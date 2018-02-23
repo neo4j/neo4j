@@ -25,13 +25,12 @@ import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class StandardBoltConnectionTrackerTest
+class StandardBoltConnectionTrackerTest
 {
     @Test
-    public void shouldTrackConnectionsAndTheirOwners()
+    void shouldTrackConnectionsAndTheirOwners()
     {
         // given
         StandardBoltConnectionTracker tracker = new StandardBoltConnectionTracker();

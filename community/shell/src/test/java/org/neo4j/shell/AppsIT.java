@@ -50,13 +50,13 @@ import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.function.Predicates.await;
@@ -77,7 +77,7 @@ public class AppsIT extends AbstractShellIT
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void canSetPropertiesAndLsWithFilters() throws Exception
+    void canSetPropertiesAndLsWithFilters() throws Exception
     {
         RelationshipType type1 = withName( "KNOWS" );
         RelationshipType type2 = withName( "LOVES" );
@@ -102,7 +102,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canSetAndRemoveProperties() throws Exception
+    void canSetAndRemoveProperties() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 2 );
         Node node = getEndNode( relationships[0] );
@@ -122,7 +122,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canCreateRelationshipsAndNodes() throws Exception
+    void canCreateRelationshipsAndNodes() throws Exception
     {
         RelationshipType type1 = withName( "type1" );
         RelationshipType type2 = withName( "type2" );
@@ -172,7 +172,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void rmrelCanLeaveStrandedIslands() throws Exception
+    void rmrelCanLeaveStrandedIslands() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 4 );
         executeCommand( "cd -a " + getEndNode( relationships[1] ).getId() );
@@ -186,7 +186,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void rmrelCanLeaveStrandedNodes() throws Exception
+    void rmrelCanLeaveStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
         Node otherNode = getEndNode( relationships[0] );
@@ -199,7 +199,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void rmrelCanDeleteStrandedNodes() throws Exception
+    void rmrelCanDeleteStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
         Node otherNode = getEndNode( relationships[0] );
@@ -211,7 +211,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void rmrelCanDeleteRelationshipSoThatCurrentNodeGetsStranded() throws Exception
+    void rmrelCanDeleteRelationshipSoThatCurrentNodeGetsStranded() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 2 );
         executeCommand( "cd " + getEndNode( relationships[0] ).getId() );
@@ -240,7 +240,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void rmnodeCanDeleteStrandedNodes() throws Exception
+    void rmnodeCanDeleteStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
         Node strandedNode = getEndNode( relationships[0] );
@@ -250,7 +250,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void rmnodeCanDeleteConnectedNodes() throws Exception
+    void rmnodeCanDeleteConnectedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 2 );
         Node middleNode = getEndNode( relationships[0] );
@@ -282,7 +282,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void pwdWorksOnDeletedNode() throws Exception
+    void pwdWorksOnDeletedNode() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
         executeCommand( "cd " + getEndNode( relationships[0] ).getId() );
@@ -300,7 +300,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void startEvenIfReferenceNodeHasBeenDeleted() throws Exception
+    void startEvenIfReferenceNodeHasBeenDeleted() throws Exception
     {
         Node node;
         try ( Transaction tx = db.beginTx() )
@@ -320,7 +320,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void cypherWithSelfParameter() throws Exception
+    void cypherWithSelfParameter() throws Exception
     {
         String nodeOneName = "Node ONE";
         String name = "name";
@@ -352,7 +352,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void cypherTiming() throws Exception
+    void cypherTiming() throws Exception
     {
         beginTx();
         Node node = db.createNode();
@@ -365,7 +365,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void filterProperties() throws Exception
+    void filterProperties() throws Exception
     {
         beginTx();
         Node node = db.createNode();
@@ -383,7 +383,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void createNewNode() throws Exception
+    void createNewNode() throws Exception
     {
         executeCommand( "mknode --np \"{'name':'test'}\" --cd" );
         executeCommand( "ls", "name", "test", "!-" /*no relationship*/ );
@@ -392,28 +392,28 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void createNodeWithArrayProperty() throws Exception
+    void createNodeWithArrayProperty() throws Exception
     {
         executeCommand( "mknode --np \"{'values':[1,2,3,4]}\" --cd" );
         assertThat( getCurrentNode(), inTx( db, hasProperty( "values" ).withValue( new int[]{1, 2, 3, 4} ) ) );
     }
 
     @Test
-    public void createNodeWithLabel() throws Exception
+    void createNodeWithLabel() throws Exception
     {
         executeCommand( "mknode --cd -l Person" );
         assertThat( getCurrentNode(), inTx( db, hasLabels( "Person" ) ) );
     }
 
     @Test
-    public void createNodeWithColonPrefixedLabel() throws Exception
+    void createNodeWithColonPrefixedLabel() throws Exception
     {
         executeCommand( "mknode --cd -l :Person" );
         assertThat( getCurrentNode(), inTx( db, hasLabels( "Person" ) ) );
     }
 
     @Test
-    public void createNodeWithPropertiesAndLabels() throws Exception
+    void createNodeWithPropertiesAndLabels() throws Exception
     {
         executeCommand( "mknode --cd --np \"{'name': 'Test'}\" -l \"['Person', ':Thing']\"" );
 
@@ -422,7 +422,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void createRelationshipWithArrayProperty() throws Exception
+    void createRelationshipWithArrayProperty() throws Exception
     {
         String type = "ARRAY";
         executeCommand( "mknode --cd" );
@@ -436,7 +436,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void createRelationshipToNewNodeWithLabels() throws Exception
+    void createRelationshipToNewNodeWithLabels() throws Exception
     {
         String type = "TEST";
         executeCommand( "mknode --cd" );
@@ -450,14 +450,14 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void getDbinfo() throws Exception
+    void getDbinfo() throws Exception
     {
         // It's JSON coming back from dbinfo command
         executeCommand( "dbinfo -g Kernel", "\\{", "\\}", "StoreId" );
     }
 
     @Test
-    public void canReassignShellVariables() throws Exception
+    void canReassignShellVariables() throws Exception
     {
         executeCommand( "export a=10" );
         executeCommand( "export b=a" );
@@ -465,7 +465,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canSetVariableToMap() throws Exception
+    void canSetVariableToMap() throws Exception
     {
         executeCommand( "export a={a:10}" );
         executeCommand( "export b={\"b\":\"foo\"}" );
@@ -473,7 +473,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canSetVariableToScalars() throws Exception
+    void canSetVariableToScalars() throws Exception
     {
         executeCommand( "export a=true" );
         executeCommand( "export b=100" );
@@ -482,14 +482,14 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canSetVariableToArray() throws Exception
+    void canSetVariableToArray() throws Exception
     {
         executeCommand( "export a=[1,true,\"foo\"]" );
         executeCommand( "env", "a=\\[1, true, foo\\]" );
     }
 
     @Test
-    public void canRemoveShellVariables() throws Exception
+    void canRemoveShellVariables() throws Exception
     {
         executeCommand( "export a=10" );
         executeCommand( "export a=null" );
@@ -497,14 +497,14 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canUseAlias() throws Exception
+    void canUseAlias() throws Exception
     {
         executeCommand( "alias x=pwd" );
         executeCommand( "x", "Current is .+" );
     }
 
     @Test
-    public void cypherNodeStillHasRelationshipsException() throws Exception
+    void cypherNodeStillHasRelationshipsException() throws Exception
     {
         // Given
         executeCommand( "create (a),(b),(a)-[:x]->(b);" );
@@ -526,13 +526,13 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void startCypherQueryWithUnwind() throws Exception
+    void startCypherQueryWithUnwind() throws Exception
     {
         executeCommand( "unwind [1,2,3] as x return x;", "| x |", "| 1 |" );
     }
 
     @Test
-    public void useCypherMerge() throws Exception
+    void useCypherMerge() throws Exception
     {
         executeCommand( "merge (n:Person {name:'Andres'});" );
 
@@ -540,7 +540,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void useCypherPeriodicCommit() throws Exception
+    void useCypherPeriodicCommit() throws Exception
     {
         File file = File.createTempFile( "file", "csv", null );
         try ( PrintWriter writer = new PrintWriter( file ) )
@@ -566,7 +566,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canSetInitialSessionVariables() throws Exception
+    void canSetInitialSessionVariables() throws Exception
     {
         Map<String, Serializable> values = genericMap( "mykey", "myvalue",
                 "my_other_key", "My other value" );
@@ -582,7 +582,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canDisableWelcomeMessage() throws Exception
+    void canDisableWelcomeMessage() throws Exception
     {
         Map<String, Serializable> values = genericMap( "quiet", "true" );
         final CollectingOutput out = new CollectingOutput();
@@ -594,7 +594,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void doesShowWelcomeMessage() throws Exception
+    void doesShowWelcomeMessage() throws Exception
     {
         Map<String, Serializable> values = genericMap();
         final CollectingOutput out = new CollectingOutput();
@@ -606,7 +606,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canExecuteCypherWithShellVariables() throws Exception
+    void canExecuteCypherWithShellVariables() throws Exception
     {
         Map<String, Serializable> variables = genericMap( "id", 0 );
         ShellClient client = newShellClient( shellServer, variables );
@@ -619,7 +619,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canDumpSubgraphWithCypher() throws Exception
+    void canDumpSubgraphWithCypher() throws Exception
     {
         final RelationshipType type = withName( "KNOWS" );
         beginTx();
@@ -634,7 +634,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canDumpGraph() throws Exception
+    void canDumpGraph() throws Exception
     {
         final RelationshipType type = withName( "KNOWS" );
         beginTx();
@@ -653,14 +653,14 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void commentsAreIgnored() throws Exception
+    void commentsAreIgnored() throws Exception
     {
         // See GitHub issue #1204
         executeCommand( "// a comment\n" );
     }
 
     @Test
-    public void canAddLabelToNode() throws Exception
+    void canAddLabelToNode() throws Exception
     {
         // GIVEN
         Relationship[] chain = createRelationshipChain( 1 );
@@ -675,7 +675,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canAddMultipleLabelsToNode() throws Exception
+    void canAddMultipleLabelsToNode() throws Exception
     {
         // GIVEN
         Relationship[] chain = createRelationshipChain( 1 );
@@ -690,7 +690,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canRemoveLabelFromNode() throws Exception
+    void canRemoveLabelFromNode() throws Exception
     {
         // GIVEN
         beginTx();
@@ -710,7 +710,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canRemoveMultipleLabelsFromNode() throws Exception
+    void canRemoveMultipleLabelsFromNode() throws Exception
     {
         // GIVEN
         beginTx();
@@ -731,7 +731,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListLabels() throws Exception
+    void canListLabels() throws Exception
     {
         // GIVEN
         beginTx();
@@ -747,7 +747,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListFilteredLabels() throws Exception
+    void canListFilteredLabels() throws Exception
     {
         // GIVEN
         beginTx();
@@ -763,7 +763,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListIndexes() throws Exception
+    void canListIndexes() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -777,7 +777,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListIndexesForGivenLabel() throws Exception
+    void canListIndexesForGivenLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -795,7 +795,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListIndexesForGivenPropertyAndLabel() throws Exception
+    void canListIndexesForGivenPropertyAndLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -822,7 +822,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canAwaitIndexesToComeOnline() throws Exception
+    void canAwaitIndexesToComeOnline() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -838,7 +838,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListIndexesWhenNoOptionGiven() throws Exception
+    void canListIndexesWhenNoOptionGiven() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -853,7 +853,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListUniquePropertyConstraints() throws Exception
+    void canListUniquePropertyConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -866,7 +866,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListUniquePropertyConstraintsByLabel() throws Exception
+    void canListUniquePropertyConstraintsByLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -879,7 +879,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canListUniquePropertyConstraintsByLabelAndProperty() throws Exception
+    void canListUniquePropertyConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -892,7 +892,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void failSampleWhenNoOptionGiven() throws Exception
+    void failSampleWhenNoOptionGiven() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -915,7 +915,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canSampleAllIndexes() throws Exception
+    void canSampleAllIndexes() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -930,7 +930,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canForceSampleIndexes() throws Exception
+    void canForceSampleIndexes() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -945,7 +945,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canSampleSpecificIndex() throws Exception
+    void canSampleSpecificIndex() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -960,7 +960,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void failSamplingWhenProvidingBadLabel() throws Exception
+    void failSamplingWhenProvidingBadLabel() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -983,7 +983,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void failSamplingWhenProvidingBadProperty() throws Exception
+    void failSamplingWhenProvidingBadProperty() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -1006,7 +1006,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void failSamplingWhenProvidingOnlyLabel() throws Exception
+    void failSamplingWhenProvidingOnlyLabel() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -1029,7 +1029,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void failSamplingWhenProvidingOnlyProperty() throws Exception
+    void failSamplingWhenProvidingOnlyProperty() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -1052,7 +1052,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void failSamplingWhenProvidingMultipleLabels() throws Exception
+    void failSamplingWhenProvidingMultipleLabels() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -1078,7 +1078,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void committingFailedTransactionShouldProperlyFinishTheTransaction() throws Exception
+    void committingFailedTransactionShouldProperlyFinishTheTransaction() throws Exception
     {
         // GIVEN a transaction with a created constraint in it
         executeCommand( "begin" );
@@ -1119,56 +1119,56 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void allowsArgumentsStartingWithSingleHyphensForCommandsThatDontTakeOptions() throws Exception
+    void allowsArgumentsStartingWithSingleHyphensForCommandsThatDontTakeOptions() throws Exception
     {
         executeCommand( "CREATE (n { test : ' -0' });" );
     }
 
     @Test
-    public void allowsArgumentsStartingWithDoubldHyphensForCommandsThatDontTakeOptions() throws Exception
+    void allowsArgumentsStartingWithDoubldHyphensForCommandsThatDontTakeOptions() throws Exception
     {
         executeCommand( "MATCH () -- () RETURN 0;" );
     }
 
     @Test
-    public void allowsCypherToContainExclamationMarks() throws Exception
+    void allowsCypherToContainExclamationMarks() throws Exception
     {
         executeCommand( "RETURN \"a\"+\"!b\";", "a!b" );
     }
 
     @Test
-    public void shouldAllowQueriesToStartWithOptionalMatch() throws Exception
+    void shouldAllowQueriesToStartWithOptionalMatch() throws Exception
     {
         executeCommand( "OPTIONAL MATCH (n) RETURN n;" );
     }
 
     @Test
-    public void shouldAllowExplainAsStartForACypherQuery() throws Exception
+    void shouldAllowExplainAsStartForACypherQuery() throws Exception
     {
         executeCommand( "EXPLAIN OPTIONAL MATCH (n) RETURN n;", "No data returned" );
     }
 
     @Test
-    public void shouldAllowProfileAsStartForACypherQuery() throws Exception
+    void shouldAllowProfileAsStartForACypherQuery() throws Exception
     {
         executeCommand( "PROFILE MATCH (n) RETURN n;", "DB Hits" );
     }
 
     @Test
-    public void shouldAllowPlannerAsStartForACypherQuery() throws Exception
+    void shouldAllowPlannerAsStartForACypherQuery() throws Exception
     {
 
         executeCommand( "CYPHER planner=cost MATCH (n) RETURN n;" );
     }
 
     @Test
-    public void canListAllConfiguration() throws Exception
+    void canListAllConfiguration() throws Exception
     {
         executeCommand( "dbinfo -g Configuration", "\"dbms.record_format\": \"\"" );
     }
 
     @Test
-    public void canTerminateAnActiveCommand() throws Exception
+    void canTerminateAnActiveCommand() throws Exception
     {
         TransactionStats txStats = db.getDependencyResolver().resolveDependency( TransactionStats.class );
         assertEquals( 0, txStats.getNumberOfActiveTransactions() );
@@ -1195,13 +1195,13 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canUseForeach() throws Exception
+    void canUseForeach() throws Exception
     {
         executeCommand( "FOREACH(x in range(0,10) | CREATE ());" );
     }
 
     @Test
-    public void use_cypher_periodic_commit2() throws Exception
+    void use_cypher_periodic_commit2() throws Exception
     {
         File file = File.createTempFile( "file", "csv", null );
         try ( PrintWriter writer = new PrintWriter( file ) )
@@ -1229,13 +1229,13 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void canUseCall() throws Exception
+    void canUseCall() throws Exception
     {
         executeCommand( "CALL db.labels" );
     }
 
     @Test
-    public void travMustListAllPathsWithinDistance() throws Exception
+    void travMustListAllPathsWithinDistance() throws Exception
     {
         long me;
         RelationshipType type;
@@ -1269,7 +1269,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void travMustRunCommandForAllPaths() throws Exception
+    void travMustRunCommandForAllPaths() throws Exception
     {
         long me;
         RelationshipType type;
@@ -1305,7 +1305,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldSupportUsingPeriodicCommitInSession() throws Exception
+    void shouldSupportUsingPeriodicCommitInSession() throws Exception
     {
         long fileSize = 120;
         long batch = 40;
@@ -1318,7 +1318,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldSupportUsingPeriodicCommitInMultipleLine() throws Exception
+    void shouldSupportUsingPeriodicCommitInMultipleLine() throws Exception
     {
         long fileSize = 120;
         long batch = 40;

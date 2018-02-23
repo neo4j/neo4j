@@ -45,12 +45,12 @@ import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 public class UniquenessConstraintValidationConcurrencyIT
 {
     @Resource
-    public ImpermanentDatabaseRule database;
+    private ImpermanentDatabaseRule database;
     @Resource
-    public OtherThreadRule<Void> otherThread;
+    private OtherThreadRule<Void> otherThread;
 
     @Test
-    public void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
+    void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
     {
         // given
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
@@ -67,7 +67,7 @@ public class UniquenessConstraintValidationConcurrencyIT
     }
 
     @Test
-    public void shouldPreventConcurrentCreationOfConflictingData() throws Exception
+    void shouldPreventConcurrentCreationOfConflictingData() throws Exception
     {
         // given
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
@@ -91,7 +91,7 @@ public class UniquenessConstraintValidationConcurrencyIT
     }
 
     @Test
-    public void shouldAllowOtherTransactionToCompleteIfFirstTransactionRollsBack() throws Exception
+    void shouldAllowOtherTransactionToCompleteIfFirstTransactionRollsBack() throws Exception
     {
         // given
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );

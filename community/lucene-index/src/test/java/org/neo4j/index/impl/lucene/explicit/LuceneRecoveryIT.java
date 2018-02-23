@@ -42,14 +42,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class LuceneRecoveryIT
+class LuceneRecoveryIT
 {
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void testHardCoreRecovery() throws Exception
+    void testHardCoreRecovery() throws Exception
     {
         String path = testDirectory.graphDbDir().getPath();
 

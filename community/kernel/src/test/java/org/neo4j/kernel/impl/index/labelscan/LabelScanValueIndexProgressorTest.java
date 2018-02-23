@@ -35,10 +35,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class LabelScanValueIndexProgressorTest
+class LabelScanValueIndexProgressorTest
 {
     @Test
-    public void shouldCloseExhaustedCursors() throws Exception
+    void shouldCloseExhaustedCursors() throws Exception
     {
         // GIVEN
         RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = mock( RawCursor.class );

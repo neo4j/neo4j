@@ -29,12 +29,12 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
  * Supplied with number of nodes to divide up and number of groups
  * to divide into, the group sizes are randomized and together they will contain all nodes.
  */
-public class IdGroupDistribution
+class IdGroupDistribution
 {
     private final long[] groupCounts;
     private final Groups groups;
 
-    public IdGroupDistribution( long nodeCount, int numberOfGroups, Random random, Groups groups )
+    IdGroupDistribution( long nodeCount, int numberOfGroups, Random random, Groups groups )
     {
         this.groups = groups;
         groupCounts = new long[numberOfGroups];

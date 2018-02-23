@@ -35,7 +35,7 @@ public class ServerConfigurationValidatorTest
     public ExpectedException expected = ExpectedException.none();
 
     @Test
-    public void httpConnectorIsRequired()
+    void httpConnectorIsRequired()
     {
         // then
         expected.expect( InvalidSettingException.class );

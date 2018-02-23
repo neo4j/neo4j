@@ -38,7 +38,7 @@ import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLo
 
 public abstract class RaftLogContractTest
 {
-    public abstract RaftLog createRaftLog();
+    protected abstract RaftLog createRaftLog();
 
     @Test
     public void shouldReportCorrectDefaultValuesOnEmptyLog() throws Exception

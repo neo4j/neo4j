@@ -55,10 +55,10 @@ import static org.neo4j.cluster.protocol.election.ElectionMessage.performRoleEle
 import static org.neo4j.cluster.protocol.election.ElectionMessage.voted;
 import static org.neo4j.cluster.protocol.election.ElectionState.election;
 
-public class ElectionStateTest
+class ElectionStateTest
 {
     @Test
-    public void testElectionRequestIsRejectedIfNoQuorum() throws Throwable
+    void testElectionRequestIsRejectedIfNoQuorum() throws Throwable
     {
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
@@ -75,7 +75,7 @@ public class ElectionStateTest
     }
 
     @Test
-    public void testElectionFromDemoteIsRejectedIfNoQuorum() throws Throwable
+    void testElectionFromDemoteIsRejectedIfNoQuorum() throws Throwable
     {
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
@@ -92,7 +92,7 @@ public class ElectionStateTest
     }
 
     @Test
-    public void electionShouldRemainLocalIfStartedBySingleInstanceWhichIsTheRoleHolder() throws Throwable
+    void electionShouldRemainLocalIfStartedBySingleInstanceWhichIsTheRoleHolder() throws Throwable
     {
         /*
          * Ensures that when an instance is alone in the cluster, elections for roles that it holds do not set
@@ -139,7 +139,7 @@ public class ElectionStateTest
     }
 
     @Test
-    public void delayedVoteFromPreviousElectionMustNotCauseCurrentElectionToComplete() throws Throwable
+    void delayedVoteFromPreviousElectionMustNotCauseCurrentElectionToComplete() throws Throwable
     {
         // Given
         ElectionContext context = mock( ElectionContext.class );
@@ -167,7 +167,7 @@ public class ElectionStateTest
     }
 
     @Test
-    public void timeoutMakesElectionBeForgotten() throws Throwable
+    void timeoutMakesElectionBeForgotten() throws Throwable
     {
         // Given
         String coordinatorRole = "coordinator";
@@ -189,7 +189,7 @@ public class ElectionStateTest
     }
 
     @Test
-    public void electionCompletingMakesItBeForgotten() throws Throwable
+    void electionCompletingMakesItBeForgotten() throws Throwable
     {
         // Given
         String coordinatorRole = "coordinator";
@@ -214,7 +214,7 @@ public class ElectionStateTest
     }
 
     @Test
-    public void voteResponseShouldHaveSameVersionAsVoteRequest() throws Throwable
+    void voteResponseShouldHaveSameVersionAsVoteRequest() throws Throwable
     {
         final List<Message<?>> messages = new ArrayList<>( 1 );
         MessageHolder holder = messages::add;
@@ -237,7 +237,7 @@ public class ElectionStateTest
     }
 
     @Test
-    public void shouldSendAtomicBroadcastOnJoiningAClusterWithAnEstablishedCoordinator() throws Throwable
+    void shouldSendAtomicBroadcastOnJoiningAClusterWithAnEstablishedCoordinator() throws Throwable
     {
         // Given
         String winnerURI = "some://winner";

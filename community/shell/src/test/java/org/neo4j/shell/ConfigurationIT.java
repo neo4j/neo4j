@@ -30,14 +30,14 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConfigurationIT
+class ConfigurationIT
 {
     private GraphDatabaseAPI db;
     private ShellServer server;
     private ShellClient client;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
@@ -47,7 +47,7 @@ public class ConfigurationIT
     }
 
     @AfterEach
-    public void after() throws Exception
+    void after() throws Exception
     {
         client.shutdown();
         server.shutdown();
@@ -55,7 +55,7 @@ public class ConfigurationIT
     }
 
     @Test
-    public void deprecatedConfigName() throws Exception
+    void deprecatedConfigName() throws Exception
     {
         CollectingOutput output = new CollectingOutput();
         client.evaluate( "pwd", output );

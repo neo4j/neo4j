@@ -65,11 +65,11 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class KernelIT extends KernelIntegrationTest
+class KernelIT extends KernelIntegrationTest
 {
 
     @Test
-    public void mixingBeansApiWithKernelAPI() throws Exception
+    void mixingBeansApiWithKernelAPI() throws Exception
     {
         // 1: Start your transactions through the Beans API
         Transaction transaction = db.beginTx();
@@ -93,7 +93,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void mixingBeansApiWithKernelAPIForNestedTransaction() throws Exception
+    void mixingBeansApiWithKernelAPIForNestedTransaction() throws Exception
     {
         // GIVEN
         Transaction outerTx = db.beginTx();
@@ -108,7 +108,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
+    void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
     {
         // GIVEN
         Node node;
@@ -140,7 +140,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
+    void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
     {
         // WHEN
         Node node = null;
@@ -182,7 +182,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void transactionStateShouldRemovePreviouslyAddedLabel() throws Exception
+    void transactionStateShouldRemovePreviouslyAddedLabel() throws Exception
     {
         Transaction tx = db.beginTx();
 
@@ -212,7 +212,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
+    void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
     {
         Transaction tx = db.beginTx();
         Statement statement = statementContextSupplier.get();
@@ -236,7 +236,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void transactionStateShouldReflectRemovingLabelImmediately() throws Exception
+    void transactionStateShouldReflectRemovingLabelImmediately() throws Exception
     {
         // GIVEN
 
@@ -268,7 +268,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void labelShouldBeRemovedAfterCommit() throws Exception
+    void labelShouldBeRemovedAfterCommit() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -302,7 +302,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
+    void addingNewLabelToNodeShouldRespondTrue() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -330,7 +330,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
+    void addingExistingLabelToNodeShouldRespondFalse() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -357,7 +357,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
+    void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -385,7 +385,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
+    void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -412,7 +412,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void deletingNodeWithLabelsShouldHaveThoseLabelRemovalsReflectedInTransaction() throws Exception
+    void deletingNodeWithLabelsShouldHaveThoseLabelRemovalsReflectedInTransaction() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -460,7 +460,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans()
+    void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans()
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -492,7 +492,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
+    void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
     {
         // GIVEN
         schemaWriteOperationsInNewTransaction();
@@ -515,7 +515,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
+    void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
         IndexDescriptor idx = createIndex( statementInNewTransaction( AUTH_DISABLED ) );
@@ -537,7 +537,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenCommitted() throws Exception
+    void txReturnsCorrectIdWhenCommitted() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -555,7 +555,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenRolledBack() throws Exception
+    void txReturnsCorrectIdWhenRolledBack() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -571,7 +571,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenMarkedForTermination() throws Exception
+    void txReturnsCorrectIdWhenMarkedForTermination() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -587,7 +587,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenFailedlAndMarkedForTermination() throws Exception
+    void txReturnsCorrectIdWhenFailedlAndMarkedForTermination() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -604,7 +604,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenReadOnly() throws Exception
+    void txReturnsCorrectIdWhenReadOnly() throws Exception
     {
         executeDummyTxs( db, 42 );
 

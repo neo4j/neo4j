@@ -36,23 +36,23 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.FilteringIterable;
 
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
-public class Plugin extends ServerPlugin
+class Plugin extends ServerPlugin
 {
-    public static final String GET_CONNECTED_NODES = "connected_nodes";
-    static String _string;
-    static Byte _byte;
-    static Character _character;
-    static Integer _integer;
-    static Short _short;
-    static Long _long;
-    static Float _float;
-    static Double _double;
-    static Boolean _boolean;
-    static Long optional;
-    static Set<String> stringSet;
-    static List<String> stringList;
-    static String[] stringArray;
-    public static int[] intArray;
+    private static final String GET_CONNECTED_NODES = "connected_nodes";
+    private static String _string;
+    private static Byte _byte;
+    private static Character _character;
+    private static Integer _integer;
+    private static Short _short;
+    private static Long _long;
+    private static Float _float;
+    private static Double _double;
+    private static Boolean _boolean;
+    private static Long optional;
+    private static Set<String> stringSet;
+    private static List<String> stringList;
+    private static String[] stringArray;
+    private static int[] intArray;
 
     @Name( GET_CONNECTED_NODES )
     @PluginTarget( Node.class )

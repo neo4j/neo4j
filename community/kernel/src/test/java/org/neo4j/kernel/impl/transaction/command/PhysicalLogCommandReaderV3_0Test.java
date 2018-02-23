@@ -36,10 +36,10 @@ import org.neo4j.storageengine.api.CommandReader;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PhysicalLogCommandReaderV3_0Test
+class PhysicalLogCommandReaderV3_0Test
 {
     @Test
-    public void shouldReadRelationshipCommand() throws Throwable
+    void shouldReadRelationshipCommand() throws Throwable
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -60,7 +60,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipCommandWithSecondaryUnit() throws IOException
+    void readRelationshipCommandWithSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
@@ -80,7 +80,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException
+    void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
@@ -100,7 +100,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipCommandWithFixedReferenceFormat300() throws IOException
+    void readRelationshipCommandWithFixedReferenceFormat300() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
@@ -121,7 +121,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipCommandWithFixedReferenceFormat302() throws IOException
+    void readRelationshipCommandWithFixedReferenceFormat302() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
@@ -142,7 +142,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void shouldReadRelationshipGroupCommand() throws Throwable
+    void shouldReadRelationshipGroupCommand() throws Throwable
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -165,7 +165,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipGroupCommandWithSecondaryUnit() throws IOException
+    void readRelationshipGroupCommandWithSecondaryUnit() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -191,7 +191,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipGroupCommandWithNonRequiredSecondaryUnit() throws IOException
+    void readRelationshipGroupCommandWithNonRequiredSecondaryUnit() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -217,7 +217,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipGroupCommandWithFixedReferenceFormat300() throws IOException
+    void readRelationshipGroupCommandWithFixedReferenceFormat300() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -243,7 +243,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readRelationshipGroupCommandWithFixedReferenceFormat302() throws IOException
+    void readRelationshipGroupCommandWithFixedReferenceFormat302() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -269,7 +269,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void shouldReadNeoStoreCommand() throws Throwable
+    void shouldReadNeoStoreCommand() throws Throwable
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -292,7 +292,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void nodeCommandWithFixedReferenceFormat300() throws Exception
+    void nodeCommandWithFixedReferenceFormat300() throws Exception
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -318,7 +318,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void nodeCommandWithFixedReferenceFormat302() throws Exception
+    void nodeCommandWithFixedReferenceFormat302() throws Exception
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -344,7 +344,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readPropertyCommandWithSecondaryUnit() throws IOException
+    void readPropertyCommandWithSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -367,7 +367,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readPropertyCommandWithNonRequiredSecondaryUnit() throws IOException
+    void readPropertyCommandWithNonRequiredSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -390,7 +390,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readPropertyCommandWithFixedReferenceFormat300() throws IOException
+    void readPropertyCommandWithFixedReferenceFormat300() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -414,7 +414,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void readPropertyCommandWithFixedReferenceFormat302() throws IOException
+    void readPropertyCommandWithFixedReferenceFormat302() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -438,7 +438,7 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    public void shouldReadSomeCommands() throws Exception
+    void shouldReadSomeCommands() throws Exception
     {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();

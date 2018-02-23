@@ -27,10 +27,10 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-public class PhysicalToLogicalLabelChangesTest
+class PhysicalToLogicalLabelChangesTest
 {
     @Test
-    public void shouldSeeSimpleAddition()
+    void shouldSeeSimpleAddition()
     {
         convertAndAssert(
                 // before/after
@@ -40,7 +40,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSimpleRemoval()
+    void shouldSeeSimpleRemoval()
     {
         convertAndAssert(
                 // before/after
@@ -50,7 +50,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAdded()
+    void shouldSeeSomeAdded()
     {
         convertAndAssert(
                 // before/after
@@ -60,7 +60,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeRemoved()
+    void shouldSeeSomeRemoved()
     {
         convertAndAssert(
                 // before/after
@@ -70,7 +70,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAddedAndSomeRemoved()
+    void shouldSeeSomeAddedAndSomeRemoved()
     {
         convertAndAssert(
                 // before/after

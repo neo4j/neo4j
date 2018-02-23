@@ -26,16 +26,16 @@ import org.hamcrest.TypeSafeMatcher;
 
 import java.util.regex.Pattern;
 
-public class RegularExpressionMatcher extends TypeSafeMatcher<String>
+class RegularExpressionMatcher extends TypeSafeMatcher<String>
 {
     private final Pattern pattern;
 
-    public RegularExpressionMatcher( String pattern )
+    private RegularExpressionMatcher( String pattern )
     {
         this( Pattern.compile( pattern ) );
     }
 
-    public RegularExpressionMatcher( Pattern pattern )
+    private RegularExpressionMatcher( Pattern pattern )
     {
         this.pattern = pattern;
     }

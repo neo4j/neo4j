@@ -32,7 +32,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 public class CreateAndDeleteNodesIT
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     enum RelTypes implements RelationshipType
     {
@@ -40,7 +40,7 @@ public class CreateAndDeleteNodesIT
     }
 
     @Test
-    public void addingALabelUsingAValidIdentifierShouldSucceed()
+    void addingALabelUsingAValidIdentifierShouldSucceed()
     {
         // Given
         GraphDatabaseService dataBase = dbRule.getGraphDatabaseAPI();

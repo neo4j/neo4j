@@ -28,17 +28,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveLongArrayQueueTest
+class PrimitiveLongArrayQueueTest
 {
 
     @Test
-    public void newQueueIsEmpty()
+    void newQueueIsEmpty()
     {
         assertTrue( createQueue().isEmpty() );
     }
 
     @Test
-    public void growQueueOnElementOffer()
+    void growQueueOnElementOffer()
     {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
         for ( int i = 1; i < 1000; i++ )
@@ -49,7 +49,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void addRemoveElementKeepQueueEmpty()
+    void addRemoveElementKeepQueueEmpty()
     {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
         for ( int i = 0; i < 1000; i++ )
@@ -61,7 +61,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void offerLessThenQueueCapacityElements()
+    void offerLessThenQueueCapacityElements()
     {
         PrimitiveLongArrayQueue arrayQueue = createQueue();
         for ( int i = 1; i < 16; i++ )
@@ -72,13 +72,13 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void failToRemoveElementFromNewEmptyQueue()
+    void failToRemoveElementFromNewEmptyQueue()
     {
         assertThrows( IllegalStateException.class, () -> createQueue().dequeue() );
     }
 
     @Test
-    public void offerMoreThenQueueCapacityElements()
+    void offerMoreThenQueueCapacityElements()
     {
         PrimitiveLongArrayQueue arrayQueue = createQueue();
         for ( int i = 1; i < 1234; i++ )
@@ -93,7 +93,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void emptyQueueAfterClear()
+    void emptyQueueAfterClear()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         queue.enqueue( 2 );
@@ -107,7 +107,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void tailBeforeHeadCorrectSize()
+    void tailBeforeHeadCorrectSize()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         for ( int i = 0; i < 14; i++ )
@@ -127,7 +127,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void tailBeforeHeadCorrectResize()
+    void tailBeforeHeadCorrectResize()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         for ( int i = 0; i < 14; i++ )
@@ -151,7 +151,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void tailBeforeHeadCorrectIteration()
+    void tailBeforeHeadCorrectIteration()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         for ( int i = 0; i < 14; i++ )
@@ -178,13 +178,13 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void failToGetNextOnEmptyQueueIterator()
+    void failToGetNextOnEmptyQueueIterator()
     {
         assertThrows( NoSuchElementException.class, () -> createQueue().iterator().next() );
     }
 
     @Test
-    public void addAllElementsFromOtherQueue()
+    void addAllElementsFromOtherQueue()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         queue.enqueue( 1 );
@@ -205,7 +205,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void doNotAllowCreationOfQueueWithRandomCapacity()
+    void doNotAllowCreationOfQueueWithRandomCapacity()
     {
         assertThrows( AssertionError.class, () -> new PrimitiveLongArrayQueue( 7 ) );
     }

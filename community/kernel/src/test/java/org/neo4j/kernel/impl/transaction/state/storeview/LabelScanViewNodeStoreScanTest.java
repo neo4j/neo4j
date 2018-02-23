@@ -42,7 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LabelScanViewNodeStoreScanTest
+class LabelScanViewNodeStoreScanTest
 {
     private NodeStore nodeStore = mock( NodeStore.class );
     private PropertyStore propertyStore = mock( PropertyStore.class );
@@ -53,13 +53,13 @@ public class LabelScanViewNodeStoreScanTest
     private Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
     }
 
     @Test
-    public void iterateOverLabeledNodeIds()
+    void iterateOverLabeledNodeIds()
     {
         PrimitiveLongResourceIterator labeledNodes = PrimitiveLongResourceCollections.iterator( null, 1, 2, 4, 8 );
 

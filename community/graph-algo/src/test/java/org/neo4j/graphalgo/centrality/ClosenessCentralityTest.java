@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Direction;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ClosenessCentralityTest extends Neo4jAlgoTestCase
+class ClosenessCentralityTest extends Neo4jAlgoTestCase
 {
     private SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
@@ -64,7 +64,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testBox()
+    void testBox()
     {
         /*
          * Layout
@@ -82,7 +82,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testPlusShape()
+    void testPlusShape()
     {
         /*
          * Layout
@@ -103,7 +103,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testChain()
+    void testChain()
     {
         /*
          * Layout
@@ -120,7 +120,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void isolatedNode()
+    void isolatedNode()
     {
         /*
          * Layout
@@ -145,7 +145,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void isolatedCommunities()
+    void isolatedCommunities()
     {
         /*
          * Layout

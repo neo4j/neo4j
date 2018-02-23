@@ -43,17 +43,17 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class PrimitiveLongDiffSetsTest
+class PrimitiveLongDiffSetsTest
 {
 
     @Test
-    public void newDiffSetIsEmpty()
+    void newDiffSetIsEmpty()
     {
         assertTrue( createDiffSet().isEmpty() );
     }
 
     @Test
-    public void addElementsToDiffSets()
+    void addElementsToDiffSets()
     {
         PrimitiveLongDiffSets diffSets = createDiffSet();
 
@@ -66,7 +66,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void removeElementsInDiffSets()
+    void removeElementsInDiffSets()
     {
         PrimitiveLongDiffSets diffSets = createDiffSet();
 
@@ -78,7 +78,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void removeAndAddElementsToDiffSets()
+    void removeAndAddElementsToDiffSets()
     {
         PrimitiveLongDiffSets diffSets = createDiffSet();
 
@@ -95,7 +95,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void checkIsElementsAddedOrRemoved()
+    void checkIsElementsAddedOrRemoved()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
 
@@ -114,7 +114,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void addAllElements()
+    void addAllElements()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
 
@@ -125,7 +125,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void removeAllElements()
+    void removeAllElements()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
 
@@ -136,7 +136,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void addedAndRemovedElementsDelta()
+    void addedAndRemovedElementsDelta()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
         assertEquals( 0, diffSet.delta() );
@@ -150,7 +150,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void augmentDiffSetWithExternalElements()
+    void augmentDiffSetWithExternalElements()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );
@@ -161,7 +161,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void visitAddedAndRemovedElements()
+    void visitAddedAndRemovedElements()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );

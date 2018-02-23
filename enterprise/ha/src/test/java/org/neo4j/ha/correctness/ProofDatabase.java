@@ -35,12 +35,12 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.Label.label;
 
-public class ProofDatabase
+class ProofDatabase
 {
     private final GraphDatabaseService gds;
     private final Map<ClusterState, Node> stateNodes = new HashMap<>();
 
-    public ProofDatabase( String location )
+    ProofDatabase( String location )
     {
         File dbDir = new File( location );
         cleanDbDir( dbDir );

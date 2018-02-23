@@ -81,7 +81,7 @@ public abstract class LabelScanStoreTest
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final ExpectedException expectedException = ExpectedException.none();
     protected final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    final RandomRule random = new RandomRule();
+    private final RandomRule random = new RandomRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( random ).around( testDirectory ).around( expectedException )

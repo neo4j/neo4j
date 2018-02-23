@@ -31,18 +31,18 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class PropertyRecordTest
+class PropertyRecordTest
 {
     @Test
-    public void addingDuplicatePropertyBlockShouldOverwriteExisting()
+    void addingDuplicatePropertyBlockShouldOverwriteExisting()
     {
         // Given these things...
         PropertyRecord record = new PropertyRecord( 1 );
@@ -64,7 +64,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void shouldIterateOverBlocks()
+    void shouldIterateOverBlocks()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );
@@ -88,7 +88,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveBlocksDuringIteration()
+    void shouldBeAbleToRemoveBlocksDuringIteration()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );
@@ -124,7 +124,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void addLoadedBlock()
+    void addLoadedBlock()
     {
         PropertyRecord record = new PropertyRecord( 42 );
 
@@ -140,7 +140,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void addLoadedBlockFailsWhenTooManyBlocksAdded()
+    void addLoadedBlockFailsWhenTooManyBlocksAdded()
     {
         PropertyRecord record = new PropertyRecord( 42 );
 

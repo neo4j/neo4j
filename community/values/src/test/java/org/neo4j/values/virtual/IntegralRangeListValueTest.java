@@ -26,10 +26,10 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.range;
 
-public class IntegralRangeListValueTest
+class IntegralRangeListValueTest
 {
     @Test
-    public void shouldHandleRangeWithStepOne()
+    void shouldHandleRangeWithStepOne()
     {
         ListValue range = range( 5L, 11L, 1L );
 
@@ -41,7 +41,7 @@ public class IntegralRangeListValueTest
     }
 
     @Test
-    public void shouldHandleRangeWithBiggerSteps()
+    void shouldHandleRangeWithBiggerSteps()
     {
         ListValue range = range( 5L, 11L, 3L );
 
@@ -52,7 +52,7 @@ public class IntegralRangeListValueTest
     }
 
     @Test
-    public void shouldHandleNegativeStep()
+    void shouldHandleNegativeStep()
     {
         ListValue range = range( 11L, 5L, -3L );
 

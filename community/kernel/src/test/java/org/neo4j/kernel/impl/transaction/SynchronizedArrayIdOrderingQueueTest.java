@@ -39,7 +39,7 @@ public class SynchronizedArrayIdOrderingQueueTest
     public final CleanupRule cleanup = new CleanupRule();
 
     @Test
-    public void shouldOfferQueueABunchOfIds() throws Exception
+    void shouldOfferQueueABunchOfIds() throws Exception
     {
         // GIVEN
         IdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 5 );
@@ -61,7 +61,7 @@ public class SynchronizedArrayIdOrderingQueueTest
     }
 
     @Test
-    public void shouldOfferAwaitAndRemoveRoundAndRound() throws Exception
+    void shouldOfferAwaitAndRemoveRoundAndRound() throws Exception
     {
         // GIVEN
         IdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 5 );
@@ -86,7 +86,7 @@ public class SynchronizedArrayIdOrderingQueueTest
     }
 
     @Test
-    public void shouldHaveOneThreadWaitForARemoval() throws Exception
+    void shouldHaveOneThreadWaitForARemoval() throws Exception
     {
         // GIVEN
         IdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 5 );
@@ -105,7 +105,7 @@ public class SynchronizedArrayIdOrderingQueueTest
     }
 
     @Test
-    public void shouldExtendArrayWhenIdsAreWrappingAround()
+    void shouldExtendArrayWhenIdsAreWrappingAround()
     {
         // GIVEN
         IdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 5 );

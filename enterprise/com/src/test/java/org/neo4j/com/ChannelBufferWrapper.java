@@ -39,11 +39,11 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 /**
  * Wraps an {@link InMemoryClosableChannel}, making it look like one {@link ChannelBuffer}.
  */
-public class ChannelBufferWrapper implements ChannelBuffer
+class ChannelBufferWrapper implements ChannelBuffer
 {
     private final InMemoryClosableChannel delegate;
 
-    public ChannelBufferWrapper( InMemoryClosableChannel delegate )
+    ChannelBufferWrapper( InMemoryClosableChannel delegate )
     {
         this.delegate = delegate;
     }

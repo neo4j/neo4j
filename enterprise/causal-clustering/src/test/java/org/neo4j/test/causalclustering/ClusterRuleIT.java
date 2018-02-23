@@ -46,7 +46,7 @@ public class ClusterRuleIT
     public final ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void shouldAssignPortsToMembersAutomatically() throws Exception
+    void shouldAssignPortsToMembersAutomatically() throws Exception
     {
         Cluster cluster = clusterRule.withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 5 ).startCluster();
 

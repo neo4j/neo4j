@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
-public class RecordFormat
+class RecordFormat
 {
     private final int numberOfThreads;
     private final int cachePageSize;
@@ -34,7 +34,7 @@ public class RecordFormat
     private final int checksumFieldOffset;
     private final int recordSize;
 
-    public RecordFormat( int numberOfThreads, int cachePageSize )
+    RecordFormat( int numberOfThreads, int cachePageSize )
     {
         this.numberOfThreads = numberOfThreads;
         this.cachePageSize = cachePageSize;

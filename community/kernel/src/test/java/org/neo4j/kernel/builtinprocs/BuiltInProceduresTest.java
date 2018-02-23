@@ -81,7 +81,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
-public class BuiltInProceduresTest
+class BuiltInProceduresTest
 {
     private final List<IndexDescriptor> indexes = new LinkedList<>();
     private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
@@ -103,7 +103,7 @@ public class BuiltInProceduresTest
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void shouldListAllIndexes() throws Throwable
+    void shouldListAllIndexes() throws Throwable
     {
         // Given
         givenIndex( "User", "name" );
@@ -120,7 +120,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListAllUniqueIndexes() throws Throwable
+    void shouldListAllUniqueIndexes() throws Throwable
     {
         // Given
         givenUniqueConstraint( "User", "name" );
@@ -132,7 +132,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListPropertyKeys() throws Throwable
+    void shouldListPropertyKeys() throws Throwable
     {
         // Given
         givenPropertyKeys( "name", "age" );
@@ -145,7 +145,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListLabels() throws Throwable
+    void shouldListLabels() throws Throwable
     {
         // Given
         givenLabels( "Banana", "Fruit" );
@@ -158,7 +158,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListRelTypes() throws Throwable
+    void shouldListRelTypes() throws Throwable
     {
         // Given
         givenRelationshipTypes( "EATS", "SPROUTS" );
@@ -171,7 +171,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListConstraints() throws Throwable
+    void shouldListConstraints() throws Throwable
     {
         // Given
         givenUniqueConstraint( "User", "name" );
@@ -185,7 +185,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldEscapeLabelNameContainingColons() throws Throwable
+    void shouldEscapeLabelNameContainingColons() throws Throwable
     {
         // Given
         givenUniqueConstraint( "FOO:BAR", "x.y" );
@@ -200,7 +200,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListCorrectBuiltinProcedures() throws Throwable
+    void shouldListCorrectBuiltinProcedures() throws Throwable
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
@@ -326,7 +326,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListSystemComponents() throws Throwable
+    void shouldListSystemComponents() throws Throwable
     {
         // When/Then
         assertThat( call( "dbms.components" ), contains(
@@ -335,7 +335,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDbLabels()
+    void shouldCloseStatementIfExceptionIsThrownDbLabels()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
@@ -358,7 +358,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys()
+    void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
@@ -381,7 +381,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDRelationshipTypes()
+    void shouldCloseStatementIfExceptionIsThrownDRelationshipTypes()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
@@ -474,7 +474,7 @@ public class BuiltInProceduresTest
     }
 
     @BeforeEach
-    public void setup() throws Exception
+    void setup() throws Exception
     {
         procs.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
         procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );

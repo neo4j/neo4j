@@ -31,7 +31,7 @@ import org.neo4j.test.rule.TestDirectory;
 public class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT
 {
     @Resource
-    public TestDirectory directory;
+    TestDirectory directory;
 
     @Override
     protected Fixture<MuninnPageCache> createFixture()

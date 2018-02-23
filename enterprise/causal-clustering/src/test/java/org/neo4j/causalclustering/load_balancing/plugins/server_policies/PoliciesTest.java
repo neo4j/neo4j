@@ -38,12 +38,12 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class PoliciesTest
+class PoliciesTest
 {
     private Log log = mock( Log.class );
 
     @Test
-    public void shouldSupplyDefaultUnfilteredPolicyForEmptyContext() throws Exception
+    void shouldSupplyDefaultUnfilteredPolicyForEmptyContext() throws Exception
     {
         // given
         Policies policies = new Policies( log );
@@ -63,7 +63,7 @@ public class PoliciesTest
     }
 
     @Test
-    public void shouldThrowExceptionOnUnknownPolicyName()
+    void shouldThrowExceptionOnUnknownPolicyName()
     {
         // given
         Policies policies = new Policies( log );
@@ -82,7 +82,7 @@ public class PoliciesTest
     }
 
     @Test
-    public void shouldThrowExceptionOnSelectionOfUnregisteredDefault()
+    void shouldThrowExceptionOnSelectionOfUnregisteredDefault()
     {
         Policies policies = new Policies( log );
 
@@ -100,7 +100,7 @@ public class PoliciesTest
     }
 
     @Test
-    public void shouldAllowOverridingDefaultPolicy() throws Exception
+    void shouldAllowOverridingDefaultPolicy() throws Exception
     {
         Policies policies = new Policies( log );
 
@@ -117,7 +117,7 @@ public class PoliciesTest
     }
 
     @Test
-    public void shouldAllowLookupOfAddedPolicy() throws Exception
+    void shouldAllowLookupOfAddedPolicy() throws Exception
     {
         // given
         Policies policies = new Policies( log );

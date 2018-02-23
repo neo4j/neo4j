@@ -40,13 +40,13 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 @ExtendWith( OtherThreadExtension.class )
-public class ProcessorStepTest
+class ProcessorStepTest
 {
     @Resource
-    public OtherThreadRule<Void> t2;
+    private OtherThreadRule<Void> t2;
 
     @Test
-    public void shouldUpholdProcessOrderingGuarantee() throws Exception
+    void shouldUpholdProcessOrderingGuarantee() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -72,7 +72,7 @@ public class ProcessorStepTest
     }
 
     @Test
-    public void shouldHaveTaskQueueSizeEqualToMaxNumberOfProcessors() throws Exception
+    void shouldHaveTaskQueueSizeEqualToMaxNumberOfProcessors() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -106,7 +106,7 @@ public class ProcessorStepTest
     }
 
     @Test
-    public void shouldRecycleDoneBatches() throws Exception
+    void shouldRecycleDoneBatches() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );

@@ -125,7 +125,7 @@ public final class FunctionalTestHelper
         return nodePropertiesUri( id ) + "/" + key;
     }
 
-    String relationshipUri()
+    private String relationshipUri()
     {
         return dataUri() + "relationship";
     }

@@ -42,10 +42,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.time.Clocks.fakeClock;
 
-public class TransactionHandleRegistryTest
+class TransactionHandleRegistryTest
 {
     @Test
-    public void shouldGenerateTransactionId()
+    void shouldGenerateTransactionId()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -62,7 +62,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void shouldStoreSuspendedTransaction() throws Exception
+    void shouldStoreSuspendedTransaction() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -81,7 +81,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void acquiringATransactionThatHasAlreadyBeenAcquiredShouldThrowInvalidConcurrentTransactionAccess() throws Exception
+    void acquiringATransactionThatHasAlreadyBeenAcquiredShouldThrowInvalidConcurrentTransactionAccess() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -108,7 +108,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void acquiringANonExistentTransactionShouldThrowErrorInvalidTransactionId() throws Exception
+    void acquiringANonExistentTransactionShouldThrowErrorInvalidTransactionId() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -132,7 +132,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void transactionsShouldBeEvictedWhenUnusedLongerThanTimeout() throws Exception
+    void transactionsShouldBeEvictedWhenUnusedLongerThanTimeout() throws Exception
     {
         // Given
         FakeClock clock = fakeClock();
@@ -174,7 +174,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void expiryTimeShouldBeSetToCurrentTimePlusTimeout() throws Exception
+    void expiryTimeShouldBeSetToCurrentTimePlusTimeout() throws Exception
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -202,7 +202,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void shouldProvideInterruptHandlerForActiveTransaction() throws TransactionLifecycleException
+    void shouldProvideInterruptHandlerForActiveTransaction() throws TransactionLifecycleException
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -224,7 +224,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void shouldProvideInterruptHandlerForSuspendedTransaction() throws TransactionLifecycleException
+    void shouldProvideInterruptHandlerForSuspendedTransaction() throws TransactionLifecycleException
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -247,7 +247,7 @@ public class TransactionHandleRegistryTest
     }
 
     @Test
-    public void gettingInterruptHandlerForUnknownIdShouldThrowErrorInvalidTransactionId()
+    void gettingInterruptHandlerForUnknownIdShouldThrowErrorInvalidTransactionId()
     {
         assertThrows( InvalidTransactionId.class, () -> {
             // Given

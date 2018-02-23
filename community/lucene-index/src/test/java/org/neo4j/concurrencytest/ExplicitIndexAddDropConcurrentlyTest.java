@@ -40,14 +40,14 @@ import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class ExplicitIndexAddDropConcurrentlyTest
+class ExplicitIndexAddDropConcurrentlyTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     @Disabled
     @Test
-    public void shouldHandleConcurrentIndexDropping() throws Exception
+    void shouldHandleConcurrentIndexDropping() throws Exception
     {
         // Given
         ExecutorService exec = Executors.newFixedThreadPool( 4 );

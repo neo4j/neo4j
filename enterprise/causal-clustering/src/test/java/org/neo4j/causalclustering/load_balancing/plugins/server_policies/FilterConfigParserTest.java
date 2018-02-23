@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterBuilder.filter;
 
-public class FilterConfigParserTest
+class FilterConfigParserTest
 {
     @Test
-    public void shouldThrowExceptionOnInvalidConfig()
+    void shouldThrowExceptionOnInvalidConfig()
     {
         String[] invalidConfigs = {
                 "",
@@ -90,7 +90,7 @@ public class FilterConfigParserTest
     }
 
     @Test
-    public void shouldParseValidConfigs()
+    void shouldParseValidConfigs()
     {
         Object[][] validConfigs = {
                 {

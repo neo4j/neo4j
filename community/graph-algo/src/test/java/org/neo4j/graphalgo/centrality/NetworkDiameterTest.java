@@ -30,16 +30,16 @@ import org.neo4j.graphdb.Direction;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class NetworkDiameterTest extends Neo4jAlgoTestCase
+class NetworkDiameterTest extends Neo4jAlgoTestCase
 {
-    protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
+    private SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
                 new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
     @Test
-    public void testBox()
+    void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
         NetworkDiameter<Double> diameter =
@@ -48,7 +48,7 @@ public class NetworkDiameterTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testPlusShape()
+    void testPlusShape()
     {
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
@@ -58,7 +58,7 @@ public class NetworkDiameterTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testChain()
+    void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
         NetworkDiameter<Double> diameter =

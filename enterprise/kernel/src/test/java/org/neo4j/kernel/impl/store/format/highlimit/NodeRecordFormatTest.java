@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class NodeRecordFormatTest
+class NodeRecordFormatTest
 {
 
     private NodeRecordFormat recordFormat;
@@ -45,7 +45,7 @@ public class NodeRecordFormatTest
     private ConstantIdSequence idSequence;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         recordFormat = new NodeRecordFormat();
         pageCursor = new FixedLinkedStubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
@@ -53,13 +53,13 @@ public class NodeRecordFormatTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         pageCursor.close();
     }
 
     @Test
-    public void readWriteFixedReferencesRecord() throws Exception
+    void readWriteFixedReferencesRecord() throws Exception
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -72,7 +72,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void useFixedReferencesFormatWhenRelationshipIsMissing() throws IOException
+    void useFixedReferencesFormatWhenRelationshipIsMissing() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -85,7 +85,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void useFixedReferencesFormatWhenPropertyIsMissing() throws IOException
+    void useFixedReferencesFormatWhenPropertyIsMissing() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -98,7 +98,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRelationshipReferenceTooBig() throws IOException
+    void useVariableLengthFormatWhenRelationshipReferenceTooBig() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -111,7 +111,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenPropertyReferenceTooBig() throws IOException
+    void useVariableLengthFormatWhenPropertyReferenceTooBig() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -124,7 +124,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -138,7 +138,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -151,7 +151,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
     {
         NodeRecord oldFormatRecord = new NodeRecord( 1 );
         NodeRecord newFormatRecord = new NodeRecord( 1 );
@@ -167,7 +167,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void readDoubleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    void readDoubleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
     {
         NodeRecord oldFormatRecord = new NodeRecord( 1 );
         NodeRecord newFormatRecord = new NodeRecord( 1 );

@@ -30,26 +30,26 @@ import org.neo4j.test.assertion.Assert;
 
 import static org.mockito.Mockito.mock;
 
-public class KernelTokenArgumentTest
+class KernelTokenArgumentTest
 {
     private KernelToken token = new KernelToken( mock( StoreReadLayer.class ), mock( KernelTransactionImplementation.class) );
 
     @Test
-    public void labelGetOrCreateForName()
+    void labelGetOrCreateForName()
     {
         assertIllegalToken( () -> token.labelGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.labelGetOrCreateForName( "" ) );
     }
 
     @Test
-    public void propertyKeyGetOrCreateForName()
+    void propertyKeyGetOrCreateForName()
     {
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( "" ) );
     }
 
     @Test
-    public void relationshipTypeGetOrCreateForName()
+    void relationshipTypeGetOrCreateForName()
     {
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( "" ) );

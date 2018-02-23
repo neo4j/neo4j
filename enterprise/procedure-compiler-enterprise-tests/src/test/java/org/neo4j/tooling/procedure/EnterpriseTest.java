@@ -41,7 +41,7 @@ public class EnterpriseTest
     private Processor processor = new ProcedureProcessor();
 
     @Test
-    public void emits_warnings_for_restricted_enterprise_types()
+    void emits_warnings_for_restricted_enterprise_types()
     {
 
         JavaFileObject sproc =
@@ -65,7 +65,7 @@ public class EnterpriseTest
     }
 
     @Test
-    public void does_not_emit_warnings_for_restricted_enterprise_types_when_warnings_are_disabled()
+    void does_not_emit_warnings_for_restricted_enterprise_types_when_warnings_are_disabled()
     {
 
         JavaFileObject sproc =

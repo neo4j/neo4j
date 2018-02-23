@@ -49,13 +49,13 @@ public class IndividualSettingsValidatorTest
     private Log log;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         log = mock( Log.class );
     }
 
     @Test
-    public void nonStrictRetainsSettings()
+    void nonStrictRetainsSettings()
     {
         IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
@@ -72,7 +72,7 @@ public class IndividualSettingsValidatorTest
     }
 
     @Test
-    public void strictErrorsOnUnknownSettingsInOurNamespace()
+    void strictErrorsOnUnknownSettingsInOurNamespace()
     {
         IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
@@ -90,7 +90,7 @@ public class IndividualSettingsValidatorTest
     }
 
     @Test
-    public void strictAllowsStuffOutsideOurNamespace()
+    void strictAllowsStuffOutsideOurNamespace()
     {
         IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 

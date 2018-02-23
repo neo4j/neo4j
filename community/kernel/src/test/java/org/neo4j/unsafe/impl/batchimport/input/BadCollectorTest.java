@@ -42,7 +42,7 @@ public class BadCollectorTest
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
+    void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
     {
         // given
         int tolerance = 5;
@@ -58,7 +58,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldThrowExceptionIfDuplicateNodeTipsUsOverTheToleranceEdge() throws IOException
+    void shouldThrowExceptionIfDuplicateNodeTipsUsOverTheToleranceEdge() throws IOException
     {
         // given
         int tolerance = 1;
@@ -80,7 +80,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldThrowExceptionIfBadRelationshipsTipsUsOverTheToleranceEdge() throws IOException
+    void shouldThrowExceptionIfBadRelationshipsTipsUsOverTheToleranceEdge() throws IOException
     {
         // given
         int tolerance = 1;
@@ -102,7 +102,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldNotCollectBadRelationshipsIfWeShouldOnlyBeCollectingNodes() throws IOException
+    void shouldNotCollectBadRelationshipsIfWeShouldOnlyBeCollectingNodes() throws IOException
     {
         // given
         int tolerance = 1;
@@ -124,7 +124,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldNotCollectBadNodesIfWeShouldOnlyBeCollectingRelationships() throws IOException
+    void shouldNotCollectBadNodesIfWeShouldOnlyBeCollectingRelationships() throws IOException
     {
         // given
         int tolerance = 1;
@@ -146,7 +146,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo()
+    void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo()
     {
         // GIVEN
         try ( BadCollector collector = new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL ) )
@@ -164,7 +164,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void skipBadEntriesLogging()
+    void skipBadEntriesLogging()
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try ( BadCollector badCollector = new BadCollector( outputStream, 100, COLLECT_ALL, true ) )

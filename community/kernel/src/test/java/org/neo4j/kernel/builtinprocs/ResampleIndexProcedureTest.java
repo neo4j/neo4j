@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
 
-public class ResampleIndexProcedureTest
+class ResampleIndexProcedureTest
 {
     private final ReadOperations operations = mock( ReadOperations.class );
     private final IndexingService indexingService = mock( IndexingService.class );
@@ -50,7 +50,7 @@ public class ResampleIndexProcedureTest
             new IndexProcedures( new StubKernelTransaction( operations ), indexingService );
 
     @Test
-    public void shouldThrowAnExceptionIfTheLabelDoesntExist()
+    void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
         when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
 
@@ -66,7 +66,7 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
+    void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
         when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
 
@@ -82,7 +82,7 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
+    void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
@@ -96,7 +96,7 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
+    void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0, 1 );
@@ -112,7 +112,7 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheIndexDoesNotExist()
+    void shouldThrowAnExceptionIfTheIndexDoesNotExist()
             throws SchemaRuleNotFoundException
 
     {
@@ -133,7 +133,7 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldTriggerResampling()
+    void shouldTriggerResampling()
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );

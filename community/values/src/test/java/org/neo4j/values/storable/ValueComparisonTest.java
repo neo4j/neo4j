@@ -233,7 +233,7 @@ public class ValueComparisonTest
     };
 
     @Test
-    public void shouldOrderValuesCorrectly()
+    void shouldOrderValuesCorrectly()
     {
         List<Value> values = Arrays.stream( objs ).map( Values::of ).collect( Collectors.toList() );
 

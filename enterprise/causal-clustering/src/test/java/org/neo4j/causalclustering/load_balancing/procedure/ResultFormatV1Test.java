@@ -32,10 +32,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ResultFormatV1Test
+class ResultFormatV1Test
 {
     @Test
-    public void shouldSerializeToAndFromRecordFormat()
+    void shouldSerializeToAndFromRecordFormat()
     {
         // given
         List<Endpoint> writers = asList(
@@ -64,7 +64,7 @@ public class ResultFormatV1Test
     }
 
     @Test
-    public void shouldSerializeToAndFromRecordFormatWithNoEntries()
+    void shouldSerializeToAndFromRecordFormatWithNoEntries()
     {
         // given
         List<Endpoint> writers = emptyList();

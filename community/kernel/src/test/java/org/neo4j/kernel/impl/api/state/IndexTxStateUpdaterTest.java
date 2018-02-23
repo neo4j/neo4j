@@ -56,7 +56,7 @@ import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.ha
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
-public class IndexTxStateUpdaterTest
+class IndexTxStateUpdaterTest
 {
     private static final int labelId1 = 10;
     private static final int labelId2 = 11;
@@ -81,7 +81,7 @@ public class IndexTxStateUpdaterTest
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         state = mock( KernelStatement.class );
         txState = mock( TransactionState.class );
@@ -129,7 +129,7 @@ public class IndexTxStateUpdaterTest
     // LABELS
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
+    void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( state, unIndexedLabelId, node, ADDED_LABEL );
@@ -140,7 +140,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedLabel()
+    void shouldUpdateIndexesOnAddedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( state, labelId1, node, ADDED_LABEL );
@@ -152,7 +152,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedLabel()
+    void shouldUpdateIndexesOnRemovedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( state, labelId2, node, REMOVED_LABEL );
@@ -165,7 +165,7 @@ public class IndexTxStateUpdaterTest
     // PROPERTIES
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
+    void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( state, node, unIndexedPropId, Values.of( "whAt" ) );
@@ -177,7 +177,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedProperty()
+    void shouldUpdateIndexesOnAddedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( state, node, newPropId, Values.of( "newHi" ) );
@@ -189,7 +189,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedProperty()
+    void shouldUpdateIndexesOnRemovedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyRemove( state, node, propId2, Values.of( "hi2" ) );
@@ -201,7 +201,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnChangesProperty()
+    void shouldUpdateIndexesOnChangesProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyChange( state, node, propId2, Values.of( "hi2" ), Values.of( "new2" ) );

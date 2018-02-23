@@ -36,9 +36,9 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.rest.management.repr.ServerRootRepresentation;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class JaxRsResponse extends Response
@@ -138,10 +138,10 @@ public class JaxRsResponse extends Response
         return type;
     }
 
-    public static class ServerRootRepresentationTest
+    static class ServerRootRepresentationTest
     {
         @Test
-        public void shouldProvideAListOfServiceUris() throws Exception
+        void shouldProvideAListOfServiceUris() throws Exception
         {
             ConsoleService consoleService =
                     new ConsoleService( null, mock( Database.class ), NullLogProvider.getInstance(), null );

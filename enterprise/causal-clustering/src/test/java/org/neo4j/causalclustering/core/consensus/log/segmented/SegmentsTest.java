@@ -51,7 +51,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class SegmentsTest
+class SegmentsTest
 {
     private final FileSystemAbstraction fsa = mock( FileSystemAbstraction.class, RETURNS_MOCKS );
     private final File baseDirectory = new File( "." );
@@ -71,13 +71,13 @@ public class SegmentsTest
     private final List<SegmentFile> segmentFiles = asList( fileA, fileB );
 
     @BeforeEach
-    public void before()
+    void before()
     {
         when( fsa.deleteFile( any() ) ).thenReturn( true );
     }
 
     @Test
-    public void shouldCreateNext() throws Exception
+    void shouldCreateNext() throws Exception
     {
         // Given
         try ( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal,
@@ -96,7 +96,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldDeleteOnPrune() throws Exception
+    void shouldDeleteOnPrune() throws Exception
     {
         verifyZeroInteractions( fsa );
         // Given
@@ -118,7 +118,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldNeverDeleteOnTruncate() throws Exception
+    void shouldNeverDeleteOnTruncate() throws Exception
     {
         // Given
         try ( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal,
@@ -138,7 +138,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldDeleteTruncatedFilesOnPrune() throws Exception
+    void shouldDeleteTruncatedFilesOnPrune() throws Exception
     {
         // Given
         try ( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal,
@@ -164,7 +164,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldCloseTheSegments()
+    void shouldCloseTheSegments()
     {
         // Given
         Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 );
@@ -180,7 +180,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldNotSwallowExceptionOnClose()
+    void shouldNotSwallowExceptionOnClose()
     {
         // Given
         doThrow( new RuntimeException() ).when( fileA ).close();
@@ -204,7 +204,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldAllowOutOfBoundsPruneIndex() throws Exception
+    void shouldAllowOutOfBoundsPruneIndex() throws Exception
     {
         //Given a prune index of n, if the smallest value for a segment file is n+c, the pruning should not remove
         // any files and not result in a failure.
@@ -231,7 +231,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void attemptsPruningUntilOpenFileIsFound() throws Exception
+    void attemptsPruningUntilOpenFileIsFound() throws Exception
     {
         /**
          * prune stops attempting to prune files after finding one that is open.

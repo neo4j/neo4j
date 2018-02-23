@@ -29,7 +29,7 @@ import org.neo4j.helpers.collection.Iterables;
 
 class MessageDeliveryAction implements ClusterAction
 {
-    public static final Function<Message,ClusterAction> MESSAGE_TO_ACTION = MessageDeliveryAction::new;
+    private static final Function<Message,ClusterAction> MESSAGE_TO_ACTION = MessageDeliveryAction::new;
 
     private final Message message;
 

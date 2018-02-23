@@ -68,7 +68,7 @@ public class SslResourceBuilder
             this.resourceName = resourceName;
         }
 
-        public URL keyId( int keyId )
+        URL keyId( int keyId )
         {
             return resource( resourceName, keyId );
         }

@@ -29,7 +29,7 @@ import org.neo4j.test.server.HTTP;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
+class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
 
@@ -40,7 +40,7 @@ public class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
      * whole stack works, so to avoid confusion we disable the jetty behaviour.
      */
     @Test
-    public void shouldDisallowDirectoryListings() throws Exception
+    void shouldDisallowDirectoryListings() throws Exception
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
@@ -59,7 +59,7 @@ public class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
     }
 
     @AfterEach
-    public void cleanup()
+    void cleanup()
     {
         if ( server != null )
         {

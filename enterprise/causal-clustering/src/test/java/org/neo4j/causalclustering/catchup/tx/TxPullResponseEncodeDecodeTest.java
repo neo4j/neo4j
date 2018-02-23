@@ -36,10 +36,10 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
-public class TxPullResponseEncodeDecodeTest
+class TxPullResponseEncodeDecodeTest
 {
     @Test
-    public void shouldEncodeAndDecodePullResponseMessage()
+    void shouldEncodeAndDecodePullResponseMessage()
     {
         // given
         EmbeddedChannel channel = new EmbeddedChannel( new TxPullResponseEncoder(), new TxPullResponseDecoder() );

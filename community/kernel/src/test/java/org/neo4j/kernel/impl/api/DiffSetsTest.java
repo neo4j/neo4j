@@ -36,12 +36,12 @@ import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 
-public class DiffSetsTest
+class DiffSetsTest
 {
     private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1L;
 
     @Test
-    public void testAdd()
+    void testAdd()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<>();
@@ -56,7 +56,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testRemove()
+    void testRemove()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<>();
@@ -71,7 +71,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testAddRemove()
+    void testAddRemove()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<>();
@@ -86,7 +86,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testRemoveAdd()
+    void testRemoveAdd()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<>();
@@ -101,7 +101,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testIsAddedOrRemoved()
+    void testIsAddedOrRemoved()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<>();
@@ -118,7 +118,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testAddRemoveAll()
+    void testAddRemoveAll()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<>();
@@ -133,7 +133,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testFilterAdded()
+    void testFilterAdded()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<>();
@@ -149,7 +149,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testReturnSourceFromApplyWithEmptyDiffSets()
+    void testReturnSourceFromApplyWithEmptyDiffSets()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets();
@@ -163,7 +163,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testAppendAddedToSourceInApply()
+    void testAppendAddedToSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -179,7 +179,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testFilterRemovedFromSourceInApply()
+    void testFilterRemovedFromSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -194,7 +194,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testFilterAddedFromSourceInApply()
+    void testFilterAddedFromSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -211,7 +211,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void replaceMultipleTimesWithAnInitialValue()
+    void replaceMultipleTimesWithAnInitialValue()
     {
         // GIVEN
         // an initial value, meaning an added value in "this transaction"
@@ -230,7 +230,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void replaceMultipleTimesWithNoInitialValue()
+    void replaceMultipleTimesWithNoInitialValue()
     {
         // GIVEN
         // no initial value, meaning a value existing before "this transaction"

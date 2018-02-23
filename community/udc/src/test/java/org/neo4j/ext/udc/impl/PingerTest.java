@@ -43,21 +43,21 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.ext.udc.UdcConstants.ID;
 
 /**
  * Unit tests for the UDC statistics pinger.
  */
-public class PingerTest extends LocalServerTestBase
+class PingerTest extends LocalServerTestBase
 {
     private final String EXPECTED_KERNEL_VERSION = "1.0";
     private final String EXPECTED_STORE_ID = "CAFE";
     private String hostname = "localhost";
     private String serverUrl;
 
-    PingerHandler handler;
+    private PingerHandler handler;
 
     @BeforeEach
     @Override
@@ -77,7 +77,7 @@ public class PingerTest extends LocalServerTestBase
      * @throws Exception
      */
     @Test
-    public void shouldRespondToHttpClientGet() throws Exception
+    void shouldRespondToHttpClientGet() throws Exception
     {
         HttpClient httpclient = new DefaultHttpClient();
         HttpGet httpget = new HttpGet( serverUrl + "/?id=storeId+v=kernelVersion" );
@@ -124,7 +124,7 @@ public class PingerTest extends LocalServerTestBase
             return crashed;
         }
 
-        public UdcInformationCollector withCrash()
+        UdcInformationCollector withCrash()
         {
             crashed = true;
             return this;
@@ -132,7 +132,7 @@ public class PingerTest extends LocalServerTestBase
     }
 
     @Test
-    public void shouldPingServer()
+    void shouldPingServer()
     {
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
         final Map<String,String> udcFields = new HashMap<>();
@@ -159,7 +159,7 @@ public class PingerTest extends LocalServerTestBase
     }
 
     @Test
-    public void shouldIncludePingCountInURI() throws IOException
+    void shouldIncludePingCountInURI() throws IOException
     {
         final int EXPECTED_PING_COUNT = 16;
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
@@ -178,7 +178,7 @@ public class PingerTest extends LocalServerTestBase
     }
 
     @Test
-    public void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
+    void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
     {
         int[] expectedSequence = {1, 2, 3, 4};
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
@@ -194,7 +194,7 @@ public class PingerTest extends LocalServerTestBase
     }
 
     @Test
-    public void crashPingSequenceShouldBeMinusOneThenTwoThenThreeEtc() throws Exception
+    void crashPingSequenceShouldBeMinusOneThenTwoThenThreeEtc() throws Exception
     {
         int[] expectedSequence = {-1, 2, 3, 4};
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );

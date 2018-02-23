@@ -76,10 +76,10 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @EnableRuleMigrationSupport
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class NeoStoreIndexStoreViewTest
+class NeoStoreIndexStoreViewTest
 {
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );
@@ -96,7 +96,7 @@ public class NeoStoreIndexStoreViewTest
     private NeoStores neoStores;
 
     @BeforeEach
-    public void before() throws KernelException
+    void before() throws KernelException
     {
         graphDb = dbRule.getGraphDatabaseAPI();
 
@@ -116,7 +116,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldScanExistingNodesForALabel() throws Exception
+    void shouldScanExistingNodesForALabel() throws Exception
     {
         // given
         NodeUpdateCollectingVisitor visitor = new NodeUpdateCollectingVisitor();
@@ -137,7 +137,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldIgnoreDeletedNodesDuringScan() throws Exception
+    void shouldIgnoreDeletedNodesDuringScan() throws Exception
     {
         // given
         deleteAlistairAndStefanNodes();
@@ -156,7 +156,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldLockNodesWhileReadingThem() throws Exception
+    void shouldLockNodesWhileReadingThem() throws Exception
     {
         // given
         @SuppressWarnings( "unchecked" )
@@ -181,14 +181,14 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldReadProperties() throws EntityNotFoundException
+    void shouldReadProperties() throws EntityNotFoundException
     {
         Value value = storeView.getPropertyValue( alistair.getId(), propertyKeyId );
         assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 
     @Test
-    public void processAllNodeProperties() throws Exception
+    void processAllNodeProperties() throws Exception
     {
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
         StoreViewNodeStoreScan storeViewNodeStoreScan =
@@ -217,7 +217,7 @@ public class NeoStoreIndexStoreViewTest
                 containsInAnyOrder( index1, index2, index3 ) );
     }
 
-    NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
+    private NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
         return NodeUpdates.forNode( nodeId, labels ).added( propertyKeyId, Values.of( value ) ).build();
     }
@@ -274,7 +274,7 @@ public class NeoStoreIndexStoreViewTest
             return true;
         }
 
-        public NodeUpdates getPropertyUpdates()
+        NodeUpdates getPropertyUpdates()
         {
             return propertyUpdates;
         }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -34,7 +34,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
@@ -55,11 +54,11 @@ import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 public abstract class AbstractShellIT
 {
-    protected GraphDatabaseAPI db;
-    protected ShellServer shellServer;
-    protected ShellClient shellClient;
-    protected Integer remotelyAvailableOnPort;
-    protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
+    GraphDatabaseAPI db;
+    ShellServer shellServer;
+    ShellClient shellClient;
+    Integer remotelyAvailableOnPort;
+    static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
 
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -74,23 +73,23 @@ public abstract class AbstractShellIT
         shellClient = newShellClient( shellServer );
     }
 
-    protected SameJvmClient newShellClient( ShellServer server ) throws ShellException, RemoteException
+    SameJvmClient newShellClient( ShellServer server ) throws ShellException, RemoteException
     {
         return newShellClient( server, Collections.singletonMap( "quiet", true ) );
     }
 
-    protected SameJvmClient newShellClient( ShellServer server, Map<String,Serializable> session )
+    SameJvmClient newShellClient( ShellServer server, Map<String,Serializable> session )
             throws ShellException, RemoteException
     {
         return new SameJvmClient( session, server, new CollectingOutput(), InterruptSignalHandler.getHandler() );
     }
 
-    protected GraphDatabaseAPI newDb()
+    GraphDatabaseAPI newDb()
     {
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase();
     }
 
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws RemoteException
+    ShellServer newServer( GraphDatabaseAPI db ) throws RemoteException
     {
         return new GraphDatabaseShellServer( db );
     }
@@ -107,29 +106,29 @@ public abstract class AbstractShellIT
         db.shutdown();
     }
 
-    protected void beginTx()
+    void beginTx()
     {
         assert tx == null;
         tx = db.beginTx();
     }
 
-    protected void finishTx()
+    void finishTx()
     {
         finishTx( true );
     }
 
-    protected ShellClient newRemoteClient() throws Exception
+    ShellClient newRemoteClient() throws Exception
     {
         return newRemoteClient( NO_INITIAL_SESSION );
     }
 
-    protected ShellClient newRemoteClient( Map<String,Serializable> initialSession ) throws Exception
+    ShellClient newRemoteClient( Map<String,Serializable> initialSession ) throws Exception
     {
         return new RemoteClient( initialSession, remoteLocation( remotelyAvailableOnPort ), new CollectingOutput(),
                 InterruptSignalHandler.getHandler() );
     }
 
-    protected void makeServerRemotelyAvailable()
+    void makeServerRemotelyAvailable()
     {
         if ( remotelyAvailableOnPort == null )
         {
@@ -156,7 +155,7 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected void restartServer() throws Exception
+    void restartServer() throws Exception
     {
         shellServer.shutdown();
         db.shutdown();
@@ -166,7 +165,7 @@ public abstract class AbstractShellIT
         shellClient = newShellClient( shellServer );
     }
 
-    protected void finishTx( boolean success )
+    void finishTx( boolean success )
     {
         assert tx != null;
         if ( success )
@@ -195,12 +194,12 @@ public abstract class AbstractShellIT
         return Pattern.quote( builder.toString() );
     }
 
-    public void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
+    void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
     {
         executeCommand( shellClient, command, theseLinesMustExistRegEx );
     }
 
-    public void executeCommand( ShellClient client, String command, String... theseLinesMustExistRegEx )
+    void executeCommand( ShellClient client, String command, String... theseLinesMustExistRegEx )
             throws Exception
     {
         CollectingOutput output = new CollectingOutput();
@@ -226,7 +225,7 @@ public abstract class AbstractShellIT
         }
     }
 
-    public void executeCommandExpectingException( String command, String errorMessageShouldContain ) throws Exception
+    void executeCommandExpectingException( String command, String errorMessageShouldContain ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
         try
@@ -244,12 +243,12 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected void assertRelationshipDoesntExist( Relationship relationship )
+    void assertRelationshipDoesntExist( Relationship relationship )
     {
         assertRelationshipDoesntExist( relationship.getId() );
     }
 
-    protected void assertRelationshipDoesntExist( long id )
+    private void assertRelationshipDoesntExist( long id )
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -262,12 +261,12 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected void assertNodeExists( Node node )
+    void assertNodeExists( Node node )
     {
         assertNodeExists( node.getId() );
     }
 
-    protected void assertNodeExists( long id )
+    private void assertNodeExists( long id )
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -279,12 +278,12 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected void assertNodeDoesntExist( Node node )
+    void assertNodeDoesntExist( Node node )
     {
         assertNodeDoesntExist( node.getId() );
     }
 
-    protected void assertNodeDoesntExist( long id )
+    private void assertNodeDoesntExist( long id )
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -297,12 +296,12 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected Relationship[] createRelationshipChain( int length )
+    Relationship[] createRelationshipChain( int length )
     {
         return createRelationshipChain( RELATIONSHIP_TYPE, length );
     }
 
-    protected Relationship[] createRelationshipChain( RelationshipType type, int length )
+    Relationship[] createRelationshipChain( RelationshipType type, int length )
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -312,7 +311,7 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected Relationship[] createRelationshipChain( Node startingFromNode, RelationshipType type, int length )
+    Relationship[] createRelationshipChain( Node startingFromNode, RelationshipType type, int length )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -329,7 +328,7 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected void deleteRelationship( Relationship relationship )
+    void deleteRelationship( Relationship relationship )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -338,7 +337,7 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected void setProperty( Node node, String key, Object value )
+    void setProperty( Node node, String key, Object value )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -347,7 +346,7 @@ public abstract class AbstractShellIT
         }
     }
 
-    protected Node getCurrentNode() throws RemoteException, ShellException
+    Node getCurrentNode() throws RemoteException, ShellException
     {
         Serializable current = shellServer.interpretVariable( shellClient.getId(), Variables.CURRENT_KEY );
         int nodeId = parseInt( current.toString().substring( 1 ) );

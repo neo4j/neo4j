@@ -52,10 +52,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ElectionContextTest
+class ElectionContextTest
 {
     @Test
-    public void testElectionOkNoFailed()
+    void testElectionOkNoFailed()
     {
         Set<InstanceId> failed = new HashSet<>();
 
@@ -63,7 +63,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void testElectionOkLessThanQuorumFailed()
+    void testElectionOkLessThanQuorumFailed()
     {
         Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 1 ) );
@@ -72,7 +72,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void testElectionNotOkMoreThanQuorumFailed()
+    void testElectionNotOkMoreThanQuorumFailed()
     {
         Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 1 ) );
@@ -82,7 +82,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void testElectionNotOkQuorumFailedTwoInstances()
+    void testElectionNotOkQuorumFailedTwoInstances()
     {
         Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
@@ -115,7 +115,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void testElectionNotOkQuorumFailedFourInstances()
+    void testElectionNotOkQuorumFailedFourInstances()
     {
         Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
@@ -151,7 +151,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void testElectionNotOkQuorumFailedFiveInstances()
+    void testElectionNotOkQuorumFailedFiveInstances()
     {
         Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
@@ -189,7 +189,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void testInstanceWithLowestIdFailedIsNotConsideredTheElector()
+    void testInstanceWithLowestIdFailedIsNotConsideredTheElector()
     {
         // Given
         // A cluster of 5 of which the two lowest instances are failed
@@ -236,7 +236,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void twoVotesFromSameInstanceForSameRoleShouldBeConsolidated()
+    void twoVotesFromSameInstanceForSameRoleShouldBeConsolidated()
     {
         // Given
         final String coordinatorRole = "coordinator";
@@ -278,7 +278,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void electionBeingForgottenMustIncreaseElectionId()
+    void electionBeingForgottenMustIncreaseElectionId()
     {
         // Given
         final String coordinatorRole = "coordinator";
@@ -302,7 +302,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void voteFromPreviousSuccessfulElectionMustNotBeCounted()
+    void voteFromPreviousSuccessfulElectionMustNotBeCounted()
     {
         // Given
         final String coordinatorRole = "coordinator";
@@ -328,7 +328,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void instanceFailingShouldHaveItsVotesInvalidated()
+    void instanceFailingShouldHaveItsVotesInvalidated()
     {
         // Given
         final String role1 = "coordinator1";
@@ -372,7 +372,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion()
+    void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion()
     {
         // Given
         final String role1 = "coordinator1";
@@ -423,7 +423,7 @@ public class ElectionContextTest
      * expected result is that it will succeed in sending election results.
      */
     @Test
-    public void electorLeavingAndRejoiningWithNoElectionsInBetweenMustStillHaveElectionsGoThrough()
+    void electorLeavingAndRejoiningWithNoElectionsInBetweenMustStillHaveElectionsGoThrough()
     {
         // Given
         final String role1 = "coordinator1";

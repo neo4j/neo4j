@@ -33,11 +33,11 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
@@ -45,10 +45,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TopLevelTransactionTest
+class TopLevelTransactionTest
 {
     @Test
-    public void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
+    void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
     {
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -71,7 +71,7 @@ public class TopLevelTransactionTest
     }
 
     @Test
-    public void shouldThrowTransactionExceptionOnTransientKernelException() throws Exception
+    void shouldThrowTransactionExceptionOnTransientKernelException() throws Exception
     {
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -93,7 +93,7 @@ public class TopLevelTransactionTest
     }
 
     @Test
-    public void shouldLetThroughTransientFailureException() throws Exception
+    void shouldLetThroughTransientFailureException() throws Exception
     {
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -115,7 +115,7 @@ public class TopLevelTransactionTest
     }
 
     @Test
-    public void shouldShowTransactionTerminatedExceptionAsTransient() throws Exception
+    void shouldShowTransactionTerminatedExceptionAsTransient() throws Exception
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         doReturn( true ).when( kernelTransaction ).isOpen();
@@ -138,7 +138,7 @@ public class TopLevelTransactionTest
     }
 
     @Test
-    public void shouldReturnTerminationReason()
+    void shouldReturnTerminationReason()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )

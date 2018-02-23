@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith( MockitoExtension.class )
-public class DefaultConversationSPITest
+class DefaultConversationSPITest
 {
 
     @Mock( answer = Answers.RETURNS_MOCKS )
@@ -46,7 +46,7 @@ public class DefaultConversationSPITest
     private DefaultConversationSPI conversationSpi;
 
     @Test
-    public void testAcquireClient()
+    void testAcquireClient()
     {
         conversationSpi.acquireClient();
 
@@ -54,7 +54,7 @@ public class DefaultConversationSPITest
     }
 
     @Test
-    public void testScheduleRecurringJob()
+    void testScheduleRecurringJob()
     {
         Runnable job = mock( Runnable.class );
         JobScheduler.Group group = mock( JobScheduler.Group.class );

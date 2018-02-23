@@ -91,7 +91,7 @@ public class BoltThrottleMaxDurationIT
         return asList( SocketConnection::new, SecureSocketConnection::new );
     }
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    private TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
 
@@ -102,7 +102,7 @@ public class BoltThrottleMaxDurationIT
         return factory;
     }
 
-    protected Consumer<Map<String, String>> getSettingsFunction()
+    private Consumer<Map<String, String>> getSettingsFunction()
     {
         return settings ->
         {

@@ -41,7 +41,7 @@ public class LabelIT
     @Rule
     public final ClusterRule clusterRule = new ClusterRule();
 
-    protected ClusterManager.ManagedCluster cluster;
+    private ClusterManager.ManagedCluster cluster;
 
     @Before
     public void setup()
@@ -113,24 +113,24 @@ public class LabelIT
             this.bridge = threadToStatementContextBridgeFrom( db );
         }
 
-        public void begin()
+        void begin()
         {
             db.beginTx();
             graphDbTx = bridge.getKernelTransactionBoundToThisThread( false );
         }
 
-        public void suspend()
+        void suspend()
         {
             graphDbTx = bridge.getKernelTransactionBoundToThisThread( true );
             bridge.unbindTransactionFromCurrentThread();
         }
 
-        public void resume()
+        void resume()
         {
             bridge.bindTransactionToCurrentThread( graphDbTx );
         }
 
-        public void commit()
+        void commit()
         {
             try
             {

@@ -36,7 +36,7 @@ public class RecordingTracer
     private Matcher<? extends Event> trap;
 
     @SafeVarargs
-    public RecordingTracer( Class<? extends Event>... eventTypesToTrace )
+    RecordingTracer( Class<? extends Event>... eventTypesToTrace )
     {
         Collections.addAll( this.eventTypesToTrace, eventTypesToTrace );
     }
@@ -51,7 +51,7 @@ public class RecordingTracer
         return type.cast( record.poll() );
     }
 
-    protected void record( Event event )
+    void record( Event event )
     {
         if ( eventTypesToTrace.contains( event.getClass() ) )
         {

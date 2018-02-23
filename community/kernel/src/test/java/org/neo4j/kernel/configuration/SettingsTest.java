@@ -70,7 +70,7 @@ public class SettingsTest
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void parsesAbsolutePaths()
+    void parsesAbsolutePaths()
     {
         File absolutePath = new File( "some/path" ).getAbsoluteFile();
         File thePath = Settings.PATH.apply( absolutePath.toString() );
@@ -79,7 +79,7 @@ public class SettingsTest
     }
 
     @Test
-    public void doesntAllowRelativePaths()
+    void doesntAllowRelativePaths()
     {
         File relativePath = new File( "some/path" );
 
@@ -88,7 +88,7 @@ public class SettingsTest
     }
 
     @Test
-    public void pathSettingsProvideDefaultValues()
+    void pathSettingsProvideDefaultValues()
     {
         File theDefault = new File( "/some/path" ).getAbsoluteFile();
         Setting<File> setting = pathSetting( "some.setting", theDefault.getAbsolutePath() );
@@ -96,20 +96,20 @@ public class SettingsTest
     }
 
     @Test
-    public void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
+    void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
     {
         Setting<File> setting = pathSetting( "some.setting", NO_DEFAULT );
         assertThat( Config.defaults().get( setting ), is( nullValue() ) );
     }
 
     @Test
-    public void shouldHaveAUsefulToStringWhichIsUsedAsTheValidValuesInDocumentation()
+    void shouldHaveAUsefulToStringWhichIsUsedAsTheValidValuesInDocumentation()
     {
         assertThat( pathSetting( "", NO_DEFAULT ).toString(), containsString( "A filesystem path" ) );
     }
 
     @Test
-    public void testInteger()
+    void testInteger()
     {
         Setting<Integer> setting = setting( "foo", INTEGER, "3" );
 
@@ -122,7 +122,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testList()
+    void testList()
     {
         Setting<List<Integer>> setting = setting( "foo", list( ",", INTEGER ), "1,2,3,4" );
         assertThat( setting.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
@@ -141,7 +141,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testStringList()
+    void testStringList()
     {
         Setting<List<String>> setting1 = setting( "apa", STRING_LIST, "foo,bar,baz" );
         assertEquals( Arrays.asList( "foo", "bar", "baz" ), setting1.apply( map( stringMap() ) ) );
@@ -154,7 +154,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testMin()
+    void testMin()
     {
         Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
@@ -167,7 +167,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testMax()
+    void testMax()
     {
         Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( max( 5 ) ).build();
 
@@ -180,7 +180,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testRange()
+    void testRange()
     {
         Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( range( 2, 5 ) ).build();
 
@@ -210,7 +210,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testMatches()
+    void testMatches()
     {
         Setting<String> setting = buildSetting( "foo", STRING, "abc" ).constraint(  matches( "a*b*c*" ) ).build();
 
@@ -223,7 +223,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testDurationWithBrokenDefault()
+    void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "1s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
@@ -232,7 +232,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testDurationWithValueNotWithinConstraint()
+    void testDurationWithValueNotWithinConstraint()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
         expect.expect( InvalidSettingException.class );
@@ -240,14 +240,14 @@ public class SettingsTest
     }
 
     @Test
-    public void testDuration()
+    void testDuration()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s").constraint( min( DURATION.apply( "3s" ) ) ).build();
         assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( Duration.ofSeconds( 4 ) ) );
     }
 
     @Test
-    public void badDurationMissingNumber()
+    void badDurationMissingNumber()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
         expect.expect( InvalidSettingException.class );
@@ -256,7 +256,7 @@ public class SettingsTest
     }
 
     @Test
-    public void badDurationInvalidUnit()
+    void badDurationInvalidUnit()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
         expect.expect( InvalidSettingException.class );
@@ -265,7 +265,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testDefault()
+    void testDefault()
     {
         Setting<Integer> setting = setting( "foo", INTEGER, "3" );
 
@@ -274,7 +274,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testPaths()
+    void testPaths()
     {
         File directory = new File( "myDirectory" );
         Setting<File> config = buildSetting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath() ).constraint(
@@ -284,7 +284,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testInheritOneLevel()
+    void testInheritOneLevel()
     {
         Setting<Integer> root = setting( "root", INTEGER, "4" );
         Setting<Integer> setting = buildSetting( "foo", INTEGER ).inherits( root ).build();
@@ -295,7 +295,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testInheritHierarchy()
+    void testInheritHierarchy()
     {
         // Test hierarchies
         Setting<String> a = setting( "A", STRING, "A" ); // A defaults to A
@@ -314,7 +314,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testLogicalLogRotationThreshold()
+    void testLogicalLogRotationThreshold()
     {
         // WHEN
         Setting<Long> setting = GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -329,7 +329,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testNormalizedRelativeURI()
+    void testNormalizedRelativeURI()
     {
         // Given
         Setting<URI> uri = setting( "mySetting", NORMALIZED_RELATIVE_URI, "http://localhost:7474///db///data///" );
@@ -339,7 +339,7 @@ public class SettingsTest
     }
 
     @Test
-    public void onlySingleInheritanceShouldBeAllowed()
+    void onlySingleInheritanceShouldBeAllowed()
     {
         Setting<String> a = setting( "A", STRING, "A" );
         Setting<String> b = setting( "B", STRING, "B" );
@@ -347,7 +347,7 @@ public class SettingsTest
         Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build();
     }
 
-    public static <From, To> Function<From,To> map( final Map<From,To> map )
+    private static <From, To> Function<From,To> map( final Map<From,To> map )
     {
         return map::get;
     }

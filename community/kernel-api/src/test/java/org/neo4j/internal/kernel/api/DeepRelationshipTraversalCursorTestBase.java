@@ -94,7 +94,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
     }
 
     @Test
-    public void shouldTraverseTreeOfDepthThree()
+    void shouldTraverseTreeOfDepthThree()
     {
         try ( NodeCursor node = cursors.allocateNodeCursor();
               RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();

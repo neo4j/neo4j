@@ -21,8 +21,6 @@ package org.neo4j.causalclustering.core.consensus.membership;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerState;
@@ -33,10 +31,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CatchupGoalTest
+class CatchupGoalTest
 {
     @Test
-    public void goalAchievedWhenCatchupRoundDurationLessThanTarget()
+    void goalAchievedWhenCatchupRoundDurationLessThanTarget()
     {
         FakeClock clock = Clocks.fakeClock();
         long electionTimeout = 15;

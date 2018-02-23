@@ -69,15 +69,15 @@ import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
 @ExtendWith( RandomExtension.class )
-public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
+class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 {
     private static final int RELATIONSHIPS_COUNT = 20;
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Override
-    protected GraphDatabaseService createGraphDatabase()
+    GraphDatabaseService createGraphDatabase()
     {
         return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( RELATIONSHIPS_COUNT ) )
@@ -85,7 +85,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelGroupChain()
+    void degreesForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
         testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain();
 
@@ -101,7 +101,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelChains()
+    void degreesForDenseNodeWithPartiallyDeletedRelChains()
     {
         testDegreesForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -117,7 +117,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain()
+    void degreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
         testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain();
 
@@ -134,7 +134,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreeByDirectionForDenseNodeWithPartiallyDeletedRelChains()
+    void degreeByDirectionForDenseNodeWithPartiallyDeletedRelChains()
     {
         testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -150,7 +150,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain()
+    void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain();
 
@@ -167,7 +167,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains()
+    void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains()
     {
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -333,7 +333,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelGroupChain()
+    void relationshipTypesForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
         testRelationshipTypesForDenseNode( this::noNodeChange,
                 asSet( TestRelType.IN, TestRelType.OUT, TestRelType.LOOP ) );
@@ -358,7 +358,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelChains()
+    void relationshipTypesForDenseNodeWithPartiallyDeletedRelChains()
     {
         testRelationshipTypesForDenseNode( this::markRandomRelsNotInUse,
                 asSet( TestRelType.IN, TestRelType.OUT, TestRelType.LOOP ) );

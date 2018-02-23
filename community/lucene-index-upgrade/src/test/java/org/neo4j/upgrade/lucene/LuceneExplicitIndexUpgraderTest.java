@@ -49,7 +49,7 @@ public class LuceneExplicitIndexUpgraderTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void failOnFileMigration() throws Exception
+    void failOnFileMigration() throws Exception
     {
         Path indexFolder = createPathForResource("indexPretender.txt");
         expectedException.expect( IllegalArgumentException.class );
@@ -58,7 +58,7 @@ public class LuceneExplicitIndexUpgraderTest
     }
 
     @Test
-    public void ignoreFoldersWithoutIndexes() throws URISyntaxException, ExplicitIndexMigrationException
+    void ignoreFoldersWithoutIndexes() throws URISyntaxException, ExplicitIndexMigrationException
     {
         Path indexFolder = createPathForResource("notIndexFolder");
         TrackingLuceneExplicitIndexUpgrader indexUpgrader = new TrackingLuceneExplicitIndexUpgrader( indexFolder );
@@ -68,7 +68,7 @@ public class LuceneExplicitIndexUpgraderTest
     }
 
     @Test
-    public void migrateValidIndexes() throws URISyntaxException, ExplicitIndexMigrationException
+    void migrateValidIndexes() throws URISyntaxException, ExplicitIndexMigrationException
     {
         Path indexFolder = createPathForResource("indexFolder");
         TrackingLuceneExplicitIndexUpgrader indexUpgrader = new TrackingLuceneExplicitIndexUpgrader( indexFolder );
@@ -78,7 +78,7 @@ public class LuceneExplicitIndexUpgraderTest
     }
 
     @Test
-    public void pointIncorrectIndexOnMigrationFailure() throws URISyntaxException, ExplicitIndexMigrationException
+    void pointIncorrectIndexOnMigrationFailure() throws URISyntaxException, ExplicitIndexMigrationException
     {
         Path indexFolder = createPathForResource("indexFolder");
         TrackingLuceneExplicitIndexUpgrader indexUpgrader = new TrackingLuceneExplicitIndexUpgrader( indexFolder, true );
@@ -147,7 +147,7 @@ public class LuceneExplicitIndexUpgraderTest
             return new IndexUpgraderWrapperStub( JarLoaderSupplier.of( jars ), migratedIndexes, failIndexUpgrade );
         }
 
-        public Set<String> getMigratedIndexes()
+        Set<String> getMigratedIndexes()
         {
             return migratedIndexes;
         }

@@ -35,10 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_H;
 
-public class HopScotchHashingAlgorithmTest
+class HopScotchHashingAlgorithmTest
 {
     @Test
-    public void shouldSupportIteratingThroughResize()
+    void shouldSupportIteratingThroughResize()
     {
         // GIVEN
         int threshold = figureOutGrowthThreshold();
@@ -83,7 +83,7 @@ public class HopScotchHashingAlgorithmTest
             return grew = true;
         }
 
-        public boolean checkAndReset()
+        boolean checkAndReset()
         {
             try
             {

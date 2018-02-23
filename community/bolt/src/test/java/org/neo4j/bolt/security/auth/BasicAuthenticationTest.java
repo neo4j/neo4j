@@ -30,7 +30,6 @@ import org.junit.rules.ExpectedException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.configuration.Config;
@@ -55,7 +54,7 @@ public class BasicAuthenticationTest
     private Authentication authentication;
 
     @Test
-    public void shouldNotDoAnythingOnSuccess() throws Exception
+    void shouldNotDoAnythingOnSuccess() throws Exception
     {
         // When
         AuthenticationResult result =
@@ -66,7 +65,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldThrowAndLogOnFailure() throws Exception
+    void shouldThrowAndLogOnFailure() throws Exception
     {
         // Expect
         exception.expect( AuthenticationException.class );
@@ -78,7 +77,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldIndicateThatCredentialsExpired() throws Exception
+    void shouldIndicateThatCredentialsExpired() throws Exception
     {
         // When
         AuthenticationResult result =
@@ -89,7 +88,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailWhenTooManyAttempts() throws Exception
+    void shouldFailWhenTooManyAttempts() throws Exception
     {
         // Given
         int maxFailedAttempts = ThreadLocalRandom.current().nextInt( 1, 10 );
@@ -117,7 +116,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateCredentials() throws Exception
+    void shouldBeAbleToUpdateCredentials() throws Exception
     {
         // When
         authentication.authenticate(
@@ -128,7 +127,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateExpiredCredentials() throws Exception
+    void shouldBeAbleToUpdateExpiredCredentials() throws Exception
     {
         // When
         AuthenticationResult result = authentication.authenticate(
@@ -139,7 +138,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws Exception
+    void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws Exception
     {
         // Expect
         exception.expect( AuthenticationException.class );
@@ -152,7 +151,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldThrowWithNoScheme() throws Exception
+    void shouldThrowWithNoScheme() throws Exception
     {
         // Expect
         exception.expect( AuthenticationException.class );
@@ -163,7 +162,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailOnInvalidAuthToken() throws Exception
+    void shouldFailOnInvalidAuthToken() throws Exception
     {
         // Expect
         exception.expect( AuthenticationException.class );
@@ -174,7 +173,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailOnMalformedToken() throws Exception
+    void shouldFailOnMalformedToken() throws Exception
     {
         // Expect
         exception.expect( AuthenticationException.class );
@@ -188,7 +187,7 @@ public class BasicAuthenticationTest
     }
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         authentication = createAuthentication( 3 );
     }

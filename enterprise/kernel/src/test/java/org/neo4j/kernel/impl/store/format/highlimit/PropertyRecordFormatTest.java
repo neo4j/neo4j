@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PropertyRecordFormatTest
+class PropertyRecordFormatTest
 {
     private static final int DATA_SIZE = 100;
     private static final long TOO_BIG_REFERENCE = 1L << (Integer.SIZE + (Byte.SIZE * 3));
@@ -48,7 +48,7 @@ public class PropertyRecordFormatTest
     private ConstantIdSequence idSequence;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         recordFormat = new PropertyRecordFormat();
         pageCursor = new StubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
@@ -56,13 +56,13 @@ public class PropertyRecordFormatTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         pageCursor.close();
     }
 
     @Test
-    public void writeAndReadRecordWithRelativeReferences()
+    void writeAndReadRecordWithRelativeReferences()
     {
         int recordSize = recordFormat.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
         long recordId = 0xF1F1F1F1F1F1L;
@@ -90,7 +90,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void readWriteFixedReferencesRecord()
+    void readWriteFixedReferencesRecord()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -103,7 +103,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenNextPropertyIsMissing()
+    void useFixedReferenceFormatWhenNextPropertyIsMissing()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -116,7 +116,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenPreviousPropertyIsMissing()
+    void useFixedReferenceFormatWhenPreviousPropertyIsMissing()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -129,7 +129,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenPreviousPropertyReferenceTooBig()
+    void useVariableLengthFormatWhenPreviousPropertyReferenceTooBig()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -142,7 +142,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenNextPropertyReferenceTooBig()
+    void useVariableLengthFormatWhenNextPropertyReferenceTooBig()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -155,7 +155,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRecordSizeIsTooSmall()
+    void useVariableLengthFormatWhenRecordSizeIsTooSmall()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -169,7 +169,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord()
+    void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -182,7 +182,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void readSingleUnitRecordStoredNotInFixedReferenceFormat()
+    void readSingleUnitRecordStoredNotInFixedReferenceFormat()
     {
         PropertyRecord oldFormatRecord = new PropertyRecord( 1 );
         PropertyRecord newFormatRecord = new PropertyRecord( 1 );

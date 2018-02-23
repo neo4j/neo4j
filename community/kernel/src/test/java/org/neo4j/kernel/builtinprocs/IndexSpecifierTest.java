@@ -26,35 +26,35 @@ import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class IndexSpecifierTest
+class IndexSpecifierTest
 {
     @Test
-    public void shouldFormatAsCanonicalRepresentation()
+    void shouldFormatAsCanonicalRepresentation()
     {
         assertThat( new IndexSpecifier( ":Person(name)" ).toString(), is( ":Person(name)" ) );
     }
 
     @Test
-    public void shouldParseASimpleLabel()
+    void shouldParseASimpleLabel()
     {
         assertThat( new IndexSpecifier( ":Person_23(name)" ).label(), is( "Person_23" ) );
     }
 
     @Test
-    public void shouldParseASimpleProperty()
+    void shouldParseASimpleProperty()
     {
         assertThat( new IndexSpecifier( ":Person(a_Name_123)" ).properties(), is( arrayContaining( "a_Name_123" ) ) );
     }
 
     @Test
-    public void shouldParseTwoProperties()
+    void shouldParseTwoProperties()
     {
         assertThat( new IndexSpecifier( ":Person(name, lastName)" ).properties(),
                 is( arrayContaining( "name", "lastName" ) ) );
     }
 
     @Test
-    public void shouldParseManyProperties()
+    void shouldParseManyProperties()
     {
         String[] properties = new IndexSpecifier( ":Person(1, 2, 3, 4, 5, 6)" ).properties();
         assertThat( properties,
@@ -62,7 +62,7 @@ public class IndexSpecifierTest
     }
 
     @Test
-    public void shouldParseOddProperties()
+    void shouldParseOddProperties()
     {
         String[] properties = new IndexSpecifier( ": Person(1,    2lskgj_LKHGS, `3sdlkhs,   df``sas;g`, 4, `  5  `, 6)" )
                 .properties();
@@ -71,20 +71,20 @@ public class IndexSpecifierTest
     }
 
     @Test
-    public void shouldParseANastyLabel()
+    void shouldParseANastyLabel()
     {
         assertThat( new IndexSpecifier( ":`:(!\"£$%^&*( )`(name)" ).label(), is( ":(!\"£$%^&*( )" ) );
     }
 
     @Test
-    public void shouldParseANastyProperty()
+    void shouldParseANastyProperty()
     {
         assertThat( new IndexSpecifier( ":Person(`(:!\"£$%^&*( )`)" ).properties(),
                 is( arrayContaining( "(:!\"£$%^&*( )" ) ) );
     }
 
     @Test
-    public void shouldProduceAReasonableErrorIfTheSpecificationCantBeParsed()
+    void shouldProduceAReasonableErrorIfTheSpecificationCantBeParsed()
     {
         try
         {

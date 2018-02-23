@@ -37,14 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class SelfSignedCertificatesIT
+class SelfSignedCertificatesIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
-    public void createSelfSignedCertificateWithCorrectPermissions() throws Exception
+    void createSelfSignedCertificateWithCorrectPermissions() throws Exception
     {
         PkiUtils certificates = new PkiUtils();
         certificates

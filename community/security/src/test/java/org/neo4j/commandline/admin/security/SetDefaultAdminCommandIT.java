@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class SetDefaultAdminCommandIT
+class SetDefaultAdminCommandIT
 {
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private File confDir;
@@ -59,7 +59,7 @@ public class SetDefaultAdminCommandIT
     private static final String SET_ADMIN = "set-default-admin";
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         File graphDir = new File( "graph-db" );
         confDir = new File( graphDir, "conf" );
@@ -70,7 +70,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldSetDefaultAdmin() throws Throwable
+    void shouldSetDefaultAdmin() throws Throwable
     {
         insertUser( "jane", false );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
@@ -80,7 +80,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldSetDefaultAdminForInitialUser() throws Throwable
+    void shouldSetDefaultAdminForInitialUser() throws Throwable
     {
         insertUser( "jane", true );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
@@ -90,7 +90,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldOverwrite() throws Throwable
+    void shouldOverwrite() throws Throwable
     {
         insertUser( "jane", false );
         insertUser( "janette", false );
@@ -104,7 +104,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldErrorWithNoSuchUser()
+    void shouldErrorWithNoSuchUser()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "bob" );
         verify( out ).stdErrLine( "command failed: no such user: 'bob'" );
@@ -113,7 +113,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldIgnoreInitialUserIfUsersExist() throws Throwable
+    void shouldIgnoreInitialUserIfUsersExist() throws Throwable
     {
         insertUser( "jane", false );
         insertUser( "janette", true );
@@ -127,7 +127,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1()
+    void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
         assertNoAuthIniFile();
@@ -151,7 +151,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2()
+    void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
         assertNoAuthIniFile();

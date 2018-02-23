@@ -87,7 +87,7 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 @RunWith( Parameterized.class )
 public class CodeGenerationTest
 {
-    public static final MethodReference RUN = createMethod( Runnable.class, void.class, "run" );
+    private static final MethodReference RUN = createMethod( Runnable.class, void.class, "run" );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> generators()
@@ -1608,7 +1608,7 @@ public class CodeGenerationTest
         return (boolean) compareFcn.invoke( lhs, rhs );
     }
 
-    public static class TernaryChecker
+    static class TernaryChecker
     {
         private boolean ranOnTrue;
         private boolean ranOnFalse;
@@ -1885,22 +1885,22 @@ public class CodeGenerationTest
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception
+    private static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception
     {
         return MethodHandles.lookup().unreflect( target.getMethod( name, parameters ) );
     }
 
-    public static MethodHandle instanceMethod( Object instance, String name, Class<?>... parameters ) throws Exception
+    private static MethodHandle instanceMethod( Object instance, String name, Class<?>... parameters ) throws Exception
     {
         return method( instance.getClass(), name, parameters ).bindTo( instance );
     }
 
-    static Object getField( Object instance, String field ) throws Exception
+    private static Object getField( Object instance, String field ) throws Exception
     {
         return instance.getClass().getField( field ).get( instance );
     }
 
-    static MethodHandle constructor( Class<?> target, Class<?>... parameters ) throws Exception
+    private static MethodHandle constructor( Class<?> target, Class<?>... parameters ) throws Exception
     {
         return MethodHandles.lookup().unreflectConstructor( target.getConstructor( parameters ) );
     }
@@ -1913,12 +1913,12 @@ public class CodeGenerationTest
         return generator.generateClass( PACKAGE, name, firstInterface, more );
     }
 
-    ClassGenerator generateClass( Class<?> base, String name, Class<?>... interfaces )
+    private ClassGenerator generateClass( Class<?> base, String name, Class<?>... interfaces )
     {
         return generator.generateClass( base, PACKAGE, name, interfaces );
     }
 
-    ClassGenerator generateClass( String name, TypeReference... interfaces )
+    private ClassGenerator generateClass( String name, TypeReference... interfaces )
     {
         return generator.generateClass( PACKAGE, name, interfaces );
     }
@@ -1928,18 +1928,18 @@ public class CodeGenerationTest
         return generator.generateClass( base, PACKAGE, name, interfaces );
     }
 
-    public static class NamedBase
+    static class NamedBase
     {
         final String name;
         private boolean defaultConstructorCalled;
 
-        public NamedBase()
+        NamedBase()
         {
             this.defaultConstructorCalled = true;
             this.name = null;
         }
 
-        public NamedBase( String name )
+        NamedBase( String name )
         {
             this.name = name;
         }
@@ -1950,7 +1950,7 @@ public class CodeGenerationTest
         }
     }
 
-    public static class SomeBean
+    static class SomeBean
     {
         private String foo;
         private String bar;
@@ -1996,11 +1996,11 @@ public class CodeGenerationTest
         return methodReference( Runnable.class, void.class, "run" );
     }
 
-    public static class MyFirstException extends RuntimeException
+    private static class MyFirstException extends RuntimeException
     {
     }
 
-    public static class MySecondException extends RuntimeException
+    private static class MySecondException extends RuntimeException
     {
     }
 

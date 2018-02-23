@@ -38,16 +38,16 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class StorageLayerSchemaWithPECTest extends StorageLayerTest
+class StorageLayerSchemaWithPECTest extends StorageLayerTest
 {
     @Override
-    protected GraphDatabaseService createGraphDatabase()
+    GraphDatabaseService createGraphDatabase()
     {
         return new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @Test
-    public void shouldListAllConstraints()
+    void shouldListAllConstraints()
     {
         // Given
         SchemaHelper.createUniquenessConstraint( db, label1, propertyKey );
@@ -81,7 +81,7 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldListAllConstraintsForLabel()
+    void shouldListAllConstraintsForLabel()
     {
         // Given
         SchemaHelper.createNodePropertyExistenceConstraint( db, label1, propertyKey );
@@ -106,7 +106,7 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldListAllConstraintsForLabelAndProperty()
+    void shouldListAllConstraintsForLabelAndProperty()
     {
         // Given
         SchemaHelper.createUniquenessConstraint( db, label2, propertyKey );
@@ -132,7 +132,7 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldListAllConstraintsForRelationshipType()
+    void shouldListAllConstraintsForRelationshipType()
     {
         // Given
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType1, propertyKey );
@@ -152,7 +152,7 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldListAllConstraintsForRelationshipTypeAndProperty()
+    void shouldListAllConstraintsForRelationshipTypeAndProperty()
     {
         // Given
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType1, propertyKey );

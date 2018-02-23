@@ -44,27 +44,27 @@ import static org.neo4j.kernel.impl.locking.LockTracer.NONE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 import static org.neo4j.time.Clocks.systemClock;
 
-public class RWLockTest
+class RWLockTest
 {
     private static final long TEST_TIMEOUT_MILLIS = 10_000;
 
     private static ExecutorService executor;
 
     @BeforeAll
-    public static void initExecutor()
+    static void initExecutor()
     {
         executor = newCachedThreadPool();
     }
 
     @AfterAll
-    public static void stopExecutor() throws InterruptedException
+    static void stopExecutor() throws InterruptedException
     {
         executor.shutdown();
         executor.awaitTermination( 2, SECONDS );
     }
 
     @Test
-    public void assertWriteLockDoesNotLeakMemory()
+    void assertWriteLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
         final LockResource resource = new LockResource( NODE, 0 );
@@ -81,7 +81,7 @@ public class RWLockTest
     }
 
     @Test
-    public void assertReadLockDoesNotLeakMemory()
+    void assertReadLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
         final LockResource resource = new LockResource( NODE, 0 );
@@ -102,7 +102,7 @@ public class RWLockTest
      * into a waiting list, wait till resource will be free and grab it.
      */
     @Test
-    public void testWaitingWriterLock() throws InterruptedException
+    void testWaitingWriterLock() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
             RagManager ragManager = new RagManager();
@@ -149,7 +149,7 @@ public class RWLockTest
     }
 
     @Test
-    public void testWaitingReaderLock() throws InterruptedException
+    void testWaitingReaderLock() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
             RagManager ragManager = new RagManager();
@@ -190,7 +190,7 @@ public class RWLockTest
     }
 
     @Test
-    public void testThreadRemovedFromWaitingListOnDeadlock() throws InterruptedException
+    void testThreadRemovedFromWaitingListOnDeadlock() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
             RagManager ragManager = mock( RagManager.class );
@@ -251,7 +251,7 @@ public class RWLockTest
     }
 
     @Test
-    public void testLockCounters() throws InterruptedException
+    void testLockCounters() throws InterruptedException
     {
         RagManager ragManager = new RagManager();
         LockResource resource = new LockResource( NODE, 1L );
@@ -303,7 +303,7 @@ public class RWLockTest
     }
 
     @Test
-    public void testDeadlockDetection() throws InterruptedException
+    void testDeadlockDetection() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
             RagManager ragManager = new RagManager();
@@ -346,7 +346,7 @@ public class RWLockTest
     }
 
     @Test
-    public void testLockRequestsTermination()
+    void testLockRequestsTermination()
     {
         assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
             //  given

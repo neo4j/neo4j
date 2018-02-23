@@ -37,12 +37,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-public class SequenceLockStressIT
+class SequenceLockStressIT
 {
     private static final ExecutorService executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
 
     @AfterAll
-    public static void shutDownExecutor()
+    static void shutDownExecutor()
     {
         executor.shutdown();
     }
@@ -50,14 +50,14 @@ public class SequenceLockStressIT
     private long lockAddr;
 
     @BeforeEach
-    public void allocateLock()
+    void allocateLock()
     {
         lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
         UnsafeUtil.putLong( lockAddr, 0 );
     }
 
     @RepeatedTest( 2 )
-    public void stressTest() throws Exception
+    void stressTest() throws Exception
     {
         int[][] data = new int[10][10];
         AtomicBoolean stop = new AtomicBoolean();
@@ -219,7 +219,7 @@ public class SequenceLockStressIT
     }
 
     @Test
-    public void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
+    void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
     {
         for ( int i = 0; i < 30000; i++ )
         {
@@ -228,7 +228,7 @@ public class SequenceLockStressIT
         }
     }
 
-    public void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
+    private void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
     {
         int threads = Runtime.getRuntime().availableProcessors() - 1;
         CountDownLatch start = new CountDownLatch( threads );

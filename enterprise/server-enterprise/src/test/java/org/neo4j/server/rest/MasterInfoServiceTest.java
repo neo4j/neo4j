@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class MasterInfoServiceTest
+class MasterInfoServiceTest
 {
     @Test
-    public void masterShouldRespond200AndTrueWhenMaster()
+    void masterShouldRespond200AndTrueWhenMaster()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -49,7 +49,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void masterShouldRespond404AndFalseWhenSlave()
+    void masterShouldRespond404AndFalseWhenSlave()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -66,7 +66,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void masterShouldRespond404AndUNKNOWNWhenUnknown()
+    void masterShouldRespond404AndUNKNOWNWhenUnknown()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -83,7 +83,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void slaveShouldRespond200AndTrueWhenSlave()
+    void slaveShouldRespond200AndTrueWhenSlave()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -100,7 +100,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void slaveShouldRespond404AndFalseWhenMaster()
+    void slaveShouldRespond404AndFalseWhenMaster()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -117,7 +117,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void slaveShouldRespond404AndUNKNOWNWhenUnknown()
+    void slaveShouldRespond404AndUNKNOWNWhenUnknown()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -134,7 +134,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportMasterAsGenerallyAvailableForTransactionProcessing()
+    void shouldReportMasterAsGenerallyAvailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -151,7 +151,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportSlaveAsGenerallyAvailableForTransactionProcessing()
+    void shouldReportSlaveAsGenerallyAvailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -168,7 +168,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportNonMasterOrSlaveAsUnavailableForTransactionProcessing()
+    void shouldReportNonMasterOrSlaveAsUnavailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );

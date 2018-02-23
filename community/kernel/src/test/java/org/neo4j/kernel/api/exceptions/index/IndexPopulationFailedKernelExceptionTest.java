@@ -29,11 +29,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IndexPopulationFailedKernelExceptionTest
+class IndexPopulationFailedKernelExceptionTest
 {
 
     @Test
-    public void shouldHandleMultiplePropertiesInConstructor1()
+    void shouldHandleMultiplePropertiesInConstructor1()
     {
         // Given
         LabelSchemaDescriptor descriptor = new LabelSchemaDescriptor( 0, 42, 43, 44 );
@@ -53,7 +53,7 @@ public class IndexPopulationFailedKernelExceptionTest
     }
 
     @Test
-    public void shouldHandleMultiplePropertiesInConstructor2()
+    void shouldHandleMultiplePropertiesInConstructor2()
     {
         // Given
         LabelSchemaDescriptor descriptor = new LabelSchemaDescriptor( 0, 42, 43, 44 );

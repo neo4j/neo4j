@@ -24,7 +24,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 public class DummyExtension implements Lifecycle
 {
-    LifecycleStatus status = LifecycleStatus.NONE;
+    private LifecycleStatus status = LifecycleStatus.NONE;
     private DummyExtensionFactory.Dependencies dependencies;
 
     public DummyExtension( DummyExtensionFactory.Dependencies dependencies )

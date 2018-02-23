@@ -71,7 +71,7 @@ public class ConfiguredQueryLoggerTest
     private long thresholdInMillis = 10;
 
     @Test
-    public void shouldLogQuerySlowerThanThreshold()
+    void shouldLogQuerySlowerThanThreshold()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -90,7 +90,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldRespectThreshold()
+    void shouldRespectThreshold()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -119,7 +119,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldKeepTrackOfDifferentSessions()
+    void shouldKeepTrackOfDifferentSessions()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -151,7 +151,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldLogQueryOnFailureEvenIfFasterThanThreshold()
+    void shouldLogQueryOnFailureEvenIfFasterThanThreshold()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -173,7 +173,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldLogQueryParameters()
+    void shouldLogQueryParameters()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -197,7 +197,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldLogQueryParametersOnFailure()
+    void shouldLogQueryParametersOnFailure()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -222,7 +222,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldLogUserName()
+    void shouldLogUserName()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -247,7 +247,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldLogMetaData()
+    void shouldLogMetaData()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -277,7 +277,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPassword()
+    void shouldNotLogPassword()
     {
         String inputQuery = "CALL dbms.security.changePassword('abc123')";
         String outputQuery = "CALL dbms.security.changePassword(******)";
@@ -286,7 +286,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordNull()
+    void shouldNotLogPasswordNull()
     {
         String inputQuery = "CALL dbms.security.changeUserPassword(null, 'password')";
         String outputQuery = "CALL dbms.security.changeUserPassword(null, ******)";
@@ -295,7 +295,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordWhenMalformedArgument()
+    void shouldNotLogPasswordWhenMalformedArgument()
     {
         String inputQuery = "CALL dbms.security.changeUserPassword('user, 'password')";
         String outputQuery = "CALL dbms.security.changeUserPassword('user, ******)";
@@ -304,7 +304,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordExplain()
+    void shouldNotLogPasswordExplain()
     {
         String inputQuery = "EXPLAIN CALL dbms.security.changePassword('abc123')";
         String outputQuery = "EXPLAIN CALL dbms.security.changePassword(******)";
@@ -313,7 +313,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogChangeUserPassword()
+    void shouldNotLogChangeUserPassword()
     {
         String inputQuery = "CALL dbms.security.changeUserPassword('abc123')";
         String outputQuery = "CALL dbms.security.changeUserPassword(******)";
@@ -322,7 +322,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordEvenIfPasswordIsSilly()
+    void shouldNotLogPasswordEvenIfPasswordIsSilly()
     {
         String inputQuery = "CALL dbms.security.changePassword('.changePassword(\\'si\"lly\\')')";
         String outputQuery = "CALL dbms.security.changePassword(******)";
@@ -331,7 +331,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTime()
+    void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTime()
     {
         String inputQuery = "CALL dbms.security.changeUserPassword('neo4j','.changePassword(silly)') " +
                 "CALL dbms.security.changeUserPassword('smith','other$silly') RETURN 1";
@@ -342,7 +342,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTimeWithSeveralParms()
+    void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTimeWithSeveralParms()
     {
         String inputQuery = "CALL dbms.security.changeUserPassword('neo4j',$first) " +
                 "CALL dbms.security.changeUserPassword('smith',$second) RETURN 1";
@@ -357,7 +357,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordInParams()
+    void shouldNotLogPasswordInParams()
     {
         String inputQuery = "CALL dbms.changePassword($password)";
         String outputQuery = "CALL dbms.changePassword($password)";
@@ -367,7 +367,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordInDeprecatedParams()
+    void shouldNotLogPasswordInDeprecatedParams()
     {
         String inputQuery = "CALL dbms.changePassword({password})";
         String outputQuery = "CALL dbms.changePassword({password})";
@@ -376,7 +376,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogPasswordDifferentWhitespace()
+    void shouldNotLogPasswordDifferentWhitespace()
     {
         String inputQuery = "CALL dbms.security.changeUserPassword(%s'abc123'%s)";
         String outputQuery = "CALL dbms.security.changeUserPassword(%s******%s)";
@@ -414,7 +414,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldBeAbleToLogDetailedTime()
+    void shouldBeAbleToLogDetailedTime()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -433,7 +433,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldBeAbleToLogAllocatedBytes()
+    void shouldBeAbleToLogAllocatedBytes()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -452,7 +452,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldBeAbleToLogPageHitsAndPageFaults()
+    void shouldBeAbleToLogPageHitsAndPageFaults()
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -472,7 +472,7 @@ public class ConfiguredQueryLoggerTest
     }
 
     @Test
-    public void shouldLogRuntime()
+    void shouldLogRuntime()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();

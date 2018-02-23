@@ -19,9 +19,9 @@
  */
 package recovery;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -50,7 +50,7 @@ import static org.neo4j.graphdb.Label.label;
 public class CountsStoreRecoveryTest
 {
     @Test
-    public void shouldRecoverTheCountsStoreEvenWhenIfNeoStoreDoesNotNeedRecovery() throws Exception
+    void shouldRecoverTheCountsStoreEvenWhenIfNeoStoreDoesNotNeedRecovery() throws Exception
     {
         // given
         createNode( "A" );
@@ -128,7 +128,7 @@ public class CountsStoreRecoveryTest
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
 
     @BeforeEach
-    public void before()
+    void before()
     {
         db = databaseFactory( fsRule.get(), indexProvider ).newImpermanentDatabase();
     }
@@ -140,7 +140,7 @@ public class CountsStoreRecoveryTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }

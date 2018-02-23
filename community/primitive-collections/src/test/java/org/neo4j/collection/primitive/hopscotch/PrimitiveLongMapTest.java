@@ -44,21 +44,21 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.memory.GlobalMemoryTracker;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class PrimitiveLongMapTest
+class PrimitiveLongMapTest
 {
     @Test
-    public void shouldContainAddedValues()
+    void shouldContainAddedValues()
     {
         // GIVEN
         Map<Long, Integer> expectedEntries = new HashMap<>();
@@ -96,7 +96,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldContainAddedValues_2()
+    void shouldContainAddedValues_2()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -119,7 +119,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldContainAddedValues_3()
+    void shouldContainAddedValues_3()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -169,7 +169,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldHaveCorrectSize()
+    void shouldHaveCorrectSize()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -255,7 +255,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldMoveValuesWhenMovingEntriesAround()
+    void shouldMoveValuesWhenMovingEntriesAround()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -281,7 +281,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldReturnCorrectPreviousValue()
+    void shouldReturnCorrectPreviousValue()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -307,7 +307,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues()
+    void shouldOnlyContainAddedValues()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -395,7 +395,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_2()
+    void shouldOnlyContainAddedValues_2()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -440,7 +440,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_3()
+    void shouldOnlyContainAddedValues_3()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -859,7 +859,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longIntEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longIntEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -879,7 +879,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longIntEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longIntEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -898,7 +898,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void intLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void intLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveIntLongMap map = Primitive.intLongMap();
@@ -918,7 +918,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void intLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void intLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntLongMap map = Primitive.intLongMap();
@@ -937,7 +937,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongLongVisitor<RuntimeException> visitor;
@@ -960,7 +960,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -981,7 +981,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongOffHeapEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongOffHeapEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongLongVisitor<RuntimeException> visitor;
@@ -1004,7 +1004,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongOffHeapEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongOffHeapEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -1025,7 +1025,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1045,7 +1045,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1064,7 +1064,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void intObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void intObjectEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1084,7 +1084,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void intObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void intObjectEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1103,7 +1103,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longIntKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longIntKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -1123,7 +1123,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longIntKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longIntKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -1142,7 +1142,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
@@ -1164,7 +1164,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -1185,7 +1185,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longLongOffHeapKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longLongOffHeapKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
@@ -1207,7 +1207,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longLongOffHeapKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longLongOffHeapKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -1228,7 +1228,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1248,7 +1248,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -1267,7 +1267,7 @@ public class PrimitiveLongMapTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void intObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void intObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1287,7 +1287,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void intObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void intObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntObjectMap<Integer> map = Primitive.intObjectMap();
@@ -1305,7 +1305,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void longObjectMapValuesContainsAllValues()
+    void longObjectMapValuesContainsAllValues()
     {
         PrimitiveLongObjectMap<String> map = Primitive.longObjectMap();
         map.put( 1, "a" );
@@ -1316,7 +1316,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void recursivePutGrowInterleavingShouldNotDropOriginalValues()
+    void recursivePutGrowInterleavingShouldNotDropOriginalValues()
     {
         // List of values which causes calls to put() call grow(), which will call put() which calls grow() again
         List<Long> lst = Arrays.asList(
@@ -1335,7 +1335,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void recursivePutGrowInterleavingShouldNotDropOriginalValuesEvenWhenFirstGrowAddsMoreValuesAfterSecondGrow()
+    void recursivePutGrowInterleavingShouldNotDropOriginalValuesEvenWhenFirstGrowAddsMoreValuesAfterSecondGrow()
     {
         // List of values that cause recursive growth like above, but this time the first grow wants to add more values
         // to the table *after* the second grow has occurred.

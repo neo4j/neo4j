@@ -19,13 +19,13 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
+import org.junit.jupiter.api.Test;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.Iterables;
@@ -33,13 +33,12 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.test.mockito.matcher.IterableMatcher.matchesIterable;
 
-public class ClusterConfigurationTest
+class ClusterConfigurationTest
 {
-    public static URI NEO4J_SERVER1_URI;
-    public static InstanceId NEO4J_SERVER_ID;
+    private static URI NEO4J_SERVER1_URI;
+    private static InstanceId NEO4J_SERVER_ID;
 
     static
     {
@@ -54,11 +53,11 @@ public class ClusterConfigurationTest
         }
     }
 
-    ClusterConfiguration configuration = new ClusterConfiguration( "default", NullLogProvider.getInstance(),
+    private ClusterConfiguration configuration = new ClusterConfiguration( "default", NullLogProvider.getInstance(),
             new ArrayList<>() );
 
     @Test
-    public void givenEmptyClusterWhenNodeAddedThenNodeWasAdded()
+    void givenEmptyClusterWhenNodeAddedThenNodeWasAdded()
     {
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
 
@@ -68,7 +67,7 @@ public class ClusterConfigurationTest
     }
 
     @Test
-    public void givenEmptyClusterWhenNodeIsAddedTwiceThenNodeWasAddedOnce()
+    void givenEmptyClusterWhenNodeIsAddedTwiceThenNodeWasAddedOnce()
     {
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
@@ -79,7 +78,7 @@ public class ClusterConfigurationTest
     }
 
     @Test
-    public void givenClusterWithOneNodeWhenNodeIsRemovedThenClusterIsEmpty()
+    void givenClusterWithOneNodeWhenNodeIsRemovedThenClusterIsEmpty()
     {
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
         configuration.left( NEO4J_SERVER_ID );
@@ -91,7 +90,7 @@ public class ClusterConfigurationTest
     }
 
     @Test
-    public void givenClusterWithOneNodeWhenNodeIsRemovedTwiceThenClusterIsEmpty()
+    void givenClusterWithOneNodeWhenNodeIsRemovedTwiceThenClusterIsEmpty()
     {
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
         configuration.left( NEO4J_SERVER_ID );

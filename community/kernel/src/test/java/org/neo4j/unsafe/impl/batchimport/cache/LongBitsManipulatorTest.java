@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LongBitsManipulatorTest
+class LongBitsManipulatorTest
 {
     @Test
-    public void shouldManageTwoSlots()
+    void shouldManageTwoSlots()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
@@ -42,7 +42,7 @@ public class LongBitsManipulatorTest
     }
 
     @Test
-    public void shouldInterpretAllOnesAsMinusOne()
+    void shouldInterpretAllOnesAsMinusOne()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
@@ -55,7 +55,7 @@ public class LongBitsManipulatorTest
     }
 
     @Test
-    public void shouldHandleMinusOneValues()
+    void shouldHandleMinusOneValues()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 1, 5, 10, 16, 32 ); // = 64 bits

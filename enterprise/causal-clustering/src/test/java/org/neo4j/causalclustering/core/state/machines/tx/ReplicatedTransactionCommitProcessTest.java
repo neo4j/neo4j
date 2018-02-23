@@ -37,12 +37,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings( "unchecked" )
-public class ReplicatedTransactionCommitProcessTest
+class ReplicatedTransactionCommitProcessTest
 {
     private Replicator replicator = mock( Replicator.class );
 
     @Test
-    public void shouldReplicateTransaction() throws Exception
+    void shouldReplicateTransaction() throws Exception
     {
         // given
         CompletableFuture<Object> futureTxId = new CompletableFuture<>();

@@ -63,7 +63,7 @@ public class PropertyExistenceConstraintVerificationIT
 {
     private static final int WAIT_TIMEOUT_SECONDS = 200;
 
-    public static class NodePropertyExistenceExistenceConstrainVerificationIT
+    static class NodePropertyExistenceExistenceConstrainVerificationIT
             extends AbstractPropertyExistenceConstraintVerificationIT
     {
         @Override
@@ -100,23 +100,23 @@ public class PropertyExistenceConstraintVerificationIT
 
     }
 
-    public static class RelationshipPropertyExistenceExistenceConstrainVerificationIT
+    static class RelationshipPropertyExistenceExistenceConstrainVerificationIT
             extends AbstractPropertyExistenceConstraintVerificationIT
     {
         @Override
-        public void createConstraint( DatabaseRule db, String relType, String property )
+        void createConstraint( DatabaseRule db, String relType, String property )
         {
             SchemaHelper.createRelPropertyExistenceConstraint( db, relType, property );
         }
 
         @Override
-        public String constraintCreationMethodName()
+        String constraintCreationMethodName()
         {
             return "relationshipPropertyExistenceConstraintCreate";
         }
 
         @Override
-        public long createOffender( DatabaseRule db, String key )
+        long createOffender( DatabaseRule db, String key )
         {
             Node start = db.createNode();
             Node end = db.createNode();
@@ -125,7 +125,7 @@ public class PropertyExistenceConstraintVerificationIT
         }
 
         @Override
-        public String offenderCreationMethodName()
+        String offenderCreationMethodName()
         {
             return "relationshipCreate"; // takes schema read lock to enforce constraints
         }
@@ -158,7 +158,7 @@ public class PropertyExistenceConstraintVerificationIT
         abstract Class<?> getOwner();
 
         @Test
-        public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty()
+        void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty()
         {
             // given
             try ( Transaction tx = db.beginTx() )
@@ -185,7 +185,7 @@ public class PropertyExistenceConstraintVerificationIT
         }
 
         @Test
-        public void shouldFailToCreateConstraintIfConcurrentlyCreatedEntityLacksTheMandatoryProperty() throws Exception
+        void shouldFailToCreateConstraintIfConcurrentlyCreatedEntityLacksTheMandatoryProperty() throws Exception
         {
             // when
             try
@@ -219,7 +219,7 @@ public class PropertyExistenceConstraintVerificationIT
         }
 
         @Test
-        public void shouldFailToCreateConstraintIfConcurrentlyCommittedEntityLacksTheMandatoryProperty()
+        void shouldFailToCreateConstraintIfConcurrentlyCommittedEntityLacksTheMandatoryProperty()
                 throws Exception
         {
             // when

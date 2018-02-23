@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -48,10 +47,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
-public class IndexBatchTransactionApplierTest
+class IndexBatchTransactionApplierTest
 {
     @Test
-    public void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
+    void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
     {
         // GIVEN
         IndexingService indexing = mock( IndexingService.class );

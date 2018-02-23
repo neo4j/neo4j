@@ -21,9 +21,7 @@ package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -32,8 +30,8 @@ import java.nio.file.Path;
 
 import org.neo4j.test.extension.MockitoExtension;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,62 +39,62 @@ import static org.neo4j.function.Predicates.alwaysFalse;
 import static org.neo4j.io.fs.FileVisitors.onlyMatching;
 
 @ExtendWith( MockitoExtension.class )
-public class OnlyMatchingFileVisitorTest
+class OnlyMatchingFileVisitorTest
 {
     @Mock
-    public FileVisitor<Path> wrapped;
+    private FileVisitor<Path> wrapped;
 
     @Test
-    public void shouldNotDelegatePreVisitDirectoryIfPredicateDoesntMatch() throws IOException
+    void shouldNotDelegatePreVisitDirectoryIfPredicateDoesntMatch() throws IOException
     {
         onlyMatching( alwaysFalse(), wrapped).preVisitDirectory( null, null );
         verify( wrapped, never() ).preVisitDirectory( any(), any() );
     }
 
     @Test
-    public void shouldNotDelegatePostVisitDirectoryIfPredicateDoesntMatch() throws IOException
+    void shouldNotDelegatePostVisitDirectoryIfPredicateDoesntMatch() throws IOException
     {
         onlyMatching( alwaysFalse(), wrapped).postVisitDirectory( null, null );
         verify( wrapped, never() ).postVisitDirectory( any(), any() );
     }
 
     @Test
-    public void shouldNotDelegateVisitFileIfPredicateDoesntMatch() throws IOException
+    void shouldNotDelegateVisitFileIfPredicateDoesntMatch() throws IOException
     {
         onlyMatching( alwaysFalse(), wrapped).visitFile( null, null );
         verify( wrapped, never() ).visitFile( any(), any() );
     }
 
     @Test
-    public void shouldNotDelegateVisitFileFailedIfPredicateDoesntMatch() throws IOException
+    void shouldNotDelegateVisitFileFailedIfPredicateDoesntMatch() throws IOException
     {
         onlyMatching( alwaysFalse(), wrapped).visitFileFailed( null, null );
         verify( wrapped, never() ).visitFileFailed( any(), any() );
     }
 
     @Test
-    public void shouldNotSkipSubtreeFromPreVisitDirectoryIfPredicateDoesntMatch() throws IOException
+    void shouldNotSkipSubtreeFromPreVisitDirectoryIfPredicateDoesntMatch() throws IOException
     {
         assertThat( onlyMatching( alwaysFalse(), wrapped).preVisitDirectory( null, null ),
                 is( FileVisitResult.SKIP_SUBTREE));
     }
 
     @Test
-    public void shouldContinueAfterPostVisitDirectoryIfPredicateDoesntMatch() throws IOException
+    void shouldContinueAfterPostVisitDirectoryIfPredicateDoesntMatch() throws IOException
     {
         assertThat( onlyMatching( alwaysFalse(), wrapped).postVisitDirectory( null, null ),
                 is( FileVisitResult.CONTINUE));
     }
 
     @Test
-    public void shouldContinueAfterVisitFileIfPredicateDoesntMatch() throws IOException
+    void shouldContinueAfterVisitFileIfPredicateDoesntMatch() throws IOException
     {
         assertThat( onlyMatching( alwaysFalse(), wrapped).visitFile( null, null ),
                 is( FileVisitResult.CONTINUE));
     }
 
     @Test
-    public void shouldContinueAfterVisitFileFailedIfPredicateDoesntMatch() throws IOException
+    void shouldContinueAfterVisitFileFailedIfPredicateDoesntMatch() throws IOException
     {
         assertThat( onlyMatching( alwaysFalse(), wrapped).visitFileFailed( null, null ),
                 is( FileVisitResult.CONTINUE));

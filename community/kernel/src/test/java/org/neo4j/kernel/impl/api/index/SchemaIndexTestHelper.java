@@ -52,7 +52,7 @@ public class SchemaIndexTestHelper
         return new SingleInstanceSchemaIndexProviderFactory( key, provider );
     }
 
-    public interface SingleInstanceSchemaIndexProviderFactoryDependencies
+    interface SingleInstanceSchemaIndexProviderFactoryDependencies
     {
         Config config();
     }

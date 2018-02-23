@@ -34,10 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public class DataStatementArgumentVerificationTest
+class DataStatementArgumentVerificationTest
 {
     @Test
-    public void shouldReturnNoPropertyFromNodeGetPropertyWithoutDelegatingForNoSuchPropertyKeyIdConstant()
+    void shouldReturnNoPropertyFromNodeGetPropertyWithoutDelegatingForNoSuchPropertyKeyIdConstant()
             throws Exception
     {
         // given
@@ -51,7 +51,7 @@ public class DataStatementArgumentVerificationTest
     }
 
     @Test
-    public void shouldReturnNoPropertyFromRelationshipGetPropertyWithoutDelegatingForNoSuchPropertyKeyIdConstant()
+    void shouldReturnNoPropertyFromRelationshipGetPropertyWithoutDelegatingForNoSuchPropertyKeyIdConstant()
             throws Exception
     {
         // given
@@ -65,7 +65,7 @@ public class DataStatementArgumentVerificationTest
     }
 
     @Test
-    public void shouldReturnNoPropertyFromGraphGetPropertyWithoutDelegatingForNoSuchPropertyKeyIdConstant()
+    void shouldReturnNoPropertyFromGraphGetPropertyWithoutDelegatingForNoSuchPropertyKeyIdConstant()
     {
         // given
         ReadOperations statement = stubStatement();
@@ -78,7 +78,7 @@ public class DataStatementArgumentVerificationTest
     }
 
     @Test
-    public void shouldReturnEmptyIdIteratorFromNodesGetForLabelForNoSuchLabelConstant()
+    void shouldReturnEmptyIdIteratorFromNodesGetForLabelForNoSuchLabelConstant()
     {
         // given
         ReadOperations statement = stubStatement();
@@ -91,7 +91,7 @@ public class DataStatementArgumentVerificationTest
     }
 
     @Test
-    public void shouldAlwaysReturnFalseFromNodeHasLabelForNoSuchLabelConstant() throws Exception
+    void shouldAlwaysReturnFalseFromNodeHasLabelForNoSuchLabelConstant() throws Exception
     {
         // given
         ReadOperations statement = stubStatement();

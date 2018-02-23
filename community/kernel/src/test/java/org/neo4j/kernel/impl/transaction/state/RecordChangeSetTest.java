@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RecordChangeSetTest
+class RecordChangeSetTest
 {
     @Test
-    public void shouldStartWithSetsInitializedAndEmpty()
+    void shouldStartWithSetsInitializedAndEmpty()
     {
         // GIVEN
         RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ) );
@@ -52,7 +52,7 @@ public class RecordChangeSetTest
     }
 
     @Test
-    public void shouldClearStateOnClose()
+    void shouldClearStateOnClose()
     {
         // GIVEN
         NeoStores mockStore = mock( NeoStores.class );

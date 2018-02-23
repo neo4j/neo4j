@@ -90,7 +90,7 @@ public class NonFollowerVoteRequestTest
         assertEquals( role, outcome.getRole() );
     }
 
-    public RaftState newState() throws IOException
+    private RaftState newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

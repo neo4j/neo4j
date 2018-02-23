@@ -32,10 +32,10 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 
-public class CombiningResourceIteratorTest
+class CombiningResourceIteratorTest
 {
     @Test
-    public void shouldNotCloseDuringIteration()
+    void shouldNotCloseDuringIteration()
     {
         // Given
         ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
@@ -51,7 +51,7 @@ public class CombiningResourceIteratorTest
     }
 
     @Test
-    public void closesAllIteratorsOnShutdown()
+    void closesAllIteratorsOnShutdown()
     {
         // Given
         ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
@@ -74,7 +74,7 @@ public class CombiningResourceIteratorTest
     }
 
     @Test
-    public void shouldHandleSingleItemIterators()
+    void shouldHandleSingleItemIterators()
     {
         // Given
         ResourceIterator<Long> it1 = asResourceIterator( iterator( 1L ) );

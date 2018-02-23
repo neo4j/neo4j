@@ -39,7 +39,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-public class StubGraphDatabaseService implements GraphDatabaseService
+class StubGraphDatabaseService implements GraphDatabaseService
 {
     @Override
     public Node createNode()

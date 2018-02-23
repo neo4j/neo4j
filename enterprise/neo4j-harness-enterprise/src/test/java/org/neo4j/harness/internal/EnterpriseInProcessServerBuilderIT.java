@@ -44,16 +44,16 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class EnterpriseInProcessServerBuilderIT
+class EnterpriseInProcessServerBuilderIT
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Resource
     public SuppressOutput suppressOutput;
 
     @Test
-    public void shouldLaunchAServerInSpecifiedDirectory()
+    void shouldLaunchAServerInSpecifiedDirectory()
     {
         // Given
         File workDir = new File( testDir.directory(), "specific" );

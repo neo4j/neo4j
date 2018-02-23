@@ -57,7 +57,7 @@ public class SubProcessTest
     }
 
     @Test
-    public void canInvokeSubprocessMethod() throws Exception
+    void canInvokeSubprocessMethod() throws Exception
     {
         Callable<String> subprocess = new TestingProcess().start( MESSAGE );
         try

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -29,15 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.helpers.ArrayUtil.array;
 
-public class ConflictDetectingValueMergerTest
+class ConflictDetectingValueMergerTest
 {
-    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger.Check<>();
+    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger<>();
 
     @Test
-    public void shouldReportConflictOnSameValueAndDifferentEntityIds()
+    void shouldReportConflictOnSameValueAndDifferentEntityIds()
     {
         // given
         Value value = Values.of( 123 );
@@ -53,21 +50,13 @@ public class ConflictDetectingValueMergerTest
 
         // then
         assertNull( merged );
-        try
-        {
-            detector.checkConflict( array( value ) );
-            fail( "Should've detected conflict" );
-        }
-        catch ( IndexEntryConflictException e )
-        {
-            assertEquals( entityId1, e.getExistingNodeId() );
-            assertEquals( entityId2, e.getAddedNodeId() );
-            assertEquals( value, e.getSinglePropertyValue() );
-        }
+        assertTrue( detector.wasConflict() );
+        assertEquals( entityId1, detector.existingNodeId() );
+        assertEquals( entityId2, detector.addedNodeId() );
     }
 
     @Test
-    public void shouldNotReportConflictOnSameValueSameEntityId() throws IndexEntryConflictException
+    void shouldNotReportConflictOnSameValueSameEntityId()
     {
         // given
         Value value = Values.of( 123 );
@@ -82,7 +71,7 @@ public class ConflictDetectingValueMergerTest
 
         // then
         assertNull( merged );
-        detector.checkConflict( array() ); // <-- should not throw conflict exception
+        assertFalse( detector.wasConflict() );
     }
 
     private static NumberSchemaKey key( long entityId, Value... value )

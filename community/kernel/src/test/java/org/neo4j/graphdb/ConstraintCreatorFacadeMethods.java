@@ -24,7 +24,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-public class ConstraintCreatorFacadeMethods
+class ConstraintCreatorFacadeMethods
 {
     private static final FacadeMethod<ConstraintCreator> UNIQUE =
             new FacadeMethod<ConstraintCreator>( "ConstraintCreator unique()" )

@@ -34,10 +34,10 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class EnterpriseReadReplicaEditionModuleTest
+class EnterpriseReadReplicaEditionModuleTest
 {
     @Test
-    public void fileWatcherFileNameFilter()
+    void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = EnterpriseReadReplicaEditionModule.fileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );

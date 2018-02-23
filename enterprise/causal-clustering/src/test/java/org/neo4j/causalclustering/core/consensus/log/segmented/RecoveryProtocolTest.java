@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -55,13 +55,13 @@ public class RecoveryProtocolTest
     private ReaderPool readerPool = new ReaderPool( 0, getInstance(), fileNames, fsa, Clocks.fakeClock() );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         fsa.mkdirs( root );
     }
 
     @Test
-    public void shouldReturnEmptyStateOnEmptyDirectory() throws Exception
+    void shouldReturnEmptyStateOnEmptyDirectory() throws Exception
     {
         // given
         RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, readerPool, contentMarshal, NullLogProvider.getInstance() );
@@ -78,7 +78,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldFailIfThereAreGapsInVersionNumberSequence() throws Exception
+    void shouldFailIfThereAreGapsInVersionNumberSequence() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 0, -1, -1 );
@@ -99,7 +99,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldFailIfTheVersionNumberInTheHeaderAndFileNameDiffer() throws Exception
+    void shouldFailIfTheVersionNumberInTheHeaderAndFileNameDiffer() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 1, -1, -1 );
@@ -119,7 +119,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldFailIfANonLastFileIsMissingHeader() throws Exception
+    void shouldFailIfANonLastFileIsMissingHeader() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 0, -1, -1 );
@@ -141,7 +141,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldRecoverEvenIfLastHeaderIsMissing() throws Exception
+    void shouldRecoverEvenIfLastHeaderIsMissing() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 0, -1, -1 );
@@ -157,7 +157,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldRecoverAndBeAbleToRotate() throws Exception
+    void shouldRecoverAndBeAbleToRotate() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 0, -1, -1 );
@@ -178,7 +178,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldRecoverAndBeAbleToTruncate() throws Exception
+    void shouldRecoverAndBeAbleToTruncate() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 0, -1, -1 );
@@ -199,7 +199,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldRecoverAndBeAbleToSkip() throws Exception
+    void shouldRecoverAndBeAbleToSkip() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 0, -1, -1 );
@@ -220,7 +220,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldRecoverBootstrappedEntry() throws Exception
+    void shouldRecoverBootstrappedEntry() throws Exception
     {
         for ( int bootstrapIndex = 0; bootstrapIndex < 5; bootstrapIndex++ )
         {
@@ -257,7 +257,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldRecoverSeveralSkips() throws Exception
+    void shouldRecoverSeveralSkips() throws Exception
     {
         // given
         createLogFile( fsa, 10, 1, 1, 20, 9 );

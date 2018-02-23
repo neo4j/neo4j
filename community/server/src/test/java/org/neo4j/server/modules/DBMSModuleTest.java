@@ -51,7 +51,7 @@ public class DBMSModuleTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldRegisterAtRootByDefault() throws Exception
+    void shouldRegisterAtRootByDefault() throws Exception
     {
         WebServer webServer = mock( WebServer.class );
         Config config = mock( Config.class );
@@ -70,7 +70,7 @@ public class DBMSModuleTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotRegisterUserServiceWhenAuthDisabled() throws Exception
+    void shouldNotRegisterUserServiceWhenAuthDisabled() throws Exception
     {
         WebServer webServer = mock( WebServer.class );
         Config config = mock( Config.class );

@@ -28,10 +28,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class LoggingResourcePoolMonitorTest
+class LoggingResourcePoolMonitorTest
 {
     @Test
-    public void testUpdatedCurrentPeakSizeLogsOnlyOnChange()
+    void testUpdatedCurrentPeakSizeLogsOnlyOnChange()
     {
         Log log = mock( Log.class );
         LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );
@@ -47,7 +47,7 @@ public class LoggingResourcePoolMonitorTest
     }
 
     @Test
-    public void testUpdatedTargetSizeOnlyOnChange()
+    void testUpdatedTargetSizeOnlyOnChange()
     {
         Log log = mock( Log.class );
         LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );

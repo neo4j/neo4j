@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -63,14 +63,14 @@ public class NodeCommandTest
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
-    InMemoryClosableChannel channel = new InMemoryClosableChannel();
+    private InMemoryClosableChannel channel = new InMemoryClosableChannel();
     private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NeoStores neoStores;
 
     @Test
-    public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
+    void shouldSerializeAndDeserializeUnusedRecords() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -80,7 +80,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeCreatedRecord() throws Exception
+    void shouldSerializeCreatedRecord() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -92,7 +92,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDenseRecord() throws Exception
+    void shouldSerializeDenseRecord() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -104,7 +104,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeUpdatedRecord() throws Exception
+    void shouldSerializeUpdatedRecord() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -116,7 +116,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeInlineLabels() throws Exception
+    void shouldSerializeInlineLabels() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -130,7 +130,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeSecondaryUnitUsage() throws Exception
+    void shouldSerializeSecondaryUnitUsage() throws Exception
     {
         // Given
         // a record that is changed to include a secondary unit
@@ -150,7 +150,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDynamicRecordLabels() throws Exception
+    void shouldSerializeDynamicRecordLabels() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -167,7 +167,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDynamicRecordsRemoved() throws Exception
+    void shouldSerializeDynamicRecordsRemoved() throws Exception
     {
         channel.reset();
         // Given
@@ -240,7 +240,7 @@ public class NodeCommandTest
     }
 
     @BeforeEach
-    public void before()
+    void before()
     {
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
@@ -253,7 +253,7 @@ public class NodeCommandTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         neoStores.close();
     }

@@ -27,10 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ReusableRecordsAllocatorTest
+class ReusableRecordsAllocatorTest
 {
     @Test
-    public void allocatePreviouslyNotUsedRecord()
+    void allocatePreviouslyNotUsedRecord()
     {
         DynamicRecord dynamicRecord = new DynamicRecord( 1 );
         dynamicRecord.setInUse( false );
@@ -44,7 +44,7 @@ public class ReusableRecordsAllocatorTest
     }
 
     @Test
-    public void allocatePreviouslyUsedRecord()
+    void allocatePreviouslyUsedRecord()
     {
         DynamicRecord dynamicRecord = new DynamicRecord( 1 );
         dynamicRecord.setInUse( true );
@@ -58,7 +58,7 @@ public class ReusableRecordsAllocatorTest
     }
 
     @Test
-    public void trackRecordsAvailability()
+    void trackRecordsAvailability()
     {
         DynamicRecord dynamicRecord1 = new DynamicRecord( 1 );
         DynamicRecord dynamicRecord2 = new DynamicRecord( 1 );

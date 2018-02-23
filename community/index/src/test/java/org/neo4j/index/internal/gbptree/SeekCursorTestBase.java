@@ -39,9 +39,9 @@ import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -50,7 +50,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 
 @SuppressWarnings( "UnnecessaryLocalVariable" )
-public abstract class SeekCursorTestBase<KEY, VALUE>
+abstract class SeekCursorTestBase<KEY, VALUE>
 {
     private static final int PAGE_SIZE = 256;
     private static final LongSupplier generationSupplier = new LongSupplier()
@@ -85,7 +85,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private int numberOfRootSplits;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         utilCursor = cursor.duplicate();
@@ -122,7 +122,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     /* NO CONCURRENT INSERT */
 
     @Test
-    public void mustFindEntriesWithinRangeInBeginningOfSingleLeaf() throws Exception
+    void mustFindEntriesWithinRangeInBeginningOfSingleLeaf() throws Exception
     {
         // GIVEN
         long lastSeed = fullLeaf();
@@ -138,7 +138,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesWithinRangeInBeginningOfSingleLeafBackwards() throws Exception
+    void mustFindEntriesWithinRangeInBeginningOfSingleLeafBackwards() throws Exception
     {
         // GIVEN
         long maxKeyCount = fullLeaf();
@@ -154,7 +154,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesWithinRangeInEndOfSingleLeaf() throws Exception
+    void mustFindEntriesWithinRangeInEndOfSingleLeaf() throws Exception
     {
         // GIVEN
         long maxKeyCount = fullLeaf();
@@ -170,7 +170,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesWithinRangeInEndOfSingleLeafBackwards() throws Exception
+    void mustFindEntriesWithinRangeInEndOfSingleLeafBackwards() throws Exception
     {
         // GIVEN
         long maxKeyCount = fullLeaf();
@@ -186,7 +186,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesWithinRangeInMiddleOfSingleLeaf() throws Exception
+    void mustFindEntriesWithinRangeInMiddleOfSingleLeaf() throws Exception
     {
         // GIVEN
         long maxKeyCount = fullLeaf();
@@ -203,7 +203,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesWithinRangeInMiddleOfSingleLeafBackwards() throws Exception
+    void mustFindEntriesWithinRangeInMiddleOfSingleLeafBackwards() throws Exception
     {
         // GIVEN
         long maxKeyCount = fullLeaf();
@@ -220,7 +220,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesSpanningTwoLeaves() throws Exception
+    void mustFindEntriesSpanningTwoLeaves() throws Exception
     {
         // GIVEN
         long i = fullLeaf();
@@ -240,7 +240,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesSpanningTwoLeavesBackwards() throws Exception
+    void mustFindEntriesSpanningTwoLeavesBackwards() throws Exception
     {
         // GIVEN
         long i = fullLeaf();
@@ -259,7 +259,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesOnSecondLeafWhenStartingFromFirstLeaf() throws Exception
+    void mustFindEntriesOnSecondLeafWhenStartingFromFirstLeaf() throws Exception
     {
         // GIVEN
         long i = fullLeaf();
@@ -276,7 +276,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindEntriesOnSecondLeafWhenStartingFromFirstLeafBackwards() throws Exception
+    void mustFindEntriesOnSecondLeafWhenStartingFromFirstLeafBackwards() throws Exception
     {
         // GIVEN
         long leftKeyCount = fullLeaf();
@@ -296,7 +296,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustNotContinueToSecondLeafAfterFindingEndOfRangeInFirst() throws Exception
+    void mustNotContinueToSecondLeafAfterFindingEndOfRangeInFirst() throws Exception
     {
         AtomicBoolean nextCalled = new AtomicBoolean();
         PageCursor pageCursorSpy = new DelegatingPageCursor( cursor )
@@ -330,7 +330,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeysWhenGivenRangeStartingOutsideStartOfData() throws Exception
+    void mustFindKeysWhenGivenRangeStartingOutsideStartOfData() throws Exception
     {
         // Given
         // [ 0 1... maxKeyCount-1]
@@ -349,7 +349,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeysWhenGivenRangeStartingOutsideStartOfDataBackwards() throws Exception
+    void mustFindKeysWhenGivenRangeStartingOutsideStartOfDataBackwards() throws Exception
     {
         // Given
         // [ 0 1... maxKeyCount-1]
@@ -368,7 +368,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeysWhenGivenRangeEndingOutsideEndOfData() throws Exception
+    void mustFindKeysWhenGivenRangeEndingOutsideEndOfData() throws Exception
     {
         // Given
         // [ 0 1... maxKeyCount-1]
@@ -387,7 +387,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeysWhenGivenRangeEndingOutsideEndOfDataBackwards() throws Exception
+    void mustFindKeysWhenGivenRangeEndingOutsideEndOfDataBackwards() throws Exception
     {
         // Given
         // [ 0 1... maxKeyCount-1]
@@ -406,7 +406,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKey() throws Exception
+    void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKey() throws Exception
     {
         // given
         long lastSeed = rootWithTwoLeaves();
@@ -432,7 +432,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKeyBackwards() throws Exception
+    void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKeyBackwards() throws Exception
     {
         // given
         rootWithTwoLeaves();
@@ -458,7 +458,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void exactMatchInStableRoot() throws Exception
+    void exactMatchInStableRoot() throws Exception
     {
         // given
         long maxKeyCount = fullLeaf();
@@ -471,7 +471,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void exactMatchInLeaves() throws Exception
+    void exactMatchInLeaves() throws Exception
     {
         // given
         long lastSeed = rootWithTwoLeaves();
@@ -508,7 +508,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     /* INSERT */
 
     @Test
-    public void mustFindNewKeyInsertedAfterOfSeekPoint() throws Exception
+    void mustFindNewKeyInsertedAfterOfSeekPoint() throws Exception
     {
         // GIVEN
         int middle = 2;
@@ -545,7 +545,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindNewKeyInsertedAfterOfSeekPointBackwards() throws Exception
+    void mustFindNewKeyInsertedAfterOfSeekPointBackwards() throws Exception
     {
         // GIVEN
         int middle = 2;
@@ -582,7 +582,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeyInsertedOnSeekPosition() throws Exception
+    void mustFindKeyInsertedOnSeekPosition() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -625,7 +625,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeyInsertedOnSeekPositionBackwards() throws Exception
+    void mustFindKeyInsertedOnSeekPositionBackwards() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -668,7 +668,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustNotFindKeyInsertedBeforeOfSeekPoint() throws Exception
+    void mustNotFindKeyInsertedBeforeOfSeekPoint() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -710,7 +710,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustNotFindKeyInsertedBeforeOfSeekPointBackwards() throws Exception
+    void mustNotFindKeyInsertedBeforeOfSeekPointBackwards() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -754,7 +754,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     /* INSERT INTO SPLIT */
 
     @Test
-    public void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToLeft() throws Exception
+    void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToLeft() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -794,7 +794,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToRightBackwards() throws Exception
+    void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToRightBackwards() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -835,7 +835,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToRight() throws Exception
+    void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToRight() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -874,7 +874,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToLeftBackwards() throws Exception
+    void mustContinueToNextLeafWhenRangeIsSplitIntoRightLeafAndPosToLeftBackwards() throws Exception
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
@@ -916,7 +916,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     /* REMOVE */
 
     @Test
-    public void mustNotFindKeyRemovedInFrontOfSeeker() throws Exception
+    void mustNotFindKeyRemovedInFrontOfSeeker() throws Exception
     {
         // GIVEN
         // [0 1 ... maxKeyCount-1]
@@ -1003,7 +1003,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustNotFindKeyRemovedInFrontOfSeekerBackwards() throws Exception
+    void mustNotFindKeyRemovedInFrontOfSeekerBackwards() throws Exception
     {
         // GIVEN
         // [1 2 ... maxKeyCount]
@@ -1041,7 +1041,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeyMovedPassedSeekerBecauseOfRemove() throws Exception
+    void mustFindKeyMovedPassedSeekerBecauseOfRemove() throws Exception
     {
         // GIVEN
         // [0 1 ... maxKeyCount-1]
@@ -1080,7 +1080,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeyMovedPassedSeekerBecauseOfRemoveBackwards() throws Exception
+    void mustFindKeyMovedPassedSeekerBecauseOfRemoveBackwards() throws Exception
     {
         // GIVEN
         // [1 2... maxKeyCount]
@@ -1118,7 +1118,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeyMovedSeekerBecauseOfRemoveOfMostRecentReturnedKey() throws Exception
+    void mustFindKeyMovedSeekerBecauseOfRemoveOfMostRecentReturnedKey() throws Exception
     {
         // GIVEN
         long maxKeyCount = fullLeaf();
@@ -1153,7 +1153,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindKeyMovedSeekerBecauseOfRemoveOfMostRecentReturnedKeyBackwards() throws Exception
+    void mustFindKeyMovedSeekerBecauseOfRemoveOfMostRecentReturnedKeyBackwards() throws Exception
     {
         // GIVEN
         long i = fullLeaf( 1 );
@@ -1189,7 +1189,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustRereadHeadersOnRetry() throws Exception
+    void mustRereadHeadersOnRetry() throws Exception
     {
         // GIVEN
         int keyCount = 2;
@@ -1228,7 +1228,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     /* REBALANCE (when rebalance is implemented) */
 
     @Test
-    public void mustFindRangeWhenCompletelyRebalancedToTheRightBeforeCallToNext() throws Exception
+    void mustFindRangeWhenCompletelyRebalancedToTheRightBeforeCallToNext() throws Exception
     {
         // given
         long key = 10;
@@ -1265,7 +1265,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindRangeWhenCompletelyRebalancedToTheRightBeforeCallToNextBackwards() throws Exception
+    void mustFindRangeWhenCompletelyRebalancedToTheRightBeforeCallToNextBackwards() throws Exception
     {
         // given
         long key = 10;
@@ -1302,7 +1302,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindRangeWhenCompletelyRebalancedToTheRightAfterCallToNext() throws Exception
+    void mustFindRangeWhenCompletelyRebalancedToTheRightAfterCallToNext() throws Exception
     {
         // given
         long key = 10;
@@ -1341,7 +1341,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindRangeWhenCompletelyRebalancedToTheRightAfterCallToNextBackwards() throws Exception
+    void mustFindRangeWhenCompletelyRebalancedToTheRightAfterCallToNextBackwards() throws Exception
     {
         // given
         long key = 10;
@@ -1382,7 +1382,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     /* MERGE */
 
     @Test
-    public void mustFindRangeWhenMergingFromCurrentSeekNode() throws Exception
+    void mustFindRangeWhenMergingFromCurrentSeekNode() throws Exception
     {
         // given
         long key = 0;
@@ -1417,7 +1417,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindRangeWhenMergingToCurrentSeekNode() throws Exception
+    void mustFindRangeWhenMergingToCurrentSeekNode() throws Exception
     {
         // given
         long key = 0;
@@ -1451,7 +1451,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindRangeWhenMergingToCurrentSeekNodeBackwards() throws Exception
+    void mustFindRangeWhenMergingToCurrentSeekNodeBackwards() throws Exception
     {
         // given
         long key = 0;
@@ -1485,7 +1485,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void mustFindRangeWhenMergingFromCurrentSeekNodeBackwards() throws Exception
+    void mustFindRangeWhenMergingFromCurrentSeekNodeBackwards() throws Exception
     {
         // given
         long key = 0;
@@ -1522,7 +1522,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     /* POINTER GENERATION TESTING */
 
     @Test
-    public void shouldRereadSiblingIfReadFailureCausedByConcurrentCheckpoint() throws Exception
+    void shouldRereadSiblingIfReadFailureCausedByConcurrentCheckpoint() throws Exception
     {
         // given
         long i = 0L;
@@ -1552,7 +1552,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldFailOnSiblingReadFailureIfNotCausedByConcurrentCheckpoint() throws Exception
+    void shouldFailOnSiblingReadFailureIfNotCausedByConcurrentCheckpoint() throws Exception
     {
         // given
         long i = 0L;
@@ -1594,7 +1594,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldRereadSuccessorIfReadFailureCausedByCheckpointInLeaf() throws Exception
+    void shouldRereadSuccessorIfReadFailureCausedByCheckpointInLeaf() throws Exception
     {
         // given
         List<Long> expected = new ArrayList<>();
@@ -1628,7 +1628,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldFailSuccessorIfReadFailureNotCausedByCheckpointInLeaf() throws Exception
+    void shouldFailSuccessorIfReadFailureNotCausedByCheckpointInLeaf() throws Exception
     {
         // given
         long i = 0L;
@@ -1666,7 +1666,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldRereadSuccessorIfReadFailureCausedByCheckpointInInternal() throws Exception
+    void shouldRereadSuccessorIfReadFailureCausedByCheckpointInInternal() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1727,7 +1727,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldFailSuccessorIfReadFailureNotCausedByCheckpointInInternal() throws Exception
+    void shouldFailSuccessorIfReadFailureNotCausedByCheckpointInInternal() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1773,7 +1773,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldRereadChildPointerIfReadFailureCausedByCheckpoint() throws Exception
+    void shouldRereadChildPointerIfReadFailureCausedByCheckpoint() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1814,7 +1814,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldFailChildPointerIfReadFailureNotCausedByCheckpoint() throws Exception
+    void shouldFailChildPointerIfReadFailureNotCausedByCheckpoint() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1854,7 +1854,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldCatchupRootWhenRootNodeHasTooNewGeneration() throws Exception
+    void shouldCatchupRootWhenRootNodeHasTooNewGeneration() throws Exception
     {
         // given
         long id = cursor.getCurrentPageId();
@@ -1880,7 +1880,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingDownTree() throws Exception
+    void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingDownTree() throws Exception
     {
         // given
         long generation = TreeNode.generation( cursor );
@@ -1931,7 +1931,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingLeaves() throws Exception
+    void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingLeaves() throws Exception
     {
         // given
         MutableBoolean triggered = new MutableBoolean( false );
@@ -1983,7 +1983,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldThrowTreeInconsistencyExceptionOnBadReadWithoutShouldRetryWhileTraversingTree() throws Exception
+    void shouldThrowTreeInconsistencyExceptionOnBadReadWithoutShouldRetryWhileTraversingTree() throws Exception
     {
         // GIVEN
         int keyCount = 10000;
@@ -2005,7 +2005,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    public void shouldThrowTreeInconsistencyExceptionOnBadReadWithoutShouldRetryWhileTraversingLeaves() throws Exception
+    void shouldThrowTreeInconsistencyExceptionOnBadReadWithoutShouldRetryWhileTraversingLeaves() throws Exception
     {
         // GIVEN
         // a root with two leaves in old generation
@@ -2335,7 +2335,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
     // KEEP even if unused
     @SuppressWarnings( "unused" )
-    private void printTree() throws IOException
+    void printTree() throws IOException
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );

@@ -139,7 +139,7 @@ public class RelationshipCreatorTest
             }
         }
 
-        protected void changingRelationship( long relId )
+        void changingRelationship( long relId )
         {   // Called by tracking record proxies
             assertTrue( "Tried to change relationship " + relId + " without this transaction having it locked",
                     relationshipLocksAcquired.contains( relId ) );

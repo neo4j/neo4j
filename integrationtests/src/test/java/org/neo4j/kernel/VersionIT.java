@@ -25,10 +25,10 @@ import org.neo4j.kernel.internal.Version;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class VersionIT
+class VersionIT
 {
     @Test
-    public void canGetKernelRevision()
+    void canGetKernelRevision()
     {
         assertNotEquals( "Kernel revision not specified", "", Version.getKernelVersion() );
     }

@@ -33,7 +33,7 @@ import org.neo4j.kernel.spi.explicitindex.ExplicitIndexProviderTransaction;
 import org.neo4j.kernel.spi.explicitindex.IndexCommandFactory;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
-public class DummyIndexImplementation extends LifecycleAdapter implements IndexImplementation
+class DummyIndexImplementation extends LifecycleAdapter implements IndexImplementation
 {
     @Override
     public Map<String, String> fillInDefaults( Map<String, String> config )

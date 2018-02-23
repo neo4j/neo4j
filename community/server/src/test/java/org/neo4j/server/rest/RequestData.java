@@ -24,12 +24,12 @@ import java.util.Map;
 class RequestData
 {
     private String payload;
-    public String uri;
-    public String method;
-    public int status;
+    private String uri;
+    private String method;
+    private int status;
     public String entity;
-    public Map<String, String> requestHeaders;
-    public Map<String, String> responseHeaders;
+    private Map<String, String> requestHeaders;
+    private Map<String, String> responseHeaders;
 
     public void setPayload( final String payload )
     {

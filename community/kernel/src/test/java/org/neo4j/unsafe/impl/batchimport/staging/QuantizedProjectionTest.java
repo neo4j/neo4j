@@ -25,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class QuantizedProjectionTest
+class QuantizedProjectionTest
 {
     @Test
-    public void shouldProjectSteps()
+    void shouldProjectSteps()
     {
         // GIVEN
         QuantizedProjection projection = new QuantizedProjection( 9, 7 );

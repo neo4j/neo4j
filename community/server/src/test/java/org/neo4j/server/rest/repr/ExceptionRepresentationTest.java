@@ -32,16 +32,16 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.exceptions.Status.General.UnknownError;
 
-public class ExceptionRepresentationTest
+class ExceptionRepresentationTest
 {
 
     @Test
-    public void shouldIncludeCause() throws Exception
+    void shouldIncludeCause() throws Exception
     {
         // Given
         ExceptionRepresentation rep = new ExceptionRepresentation(
@@ -56,7 +56,7 @@ public class ExceptionRepresentationTest
     }
 
     @Test
-    public void shouldRenderErrorsWithNeo4jStatusCode() throws Exception
+    void shouldRenderErrorsWithNeo4jStatusCode() throws Exception
     {
         // Given
         ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )
@@ -72,7 +72,7 @@ public class ExceptionRepresentationTest
     }
 
     @Test
-    public void shoudExcludeLegacyFormatIfAsked() throws Exception
+    void shoudExcludeLegacyFormatIfAsked() throws Exception
     {
         // Given
         ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )

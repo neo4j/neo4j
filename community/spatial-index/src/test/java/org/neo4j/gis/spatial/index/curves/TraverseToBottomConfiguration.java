@@ -21,7 +21,7 @@ package org.neo4j.gis.spatial.index.curves;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
-public class TraverseToBottomConfiguration implements SpaceFillingCurveConfiguration
+class TraverseToBottomConfiguration implements SpaceFillingCurveConfiguration
 {
     @Override
     public boolean stopAtThisDepth( double overlap, int depth, int maxDepth )

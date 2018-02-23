@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DeleteDuplicateNodesStepTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
     @Rule
     private final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
 
@@ -88,7 +88,7 @@ public class DeleteDuplicateNodesStepTest
     }
 
     @RepeatedTest( 10 )
-    public void shouldDeleteEverythingAboutTheDuplicatedNodes() throws Exception
+    void shouldDeleteEverythingAboutTheDuplicatedNodes() throws Exception
     {
         // given
         NeoStores neoStores = neoStoresRule.builder().build();

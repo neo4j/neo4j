@@ -27,11 +27,11 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import java.util.Arrays;
 import java.util.HashSet;
 
-public final class MyStandardAnalyzer extends AnalyzerWrapper
+final class MyStandardAnalyzer extends AnalyzerWrapper
 {
     private final Analyzer actual;
 
-    public MyStandardAnalyzer()
+    MyStandardAnalyzer()
     {
         super( GLOBAL_REUSE_STRATEGY );
         CharArraySet stopWords = CharArraySet.copy( new HashSet<>( Arrays.asList( "just", "some", "words" ) ) );

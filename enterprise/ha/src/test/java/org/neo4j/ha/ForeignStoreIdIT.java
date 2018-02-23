@@ -46,15 +46,15 @@ import static org.neo4j.kernel.ha.HaSettings.ha_server;
 import static org.neo4j.kernel.ha.HaSettings.state_switch_timeout;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ForeignStoreIdIT
+class ForeignStoreIdIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private GraphDatabaseService firstInstance;
     private GraphDatabaseService foreignInstance;
 
     @AfterEach
-    public void after()
+    void after()
     {
         if ( foreignInstance != null )
         {
@@ -67,7 +67,7 @@ public class ForeignStoreIdIT
     }
 
     @Test
-    public void emptyForeignDbShouldJoinAfterHavingItsEmptyDbDeleted()
+    void emptyForeignDbShouldJoinAfterHavingItsEmptyDbDeleted()
     {
         // GIVEN
         // -- one instance running
@@ -102,7 +102,7 @@ public class ForeignStoreIdIT
     }
 
     @Test
-    public void nonEmptyForeignDbShouldNotBeAbleToJoin()
+    void nonEmptyForeignDbShouldNotBeAbleToJoin()
     {
         // GIVEN
         // -- one instance running

@@ -23,13 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import static org.neo4j.causalclustering.core.consensus.MajorityIncludingSelfQuorum.isQuorum;
 
-public class QuorumStrategyTest
+class QuorumStrategyTest
 {
     @Test
-    public void shouldDecideIfWeHaveAMajorityCorrectly()
+    void shouldDecideIfWeHaveAMajorityCorrectly()
     {
         // the assumption in these tests is that we always vote for ourselves
         assertTrue( isQuorum( 0, 1, 0 ) );
@@ -54,7 +53,7 @@ public class QuorumStrategyTest
     }
 
     @Test
-    public void shouldDecideIfWeHaveAMajorityCorrectlyUsingMinQuorum()
+    void shouldDecideIfWeHaveAMajorityCorrectlyUsingMinQuorum()
     {
         // Then
         assertFalse( isQuorum( 2, 1, 0 ) );

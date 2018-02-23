@@ -51,15 +51,15 @@ import static org.neo4j.graphdb.Label.label;
 public abstract class StorageLayerTest
 {
     @SuppressWarnings( "deprecation" )
-    protected GraphDatabaseAPI db;
-    protected final Label label1 = label( "FirstLabel" );
-    protected final Label label2 = label( "SecondLabel" );
-    protected final RelationshipType relType1 = RelationshipType.withName( "type1" );
-    protected final RelationshipType relType2 = RelationshipType.withName( "type2" );
-    protected final String propertyKey = "name";
-    protected final String otherPropertyKey = "age";
-    protected KernelStatement state;
-    protected StoreReadLayer disk;
+    GraphDatabaseAPI db;
+    final Label label1 = label( "FirstLabel" );
+    final Label label2 = label( "SecondLabel" );
+    final RelationshipType relType1 = RelationshipType.withName( "type1" );
+    final RelationshipType relType2 = RelationshipType.withName( "type2" );
+    final String propertyKey = "name";
+    final String otherPropertyKey = "age";
+    KernelStatement state;
+    StoreReadLayer disk;
 
     @SuppressWarnings( "deprecation" )
     @BeforeEach
@@ -72,7 +72,7 @@ public abstract class StorageLayerTest
                 LockTracer.NONE, null, new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 
-    protected GraphDatabaseService createGraphDatabase()
+    GraphDatabaseService createGraphDatabase()
     {
         return new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
@@ -83,7 +83,7 @@ public abstract class StorageLayerTest
         db.shutdown();
     }
 
-    protected static Node createLabeledNode( GraphDatabaseService db, Map<String,Object> properties, Label... labels )
+    static Node createLabeledNode( GraphDatabaseService db, Map<String,Object> properties, Label... labels )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -97,7 +97,7 @@ public abstract class StorageLayerTest
         }
     }
 
-    protected int labelId( Label label )
+    int labelId( Label label )
     {
         try ( Transaction ignored = db.beginTx();
                 Statement statement = statement() )
@@ -106,7 +106,7 @@ public abstract class StorageLayerTest
         }
     }
 
-    protected int relationshipTypeId( RelationshipType type )
+    int relationshipTypeId( RelationshipType type )
     {
         try ( Transaction ignored = db.beginTx();
                 Statement statement = statement() )
@@ -115,7 +115,7 @@ public abstract class StorageLayerTest
         }
     }
 
-    protected int propertyKeyId( String propertyKey )
+    int propertyKeyId( String propertyKey )
     {
         try ( Transaction ignored = db.beginTx();
                 Statement statement = statement() )
@@ -124,7 +124,7 @@ public abstract class StorageLayerTest
         }
     }
 
-    protected Statement statement()
+    private Statement statement()
     {
         DependencyResolver dependencyResolver = db.getDependencyResolver();
         return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();

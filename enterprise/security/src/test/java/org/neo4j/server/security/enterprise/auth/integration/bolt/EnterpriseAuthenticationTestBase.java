@@ -70,16 +70,16 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
             asSettings( getSettingsFunction() ) );
 
-    protected static String createdUserPassword = "nativePassword";
+    static String createdUserPassword = "nativePassword";
 
-    protected void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
+    void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( overrideSettingsFunction ) );
         lookupConnectorAddress();
     }
 
-    protected Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
+    Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
     {
         return settings ->
         {
@@ -92,21 +92,21 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         };
     }
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    private TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
     }
 
-    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
+    Consumer<Map<Setting<?>,String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" );
     }
 
-    public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
+    Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
 
-    protected HostnamePort address;
-    protected TransportConnection client;
-    protected TransportTestUtil util;
+    HostnamePort address;
+    TransportConnection client;
+    TransportTestUtil util;
 
     @Before
     public void setup()
@@ -116,7 +116,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         this.util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
-    protected void lookupConnectorAddress()
+    void lookupConnectorAddress()
     {
         this.address = server.lookupDefaultConnector();
     }
@@ -130,7 +130,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         }
     }
 
-    protected void reconnect() throws Exception
+    void reconnect() throws Exception
     {
         if ( client != null )
         {
@@ -139,22 +139,22 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         this.client = cf.newInstance();
     }
 
-    protected void testCreateReaderUser() throws Exception
+    void testCreateReaderUser() throws Exception
     {
         testCreateReaderUser( "neo" );
     }
 
-    protected void testAuthWithReaderUser() throws Exception
+    void testAuthWithReaderUser() throws Exception
     {
         testAuthWithReaderUser( "neo", "abc123", null );
     }
 
-    protected void testAuthWithPublisherUser() throws Exception
+    void testAuthWithPublisherUser() throws Exception
     {
         testAuthWithPublisherUser( "tank", "abc123", null );
     }
 
-    protected void testCreateReaderUser( String username ) throws Exception
+    void testCreateReaderUser( String username ) throws Exception
     {
         // NOTE: The default user 'neo4j' has password change required, so we have to first change it
         assertAuthAndChangePassword( "neo4j", "abc123", "123" );
@@ -167,31 +167,31 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( longValue( 0L ) ) ) ) ) );
     }
 
-    protected void testAuthWithReaderUser( String username, String password, String realm ) throws Exception
+    void testAuthWithReaderUser( String username, String password, String realm ) throws Exception
     {
         assertAuth( username, password, realm );
         assertReadSucceeds();
         assertWriteFails( username, "reader" );
     }
 
-    protected void testAuthWithPublisherUser( String username, String password, String realm ) throws Exception
+    private void testAuthWithPublisherUser( String username, String password, String realm ) throws Exception
     {
         assertAuth( username, password, realm );
         assertWriteSucceeds();
     }
 
-    protected void testAuthWithNoPermissionUser( String username, String password ) throws Exception
+    void testAuthWithNoPermissionUser( String username, String password ) throws Exception
     {
         assertAuth( username, password );
         assertReadFails( username, "" );
     }
 
-    protected void assertAuth( String username, String password ) throws Exception
+    void assertAuth( String username, String password ) throws Exception
     {
         assertConnectionSucceeds( authToken( username, password, null ) );
     }
 
-    protected void assertAuthAndChangePassword( String username, String password, String newPassword ) throws Exception
+    private void assertAuthAndChangePassword( String username, String password, String newPassword ) throws Exception
     {
         assertAuth( username, password );
         String query = format( "CALL dbms.security.changeUserPassword('%s', '%s', false)", username, newPassword );
@@ -199,17 +199,17 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    protected void assertAuth( String username, String password, String realm ) throws Exception
+    void assertAuth( String username, String password, String realm ) throws Exception
     {
         assertConnectionSucceeds( authToken( username, password, realm ) );
     }
 
-    protected void assertAuthFail( String username, String password ) throws Exception
+    void assertAuthFail( String username, String password ) throws Exception
     {
         assertConnectionFails( map( "principal", username, "credentials", password, "scheme", "basic" ) );
     }
 
-    protected void assertRoles( String... roles ) throws Exception
+    void assertRoles( String... roles ) throws Exception
     {
         client.send( util.chunk( run( "CALL dbms.showCurrentUser" ), pullAll() ) );
 
@@ -221,7 +221,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                 msgSuccess() ) );
     }
 
-    protected void assertConnectionSucceeds( Map<String,Object> authToken ) throws Exception
+    void assertConnectionSucceeds( Map<String,Object> authToken ) throws Exception
     {
         // When
         client.connect( address )
@@ -234,7 +234,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
-    protected void assertConnectionFails( Map<String,Object> authToken ) throws Exception
+    void assertConnectionFails( Map<String,Object> authToken ) throws Exception
     {
         final int RETRIES = 10;
         int tries = 0;
@@ -267,7 +267,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         }
     }
 
-    protected void assertReadSucceeds() throws Exception
+    void assertReadSucceeds() throws Exception
     {
         // When
         client.send( util.chunk( run( "MATCH (n) RETURN count(n)" ),
@@ -280,7 +280,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                 msgSuccess() ) );
     }
 
-    protected void assertReadFails( String username, String roles ) throws Exception
+    void assertReadFails( String username, String roles ) throws Exception
     {
         // When
         client.send( util.chunk(
@@ -295,7 +295,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                         format( "Read operations are not allowed for user '%s' with %s.", username, roleString ) ) ) );
     }
 
-    protected void assertWriteSucceeds() throws Exception
+    void assertWriteSucceeds() throws Exception
     {
         // When
         client.send( util.chunk(
@@ -306,7 +306,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    protected void assertWriteFails( String username, String roles ) throws Exception
+    void assertWriteFails( String username, String roles ) throws Exception
     {
         // When
         client.send( util.chunk(
@@ -321,7 +321,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                         format( "Write operations are not allowed for user '%s' with %s.", username, roleString ) ) ) );
     }
 
-    protected void assertBeginTransactionSucceeds() throws Exception
+    void assertBeginTransactionSucceeds() throws Exception
     {
         // When
         client.send( util.chunk( run( "BEGIN" ),
@@ -353,7 +353,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    protected Map<String,Object> authToken( String username, String password, String realm )
+    Map<String,Object> authToken( String username, String password, String realm )
     {
         if ( realm != null && realm.length() > 0 )
         {

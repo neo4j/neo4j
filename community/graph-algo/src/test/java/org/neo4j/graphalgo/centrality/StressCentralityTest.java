@@ -33,23 +33,22 @@ import org.neo4j.graphdb.Node;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StressCentralityTest extends Neo4jAlgoTestCase
+class StressCentralityTest extends Neo4jAlgoTestCase
 {
-    protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
+    private SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new DoubleAdder(),
                 new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
-    protected void assertCentrality( StressCentrality<Double> stressCentrality,
-        String nodeId, Double value )
+    private void assertCentrality( StressCentrality<Double> stressCentrality, String nodeId, Double value )
     {
         assertTrue( stressCentrality.getCentrality( graph.getNode( nodeId ) )
             .equals( value ) );
     }
 
     @Test
-    public void testBox()
+    void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
         StressCentrality<Double> stressCentrality = new StressCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
@@ -61,7 +60,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testPlusShape()
+    void testPlusShape()
     {
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
@@ -75,7 +74,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testChain()
+    void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
         StressCentrality<Double> stressCentrality = new StressCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
@@ -88,7 +87,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testStressUpdating()
+    void testStressUpdating()
     {
         graph.makeEdgeChain( "a,b,c,d,e,f" );
         new StressTest( getSingleSourceShortestPath(), graph.getAllNodes() )
@@ -102,7 +101,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
             super( singleSourceShortestPath, nodeSet );
         }
 
-        public void test()
+        void test()
         {
             // avoid starting the real calculation by mistake
             this.doneCalculation = true;

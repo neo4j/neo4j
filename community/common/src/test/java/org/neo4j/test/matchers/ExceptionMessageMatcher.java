@@ -23,11 +23,11 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-public class ExceptionMessageMatcher extends TypeSafeMatcher<Throwable>
+class ExceptionMessageMatcher extends TypeSafeMatcher<Throwable>
 {
     private final Matcher<? super String> matcher;
 
-    public ExceptionMessageMatcher( Matcher<? super String> matcher )
+    ExceptionMessageMatcher( Matcher<? super String> matcher )
     {
         this.matcher = matcher;
     }

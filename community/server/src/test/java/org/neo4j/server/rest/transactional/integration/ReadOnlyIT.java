@@ -36,13 +36,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class ReadOnlyIT extends ExclusiveServerTestBase
+class ReadOnlyIT extends ExclusiveServerTestBase
 {
     private NeoServer readOnlyServer;
     private HTTP.Builder http;
 
     @BeforeEach
-    public void setup() throws IOException
+    void setup() throws IOException
     {
         ServerHelper.cleanTheDatabase( readOnlyServer );
         readOnlyServer = ServerHelper.createNonPersistentReadOnlyServer();
@@ -50,7 +50,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     }
 
     @AfterEach
-    public void teardown()
+    void teardown()
     {
         if ( readOnlyServer != null )
         {
@@ -59,7 +59,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception
+    void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception
     {
         // Given
         HTTP.Response response = http.POST( "db/data/transaction/commit",
@@ -75,7 +75,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldReturnReadOnlyStatusWhenCreatingNodesWhichTransitivelyCreateTokens() throws Exception
+    void shouldReturnReadOnlyStatusWhenCreatingNodesWhichTransitivelyCreateTokens() throws Exception
     {
         // Given
         // When

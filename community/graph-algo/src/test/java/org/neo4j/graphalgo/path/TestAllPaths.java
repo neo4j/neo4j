@@ -19,25 +19,24 @@
  */
 package org.neo4j.graphalgo.path;
 
+import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
-
-import common.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.PathExpanders;
 
 import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
 
-public class TestAllPaths extends Neo4jAlgoTestCase
+class TestAllPaths extends Neo4jAlgoTestCase
 {
-    protected PathFinder<Path> instantiatePathFinder( int maxDepth )
+    private PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
         return allPaths( PathExpanders.allTypesAndDirections(), maxDepth );
     }
 
     @Test
-    public void testCircularGraph()
+    void testCircularGraph()
     {
         /* Layout
          *
@@ -59,7 +58,7 @@ public class TestAllPaths extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testTripleRelationshipGraph()
+    void testTripleRelationshipGraph()
     {
         /* Layout
          *          ___

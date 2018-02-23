@@ -33,7 +33,6 @@ import java.time.temporal.TemporalAmount;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -67,7 +66,7 @@ public class ArrayEncoderTest
     private static final char PADDING = '=';
 
     @Test
-    public void encodingShouldContainOnlyBase64EncodingChars()
+    void encodingShouldContainOnlyBase64EncodingChars()
     {
         String[] array = {
                 "This string is long enough for BASE64 to emit a line break, making the encoding platform dependant.",
@@ -103,7 +102,7 @@ public class ArrayEncoderTest
     }
 
     @Test
-    public void shouldEncodeArrays()
+    void shouldEncodeArrays()
     {
         assertEncoding( "D1.0|2.0|3.0|", new int[]{1, 2, 3} );
         assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
@@ -132,7 +131,7 @@ public class ArrayEncoderTest
     }
 
     @Test
-    public void shouldEncodeProperlyWithMultipleThreadsRacing() throws Throwable
+    void shouldEncodeProperlyWithMultipleThreadsRacing() throws Throwable
     {
         // given
         String[] INPUT = {

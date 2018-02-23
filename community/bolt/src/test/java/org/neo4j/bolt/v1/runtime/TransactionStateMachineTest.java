@@ -37,10 +37,10 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -54,14 +54,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-public class TransactionStateMachineTest
+class TransactionStateMachineTest
 {
     private TransactionStateMachineSPI stateMachineSPI;
     private TransactionStateMachine.MutableTransactionState mutableState;
     private TransactionStateMachine stateMachine;
 
     @BeforeEach
-    public void createMocks()
+    void createMocks()
     {
         stateMachineSPI = mock( TransactionStateMachineSPI.class );
         mutableState = mock(TransactionStateMachine.MutableTransactionState.class);
@@ -69,7 +69,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldTransitionToExplicitTransactionOnBegin() throws Exception
+    void shouldTransitionToExplicitTransactionOnBegin() throws Exception
     {
         assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
                 mutableState, stateMachineSPI, "begin", EMPTY_MAP ),
@@ -86,7 +86,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldTransitionToAutoCommitOnCommit() throws Exception
+    void shouldTransitionToAutoCommitOnCommit() throws Exception
     {
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
                 mutableState, stateMachineSPI, "commit", EMPTY_MAP ),
@@ -103,7 +103,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldTransitionToAutoCommitOnRollback() throws Exception
+    void shouldTransitionToAutoCommitOnRollback() throws Exception
     {
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
                 mutableState, stateMachineSPI, "rollback", EMPTY_MAP ),
@@ -120,7 +120,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldThrowOnBeginInExplicitTransaction() throws Exception
+    void shouldThrowOnBeginInExplicitTransaction() throws Exception
     {
         try
         {
@@ -143,7 +143,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldThrowOnRollbackInAutoCommit() throws Exception
+    void shouldThrowOnRollbackInAutoCommit() throws Exception
     {
         try
         {
@@ -166,7 +166,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldThrowOnCommitInAutoCommit() throws Exception
+    void shouldThrowOnCommitInAutoCommit() throws Exception
     {
         try
         {
@@ -189,21 +189,21 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldNotWaitWhenNoBookmarkSupplied() throws Exception
+    void shouldNotWaitWhenNoBookmarkSupplied() throws Exception
     {
         stateMachine.run( "BEGIN", EMPTY_MAP );
         verify( stateMachineSPI, never() ).awaitUpToDate( anyLong() );
     }
 
     @Test
-    public void shouldAwaitSingleBookmark() throws Exception
+    void shouldAwaitSingleBookmark() throws Exception
     {
         stateMachine.run( "BEGIN", map( "bookmark", "neo4j:bookmark:v1:tx15" ) );
         verify( stateMachineSPI ).awaitUpToDate( 15 );
     }
 
     @Test
-    public void shouldAwaitMultipleBookmarks() throws Exception
+    void shouldAwaitMultipleBookmarks() throws Exception
     {
         MapValue params = map( "bookmarks", asList(
                 "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx9" )
@@ -213,7 +213,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldAwaitMultipleBookmarksWhenBothSingleAndMultipleSupplied() throws Exception
+    void shouldAwaitMultipleBookmarksWhenBothSingleAndMultipleSupplied() throws Exception
     {
         MapValue params = map(
                 "bookmark", "neo4j:bookmark:v1:tx42",
@@ -224,7 +224,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldStartWithAutoCommitState()
+    void shouldStartWithAutoCommitState()
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
@@ -236,7 +236,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception
+    void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -258,7 +258,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
+    void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -288,7 +288,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
+    void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -313,7 +313,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
+    void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -340,7 +340,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldUnbindTxAfterRun() throws Exception
+    void shouldUnbindTxAfterRun() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -352,7 +352,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldUnbindTxAfterStreamResult() throws Exception
+    void shouldUnbindTxAfterStreamResult() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -368,7 +368,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldThrowDuringRunIfPendingTerminationNoticeExists() throws Exception
+    void shouldThrowDuringRunIfPendingTerminationNoticeExists() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -392,7 +392,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldThrowDuringStreamResultIfPendingTerminationNoticeExists() throws Exception
+    void shouldThrowDuringStreamResultIfPendingTerminationNoticeExists() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -448,7 +448,7 @@ public class TransactionStateMachineTest
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
-    private static TransactionStateMachineSPI newFailingTransactionStateMachineSPI( Status failureStatus ) throws KernelException
+    static TransactionStateMachineSPI newFailingTransactionStateMachineSPI( Status failureStatus ) throws KernelException
     {
         TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );

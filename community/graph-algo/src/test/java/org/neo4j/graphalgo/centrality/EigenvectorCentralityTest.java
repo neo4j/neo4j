@@ -36,10 +36,10 @@ import org.neo4j.graphdb.Relationship;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
+abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void shouldHandleTargetNodeBeingOrphan()
+    void shouldHandleTargetNodeBeingOrphan()
     {
         graph.makeNode( "o" );
         EigenvectorCentrality eigenvectorCentrality = getEigenvectorCentrality( Direction.BOTH,
@@ -48,7 +48,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleFirstNodeBeingOrphan()
+    void shouldHandleFirstNodeBeingOrphan()
     {
         /*
          * Layout
@@ -89,7 +89,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleFirstNodeBeingOrphanInRelationshipSet()
+    void shouldHandleFirstNodeBeingOrphanInRelationshipSet()
     {
          /*
          * Layout
@@ -134,7 +134,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void simpleTest()
+    void simpleTest()
     {
         /*
          * Layout
@@ -159,7 +159,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
      * Same as above, but inverted direction.
      */
     @Test
-    public void testDirection()
+    void testDirection()
     {
         graph.makeEdgeChain( "d,c,b,a" );
         graph.makeEdges( "a,b,a,c" );
@@ -173,7 +173,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleIsolatedCommunities()
+    void shouldHandleIsolatedCommunities()
     {
         /*
          * Layout
@@ -218,7 +218,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
      * Some weighted relationships.
      */
     @Test
-    public void testWeight()
+    void testWeight()
     {
         /*
          * Layout
@@ -249,7 +249,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
      * directions are given by a map.
      */
     @Test
-    public void testWeightAndDirection()
+    void testWeightAndDirection()
     {
         graph.makeEdgeChain( "a,b" );
         graph.makeEdgeChain( "b,c" );
@@ -298,9 +298,8 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
      * @param precision
      *            Precision factor (ex. 0.01)
      */
-    protected void assertApproximateCentrality(
-            EigenvectorCentrality eigenvectorCentrality, String nodeId,
-            Double value, Double  precision )
+    private void assertApproximateCentrality( EigenvectorCentrality eigenvectorCentrality, String nodeId, Double value,
+            Double precision )
     {
         Double centrality = eigenvectorCentrality.getCentrality( graph.getNode( nodeId ) );
         assertEquals( value, centrality, precision );

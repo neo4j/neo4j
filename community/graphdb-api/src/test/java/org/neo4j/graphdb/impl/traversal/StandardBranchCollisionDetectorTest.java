@@ -48,7 +48,7 @@ public class StandardBranchCollisionDetectorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void testFilteredPathEvaluation()
+    void testFilteredPathEvaluation()
     {
         final PropertyContainer endNode = mock( Node.class );
         final PropertyContainer alternativeEndNode = mock( Node.class );

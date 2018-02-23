@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 @Disabled
-public class NettyPipelineBuilderTest
+class NettyPipelineBuilderTest
 {
     private AssertableLogProvider logProvider = new AssertableLogProvider();
     private Log log = logProvider.getLog( getClass() );
@@ -54,7 +54,7 @@ public class NettyPipelineBuilderTest
     };
 
     @Test
-    public void shouldLogExceptionInbound()
+    void shouldLogExceptionInbound()
     {
         // given
         RuntimeException ex = new RuntimeException();
@@ -75,7 +75,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogUnhandledMessageInbound()
+    void shouldLogUnhandledMessageInbound()
     {
         // given
         Object msg = new Object();
@@ -89,7 +89,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogUnhandledMessageOutbound()
+    void shouldLogUnhandledMessageOutbound()
     {
         // given
         Object msg = new Object();
@@ -103,7 +103,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogExceptionOutbound()
+    void shouldLogExceptionOutbound()
     {
         RuntimeException ex = new RuntimeException();
         NettyPipelineBuilder.server( channel.pipeline(), log ).add( "write_handler", new ChannelOutboundHandlerAdapter()
@@ -123,7 +123,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogExceptionOutboundWithVoidPromise()
+    void shouldLogExceptionOutboundWithVoidPromise()
     {
         RuntimeException ex = new RuntimeException();
         NettyPipelineBuilder.server( channel.pipeline(), log ).add( "write_handler", new ChannelOutboundHandlerAdapter()
@@ -143,7 +143,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldNotLogAnythingForHandledInbound()
+    void shouldNotLogAnythingForHandledInbound()
     {
         // given
         Object msg = new Object();
@@ -165,7 +165,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldNotLogAnythingForHandledOutbound()
+    void shouldNotLogAnythingForHandledOutbound()
     {
         // given
         Object msg = new Object();
@@ -187,7 +187,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldReInstallWithPreviousGate()
+    void shouldReInstallWithPreviousGate()
     {
         // given
         Object gatedMessage = new Object();

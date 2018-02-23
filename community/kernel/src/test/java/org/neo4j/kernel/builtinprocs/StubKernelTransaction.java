@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class StubKernelTransaction implements KernelTransaction
+class StubKernelTransaction implements KernelTransaction
 {
     private final ReadOperations readOperations;
 

@@ -27,8 +27,8 @@ import java.nio.channels.WritableByteChannel;
 public class StubPagedFile implements PagedFile
 {
     private final int pageSize;
-    public final int exposedPageSize;
-    public long lastPageId = 1;
+    private final int exposedPageSize;
+    private long lastPageId = 1;
 
     public StubPagedFile( int pageSize )
     {

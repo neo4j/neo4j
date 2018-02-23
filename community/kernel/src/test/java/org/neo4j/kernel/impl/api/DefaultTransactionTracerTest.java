@@ -39,14 +39,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class DefaultTransactionTracerTest
+class DefaultTransactionTracerTest
 {
     private final FakeClock clock = Clocks.fakeClock();
     private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
     private final Monitor monitor = mock( Monitor.class );
 
     @Test
-    public void shouldComputeStartEndAndTotalTimeForLogRotation()
+    void shouldComputeStartEndAndTotalTimeForLogRotation()
     {
         DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
 
@@ -65,7 +65,7 @@ public class DefaultTransactionTracerTest
     }
 
     @Test
-    public void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation()
+    void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation()
     {
         DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
 

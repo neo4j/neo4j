@@ -36,10 +36,10 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -52,7 +52,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class AwaitIndexProcedureTest
+class AwaitIndexProcedureTest
 {
     private static final int TIMEOUT = 10;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
@@ -63,7 +63,7 @@ public class AwaitIndexProcedureTest
     private final IndexDescriptor anyIndex = IndexDescriptorFactory.forSchema( anyDescriptor );
 
     @Test
-    public void shouldThrowAnExceptionIfTheLabelDoesntExist()
+    void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
         when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
 
@@ -79,7 +79,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
+    void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
         when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
 
@@ -95,7 +95,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
+    void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
@@ -109,7 +109,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheIndexHasFailed()
+    void shouldThrowAnExceptionIfTheIndexHasFailed()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
 
     {
@@ -130,7 +130,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheIndexDoesNotExist()
+    void shouldThrowAnExceptionIfTheIndexDoesNotExist()
             throws SchemaRuleNotFoundException
 
     {
@@ -151,7 +151,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldBlockUntilTheIndexIsOnline() throws SchemaRuleNotFoundException, IndexNotFoundKernelException,
+    void shouldBlockUntilTheIndexIsOnline() throws SchemaRuleNotFoundException, IndexNotFoundKernelException,
             InterruptedException
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
@@ -183,7 +183,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldTimeoutIfTheIndexTakesTooLongToComeOnline()
+    void shouldTimeoutIfTheIndexTakesTooLongToComeOnline()
             throws InterruptedException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );

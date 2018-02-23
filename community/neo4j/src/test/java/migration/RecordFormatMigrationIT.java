@@ -50,20 +50,20 @@ import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class RecordFormatMigrationIT
+class RecordFormatMigrationIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private File storeDir;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         storeDir = testDirectory.graphDbDir();
     }
 
     @Test
-    public void failToDowngradeFormatWhenUpgradeNotAllowed()
+    void failToDowngradeFormatWhenUpgradeNotAllowed()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
@@ -84,7 +84,7 @@ public class RecordFormatMigrationIT
     }
 
     @Test
-    public void failToDowngradeFormatWheUpgradeAllowed()
+    void failToDowngradeFormatWheUpgradeAllowed()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
@@ -108,7 +108,7 @@ public class RecordFormatMigrationIT
     }
 
     @Test
-    public void skipMigrationIfFormatSpecifiedInConfig()
+    void skipMigrationIfFormatSpecifiedInConfig()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )
@@ -126,7 +126,7 @@ public class RecordFormatMigrationIT
     }
 
     @Test
-    public void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
+    void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )
@@ -145,7 +145,7 @@ public class RecordFormatMigrationIT
     }
 
     @Test
-    public void latestRecordNotMigratedWhenFormatBumped()
+    void latestRecordNotMigratedWhenFormatBumped()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )

@@ -27,10 +27,10 @@ import org.neo4j.logging.Log;
 
 import static org.hamcrest.Matchers.containsString;
 
-public class VisibleMigrationProgressMonitorTest
+class VisibleMigrationProgressMonitorTest
 {
     @Test
-    public void shouldReportAllPercentageSteps()
+    void shouldReportAllPercentageSteps()
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -47,7 +47,7 @@ public class VisibleMigrationProgressMonitorTest
     }
 
     @Test
-    public void progressNeverReportMoreThenHundredPercent()
+    void progressNeverReportMoreThenHundredPercent()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log log = logProvider.getLog( getClass() );

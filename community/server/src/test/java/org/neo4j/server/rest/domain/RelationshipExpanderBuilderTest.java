@@ -40,13 +40,13 @@ import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @ExtendWith( {ImpermanentDatabaseExtension.class} )
-public class RelationshipExpanderBuilderTest
+class RelationshipExpanderBuilderTest
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     @Test
-    public void shouldInterpretNoSpecifiedRelationshipsAsAll()
+    void shouldInterpretNoSpecifiedRelationshipsAsAll()
     {
         // GIVEN
         Node node = createSomeData();
@@ -69,7 +69,7 @@ public class RelationshipExpanderBuilderTest
     }
 
     @Test
-    public void shouldInterpretSomeSpecifiedRelationships()
+    void shouldInterpretSomeSpecifiedRelationships()
     {
         // GIVEN
         Node node = createSomeData();

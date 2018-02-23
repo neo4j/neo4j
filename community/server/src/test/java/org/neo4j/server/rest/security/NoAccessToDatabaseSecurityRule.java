@@ -21,7 +21,7 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
-public class NoAccessToDatabaseSecurityRule implements SecurityRule
+class NoAccessToDatabaseSecurityRule implements SecurityRule
 {
     private static boolean wasInvoked;
 

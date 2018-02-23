@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class LogPruningTest
+class LogPruningTest
 {
     private final Config config = Config.defaults();
     private FileSystemAbstraction fs;
@@ -54,7 +54,7 @@ public class LogPruningTest
     private LogPruneStrategyFactory factory;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fs = mock( FileSystemAbstraction.class );
         logFiles = mock( LogFiles.class );
@@ -66,7 +66,7 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustDeleteLogFilesThatCanBePruned()
+    void mustDeleteLogFilesThatCanBePruned()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
                 .thenReturn( upTo -> LongStream.range( 3, upTo ) );
@@ -80,7 +80,7 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustHaveLogFilesToPruneIfStrategyFindsFiles()
+    void mustHaveLogFilesToPruneIfStrategyFindsFiles()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
                 .thenReturn(  upTo -> LongStream.range( 3, upTo ) );
@@ -90,7 +90,7 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles()
+    void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
                 .thenReturn(  x -> LongStream.empty() );

@@ -46,12 +46,12 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -80,13 +80,13 @@ public class RecordFormatSelectorTest
     private final File storeDir = new File( "graph.db" );
 
     @Test
-    public void defaultFormatTest()
+    void defaultFormatTest()
     {
         assertSame( Standard.LATEST_RECORD_FORMATS, defaultFormat() );
     }
 
     @Test
-    public void selectForVersionTest()
+    void selectForVersionTest()
     {
         assertSame( StandardV2_3.RECORD_FORMATS, selectForVersion( StandardV2_3.STORE_VERSION ) );
         assertSame( StandardV3_0.RECORD_FORMATS, selectForVersion( StandardV3_0.STORE_VERSION ) );
@@ -98,7 +98,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForWrongVersionTest()
+    void selectForWrongVersionTest()
     {
         try
         {
@@ -112,20 +112,20 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForConfigWithRecordFormatParameter()
+    void selectForConfigWithRecordFormatParameter()
     {
         assertSame( Standard.LATEST_RECORD_FORMATS, selectForConfig( config( Standard.LATEST_NAME ), LOG ) );
         assertSame( HighLimit.RECORD_FORMATS, selectForConfig( config( HighLimit.NAME ), LOG ) );
     }
 
     @Test
-    public void selectForConfigWithoutRecordFormatParameter()
+    void selectForConfigWithoutRecordFormatParameter()
     {
         assertSame( defaultFormat(), selectForConfig( Config.defaults(), LOG ) );
     }
 
     @Test
-    public void selectForConfigWithWrongRecordFormatParameter()
+    void selectForConfigWithWrongRecordFormatParameter()
     {
         try
         {
@@ -139,7 +139,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreWithValidStore() throws IOException
+    void selectForStoreWithValidStore() throws IOException
     {
         PageCache pageCache = getPageCache();
         verifySelectForStore( pageCache, StandardV2_3.RECORD_FORMATS );
@@ -149,13 +149,13 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreWithNoStore()
+    void selectForStoreWithNoStore()
     {
         assertNull( selectForStore( storeDir, getPageCache(), LOG ) );
     }
 
     @Test
-    public void selectForStoreWithThrowingPageCache() throws IOException
+    void selectForStoreWithThrowingPageCache() throws IOException
     {
         createNeoStoreFile();
         PageCache pageCache = mock( PageCache.class );
@@ -166,7 +166,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreWithInvalidStoreVersion() throws IOException
+    void selectForStoreWithInvalidStoreVersion() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( "v9.Z.9", pageCache );
@@ -174,7 +174,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithSameStandardConfiguredAndStoredFormat() throws IOException
+    void selectForStoreOrConfigWithSameStandardConfiguredAndStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
@@ -185,7 +185,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithSameHighLimitConfiguredAndStoredFormat() throws IOException
+    void selectForStoreOrConfigWithSameHighLimitConfiguredAndStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( HighLimit.STORE_VERSION, pageCache );
@@ -196,7 +196,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithDifferentlyConfiguredAndStoredFormat() throws IOException
+    void selectForStoreOrConfigWithDifferentlyConfiguredAndStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
@@ -215,7 +215,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithOnlyStandardStoredFormat() throws IOException
+    void selectForStoreOrConfigWithOnlyStandardStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
@@ -226,7 +226,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithOnlyHighLimitStoredFormat() throws IOException
+    void selectForStoreOrConfigWithOnlyHighLimitStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( HighLimit.STORE_VERSION, pageCache );
@@ -237,7 +237,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithOnlyStandardConfiguredFormat()
+    void selectForStoreOrConfigWithOnlyStandardConfiguredFormat()
     {
         PageCache pageCache = getPageCache();
 
@@ -247,7 +247,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithOnlyHighLimitConfiguredFormat()
+    void selectForStoreOrConfigWithOnlyHighLimitConfiguredFormat()
     {
         PageCache pageCache = getPageCache();
 
@@ -257,7 +257,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithWrongConfiguredFormat()
+    void selectForStoreOrConfigWithWrongConfiguredFormat()
     {
         PageCache pageCache = getPageCache();
 
@@ -274,27 +274,27 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithoutConfiguredAndStoredFormats()
+    void selectForStoreOrConfigWithoutConfiguredAndStoredFormats()
     {
         assertSame( defaultFormat(), selectForStoreOrConfig( Config.defaults(), storeDir, getPageCache(), LOG ) );
     }
 
     @Test
-    public void selectNewestFormatWithConfiguredStandardFormat()
+    void selectNewestFormatWithConfiguredStandardFormat()
     {
         assertSame( Standard.LATEST_RECORD_FORMATS,
                 selectNewestFormat( config( Standard.LATEST_NAME ), storeDir, getPageCache(), LOG ) );
     }
 
     @Test
-    public void selectNewestFormatWithConfiguredHighLimitFormat()
+    void selectNewestFormatWithConfiguredHighLimitFormat()
     {
         assertSame( HighLimit.RECORD_FORMATS,
                 selectNewestFormat( config( HighLimit.NAME ), storeDir, getPageCache(), LOG ) );
     }
 
     @Test
-    public void selectNewestFormatWithWrongConfiguredFormat()
+    void selectNewestFormatWithWrongConfiguredFormat()
     {
         try
         {
@@ -307,13 +307,13 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectNewestFormatWithoutConfigAndStore()
+    void selectNewestFormatWithoutConfigAndStore()
     {
         assertSame( defaultFormat(), selectNewestFormat( Config.defaults(), storeDir, getPageCache(), LOG ) );
     }
 
     @Test
-    public void selectNewestFormatForExistingStandardStore() throws IOException
+    void selectNewestFormatForExistingStandardStore() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
@@ -324,7 +324,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectNewestFormatForExistingHighLimitStore() throws IOException
+    void selectNewestFormatForExistingHighLimitStore() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( HighLimit.STORE_VERSION, pageCache );
@@ -335,7 +335,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectNewestFormatForExistingStoreWithLegacyFormat() throws IOException
+    void selectNewestFormatForExistingStoreWithLegacyFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( StandardV2_3.STORE_VERSION, pageCache );
@@ -346,13 +346,13 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void findSuccessorLatestVersion()
+    void findSuccessorLatestVersion()
     {
         assertFalse( findSuccessor( defaultFormat() ).isPresent() );
     }
 
     @Test
-    public void findSuccessorToOlderVersion()
+    void findSuccessorToOlderVersion()
     {
         assertEquals( StandardV3_0.RECORD_FORMATS, findSuccessor( StandardV2_3.RECORD_FORMATS ).get() );
         assertEquals( StandardV3_2.RECORD_FORMATS, findSuccessor( StandardV3_0.RECORD_FORMATS ).get() );

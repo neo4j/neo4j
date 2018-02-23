@@ -46,10 +46,10 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
-public class ForkedProcessorStepTest
+class ForkedProcessorStepTest
 {
     @Test
-    public void shouldProcessAllSingleThreaded() throws Exception
+    void shouldProcessAllSingleThreaded() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -79,7 +79,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void shouldProcessAllBatchesOnSingleCoreSystems()
+    void shouldProcessAllBatchesOnSingleCoreSystems()
     {
         assertTimeout( ofMillis( 10_000 ), () -> {
             //  GIVEN
@@ -111,7 +111,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void mustNotDetachProcessorsFromBatchChains() throws Exception
+    void mustNotDetachProcessorsFromBatchChains() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -142,7 +142,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void shouldProcessAllMultiThreadedAndWithChangingProcessorCount() throws Exception
+    void shouldProcessAllMultiThreadedAndWithChangingProcessorCount() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -197,7 +197,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void shouldKeepForkedOrderIntactWhenChangingProcessorCount() throws Exception
+    void shouldKeepForkedOrderIntactWhenChangingProcessorCount() throws Exception
     {
         int length = 100;
         AtomicIntegerArray reference = new AtomicIntegerArray( length );
@@ -258,7 +258,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void shouldPanicOnFailure() throws Exception
+    void shouldPanicOnFailure() throws Exception
     {
         // GIVEN
         SimpleStageControl control = new SimpleStageControl();
@@ -294,13 +294,13 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered()
+    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered()
     {
         assertTimeout( ofMillis( 60_000 ), () -> shouldBeAbleToProgressUnderStressfulProcessorChanges( ORDER_SEND_DOWNSTREAM ) );
     }
 
     @Test
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered()
+    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered()
     {
         assertTimeout( ofMillis( 60_000 ), () -> shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 ) );
     }
@@ -379,7 +379,7 @@ public class ForkedProcessorStepTest
 
     private static class BatchProcessor extends ForkedProcessorStep<Batch>
     {
-        protected BatchProcessor( StageControl control, int processors )
+        BatchProcessor( StageControl control, int processors )
         {
             super( control, "PROCESSOR", config( processors ) );
         }

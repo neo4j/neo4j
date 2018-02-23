@@ -29,8 +29,8 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -38,10 +38,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class TransactionHookIT extends KernelIntegrationTest
+class TransactionHookIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldRecieveTxStateOnCommit() throws Exception
+    void shouldRecieveTxStateOnCommit() throws Exception
     {
         // Given
         TransactionHook hook = mock( TransactionHook.class );
@@ -60,7 +60,7 @@ public class TransactionHookIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRollbackOnFailureInBeforeCommit() throws Exception
+    void shouldRollbackOnFailureInBeforeCommit() throws Exception
     {
         // Given
         TransactionHook hook = mock( TransactionHook.class );

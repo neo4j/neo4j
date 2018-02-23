@@ -31,10 +31,10 @@ import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.given;
 
-public class EagerlyReversedTransactionCursorTest
+class EagerlyReversedTransactionCursorTest
 {
     @Test
-    public void shouldReverseTransactionsFromSource() throws Exception
+    void shouldReverseTransactionsFromSource() throws Exception
     {
         // GIVEN
         CommittedTransactionRepresentation tx1 = mock( CommittedTransactionRepresentation.class );
@@ -51,7 +51,7 @@ public class EagerlyReversedTransactionCursorTest
     }
 
     @Test
-    public void shouldHandleEmptySource() throws Exception
+    void shouldHandleEmptySource() throws Exception
     {
         // GIVEN
         TransactionCursor source = given();

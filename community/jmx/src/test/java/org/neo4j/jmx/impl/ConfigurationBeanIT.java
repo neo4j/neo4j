@@ -33,18 +33,18 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ConfigurationBeanIT
+class ConfigurationBeanIT
 {
     private static GraphDatabaseService graphdb;
 
     @BeforeAll
-    public static void startDb()
+    static void startDb()
     {
         graphdb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
     @AfterAll
-    public static void stopDb()
+    static void stopDb()
     {
         if ( graphdb != null )
         {
@@ -54,7 +54,7 @@ public class ConfigurationBeanIT
     }
 
     @Test
-    public void durationListedWithUnit()
+    void durationListedWithUnit()
     {
         ConfigurationBean configurationBean =
                 ( (GraphDatabaseAPI) graphdb ).getDependencyResolver().resolveDependency(

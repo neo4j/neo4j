@@ -46,19 +46,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( {EmbeddedDatabaseExtension.class, RandomExtension.class} )
-public class NativeLabelScanStoreStartupIT
+class NativeLabelScanStoreStartupIT
 {
     private static final Label LABEL = Label.label( "testLabel" );
 
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     private int labelId;
 
     @Test
-    public void scanStoreStartWithoutExistentIndex() throws IOException
+    void scanStoreStartWithoutExistentIndex() throws IOException
     {
         LabelScanStore labelScanStore = getLabelScanStore();
         labelScanStore.shutdown();
@@ -72,7 +72,7 @@ public class NativeLabelScanStoreStartupIT
     }
 
     @Test
-    public void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
+    void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
     {
         LabelScanStore labelScanStore = getLabelScanStore();
 

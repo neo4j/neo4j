@@ -36,7 +36,7 @@ public class DiagnosticsLoggingTest
     public CleanupRule cleanupRule = new CleanupRule();
 
     @Test
-    public void shouldSeeExpectedDiagnostics()
+    void shouldSeeExpectedDiagnostics()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         GraphDatabaseService db =

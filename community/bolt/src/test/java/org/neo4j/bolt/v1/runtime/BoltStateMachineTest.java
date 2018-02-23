@@ -65,11 +65,11 @@ import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransaction;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransactionSPI;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class BoltStateMachineTest
+class BoltStateMachineTest
 {
 
     @Test
-    public void allStateTransitionsShouldSendExactlyOneResponseToTheClient() throws Exception
+    void allStateTransitionsShouldSendExactlyOneResponseToTheClient() throws Exception
     {
         for ( BoltStateMachine.State initialState : BoltStateMachine.State.values() )
         {
@@ -85,13 +85,13 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void initialStateShouldBeConnected()
+    void initialStateShouldBeConnected()
     {
         assertThat( newMachine(), inState( CONNECTED ) );
     }
 
     @Test
-    public void shouldRollbackOpenTransactionOnReset() throws Throwable
+    void shouldRollbackOpenTransactionOnReset() throws Throwable
     {
         // Given a FAILED machine with an open transaction
         final BoltStateMachine machine = newMachineWithTransaction( READY );
@@ -108,7 +108,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldRollbackOpenTransactionOnClose() throws Throwable
+    void shouldRollbackOpenTransactionOnClose() throws Throwable
     {
         // Given a ready machine with an open transaction
         final BoltStateMachine machine = newMachineWithTransaction( READY );
@@ -121,25 +121,25 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldPublishClientName() throws Throwable
+    void shouldPublishClientName() throws Throwable
     {
         verify( newMachine( READY ).spi ).udcRegisterClient( USER_AGENT );
     }
 
     @Test
-    public void shouldBeAbleToResetWhenInReadyState() throws Throwable
+    void shouldBeAbleToResetWhenInReadyState() throws Throwable
     {
         assertThat( newMachine( READY ), canReset() );
     }
 
     @Test
-    public void shouldResetWithOpenTransaction() throws Throwable
+    void shouldResetWithOpenTransaction() throws Throwable
     {
         assertThat( newMachineWithTransaction( READY ), canReset() );
     }
 
     @Test
-    public void shouldResetWithOpenTransactionAndOpenResult() throws Throwable
+    void shouldResetWithOpenTransactionAndOpenResult() throws Throwable
     {
         // Given a ready machine with an open transaction...
         final BoltStateMachine machine = newMachineWithTransaction( READY );
@@ -152,7 +152,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldResetWithOpenResult() throws Throwable
+    void shouldResetWithOpenResult() throws Throwable
     {
         // Given a ready machine...
         final BoltStateMachine machine = newMachine( READY );
@@ -165,7 +165,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldResetWhenFailed() throws Throwable
+    void shouldResetWhenFailed() throws Throwable
     {
         // Given a ready machine with an open transaction
         final BoltStateMachine machine = newMachineWithTransaction( READY );
@@ -178,7 +178,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldFailWhenOutOfOrderRollback() throws Throwable
+    void shouldFailWhenOutOfOrderRollback() throws Throwable
     {
         // Given a failed machine
         final BoltStateMachine machine = newMachine( FAILED );
@@ -191,7 +191,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldGoBackToReadyAfterAckFailure() throws Throwable
+    void shouldGoBackToReadyAfterAckFailure() throws Throwable
     {
         // Given a failed machine
         final BoltStateMachine machine = newMachine( FAILED );
@@ -204,7 +204,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldNotRollbackOpenTransactionOnAckFailure() throws Throwable
+    void shouldNotRollbackOpenTransactionOnAckFailure() throws Throwable
     {
         // Given a ready machine with an open transaction
         final BoltStateMachine machine = newMachineWithTransaction( READY );
@@ -220,7 +220,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldRemainStoppedAfterInterrupted() throws Throwable
+    void shouldRemainStoppedAfterInterrupted() throws Throwable
     {
         // Given a ready machine
         final BoltStateMachine machine = newMachine( READY );
@@ -238,7 +238,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldBeAbleToKillMessagesAheadInLineWithAnInterrupt() throws Throwable
+    void shouldBeAbleToKillMessagesAheadInLineWithAnInterrupt() throws Throwable
     {
         // Given
         final BoltStateMachine machine = newMachine( READY );
@@ -259,7 +259,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void multipleInterruptsShouldBeMatchedWithMultipleResets() throws Throwable
+    void multipleInterruptsShouldBeMatchedWithMultipleResets() throws Throwable
     {
         // Given
         final BoltStateMachine machine = newMachine( READY );
@@ -290,7 +290,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void testPublishingError() throws Throwable
+    void testPublishingError() throws Throwable
     {
         // Given a new ready machine...
         BoltStateMachine machine = newMachine( READY );
@@ -319,7 +319,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void testRollbackError() throws Throwable
+    void testRollbackError() throws Throwable
     {
         // Given
         BoltStateMachine machine = newMachine( READY );
@@ -343,7 +343,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void testFailOnNestedTransactions() throws Throwable
+    void testFailOnNestedTransactions() throws Throwable
     {
         // Given
         BoltStateMachine machine = newMachine( READY );
@@ -361,7 +361,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void testCantDoAnythingIfInFailedState() throws Throwable
+    void testCantDoAnythingIfInFailedState() throws Throwable
     {
         // Given a FAILED machine
         BoltStateMachine machine = newMachine( FAILED );
@@ -378,7 +378,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void testUsingResetToAcknowledgeError() throws Throwable
+    void testUsingResetToAcknowledgeError() throws Throwable
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -400,7 +400,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void actionsDisallowedBeforeInitialized()
+    void actionsDisallowedBeforeInitialized()
     {
         // Given
         BoltStateMachine machine = newMachine();
@@ -421,7 +421,7 @@ public class BoltStateMachineTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldTerminateOnAuthExpiryDuringREADYRun() throws Throwable
+    void shouldTerminateOnAuthExpiryDuringREADYRun() throws Throwable
     {
         // Given
         TransactionStateMachine.SPI transactionSPI = mock( TransactionStateMachine.SPI.class );
@@ -437,7 +437,7 @@ public class BoltStateMachineTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldTerminateOnAuthExpiryDuringSTREAMINGPullAll() throws Throwable
+    void shouldTerminateOnAuthExpiryDuringSTREAMINGPullAll() throws Throwable
     {
         // Given
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
@@ -470,7 +470,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void callResetEvenThoughAlreadyClosed() throws Throwable
+    void callResetEvenThoughAlreadyClosed() throws Throwable
     {
         // Given
         BoltStateMachine machine = newMachine( READY );
@@ -491,7 +491,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldCallOnTerminateWhenClosing()
+    void shouldCallOnTerminateWhenClosing()
     {
         // Given
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
@@ -506,7 +506,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldCloseBoltChannelWhenClosed()
+    void shouldCloseBoltChannelWhenClosed()
     {
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class );
         BoltChannel boltChannel = mock( BoltChannel.class );

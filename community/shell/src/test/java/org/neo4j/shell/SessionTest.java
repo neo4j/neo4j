@@ -25,62 +25,62 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class SessionTest
+class SessionTest
 {
     private Session session;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         session = new Session( 1 );
     }
 
     @Test
-    public void cannotSetInvalidVariableName()
+    void cannotSetInvalidVariableName()
     {
         assertThrows( ShellException.class, () -> session.set( "foo bar", 42 ) );
     }
 
     @Test
-    public void canSetVariableName() throws ShellException
+    void canSetVariableName() throws ShellException
     {
         session.set( "_foobar", 42 );
     }
 
     @Test
-    public void cannotGetInvalidVariableName()
+    void cannotGetInvalidVariableName()
     {
         assertThrows( ShellException.class, () -> session.get( "foo bar" ) );
     }
 
     @Test
-    public void canGetVariableName() throws ShellException
+    void canGetVariableName() throws ShellException
     {
         session.set( "_foobar", 42 );
         assertEquals( 42, session.get( "_foobar" ) );
     }
 
     @Test
-    public void cannotRemoveInvalidVariableName()
+    void cannotRemoveInvalidVariableName()
     {
         assertThrows( ShellException.class, () -> session.remove( "foo bar" ) );
     }
 
     @Test
-    public void canRemoveVariableName() throws ShellException
+    void canRemoveVariableName() throws ShellException
     {
         session.set( "_foobar", 42 );
         assertEquals( 42, session.remove( "_foobar" ) );
     }
 
     @Test
-    public void canCheckInvalidVariableName()
+    void canCheckInvalidVariableName()
     {
         assertEquals( false, session.has( "foo bar" ) );
     }
 
     @Test
-    public void canCheckVariableName() throws ShellException
+    void canCheckVariableName() throws ShellException
     {
         assertEquals( false, session.has( "_foobar" ) );
         session.set( "_foobar", 42 );

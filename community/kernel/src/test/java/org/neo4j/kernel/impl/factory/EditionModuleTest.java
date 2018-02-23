@@ -35,7 +35,7 @@ public class EditionModuleTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
+    void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
     {
         // Expect
         exception.expect( IllegalArgumentException.class );

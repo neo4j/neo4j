@@ -280,7 +280,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         assertPath( best1_4, node1, node2, node3, node4 );
     }
 
-    static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->
+    private static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->
     {
         double dx = (Double) node.getProperty( "x" )
                 - (Double) goal.getProperty( "x" );

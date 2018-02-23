@@ -34,7 +34,7 @@ import static org.neo4j.backup.impl.BackupSupportingClassesFactoryProvider.getPr
 public class OnlineBackupCommandProviderTest
 {
     @Test
-    public void communityBackupSupportingFactory()
+    void communityBackupSupportingFactory()
     {
         BackupModule backupModule = mock( BackupModule.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );

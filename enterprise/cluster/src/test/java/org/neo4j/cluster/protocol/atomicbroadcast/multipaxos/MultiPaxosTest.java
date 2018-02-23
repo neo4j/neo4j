@@ -39,10 +39,10 @@ import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class MultiPaxosTest
+class MultiPaxosTest
 {
     @Test
-    public void testFailure() throws Exception
+    void testFailure() throws Exception
     {
         ScriptableNetworkFailureLatencyStrategy networkLatency = new ScriptableNetworkFailureLatencyStrategy();
         NetworkMock network = new NetworkMock( NullLogService.getInstance(), new Monitors(), 50,

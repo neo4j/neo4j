@@ -26,19 +26,19 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author mh
  * @since 19.04.12
  */
-public class FirstItemIterableTest
+class FirstItemIterableTest
 {
     @Test
-    public void testEmptyIterator()
+    void testEmptyIterator()
     {
         FirstItemIterable<?> firstItemIterable = new FirstItemIterable<>( Collections.emptyList() );
         Iterator<?> empty = firstItemIterable.iterator();
@@ -56,7 +56,7 @@ public class FirstItemIterableTest
     }
 
     @Test
-    public void testSingleIterator()
+    void testSingleIterator()
     {
         FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>( Collections.singleton( Boolean.TRUE ) );
         Iterator<Boolean> empty = firstItemIterable.iterator();
@@ -77,7 +77,7 @@ public class FirstItemIterableTest
     }
 
     @Test
-    public void testMultiIterator()
+    void testMultiIterator()
     {
         FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>( asList( Boolean.TRUE, Boolean.FALSE ) );
         Iterator<Boolean> empty = firstItemIterable.iterator();

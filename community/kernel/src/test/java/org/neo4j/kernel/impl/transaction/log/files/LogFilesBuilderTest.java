@@ -58,7 +58,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFil
 public class LogFilesBuilderTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
@@ -68,14 +68,14 @@ public class LogFilesBuilderTest
     private DefaultFileSystemAbstraction fileSystem;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         storeDirectory = testDirectory.directory();
         fileSystem = fileSystemRule.get();
     }
 
     @Test
-    public void buildActiveFilesOnlyContext() throws IOException
+    void buildActiveFilesOnlyContext() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         TransactionLogFilesContext context = activeFilesBuilder( storeDirectory, fileSystem, pageCache ).buildContext();
@@ -89,7 +89,7 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void buildFilesBasedContext() throws IOException
+    void buildFilesBasedContext() throws IOException
     {
         TransactionLogFilesContext context = logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
@@ -97,7 +97,7 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void buildDefaultContext() throws IOException
+    void buildDefaultContext() throws IOException
     {
         TransactionLogFilesContext context =
                 builder( storeDirectory, fileSystem ).withLogVersionRepository( new SimpleLogVersionRepository( 2 ) )
@@ -111,7 +111,7 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void buildDefaultContextWithDependencies() throws IOException
+    void buildDefaultContextWithDependencies() throws IOException
     {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 2 );
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -131,7 +131,7 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void buildContextWithCustomLogFilesLocations() throws Throwable
+    void buildContextWithCustomLogFilesLocations() throws Throwable
     {
         String customLogLocation = "customLogLocation";
         Config customLogLocationConfig = defaults( logical_logs_location, customLogLocation );
@@ -145,7 +145,7 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void buildContextWithCustomAbsoluteLogFilesLocations() throws Throwable
+    void buildContextWithCustomAbsoluteLogFilesLocations() throws Throwable
     {
         File customLogDirectory = testDirectory.directory( "absoluteCustomLogDirectory" );
         Config customLogLocationConfig = defaults( logical_logs_location, customLogDirectory.getAbsolutePath() );
@@ -159,7 +159,7 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void failToBuildFullContextWithoutLogVersionRepo()
+    void failToBuildFullContextWithoutLogVersionRepo()
     {
         assertThrows( NullPointerException.class,
                 () -> builder( storeDirectory, fileSystem ).withTransactionIdStore( new SimpleTransactionIdStore() )
@@ -167,14 +167,14 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void failToBuildFullContextWithoutTransactionIdStore()
+    void failToBuildFullContextWithoutTransactionIdStore()
     {
         assertThrows( NullPointerException.class, () -> builder( storeDirectory, fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository( 2 ) ).buildContext() );
     }
 
     @Test
-    public void fileBasedOperationsContextFailOnLastCommittedTransactionIdAccess()
+    void fileBasedOperationsContextFailOnLastCommittedTransactionIdAccess()
     {
         assertThrows( UnsupportedOperationException.class,
                 () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext()
@@ -182,7 +182,7 @@ public class LogFilesBuilderTest
     }
 
     @Test
-    public void fileBasedOperationsContextFailOnLogVersionRepositoryAccess()
+    void fileBasedOperationsContextFailOnLogVersionRepositoryAccess()
     {
         assertThrows( UnsupportedOperationException.class,
                 () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext().getLogVersionRepository() );

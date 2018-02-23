@@ -28,10 +28,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MonitoredRaftLogTest
+class MonitoredRaftLogTest
 {
     @Test
-    public void shouldMonitorAppendIndexAndCommitIndex() throws Exception
+    void shouldMonitorAppendIndexAndCommitIndex() throws Exception
     {
         // Given
         Monitors monitors = new Monitors();

@@ -21,9 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
-public class DeadEndStep extends ProcessorStep<Object>
+class DeadEndStep extends ProcessorStep<Object>
 {
-    public DeadEndStep( StageControl control )
+    DeadEndStep( StageControl control )
     {
         super( control, "END", Configuration.DEFAULT, 1 );
     }

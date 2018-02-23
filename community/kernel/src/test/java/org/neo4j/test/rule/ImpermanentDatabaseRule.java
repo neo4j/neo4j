@@ -61,12 +61,12 @@ public class ImpermanentDatabaseRule extends DatabaseRule
         return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder();
     }
 
-    protected final TestGraphDatabaseFactory maybeSetUserLogProvider( TestGraphDatabaseFactory factory )
+    final TestGraphDatabaseFactory maybeSetUserLogProvider( TestGraphDatabaseFactory factory )
     {
         return ( userLogProvider == null ) ? factory : factory.setUserLogProvider( userLogProvider );
     }
 
-    protected final TestGraphDatabaseFactory maybeSetInternalLogProvider( TestGraphDatabaseFactory factory )
+    final TestGraphDatabaseFactory maybeSetInternalLogProvider( TestGraphDatabaseFactory factory )
     {
         return ( internalLogProvider == null ) ? factory : factory.setInternalLogProvider( internalLogProvider );
     }

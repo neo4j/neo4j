@@ -56,17 +56,17 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class BigStoreIT implements RelationshipType
+class BigStoreIT implements RelationshipType
 {
     private static final RelationshipType OTHER_TYPE = RelationshipType.withName( "OTHER" );
 
     private static final String PATH = "target/var/big";
     private GraphDatabaseService db;
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
 
     @BeforeEach
-    public void doBefore()
+    void doBefore()
     {
         // Delete before just to be sure
         deleteFileOrDirectory( new File( PATH ) );
@@ -80,25 +80,25 @@ public class BigStoreIT implements RelationshipType
     }
 
     @Test
-    public void create4BPlusStuff() throws Exception
+    void create4BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 32 ), 2, 400 );
     }
 
     @Test
-    public void create8BPlusStuff() throws Exception
+    void create8BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 33 ), 1, 1000 );
     }
 
     @Test
-    public void createAndVerify32BitGraph() throws Exception
+    void createAndVerify32BitGraph() throws Exception
     {
         createAndVerifyGraphStartingWithId( (long) pow( 2, 32 ), 400 );
     }
 
     @Test
-    public void createAndVerify33BitGraph() throws Exception
+    void createAndVerify33BitGraph() throws Exception
     {
         createAndVerifyGraphStartingWithId( (long) pow( 2, 33 ), 1000 );
     }
@@ -180,7 +180,7 @@ public class BigStoreIT implements RelationshipType
         }
     }
 
-    public static boolean machineIsOkToRunThisTest( int requiredHeapMb )
+    private static boolean machineIsOkToRunThisTest( int requiredHeapMb )
     {
         if ( SystemUtils.IS_OS_WINDOWS )
         {
@@ -198,7 +198,7 @@ public class BigStoreIT implements RelationshipType
         return heapMb >= requiredHeapMb;
     }
 
-    public static void assertProperties( Map<String, Object> properties, PropertyContainer entity )
+    private static void assertProperties( Map<String,Object> properties, PropertyContainer entity )
     {
         int count = 0;
         for ( String key : entity.getPropertyKeys() )

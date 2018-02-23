@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( MockitoExtension.class )
-public class PartitionedIndexReaderTest
+class PartitionedIndexReaderTest
 {
 
     private IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 0, 1 );
@@ -70,7 +70,7 @@ public class PartitionedIndexReaderTest
     private SimpleIndexReader indexReader3;
 
     @Test
-    public void partitionedReaderCloseAllSearchers() throws IOException
+    void partitionedReaderCloseAllSearchers() throws IOException
     {
         PartitionedIndexReader partitionedIndexReader = createPartitionedReader();
 
@@ -82,7 +82,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void seekOverAllPartitions() throws Exception
+    void seekOverAllPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -96,7 +96,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByNumberOverPartitions() throws Exception
+    void rangeSeekByNumberOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -111,7 +111,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByStringOverPartitions() throws Exception
+    void rangeSeekByStringOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -126,7 +126,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByPrefixOverPartitions() throws Exception
+    void rangeSeekByPrefixOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1, "prefix" );
@@ -139,7 +139,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void scanOverPartitions() throws Exception
+    void scanOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.ExistsPredicate query = IndexQuery.exists( 1 );
@@ -152,7 +152,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void countNodesOverPartitions()
+    void countNodesOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         when( indexReader1.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 1L );
@@ -163,7 +163,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void samplingOverPartitions() throws IndexNotFoundKernelException
+    void samplingOverPartitions() throws IndexNotFoundKernelException
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         when( indexReader1.createSampler() ).thenReturn( new SimpleSampler( 1 ) );

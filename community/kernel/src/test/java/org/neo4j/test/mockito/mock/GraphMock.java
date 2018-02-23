@@ -47,7 +47,7 @@ public class GraphMock
     {
     }
 
-    public static Label[] labels( String... names )
+    private static Label[] labels( String... names )
     {
         Label[] labels = new Label[names.length];
         for ( int i = 0; i < labels.length; i++ )

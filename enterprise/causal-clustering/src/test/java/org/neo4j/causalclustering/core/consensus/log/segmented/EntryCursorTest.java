@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class EntryCursorTest
+class EntryCursorTest
 {
     private final FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
     private final File bam = new File( "bam" );
@@ -50,13 +50,13 @@ public class EntryCursorTest
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         fsa.close();
     }
 
     @Test
-    public void ifFileExistsButEntryDoesNotExist() throws Exception
+    void ifFileExistsButEntryDoesNotExist() throws Exception
     {
         // When
         segments.rotate( -1, -1, -1 );
@@ -71,7 +71,7 @@ public class EntryCursorTest
     }
 
     @Test
-    public void requestedSegmentHasBeenPruned() throws Exception
+    void requestedSegmentHasBeenPruned() throws Exception
     {
         // When
         segments.rotate( -1, -1, -1 );
@@ -88,7 +88,7 @@ public class EntryCursorTest
     }
 
     @Test
-    public void requestedSegmentHasNotExistedYet() throws Exception
+    void requestedSegmentHasNotExistedYet() throws Exception
     {
         // When
         segments.rotate( -1, -1, -1 );

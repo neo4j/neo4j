@@ -59,7 +59,7 @@ public class RawBitsTest
         );
     }
 
-    final List<Object> objects = Arrays.asList(
+    private final List<Object> objects = Arrays.asList(
             Double.NEGATIVE_INFINITY,
             -Double.MAX_VALUE,
             Long.MIN_VALUE,

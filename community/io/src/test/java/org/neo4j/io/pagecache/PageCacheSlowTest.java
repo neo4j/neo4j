@@ -115,7 +115,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     }
 
     @RepeatedTest( 50 )
-    public void mustNotLoseUpdates() throws Exception
+    void mustNotLoseUpdates() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
@@ -284,7 +284,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     }
 
     @RepeatedTest( 100 )
-    public void mustNotLoseUpdatesWhenOpeningMultiplePageCursorsPerThread() throws Exception
+    void mustNotLoseUpdatesWhenOpeningMultiplePageCursorsPerThread() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
@@ -378,7 +378,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     }
 
     @RepeatedTest( 50 )
-    public void writeLockingCursorMustThrowWhenLockingPageRacesWithUnmapping() throws Exception
+    void writeLockingCursorMustThrowWhenLockingPageRacesWithUnmapping() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
@@ -492,7 +492,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     }
 
     @RepeatedTest( 20 )
-    public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
+    void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {
         assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
         {
@@ -638,7 +638,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     }
 
     @Test
-    public void mustNotRunOutOfSwapperAllocationSpace() throws Exception
+    void mustNotRunOutOfSwapperAllocationSpace() throws Exception
     {
         assumeTrue( fs instanceof EphemeralFileSystemAbstraction,
                 "This test is file system agnostic, and too slow on a real file system" );

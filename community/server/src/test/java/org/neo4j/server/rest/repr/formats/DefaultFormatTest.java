@@ -37,12 +37,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DefaultFormatTest
+class DefaultFormatTest
 {
     private DefaultFormat input;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         JsonFormat inner = new JsonFormat();
         ArrayList<MediaType> supported = new ArrayList<>();
@@ -51,7 +51,7 @@ public class DefaultFormatTest
     }
 
     @Test
-    public void canReadEmptyMap() throws Exception
+    void canReadEmptyMap() throws Exception
     {
         Map<String,Object> map = input.readMap( "{}" );
         assertNotNull( map );
@@ -59,7 +59,7 @@ public class DefaultFormatTest
     }
 
     @Test
-    public void canReadMapWithTwoValues() throws Exception
+    void canReadMapWithTwoValues() throws Exception
     {
         Map<String,Object> map = input.readMap( "{\"key1\":\"value1\",     \"key2\":\"value11\"}" );
         assertNotNull( map );
@@ -69,7 +69,7 @@ public class DefaultFormatTest
     }
 
     @Test
-    public void canReadMapWithNestedMap() throws Exception
+    void canReadMapWithNestedMap() throws Exception
     {
         Map<String,Object> map = input.readMap( "{\"nested\": {\"key\": \"valuable\"}}" );
         assertNotNull( map );
@@ -83,19 +83,19 @@ public class DefaultFormatTest
     }
 
     @Test
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput()
+    void failsWithTheCorrectExceptionWhenGettingTheWrongInput()
     {
         assertThrows( MediaTypeNotSupportedException.class, () -> input.readValue( "<xml />" ) );
     }
 
     @Test
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput2()
+    void failsWithTheCorrectExceptionWhenGettingTheWrongInput2()
     {
         assertThrows( MediaTypeNotSupportedException.class, () -> input.readMap( "<xml />" ) );
     }
 
     @Test
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3()
+    void failsWithTheCorrectExceptionWhenGettingTheWrongInput3()
     {
         assertThrows( MediaTypeNotSupportedException.class, () -> input.readUri( "<xml />" ) );
     }

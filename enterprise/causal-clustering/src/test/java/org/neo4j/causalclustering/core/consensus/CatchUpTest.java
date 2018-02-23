@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages.NewEntry.Request;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
@@ -36,16 +36,16 @@ import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-public class CatchUpTest
+class CatchUpTest
 {
     @Test
-    public void happyClusterPropagatesUpdates() throws Throwable
+    void happyClusterPropagatesUpdates() throws Throwable
     {
         DirectNetworking net = new DirectNetworking();
 
@@ -71,7 +71,7 @@ public class CatchUpTest
     }
 
     @Test
-    public void newMemberWithNoLogShouldCatchUpFromPeers() throws Throwable
+    void newMemberWithNoLogShouldCatchUpFromPeers() throws Throwable
     {
         DirectNetworking net = new DirectNetworking();
 

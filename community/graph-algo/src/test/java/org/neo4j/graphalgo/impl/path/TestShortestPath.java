@@ -51,9 +51,9 @@ import org.neo4j.helpers.collection.Iterables;
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -62,12 +62,12 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 import static org.neo4j.helpers.collection.Iterables.count;
 
-public class TestShortestPath extends Neo4jAlgoTestCase
+class TestShortestPath extends Neo4jAlgoTestCase
 {
     // Attempt at recreating this issue without cypher
     // https://github.com/neo4j/neo4j/issues/4160
     @Test
-    public void shouldAbortAsSoonAsPossible()
+    void shouldAbortAsSoonAsPossible()
     {
         final Label A = Label.label( "A" );
         final Label B = Label.label( "B" );
@@ -137,7 +137,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testSimplestGraph()
+    void testSimplestGraph()
     {
         // Layout:
         //    __
@@ -155,7 +155,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testAnotherSimpleGraph()
+    void testAnotherSimpleGraph()
     {
         // Layout:
         //   (m)
@@ -179,7 +179,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testCrossedCircle()
+    void testCrossedCircle()
     {
         // Layout:
         //    (s)
@@ -204,7 +204,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDirectedFinder()
+    void testDirectedFinder()
     {
         // Layout:
         //
@@ -220,7 +220,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureShortestPathsReturnsNoLoops()
+    void makeSureShortestPathsReturnsNoLoops()
     {
         // Layout:
         //
@@ -239,7 +239,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void withFilters()
+    void withFilters()
     {
         // Layout:
         //
@@ -263,7 +263,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void filtersTouchesAllIntermediateNodes()
+    void filtersTouchesAllIntermediateNodes()
     {
         // Layout:
         //
@@ -292,7 +292,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testFinderShouldNotFindAnythingBeyondLimit()
+    void testFinderShouldNotFindAnythingBeyondLimit()
     {
         // Layout:
         //
@@ -315,7 +315,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureDescentStopsWhenPathIsFound()
+    void makeSureDescentStopsWhenPathIsFound()
     {
         /*
          * (a)==>(b)==>(c)==>(d)==>(e)
@@ -352,7 +352,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureRelationshipNotConnectedIssueNotThere()
+    void makeSureRelationshipNotConnectedIssueNotThere()
     {
         /*
          *                                  (g)
@@ -374,7 +374,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureShortestPathCanBeFetchedEvenIfANodeHasLoops()
+    void makeSureShortestPathCanBeFetchedEvenIfANodeHasLoops()
     {
         // Layout:
         //
@@ -397,7 +397,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureAMaxResultCountIsObeyed()
+    void makeSureAMaxResultCountIsObeyed()
     {
         // Layout:
         //
@@ -427,7 +427,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void unfortunateRelationshipOrderingInTriangle()
+    void unfortunateRelationshipOrderingInTriangle()
     {
         /*
          *            (b)
@@ -449,7 +449,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldFindShortestPathWhenOneSideFindsLongerPathFirst()
+    void shouldFindShortestPathWhenOneSideFindsLongerPathFirst()
     {
         /*
         The order in which nodes are created matters when reproducing the original problem
@@ -470,7 +470,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldMakeSureResultLimitIsRespectedForMultiPathHits()
+    void shouldMakeSureResultLimitIsRespectedForMultiPathHits()
     {
         /*       _____
          *      /     \

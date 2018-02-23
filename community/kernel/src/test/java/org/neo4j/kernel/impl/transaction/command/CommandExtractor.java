@@ -26,7 +26,7 @@ import java.util.List;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public class CommandExtractor implements Visitor<StorageCommand,IOException>
+class CommandExtractor implements Visitor<StorageCommand,IOException>
 {
     private final List<StorageCommand> commands = new ArrayList<>();
 

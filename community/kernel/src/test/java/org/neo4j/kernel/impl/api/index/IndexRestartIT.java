@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.hamcrest.CoreMatchers;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -38,9 +38,9 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
@@ -63,7 +63,7 @@ public class IndexRestartIT
     private final Label myLabel = label( "MyLabel" );
 
     @BeforeEach
-    public void before()
+    void before()
     {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
@@ -73,7 +73,7 @@ public class IndexRestartIT
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }
@@ -83,7 +83,7 @@ public class IndexRestartIT
      * as possible. If this proves to be flaky, remove it right away.
      */
     @Test
-    public void shouldBeAbleToDropIndexWhileItIsPopulating()
+    void shouldBeAbleToDropIndexWhileItIsPopulating()
     {
         // GIVEN
         startDb();
@@ -108,7 +108,7 @@ public class IndexRestartIT
     }
 
     @Test
-    public void shouldHandleRestartOfOnlineIndex()
+    void shouldHandleRestartOfOnlineIndex()
     {
         // Given
         startDb();
@@ -129,7 +129,7 @@ public class IndexRestartIT
     }
 
     @Test
-    public void shouldHandleRestartIndexThatHasNotComeOnlineYet()
+    void shouldHandleRestartIndexThatHasNotComeOnlineYet()
     {
         // Given
         startDb();

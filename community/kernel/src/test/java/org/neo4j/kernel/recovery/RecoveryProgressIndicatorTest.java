@@ -36,11 +36,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RecoveryProgressIndicatorTest
+class RecoveryProgressIndicatorTest
 {
 
     @Test
-    public void reportProgressOnRecovery() throws Throwable
+    void reportProgressOnRecovery() throws Throwable
     {
         RecoveryService recoveryService = mock( RecoveryService.class, Answers.RETURNS_MOCKS );
         StartupStatisticsProvider statisticsProvider = mock( StartupStatisticsProvider.class );
@@ -105,7 +105,7 @@ public class RecoveryProgressIndicatorTest
             completed = true;
         }
 
-        public void verify()
+        void verify()
         {
             assertTrue( completed, "Progress reporting was not completed." );
             assertEquals( expectedMax, max, "Number of max recovered transactions is different." );

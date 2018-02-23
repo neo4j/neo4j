@@ -38,7 +38,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
     private boolean exactMatch;
     private ClusterMemberMatch[] expectedMembers;
 
-    public ClusterMemberMatcher( boolean exactMatch, ClusterMemberMatch[] expected )
+    private ClusterMemberMatcher( boolean exactMatch, ClusterMemberMatch[] expected )
     {
         this.exactMatch = exactMatch;
         this.expectedMembers = expected;

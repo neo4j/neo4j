@@ -31,10 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Pair.of;
 
-public class DbStructureCollectorTest
+class DbStructureCollectorTest
 {
     @Test
-    public void collectsDbStructure()
+    void collectsDbStructure()
     {
         // GIVEN
         DbStructureCollector collector = new DbStructureCollector();
@@ -85,7 +85,7 @@ public class DbStructureCollectorTest
     }
 
     @Test
-    public void collectsCompositeDbStructure()
+    void collectsCompositeDbStructure()
     {
         // GIVEN
         DbStructureCollector collector = new DbStructureCollector();

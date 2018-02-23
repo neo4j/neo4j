@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -61,13 +60,13 @@ import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
 @ExtendWith( {RandomExtension.class, EmbeddedDatabaseExtension.class} )
-public class AllNodesInStoreExistInLabelIndexTest
+class AllNodesInStoreExistInLabelIndexTest
 {
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABEL_ALPHABET = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
@@ -77,7 +76,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     private static final int NODE_COUNT_BASELINE = 10;
 
     @Test
-    public void mustReportSuccessfulForConsistentLabelScanStore() throws Exception
+    void mustReportSuccessfulForConsistentLabelScanStore() throws Exception
     {
         // given
         someData();
@@ -91,7 +90,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     }
 
     @Test
-    public void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
+    void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
     {
         File storeDir = db.getStoreDir();
         someData();
@@ -116,7 +115,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     }
 
     @Test
-    public void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
+    void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
     {
         File storeDir = db.getStoreDir();
         someData();
@@ -135,7 +134,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     }
 
     @Test
-    public void mustReportMissingNode() throws Exception
+    void mustReportMissingNode() throws Exception
     {
         // given
         someData();
@@ -158,7 +157,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     }
 
     @Test
-    public void mustReportMissingLabel() throws Exception
+    void mustReportMissingLabel() throws Exception
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
@@ -181,7 +180,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     }
 
     @Test
-    public void mustReportExtraLabelsOnExistingNode() throws Exception
+    void mustReportExtraLabelsOnExistingNode() throws Exception
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
@@ -204,7 +203,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     }
 
     @Test
-    public void mustReportExtraNode() throws Exception
+    void mustReportExtraNode() throws Exception
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
@@ -288,12 +287,12 @@ public class AllNodesInStoreExistInLabelIndexTest
         return labelIndexFileCopy;
     }
 
-    List<Pair<Long,Label[]>> someData()
+    private List<Pair<Long,Label[]>> someData()
     {
         return someData( 50 );
     }
 
-    List<Pair<Long,Label[]>> someData( int numberOfModifications )
+    private List<Pair<Long,Label[]>> someData( int numberOfModifications )
     {
         List<Pair<Long,Label[]>> existingNodes;
         existingNodes = new ArrayList<>();
@@ -372,7 +371,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         return labels.toArray( new Label[labels.size()] );
     }
 
-    ConsistencyCheckService.Result fullConsistencyCheck()
+    private ConsistencyCheckService.Result fullConsistencyCheck()
             throws ConsistencyCheckIncompleteException, IOException
     {
         try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )

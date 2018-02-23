@@ -24,16 +24,16 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsNot.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class TestJavascriptExecutor
+class TestJavascriptExecutor
 {
 
     @Test
-    public void shouldExecuteBasicScript()
+    void shouldExecuteBasicScript()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "1337;" );
@@ -47,7 +47,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void shouldAllowContextVariables()
+    void shouldAllowContextVariables()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "myVar;" );
@@ -64,7 +64,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void shouldBeAbleToReuseExecutor()
+    void shouldBeAbleToReuseExecutor()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "1337;" );
@@ -79,7 +79,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void varsSetInOneExecutionShouldNotBeAvailableInAnother()
+    void varsSetInOneExecutionShouldNotBeAvailableInAnother()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor(

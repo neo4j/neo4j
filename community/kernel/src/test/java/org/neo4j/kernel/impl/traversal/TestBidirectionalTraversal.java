@@ -55,7 +55,7 @@ import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH;
 
 public class TestBidirectionalTraversal extends TraversalTestBase
 {
-    RelationshipType to = withName( "TO" );
+    private RelationshipType to = withName( "TO" );
     private Transaction tx;
 
     @Before

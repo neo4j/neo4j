@@ -54,10 +54,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encode
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ReaderLogVersionBridgeTest
+class ReaderLogVersionBridgeTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogVersionedStoreChannel channel = mock( LogVersionedStoreChannel.class );
 
@@ -65,13 +65,13 @@ public class ReaderLogVersionBridgeTest
     private LogFiles logFiles;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         logFiles = prepareLogFiles();
     }
 
     @Test
-    public void shouldOpenTheNextChannelWhenItExists() throws IOException
+    void shouldOpenTheNextChannelWhenItExists() throws IOException
     {
         // given
         final StoreChannel newStoreChannel = mock( StoreChannel.class );
@@ -100,7 +100,7 @@ public class ReaderLogVersionBridgeTest
     }
 
     @Test
-    public void shouldReturnOldChannelWhenThereIsNoNextChannel() throws IOException
+    void shouldReturnOldChannelWhenThereIsNoNextChannel() throws IOException
     {
         // given
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );
@@ -117,7 +117,7 @@ public class ReaderLogVersionBridgeTest
     }
 
     @Test
-    public void shouldReturnOldChannelWhenNextChannelHasntGottenCompleteHeaderYet() throws Exception
+    void shouldReturnOldChannelWhenNextChannelHasntGottenCompleteHeaderYet() throws Exception
     {
         // given
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );

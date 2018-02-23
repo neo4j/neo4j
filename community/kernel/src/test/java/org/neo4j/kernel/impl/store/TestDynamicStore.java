@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -58,7 +58,7 @@ public class TestDynamicStore
     private Config config;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         File storeDir = new File( "dynamicstore" );
         fs.get().mkdir( storeDir );
@@ -68,7 +68,7 @@ public class TestDynamicStore
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( neoStores != null )
         {
@@ -88,7 +88,7 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testClose()
+    void testClose()
     {
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
@@ -119,7 +119,7 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testStoreGetCharsFromString()
+    void testStoreGetCharsFromString()
     {
         final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         DynamicArrayStore store = createDynamicArrayStore();
@@ -135,7 +135,7 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testRandomTest()
+    void testRandomTest()
     {
         Random random = new Random( System.currentTimeMillis() );
         DynamicArrayStore store = createDynamicArrayStore();
@@ -220,7 +220,7 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testAddDeleteSequenceEmptyNumberArray()
+    void testAddDeleteSequenceEmptyNumberArray()
     {
         DynamicArrayStore store = createDynamicArrayStore();
         byte[] emptyToWrite = createBytes( 0 );
@@ -238,7 +238,7 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testAddDeleteSequenceEmptyStringArray()
+    void testAddDeleteSequenceEmptyStringArray()
     {
         DynamicArrayStore store = createDynamicArrayStore();
         long blockId = create( store, new String[0] );

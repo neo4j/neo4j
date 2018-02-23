@@ -38,9 +38,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    protected IndexAccessor accessor;
+    private IndexAccessor accessor;
 
-    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -62,7 +62,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         accessor.close();
     }
 
-    protected List<Long> query( IndexQuery... predicates ) throws Exception
+    List<Long> query( IndexQuery... predicates ) throws Exception
     {
         return metaGet( reader -> reader.query( predicates ) );
     }

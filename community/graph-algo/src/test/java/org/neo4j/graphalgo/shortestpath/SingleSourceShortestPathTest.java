@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import common.Neo4jAlgoTestCase;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -31,9 +31,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
+abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
 {
     protected abstract SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode );
@@ -42,7 +42,7 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
         Node startNode, Direction direction, RelationshipType... relTypes );
 
     @Test
-    public void testRun()
+    void testRun()
     {
         // make the graph
         graph.makeEdgeChain( "a,b1,c1,d1,e1,f1,g1" );
@@ -104,7 +104,7 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testMultipleRelTypes()
+    void testMultipleRelTypes()
     {
         graph.setCurrentRelType( MyRelTypes.R1 );
         graph.makeEdgeChain( "a,b,c,d,e" );

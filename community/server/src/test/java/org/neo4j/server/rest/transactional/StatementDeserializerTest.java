@@ -36,11 +36,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
-public class StatementDeserializerTest
+class StatementDeserializerTest
 {
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldDeserializeSingleStatement()
+    void shouldDeserializeSingleStatement()
     {
         // Given
         String json = createJsonFrom( map( "statements", asList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
@@ -59,7 +59,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldRejectMapWithADifferentFieldBeforeStatement()
+    void shouldRejectMapWithADifferentFieldBeforeStatement()
     {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
@@ -71,7 +71,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished()
+    void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished()
     {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
@@ -93,7 +93,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldIgnoreUnknownFields()
+    void shouldIgnoreUnknownFields()
     {
         // Given
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
@@ -109,7 +109,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTakeParametersBeforeStatement()
+    void shouldTakeParametersBeforeStatement()
     {
         // Given
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
@@ -128,7 +128,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTreatEmptyInputStreamAsEmptyStatementList()
+    void shouldTreatEmptyInputStreamAsEmptyStatementList()
     {
         // Given
         byte[] json = new byte[0];
@@ -143,7 +143,7 @@ public class StatementDeserializerTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldDeserializeMultipleStatements()
+    void shouldDeserializeMultipleStatements()
     {
         // Given
         String json = createJsonFrom( map( "statements", asList(
@@ -170,7 +170,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldNotThrowButReportErrorOnInvalidInput()
+    void shouldNotThrowButReportErrorOnInvalidInput()
     {
         assertYieldsErrors( "{}",
                 new Neo4jError( Status.Request.InvalidFormat, new DeserializationException( "Unable to " +

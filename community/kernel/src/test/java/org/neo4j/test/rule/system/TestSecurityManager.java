@@ -23,7 +23,7 @@ import java.io.FileDescriptor;
 import java.net.InetAddress;
 import java.security.Permission;
 
-public class TestSecurityManager extends SecurityManager
+class TestSecurityManager extends SecurityManager
 {
 
     private SecurityManager securityManager;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.ports.allocation;
 
-public interface PortProbe
+interface PortProbe
 {
     boolean isOccupied( int port );
 }

@@ -30,10 +30,10 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ChunkedInputTest
+class ChunkedInputTest
 {
     @Test
-    public void shouldExposeMultipleChunksAsCohesiveStream() throws Throwable
+    void shouldExposeMultipleChunksAsCohesiveStream() throws Throwable
     {
         // Given
         ChunkedInput ch = new ChunkedInput();
@@ -51,7 +51,7 @@ public class ChunkedInputTest
     }
 
     @Test
-    public void shouldReadIntoMisalignedDestinationBuffer() throws Throwable
+    void shouldReadIntoMisalignedDestinationBuffer() throws Throwable
     {
         // Given
         byte[] bytes = new byte[3];
@@ -84,7 +84,7 @@ public class ChunkedInputTest
     }
 
     @Test
-    public void shouldReadPartialChunk() throws Throwable
+    void shouldReadPartialChunk() throws Throwable
     {
         // Given
         ChunkedInput ch = new ChunkedInput();
@@ -102,7 +102,7 @@ public class ChunkedInputTest
     }
 
     @Test
-    public void shouldHandleEmptyBuffer() throws Throwable
+    void shouldHandleEmptyBuffer() throws Throwable
     {
         // Given the user sent an empty network frame
         ChunkedInput ch = new ChunkedInput();
@@ -120,7 +120,7 @@ public class ChunkedInputTest
     }
 
     @Test
-    public void shouldReadShortCorrectly() throws Throwable
+    void shouldReadShortCorrectly() throws Throwable
     {
         // Given
         ChunkedInput ch = new ChunkedInput();
@@ -139,7 +139,7 @@ public class ChunkedInputTest
     }
 
     @Test
-    public void shouldReadIntCorrectly() throws Throwable
+    void shouldReadIntCorrectly() throws Throwable
     {
         // Given
         ChunkedInput ch = new ChunkedInput();
@@ -158,7 +158,7 @@ public class ChunkedInputTest
     }
 
     @Test
-    public void shouldReadLongCorrectly() throws Throwable
+    void shouldReadLongCorrectly() throws Throwable
     {
         // Given
         ChunkedInput ch = new ChunkedInput();
@@ -179,7 +179,7 @@ public class ChunkedInputTest
     }
 
     @Test
-    public void shouldReadDoubleCorrectly() throws Throwable
+    void shouldReadDoubleCorrectly() throws Throwable
     {
         // Given
         ChunkedInput ch = new ChunkedInput();

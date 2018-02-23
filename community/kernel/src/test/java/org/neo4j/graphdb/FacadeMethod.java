@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphdb;
 
-public abstract class FacadeMethod<T>
+abstract class FacadeMethod<T>
 {
     private final String methodSignature;
 
-    public FacadeMethod( String methodSignature )
+    FacadeMethod( String methodSignature )
     {
         this.methodSignature = methodSignature;
     }

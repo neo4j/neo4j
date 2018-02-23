@@ -28,17 +28,17 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class AuthorizationDisabledIT extends ExclusiveServerTestBase
+class AuthorizationDisabledIT extends ExclusiveServerTestBase
 {
 
     private CommunityNeoServer server;
 
     @Test
-    public void shouldAllowDisablingAuthorization() throws Exception
+    void shouldAllowDisablingAuthorization() throws Exception
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
@@ -57,7 +57,7 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
     }
 
     @AfterEach
-    public void cleanup()
+    void cleanup()
     {
         if ( server != null )
         {

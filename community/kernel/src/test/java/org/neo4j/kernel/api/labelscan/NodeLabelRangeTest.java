@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-public class NodeLabelRangeTest
+class NodeLabelRangeTest
 {
     @Test
-    public void shouldTransposeNodeIdsAndLabelIds()
+    void shouldTransposeNodeIdsAndLabelIds()
     {
         // given
         long[][] labelsPerNode = new long[][] {
@@ -52,7 +52,7 @@ public class NodeLabelRangeTest
     }
 
     @Test
-    public void shouldRebaseOnRangeId()
+    void shouldRebaseOnRangeId()
     {
         // given
         long[][] labelsPerNode = new long[][] {

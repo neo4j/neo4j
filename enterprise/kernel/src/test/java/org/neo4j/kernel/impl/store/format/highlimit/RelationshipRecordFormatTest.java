@@ -45,7 +45,7 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetFor
 import static org.neo4j.kernel.impl.store.format.BaseRecordFormat.IN_USE_BIT;
 import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.NULL;
 
-public class RelationshipRecordFormatTest
+class RelationshipRecordFormatTest
 {
     private final RelationshipRecordFormat format = new RelationshipRecordFormat();
     private final int recordSize = format.getRecordSize( NO_STORE_HEADER );
@@ -65,7 +65,7 @@ public class RelationshipRecordFormatTest
     };
 
     @Test
-    public void writeAndReadRecordWithRelativeReferences() throws IOException
+    void writeAndReadRecordWithRelativeReferences() throws IOException
     {
         long recordId = 0xF1F1F1F1F1F1L;
         int recordOffset = cursor.getOffset();
@@ -86,7 +86,7 @@ public class RelationshipRecordFormatTest
      * the logic for marking both units as unused when deleting exists there.
      */
     @Test
-    public void shouldMarkBothUnitsAsUnusedWhenDeletingRecordWhichHasSecondaryUnit() throws Exception
+    void shouldMarkBothUnitsAsUnusedWhenDeletingRecordWhichHasSecondaryUnit() throws Exception
     {
         // GIVEN a record which requires two units
         PagedFile storeFile = mock( PagedFile.class );
@@ -113,7 +113,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void readWriteFixedReferencesRecord() throws Exception
+    void readWriteFixedReferencesRecord() throws Exception
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
@@ -128,7 +128,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenTypeIsTooBig() throws IOException
+    void useVariableLengthFormatWhenTypeIsTooBig() throws IOException
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
@@ -143,7 +143,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenTypeIsSmallEnough() throws IOException
+    void useFixedReferenceFormatWhenTypeIsSmallEnough() throws IOException
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
@@ -158,7 +158,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void useFixedRecordFormatWhenAtLeastOneOfTheReferencesIsMissing() throws IOException
+    void useFixedRecordFormatWhenAtLeastOneOfTheReferencesIsMissing() throws IOException
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
@@ -167,7 +167,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenAtLeastOneOfTheReferencesIsTooBig() throws IOException
+    void useVariableLengthFormatWhenAtLeastOneOfTheReferencesIsTooBig() throws IOException
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
@@ -175,7 +175,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
@@ -191,7 +191,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );

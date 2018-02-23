@@ -28,16 +28,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
-import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory;
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
+import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -49,12 +49,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class RaftContentByteBufferMarshalTest
+class RaftContentByteBufferMarshalTest
 {
     private MemberId memberId = new MemberId( UUID.randomUUID() );
 
     @Test
-    public void shouldSerializeMemberSet() throws Exception
+    void shouldSerializeMemberSet() throws Exception
     {
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
@@ -69,7 +69,7 @@ public class RaftContentByteBufferMarshalTest
     }
 
     @Test
-    public void shouldSerializeTransactionRepresentation() throws Exception
+    void shouldSerializeTransactionRepresentation() throws Exception
     {
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
@@ -101,7 +101,7 @@ public class RaftContentByteBufferMarshalTest
     }
 
     @Test
-    public void txSerializationShouldNotResultInExcessZeroes()
+    void txSerializationShouldNotResultInExcessZeroes()
     {
         /*
          * This test ensures that the buffer used to serialize a transaction and then extract the byte array for
@@ -125,7 +125,7 @@ public class RaftContentByteBufferMarshalTest
     }
 
     @Test
-    public void shouldSerializeIdRangeRequest() throws Exception
+    void shouldSerializeIdRangeRequest() throws Exception
     {
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();

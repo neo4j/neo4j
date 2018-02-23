@@ -35,9 +35,9 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 
 public class PageCacheRule extends ExternalResource
 {
@@ -46,11 +46,11 @@ public class PageCacheRule extends ExternalResource
      */
     public static final class PageCacheConfig
     {
-        protected Boolean inconsistentReads;
-        protected Integer pageSize;
-        protected AtomicBoolean nextReadIsInconsistent;
-        protected PageCacheTracer tracer;
-        protected PageCursorTracerSupplier pageCursorTracerSupplier;
+        Boolean inconsistentReads;
+        Integer pageSize;
+        AtomicBoolean nextReadIsInconsistent;
+        PageCacheTracer tracer;
+        PageCursorTracerSupplier pageCursorTracerSupplier;
         private boolean accessChecks;
         private String memory;
 
@@ -157,7 +157,7 @@ public class PageCacheRule extends ExternalResource
         return new PageCacheConfig();
     }
 
-    protected PageCache pageCache;
+    PageCache pageCache;
     final PageCacheConfig baseConfig;
 
     public PageCacheRule()
@@ -212,12 +212,12 @@ public class PageCacheRule extends ExternalResource
         return pageCache;
     }
 
-    protected static <T> T selectConfig( T base, T overridden, T defaultValue )
+    static <T> T selectConfig( T base, T overridden, T defaultValue )
     {
         return ObjectUtils.firstNonNull( base, overridden, defaultValue );
     }
 
-    protected void pageCachePostConstruct( PageCacheConfig overriddenConfig )
+    void pageCachePostConstruct( PageCacheConfig overriddenConfig )
     {
         if ( selectConfig( baseConfig.inconsistentReads, overriddenConfig.inconsistentReads, true ) )
         {
@@ -234,7 +234,7 @@ public class PageCacheRule extends ExternalResource
         }
     }
 
-    protected void closeExistingPageCache()
+    void closeExistingPageCache()
     {
         if ( pageCache != null )
         {

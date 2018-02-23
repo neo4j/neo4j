@@ -44,7 +44,7 @@ public class TestTxEntries
      * in the xa log.
      */
     @Test
-    public void testStartEntryWrittenOnceOnRollback() throws Exception
+    void testStartEntryWrittenOnceOnRollback() throws Exception
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );

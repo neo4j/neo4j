@@ -31,7 +31,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BatchTransactionApplierFacadeTest
+class BatchTransactionApplierFacadeTest
 {
 
     private BatchTransactionApplierFacade facade;
@@ -43,7 +43,7 @@ public class BatchTransactionApplierFacadeTest
     private TransactionApplier txApplier3;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         txApplier1 = mock( TransactionApplier.class );
         applier1 = mock( BatchTransactionApplier.class );
@@ -64,7 +64,7 @@ public class BatchTransactionApplierFacadeTest
     }
 
     @Test
-    public void testStartTxCorrectOrder() throws Exception
+    void testStartTxCorrectOrder() throws Exception
     {
         // GIVEN
         TransactionToApply tx = mock( TransactionToApply.class );
@@ -86,7 +86,7 @@ public class BatchTransactionApplierFacadeTest
     }
 
     @Test
-    public void testStartTxCorrectOrderWithLockGroup() throws Exception
+    void testStartTxCorrectOrderWithLockGroup() throws Exception
     {
         // GIVEN
         TransactionToApply tx = mock( TransactionToApply.class );
@@ -109,7 +109,7 @@ public class BatchTransactionApplierFacadeTest
     }
 
     @Test
-    public void closeShouldBeDoneInReverseOrder() throws Exception
+    void closeShouldBeDoneInReverseOrder() throws Exception
     {
         // No idea why it was done like this before refactoring
 

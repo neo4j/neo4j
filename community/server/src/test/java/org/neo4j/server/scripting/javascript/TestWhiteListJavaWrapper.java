@@ -39,11 +39,11 @@ import static org.mozilla.javascript.UniqueTag.NOT_FOUND;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.server.scripting.UserScriptClassWhiteList.getWhiteList;
 
-public class TestWhiteListJavaWrapper
+class TestWhiteListJavaWrapper
 {
 
     @AfterEach
-    public void exitContext()
+    void exitContext()
     {
         try
         {
@@ -56,7 +56,7 @@ public class TestWhiteListJavaWrapper
     }
 
     @Test
-    public void shouldBlockAttemptsAtAccessingClassLoader()
+    void shouldBlockAttemptsAtAccessingClassLoader()
     {
         assertThrows( SecurityException.class, () -> {
             // Given
@@ -68,7 +68,7 @@ public class TestWhiteListJavaWrapper
     }
 
     @Test
-    public void shouldDownCastSubclassesToAllowedParentClass()
+    void shouldDownCastSubclassesToAllowedParentClass()
     {
         // Given
         Set<String> whiteList = new HashSet<>();
@@ -91,7 +91,7 @@ public class TestWhiteListJavaWrapper
     }
 
     @Test
-    public void shouldThrowSecurityExceptionWhenAccessingLockedClasses()
+    void shouldThrowSecurityExceptionWhenAccessingLockedClasses()
     {
         assertThrows( SecurityException.class, () -> {
             // Given
@@ -109,7 +109,7 @@ public class TestWhiteListJavaWrapper
     }
 
     @Test
-    public void shouldAllowAccessToWhiteListedClassMembers()
+    void shouldAllowAccessToWhiteListedClassMembers()
     {
         // XXX: The Rhino security stuff can only be set globally, unfortunately. That means
         // that we need to use a class here that is white-listed in the "real" white list, because

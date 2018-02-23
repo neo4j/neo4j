@@ -42,7 +42,7 @@ public class ExtensionInitializerTest
 {
 
     @Test
-    public void testPluginInitialization()
+    void testPluginInitialization()
     {
         Config config = Config.defaults( ServerSettings.transaction_idle_timeout, "600" );
         NeoServer neoServer = Mockito.mock( NeoServer.class, Mockito.RETURNS_DEEP_STUBS );

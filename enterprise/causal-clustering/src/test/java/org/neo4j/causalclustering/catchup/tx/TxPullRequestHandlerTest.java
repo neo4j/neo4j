@@ -53,7 +53,7 @@ import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class TxPullRequestHandlerTest
+class TxPullRequestHandlerTest
 {
     private final ChannelHandlerContext context = mock( ChannelHandlerContext.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -66,7 +66,7 @@ public class TxPullRequestHandlerTest
             () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
 
     @Test
-    public void shouldRespondWithCompleteStreamOfTransactions() throws Exception
+    void shouldRespondWithCompleteStreamOfTransactions() throws Exception
     {
         // given
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
@@ -81,7 +81,7 @@ public class TxPullRequestHandlerTest
     }
 
     @Test
-    public void shouldRespondWithEndOfStreamIfThereAreNoTransactions() throws Exception
+    void shouldRespondWithEndOfStreamIfThereAreNoTransactions() throws Exception
     {
         // given
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 14L );
@@ -95,7 +95,7 @@ public class TxPullRequestHandlerTest
     }
 
     @Test
-    public void shouldRespondWithoutTransactionsIfTheyDoNotExist() throws Exception
+    void shouldRespondWithoutTransactionsIfTheyDoNotExist() throws Exception
     {
         // given
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
@@ -115,7 +115,7 @@ public class TxPullRequestHandlerTest
     }
 
     @Test
-    public void shouldNotStreamTxEntriesIfStoreIdMismatches() throws Exception
+    void shouldNotStreamTxEntriesIfStoreIdMismatches() throws Exception
     {
         // given
         StoreId serverStoreId = new StoreId( 1, 2, 3, 4 );
@@ -141,7 +141,7 @@ public class TxPullRequestHandlerTest
     }
 
     @Test
-    public void shouldNotStreamTxsAndReportErrorIfTheLocalDatabaseIsNotAvailable() throws Exception
+    void shouldNotStreamTxsAndReportErrorIfTheLocalDatabaseIsNotAvailable() throws Exception
     {
         // given
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );

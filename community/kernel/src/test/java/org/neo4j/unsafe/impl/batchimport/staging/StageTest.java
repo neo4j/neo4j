@@ -25,17 +25,16 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
-public class StageTest
+class StageTest
 {
     @Test
-    public void shouldReceiveBatchesInOrder()
+    void shouldReceiveBatchesInOrder()
     {
         // GIVEN
         Configuration config = new Configuration.Overridden( DEFAULT )

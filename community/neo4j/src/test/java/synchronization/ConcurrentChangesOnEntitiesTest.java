@@ -50,19 +50,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
-public class ConcurrentChangesOnEntitiesTest
+class ConcurrentChangesOnEntitiesTest
 {
     @Resource
     public SuppressOutput suppressOutput;
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private final CyclicBarrier barrier = new CyclicBarrier( 2 );
     private final AtomicReference<Exception> ex = new AtomicReference<>();
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -70,7 +70,7 @@ public class ConcurrentChangesOnEntitiesTest
     }
 
     @Test
-    public void addConcurrentlySameLabelToANode() throws Throwable
+    void addConcurrentlySameLabelToANode() throws Throwable
     {
 
         final long nodeId = initWithNode( db );
@@ -87,7 +87,7 @@ public class ConcurrentChangesOnEntitiesTest
     }
 
     @Test
-    public void setConcurrentlySamePropertyWithDifferentValuesOnANode() throws Throwable
+    void setConcurrentlySamePropertyWithDifferentValuesOnANode() throws Throwable
     {
         final long nodeId = initWithNode( db );
 
@@ -103,7 +103,7 @@ public class ConcurrentChangesOnEntitiesTest
     }
 
     @Test
-    public void setConcurrentlySamePropertyWithDifferentValuesOnARelationship() throws Throwable
+    void setConcurrentlySamePropertyWithDifferentValuesOnARelationship() throws Throwable
     {
         final long relId = initWithRel( db );
 

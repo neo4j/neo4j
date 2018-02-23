@@ -34,10 +34,10 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.load_bala
 import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterBuilder.filter;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class FilteringPolicyLoaderTest
+class FilteringPolicyLoaderTest
 {
     @Test
-    public void shouldLoadConfiguredPolicies() throws Exception
+    void shouldLoadConfiguredPolicies() throws Exception
     {
         // given
         String pluginName = "server_policies";

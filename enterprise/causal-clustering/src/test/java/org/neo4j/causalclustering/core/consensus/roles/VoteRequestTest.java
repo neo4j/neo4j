@@ -170,7 +170,7 @@ public class VoteRequestTest
         assertEquals( candidateTerm, outcome.getTerm() );
     }
 
-    public RaftState newState() throws IOException
+    private RaftState newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

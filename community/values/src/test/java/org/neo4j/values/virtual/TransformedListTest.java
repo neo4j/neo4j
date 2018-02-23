@@ -29,10 +29,10 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.transform;
 
-public class TransformedListTest
+class TransformedListTest
 {
     @Test
-    public void shouldTransformList()
+    void shouldTransformList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ) );

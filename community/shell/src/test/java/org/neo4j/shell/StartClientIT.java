@@ -20,8 +20,8 @@
 package org.neo4j.shell;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -45,9 +45,9 @@ import org.neo4j.test.rule.SuppressOutput;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -64,13 +64,13 @@ public class StartClientIT extends AbstractShellIT
     private GraphDatabaseShellServer shellServer;
 
     @BeforeEach
-    public void startDatabase() throws Exception
+    void startDatabase() throws Exception
     {
         makeServerRemotelyAvailable();
     }
 
     @Test
-    public void givenShellClientWhenOpenFileThenExecuteFileCommands()
+    void givenShellClientWhenOpenFileThenExecuteFileCommands()
     {
         // Given
         // an empty database
@@ -83,7 +83,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands()
+    void givenShellClientWhenReadFromStdinThenExecutePipedCommands()
     {
         // Given
         // an empty database
@@ -105,7 +105,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void mustWarnWhenRunningScriptWithUnterminatedMultilineCommands()
+    void mustWarnWhenRunningScriptWithUnterminatedMultilineCommands()
     {
         // Given an empty database and the unterminated-cypher-query.txt file.
         String script = getClass().getResource( "/unterminated-cypher-query.txt" ).getFile();
@@ -118,7 +118,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void mustNotAboutExitingWithUnterminatedCommandWhenItIsNothingButComments()
+    void mustNotAboutExitingWithUnterminatedCommandWhenItIsNothingButComments()
     {
         // Given an empty database and the unterminated-comment.txt file.
         String script = getClass().getResource( "/unterminated-comment.txt" ).getFile();
@@ -131,7 +131,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void testShellCloseAfterCommandExecution() throws Exception
+    void testShellCloseAfterCommandExecution() throws Exception
     {
         PrintStream out = mock( PrintStream.class );
         PrintStream err = mock( PrintStream.class );
@@ -160,7 +160,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldReportEditionThroughDbInfoApp()
+    void shouldReportEditionThroughDbInfoApp()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -178,7 +178,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldPrintVersionAndExit()
+    void shouldPrintVersionAndExit()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -196,7 +196,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldNotStartBolt() throws IOException
+    void shouldNotStartBolt() throws IOException
     {
         // Given
         AssertableLogProvider log = new AssertableLogProvider();

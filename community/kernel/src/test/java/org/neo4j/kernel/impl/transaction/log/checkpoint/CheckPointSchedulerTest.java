@@ -64,7 +64,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler.MAX_CONSECUTIVE_FAILURES_TOLERANCE;
 import static org.neo4j.scheduler.JobScheduler.Groups.checkPoint;
 
-public class CheckPointSchedulerTest
+class CheckPointSchedulerTest
 {
     private final IOLimiter ioLimiter = mock( IOLimiter.class );
     private final CheckPointer checkPointer = mock( CheckPointer.class );
@@ -74,20 +74,20 @@ public class CheckPointSchedulerTest
     private static ExecutorService executor;
 
     @BeforeAll
-    public static void setUpExecutor()
+    static void setUpExecutor()
     {
         executor = newCachedThreadPool();
     }
 
     @AfterAll
-    public static void tearDownExecutor() throws InterruptedException
+    static void tearDownExecutor() throws InterruptedException
     {
         executor.shutdown();
         executor.awaitTermination( 30, SECONDS );
     }
 
     @Test
-    public void shouldScheduleTheCheckPointerJobOnStart()
+    void shouldScheduleTheCheckPointerJobOnStart()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -103,7 +103,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldRescheduleTheJobAfterARun() throws Throwable
+    void shouldRescheduleTheJobAfterARun() throws Throwable
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -125,7 +125,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldNotRescheduleAJobWhenStopped()
+    void shouldNotRescheduleAJobWhenStopped()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -144,7 +144,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void stoppedJobCantBeInvoked() throws Throwable
+    void stoppedJobCantBeInvoked() throws Throwable
     {
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 10L, health );
         scheduler.start();
@@ -164,7 +164,7 @@ public class CheckPointSchedulerTest
 
     // Timeout as fallback safety if test deadlocks
     @Test
-    public void shouldWaitOnStopUntilTheRunningCheckpointIsDone()
+    void shouldWaitOnStopUntilTheRunningCheckpointIsDone()
     {
         assertTimeout( ofMillis( 60_000 ), () -> {
             // given
@@ -243,7 +243,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldContinueThroughSporadicFailures()
+    void shouldContinueThroughSporadicFailures()
     {
         // GIVEN
         ControlledCheckPointer checkPointer = new ControlledCheckPointer();
@@ -266,7 +266,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void checkpointOnStopShouldFlushAsFastAsPossible() throws Throwable
+    void checkpointOnStopShouldFlushAsFastAsPossible() throws Throwable
     {
         assertTimeout( ofMillis( 10_000 ), () -> {
             CheckableIOLimiter ioLimiter = new CheckableIOLimiter();
@@ -287,7 +287,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldCausePanicAfterSomeFailures() throws Throwable
+    void shouldCausePanicAfterSomeFailures() throws Throwable
     {
         // GIVEN
         RuntimeException[] failures =

@@ -101,7 +101,7 @@ public class RecordAccessStub implements RecordAccess
     {
         private final REPORT report;
 
-        protected Engine( REPORT report )
+        Engine( REPORT report )
         {
             this.report = report;
         }
@@ -280,17 +280,17 @@ public class RecordAccessStub implements RecordAccess
         records.put( newRecord.getId(), new Delta<>( oldRecord, newRecord ) );
     }
 
-    public DynamicRecord addSchema( DynamicRecord schema )
+    private DynamicRecord addSchema( DynamicRecord schema )
     {
         return add( schemata, schema);
     }
 
-    public DynamicRecord addString( DynamicRecord string )
+    private DynamicRecord addString( DynamicRecord string )
     {
         return add( strings, string );
     }
 
-    public DynamicRecord addArray( DynamicRecord array )
+    private DynamicRecord addArray( DynamicRecord array )
     {
         return add( arrays, array );
     }

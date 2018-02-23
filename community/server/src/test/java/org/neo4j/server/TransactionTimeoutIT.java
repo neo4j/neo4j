@@ -36,18 +36,18 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 
-public class TransactionTimeoutIT extends ExclusiveServerTestBase
+class TransactionTimeoutIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
 
     @AfterEach
-    public void stopTheServer()
+    void stopTheServer()
     {
         server.stop();
     }
 
     @Test
-    public void shouldHonorReallyLowSessionTimeout() throws Exception
+    void shouldHonorReallyLowSessionTimeout() throws Exception
     {
         // Given
         server = serverOnRandomPorts()

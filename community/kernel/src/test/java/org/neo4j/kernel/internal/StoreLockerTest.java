@@ -58,12 +58,12 @@ import static org.neo4j.kernel.internal.locker.StoreLocker.STORE_LOCK_FILENAME;
 public class StoreLockerTest
 {
     @Resource
-    public TestDirectory target;
+    private TestDirectory target;
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void shouldUseAlreadyOpenedFileChannel() throws Exception
+    void shouldUseAlreadyOpenedFileChannel() throws Exception
     {
         StoreChannel channel = Mockito.mock( StoreChannel.class );
         CustomChannelFileSystemAbstraction fileSystemAbstraction =
@@ -94,7 +94,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void shouldAllowMultipleCallsToCheckLock() throws Exception
+    void shouldAllowMultipleCallsToCheckLock() throws Exception
     {
         try ( StoreLocker storeLocker = new StoreLocker( fileSystemRule.get(), target.directory( "unused" ) ) )
         {
@@ -104,7 +104,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void keepLockWhenOtherTryToTakeLock() throws Exception
+    void keepLockWhenOtherTryToTakeLock() throws Exception
     {
         File directory = target.directory( "unused" );
         DefaultFileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
@@ -136,7 +136,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
+    void shouldObtainLockWhenStoreFileNotLocked() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
@@ -160,7 +160,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
+    void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
@@ -179,7 +179,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void shouldNotObtainLockWhenStoreDirCannotBeCreated() throws Exception
+    void shouldNotObtainLockWhenStoreDirCannotBeCreated() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
@@ -213,7 +213,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void shouldNotObtainLockWhenUnableToOpenLockFile() throws Exception
+    void shouldNotObtainLockWhenUnableToOpenLockFile() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
@@ -248,7 +248,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void shouldNotObtainLockWhenStoreAlreadyInUse() throws Exception
+    void shouldNotObtainLockWhenStoreAlreadyInUse() throws Exception
     {
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
@@ -285,7 +285,7 @@ public class StoreLockerTest
     }
 
     @Test
-    public void mustPreventMultipleInstancesFromStartingOnSameStore()
+    void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
         File storeDir = target.graphDbDir();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
@@ -328,7 +328,7 @@ public class StoreLockerTest
             return channel;
         }
 
-        public int getNumberOfCallsToOpen()
+        int getNumberOfCallsToOpen()
         {
             return numberOfCallsToOpen;
         }

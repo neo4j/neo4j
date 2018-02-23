@@ -31,18 +31,18 @@ import org.neo4j.logging.NullLog;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class VotingTest
+class VotingTest
 {
-    MemberId candidate = new MemberId( UUID.randomUUID() );
+    private MemberId candidate = new MemberId( UUID.randomUUID() );
 
-    long logTerm = 10;
-    long currentTerm = 20;
-    long appendIndex = 1000;
+    private long logTerm = 10;
+    private long currentTerm = 20;
+    private long appendIndex = 1000;
 
-    Log log = NullLog.getInstance();
+    private Log log = NullLog.getInstance();
 
     @Test
-    public void shouldAcceptRequestWithIdenticalLog()
+    void shouldAcceptRequestWithIdenticalLog()
     {
         assertTrue( Voting.shouldVoteFor(
                 candidate,
@@ -58,7 +58,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldRejectRequestFromOldTerm()
+    void shouldRejectRequestFromOldTerm()
     {
         assertFalse( Voting.shouldVoteFor(
                 candidate,
@@ -74,7 +74,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldRejectRequestIfCandidateLogEndsAtLowerTerm()
+    void shouldRejectRequestIfCandidateLogEndsAtLowerTerm()
     {
         assertFalse( Voting.shouldVoteFor(
                 candidate,
@@ -90,7 +90,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldRejectRequestIfLogsEndInSameTermButCandidateLogIsShorter()
+    void shouldRejectRequestIfLogsEndInSameTermButCandidateLogIsShorter()
     {
         assertFalse( Voting.shouldVoteFor(
                 candidate,
@@ -106,7 +106,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsSameLength()
+    void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsSameLength()
     {
         assertTrue( Voting.shouldVoteFor(
                 candidate,
@@ -122,7 +122,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsLonger()
+    void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsLonger()
     {
         assertTrue( Voting.shouldVoteFor(
                 candidate,
@@ -138,7 +138,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldAcceptRequestIfLogsEndInHigherTermAndCandidateLogIsShorter()
+    void shouldAcceptRequestIfLogsEndInHigherTermAndCandidateLogIsShorter()
     {
         assertTrue( Voting.shouldVoteFor(
                 candidate,
@@ -154,7 +154,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsSameLength()
+    void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsSameLength()
     {
         assertTrue( Voting.shouldVoteFor(
                 candidate,
@@ -170,7 +170,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsLonger()
+    void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsLonger()
     {
         assertTrue( Voting.shouldVoteFor(
                 candidate,
@@ -186,7 +186,7 @@ public class VotingTest
     }
 
     @Test
-    public void shouldRejectRequestIfAlreadyVotedForOtherCandidate()
+    void shouldRejectRequestIfAlreadyVotedForOtherCandidate()
     {
         assertFalse( Voting.shouldVoteFor(
                 candidate,

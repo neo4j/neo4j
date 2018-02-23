@@ -35,13 +35,13 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 public class DeleteNodeWithRelsIT
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
+    void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
     {
         // Given
         GraphDatabaseService db = this.db.getGraphDatabaseAPI();

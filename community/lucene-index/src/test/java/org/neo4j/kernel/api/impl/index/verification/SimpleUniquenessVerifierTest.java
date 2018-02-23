@@ -65,19 +65,19 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class SimpleUniquenessVerifierTest
+class SimpleUniquenessVerifierTest
 {
     private static final int[] PROPERTY_KEY_IDS = new int[]{42};
 
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     private DirectoryFactory dirFactory;
     private IndexWriter writer;
     private SearcherManager searcherManager;
 
     @BeforeEach
-    public void initLuceneResources() throws Exception
+    void initLuceneResources() throws Exception
     {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         Directory dir = dirFactory.open( testDir.directory( "test" ) );
@@ -86,13 +86,13 @@ public class SimpleUniquenessVerifierTest
     }
 
     @AfterEach
-    public void closeLuceneResources() throws Exception
+    void closeLuceneResources() throws Exception
     {
         IOUtils.closeAll( searcherManager, writer, dirFactory );
     }
 
     @Test
-    public void partitionSearcherIsClosed() throws IOException
+    void partitionSearcherIsClosed() throws IOException
     {
         PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
         SimpleUniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher );
@@ -103,7 +103,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void populationVerificationNoDuplicates() throws Exception
+    void populationVerificationNoDuplicates() throws Exception
     {
         List<Object> data = asList( "string1", 42, 43, 44, 45L, (byte) 46, 47.0, (float) 48.1, "string2" );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -114,7 +114,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void populationVerificationOneDuplicate() throws IOException
+    void populationVerificationOneDuplicate() throws IOException
     {
         List<Object> data = asList( "cat", 21, 22, 23, 24L, (byte) 25, 26.0, (float) 22, "dog" );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -125,7 +125,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void populationVerificationManyDuplicate() throws IOException
+    void populationVerificationManyDuplicate() throws IOException
     {
         List<Object> data = asList( "dog", "cat", "dog", "dog", "dog", "dog" );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -136,7 +136,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void updatesVerificationNoDuplicates() throws Exception
+    void updatesVerificationNoDuplicates() throws Exception
     {
         List<Object> data = asList( "lucene", 1337975550, 43.10, 'a', 'b', 'c', (byte) 12 );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -147,7 +147,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void updatesVerificationOneDuplicate() throws IOException
+    void updatesVerificationOneDuplicate() throws IOException
     {
         List<Object> data = asList( "foo", "bar", "baz", 100, 200, 'q', 'u', 'x', "aa", 300, 'u', -100 );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -158,7 +158,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void updatesVerificationManyDuplicate() throws IOException
+    void updatesVerificationManyDuplicate() throws IOException
     {
         List<Object> data = asList( -99, 'a', -10.0, -99.99999, "apa", (float) -99.99999, "mod", "div", "div", -10 );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -169,7 +169,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void numericIndexVerificationNoDuplicates() throws Exception
+    void numericIndexVerificationNoDuplicates() throws Exception
     {
         List<Object> data = asList( Integer.MAX_VALUE - 2, Integer.MAX_VALUE - 1, Integer.MAX_VALUE );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -183,7 +183,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void numericIndexVerificationSomePossibleDuplicates() throws Exception
+    void numericIndexVerificationSomePossibleDuplicates() throws Exception
     {
         List<Object> data = asList( 42, Long.MAX_VALUE - 1, Long.MAX_VALUE );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );
@@ -197,7 +197,7 @@ public class SimpleUniquenessVerifierTest
     }
 
     @Test
-    public void numericIndexVerificationSomeWithDuplicates() throws Exception
+    void numericIndexVerificationSomeWithDuplicates() throws Exception
     {
         List<Object> data = asList( Integer.MAX_VALUE, Long.MAX_VALUE, 42, Long.MAX_VALUE );
         PropertyAccessor propertyAccessor = newPropertyAccessor( data );

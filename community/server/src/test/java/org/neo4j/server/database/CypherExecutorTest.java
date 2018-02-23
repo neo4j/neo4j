@@ -46,7 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
-public class CypherExecutorTest
+class CypherExecutorTest
 {
     private static final long CUSTOM_TRANSACTION_TIMEOUT = 1000L;
     private static final String QUERY = "create (n)";
@@ -63,14 +63,14 @@ public class CypherExecutorTest
     private AssertableLogProvider logProvider;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         setUpMocks();
         initLogProvider();
     }
 
     @Test
-    public void startDefaultTransaction()
+    void startDefaultTransaction()
     {
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
@@ -82,7 +82,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startTransactionWithCustomTimeout()
+    void startTransactionWithCustomTimeout()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
@@ -98,7 +98,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransactionWhenHeaderHasIncorrectValue()
+    void startDefaultTransactionWhenHeaderHasIncorrectValue()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "not a number" );
@@ -114,7 +114,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransactionIfTimeoutIsNegative()
+    void startDefaultTransactionIfTimeoutIsNegative()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "-2" );

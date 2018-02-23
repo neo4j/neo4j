@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.RuleChain;
 
@@ -67,8 +67,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
@@ -85,13 +85,13 @@ public class BatchingTransactionAppenderConcurrencyTest
     private static ExecutorService executor;
 
     @BeforeAll
-    public static void setUpExecutor()
+    static void setUpExecutor()
     {
         executor = Executors.newCachedThreadPool();
     }
 
     @AfterAll
-    public static void tearDownExecutor()
+    static void tearDownExecutor()
     {
         executor.shutdown();
         executor = null;
@@ -117,14 +117,14 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final BlockingQueue<ChannelCommand> channelCommandQueue = new LinkedBlockingQueue<>( 2 );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
         when( logFile.getWriter() ).thenReturn( new CommandQueueChannel() );
     }
 
     @Test
-    public void shouldForceLogChannel() throws Throwable
+    void shouldForceLogChannel() throws Throwable
     {
         BatchingTransactionAppender appender = life.add( createTransactionAppender() );
         life.start();
@@ -137,7 +137,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
+    void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
     {
         channelCommandQueue.put( ChannelCommand.dummy );
 
@@ -166,7 +166,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
+    void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
     {
         channelCommandQueue.put( ChannelCommand.dummy );
 
@@ -211,7 +211,7 @@ public class BatchingTransactionAppenderConcurrencyTest
      * and notice the panic later (which would be too late).
      */
     @Test
-    public void shouldHaveAllConcurrentAppendersSeePanic() throws Throwable
+    void shouldHaveAllConcurrentAppendersSeePanic() throws Throwable
     {
         // GIVEN
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
@@ -272,7 +272,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         race.go();
     }
 
-    protected TransactionToApply tx()
+    private TransactionToApply tx()
     {
         NodeRecord before = new NodeRecord( 0 );
         NodeRecord after = new NodeRecord( 0 );

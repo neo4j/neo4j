@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-public class BadPrimitiveInputSproc
+class BadPrimitiveInputSproc
 {
 
     @Procedure

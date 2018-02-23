@@ -25,13 +25,13 @@ import org.neo4j.causalclustering.core.consensus.log.LogPosition;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PositionCacheTest
+class PositionCacheTest
 {
     private final PositionCache cache = new PositionCache();
     private final LogPosition BEGINNING = new LogPosition( 0, SegmentHeader.SIZE );
 
     @Test
-    public void shouldReturnSaneDefaultPosition()
+    void shouldReturnSaneDefaultPosition()
     {
         // when
         LogPosition position = cache.lookup( 5 );
@@ -41,7 +41,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldReturnBestPosition()
+    void shouldReturnBestPosition()
     {
         // given
         cache.put( pos( 4 ) );
@@ -55,7 +55,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldReturnExactMatch()
+    void shouldReturnExactMatch()
     {
         // given
         cache.put( pos( 4 ) );
@@ -70,7 +70,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldNotReturnPositionAhead()
+    void shouldNotReturnPositionAhead()
     {
         // given
         cache.put( pos( 4 ) );
@@ -85,7 +85,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldPushOutOldEntries()
+    void shouldPushOutOldEntries()
     {
         // given
         int count = PositionCache.CACHE_SIZE + 4;

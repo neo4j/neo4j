@@ -23,8 +23,8 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 public abstract class Event
 {
-    public final PageSwapper io;
-    public final long pageId;
+    final PageSwapper io;
+    final long pageId;
 
     public Event( PageSwapper io, long pageId )
     {

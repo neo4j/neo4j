@@ -49,13 +49,13 @@ public abstract class KernelExtensionFactoryContractTest
     @Rule
     public TestDirectory target = TestDirectory.testDirectory( getClass() );
 
-    public KernelExtensionFactoryContractTest( String key, Class<? extends KernelExtensionFactory<?>> extClass )
+    protected KernelExtensionFactoryContractTest( String key, Class<? extends KernelExtensionFactory<?>> extClass )
     {
         this.extClass = extClass;
         this.key = key;
     }
 
-    public GraphDatabaseAPI graphdb( int instance )
+    protected GraphDatabaseAPI graphdb( int instance )
     {
         Map<String, String> config = configuration( true, instance );
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
@@ -84,7 +84,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void extensionShouldHavePublicNoArgConstructor()
+    void extensionShouldHavePublicNoArgConstructor()
     {
         KernelExtensionFactory<?> instance = null;
         try
@@ -100,7 +100,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void shouldBeAbleToLoadExtensionAsAServiceProvider()
+    void shouldBeAbleToLoadExtensionAsAServiceProvider()
     {
         KernelExtensionFactory<?> instance = null;
         try
@@ -119,7 +119,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void differentInstancesShouldHaveEqualHashCodesAndBeEqual()
+    void differentInstancesShouldHaveEqualHashCodesAndBeEqual()
     {
         KernelExtensionFactory<?> one = newInstance();
         KernelExtensionFactory<?> two = newInstance();
@@ -138,7 +138,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void canLoadKernelExtension()
+    void canLoadKernelExtension()
     {
         GraphDatabaseService graphdb = graphdb( 0 );
         try

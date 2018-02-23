@@ -21,8 +21,8 @@ package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
@@ -44,19 +44,19 @@ public class WritableIndexReferenceTest
     private WritableIndexReference indexReference = new WritableIndexReference( identifier, searcher, indexWriter );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( searcher.getIndexReader() ).thenReturn( reader );
     }
 
     @Test
-    public void useProvidedWriterAsIndexWriter()
+    void useProvidedWriterAsIndexWriter()
     {
         assertSame( indexWriter, indexReference.getWriter() );
     }
 
     @Test
-    public void stalingWritableIndex()
+    void stalingWritableIndex()
     {
         assertFalse( indexReference.checkAndClearStale(), "Index is not stale by default." );
         indexReference.setStale();
@@ -66,7 +66,7 @@ public class WritableIndexReferenceTest
     }
 
     @Test
-    public void disposeWritableIndex() throws Exception
+    void disposeWritableIndex() throws Exception
     {
         indexReference.dispose();
         assertTrue( reader.isClosed(), "Reader should be closed." );

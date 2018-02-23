@@ -21,7 +21,7 @@ package org.neo4j.server.rest;
 
 import org.neo4j.function.Factory;
 
-public class UniqueStrings
+class UniqueStrings
 {
     private UniqueStrings()
     {

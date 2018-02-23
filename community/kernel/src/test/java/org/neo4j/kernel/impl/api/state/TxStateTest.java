@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -34,10 +30,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import javax.annotation.Resource;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -47,15 +43,14 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -64,21 +59,13 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.primitive.Primitive.intObjectMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -86,80 +73,14 @@ import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 
-@RunWith( Parameterized.class )
-public class TxStateTest
+@ExtendWith( RandomExtension.class )
+class TxStateTest
 {
-    public final RandomRule random = new RandomRule();
-
-    @Rule
-    public final TestRule repeatWithDifferentRandomization()
-    {
-        return RuleChain.outerRule( new RepeatRule() ).around( random );
-    }
-
-    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.forLabel( 1, 1 );
-    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.forLabel( 1, 2 );
-    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.forLabel( 2, 1 );
-
-    private CollectionsFactory collectionsFactory;
-    private TxState state;
-
-    @Parameter
-    public CollectionsFactorySupplier collectionsFactorySupplier;
-
-    @Parameters( name = "{0}" )
-    public static List<CollectionsFactorySupplier> data()
-    {
-        return asList(
-                new CollectionsFactorySupplier()
-                {
-                    @Override
-                    public CollectionsFactory create()
-                    {
-                        return CollectionsFactorySupplier.ON_HEAP.create();
-                    }
-
-                    @Override
-                    public String toString()
-                    {
-                        return "On heap";
-                    }
-                },
-                new CollectionsFactorySupplier()
-                {
-                    @Override
-                    public CollectionsFactory create()
-                    {
-                        return CollectionsFactorySupplier.OFF_HEAP.create();
-                    }
-
-                    @Override
-                    public String toString()
-                    {
-                        return "Off heap";
-                    }
-                }
-        );
-    }
-
-    @Before
-    public void before()
-    {
-        collectionsFactory = collectionsFactorySupplier.create();
-        state = new TxState( collectionsFactory );
-    }
-
-    @After
-    public void after()
-    {
-        state.release();
-        assertEquals( "Seems like native memory is leaking", 0L, collectionsFactory.getMemoryTracker().usedDirectMemory() );
-    }
-
-    //region node label update tests
+    @Resource
+    private RandomRule random;
 
     @Test
-    public void shouldGetAddedLabels()
+    void shouldGetAddedLabels()
     {
         // GIVEN
         state.nodeDoAddLabel( 1, 0 );
@@ -174,7 +95,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldGetRemovedLabels()
+    void shouldGetRemovedLabels()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -189,7 +110,7 @@ public class TxStateTest
     }
 
     @Test
-    public void removeAddedLabelShouldRemoveFromAdded()
+    void removeAddedLabelShouldRemoveFromAdded()
     {
         // GIVEN
         state.nodeDoAddLabel( 1, 0 );
@@ -204,7 +125,7 @@ public class TxStateTest
     }
 
     @Test
-    public void addRemovedLabelShouldRemoveFromRemoved()
+    void addRemovedLabelShouldRemoveFromRemoved()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -219,7 +140,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldHandleMultipleLabels()
+    void shouldHandleMultipleLabels()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -239,7 +160,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldMapFromRemovedLabelToNodes()
+    void shouldMapFromRemovedLabelToNodes()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -260,7 +181,7 @@ public class TxStateTest
     //region index rule tests
 
     @Test
-    public void shouldAddAndGetByLabel()
+    void shouldAddAndGetByLabel()
     {
         // WHEN
         state.indexRuleDoAdd( indexOn_1_1 );
@@ -272,7 +193,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldAddAndGetByRuleId()
+    void shouldAddAndGetByRuleId()
     {
         // GIVEN
         state.indexRuleDoAdd( indexOn_1_1 );
@@ -286,7 +207,7 @@ public class TxStateTest
     //region scan and seek index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForScanOrSeekOnAnEmptyTxState()
+    void shouldComputeIndexUpdatesForScanOrSeekOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1 );
@@ -296,7 +217,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForScanWhenThereAreNewNodes()
+    void shouldComputeIndexUpdatesForScanWhenThereAreNewNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -310,7 +231,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodes()
+    void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -328,7 +249,7 @@ public class TxStateTest
     //region range seek by number index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNoMatchingNodes()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNoMatchingNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties( asList( of( 42L, 500 ), of( 43L, 550 ) ) );
@@ -342,7 +263,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNewNodesCreatedInSingleBatch()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNewNodesCreatedInSingleBatch()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties( asList( of( 42L, 500 ), of( 43L, 550 ) ) );
@@ -356,7 +277,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNewNodesCreatedInTwoBatches()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNewNodesCreatedInTwoBatches()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties( singletonList( of( 42L, 500 ) ) );
@@ -371,7 +292,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -387,7 +308,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -403,7 +324,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -419,7 +340,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -435,7 +356,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerExcludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -452,7 +373,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerIncludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -469,7 +390,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerExcludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -487,7 +408,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerIncludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -504,7 +425,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperIncludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -521,7 +442,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperIncludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -538,7 +459,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperExcludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -555,7 +476,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperExcludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -573,7 +494,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithNoBounds()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithNoBounds()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -592,7 +513,7 @@ public class TxStateTest
     //region range seek by string index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNoMatchingNodes()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNoMatchingNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties( asList( of( 42L, "Agatha" ), of( 43L, "Barbara" ) ) );
@@ -607,7 +528,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInSingleBatch()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInSingleBatch()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties( asList( of( 42L, "Agatha" ), of( 43L, "Barbara" ) ) );
@@ -622,7 +543,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInTwoBatches()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInTwoBatches()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties( singletonList( of( 42L, "Agatha" ) ) );
@@ -638,7 +559,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -655,7 +576,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -672,7 +593,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -689,7 +610,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -706,7 +627,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -724,7 +645,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -742,7 +663,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -760,7 +681,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -778,7 +699,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -796,7 +717,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -814,7 +735,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndIncludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -832,7 +753,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndExcludeUpper()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -850,7 +771,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithNoBounds()
+    void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithNoBounds()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -870,7 +791,7 @@ public class TxStateTest
     //region range seek by prefix index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNoMatchingNodes()
+    void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNoMatchingNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -884,7 +805,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInOneBatch()
+    void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInOneBatch()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -898,7 +819,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes1()
+    void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes1()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -915,7 +836,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes2()
+    void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes2()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -932,7 +853,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingLeadingNewNodes()
+    void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingLeadingNewNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -949,7 +870,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingTrailingNewNodes()
+    void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingTrailingNewNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -966,7 +887,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInTwoBatches()
+    void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInTwoBatches()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
@@ -985,7 +906,7 @@ public class TxStateTest
     //region miscellaneous
 
     @Test
-    public void shouldListNodeAsDeletedIfItIsDeleted()
+    void shouldListNodeAsDeletedIfItIsDeleted()
     {
         // Given
 
@@ -998,7 +919,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldAddUniquenessConstraint()
+    void shouldAddUniquenessConstraint()
     {
         // when
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
@@ -1012,7 +933,7 @@ public class TxStateTest
     }
 
     @Test
-    public void addingUniquenessConstraintShouldBeIdempotent()
+    void addingUniquenessConstraintShouldBeIdempotent()
     {
         // given
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
@@ -1028,7 +949,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels()
+    void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels()
     {
         // when
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
@@ -1042,7 +963,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldAddRelationshipPropertyExistenceConstraint()
+    void shouldAddRelationshipPropertyExistenceConstraint()
     {
         // Given
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType( 1, 42 );
@@ -1055,7 +976,7 @@ public class TxStateTest
     }
 
     @Test
-    public void addingRelationshipPropertyExistenceConstraintConstraintShouldBeIdempotent()
+    void addingRelationshipPropertyExistenceConstraintConstraintShouldBeIdempotent()
     {
         // Given
         ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType( 1, 42 );
@@ -1071,7 +992,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldDropRelationshipPropertyExistenceConstraint()
+    void shouldDropRelationshipPropertyExistenceConstraint()
     {
         // Given
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType( 1, 42 );
@@ -1085,7 +1006,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldDifferentiateRelationshipPropertyExistenceConstraints()
+    void shouldDifferentiateRelationshipPropertyExistenceConstraints()
     {
         // Given
         ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType( 1, 11 );
@@ -1109,7 +1030,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldListRelationshipsAsCreatedIfCreated()
+    void shouldListRelationshipsAsCreatedIfCreated()
     {
         // When
         long relId = 10;
@@ -1121,7 +1042,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldGiveCorrectDegreeWhenAddingAndRemovingRelationships()
+    void shouldGiveCorrectDegreeWhenAddingAndRemovingRelationships()
     {
         // Given
         int startNode = 1;
@@ -1144,7 +1065,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldGiveCorrectRelationshipTypesForNode()
+    void shouldGiveCorrectRelationshipTypesForNode()
     {
         // Given
         int startNode = 1;
@@ -1167,7 +1088,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldNotChangeRecordForCreatedAndDeletedNode() throws Exception
+    void shouldNotChangeRecordForCreatedAndDeletedNode() throws Exception
     {
         // GIVEN
         state.nodeDoCreate( 0 );
@@ -1180,7 +1101,7 @@ public class TxStateTest
             @Override
             public void visitCreatedNode( long id )
             {
-                assertEquals( "Should not create any other node than 1", 1, id );
+                assertEquals( 1, id, "Should not create any other node than 1" );
             }
 
             @Override
@@ -1192,7 +1113,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldVisitDeletedNode() throws Exception
+    void shouldVisitDeletedNode() throws Exception
     {
         // Given
         state.nodeDoDelete( 42 );
@@ -1204,13 +1125,13 @@ public class TxStateTest
             public void visitDeletedNode( long id )
             {
                 // Then
-                assertEquals( "Wrong deleted node id", 42, id );
+                assertEquals( 42, id, "Wrong deleted node id" );
             }
         } );
     }
 
     @Test
-    public void shouldReportDeletedNodeIfItWasCreatedAndDeletedInSameTx()
+    void shouldReportDeletedNodeIfItWasCreatedAndDeletedInSameTx()
     {
         // Given
         long nodeId = 42;
@@ -1224,7 +1145,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldNotReportDeletedNodeIfItIsNotDeleted()
+    void shouldNotReportDeletedNodeIfItIsNotDeleted()
     {
         // Given
         long nodeId = 42;
@@ -1237,7 +1158,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldNotChangeRecordForCreatedAndDeletedRelationship() throws Exception
+    void shouldNotChangeRecordForCreatedAndDeletedRelationship() throws Exception
     {
         // GIVEN
         state.relationshipDoCreate( 0, 0, 1, 2 );
@@ -1250,7 +1171,7 @@ public class TxStateTest
             @Override
             public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
             {
-                assertEquals( "Should not create any other relationship than 1", 1, id );
+                assertEquals( 1, id, "Should not create any other relationship than 1" );
             }
 
             @Override
@@ -1262,7 +1183,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldVisitDeletedRelationship() throws Exception
+    void shouldVisitDeletedRelationship() throws Exception
     {
         // Given
         state.relationshipDoDelete( 42, 2, 3, 4 );
@@ -1274,13 +1195,13 @@ public class TxStateTest
             public void visitDeletedRelationship( long id )
             {
                 // Then
-                assertEquals( "Wrong deleted relationship id", 42, id );
+                assertEquals( 42, id, "Wrong deleted relationship id" );
             }
         } );
     }
 
     @Test
-    public void shouldReportDeletedRelationshipIfItWasCreatedAndDeletedInSameTx()
+    void shouldReportDeletedRelationshipIfItWasCreatedAndDeletedInSameTx()
     {
         // Given
         long startNodeId = 1;
@@ -1297,7 +1218,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldNotReportDeletedRelationshipIfItIsNotDeleted()
+    void shouldNotReportDeletedRelationshipIfItIsNotDeleted()
     {
         // Given
         long startNodeId = 1;
@@ -1312,9 +1233,8 @@ public class TxStateTest
         assertFalse( state.relationshipIsDeletedInThisTx( relationshipId ) );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
-    public void shouldVisitCreatedNodesBeforeDeletedNodes() throws Exception
+    @RepeatedTest( 100 )
+    void shouldVisitCreatedNodesBeforeDeletedNodes() throws Exception
     {
         // when
         state.accept( new VisitationOrder( random.nextInt( 100 ) )
@@ -1349,9 +1269,8 @@ public class TxStateTest
         } );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
-    public void shouldVisitCreatedNodesBeforeCreatedRelationships() throws Exception
+    @RepeatedTest( 100 )
+    void shouldVisitCreatedNodesBeforeCreatedRelationships() throws Exception
     {
         // when
         state.accept( new VisitationOrder( random.nextInt( 100 ) )
@@ -1368,9 +1287,9 @@ public class TxStateTest
             void createLateState()
             {
                 state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
-                        /*type=*/random.nextInt( 128 ),
-                        /*startNode=*/random.nextInt( 1 << 20 ),
-                        /*endNode=*/random.nextInt( 1 << 20 ) );
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             // then
@@ -1389,9 +1308,8 @@ public class TxStateTest
         } );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
-    public void shouldVisitCreatedRelationshipsBeforeDeletedRelationships() throws Exception
+    @RepeatedTest( 100 )
+    void shouldVisitCreatedRelationshipsBeforeDeletedRelationships() throws Exception
     {
         // when
         state.accept( new VisitationOrder( random.nextInt( 100 ) )
@@ -1402,18 +1320,18 @@ public class TxStateTest
             void createEarlyState()
             {
                 state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
-                        /*type=*/random.nextInt( 128 ),
-                        /*startNode=*/random.nextInt( 1 << 20 ),
-                        /*endNode=*/random.nextInt( 1 << 20 ) );
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             @Override
             void createLateState()
             {
                 state.relationshipDoDelete( /*id=*/random.nextInt( 1 << 20 ),
-                        /*type=*/random.nextInt( 128 ),
-                        /*startNode=*/random.nextInt( 1 << 20 ),
-                        /*endNode=*/random.nextInt( 1 << 20 ) );
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             // then
@@ -1431,9 +1349,8 @@ public class TxStateTest
         } );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
-    public void shouldVisitDeletedNodesAfterDeletedRelationships() throws Exception
+    @RepeatedTest( 100 )
+    void shouldVisitDeletedNodesAfterDeletedRelationships() throws Exception
     {
         // when
         state.accept( new VisitationOrder( random.nextInt( 100 ) )
@@ -1444,9 +1361,9 @@ public class TxStateTest
             void createEarlyState()
             {
                 state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
-                        /*type=*/random.nextInt( 128 ),
-                        /*startNode=*/random.nextInt( 1 << 20 ),
-                        /*endNode=*/random.nextInt( 1 << 20 ) );
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             @Override
@@ -1472,7 +1389,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldObserveCorrectAugmentedNodeRelationshipsState()
+    void shouldObserveCorrectAugmentedNodeRelationshipsState()
     {
         // GIVEN random committed state
         TxState state = new TxState();
@@ -1523,9 +1440,9 @@ public class TxStateTest
             Cursor<RelationshipItem> committed = cursor(
                     relationshipsForNode( i, committedRelationships, direction, relationshipTypes ).values() );
             Cursor<RelationshipItem> augmented = relationshipTypes == null
-                                                 ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
-                                                 : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
-                                                         relationshipTypes );
+                    ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
+                    : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
+                             relationshipTypes );
 
             Map<Long,RelationshipItem> expectedRelationships =
                     relationshipsForNode( i, allRelationships, direction, relationshipTypes );
@@ -1534,29 +1451,13 @@ public class TxStateTest
             {
                 RelationshipItem relationship = augmented.get();
                 RelationshipItem actual = expectedRelationships.remove( relationship.id() );
-                assertNotNull( "Augmented cursor returned relationship " + relationship + ", but shouldn't have",
-                        actual );
+                assertNotNull( actual,
+                        "Augmented cursor returned relationship " + relationship + ", but shouldn't have" );
                 assertRelationshipEquals( actual, relationship );
             }
-            assertTrue( "Augmented cursor didn't return some expected relationships: " + expectedRelationships,
-                    expectedRelationships.isEmpty() );
+            assertTrue( expectedRelationships.isEmpty(),
+                    "Augmented cursor didn't return some expected relationships: " + expectedRelationships );
         }
-    }
-
-    @Test
-    public void useCollectionFactory()
-    {
-        final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
-        doAnswer( invocation -> intObjectMap() ).when( collectionsFactory ).newIntObjectMap();
-
-        state = new TxState( collectionsFactory );
-
-        state.labelDoCreateForName( "foo", 1 );
-        state.propertyKeyDoCreateForName( "bar", 2 );
-        state.relationshipTypeDoCreateForName( "baz", 3 );
-
-        verify( collectionsFactory, times( 3 ) ).newIntObjectMap();
-        verifyNoMoreInteractions( collectionsFactory );
     }
 
     private Map<Long,RelationshipItem> relationshipsForNode( long nodeId, Map<Long,RelationshipItem> allRelationships,
@@ -1657,7 +1558,7 @@ public class TxStateTest
                     visitMethods.add( method.getName() );
                 }
             }
-            assertEquals( "should implement exactly two visit*(...) methods", 2, visitMethods.size() );
+            assertEquals( 2, visitMethods.size(), "should implement exactly two visit*(...) methods" );
             do
             {
                 if ( random.nextBoolean() )
@@ -1707,6 +1608,18 @@ public class TxStateTest
         {
             late = true;
         }
+    }
+
+    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.forLabel( 1, 1 );
+    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.forLabel( 2, 1 );
+
+    private TransactionState state;
+
+    @BeforeEach
+    void before()
+    {
+        state = new TxState();
     }
 
     private interface IndexUpdater

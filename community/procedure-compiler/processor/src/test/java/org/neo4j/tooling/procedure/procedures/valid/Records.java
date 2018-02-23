@@ -26,14 +26,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-public class Records
+class Records
 {
 
-    public static class LongWrapper
+    static class LongWrapper
     {
-        public final Long value;
+        final Long value;
 
-        public LongWrapper( Long value )
+        LongWrapper( Long value )
         {
             this.value = value;
         }

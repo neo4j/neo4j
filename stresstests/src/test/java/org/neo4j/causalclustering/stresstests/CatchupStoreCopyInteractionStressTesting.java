@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.RuleChain;
 
@@ -76,14 +76,14 @@ public class CatchupStoreCopyInteractionStressTesting
     private PageCache pageCache;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fs = fileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
     }
 
     @Test
-    public void shouldBehaveCorrectlyUnderStress() throws Exception
+    void shouldBehaveCorrectlyUnderStress() throws Exception
     {
         int numberOfCores =
                 parseInt( fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_NUMBER_OF_CORES", DEFAULT_NUMBER_OF_CORES ) );

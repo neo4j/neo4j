@@ -50,11 +50,11 @@ import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -70,7 +70,7 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 } )
 public class ConstraintHaIT
 {
-    public static class NodePropertyExistenceConstraintHaIT extends AbstractConstraintHaIT
+    protected static class NodePropertyExistenceConstraintHaIT extends AbstractConstraintHaIT
     {
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
@@ -115,7 +115,7 @@ public class ConstraintHaIT
         }
     }
 
-    public static class RelationshipPropertyExistenceConstraintHaIT extends AbstractConstraintHaIT
+    protected static class RelationshipPropertyExistenceConstraintHaIT extends AbstractConstraintHaIT
     {
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
@@ -164,7 +164,7 @@ public class ConstraintHaIT
         }
     }
 
-    public static class UniquenessConstraintHaIT extends AbstractConstraintHaIT
+    protected static class UniquenessConstraintHaIT extends AbstractConstraintHaIT
     {
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
@@ -220,12 +220,12 @@ public class ConstraintHaIT
 
         // These type/key methods are due to the ClusterRule being a ClassRule so that one cluster
         // is used for all the tests, and so they need to have each their own constraint
-        protected String type( int id )
+        String type( int id )
         {
             return TYPE + "_" + getClass().getSimpleName() + "_" + id;
         }
 
-        protected String key( int id )
+        String key( int id )
         {
             return PROPERTY_KEY + "_" + getClass().getSimpleName() + "_" + id;
         }
@@ -251,7 +251,7 @@ public class ConstraintHaIT
         protected abstract Class<? extends ConstraintDefinition> constraintDefinitionClass();
 
         @Test
-        public void shouldCreateConstraintOnMaster()
+        void shouldCreateConstraintOnMaster()
         {
             // given
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -282,7 +282,7 @@ public class ConstraintHaIT
         }
 
         @Test
-        public void shouldNotBePossibleToCreateConstraintsDirectlyOnSlaves()
+        void shouldNotBePossibleToCreateConstraintsDirectlyOnSlaves()
         {
             // given
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -303,7 +303,7 @@ public class ConstraintHaIT
         }
 
         @Test
-        public void shouldRemoveConstraints()
+        void shouldRemoveConstraints()
         {
             // given
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -347,7 +347,7 @@ public class ConstraintHaIT
         }
 
         @Test
-        public void newSlaveJoiningClusterShouldNotAcceptOperationsUntilConstraintIsOnline() throws Throwable
+        void newSlaveJoiningClusterShouldNotAcceptOperationsUntilConstraintIsOnline() throws Throwable
         {
             // Given
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();

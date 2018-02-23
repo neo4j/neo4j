@@ -30,10 +30,10 @@ import org.neo4j.server.configuration.ServerSettings;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConfigAdapterTest
+class ConfigAdapterTest
 {
     @Test
-    public void shouldGetDefaultPropertyByKey() throws Exception
+    void shouldGetDefaultPropertyByKey() throws Exception
     {
         // GIVEN
         Config config = Config.defaults();
@@ -47,7 +47,7 @@ public class ConfigAdapterTest
     }
 
     @Test
-    public void shouldGetPropertyInRightFormat() throws Exception
+    void shouldGetPropertyInRightFormat() throws Exception
     {
         // GIVEN
         Config config = Config.defaults();
@@ -63,7 +63,7 @@ public class ConfigAdapterTest
     }
 
     @Test
-    public void shouldContainAllKeysOfPropertiesWithDefaultOrUserDefinedValues()
+    void shouldContainAllKeysOfPropertiesWithDefaultOrUserDefinedValues()
     {
         // GIVEN
 
@@ -75,7 +75,7 @@ public class ConfigAdapterTest
     }
 
     @Test
-    public void shouldAbleToAccessRegisteredPropertyByName()
+    void shouldAbleToAccessRegisteredPropertyByName()
     {
         Config config = Config.defaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
@@ -85,7 +85,7 @@ public class ConfigAdapterTest
     }
 
     @Test
-    public void shouldAbleToAccessNonRegisteredPropertyByName()
+    void shouldAbleToAccessNonRegisteredPropertyByName()
     {
         Config config = Config.defaults( ServerSettings.transaction_idle_timeout, "600ms" );
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );

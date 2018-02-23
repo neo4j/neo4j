@@ -76,7 +76,7 @@ public class OtherThreadRule<STATE> implements TestRule
         return future;
     }
 
-    protected STATE initialState()
+    private STATE initialState()
     {
         return null;
     }
@@ -86,7 +86,7 @@ public class OtherThreadRule<STATE> implements TestRule
         return isThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
     }
 
-    public static Matcher<OtherThreadRule> isThreadState( final Thread.State... eitherOfStates )
+    private static Matcher<OtherThreadRule> isThreadState( final Thread.State... eitherOfStates )
     {
         return new TypeSafeMatcher<OtherThreadRule>()
         {

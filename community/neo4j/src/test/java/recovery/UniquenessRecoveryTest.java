@@ -62,7 +62,7 @@ public class UniquenessRecoveryTest
     /** This test can be configured (via system property) to use cypher or the core API to exercise the db. */
     private static final boolean USE_CYPHER = getBoolean( param( "use_cypher" ) );
     /** This test can be configured (via system property) to run with all different kill signals. */
-    public static final boolean EXHAUSTIVE = getBoolean( param( "exhaustive" ) );
+    private static final boolean EXHAUSTIVE = getBoolean( param( "exhaustive" ) );
 
     /** these are all the kill signals that causes a JVM to exit */
     private static final int[] KILL_SIGNALS = {1/*SIGHUP - should run exit hooks*/, 2/*SIGING - should run exit hooks*/,
@@ -305,7 +305,7 @@ public class UniquenessRecoveryTest
         }
     }
 
-    static void await() throws IOException
+    private static void await() throws IOException
     {
         System.in.read();
     }
@@ -333,23 +333,23 @@ public class UniquenessRecoveryTest
         return configurations;
     }
 
-    public static class Configuration
+    static class Configuration
     {
         boolean force_create_constraint;
         int kill_signal = 9;
 
-        public Configuration force_create_constraint( boolean force_create_constraint )
+        Configuration force_create_constraint( boolean force_create_constraint )
         {
             this.force_create_constraint = force_create_constraint;
             return this;
         }
 
-        public Object[] build()
+        Object[] build()
         {
             return new Object[]{this};
         }
 
-        public Configuration kill_signal( int kill_signal )
+        Configuration kill_signal( int kill_signal )
         {
             this.kill_signal = kill_signal;
             return this;

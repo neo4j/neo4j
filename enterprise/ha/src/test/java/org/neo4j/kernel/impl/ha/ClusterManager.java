@@ -900,12 +900,12 @@ public class ClusterManager
             return members.values().stream().filter( db -> !exceptSet.contains( db ) ).collect( Collectors.toList());
         }
 
-        public Iterable<ObservedClusterMembers> getArbiters()
+        Iterable<ObservedClusterMembers> getArbiters()
         {
             return arbiters;
         }
 
-        public boolean isArbiter( ClusterMember clusterMember )
+        boolean isArbiter( ClusterMember clusterMember )
         {
             for ( ObservedClusterMembers arbiter : arbiters )
             {
@@ -917,7 +917,7 @@ public class ClusterManager
             return false;
         }
 
-        public boolean isAvailable( ClusterMember clusterMember )
+        boolean isAvailable( ClusterMember clusterMember )
         {
             if ( isArbiter( clusterMember ) )
             {

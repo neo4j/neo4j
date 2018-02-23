@@ -161,7 +161,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
             return false;
         }
 
-        public boolean isInconsistent()
+        boolean isInconsistent()
         {
             if ( currentReadIsPreparingInconsistent )
             {
@@ -535,7 +535,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
             }
         }
 
-        public void printStackTrace( StringBuilder sb )
+        void printStackTrace( StringBuilder sb )
         {
             StringWriter w = new StringWriter();
             PrintWriter pw = new PrintWriter( w );

@@ -27,10 +27,10 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ValueTupleTest
+class ValueTupleTest
 {
     @Test
-    public void shouldEqual()
+    void shouldEqual()
     {
         assertEquals( tuple( true ), tuple( true ) );
         assertNotEquals( tuple( true ), tuple( false ) );

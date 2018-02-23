@@ -21,13 +21,11 @@ package org.neo4j.server.rest.batch;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import javax.servlet.ServletException;
 
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletRequest.RequestData;
@@ -38,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class BatchOperationsTest
+class BatchOperationsTest
 {
 
     private final BatchOperations ops = new BatchOperations( null )
@@ -51,7 +49,7 @@ public class BatchOperationsTest
     };
 
     @Test
-    public void testReplaceLocations()
+    void testReplaceLocations()
     {
         Map<Integer,String> map = new HashMap<>();
         map.put(100,"bar");
@@ -62,7 +60,7 @@ public class BatchOperationsTest
     }
 
     @Test
-    public void testSchemeInInternalJettyServletRequestForHttp() throws UnsupportedEncodingException
+    void testSchemeInInternalJettyServletRequestForHttp() throws UnsupportedEncodingException
     {
         // when
         InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
@@ -74,7 +72,7 @@ public class BatchOperationsTest
     }
 
     @Test
-    public void testSchemeInInternalJettyServletRequestForHttps() throws UnsupportedEncodingException
+    void testSchemeInInternalJettyServletRequestForHttps() throws UnsupportedEncodingException
     {
         // when
         InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
@@ -86,7 +84,7 @@ public class BatchOperationsTest
     }
 
     @Test
-    public void shouldForwardMetadataFromRequestData() throws Exception
+    void shouldForwardMetadataFromRequestData() throws Exception
     {
         // Given
         RequestData mock = new RequestData(
@@ -111,7 +109,7 @@ public class BatchOperationsTest
     }
 
     @Test
-    public void shouldIgnoreUnknownAndUnparseablePlaceholders()
+    void shouldIgnoreUnknownAndUnparseablePlaceholders()
     {
         // When/then
         assertEquals("foo {00000000010001010001001100111000100101010111001101110111}",

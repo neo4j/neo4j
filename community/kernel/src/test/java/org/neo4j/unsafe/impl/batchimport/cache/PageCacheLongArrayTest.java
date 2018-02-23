@@ -48,9 +48,9 @@ public class PageCacheLongArrayTest
     private static final int COUNT = 1_000_000;
 
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
     @Resource
-    public RandomRule random;
+    private RandomRule random;
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -58,7 +58,7 @@ public class PageCacheLongArrayTest
     public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( pageCacheRule );
 
     @Test
-    public void verifyPageCacheLongArray() throws Exception
+    void verifyPageCacheLongArray() throws Exception
     {
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         PagedFile file = pageCache.map( dir.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
@@ -70,7 +70,7 @@ public class PageCacheLongArrayTest
     }
 
     @Test
-    public void verifyChunkingArrayWithPageCacheLongArray()
+    void verifyChunkingArrayWithPageCacheLongArray()
     {
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File directory = dir.directory();

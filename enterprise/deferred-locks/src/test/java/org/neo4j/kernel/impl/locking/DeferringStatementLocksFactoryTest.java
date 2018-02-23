@@ -24,18 +24,18 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.DeferringStatementLocksFactory.deferred_locks_enabled;
 
-public class DeferringStatementLocksFactoryTest
+class DeferringStatementLocksFactoryTest
 {
     @Test
-    public void initializeThrowsForNullLocks()
+    void initializeThrowsForNullLocks()
     {
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         try
@@ -50,7 +50,7 @@ public class DeferringStatementLocksFactoryTest
     }
 
     @Test
-    public void initializeThrowsForNullConfig()
+    void initializeThrowsForNullConfig()
     {
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         try
@@ -65,7 +65,7 @@ public class DeferringStatementLocksFactoryTest
     }
 
     @Test
-    public void newInstanceThrowsWhenNotInitialized()
+    void newInstanceThrowsWhenNotInitialized()
     {
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         try
@@ -80,7 +80,7 @@ public class DeferringStatementLocksFactoryTest
     }
 
     @Test
-    public void newInstanceCreatesSimpleLocksWhenConfigNotSet()
+    void newInstanceCreatesSimpleLocksWhenConfigNotSet()
     {
         Locks locks = mock( Locks.class );
         Locks.Client client = mock( Locks.Client.class );
@@ -99,7 +99,7 @@ public class DeferringStatementLocksFactoryTest
     }
 
     @Test
-    public void newInstanceCreatesDeferredLocksWhenConfigSet()
+    void newInstanceCreatesDeferredLocksWhenConfigSet()
     {
         Locks locks = mock( Locks.class );
         Locks.Client client = mock( Locks.Client.class );

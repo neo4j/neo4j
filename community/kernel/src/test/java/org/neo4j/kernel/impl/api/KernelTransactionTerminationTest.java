@@ -76,7 +76,7 @@ public class KernelTransactionTerminationTest
     private static final int TEST_RUN_TIME_MS = 5_000;
 
     @Test
-    public void transactionCantBeTerminatedAfterItIsClosed()
+    void transactionCantBeTerminatedAfterItIsClosed()
     {
         assertTimeout( ofMillis( TEST_RUN_TIME_MS * 20 ), () -> runTwoThreads( tx -> tx.markForTermination( TransactionMarkedAsFailed ), tx -> {
             close( tx );
@@ -86,7 +86,7 @@ public class KernelTransactionTerminationTest
     }
 
     @Test
-    public void closeTransaction() throws Throwable
+    void closeTransaction() throws Throwable
     {
         assertTimeout( ofMillis( TEST_RUN_TIME_MS * 20 ), () -> {
             BlockingQueue<Boolean> committerToTerminator = new LinkedBlockingQueue<>( 1 );

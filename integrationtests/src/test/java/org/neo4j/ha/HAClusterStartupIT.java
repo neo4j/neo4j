@@ -19,10 +19,10 @@
  */
 package org.neo4j.ha;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.jupiter.api.Test;
 import org.junit.experimental.runners.Enclosed;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -65,7 +65,7 @@ public class HAClusterStartupIT
         private HighlyAvailableGraphDatabase oldSlave2;
 
         @BeforeEach
-        public void setup() throws Throwable
+        void setup() throws Throwable
         {
             // setup a cluster with some data and entries in log files in fully functional and shutdown state
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -89,7 +89,7 @@ public class HAClusterStartupIT
         }
 
         @Test
-        public void allClusterNodesShouldSupportTheBuiltInProcedures() throws Throwable
+        void allClusterNodesShouldSupportTheBuiltInProcedures() throws Throwable
         {
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
             try
@@ -124,7 +124,7 @@ public class HAClusterStartupIT
         }
 
         @Test
-        public void aSlaveWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+        void aSlaveWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
         {
             // WHEN removing all the files in graphdb on the slave and restarting the cluster
             deleteAllFilesOn( oldSlave1 );
@@ -134,7 +134,7 @@ public class HAClusterStartupIT
         }
 
         @Test
-        public void bothSlavesWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+        void bothSlavesWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
         {
             // WHEN removing all the files in graphdb on both slaves and restarting the cluster
             deleteAllFilesOn( oldSlave1 );
@@ -145,7 +145,7 @@ public class HAClusterStartupIT
         }
 
         @Test
-        public void theMasterWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+        void theMasterWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
         {
             // WHEN removing all the files in graphdb on the db that was master and restarting the cluster
             deleteAllFilesOn( oldMaster );
@@ -155,7 +155,7 @@ public class HAClusterStartupIT
         }
 
         @Test
-        public void aSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
+        void aSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
         {
             // WHEN removing all logical log files in graphdb on the slave and restarting the cluster
             deleteAllLogsOn( oldSlave1 );
@@ -165,7 +165,7 @@ public class HAClusterStartupIT
         }
 
         @Test
-        public void bothSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
+        void bothSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
         {
             // WHEN removing all logical log files in graphdb on the slave and restarting the cluster
             deleteAllLogsOn( oldSlave1 );
@@ -182,12 +182,12 @@ public class HAClusterStartupIT
         public final ClusterRule clusterRule = new ClusterRule().withCluster( clusterOfSize( 3 ) )
                 .withSeedDir( dbWithOutLogs() );
 
-        public ClusterWithSeed() throws IOException
+        ClusterWithSeed() throws IOException
         {
         }
 
         @Test
-        public void aClusterShouldStartAndRunWhenSeededWithAStoreHavingNoLogicalLogFiles() throws Throwable
+        void aClusterShouldStartAndRunWhenSeededWithAStoreHavingNoLogicalLogFiles() throws Throwable
         {
             // WHEN removing all logical log files in graphdb on the slave and restarting a new cluster
             // THEN the new cluster should work

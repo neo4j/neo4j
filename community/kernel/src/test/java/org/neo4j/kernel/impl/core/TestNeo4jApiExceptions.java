@@ -38,10 +38,10 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TestNeo4jApiExceptions
+class TestNeo4jApiExceptions
 {
     @Test
-    public void testNotInTransactionException()
+    void testNotInTransactionException()
     {
         Node node1 = graph.createNode();
         node1.setProperty( "test", 1 );
@@ -116,7 +116,7 @@ public class TestNeo4jApiExceptions
     }
 
     @Test
-    public void testNotFoundException()
+    void testNotFoundException()
     {
         Node node1 = graph.createNode();
         Node node2 = graph.createNode();
@@ -150,7 +150,7 @@ public class TestNeo4jApiExceptions
     }
 
     @Test
-    public void shouldGiveNiceErrorWhenShutdownKernelApi()
+    void shouldGiveNiceErrorWhenShutdownKernelApi()
     {
         GraphDatabaseService graphDb = graph;
         Node node = graphDb.createNode();
@@ -168,7 +168,7 @@ public class TestNeo4jApiExceptions
     }
 
     @Test
-    public void shouldGiveNiceErrorWhenShutdownLegacy()
+    void shouldGiveNiceErrorWhenShutdownLegacy()
     {
         GraphDatabaseService graphDb = graph;
         Node node = graphDb.createNode();
@@ -206,7 +206,7 @@ public class TestNeo4jApiExceptions
         tx = graph.beginTx();
     }
 
-    public void commit()
+    private void commit()
     {
         if ( tx != null )
         {
@@ -216,7 +216,7 @@ public class TestNeo4jApiExceptions
         }
     }
 
-    public void rollback()
+    private void rollback()
     {
         if ( tx != null )
         {
@@ -226,14 +226,14 @@ public class TestNeo4jApiExceptions
     }
 
     @BeforeEach
-    public void init()
+    void init()
     {
         graph = new TestGraphDatabaseFactory().newImpermanentDatabase();
         newTransaction();
     }
 
     @AfterEach
-    public void cleanUp()
+    void cleanUp()
     {
         rollback();
         graph.shutdown();

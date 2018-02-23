@@ -19,24 +19,24 @@
  */
 package org.neo4j.server;
 
-import java.io.PrintStream;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.io.PrintStream;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.commandline.Util.neo4jVersion;
 
-public class CommunityEntryPointTest
+class CommunityEntryPointTest
 {
     private PrintStream realSystemOut;
     private PrintStream fakeSystemOut;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         realSystemOut = System.out;
         fakeSystemOut = mock( PrintStream.class );
@@ -44,13 +44,13 @@ public class CommunityEntryPointTest
     }
 
     @AfterEach
-    public void teardown()
+    void teardown()
     {
         System.setOut( realSystemOut );
     }
 
     @Test
-    public void mainPrintsVersion()
+    void mainPrintsVersion()
     {
         // when
         CommunityEntryPoint.main( new String[]{ "--version" } );

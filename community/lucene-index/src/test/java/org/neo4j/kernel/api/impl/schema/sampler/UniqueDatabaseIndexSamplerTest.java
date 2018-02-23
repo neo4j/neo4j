@@ -46,7 +46,7 @@ public class UniqueDatabaseIndexSamplerTest
     private final TaskCoordinator taskControl = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 
     @Test
-    public void uniqueSamplingUseDocumentsNumber() throws IndexNotFoundKernelException
+    void uniqueSamplingUseDocumentsNumber() throws IndexNotFoundKernelException
     {
         when( indexSearcher.getIndexReader().numDocs() ).thenReturn( 17 );
 
@@ -56,7 +56,7 @@ public class UniqueDatabaseIndexSamplerTest
     }
 
     @Test
-    public void uniqueSamplingCancel() throws IndexNotFoundKernelException
+    void uniqueSamplingCancel() throws IndexNotFoundKernelException
     {
         when( indexSearcher.getIndexReader().numDocs() ).thenAnswer( invocation ->
         {

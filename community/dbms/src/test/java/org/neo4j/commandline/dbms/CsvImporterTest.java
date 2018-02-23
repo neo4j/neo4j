@@ -44,15 +44,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class CsvImporterTest
+class CsvImporterTest
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
     @Resource
     public SuppressOutput suppressOutput;
 
     @Test
-    public void writesReportToSpecifiedReportFile() throws Exception
+    void writesReportToSpecifiedReportFile() throws Exception
     {
         File dbDir = testDir.directory( "db" );
         File logDir = testDir.directory( "logs" );

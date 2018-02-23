@@ -19,20 +19,20 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
-public class SegmentHeaderTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+class SegmentHeaderTest
 {
     private SegmentHeader.Marshal marshal = new SegmentHeader.Marshal();
 
     @Test
-    public void shouldWriteAndReadHeader() throws Exception
+    void shouldWriteAndReadHeader() throws Exception
     {
         // given
         long prevFileLastIndex = 1;
@@ -53,7 +53,7 @@ public class SegmentHeaderTest
     }
 
     @Test
-    public void shouldThrowExceptionWhenReadingIncompleteHeader() throws Exception
+    void shouldThrowExceptionWhenReadingIncompleteHeader() throws Exception
     {
         // given
         long prevFileLastIndex = 1;

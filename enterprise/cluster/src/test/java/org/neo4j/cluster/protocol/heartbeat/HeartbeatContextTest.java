@@ -47,9 +47,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
  * Tests basic sanity and various scenarios for HeartbeatContext.
  * All tests are performed from the perspective of instance running at 5001.
  */
-public class HeartbeatContextTest
+class HeartbeatContextTest
 {
     private static InstanceId[] instanceIds = new InstanceId[]{
             new InstanceId( 1 ),
@@ -76,7 +76,7 @@ public class HeartbeatContextTest
     private ClusterContext context;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         Map<InstanceId, URI> members = new HashMap<>();
         for ( int i = 0; i < instanceIds.length; i++ )
@@ -105,7 +105,7 @@ public class HeartbeatContextTest
     }
 
     @Test
-    public void testSaneInitialState()
+    void testSaneInitialState()
     {
 
         // In config, not suspected yet
@@ -124,7 +124,7 @@ public class HeartbeatContextTest
     }
 
     @Test
-    public void testSuspicions()
+    void testSuspicions()
     {
         InstanceId suspect = instanceIds[1];
         toTest.suspect( suspect );
@@ -158,7 +158,7 @@ public class HeartbeatContextTest
     }
 
     @Test
-    public void testFailedInstanceReportingSuspicions()
+    void testFailedInstanceReportingSuspicions()
     {
         InstanceId suspect = instanceIds[1];
         InstanceId newSuspiciousBastard = instanceIds[2];
@@ -174,7 +174,7 @@ public class HeartbeatContextTest
     }
 
     @Test
-    public void testFailedInstanceBecomingAlive()
+    void testFailedInstanceBecomingAlive()
     {
         InstanceId suspect = instanceIds[1];
         InstanceId newSuspiciousBastard = instanceIds[2];
@@ -206,7 +206,7 @@ public class HeartbeatContextTest
      * Instance A should now consider C alive.
      */
     @Test
-    public void testOneInstanceComesAliveAfterAllOtherFail()
+    void testOneInstanceComesAliveAfterAllOtherFail()
     {
         InstanceId instanceB = instanceIds[1];
         InstanceId instanceC = instanceIds[2];
@@ -226,7 +226,7 @@ public class HeartbeatContextTest
         assertFalse( toTest.isFailedBasedOnSuspicions( instanceC ) );
     }
     @Test
-    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers()
+    void shouldConsultSuspicionsOnlyFromCurrentClusterMembers()
     {
         // Given
         InstanceId notInCluster = new InstanceId( -1 ); // backup, for example

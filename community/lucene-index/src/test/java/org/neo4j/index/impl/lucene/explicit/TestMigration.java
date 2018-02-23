@@ -52,7 +52,7 @@ public class TestMigration
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void canReadAndUpgradeOldIndexStoreFormat() throws Exception
+    void canReadAndUpgradeOldIndexStoreFormat() throws Exception
     {
         File path = new File( "target/var/old-index-store" );
         Neo4jTestCase.deleteFileOrDirectory( path );
@@ -94,7 +94,7 @@ public class TestMigration
     }
 
     @Test
-    public void providerGetsFilledInAutomatically()
+    void providerGetsFilledInAutomatically()
     {
         Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" );
         File storeDir = new File( "target/var/index" );

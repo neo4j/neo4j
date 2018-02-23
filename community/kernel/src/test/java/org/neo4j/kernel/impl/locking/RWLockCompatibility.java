@@ -209,7 +209,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
     }
 
-    public class StressThread extends Thread
+    class StressThread extends Thread
     {
         private final Random rand = new Random( currentTimeMillis() );
         private final Object READ = new Object();

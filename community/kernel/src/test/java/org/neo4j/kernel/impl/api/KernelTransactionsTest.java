@@ -126,7 +126,7 @@ import static org.neo4j.time.Clocks.nanoClock;
 public class KernelTransactionsTest
 {
     @Resource
-    public OtherThreadRule<Void> t2;
+    private OtherThreadRule<Void> t2;
     @Rule
     public final ExpectedException expectedException = none();
 
@@ -135,13 +135,13 @@ public class KernelTransactionsTest
     private static AvailabilityGuard availabilityGuard;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         availabilityGuard = new AvailabilityGuard( clock, getInstance() );
     }
 
     @Test
-    public void shouldListActiveTransactions() throws Throwable
+    void shouldListActiveTransactions() throws Throwable
     {
         // Given
         KernelTransactions transactions = newTestKernelTransactions();
@@ -158,7 +158,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldDisposeTransactionsWhenAsked() throws Throwable
+    void shouldDisposeTransactionsWhenAsked() throws Throwable
     {
         // Given
         KernelTransactions transactions = newKernelTransactions();
@@ -183,7 +183,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldIncludeRandomBytesInAdditionalHeader() throws Throwable
+    void shouldIncludeRandomBytesInAdditionalHeader() throws Throwable
     {
         // Given
         TransactionRepresentation[] transactionRepresentation = new TransactionRepresentation[1];
@@ -205,7 +205,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldReuseClosedTransactionObjects() throws Throwable
+    void shouldReuseClosedTransactionObjects() throws Throwable
     {
         // GIVEN
         KernelTransactions transactions = newKernelTransactions();
@@ -220,7 +220,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldTellWhenTransactionsFromSnapshotHaveBeenClosed() throws Throwable
+    void shouldTellWhenTransactionsFromSnapshotHaveBeenClosed() throws Throwable
     {
         // GIVEN
         KernelTransactions transactions = newKernelTransactions();
@@ -245,7 +245,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldBeAbleToSnapshotDuringHeavyLoad() throws Throwable
+    void shouldBeAbleToSnapshotDuringHeavyLoad() throws Throwable
     {
         // GIVEN
         final KernelTransactions transactions = newKernelTransactions();
@@ -305,7 +305,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void transactionCloseRemovesTxFromActiveTransactions() throws Throwable
+    void transactionCloseRemovesTxFromActiveTransactions() throws Throwable
     {
         KernelTransactions kernelTransactions = newTestKernelTransactions();
 
@@ -320,7 +320,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void disposeAllMarksAllTransactionsForTermination() throws Throwable
+    void disposeAllMarksAllTransactionsForTermination() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
@@ -336,7 +336,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void transactionClosesUnderlyingStoreStatementWhenDisposed() throws Throwable
+    void transactionClosesUnderlyingStoreStatementWhenDisposed() throws Throwable
     {
         StorageStatement storeStatement1 = mock( StorageStatement.class );
         StorageStatement storeStatement2 = mock( StorageStatement.class );
@@ -359,7 +359,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void threadThatBlocksNewTxsCantStartNewTxs() throws Throwable
+    void threadThatBlocksNewTxsCantStartNewTxs() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
@@ -375,7 +375,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void blockNewTransactions() throws Throwable
+    void blockNewTransactions() throws Throwable
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             KernelTransactions kernelTransactions = newKernelTransactions();
@@ -393,7 +393,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void unblockNewTransactionsFromWrongThreadThrows() throws Throwable
+    void unblockNewTransactionsFromWrongThreadThrows() throws Throwable
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             KernelTransactions kernelTransactions = newKernelTransactions();
@@ -424,7 +424,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldNotLeakTransactionOnSecurityContextFreezeFailure() throws Throwable
+    void shouldNotLeakTransactionOnSecurityContextFreezeFailure() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         LoginContext loginContext = mock( LoginContext.class );
@@ -437,7 +437,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void exceptionWhenStartingNewTransactionOnShutdownInstance() throws Throwable
+    void exceptionWhenStartingNewTransactionOnShutdownInstance() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
@@ -448,7 +448,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void exceptionWhenStartingNewTransactionOnStoppedKernelTransactions() throws Throwable
+    void exceptionWhenStartingNewTransactionOnStoppedKernelTransactions() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
@@ -462,7 +462,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void startNewTransactionOnRestartedKErnelTransactions() throws Throwable
+    void startNewTransactionOnRestartedKErnelTransactions() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
@@ -473,7 +473,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void incrementalUserTransactionId() throws Throwable
+    void incrementalUserTransactionId() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         try ( KernelTransaction kernelTransaction = kernelTransactions

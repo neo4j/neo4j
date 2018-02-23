@@ -74,7 +74,7 @@ import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 public abstract class FileSystemAbstractionTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    TestDirectory testDirectory;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -84,18 +84,18 @@ public abstract class FileSystemAbstractionTest
     private int pageCachePageSize = 32;
     private int recordsPerFilePage = pageCachePageSize / recordSize;
     private int recordCount = 25 * maxPages * recordsPerFilePage;
-    protected FileSystemAbstraction fsa;
-    protected File path;
+    FileSystemAbstraction fsa;
+    File path;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         fsa = buildFileSystemAbstraction();
         path = new File( testDirectory.directory(), UUID.randomUUID().toString() );
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         fsa.close();
     }
@@ -103,7 +103,7 @@ public abstract class FileSystemAbstractionTest
     protected abstract FileSystemAbstraction buildFileSystemAbstraction();
 
     @Test
-    public void shouldCreatePath() throws Exception
+    void shouldCreatePath() throws Exception
     {
         fsa.mkdirs( path );
 
@@ -111,7 +111,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void shouldCreateDeepPath() throws Exception
+    void shouldCreateDeepPath() throws Exception
     {
         path = new File( path, UUID.randomUUID() + "/" + UUID.randomUUID() );
 
@@ -121,7 +121,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void shouldCreatePathThatAlreadyExists() throws Exception
+    void shouldCreatePathThatAlreadyExists() throws Exception
     {
         fsa.mkdirs( path );
         assertTrue( fsa.fileExists( path ) );
@@ -132,7 +132,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void shouldCreatePathThatPointsToFile() throws Exception
+    void shouldCreatePathThatPointsToFile() throws Exception
     {
         fsa.mkdirs( path );
         assertTrue( fsa.fileExists( path ) );
@@ -148,7 +148,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void moveToDirectoryMustMoveFile() throws Exception
+    void moveToDirectoryMustMoveFile() throws Exception
     {
         File source = new File( path, "source" );
         File target = new File( path, "target" );
@@ -165,7 +165,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void copyToDirectoryCopiesFile() throws IOException
+    void copyToDirectoryCopiesFile() throws IOException
     {
         File source = new File( path, "source" );
         File target = new File( path, "target" );
@@ -182,7 +182,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void copyToDirectoryReplaceExistingFile() throws Exception
+    void copyToDirectoryReplaceExistingFile() throws Exception
     {
         File source = new File( path, "source" );
         File target = new File( path, "target" );
@@ -201,7 +201,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void deleteRecursivelyMustDeleteAllFilesInDirectory() throws Exception
+    void deleteRecursivelyMustDeleteAllFilesInDirectory() throws Exception
     {
         fsa.mkdirs( path );
         File a = new File( path, "a" );
@@ -222,7 +222,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void deleteRecursivelyMustDeleteGivenDirectory() throws Exception
+    void deleteRecursivelyMustDeleteGivenDirectory() throws Exception
     {
         fsa.mkdirs( path );
         fsa.deleteRecursively( path );
@@ -230,7 +230,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void deleteRecursivelyMustDeleteGivenFile() throws Exception
+    void deleteRecursivelyMustDeleteGivenFile() throws Exception
     {
         fsa.mkdirs( path );
         File file = new File( path, "file" );
@@ -240,7 +240,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void fileWatcherCreation() throws IOException
+    void fileWatcherCreation() throws IOException
     {
         try ( FileWatcher fileWatcher = fsa.fileWatcher() )
         {
@@ -249,7 +249,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void closeThirdPartyFileSystemsOnClose() throws IOException
+    void closeThirdPartyFileSystemsOnClose() throws IOException
     {
         CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
 
@@ -265,7 +265,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void readAndWriteMustTakeBufferPositionIntoAccount() throws Exception
+    void readAndWriteMustTakeBufferPositionIntoAccount() throws Exception
     {
         byte[] bytes = new byte[]{1, 2, 3, 4, 5};
         ByteBuffer buf = ByteBuffer.wrap( bytes );
@@ -300,14 +300,14 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustBeEmptyForEmptyBaseDirectory() throws Exception
+    void streamFilesRecursiveMustBeEmptyForEmptyBaseDirectory() throws Exception
     {
         File dir = existingDirectory( "dir" );
         assertThat( fsa.streamFilesRecursive( dir ).count(), Matchers.is( 0L ) );
     }
 
     @Test
-    public void streamFilesRecursiveMustListAllFilesInBaseDirectory() throws Exception
+    void streamFilesRecursiveMustListAllFilesInBaseDirectory() throws Exception
     {
         File a = existingFile( "a" );
         File b = existingFile( "b" );
@@ -318,7 +318,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustListAllFilesInSubDirectories() throws Exception
+    void streamFilesRecursiveMustListAllFilesInSubDirectories() throws Exception
     {
         File sub1 = existingDirectory( "sub1" );
         File sub2 = existingDirectory( "sub2" );
@@ -334,7 +334,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustNotListSubDirectories() throws Exception
+    void streamFilesRecursiveMustNotListSubDirectories() throws Exception
     {
         File sub1 = existingDirectory( "sub1" );
         File sub2 = existingDirectory( "sub2" );
@@ -353,7 +353,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveFilePathsMustBeCanonical() throws Exception
+    void streamFilesRecursiveFilePathsMustBeCanonical() throws Exception
     {
         File sub = existingDirectory( "sub" );
         File a = new File( new File( new File( sub, ".." ), "sub" ), "a" );
@@ -366,7 +366,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustBeAbleToGivePathRelativeToBase() throws Exception
+    void streamFilesRecursiveMustBeAbleToGivePathRelativeToBase() throws Exception
     {
         File sub = existingDirectory( "sub" );
         File a = existingFile( "a" );
@@ -379,7 +379,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustListSingleFileGivenAsBase() throws Exception
+    void streamFilesRecursiveMustListSingleFileGivenAsBase() throws Exception
     {
         existingDirectory( "sub" ); // must not be observed
         existingFile( "sub/x" ); // must not be observed
@@ -391,7 +391,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveListedSingleFileMustHaveCanonicalPath() throws Exception
+    void streamFilesRecursiveListedSingleFileMustHaveCanonicalPath() throws Exception
     {
         File sub = existingDirectory( "sub" );
         existingFile( "sub/x" ); // we query specifically for 'a', so this must not be listed
@@ -404,14 +404,14 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustReturnEmptyStreamForNonExistingBasePath() throws Exception
+    void streamFilesRecursiveMustReturnEmptyStreamForNonExistingBasePath() throws Exception
     {
         File nonExisting = new File( "nonExisting" );
         assertFalse( fsa.streamFilesRecursive( nonExisting ).anyMatch( Predicates.alwaysTrue() ) );
     }
 
     @Test
-    public void streamFilesRecursiveMustRenameFiles() throws Exception
+    void streamFilesRecursiveMustRenameFiles() throws Exception
     {
         File a = existingFile( "a" );
         File b = nonExistingFile( "b" ); // does not yet exist
@@ -422,7 +422,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustDeleteFiles() throws Exception
+    void streamFilesRecursiveMustDeleteFiles() throws Exception
     {
         File a = existingFile( "a" );
         File b = existingFile( "b" );
@@ -436,13 +436,13 @@ public abstract class FileSystemAbstractionTest
         assertFalse( fsa.fileExists( c ) );
     }
 
-    private Predicate<FileHandle> hasFile( File a )
+    Predicate<FileHandle> hasFile( File a )
     {
         return fh -> fh.getFile().equals( a );
     }
 
     @Test
-    public void streamFilesRecursiveMustThrowWhenDeletingNonExistingFile() throws Exception
+    void streamFilesRecursiveMustThrowWhenDeletingNonExistingFile() throws Exception
     {
         File a = existingFile( "a" );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
@@ -452,7 +452,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustThrowWhenTargetFileOfRenameAlreadyExists() throws Exception
+    void streamFilesRecursiveMustThrowWhenTargetFileOfRenameAlreadyExists() throws Exception
     {
         File a = existingFile( "a" );
         File b = existingFile( "b" );
@@ -462,7 +462,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustNotThrowWhenTargetFileOfRenameAlreadyExistsAndUsingReplaceExisting()
+    void streamFilesRecursiveMustNotThrowWhenTargetFileOfRenameAlreadyExistsAndUsingReplaceExisting()
             throws Exception
     {
         File a = existingFile( "a" );
@@ -472,7 +472,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileRename() throws Exception
+    void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileRename() throws Exception
     {
         File sub = existingDirectory( "sub" );
         File x = new File( sub, "x" );
@@ -486,7 +486,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByRename() throws Exception
+    void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByRename() throws Exception
     {
         File sub = existingDirectory( "sub" );
         File subsub = new File( sub, "subsub" );
@@ -504,7 +504,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByRename()
+    void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByRename()
             throws Exception
     {
         File sub = existingDirectory( "sub" );
@@ -527,7 +527,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileDelete() throws Exception
+    void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileDelete() throws Exception
     {
         File sub = existingDirectory( "sub" );
         File x = new File( sub, "x" );
@@ -540,7 +540,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByDelete() throws Exception
+    void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByDelete() throws Exception
     {
         File sub = existingDirectory( "sub" );
         File subsub = new File( sub, "subsub" );
@@ -557,7 +557,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByDelete()
+    void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByDelete()
             throws Exception
     {
         File sub = existingDirectory( "sub" );
@@ -579,7 +579,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustCreateMissingPathDirectoriesImpliedByFileRename() throws Exception
+    void streamFilesRecursiveMustCreateMissingPathDirectoriesImpliedByFileRename() throws Exception
     {
         File a = existingFile( "a" );
         File sub = new File( path, "sub" ); // does not exists
@@ -593,7 +593,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustNotSeeFilesLaterCreatedBaseDirectory() throws Exception
+    void streamFilesRecursiveMustNotSeeFilesLaterCreatedBaseDirectory() throws Exception
     {
         File a = existingFile( "a" );
         Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParentFile() );
@@ -604,7 +604,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustNotSeeFilesRenamedIntoBaseDirectory() throws Exception
+    void streamFilesRecursiveMustNotSeeFilesRenamedIntoBaseDirectory() throws Exception
     {
         File a = existingFile( "a" );
         File sub = existingDirectory( "sub" );
@@ -625,7 +625,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustNotSeeFilesRenamedIntoSubDirectory() throws Exception
+    void streamFilesRecursiveMustNotSeeFilesRenamedIntoSubDirectory() throws Exception
     {
         File a = existingFile( "a" );
         File sub = existingDirectory( "sub" );
@@ -644,7 +644,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveRenameMustCanonicaliseSourceFile() throws Exception
+    void streamFilesRecursiveRenameMustCanonicaliseSourceFile() throws Exception
     {
         // File 'a' should canonicalise from 'a/poke/..' to 'a', which is a file that exists.
         // Thus, this should not throw a NoSuchFileException.
@@ -656,7 +656,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveRenameMustCanonicaliseTargetFile() throws Exception
+    void streamFilesRecursiveRenameMustCanonicaliseTargetFile() throws Exception
     {
         // File 'b' should canonicalise from 'b/poke/..' to 'b', which is a file that doesn't exists.
         // Thus, this should not throw a NoSuchFileException for the 'poke' directory.
@@ -667,7 +667,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveRenameTargetFileMustBeRenamed() throws Exception
+    void streamFilesRecursiveRenameTargetFileMustBeRenamed() throws Exception
     {
         File a = existingFile( "a" );
         File b = nonExistingFile( "b" );
@@ -677,7 +677,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveSourceFileMustNotBeMappableAfterRename() throws Exception
+    void streamFilesRecursiveSourceFileMustNotBeMappableAfterRename() throws Exception
     {
         File a = existingFile( "a" );
         File b = nonExistingFile( "b" );
@@ -688,7 +688,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveRenameMustNotChangeSourceFileContents() throws Exception
+    void streamFilesRecursiveRenameMustNotChangeSourceFileContents() throws Exception
     {
         File a = existingFile( "a" );
         File b = nonExistingFile( "b" );
@@ -699,7 +699,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveRenameMustNotChangeSourceFileContentsWithReplaceExisting() throws Exception
+    void streamFilesRecursiveRenameMustNotChangeSourceFileContentsWithReplaceExisting() throws Exception
     {
         File a = existingFile( "a" );
         File b = existingFile( "b" );
@@ -731,7 +731,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void shouldHandlePathThatLooksVeryDifferentWhenCanonicalized() throws Exception
+    void shouldHandlePathThatLooksVeryDifferentWhenCanonicalized() throws Exception
     {
         File dir = existingDirectory( "/././home/.././././home/././.././././././././././././././././././home/././" );
         File a = existingFile( "/home/a" );

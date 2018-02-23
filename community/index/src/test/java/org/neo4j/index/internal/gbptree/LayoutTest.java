@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class LayoutTest
+class LayoutTest
 {
     @Test
-    public void shouldCreateDifferentIdentifierWithDifferentName()
+    void shouldCreateDifferentIdentifierWithDifferentName()
     {
         // GIVEN
         String firstName = "one";
@@ -43,7 +43,7 @@ public class LayoutTest
     }
 
     @Test
-    public void shouldCreateDifferentIdentifierWithDifferentChecksums()
+    void shouldCreateDifferentIdentifierWithDifferentChecksums()
     {
         // GIVEN
         String name = "name";
@@ -59,7 +59,7 @@ public class LayoutTest
     }
 
     @Test
-    public void shouldFailOnTooLongName()
+    void shouldFailOnTooLongName()
     {
         // WHEN
         try

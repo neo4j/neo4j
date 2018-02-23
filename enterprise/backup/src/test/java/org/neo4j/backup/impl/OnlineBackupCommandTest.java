@@ -74,7 +74,7 @@ public class OnlineBackupCommandTest
     private OnlineBackupCommand subject;
 
     @BeforeEach
-    public void setup() throws Exception
+    void setup() throws Exception
     {
         OnlineBackupContextBuilder contextBuilder = mock( OnlineBackupContextBuilder.class );
         when( contextBuilder.createContext( any() ) ).thenReturn( onlineBackupContext );
@@ -94,7 +94,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void nonExistingBackupDirectoryRaisesException() throws CommandFailed, IncorrectUsage
+    void nonExistingBackupDirectoryRaisesException() throws CommandFailed, IncorrectUsage
     {
         // given backup directory is not a directory
         when( fileSystemAbstraction.isDirectory( backupDirectory.toFile() ) ).thenReturn( false );
@@ -108,7 +108,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void nonExistingReportDirectoryRaisesException() throws CommandFailed, IncorrectUsage
+    void nonExistingReportDirectoryRaisesException() throws CommandFailed, IncorrectUsage
     {
         // given report directory is not a directory
         when( fileSystemAbstraction.isDirectory( reportDirectory.toFile() ) ).thenReturn( false );
@@ -122,7 +122,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

@@ -26,10 +26,10 @@ import static java.lang.System.out;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PropertyValueComparatorTest
+class PropertyValueComparatorTest
 {
     @Test
-    public void shouldDetectEmptyRanges()
+    void shouldDetectEmptyRanges()
     {
         // Set DEBUG=true below to see how this test works
 
@@ -57,7 +57,7 @@ public class PropertyValueComparatorTest
     }
 
     @Test
-    public void shouldHandleNulls()
+    void shouldHandleNulls()
     {
         for ( boolean includeLower : BOOLEANS )
         {

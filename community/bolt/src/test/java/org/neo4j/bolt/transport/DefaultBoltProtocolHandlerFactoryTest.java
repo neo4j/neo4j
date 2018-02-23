@@ -41,24 +41,24 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultBoltProtocolHandlerFactoryTest
+class DefaultBoltProtocolHandlerFactoryTest
 {
     private static final String CONNECTOR = "default";
 
     @Test
-    public void shouldCreateV1Handler()
+    void shouldCreateV1Handler()
     {
         testHandlerCreation( Neo4jPackV1.VERSION );
     }
 
     @Test
-    public void shouldCreateV2Handler()
+    void shouldCreateV2Handler()
     {
         testHandlerCreation( Neo4jPackV2.VERSION );
     }
 
     @Test
-    public void shouldCreateNothingForUnknownProtocolVersion()
+    void shouldCreateNothingForUnknownProtocolVersion()
     {
         int protocolVersion = 42;
         BoltChannel channel = mock( BoltChannel.class );

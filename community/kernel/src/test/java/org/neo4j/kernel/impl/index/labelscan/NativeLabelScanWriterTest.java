@@ -51,17 +51,17 @@ import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.getLa
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.nodesWithLabel;
 
 @ExtendWith( RandomExtension.class )
-public class NativeLabelScanWriterTest
+class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
     private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout();
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldAddLabels() throws Exception
+    void shouldAddLabels() throws Exception
     {
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
@@ -88,7 +88,7 @@ public class NativeLabelScanWriterTest
     }
 
     @Test
-    public void shouldNotAcceptUnsortedLabels() throws Exception
+    void shouldNotAcceptUnsortedLabels() throws Exception
     {
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();

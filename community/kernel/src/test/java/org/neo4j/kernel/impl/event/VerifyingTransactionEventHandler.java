@@ -23,14 +23,14 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.collection.Iterables;
 
-public class VerifyingTransactionEventHandler implements
+class VerifyingTransactionEventHandler implements
         TransactionEventHandler<Object>
 {
     private final ExpectedTransactionData expectedData;
     private boolean hasBeenCalled;
     private Throwable failure;
 
-    public VerifyingTransactionEventHandler( ExpectedTransactionData expectedData )
+    VerifyingTransactionEventHandler( ExpectedTransactionData expectedData )
     {
         this.expectedData = expectedData;
     }

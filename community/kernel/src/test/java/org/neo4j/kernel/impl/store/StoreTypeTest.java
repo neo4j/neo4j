@@ -23,21 +23,21 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class StoreTypeTest
+class StoreTypeTest
 {
     @Test
-    public void storeTypeOfValidStoreFile()
+    void storeTypeOfValidStoreFile()
     {
         //noinspection OptionalGetWithoutIsPresent
         assertEquals( StoreType.NODE, StoreType.typeOf( "neostore.nodestore.db" ).get() );
     }
 
     @Test
-    public void storeTypeOfMetaDataStoreFile()
+    void storeTypeOfMetaDataStoreFile()
     {
         //noinspection OptionalGetWithoutIsPresent
         String fileName = MetaDataStore.DEFAULT_NAME;
@@ -45,7 +45,7 @@ public class StoreTypeTest
     }
 
     @Test
-    public void storeTypeofSomeInvalidFile()
+    void storeTypeofSomeInvalidFile()
     {
         assertThat( StoreType.typeOf( "test.txt" ), is( Optional.empty() ) );
     }

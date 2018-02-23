@@ -70,9 +70,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public class OperationsLockTest
+class OperationsLockTest
 {
     private KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private Operations operations;
@@ -88,7 +87,7 @@ public class OperationsLockTest
     private StoreReadLayer storeReadLayer;
 
     @BeforeEach
-    public void setUp() throws InvalidTransactionTypeKernelException
+    void setUp() throws InvalidTransactionTypeKernelException
     {
         txState = Mockito.spy( new TxState() );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
@@ -112,25 +111,25 @@ public class OperationsLockTest
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
-        when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing );
+                store, transaction, new KernelToken( storeReadLayer ), cursors, autoindexing,
+                mock( NodeSchemaMatcher.class ) );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storeReadLayer );
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         operations.release();
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
+    void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
         long rId = operations.relationshipCreate( 1, 2, 3 );
@@ -142,7 +141,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
+    void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
     {
         // GIVEN
         long lowId = 3;
@@ -174,7 +173,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
+    void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
     {
         // GIVEN
         final long relationshipId = 10;
@@ -215,7 +214,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
+    void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -230,7 +229,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeAddingLabelToJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeAddingLabelToJustCreatedNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -246,7 +245,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
+    void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -262,7 +261,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
+    void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -271,7 +270,7 @@ public class OperationsLockTest
         Value value = Values.of( 9 );
         when( propertyCursor.next() ).thenReturn( true );
         when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
-        when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
+        when( propertyCursor.propertyValue() ).thenReturn( Values.NO_VALUE );
 
         // when
         operations.nodeSetProperty( 123, propertyKeyId, value );
@@ -282,26 +281,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
-    {
-        // given
-        when( relationshipCursor.next() ).thenReturn( true );
-        int propertyKeyId = 8;
-        Value value = Values.of( 9 );
-        when( propertyCursor.next() ).thenReturn( true );
-        when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
-        when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
-
-        // when
-        operations.relationshipSetProperty( 123, propertyKeyId, value );
-
-        // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
-        order.verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
-    }
-
-    @Test
-    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -320,25 +300,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
-    {
-        // given
-        when( relationshipCursor.next() ).thenReturn( true );
-        when( transaction.hasTxStateWithChanges() ).thenReturn( true );
-        txState.relationshipDoCreate( 123, 42, 43, 45 );
-        int propertyKeyId = 8;
-        Value value = Values.of( 9 );
-
-        // when
-        operations.relationshipSetProperty( 123, propertyKeyId, value );
-
-        // then
-        verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
-        verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
-    }
-
-    @Test
-    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
+    void shouldAcquireEntityWriteLockBeforeDeletingNode()
             throws AutoIndexingKernelException
     {
         // GIVEN
@@ -355,7 +317,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
     {
         // THEN
         txState.nodeDoCreate( 123 );
@@ -370,7 +332,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
+    void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
     {
         // WHEN
         allStoreHolder.constraintsGetForSchema( descriptor );
@@ -381,7 +343,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
+    void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
     {
         // WHEN
         allStoreHolder.constraintsGetForLabel( 42 );
@@ -392,7 +354,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints()
+    void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints()
     {
         // WHEN
         allStoreHolder.constraintExists( ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
@@ -403,7 +365,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockLazilyBeforeGettingAllConstraints()
+    void shouldAcquireSchemaReadLockLazilyBeforeGettingAllConstraints()
     {
         // given
         int labelId = 1;

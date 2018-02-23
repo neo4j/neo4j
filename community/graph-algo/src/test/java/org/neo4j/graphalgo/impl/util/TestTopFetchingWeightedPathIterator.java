@@ -39,10 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Anton Persson
  */
-public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
+class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
 {
     @Test
-    public void shouldHandleEmptySource()
+    void shouldHandleEmptySource()
     {
         topFetcher = new TopFetchingWeightedPathIterator(
                 Collections.emptyIterator(), evaluator );
@@ -52,7 +52,7 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleSinglePath()
+    void shouldHandleSinglePath()
     {
         Path a = graph.makePathWithRelProperty( length, "a1-1-a2" );
         List<Path> list = new ArrayList<>(  );
@@ -67,7 +67,7 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleMultipleShortest()
+    void shouldHandleMultipleShortest()
     {
         Path a = graph.makePathWithRelProperty(  length, "a1-1-a2" );
         Path b = graph.makePathWithRelProperty( length, "b1-0-b2-1-b3-0-b4" );
@@ -86,7 +86,7 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleUnsortedSource()
+    void shouldHandleUnsortedSource()
     {
         Path a = graph.makePathWithRelProperty( length, "a1-1-a2-2-a3" );             // 3
         Path b = graph.makePathWithRelProperty( length, "b1-3-b2-3-b3" );             // 6

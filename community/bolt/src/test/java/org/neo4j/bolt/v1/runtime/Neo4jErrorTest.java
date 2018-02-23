@@ -33,10 +33,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class Neo4jErrorTest
+class Neo4jErrorTest
 {
     @Test
-    public void shouldAssignUnknownStatusToUnpredictedException()
+    void shouldAssignUnknownStatusToUnpredictedException()
     {
         // Given
         Throwable cause = new Throwable( "This is not an error we know how to handle." );
@@ -47,7 +47,7 @@ public class Neo4jErrorTest
     }
 
     @Test
-    public void shouldConvertDeadlockException()
+    void shouldConvertDeadlockException()
     {
         // When
         Neo4jError error = Neo4jError.from( new DeadlockDetectedException( null ) );
@@ -57,7 +57,7 @@ public class Neo4jErrorTest
     }
 
     @Test
-    public void shouldSetStatusToDatabaseUnavailableOnDatabaseShutdownException()
+    void shouldSetStatusToDatabaseUnavailableOnDatabaseShutdownException()
     {
         // Given
         DatabaseShutdownException ex = new DatabaseShutdownException();
@@ -71,7 +71,7 @@ public class Neo4jErrorTest
     }
 
     @Test
-    public void shouldCombineErrors()
+    void shouldCombineErrors()
     {
        // Given
         Neo4jError error1 = Neo4jError.from( new DeadlockDetectedException( "In my life" ) );
@@ -92,7 +92,7 @@ public class Neo4jErrorTest
     }
 
     @Test
-    public void shouldCombineSingleErrorToItself()
+    void shouldCombineSingleErrorToItself()
     {
         Neo4jError error = Neo4jError.from( Status.Request.Invalid, "Really bad request" );
         Neo4jError combinedError = Neo4jError.combine( singletonList( error ) );
@@ -101,13 +101,13 @@ public class Neo4jErrorTest
     }
 
     @Test
-    public void shouldCombineNoErrorsToNull()
+    void shouldCombineNoErrorsToNull()
     {
         assertNull( Neo4jError.combine( emptyList() ) );
     }
 
     @Test
-    public void shouldBeUnknownIfCombiningDifferentStatus()
+    void shouldBeUnknownIfCombiningDifferentStatus()
     {
         // Given
         Neo4jError error1 = Neo4jError.from( Status.General.DatabaseUnavailable,  "foo" );

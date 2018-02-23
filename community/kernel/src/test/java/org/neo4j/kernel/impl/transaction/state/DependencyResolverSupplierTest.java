@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DependencyResolverSupplierTest
+class DependencyResolverSupplierTest
 {
     @Test
-    public void shouldReturnTheDependencyResolveFromTheRegisteredDatasource()
+    void shouldReturnTheDependencyResolveFromTheRegisteredDatasource()
     {
         // given
         DataSourceManager dataSourceManager = new DataSourceManager();
@@ -50,7 +50,7 @@ public class DependencyResolverSupplierTest
     }
 
     @Test
-    public void shouldReturnNullIfDataSourceHasBeenUnregistered()
+    void shouldReturnNullIfDataSourceHasBeenUnregistered()
     {
         // given
         DataSourceManager dataSourceManager = new DataSourceManager();

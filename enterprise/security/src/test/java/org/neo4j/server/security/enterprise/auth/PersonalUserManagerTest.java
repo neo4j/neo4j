@@ -53,7 +53,7 @@ public class PersonalUserManagerTest
     private Log log;
 
     @Test
-    public void shouldHandleFailureToCreateUser() throws Exception
+    void shouldHandleFailureToCreateUser() throws Exception
     {
         // Given
         evilUserManager.setFailNextCall();
@@ -69,7 +69,7 @@ public class PersonalUserManagerTest
     }
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         evilUserManager = new EvilUserManager(
                 new InternalFlatFileRealm( new InMemoryUserRepository(), new InMemoryRoleRepository(),

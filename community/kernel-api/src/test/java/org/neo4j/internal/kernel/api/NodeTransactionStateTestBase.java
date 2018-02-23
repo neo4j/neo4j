@@ -40,7 +40,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Test
-    public void shouldSeeNodeInTransaction() throws Exception
+    void shouldSeeNodeInTransaction() throws Exception
     {
         long nodeId;
         try ( Transaction tx = session.beginTransaction() )
@@ -63,7 +63,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeNewLabeledNodeInTransaction() throws Exception
+    void shouldSeeNewLabeledNodeInTransaction() throws Exception
     {
         long nodeId;
         int labelId;
@@ -97,7 +97,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeLabelChangesInTransaction() throws Exception
+    void shouldSeeLabelChangesInTransaction() throws Exception
     {
         long nodeId;
         int toRetain, toDelete, toAdd;
@@ -148,7 +148,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldDiscoverDeletedNodeInTransaction() throws Exception
+    void shouldDiscoverDeletedNodeInTransaction() throws Exception
     {
         long nodeId;
         try ( Transaction tx = session.beginTransaction() )
@@ -170,7 +170,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldHandleMultipleNodeDeletions() throws Exception
+    void shouldHandleMultipleNodeDeletions() throws Exception
     {
         long nodeId;
         try ( Transaction tx = session.beginTransaction() )
@@ -188,7 +188,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeNewNodePropertyInTransaction() throws Exception
+    void shouldSeeNewNodePropertyInTransaction() throws Exception
     {
         long nodeId;
         String propKey1 = "prop1";
@@ -226,7 +226,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeAddedPropertyFromExistingNodeWithoutPropertiesInTransaction() throws Exception
+    void shouldSeeAddedPropertyFromExistingNodeWithoutPropertiesInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -269,7 +269,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeAddedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
+    void shouldSeeAddedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -325,7 +325,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeUpdatedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
+    void shouldSeeUpdatedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -371,7 +371,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeRemovedPropertyInTransaction() throws Exception
+    void shouldSeeRemovedPropertyInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -411,7 +411,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
+    void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -456,7 +456,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeExistingNode() throws Exception
+    void shouldSeeExistingNode() throws Exception
     {
         // Given
         long node;
@@ -474,7 +474,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotSeeNonExistingNode() throws Exception
+    void shouldNotSeeNonExistingNode() throws Exception
     {
         // Given, empty db
 
@@ -486,7 +486,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeNodeExistingInTxOnly() throws Exception
+    void shouldSeeNodeExistingInTxOnly() throws Exception
     {
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -497,7 +497,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotSeeDeletedNode() throws Exception
+    void shouldNotSeeDeletedNode() throws Exception
     {
         // Given
         long node;
@@ -516,7 +516,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInLabelScan() throws Exception
+    void shouldNotFindDeletedNodeInLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label" );
@@ -534,7 +534,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInLabelScan() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label" );
@@ -552,7 +552,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldFindUpdatedNodeInInLabelScan() throws Exception
+    void shouldFindUpdatedNodeInInLabelScan() throws Exception
     {
         // Given
         Node node = createNode(  );
@@ -572,7 +572,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldFindSwappedNodeInLabelScan() throws Exception
+    void shouldFindSwappedNodeInLabelScan() throws Exception
     {
         // Given
         Node node1 = createNode( "label" );
@@ -593,7 +593,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldNotFindDeletedNodeInDisjunctionLabelScan() throws Exception
+    void shouldNotFindDeletedNodeInDisjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1", "label2" );
@@ -611,7 +611,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldFindNodeWithOneRemovedLabelInDisjunctionLabelScan() throws Exception
+    void shouldFindNodeWithOneRemovedLabelInDisjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1", "label2" );
@@ -630,7 +630,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldNotFindNodeWithAllRemovedLabelsInDisjunctionLabelScan() throws Exception
+    void shouldNotFindNodeWithAllRemovedLabelsInDisjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1", "label2" );
@@ -649,7 +649,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldNotFindNodeWithOneRemovedLabelsInDisjunctionLabelScan() throws Exception
+    void shouldNotFindNodeWithOneRemovedLabelsInDisjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1");
@@ -670,7 +670,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldFindUpdatedNodeInInDisjunctionLabelScan() throws Exception
+    void shouldFindUpdatedNodeInInDisjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1" );
@@ -690,7 +690,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldNotFindDeletedNodeInConjunctionLabelScan() throws Exception
+    void shouldNotFindDeletedNodeInConjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1", "label2" );
@@ -708,7 +708,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldNotFindNodeWithRemovedLabelInConjunctionLabelScan() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInConjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1", "label2" );
@@ -726,7 +726,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldFindUpdatedNodeInInConjunctionLabelScan() throws Exception
+    void shouldFindUpdatedNodeInInConjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode("label1");
@@ -746,7 +746,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Disabled
-    public void shouldNotFindNodeWithJustOneUpdatedLabelInInConjunctionLabelScan() throws Exception
+    void shouldNotFindNodeWithJustOneUpdatedLabelInInConjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode();
@@ -862,7 +862,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         assertTrue( Arrays.equals( expected, labelArray ), "labels match expected" );
     }
 
-    public Node createNode( String... labels ) throws Exception
+    private Node createNode( String... labels ) throws Exception
     {
         long node;
         int[] labelIds = new int[labels.length];

@@ -49,8 +49,8 @@ public abstract class AbstractLuceneIndexTest
     public final TestName testname = new TestName();
     @ClassRule
     public static TestDirectory testDirectory = TestDirectory.testDirectory( AbstractLuceneIndexTest.class );
-    protected static GraphDatabaseService graphDb;
-    protected Transaction tx;
+    static GraphDatabaseService graphDb;
+    private Transaction tx;
 
     @BeforeClass
     public static void setUpStuff()
@@ -70,12 +70,12 @@ public abstract class AbstractLuceneIndexTest
         finishTx( true );
     }
 
-    public void rollbackTx()
+    void rollbackTx()
     {
         finishTx( false );
     }
 
-    public void finishTx( boolean success )
+    void finishTx( boolean success )
     {
         if ( tx != null )
         {
@@ -103,7 +103,7 @@ public abstract class AbstractLuceneIndexTest
         beginTx();
     }
 
-    protected interface EntityCreator<T extends PropertyContainer>
+    interface EntityCreator<T extends PropertyContainer>
     {
         T create( Object... properties );
 
@@ -112,7 +112,7 @@ public abstract class AbstractLuceneIndexTest
 
     private static final RelationshipType TEST_TYPE = RelationshipType.withName( "TEST_TYPE" );
 
-    protected static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
+    static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
     {
         @Override
         public Node create( Object... properties )
@@ -128,7 +128,7 @@ public abstract class AbstractLuceneIndexTest
             entity.delete();
         }
     };
-    protected static final EntityCreator<Relationship> RELATIONSHIP_CREATOR =
+    static final EntityCreator<Relationship> RELATIONSHIP_CREATOR =
             new EntityCreator<Relationship>()
             {
                 @Override
@@ -154,32 +154,32 @@ public abstract class AbstractLuceneIndexTest
         }
     }
 
-    protected Index<Node> nodeIndex()
+    Index<Node> nodeIndex()
     {
         return nodeIndex( currentIndexName(), stringMap() );
     }
 
-    protected Index<Node> nodeIndex( Map<String, String> config )
+    Index<Node> nodeIndex( Map<String,String> config )
     {
         return nodeIndex( currentIndexName(), config );
     }
 
-    protected Index<Node> nodeIndex( String name, Map<String, String> config )
+    Index<Node> nodeIndex( String name, Map<String,String> config )
     {
         return graphDb.index().forNodes( name, config );
     }
 
-    protected RelationshipIndex relationshipIndex( Map<String, String> config )
+    RelationshipIndex relationshipIndex( Map<String,String> config )
     {
         return relationshipIndex( currentIndexName(), config );
     }
 
-    protected RelationshipIndex relationshipIndex( String name, Map<String, String> config )
+    RelationshipIndex relationshipIndex( String name, Map<String,String> config )
     {
         return graphDb.index().forRelationships( name, config );
     }
 
-    protected String currentIndexName()
+    String currentIndexName()
     {
         return testname.getMethodName();
     }

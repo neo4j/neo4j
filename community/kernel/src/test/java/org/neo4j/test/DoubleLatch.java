@@ -89,7 +89,7 @@ public class DoubleLatch
         awaitLatch( latch, false );
     }
 
-    public static void awaitLatch( CountDownLatch latch, boolean uninterruptedWaiting )
+    private static void awaitLatch( CountDownLatch latch, boolean uninterruptedWaiting )
     {
         long now = System.currentTimeMillis();
         long deadline = System.currentTimeMillis() + FIVE_MINUTES;

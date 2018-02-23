@@ -34,10 +34,10 @@ import org.neo4j.logging.LogProvider;
 
 import static org.mockito.Mockito.mock;
 
-public class MasterServerTest
+class MasterServerTest
 {
     @Test
-    public void shouldCleanExistentLockSessionOnFinishOffChannel()
+    void shouldCleanExistentLockSessionOnFinishOffChannel()
     {
         Master master = mock( Master.class );
         ConversationManager conversationManager = mock( ConversationManager.class );

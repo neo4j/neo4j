@@ -58,7 +58,7 @@ public class FakeCpuClock extends CpuClock implements TestRule
         return add( Thread.currentThread().getId(), nanos );
     }
 
-    public FakeCpuClock add( long threadId, long nanos )
+    private FakeCpuClock add( long threadId, long nanos )
     {
         cpuTimes.put( threadId, cpuTimeNanos( threadId ) + nanos );
         return this;

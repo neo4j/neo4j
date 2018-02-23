@@ -30,18 +30,18 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.time.Clocks;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
-public class SecurityContextDescriptionTest
+class SecurityContextDescriptionTest
 {
     private BasicAuthManager manager;
     private SecurityContext context;
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         manager =
             new BasicAuthManager(
@@ -57,27 +57,27 @@ public class SecurityContextDescriptionTest
     }
 
     @AfterEach
-    public void teardown() throws Throwable
+    void teardown() throws Throwable
     {
         manager.stop();
         manager.shutdown();
     }
 
     @Test
-    public void shouldMakeNiceDescription()
+    void shouldMakeNiceDescription()
     {
         assertThat( context.description(), equalTo( "user 'johan' with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithMode()
+    void shouldMakeNiceDescriptionWithMode()
     {
         SecurityContext modified = context.withMode( AccessMode.Static.WRITE );
         assertThat( modified.description(), equalTo( "user 'johan' with WRITE" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionRestricted()
+    void shouldMakeNiceDescriptionRestricted()
     {
         SecurityContext restricted =
                 context.withMode( new RestrictedAccessMode( context.mode(), AccessMode.Static.READ ) );
@@ -85,7 +85,7 @@ public class SecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionOverridden()
+    void shouldMakeNiceDescriptionOverridden()
     {
         SecurityContext overridden =
                 context.withMode( new OverriddenAccessMode( context.mode(), AccessMode.Static.READ ) );
@@ -93,14 +93,14 @@ public class SecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabled()
+    void shouldMakeNiceDescriptionAuthDisabled()
     {
         SecurityContext disabled = SecurityContext.AUTH_DISABLED;
         assertThat( disabled.description(), equalTo( "AUTH_DISABLED with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
+    void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
     {
         SecurityContext disabled = SecurityContext.AUTH_DISABLED;
         SecurityContext restricted =

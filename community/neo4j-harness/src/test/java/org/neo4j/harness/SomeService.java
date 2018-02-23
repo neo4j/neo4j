@@ -19,7 +19,7 @@
  */
 package org.neo4j.harness;
 
-public class SomeService
+class SomeService
 {
     public String hello()
     {

@@ -38,8 +38,8 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JavaProceduresTest
@@ -50,9 +50,9 @@ public class JavaProceduresTest
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    public static class MyProcedures
+    static class MyProcedures
     {
-        public static class OutputRecord
+        static class OutputRecord
         {
             public long someNumber = 1337;
         }
@@ -70,15 +70,15 @@ public class JavaProceduresTest
         }
     }
 
-    public static class MyProceduresUsingMyService
+    static class MyProceduresUsingMyService
     {
-        public static class OutputRecord
+        static class OutputRecord
         {
-            public String result;
+            String result;
         }
 
         @Context
-        public SomeService service;
+        SomeService service;
 
         @Procedure( "hello" )
         public Stream<OutputRecord> hello()
@@ -89,15 +89,15 @@ public class JavaProceduresTest
         }
     }
 
-    public static class MyProceduresUsingMyCoreAPI
+    static class MyProceduresUsingMyCoreAPI
     {
-        public static class LongResult
+        static class LongResult
         {
-            public Long value;
+            Long value;
         }
 
         @Context
-        public MyCoreAPI myCoreAPI;
+        MyCoreAPI myCoreAPI;
 
         @Procedure( value = "makeNode", mode = Mode.WRITE )
         public Stream<LongResult> makeNode( @Name( "label" ) String label ) throws ProcedureException
@@ -132,7 +132,7 @@ public class JavaProceduresTest
     }
 
     @Test
-    public void shouldLaunchWithDeclaredProcedures() throws Exception
+    void shouldLaunchWithDeclaredProcedures() throws Exception
     {
         // When
         try ( ServerControls server = createServer( MyProcedures.class ).newServer() )
@@ -149,7 +149,7 @@ public class JavaProceduresTest
     }
 
     @Test
-    public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
+    void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
         try ( ServerControls server = createServer( MyProcedures.class ).newServer() )
@@ -165,7 +165,7 @@ public class JavaProceduresTest
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
+    void shouldWorkWithInjectableFromKernelExtension() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyProceduresUsingMyService.class ).newServer() )
@@ -182,7 +182,7 @@ public class JavaProceduresTest
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
+    void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyProceduresUsingMyCoreAPI.class )

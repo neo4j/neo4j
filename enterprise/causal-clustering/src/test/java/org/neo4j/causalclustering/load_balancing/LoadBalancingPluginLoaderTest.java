@@ -47,7 +47,7 @@ public class LoadBalancingPluginLoaderTest
     private static final String DOES_NOT_EXIST = "does_not_exist";
 
     @Test
-    public void shouldReturnSelectedPlugin() throws Throwable
+    void shouldReturnSelectedPlugin() throws Throwable
     {
         // given
         Config config = Config.builder()
@@ -68,7 +68,7 @@ public class LoadBalancingPluginLoaderTest
     }
 
     @Test
-    public void shouldEnableShufflingOfDelegate() throws Throwable
+    void shouldEnableShufflingOfDelegate() throws Throwable
     {
         // given
         Config config = Config.builder()
@@ -88,7 +88,7 @@ public class LoadBalancingPluginLoaderTest
     }
 
     @Test
-    public void shouldFindServerPoliciesPlugin() throws Throwable
+    void shouldFindServerPoliciesPlugin() throws Throwable
     {
         // given
         Config config = Config.builder()
@@ -108,7 +108,7 @@ public class LoadBalancingPluginLoaderTest
     }
 
     @Test
-    public void shouldThrowOnInvalidPlugin()
+    void shouldThrowOnInvalidPlugin()
     {
         // given
         Config config = Config.defaults( CausalClusteringSettings.load_balancing_plugin, DOES_NOT_EXIST );
@@ -126,7 +126,7 @@ public class LoadBalancingPluginLoaderTest
     }
 
     @Test
-    public void shouldNotAcceptInvalidSetting()
+    void shouldNotAcceptInvalidSetting()
     {
         // given
         Config config = Config.builder()

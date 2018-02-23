@@ -39,13 +39,13 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class TestTransactionEventDeadlocks
+class TestTransactionEventDeadlocks
 {
     @Resource
-    public ImpermanentDatabaseRule database;
+    private ImpermanentDatabaseRule database;
 
     @Test
-    public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
+    void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Node node = null;

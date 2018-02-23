@@ -29,14 +29,14 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
 
-public class CommunityCommitProcessFactoryTest
+class CommunityCommitProcessFactoryTest
 {
     @Test
-    public void createReadOnlyCommitProcess()
+    void createReadOnlyCommitProcess()
     {
         CommunityCommitProcessFactory factory = new CommunityCommitProcessFactory();
 
@@ -49,7 +49,7 @@ public class CommunityCommitProcessFactoryTest
     }
 
     @Test
-    public void createRegularCommitProcess()
+    void createRegularCommitProcess()
     {
         CommunityCommitProcessFactory factory = new CommunityCommitProcessFactory();
 

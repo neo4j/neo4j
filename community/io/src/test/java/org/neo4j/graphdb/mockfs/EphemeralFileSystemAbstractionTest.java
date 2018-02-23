@@ -45,25 +45,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class EphemeralFileSystemAbstractionTest
+class EphemeralFileSystemAbstractionTest
 {
 
     private EphemeralFileSystemAbstraction fs;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fs = new EphemeralFileSystemAbstraction();
     }
 
     @AfterEach
-    public void tearDown() throws IOException
+    void tearDown() throws IOException
     {
         fs.close();
     }
 
     @Test
-    public void allowStoreThatExceedDefaultSize() throws IOException
+    void allowStoreThatExceedDefaultSize() throws IOException
     {
         File aFile = new File( "test" );
         StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
@@ -81,7 +81,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void growEphemeralFileBuffer()
+    void growEphemeralFileBuffer()
     {
         EphemeralFileSystemAbstraction.DynamicByteBuffer byteBuffer =
                 new EphemeralFileSystemAbstraction.DynamicByteBuffer();
@@ -102,7 +102,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldNotLoseDataForcedBeforeFileSystemCrashes() throws Exception
+    void shouldNotLoseDataForcedBeforeFileSystemCrashes() throws Exception
     {
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
@@ -128,7 +128,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldBeConsistentAfterConcurrentWritesAndCrashes() throws Exception
+    void shouldBeConsistentAfterConcurrentWritesAndCrashes() throws Exception
     {
         ExecutorService executorService = Executors.newCachedThreadPool();
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
@@ -176,7 +176,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldBeConsistentAfterConcurrentWritesAndForces() throws Exception
+    void shouldBeConsistentAfterConcurrentWritesAndForces() throws Exception
     {
         ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -232,7 +232,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void releaseResourcesOnClose() throws IOException
+    void releaseResourcesOnClose() throws IOException
     {
         try ( EphemeralFileSystemAbstraction fileSystemAbstraction = new EphemeralFileSystemAbstraction() )
         {

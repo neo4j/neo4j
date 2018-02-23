@@ -35,14 +35,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class IndexPopulationJobControllerTest
+class IndexPopulationJobControllerTest
 {
 
     private final OnDemandJobScheduler executer = new OnDemandJobScheduler();
     private final IndexPopulationJobController jobController = new IndexPopulationJobController( executer );
 
     @Test
-    public void trackPopulationJobs()
+    void trackPopulationJobs()
     {
         assertThat( jobController.getPopulationJobs(), is( empty() ) );
 
@@ -56,7 +56,7 @@ public class IndexPopulationJobControllerTest
     }
 
     @Test
-    public void stopOngoingPopulationJobs() throws ExecutionException, InterruptedException
+    void stopOngoingPopulationJobs() throws ExecutionException, InterruptedException
     {
         IndexPopulationJob populationJob = getIndexPopulationJob();
         IndexPopulationJob populationJob2 = getIndexPopulationJob();
@@ -70,7 +70,7 @@ public class IndexPopulationJobControllerTest
     }
 
     @Test
-    public void untrackFinishedPopulations()
+    void untrackFinishedPopulations()
     {
         IndexPopulationJob populationJob = getIndexPopulationJob();
         jobController.startIndexPopulation( populationJob );

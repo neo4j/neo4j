@@ -21,8 +21,6 @@ package org.neo4j.causalclustering.core.consensus.log.pruning;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
-import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,13 +45,13 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.scheduler.JobScheduler.Groups.raftLogPruning;
 
-public class PruningSchedulerTest
+class PruningSchedulerTest
 {
     private final RaftLogPruner logPruner = mock( RaftLogPruner.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
 
     @Test
-    public void shouldScheduleTheCheckPointerJobOnStart()
+    void shouldScheduleTheCheckPointerJobOnStart()
     {
         // given
         PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, getInstance() );
@@ -69,7 +67,7 @@ public class PruningSchedulerTest
     }
 
     @Test
-    public void shouldRescheduleTheJobAfterARun() throws Throwable
+    void shouldRescheduleTheJobAfterARun() throws Throwable
     {
         // given
         PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, getInstance() );
@@ -91,7 +89,7 @@ public class PruningSchedulerTest
     }
 
     @Test
-    public void shouldNotRescheduleAJobWhenStopped()
+    void shouldNotRescheduleAJobWhenStopped()
     {
         // given
         PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, getInstance() );
@@ -110,7 +108,7 @@ public class PruningSchedulerTest
     }
 
     @Test
-    public void stoppedJobCantBeInvoked() throws Throwable
+    void stoppedJobCantBeInvoked() throws Throwable
     {
         PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 10L, getInstance() );
         scheduler.start();
@@ -129,7 +127,7 @@ public class PruningSchedulerTest
     }
 
     @Test
-    public void shouldWaitOnStopUntilTheRunningCheckpointIsDone()
+    void shouldWaitOnStopUntilTheRunningCheckpointIsDone()
     {
         assertTimeout( ofMillis( 5000 ), () -> {
             //  given

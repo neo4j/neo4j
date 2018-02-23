@@ -30,13 +30,13 @@ public class MandatoryTransactionsForConstraintDefinitionTest
     extends AbstractMandatoryTransactionsTest<ConstraintDefinition>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
+    void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
+    void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }

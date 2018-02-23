@@ -160,14 +160,14 @@ public class TypeMappersTest
         Assert.assertEquals( expectedNeoValue, converted );
     }
 
-    static Type listOfListOfMap = typeOf( "listOfListOfMap" );
+    private static Type listOfListOfMap = typeOf( "listOfListOfMap" );
 
-    interface ClassToGetGenericTypeSignatures
+    private interface ClassToGetGenericTypeSignatures
     {
         void listOfListOfMap( List<List<Map<String,Object>>> arg );
     }
 
-    static Type typeOf( String methodName )
+    private static Type typeOf( String methodName )
     {
         try
         {

@@ -38,13 +38,13 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class DatabaseMetadataServiceTest
+class DatabaseMetadataServiceTest
 {
     private GraphDatabaseFacade db;
     private long relId;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         db = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         try ( Transaction tx = db.beginTx() )
@@ -58,13 +58,13 @@ public class DatabaseMetadataServiceTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         db.shutdown();
     }
 
     @Test
-    public void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
+    void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -88,7 +88,7 @@ public class DatabaseMetadataServiceTest
     }
 
     @Test
-    public void shouldAdvertiseRelationshipTypesThatCurrentlyInUseInTheDatabase() throws Throwable
+    void shouldAdvertiseRelationshipTypesThatCurrentlyInUseInTheDatabase() throws Throwable
     {
         try ( Transaction tx = db.beginTx() )
         {

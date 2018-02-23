@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
 {
-    public static final String CUSTOM_SWAPPER = "CustomSwapper";
+    private static final String CUSTOM_SWAPPER = "CustomSwapper";
     private static Semaphore semaphore;
 
     static
@@ -56,7 +56,7 @@ public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
      */
 
     @Test
-    public void shouldBeAbleToRestartWhenStoppedDuringStartup() throws IOException, InterruptedException
+    void shouldBeAbleToRestartWhenStoppedDuringStartup() throws IOException, InterruptedException
     {
         // Make sure that the semaphore is in a clean state.
         semaphore.drainPermits();

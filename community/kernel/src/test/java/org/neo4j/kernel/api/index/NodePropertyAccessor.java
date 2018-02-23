@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class NodePropertyAccessor implements PropertyAccessor
+class NodePropertyAccessor implements PropertyAccessor
 {
     private final Map<Long, Map<Integer,Value>> nodePropertyMap;
 

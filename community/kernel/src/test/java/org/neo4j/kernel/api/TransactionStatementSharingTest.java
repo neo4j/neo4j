@@ -26,13 +26,13 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
-public class TransactionStatementSharingTest
+class TransactionStatementSharingTest
 {
     @Test
-    public void shouldShareStatementStateForConcurrentReadStatementAndReadStatement()
+    void shouldShareStatementStateForConcurrentReadStatementAndReadStatement()
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.read() );
@@ -46,7 +46,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldShareStatementStateForConcurrentReadStatementAndDataStatement() throws Exception
+    void shouldShareStatementStateForConcurrentReadStatementAndDataStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
@@ -60,7 +60,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldShareStatementStateForConcurrentReadStatementAndSchemaStatement() throws Exception
+    void shouldShareStatementStateForConcurrentReadStatementAndSchemaStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
@@ -74,7 +74,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldShareStatementStateForConcurrentDataStatementAndReadStatement() throws Exception
+    void shouldShareStatementStateForConcurrentDataStatementAndReadStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
@@ -88,7 +88,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldShareStatementStateForConcurrentDataStatementAndDataStatement() throws Exception
+    void shouldShareStatementStateForConcurrentDataStatementAndDataStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
@@ -102,7 +102,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldShareStatementStateForConcurrentSchemaStatementAndReadStatement() throws Exception
+    void shouldShareStatementStateForConcurrentSchemaStatementAndReadStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
@@ -116,7 +116,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldShareStatementStateForConcurrentSchemaStatementAndSchemaStatement() throws Exception
+    void shouldShareStatementStateForConcurrentSchemaStatementAndSchemaStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
@@ -130,7 +130,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldNotShareStateForSequentialReadStatementAndReadStatement()
+    void shouldNotShareStateForSequentialReadStatementAndReadStatement()
     {
         // given
         KernelTransactionFactory.Instances instances =

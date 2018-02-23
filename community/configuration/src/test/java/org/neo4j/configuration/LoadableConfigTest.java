@@ -37,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class LoadableConfigTest
+class LoadableConfigTest
 {
     @Test
-    public void getConfigOptions()
+    void getConfigOptions()
     {
         Map<String,String> config = stringMap(
                 TestConfig.integer.name(), "123",
@@ -89,7 +89,7 @@ public class LoadableConfigTest
 
     private static class TestConfig implements LoadableConfig
     {
-        public static final Setting<Integer> integer = new BaseSetting<Integer>()
+        static final Setting<Integer> integer = new BaseSetting<Integer>()
         {
             @Override
             public String valueDescription()
@@ -135,7 +135,7 @@ public class LoadableConfigTest
         };
 
         @Description( "A string setting" )
-        public static final Setting<String> string = new StringSetting()
+        static final Setting<String> string = new StringSetting()
         {
             @Override
             public String apply( Function<String,String> provider )
@@ -251,7 +251,7 @@ public class LoadableConfigTest
 
         @Description( "A dynamic string setting" )
         @Dynamic
-        public static final Setting<String> dynamic = new StringSetting()
+        static final Setting<String> dynamic = new StringSetting()
         {
             @Override
             public String apply( Function<String,String> provider )

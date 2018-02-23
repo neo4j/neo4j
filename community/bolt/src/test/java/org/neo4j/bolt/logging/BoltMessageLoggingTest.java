@@ -46,7 +46,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_logging_enabl
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( MockitoExtension.class )
-public class BoltMessageLoggingTest
+class BoltMessageLoggingTest
 {
     @Mock( answer = Answers.RETURNS_MOCKS )
     private FileSystemAbstraction fs;
@@ -59,7 +59,7 @@ public class BoltMessageLoggingTest
     private static InetSocketAddress inetSocketAddress = new InetSocketAddress( "127.0.0.1", 7476 );
 
     @Test
-    public void shouldCreateNullLoggerWhenDisabled()
+    void shouldCreateNullLoggerWhenDisabled()
     {
         Config config = newConfig( false );
 
@@ -70,7 +70,7 @@ public class BoltMessageLoggingTest
     }
 
     @Test
-    public void shouldCreateNullLoggerWhenUnableToCreateRealLogger() throws IOException
+    void shouldCreateNullLoggerWhenUnableToCreateRealLogger() throws IOException
     {
         Config config = newConfig( true );
         IOException fsError = new IOException();
@@ -84,7 +84,7 @@ public class BoltMessageLoggingTest
     }
 
     @Test
-    public void shouldCreateRealLoggerWhenEnabled()
+    void shouldCreateRealLoggerWhenEnabled()
     {
         Config config = newConfig( true );
 
@@ -96,7 +96,7 @@ public class BoltMessageLoggingTest
     }
 
     @Test
-    public void shouldCreateNullLoggerWhenNone()
+    void shouldCreateNullLoggerWhenNone()
     {
         BoltMessageLogging logging = BoltMessageLogging.none();
         BoltMessageLogger logger = logging.newLogger( channel );

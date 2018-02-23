@@ -27,10 +27,10 @@ import static java.util.Collections.unmodifiableSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class IdentityFilterTest
+class IdentityFilterTest
 {
     @Test
-    public void shouldNotFilter()
+    void shouldNotFilter()
     {
         // given
         IdentityFilter<Object> identityFilter = IdentityFilter.as();

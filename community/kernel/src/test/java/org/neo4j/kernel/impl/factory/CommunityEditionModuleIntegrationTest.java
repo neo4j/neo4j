@@ -46,13 +46,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class CommunityEditionModuleIntegrationTest
+class CommunityEditionModuleIntegrationTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void createBufferedIdComponentsByDefault()
+    void createBufferedIdComponentsByDefault()
     {
         GraphDatabaseAPI database =
                 (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
@@ -72,7 +72,7 @@ public class CommunityEditionModuleIntegrationTest
     }
 
     @Test
-    public void fileWatcherFileNameFilter()
+    void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );

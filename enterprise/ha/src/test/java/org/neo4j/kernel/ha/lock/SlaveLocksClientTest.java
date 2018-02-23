@@ -78,7 +78,7 @@ import static org.neo4j.logging.NullLog.getInstance;
 import static org.neo4j.time.Clocks.fakeClock;
 import static org.neo4j.time.Clocks.systemClock;
 
-public class SlaveLocksClientTest
+class SlaveLocksClientTest
 {
     private Master master;
     private Locks lockManager;
@@ -88,7 +88,7 @@ public class SlaveLocksClientTest
     private AssertableLogProvider logProvider;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         master = mock( Master.class );
         availabilityGuard = new AvailabilityGuard( fakeClock(), getInstance() );
@@ -120,13 +120,13 @@ public class SlaveLocksClientTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         local.close();
     }
 
     @Test
-    public void shouldNotTakeSharedLockOnMasterIfWeAreAlreadyHoldingSaidLock()
+    void shouldNotTakeSharedLockOnMasterIfWeAreAlreadyHoldingSaidLock()
     {
         // When taking a lock twice
         client.acquireShared( NONE, NODE, 1 );
@@ -137,7 +137,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldNotTakeExclusiveLockOnMasterIfWeAreAlreadyHoldingSaidLock()
+    void shouldNotTakeExclusiveLockOnMasterIfWeAreAlreadyHoldingSaidLock()
     {
         // When taking a lock twice
         client.acquireExclusive( NONE, NODE, 1 );
@@ -148,7 +148,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldAllowAcquiringReleasingAndReacquiringExclusive()
+    void shouldAllowAcquiringReleasingAndReacquiringExclusive()
     {
         // Given we have grabbed and released a lock
         client.acquireExclusive( NONE, NODE, 1L );
@@ -164,7 +164,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldAllowAcquiringReleasingAndReacquiringShared()
+    void shouldAllowAcquiringReleasingAndReacquiringShared()
     {
         // Given we have grabbed and released a lock
         client.acquireShared( NONE, NODE, 1L );
@@ -180,7 +180,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldUseReEntryMethodsOnLocalLocksForReEntryExclusive()
+    void shouldUseReEntryMethodsOnLocalLocksForReEntryExclusive()
     {
         // Given we have grabbed and released a lock
         client.acquireExclusive( NONE, NODE, 1L );
@@ -199,7 +199,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldUseReEntryMethodsOnLocalLocksForReEntryShared()
+    void shouldUseReEntryMethodsOnLocalLocksForReEntryShared()
     {
         // Given we have grabbed and released a lock
         client.acquireShared( NONE, NODE, 1L );
@@ -218,7 +218,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldReturnNoLockSessionIfNotInitialized()
+    void shouldReturnNoLockSessionIfNotInitialized()
     {
         // When
         int lockSessionId = client.getLockSessionId();
@@ -228,7 +228,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldReturnDelegateIdIfInitialized()
+    void shouldReturnDelegateIdIfInitialized()
     {
         // Given
         client.acquireExclusive( NONE, NODE, 1L );
@@ -241,7 +241,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void mustThrowIfStartingNewLockSessionOnMasterThrowsComException()
+    void mustThrowIfStartingNewLockSessionOnMasterThrowsComException()
     {
         assertThrows( DistributedLockFailureException.class, () -> {
             when( master.newLockSession( isNull() ) ).thenThrow( new ComException() );
@@ -251,7 +251,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void mustThrowIfStartingNewLockSessionOnMasterThrowsTransactionFailureException()
+    void mustThrowIfStartingNewLockSessionOnMasterThrowsTransactionFailureException()
     {
         assertThrows( DistributedLockFailureException.class, () -> {
             when( master.newLockSession( isNull() ) )
@@ -262,7 +262,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void acquireSharedMustThrowIfMasterThrows()
+    void acquireSharedMustThrowIfMasterThrows()
     {
         assertThrows( DistributedLockFailureException.class, () -> {
             whenMasterAcquireShared().thenThrow( new ComException() );
@@ -272,7 +272,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void acquireExclusiveMustThrowIfMasterThrows()
+    void acquireExclusiveMustThrowIfMasterThrows()
     {
         assertThrows( DistributedLockFailureException.class, () -> {
             whenMasterAcquireExclusive().thenThrow( new ComException() );
@@ -282,19 +282,19 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void tryExclusiveMustBeUnsupported()
+    void tryExclusiveMustBeUnsupported()
     {
         assertThrows( UnsupportedOperationException.class, () -> client.tryExclusiveLock( NODE, 1 ) );
     }
 
     @Test
-    public void trySharedMustBeUnsupported()
+    void trySharedMustBeUnsupported()
     {
         assertThrows( UnsupportedOperationException.class, () -> client.trySharedLock( NODE, 1 ) );
     }
 
     @Test
-    public void closeMustThrowIfMasterThrows()
+    void closeMustThrowIfMasterThrows()
     {
         assertThrows( DistributedLockFailureException.class, () -> {
             when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( new ComException() );
@@ -305,7 +305,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void mustCloseLocalClientEvenIfMasterThrows()
+    void mustCloseLocalClientEvenIfMasterThrows()
     {
         when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( new ComException() );
 
@@ -322,7 +322,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void mustThrowTransientTransactionFailureIfDatabaseUnavailable()
+    void mustThrowTransientTransactionFailureIfDatabaseUnavailable()
     {
         assertThrows( TransientDatabaseFailureException.class, () -> {
             availabilityGuard.shutdown();
@@ -332,7 +332,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldFailWithTransientErrorOnDbUnavailable()
+    void shouldFailWithTransientErrorOnDbUnavailable()
     {
         // GIVEN
         availabilityGuard.shutdown();
@@ -350,7 +350,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void acquireSharedFailsWhenClientStopped()
+    void acquireSharedFailsWhenClientStopped()
     {
         SlaveLocksClient client = stoppedClient();
         try
@@ -364,7 +364,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void releaseSharedFailsWhenClientStopped()
+    void releaseSharedFailsWhenClientStopped()
     {
         SlaveLocksClient client = stoppedClient();
         try
@@ -378,7 +378,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void acquireExclusiveFailsWhenClientStopped()
+    void acquireExclusiveFailsWhenClientStopped()
     {
         SlaveLocksClient client = stoppedClient();
         try
@@ -392,7 +392,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void releaseExclusiveFailsWhenClientStopped()
+    void releaseExclusiveFailsWhenClientStopped()
     {
         SlaveLocksClient client = stoppedClient();
         try
@@ -406,7 +406,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void getLockSessionIdWhenClientStopped()
+    void getLockSessionIdWhenClientStopped()
     {
         SlaveLocksClient client = stoppedClient();
         try
@@ -420,7 +420,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void acquireSharedFailsWhenClientClosed()
+    void acquireSharedFailsWhenClientClosed()
     {
         SlaveLocksClient client = closedClient();
         try
@@ -434,7 +434,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void releaseSharedFailsWhenClientClosed()
+    void releaseSharedFailsWhenClientClosed()
     {
         SlaveLocksClient client = closedClient();
         try
@@ -448,7 +448,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void acquireExclusiveFailsWhenClientClosed()
+    void acquireExclusiveFailsWhenClientClosed()
     {
         SlaveLocksClient client = closedClient();
         try
@@ -462,7 +462,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void releaseExclusiveFailsWhenClientClosed()
+    void releaseExclusiveFailsWhenClientClosed()
     {
         SlaveLocksClient client = closedClient();
         try
@@ -476,7 +476,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void getLockSessionIdWhenClientClosed()
+    void getLockSessionIdWhenClientClosed()
     {
         SlaveLocksClient client = closedClient();
         try
@@ -490,7 +490,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void stopLocalLocksAndEndLockSessionOnMasterWhenStopped()
+    void stopLocalLocksAndEndLockSessionOnMasterWhenStopped()
     {
         client.acquireShared( NONE, NODE, 1 );
 
@@ -501,7 +501,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void closeLocalLocksAndEndLockSessionOnMasterWhenClosed()
+    void closeLocalLocksAndEndLockSessionOnMasterWhenClosed()
     {
         client.acquireShared( NONE, NODE, 1 );
 
@@ -512,7 +512,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void closeAfterStopped()
+    void closeAfterStopped()
     {
         client.acquireShared( NONE, NODE, 1 );
 
@@ -525,7 +525,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void closeWhenNotInitialized()
+    void closeWhenNotInitialized()
     {
         client.close();
 
@@ -534,7 +534,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void stopDoesNotThrowWhenMasterCommunicationThrowsComException()
+    void stopDoesNotThrowWhenMasterCommunicationThrowsComException()
     {
         ComException error = new ComException( "Communication failure" );
         when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( error );
@@ -547,7 +547,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void stopDoesNotThrowWhenMasterCommunicationThrows()
+    void stopDoesNotThrowWhenMasterCommunicationThrows()
     {
         RuntimeException error = new IllegalArgumentException( "Wrong params" );
         when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( error );
@@ -559,7 +559,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldIncludeReasonForNotLocked()
+    void shouldIncludeReasonForNotLocked()
     {
         // GIVEN
         SlaveLocksClient client = newSlaveLocksClient( lockManager );
@@ -584,7 +584,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void acquireDeferredSharedLocksForLabelsAndRelationshipTypes()
+    void acquireDeferredSharedLocksForLabelsAndRelationshipTypes()
     {
         for ( ResourceTypes type : ResourceTypes.values() )
         {

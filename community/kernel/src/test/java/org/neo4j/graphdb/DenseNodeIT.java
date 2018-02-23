@@ -36,13 +36,13 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class DenseNodeIT
+class DenseNodeIT
 {
     @Resource
-    public ImpermanentDatabaseRule databaseRule;
+    private ImpermanentDatabaseRule databaseRule;
 
     @Test
-    public void testBringingNodeOverDenseThresholdIsConsistent()
+    void testBringingNodeOverDenseThresholdIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -85,7 +85,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void deletingRelationshipsFromDenseNodeIsConsistent()
+    void deletingRelationshipsFromDenseNodeIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -118,7 +118,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent()
+    void movingBilaterallyOfTheDenseNodeThresholdIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -149,7 +149,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent()
+    void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -210,7 +210,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void shouldBeAbleToCreateRelationshipsInEmptyDenseNode()
+    void shouldBeAbleToCreateRelationshipsInEmptyDenseNode()
     {
         // GIVEN
         Node node;

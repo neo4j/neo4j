@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class TransitionalTxManagementKernelTransactionTest
+class TransitionalTxManagementKernelTransactionTest
 {
 
     private GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
@@ -42,7 +42,7 @@ public class TransitionalTxManagementKernelTransactionTest
     private KernelTransaction.Type type = KernelTransaction.Type.implicit;
 
     @Test
-    public void reopenStartTransactionWithCustomTimeoutIfSpecified()
+    void reopenStartTransactionWithCustomTimeoutIfSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
                 new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, 10, contextBridge );
@@ -53,7 +53,7 @@ public class TransitionalTxManagementKernelTransactionTest
     }
 
     @Test
-    public void reopenStartDefaultTransactionIfTimeoutNotSpecified()
+    void reopenStartDefaultTransactionIfTimeoutNotSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
                 new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, -1, contextBridge );

@@ -68,7 +68,7 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 @RunWith( Parameterized.class )
 public class DatabaseIndexAccessorTest
 {
-    public static final int PROP_ID = 1;
+    private static final int PROP_ID = 1;
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();

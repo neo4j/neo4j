@@ -39,8 +39,8 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -51,7 +51,7 @@ import static org.neo4j.cluster.com.message.Message.internal;
 public class StateMachinesTest
 {
     @Test
-    public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder()
+    void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder()
     {
         // Given
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
@@ -73,7 +73,7 @@ public class StateMachinesTest
     }
 
     @Test
-    public void shouldAlwaysAddItsInstanceIdToOutgoingMessages()
+    void shouldAlwaysAddItsInstanceIdToOutgoingMessages()
     {
         InstanceId me = new InstanceId( 42 );
         final List<Message> sentOut = new LinkedList<>();

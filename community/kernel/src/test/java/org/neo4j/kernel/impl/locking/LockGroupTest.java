@@ -25,10 +25,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class LockGroupTest
+class LockGroupTest
 {
     @Test
-    public void shouldReleaseAllLocksWhenExitingTheLockGroupRegion()
+    void shouldReleaseAllLocksWhenExitingTheLockGroupRegion()
     {
         // given
         Lock lock1 = mock( Lock.class );

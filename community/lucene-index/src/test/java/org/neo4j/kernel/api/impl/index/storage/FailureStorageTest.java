@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -28,12 +28,11 @@ import java.io.File;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.hamcrest.CoreMatchers.containsString;
-
 import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FailureStorageTest
@@ -43,7 +42,7 @@ public class FailureStorageTest
     private IndexFolderLayout indexFolderLayout;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         File rootDirectory = new File( "dir" );
         fs.get().mkdirs( rootDirectory );
@@ -51,7 +50,7 @@ public class FailureStorageTest
     }
 
     @Test
-    public void shouldReserveFailureFile() throws Exception
+    void shouldReserveFailureFile() throws Exception
     {
         // GIVEN
         FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
@@ -66,7 +65,7 @@ public class FailureStorageTest
     }
 
     @Test
-    public void shouldStoreFailure() throws Exception
+    void shouldStoreFailure() throws Exception
     {
         // GIVEN
         FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
@@ -84,7 +83,7 @@ public class FailureStorageTest
     }
 
     @Test
-    public void shouldClearFailure() throws Exception
+    void shouldClearFailure() throws Exception
     {
         // GIVEN
         FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
@@ -103,7 +102,7 @@ public class FailureStorageTest
     }
 
     @Test
-    public void shouldAppendFailureIfAlreadyExists() throws Exception
+    void shouldAppendFailureIfAlreadyExists() throws Exception
     {
         // GIVEN
         FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );

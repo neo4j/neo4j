@@ -63,7 +63,7 @@ public class ProceduresTest
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void shouldGetRegisteredProcedure() throws Throwable
+    void shouldGetRegisteredProcedure() throws Throwable
     {
         // When
         procs.register( procedure );
@@ -73,7 +73,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldGetAllRegisteredProcedures() throws Throwable
+    void shouldGetAllRegisteredProcedures() throws Throwable
     {
         // When
         procs.register( procedure( procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build() ) );
@@ -89,7 +89,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldCallRegisteredProcedure() throws Throwable
+    void shouldCallRegisteredProcedure() throws Throwable
     {
         // Given
         procs.register( procedure );
@@ -103,7 +103,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldNotAllowCallingNonExistingProcedure() throws Throwable
+    void shouldNotAllowCallingNonExistingProcedure() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -116,7 +116,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldNotAllowRegisteringConflictingName() throws Throwable
+    void shouldNotAllowRegisteringConflictingName() throws Throwable
     {
         // Given
         procs.register( procedure );
@@ -130,7 +130,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldNotAllowDuplicateFieldNamesInInput() throws Throwable
+    void shouldNotAllowDuplicateFieldNamesInInput() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -143,7 +143,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldNotAllowDuplicateFieldNamesInOutput() throws Throwable
+    void shouldNotAllowDuplicateFieldNamesInOutput() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -156,7 +156,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldSignalNonExistingProcedure() throws Throwable
+    void shouldSignalNonExistingProcedure() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -169,7 +169,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldMakeContextAvailable() throws Throwable
+    void shouldMakeContextAvailable() throws Throwable
     {
         // Given
         Key<String> someKey = key("someKey", String.class);
@@ -194,7 +194,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldFailCompileProcedureWithReadConflict() throws Throwable
+    void shouldFailCompileProcedureWithReadConflict() throws Throwable
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
@@ -202,7 +202,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldFailCompileProcedureWithWriteConflict() throws Throwable
+    void shouldFailCompileProcedureWithWriteConflict() throws Throwable
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
@@ -210,7 +210,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldFailCompileProcedureWithSchemaConflict() throws Throwable
+    void shouldFailCompileProcedureWithSchemaConflict() throws Throwable
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
@@ -218,14 +218,14 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldFailCompileProcedureWithDBMSConflict() throws Throwable
+    void shouldFailCompileProcedureWithDBMSConflict() throws Throwable
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
         procs.registerProcedure( ProcedureWithDBMSConflictAnnotation.class );
     }
 
-    public static class ProcedureWithReadConflictAnnotation
+    private static class ProcedureWithReadConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.READ )
@@ -234,7 +234,7 @@ public class ProceduresTest
         }
     }
 
-    public static class ProcedureWithWriteConflictAnnotation
+    private static class ProcedureWithWriteConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.WRITE )
@@ -243,7 +243,7 @@ public class ProceduresTest
         }
     }
 
-    public static class ProcedureWithDBMSConflictAnnotation
+    private static class ProcedureWithDBMSConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.DBMS )
@@ -252,7 +252,7 @@ public class ProceduresTest
         }
     }
 
-    public static class ProcedureWithSchemaConflictAnnotation
+    private static class ProcedureWithSchemaConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.SCHEMA )

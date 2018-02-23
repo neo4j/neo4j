@@ -75,7 +75,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class HighAvailabilityModeSwitcherTest
 {
     @Test
-    public void shouldBroadcastMasterIsAvailableIfMasterAndReceiveMasterIsElected()
+    void shouldBroadcastMasterIsAvailableIfMasterAndReceiveMasterIsElected()
     {
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
@@ -94,7 +94,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldBroadcastSlaveIsAvailableIfSlaveAndReceivesMasterIsAvailable()
+    void shouldBroadcastSlaveIsAvailableIfSlaveAndReceivesMasterIsAvailable()
     {
 
         // Given
@@ -114,7 +114,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldNotBroadcastIfSlaveAndReceivesMasterIsElected()
+    void shouldNotBroadcastIfSlaveAndReceivesMasterIsElected()
     {
 
         // Given
@@ -134,7 +134,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldNotBroadcastIfMasterAndReceivesSlaveIsAvailable()
+    void shouldNotBroadcastIfMasterAndReceivesSlaveIsAvailable()
     {
 
         // Given
@@ -154,7 +154,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldReswitchToSlaveIfNewMasterBecameElectedAndAvailableDuringSwitch() throws Throwable
+    void shouldReswitchToSlaveIfNewMasterBecameElectedAndAvailableDuringSwitch() throws Throwable
     {
         // Given
         final CountDownLatch switching = new CountDownLatch( 1 );
@@ -211,7 +211,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldRecognizeNewMasterIfNewMasterBecameAvailableDuringSwitch() throws Throwable
+    void shouldRecognizeNewMasterIfNewMasterBecameAvailableDuringSwitch() throws Throwable
     {
         // When messages coming in the following ordering, the slave should detect that the master id has changed
         // M1: Get masterIsAvailable for instance 1 at PENDING state, changing PENDING -> TO_SLAVE
@@ -292,7 +292,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldNotResetAvailableMasterURIIfElectionResultReceived() throws Throwable
+    void shouldNotResetAvailableMasterURIIfElectionResultReceived() throws Throwable
     {
         /*
          * It is possible that a masterIsElected nulls out the current available master URI in the HAMS. That can
@@ -352,7 +352,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldTakeNoActionIfSwitchingToSlaveForItselfAsMaster()
+    void shouldTakeNoActionIfSwitchingToSlaveForItselfAsMaster()
     {
         // Given
         // A HAMS
@@ -390,7 +390,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldPerformForcedElections()
+    void shouldPerformForcedElections()
     {
         // Given
         ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
@@ -412,7 +412,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldPerformForcedElectionsOnlyOnce()
+    void shouldPerformForcedElectionsOnlyOnce()
     {
         // Given: HAMS
         ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
@@ -436,7 +436,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldAllowForcedElectionsAfterModeSwitch() throws Throwable
+    void shouldAllowForcedElectionsAfterModeSwitch() throws Throwable
     {
         // Given
         SwitchToSlaveCopyThenBranch switchToSlave = mock( SwitchToSlaveCopyThenBranch.class );
@@ -489,7 +489,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldUseProperServerIdWhenDemotingFromMasterOnException() throws Throwable
+    void shouldUseProperServerIdWhenDemotingFromMasterOnException() throws Throwable
     {
         /*
          * This a test that acts as a driver to prove a bug which had an instance send out a demote message
@@ -542,7 +542,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached()
+    void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached()
     {
         // Given
         SwitchToSlaveCopyThenBranch sts = mock( SwitchToSlaveCopyThenBranch.class );

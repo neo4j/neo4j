@@ -24,12 +24,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class CharacterConverterTest
+class CharacterConverterTest
 {
     private final CharacterConverter converter = new CharacterConverter();
 
     @Test
-    public void shouldConvertCharacter()
+    void shouldConvertCharacter()
     {
         // GIVEN
         String candidates = "abcdefghijklmnopqrstuvwxyzåäö\"'^`\\"; // to name a few
@@ -43,7 +43,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvertRawAscii()
+    void shouldConvertRawAscii()
     {
         for ( char expected = 0; expected < Character.MAX_VALUE; expected++ )
         {
@@ -52,7 +52,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvertEscaped_t_AsTab()
+    void shouldConvertEscaped_t_AsTab()
     {
         // GIVEN
         char expected = '\t';
@@ -62,7 +62,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvert_t_AsTab()
+    void shouldConvert_t_AsTab()
     {
         // GIVEN
         char expected = '\t';
@@ -72,7 +72,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvertSpelledOut_TAB_AsTab()
+    void shouldConvertSpelledOut_TAB_AsTab()
     {
         // GIVEN
         char expected = '\t';
@@ -82,7 +82,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldNotAcceptRandomEscapedStrings()
+    void shouldNotAcceptRandomEscapedStrings()
     {
         try
         {
@@ -96,7 +96,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldNotAcceptStrings()
+    void shouldNotAcceptStrings()
     {
         try
         {

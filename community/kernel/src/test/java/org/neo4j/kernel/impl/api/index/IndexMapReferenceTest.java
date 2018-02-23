@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IndexMapReferenceTest
+class IndexMapReferenceTest
 {
     @Test
-    public void shouldSynchronizeModifications() throws Throwable
+    void shouldSynchronizeModifications() throws Throwable
     {
         // given
         IndexMapReference ref = new IndexMapReference();

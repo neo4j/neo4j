@@ -40,10 +40,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class UniqueFactoryTest
+class UniqueFactoryTest
 {
     @Test
-    public void shouldUseConcurrentlyCreatedNode()
+    void shouldUseConcurrentlyCreatedNode()
     {
         // given
         GraphDatabaseService graphdb = mock( GraphDatabaseService.class );
@@ -81,7 +81,7 @@ public class UniqueFactoryTest
     }
 
     @Test
-    public void shouldCreateNodeAndIndexItIfMissing()
+    void shouldCreateNodeAndIndexItIfMissing()
     {
         // given
         GraphDatabaseService graphdb = mock( GraphDatabaseService.class );
@@ -120,7 +120,7 @@ public class UniqueFactoryTest
     }
 
     @Test
-    public void shouldCreateNodeWithOutcomeAndIndexItIfMissing()
+    void shouldCreateNodeWithOutcomeAndIndexItIfMissing()
     {
         // given
         GraphDatabaseService graphdb = mock( GraphDatabaseService.class );
@@ -160,7 +160,7 @@ public class UniqueFactoryTest
     }
 
     @Test
-    public void shouldNotTouchTransactionsIfAlreadyInIndex()
+    void shouldNotTouchTransactionsIfAlreadyInIndex()
     {
         GraphDatabaseService graphdb = mock( GraphDatabaseService.class );
         @SuppressWarnings( "unchecked" )

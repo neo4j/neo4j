@@ -24,12 +24,12 @@ import org.junit.jupiter.api.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ExponentialBackoffStrategyTest
+class ExponentialBackoffStrategyTest
 {
     private static final int NUMBER_OF_ACCESSES = 5;
 
     @Test
-    public void shouldDoubleEachTime()
+    void shouldDoubleEachTime()
     {
         // given
         ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
@@ -46,7 +46,7 @@ public class ExponentialBackoffStrategyTest
     }
 
     @Test
-    public void shouldProvidePreviousTimeout()
+    void shouldProvidePreviousTimeout()
     {
         // given
         ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
@@ -63,7 +63,7 @@ public class ExponentialBackoffStrategyTest
     }
 
     @Test
-    public void shouldRespectUpperBound()
+    void shouldRespectUpperBound()
     {
         // given
         long upperBound = (1 << NUMBER_OF_ACCESSES) - 5;

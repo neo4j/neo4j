@@ -26,8 +26,6 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,11 +35,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CompiledIndexUtilsTest
+class CompiledIndexUtilsTest
 {
 
     @Test
-    public void shouldCallIndexSeek() throws KernelException
+    void shouldCallIndexSeek() throws KernelException
     {
 
         // GIVEN
@@ -57,7 +55,7 @@ public class CompiledIndexUtilsTest
     }
 
     @Test
-    public void shouldHandleNullInIndexSeek() throws KernelException
+    void shouldHandleNullInIndexSeek() throws KernelException
     {
         // GIVEN
         Read read = mock( Read.class );

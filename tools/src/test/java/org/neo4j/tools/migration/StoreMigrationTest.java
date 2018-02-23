@@ -38,21 +38,21 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 @ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
-public class StoreMigrationTest
+class StoreMigrationTest
 {
     @Resource
     public SuppressOutput mute;
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         Unzip.unzip( getClass(), "2.3-store.zip", testDir.graphDbDir() );
     }
 
     @Test
-    public void storeMigrationToolShouldBeAbleToMigrateOldStore() throws IOException
+    void storeMigrationToolShouldBeAbleToMigrateOldStore() throws IOException
     {
         StoreMigration.main( new String[]{testDir.graphDbDir().getAbsolutePath()} );
 

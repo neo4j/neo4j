@@ -43,7 +43,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TestPlaceboTransaction
+class TestPlaceboTransaction
 {
     private Transaction placeboTx;
     private Node resource;
@@ -51,7 +51,7 @@ public class TestPlaceboTransaction
     private ReadOperations readOps;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
         when( bridge.get() ).thenReturn( mock( Statement.class ) );
@@ -66,7 +66,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldRollbackParentByDefault()
+    void shouldRollbackParentByDefault()
     {
         // When
         placeboTx.close();
@@ -76,7 +76,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldRollbackParentIfFailureCalled()
+    void shouldRollbackParentIfFailureCalled()
     {
         // When
         placeboTx.failure();
@@ -87,7 +87,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldNotRollbackParentIfSuccessCalled()
+    void shouldNotRollbackParentIfSuccessCalled()
     {
         // When
         placeboTx.success();
@@ -98,7 +98,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void successCannotOverrideFailure()
+    void successCannotOverrideFailure()
     {
         // When
         placeboTx.failure();
@@ -111,7 +111,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void canAcquireReadLock()
+    void canAcquireReadLock()
     {
         // when
         placeboTx.acquireReadLock( resource );
@@ -121,7 +121,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void canAcquireWriteLock()
+    void canAcquireWriteLock()
     {
         // when
         placeboTx.acquireWriteLock( resource );
@@ -131,7 +131,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldReturnTerminationReason()
+    void shouldReturnTerminationReason()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )

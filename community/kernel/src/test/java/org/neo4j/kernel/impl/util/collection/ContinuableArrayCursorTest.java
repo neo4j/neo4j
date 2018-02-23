@@ -39,7 +39,7 @@ public class ContinuableArrayCursorTest
     public final ExpectedException thrown = ExpectedException.none();
 
     @Test
-    public void shouldNotReturnAnyElementOnEmptySupplier()
+    void shouldNotReturnAnyElementOnEmptySupplier()
     {
         // given
         ContinuableArrayCursor cursor = new ContinuableArrayCursor<>( () -> null );
@@ -49,7 +49,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void shouldNotReturnAnyElementOnSupplierWithOneEmptyArray()
+    void shouldNotReturnAnyElementOnSupplierWithOneEmptyArray()
     {
         // given
         ContinuableArrayCursor cursor = new ContinuableArrayCursor( supply( new Integer[0] ) );
@@ -59,7 +59,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void shouldMoveCursorOverSingleArray()
+    void shouldMoveCursorOverSingleArray()
     {
         // given
         Integer[] array = new Integer[]{1, 2, 3};
@@ -70,7 +70,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void shouldMoveCursorOverMultipleArrays()
+    void shouldMoveCursorOverMultipleArrays()
     {
         // given
         Integer[][] arrays = new Integer[][]{
@@ -85,7 +85,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void callGetBeforeNextShouldThrowIllegalStateException()
+    void callGetBeforeNextShouldThrowIllegalStateException()
     {
         // given
         ContinuableArrayCursor<?> cursor = new ContinuableArrayCursor( supply( new Integer[0] ) );
@@ -96,7 +96,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void callGetAfterNextReturnsFalseShouldThrowIllegalStateException()
+    void callGetAfterNextReturnsFalseShouldThrowIllegalStateException()
     {
         // given
         ContinuableArrayCursor<Integer> cursor = new ContinuableArrayCursor<>( supply( new Integer[0] ) );

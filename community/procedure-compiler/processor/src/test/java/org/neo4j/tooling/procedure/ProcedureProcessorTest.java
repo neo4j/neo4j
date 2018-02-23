@@ -43,7 +43,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     private Processor processor = new ProcedureProcessor();
 
     @Test
-    public void fails_if_parameters_are_not_properly_annotated()
+    void fails_if_parameters_are_not_properly_annotated()
     {
         JavaFileObject sproc =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/missing_name/MissingNameSproc.java" );
@@ -60,7 +60,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_return_type_is_not_stream()
+    void fails_if_return_type_is_not_stream()
     {
         JavaFileObject sproc =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_return_type/BadReturnTypeSproc.java" );
@@ -71,7 +71,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_record_type_has_nonpublic_fields()
+    void fails_if_record_type_has_nonpublic_fields()
     {
         JavaFileObject record =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_record_type/BadRecord.java" );
@@ -88,7 +88,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_procedure_primitive_input_type_is_not_supported()
+    void fails_if_procedure_primitive_input_type_is_not_supported()
     {
         JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_proc_input_type/BadPrimitiveInputSproc.java" );
@@ -100,7 +100,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_procedure_generic_input_type_is_not_supported()
+    void fails_if_procedure_generic_input_type_is_not_supported()
     {
         JavaFileObject sproc =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_proc_input_type/BadGenericInputSproc.java" );
@@ -123,7 +123,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_procedure_primitive_record_field_type_is_not_supported()
+    void fails_if_procedure_primitive_record_field_type_is_not_supported()
     {
         JavaFileObject record = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_record_field_type/BadRecordSimpleFieldType.java" );
@@ -136,7 +136,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_procedure_generic_record_field_type_is_not_supported()
+    void fails_if_procedure_generic_record_field_type_is_not_supported()
     {
         JavaFileObject record = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_record_field_type/BadRecordGenericFieldType.java" );
@@ -158,7 +158,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_duplicate_procedures_are_declared()
+    void fails_if_duplicate_procedures_are_declared()
     {
         JavaFileObject firstDuplicate =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/duplicated/Sproc1.java" );
@@ -172,7 +172,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_procedure_class_has_no_public_no_arg_constructor()
+    void fails_if_procedure_class_has_no_public_no_arg_constructor()
     {
         JavaFileObject procedure = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/missing_constructor/MissingConstructorProcedure.java" );
@@ -185,7 +185,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void succeeds_to_process_valid_stored_procedures()
+    void succeeds_to_process_valid_stored_procedures()
     {
         assert_().about( javaSources() )
                 .that( asList( JavaFileObjectUtils.INSTANCE.procedureSource( "valid/Procedures.java" ),
@@ -195,7 +195,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_with_conflicting_mode()
+    void fails_with_conflicting_mode()
     {
         JavaFileObject procedure = JavaFileObjectUtils.INSTANCE.procedureSource(
                 "invalid/conflicting_mode/ConflictingMode.java" );

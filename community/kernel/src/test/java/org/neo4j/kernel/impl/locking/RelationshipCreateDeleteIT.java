@@ -44,15 +44,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Also test that relationship chains are consistently read during concurrent updates.
  */
 @ExtendWith( {ImpermanentDatabaseExtension.class, RandomExtension.class} )
-public class RelationshipCreateDeleteIT
+class RelationshipCreateDeleteIT
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldNotDeadlockOrCrashFromInconsistency() throws Throwable
+    void shouldNotDeadlockOrCrashFromInconsistency() throws Throwable
     {
         // GIVEN (A) -[R]-> (B)
         final Node a;

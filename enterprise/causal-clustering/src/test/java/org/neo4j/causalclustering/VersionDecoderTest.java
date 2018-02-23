@@ -29,12 +29,12 @@ import org.neo4j.logging.AssertableLogProvider;
 
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class VersionDecoderTest
+class VersionDecoderTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldDiscardMessageWithUnknownVersionAndLogAnError()
+    void shouldDiscardMessageWithUnknownVersionAndLogAnError()
     {
         // given
         byte currentVersion = (byte) 1;
@@ -54,7 +54,7 @@ public class VersionDecoderTest
     }
 
     @Test
-    public void shouldHandleMessageWithCorrectVersion()
+    void shouldHandleMessageWithCorrectVersion()
     {
         // given
         byte currentVersion = (byte) 1;

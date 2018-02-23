@@ -28,10 +28,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class RecentKTest
+class RecentKTest
 {
     @Test
-    public void shouldEvictOnOverflow()
+    void shouldEvictOnOverflow()
     {
         // When & Then
         assertThat( appendSequence( 1, 1, 1, 1, 1, 1, 1 ), yieldsSet( 1 ) );

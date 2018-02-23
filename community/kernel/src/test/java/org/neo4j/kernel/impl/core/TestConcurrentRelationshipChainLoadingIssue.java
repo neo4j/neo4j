@@ -40,18 +40,18 @@ import static org.neo4j.helpers.collection.Iterables.count;
  * for a couple of seconds. The original issues is mostly seen immediately, but after
  * a fix is in this test will take the full amount of seconds unfortunately.
  */
-public class TestConcurrentRelationshipChainLoadingIssue
+class TestConcurrentRelationshipChainLoadingIssue
 {
     private final int relCount = 2;
 
     @Test
-    public void tryToTriggerRelationshipLoadingStoppingMidWay() throws Throwable
+    void tryToTriggerRelationshipLoadingStoppingMidWay() throws Throwable
     {
         tryToTriggerRelationshipLoadingStoppingMidWay( 50 );
     }
 
     @Test
-    public void tryToTriggerRelationshipLoadingStoppingMidWayForDenseNodeRepresentation() throws Throwable
+    void tryToTriggerRelationshipLoadingStoppingMidWayForDenseNodeRepresentation() throws Throwable
     {
         tryToTriggerRelationshipLoadingStoppingMidWay( 1 );
     }

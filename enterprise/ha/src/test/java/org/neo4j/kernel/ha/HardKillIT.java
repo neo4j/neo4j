@@ -60,15 +60,15 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class HardKillIT
+class HardKillIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private ProcessStreamHandler processHandler;
 
     @Test
-    public void testMasterSwitchHappensOnKillMinus9() throws Exception
+    void testMasterSwitchHappensOnKillMinus9() throws Exception
     {
         Process proc = null;
         HighlyAvailableGraphDatabase dbWithId2 = null;
@@ -199,7 +199,7 @@ public class HardKillIT
     /*
      * Used to launch the master instance
      */
-    public static void main( String[] args ) throws InterruptedException
+    static void main( String[] args ) throws InterruptedException
     {
         int serverId = Integer.parseInt( args[0] );
         File path = new File( args[1] );

@@ -37,10 +37,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TimeoutLoopTest
+class TimeoutLoopTest
 {
     @Test
-    public void shouldReturnImmediatelyIfFutureIsAlreadyComplete() throws Exception
+    void shouldReturnImmediatelyIfFutureIsAlreadyComplete() throws Exception
     {
         // given
         CompletableFuture<Long> future = new CompletableFuture<>();
@@ -56,7 +56,7 @@ public class TimeoutLoopTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldTimeoutIfNoActivity() throws Exception
+    void shouldTimeoutIfNoActivity() throws Exception
     {
         // given
         CompletableFuture<Long> future = mock( CompletableFuture.class );
@@ -80,7 +80,7 @@ public class TimeoutLoopTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldTimeoutIfNoContinuedActivity() throws Exception
+    void shouldTimeoutIfNoContinuedActivity() throws Exception
     {
         // given
         CompletableFuture<Long> future = mock( CompletableFuture.class );
@@ -104,7 +104,7 @@ public class TimeoutLoopTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldKeepWaitingIfThereIsSomeActivity() throws Exception
+    void shouldKeepWaitingIfThereIsSomeActivity() throws Exception
     {
         // given
         CompletableFuture<Long> future = mock( CompletableFuture.class );
@@ -120,7 +120,7 @@ public class TimeoutLoopTest
     }
 
     @Test
-    public void shouldTranslateExecutionExceptionToCatchUpClientException()
+    void shouldTranslateExecutionExceptionToCatchUpClientException()
     {
         // given
         CompletableFuture<Long> future = new CompletableFuture<>();

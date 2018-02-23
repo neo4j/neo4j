@@ -32,10 +32,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
-public class TestDatasourceCommitOrderDataVisibility
+class TestDatasourceCommitOrderDataVisibility
 {
     private static final String INDEX_NAME = "foo";
     private static final String INDEX_KEY = "bar";
@@ -46,19 +46,19 @@ public class TestDatasourceCommitOrderDataVisibility
     private GraphDatabaseService graphDatabaseService;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         graphDatabaseService.shutdown();
     }
 
     @Test
-    public void shouldNotMakeIndexWritesVisibleUntilCommit() throws Exception
+    void shouldNotMakeIndexWritesVisibleUntilCommit() throws Exception
     {
         Node commonNode;
         try ( Transaction tx = graphDatabaseService.beginTx() )

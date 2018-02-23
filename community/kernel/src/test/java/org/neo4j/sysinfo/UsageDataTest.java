@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.udc.UsageDataKey.key;
 
-public class UsageDataTest
+class UsageDataTest
 {
     @Test
-    public void shouldPutAndRetrieve()
+    void shouldPutAndRetrieve()
     {
         // Given
         UsageData ms = new UsageData( mock( JobScheduler.class ) );

@@ -48,15 +48,15 @@ import static org.hamcrest.core.Is.is;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class ExecutionEngineTest
+class ExecutionEngineTest
 {
     private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
 
     @Resource
-    public ImpermanentDatabaseRule database;
+    private ImpermanentDatabaseRule database;
 
     @Test
-    public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
+    void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
     {
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
         Monitors monitors = graph.getDependencyResolver().resolveDependency( Monitors.class );

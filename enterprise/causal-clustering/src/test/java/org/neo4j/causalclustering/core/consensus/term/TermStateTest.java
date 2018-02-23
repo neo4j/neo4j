@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TermStateTest
+class TermStateTest
 {
     @Test
-    public void shouldStoreCurrentTerm()
+    void shouldStoreCurrentTerm()
     {
         // given
         TermState termState = new TermState();
@@ -40,7 +40,7 @@ public class TermStateTest
     }
 
     @Test
-    public void rejectLowerTerm()
+    void rejectLowerTerm()
     {
         // given
         TermState termState = new TermState();

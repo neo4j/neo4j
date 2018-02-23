@@ -84,7 +84,7 @@ class LinearHistoryTracer
             super( null ); // No output target by default. This is changed in printHistory.
         }
 
-        public void setOut( OutputStream out )
+        void setOut( OutputStream out )
         {
             super.out = out;
         }

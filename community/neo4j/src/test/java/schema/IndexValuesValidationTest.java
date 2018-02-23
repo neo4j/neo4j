@@ -52,26 +52,26 @@ public class IndexValuesValidationTest
 {
 
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     private static GraphDatabaseService database;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         database.shutdown();
     }
 
     @Test
-    public void validateIndexedNodeProperties()
+    void validateIndexedNodeProperties()
     {
         Label label = Label.label( "indexedNodePropertiesTestLabel" );
         String propertyName = "indexedNodePropertyName";
@@ -96,7 +96,7 @@ public class IndexValuesValidationTest
     }
 
     @Test
-    public void validateNodePropertiesOnPopulation()
+    void validateNodePropertiesOnPopulation()
     {
         Label label = Label.label( "populationTestNodeLabel" );
         String propertyName = "populationTestPropertyName";
@@ -129,7 +129,7 @@ public class IndexValuesValidationTest
     }
 
     @Test
-    public void validateExplicitIndexedNodeProperties()
+    void validateExplicitIndexedNodeProperties()
     {
         Label label = Label.label( "explicitIndexedNodePropertiesTestLabel" );
         String propertyName = "explicitIndexedNodeProperties";
@@ -157,7 +157,7 @@ public class IndexValuesValidationTest
     }
 
     @Test
-    public void validateExplicitIndexedRelationshipProperties()
+    void validateExplicitIndexedRelationshipProperties()
     {
         Label label = Label.label( "explicitIndexedRelationshipPropertiesTestLabel" );
         String propertyName = "explicitIndexedRelationshipProperties";

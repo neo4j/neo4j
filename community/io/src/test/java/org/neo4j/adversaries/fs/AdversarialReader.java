@@ -27,12 +27,12 @@ import java.nio.CharBuffer;
 import org.neo4j.adversaries.Adversary;
 
 @SuppressWarnings( "unchecked" )
-public class AdversarialReader extends Reader
+class AdversarialReader extends Reader
 {
     private final Reader reader;
     private final Adversary adversary;
 
-    public AdversarialReader( Reader reader, Adversary adversary )
+    AdversarialReader( Reader reader, Adversary adversary )
     {
         this.reader = reader;
         this.adversary = adversary;

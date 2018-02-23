@@ -89,7 +89,7 @@ public class ConfigTest
 {
     private static final String ORIGIN = "test";
 
-    public static class MyMigratingSettings implements LoadableConfig
+    static class MyMigratingSettings implements LoadableConfig
     {
         @SuppressWarnings( "unused" ) // accessed by reflection
         @Migrator
@@ -107,18 +107,18 @@ public class ConfigTest
             }
         };
 
-        public static Setting<String> newer = setting( "newer", STRING, "" );
+        static Setting<String> newer = setting( "newer", STRING, "" );
     }
 
     public static class MySettingsWithDefaults implements LoadableConfig
     {
-        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
+        static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
+        static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
 
         @Internal
         @DocumentedDefaultValue( "<documented default value>" )
-        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, TRUE );
+        static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, TRUE );
 
         @Deprecated
         @ReplacedBy( "hello" )
@@ -156,13 +156,13 @@ public class ConfigTest
     }
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Rule
     public ExpectedException expect = none();
 
     @Test
-    public void shouldApplyDefaults()
+    void shouldApplyDefaults()
     {
         Config config = Config();
 
@@ -170,7 +170,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldApplyMigrations()
+    void shouldApplyMigrations()
     {
         // When
         Config config = Config( stringMap( "old", "hello!" ) );
@@ -180,7 +180,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldNotAllowSettingInvalidValues()
+    void shouldNotAllowSettingInvalidValues()
     {
         assertThrows( InvalidSettingException.class, () -> {
             Config( stringMap( boolSetting.name(), "asd" ) );
@@ -189,7 +189,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldBeAbleToAugmentConfig()
+    void shouldBeAbleToAugmentConfig()
     {
         // Given
         Config config = Config();
@@ -204,7 +204,7 @@ public class ConfigTest
     }
 
     @Test
-    public void augmentAnotherConfig()
+    void augmentAnotherConfig()
     {
         Config config = Config();
         config.augment( hello, "Hi" );
@@ -219,7 +219,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods()
+    void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods()
             throws Exception
     {
         // Given
@@ -241,7 +241,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldLogDeprecationWarnings() throws Exception
+    void shouldLogDeprecationWarnings() throws Exception
     {
         // Given
         Log log = mock( Log.class );
@@ -262,7 +262,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldSetInternalParameter()
+    void shouldSetInternalParameter()
     {
         // Given
         Config config = builder().withSetting( secretSetting, "false" ).withSetting( hello, "ABC" )
@@ -274,7 +274,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldSetDocumentedDefaultValue()
+    void shouldSetDocumentedDefaultValue()
     {
         // Given
         Config config = builder().withSetting( secretSetting, "false" ).withSetting( hello, "ABC" )
@@ -287,7 +287,7 @@ public class ConfigTest
     }
 
     @Test
-    public void validatorsShouldBeCalledWhenBuilding()
+    void validatorsShouldBeCalledWhenBuilding()
     {
         // Should not throw
         builder().withSetting( hello, "neo4j" ).withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
@@ -307,7 +307,7 @@ public class ConfigTest
     }
 
     @Test
-    public void identifiersFromGroup() throws Exception
+    void identifiersFromGroup() throws Exception
     {
         // Given
         File confFile = testDirectory.file( "test.conf" );
@@ -324,7 +324,7 @@ public class ConfigTest
     }
 
     @Test
-    public void isConfigured()
+    void isConfigured()
     {
         Config config = Config();
         assertFalse( config.isConfigured( hello ) );
@@ -333,7 +333,7 @@ public class ConfigTest
     }
 
     @Test
-    public void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists()
+    void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists()
     {
         Config config = Config();
         assertFalse( config.isConfigured( hello ) );
@@ -341,7 +341,7 @@ public class ConfigTest
     }
 
     @Test
-    public void withConnectorsDisabled()
+    void withConnectorsDisabled()
     {
         Connector httpConnector = new HttpConnector();
         Connector boltConnector = new BoltConnector();
@@ -352,7 +352,7 @@ public class ConfigTest
     }
 
     @Test
-    public void augmentDefaults()
+    void augmentDefaults()
     {
         Config config = Config();
         assertEquals( "Hello, World!", config.get( hello ) );
@@ -360,14 +360,14 @@ public class ConfigTest
         assertEquals( "new default", config.get( hello ) );
     }
 
-    public static class MyDynamicSettings implements LoadableConfig
+    static class MyDynamicSettings implements LoadableConfig
     {
         @Dynamic
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
+        static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
     }
 
     @Test
-    public void updateDynamicShouldLogChanges()
+    void updateDynamicShouldLogChanges()
     {
         String settingName = MyDynamicSettings.boolSetting.name();
         String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
@@ -388,7 +388,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldThrowIfSettingIsNotDynamic()
+    void updateDynamicShouldThrowIfSettingIsNotDynamic()
     {
         Config config = builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
         expect.expect( IllegalArgumentException.class );
@@ -396,7 +396,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldInformRegisteredListeners()
+    void updateDynamicShouldInformRegisteredListeners()
     {
         Config config = builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         AtomicInteger counter = new AtomicInteger( 0 );
@@ -410,7 +410,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldNotAllowInvalidSettings()
+    void updateDynamicShouldNotAllowInvalidSettings()
     {
         Config config = builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         expect.expect( InvalidSettingException.class );
@@ -418,7 +418,7 @@ public class ConfigTest
     }
 
     @Test
-    public void registeringUpdateListenerOnNonDynamicSettingMustThrow()
+    void registeringUpdateListenerOnNonDynamicSettingMustThrow()
     {
         Config config = builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
         expect.expect( IllegalArgumentException.class );
@@ -426,7 +426,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldLogExceptionsFromUpdateListeners()
+    void updateDynamicShouldLogExceptionsFromUpdateListeners()
     {
         Config config = builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         IllegalStateException exception = new IllegalStateException( "Boo" );

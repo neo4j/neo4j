@@ -37,10 +37,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
-public class OwningNodeRelationshipChainTest
+class OwningNodeRelationshipChainTest
 {
     @Test
-    public void shouldFindBothChainsThatTheRelationshipRecordShouldBelongTo()
+    void shouldFindBothChainsThatTheRelationshipRecordShouldBelongTo()
     {
         // given
         long node1 = 101;

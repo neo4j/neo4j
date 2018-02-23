@@ -24,14 +24,14 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.Map;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
-public class VersionedHashMapTest
+class VersionedHashMapTest
 {
 
     @Test
-    public void shouldGetAndContain()
+    void shouldGetAndContain()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -50,7 +50,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldReplace()
+    void shouldReplace()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -70,7 +70,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldRemove()
+    void shouldRemove()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -90,7 +90,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldNotSeeAdditionsWhileIterating()
+    void shouldNotSeeAdditionsWhileIterating()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -122,7 +122,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldSeeRemovalsWhileIterating()
+    void shouldSeeRemovalsWhileIterating()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -150,7 +150,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldAllowRemovalsWhileIterating()
+    void shouldAllowRemovalsWhileIterating()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -175,7 +175,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldHandleResizing()
+    void shouldHandleResizing()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>( 16, 0.5f );
@@ -199,7 +199,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldAllowRemovalsWhileIteratingEvenInFaceOfResizing()
+    void shouldAllowRemovalsWhileIteratingEvenInFaceOfResizing()
     {
         // Given
         VersionedHashMap<Object,Object> map = new VersionedHashMap<>( 16, 5.0f );

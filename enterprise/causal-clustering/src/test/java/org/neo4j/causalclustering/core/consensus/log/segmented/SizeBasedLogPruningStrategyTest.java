@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SizeBasedLogPruningStrategyTest extends PruningStrategyTest
+class SizeBasedLogPruningStrategyTest extends PruningStrategyTest
 {
     @Test
-    public void indexToKeepTest()
+    void indexToKeepTest()
     {
         // given
         int segmentFilesCount = 14;

@@ -51,9 +51,9 @@ import org.neo4j.time.Clocks;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -75,7 +75,7 @@ public class RaftReplicatorTest
     private long replicationLimit = 1000;
 
     @Test
-    public void shouldSendReplicatedContentToLeader() throws Exception
+    void shouldSendReplicatedContentToLeader() throws Exception
     {
         // given
         when( leaderLocator.getLeader() ).thenReturn( leader );
@@ -104,7 +104,7 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void shouldResendAfterTimeout() throws Exception
+    void shouldResendAfterTimeout() throws Exception
     {
         // given
         when( leaderLocator.getLeader() ).thenReturn( leader );
@@ -129,7 +129,7 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void shouldRetryGettingLeader() throws Exception
+    void shouldRetryGettingLeader() throws Exception
     {
         // given
         AtomicInteger leaderRetries = new AtomicInteger( 0 );
@@ -160,7 +160,7 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void shouldReleaseSessionWhenFinished() throws Exception
+    void shouldReleaseSessionWhenFinished() throws Exception
     {
         // given
         when( leaderLocator.getLeader() ).thenReturn( leader );
@@ -192,7 +192,7 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void stopReplicationOnShutdown() throws NoLeaderFoundException, InterruptedException
+    void stopReplicationOnShutdown() throws NoLeaderFoundException, InterruptedException
     {
         when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
@@ -258,7 +258,7 @@ public class RaftReplicatorTest
             }
         }
 
-        public Exception getReplicationException()
+        Exception getReplicationException()
         {
             return replicationException;
         }

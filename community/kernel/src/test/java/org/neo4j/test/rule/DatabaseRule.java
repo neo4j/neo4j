@@ -148,8 +148,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
      * @param transaction {@link Function} containing the transaction logic and returning a result.
      * @return result from transaction {@link Function}.
      */
-    public static <T> T tx( GraphDatabaseService db, boolean commit,
-            RetryHandler retry, Function<? super GraphDatabaseService, T> transaction )
+    private static <T> T tx( GraphDatabaseService db, boolean commit, RetryHandler retry,
+            Function<? super GraphDatabaseService,T> transaction )
     {
         while ( true )
         {
@@ -280,11 +280,11 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         }
     }
 
-    protected void deleteResources()
+    void deleteResources()
     {
     }
 
-    protected void createResources()
+    private void createResources()
     {
     }
 

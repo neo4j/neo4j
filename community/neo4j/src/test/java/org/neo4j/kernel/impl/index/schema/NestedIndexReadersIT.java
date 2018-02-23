@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( {ImpermanentDatabaseExtension.class, OtherThreadExtension.class} )
-public class NestedIndexReadersIT
+class NestedIndexReadersIT
 {
     private static final int NODE_PER_ID = 3;
     private static final int IDS = 5;
@@ -50,12 +50,12 @@ public class NestedIndexReadersIT
     private static final String KEY = "key";
 
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
     @Resource
-    public OtherThreadRule<Void> t2;
+    private OtherThreadRule<Void> t2;
 
     @Test
-    public void shouldReadCorrectResultsFromMultipleNestedReaders()
+    void shouldReadCorrectResultsFromMultipleNestedReaders()
     {
         // given
         createIndex();
@@ -95,7 +95,7 @@ public class NestedIndexReadersIT
     }
 
     @Test
-    public void shouldReadCorrectResultsFromMultipleNestedReadersWhenConcurrentWriteHappens() throws Exception
+    void shouldReadCorrectResultsFromMultipleNestedReadersWhenConcurrentWriteHappens() throws Exception
     {
         // given
         createIndex();

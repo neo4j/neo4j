@@ -31,7 +31,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class CommunityServerTestBase extends ExclusiveServerTestBase
 {
-    protected CommunityNeoServer server;
+    CommunityNeoServer server;
 
     @After
     public void cleanup()
@@ -42,7 +42,7 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         }
     }
 
-    protected void startServer( boolean authEnabled ) throws IOException
+    void startServer( boolean authEnabled ) throws IOException
     {
         server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
@@ -50,28 +50,28 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         server.start();
     }
 
-    protected String basicAuthHeader( String username, String password )
+    String basicAuthHeader( String username, String password )
     {
         String usernamePassword = username + ':' + password;
         return "Basic " + Base64.getEncoder().encodeToString( usernamePassword.getBytes() );
     }
 
-    protected String dataURL()
+    String dataURL()
     {
         return server.baseUri().resolve( "db/data/" ).toString();
     }
 
-    protected String userURL( String username )
+    String userURL( String username )
     {
         return server.baseUri().resolve( "user/" + username ).toString();
     }
 
-    protected String passwordURL( String username )
+    String passwordURL( String username )
     {
         return server.baseUri().resolve( "user/" + username + "/password" ).toString();
     }
 
-    protected String txCommitURL()
+    String txCommitURL()
     {
         return server.baseUri().resolve( "db/data/transaction/commit" ).toString();
     }

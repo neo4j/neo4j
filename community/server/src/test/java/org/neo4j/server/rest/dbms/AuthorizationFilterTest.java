@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 import javax.servlet.FilterChain;
@@ -41,8 +40,8 @@ import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicLoginContext;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
@@ -54,7 +53,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
-public class AuthorizationFilterTest
+class AuthorizationFilterTest
 {
     private final BasicAuthManager authManager = mock( BasicAuthManager.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -64,7 +63,7 @@ public class AuthorizationFilterTest
     private final FilterChain filterChain = mock( FilterChain.class );
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         when( servletResponse.getOutputStream() ).thenReturn( new ServletOutputStream()
         {
@@ -89,7 +88,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldAllowOptionsRequests() throws Exception
+    void shouldAllowOptionsRequests() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
@@ -103,7 +102,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldWhitelistMatchingUris() throws Exception
+    void shouldWhitelistMatchingUris() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider,
@@ -120,7 +119,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldRequireAuthorizationForNonWhitelistedUris() throws Exception
+    void shouldRequireAuthorizationForNonWhitelistedUris() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider,
@@ -143,7 +142,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldRequireValidAuthorizationHeader() throws Exception
+    void shouldRequireValidAuthorizationHeader() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
@@ -165,7 +164,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldNotAuthorizeInvalidCredentials() throws Exception
+    void shouldNotAuthorizeInvalidCredentials() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
@@ -196,7 +195,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldAuthorizeWhenPasswordChangeRequiredForWhitelistedPath() throws Exception
+    void shouldAuthorizeWhenPasswordChangeRequiredForWhitelistedPath() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
@@ -219,7 +218,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldNotAuthorizeWhenPasswordChangeRequired() throws Exception
+    void shouldNotAuthorizeWhenPasswordChangeRequired() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
@@ -251,7 +250,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldNotAuthorizeWhenTooManyAttemptsMade() throws Exception
+    void shouldNotAuthorizeWhenTooManyAttemptsMade() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
@@ -280,7 +279,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldAuthorizeWhenValidCredentialsSupplied() throws Exception
+    void shouldAuthorizeWhenValidCredentialsSupplied() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
@@ -303,7 +302,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldIncludeCrippledAuthHeaderIfBrowserIsTheOneCalling() throws Throwable
+    void shouldIncludeCrippledAuthHeaderIfBrowserIsTheOneCalling() throws Throwable
     {
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider,

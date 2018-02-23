@@ -61,7 +61,7 @@ public class UserFunctionsTest
     private final CallableUserFunction function = function( signature );
 
     @Test
-    public void shouldGetRegisteredFunction() throws Throwable
+    void shouldGetRegisteredFunction() throws Throwable
     {
         // When
         procs.register( function );
@@ -71,7 +71,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldGetAllRegisteredFunctions() throws Throwable
+    void shouldGetAllRegisteredFunctions() throws Throwable
     {
         // When
         procs.register( function( functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build() ) );
@@ -87,7 +87,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldGetRegisteredAggregationFunctions() throws Throwable
+    void shouldGetRegisteredAggregationFunctions() throws Throwable
     {
         // When
         procs.register( function( functionSignature( "org", "myfunc1" ).out(Neo4jTypes.NTAny).build() ) );
@@ -103,7 +103,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldCallRegisteredFunction() throws Throwable
+    void shouldCallRegisteredFunction() throws Throwable
     {
         // Given
         procs.register( function );
@@ -116,7 +116,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldNotAllowCallingNonExistingFunction() throws Throwable
+    void shouldNotAllowCallingNonExistingFunction() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -129,7 +129,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldNotAllowRegisteringConflictingName() throws Throwable
+    void shouldNotAllowRegisteringConflictingName() throws Throwable
     {
         // Given
         procs.register( function );
@@ -143,14 +143,14 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldSignalNonExistingFunction()
+    void shouldSignalNonExistingFunction()
     {
         // When
         assertThat(procs.function( signature.name() ), is( Optional.empty()));
     }
 
     @Test
-    public void shouldMakeContextAvailable() throws Throwable
+    void shouldMakeContextAvailable() throws Throwable
     {
         // Given
         Key<String> someKey = key("someKey", String.class);

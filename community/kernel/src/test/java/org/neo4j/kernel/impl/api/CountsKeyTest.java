@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-public class CountsKeyTest
+class CountsKeyTest
 {
     @Test
-    public void shouldSortNodeKeysBeforeRelationshipKeys()
+    void shouldSortNodeKeysBeforeRelationshipKeys()
     {
         // given
         CountsKey[] array = {

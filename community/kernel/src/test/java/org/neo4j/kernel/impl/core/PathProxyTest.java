@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Iterator;
-
 import org.junit.jupiter.api.Test;
+
+import java.util.Iterator;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -29,16 +29,16 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PathProxyTest
+class PathProxyTest
 {
     @Test
-    public void shouldIterateThroughNodes()
+    void shouldIterateThroughNodes()
     {
         // given
         Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
@@ -60,7 +60,7 @@ public class PathProxyTest
     }
 
     @Test
-    public void shouldIterateThroughNodesInReverse()
+    void shouldIterateThroughNodesInReverse()
     {
         // given
         Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
@@ -82,7 +82,7 @@ public class PathProxyTest
     }
 
     @Test
-    public void shouldIterateThroughRelationships()
+    void shouldIterateThroughRelationships()
     {
         // given
         Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
@@ -105,7 +105,7 @@ public class PathProxyTest
     }
 
     @Test
-    public void shouldIterateThroughRelationshipsInReverse()
+    void shouldIterateThroughRelationshipsInReverse()
     {
         // given
         Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
@@ -128,7 +128,7 @@ public class PathProxyTest
     }
 
     @Test
-    public void shouldIterateAlternatingNodesAndRelationships()
+    void shouldIterateAlternatingNodesAndRelationships()
     {
         // given
         Path path = new PathProxy( null, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );

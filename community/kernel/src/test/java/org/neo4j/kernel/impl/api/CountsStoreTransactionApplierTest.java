@@ -34,10 +34,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CountsStoreTransactionApplierTest
+class CountsStoreTransactionApplierTest
 {
     @Test
-    public void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception
+    void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception
     {
         // GIVEN
         final CountsTracker tracker = mock( CountsTracker.class );

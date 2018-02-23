@@ -75,7 +75,7 @@ class ClusterInstance
     private final ClusterInstanceOutput output;
     private final URI uri;
 
-    public static final Executor DIRECT_EXECUTOR = Runnable::run;
+    private static final Executor DIRECT_EXECUTOR = Runnable::run;
 
     private boolean online = true;
 
@@ -121,11 +121,9 @@ class ClusterInstance
                 input, output, uri );
     }
 
-    ClusterInstance( Executor stateMachineExecutor, LogProvider logging, MultiPaxosServerFactory factory,
-                            ProtocolServer server,
-                            MultiPaxosContext ctx, InMemoryAcceptorInstanceStore acceptorInstanceStore,
-                            ProverTimeouts timeouts, ClusterInstanceInput input, ClusterInstanceOutput output,
-                            URI uri )
+    private ClusterInstance( Executor stateMachineExecutor, LogProvider logging, MultiPaxosServerFactory factory,
+            ProtocolServer server, MultiPaxosContext ctx, InMemoryAcceptorInstanceStore acceptorInstanceStore,
+            ProverTimeouts timeouts, ClusterInstanceInput input, ClusterInstanceOutput output, URI uri )
     {
         this.stateMachineExecutor = stateMachineExecutor;
         this.logging = logging;
@@ -139,7 +137,7 @@ class ClusterInstance
         this.uri = uri;
     }
 
-    public InstanceId id()
+    private InstanceId id()
     {
         return server.getServerId();
     }
@@ -373,7 +371,7 @@ class ClusterInstance
             }
         }
 
-        public Iterable<Message<? extends MessageType>> messages()
+        Iterable<Message<? extends MessageType>> messages()
         {
             return messages;
         }

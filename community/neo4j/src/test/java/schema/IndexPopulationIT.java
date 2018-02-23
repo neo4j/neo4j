@@ -57,31 +57,31 @@ import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class IndexPopulationIT
+class IndexPopulationIT
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     private static final int TEST_TIMEOUT = 120_000;
     private static GraphDatabaseService database;
     private static ExecutorService executorService;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
         executorService = newCachedThreadPool();
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         executorService.shutdown();
         database.shutdown();
     }
 
     @Test
-    public void indexCreationDoNotBlockQueryExecutions() throws Exception
+    void indexCreationDoNotBlockQueryExecutions() throws Exception
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             Label nodeLabel = label( "nodeLabel" );
@@ -104,7 +104,7 @@ public class IndexPopulationIT
     }
 
     @Test
-    public void createIndexesFromDifferentTransactionsWithoutBlocking() throws ExecutionException
+    void createIndexesFromDifferentTransactionsWithoutBlocking() throws ExecutionException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             long numberOfIndexesBeforeTest = countIndexes();
@@ -126,7 +126,7 @@ public class IndexPopulationIT
     }
 
     @Test
-    public void indexCreationDoNotBlockWritesOnOtherLabel() throws ExecutionException
+    void indexCreationDoNotBlockWritesOnOtherLabel() throws ExecutionException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             Label markerLabel = label( "testLabel3" );
@@ -152,7 +152,7 @@ public class IndexPopulationIT
     }
 
     @Test
-    public void shutdownDatabaseDuringIndexPopulations()
+    void shutdownDatabaseDuringIndexPopulations()
     {
         AssertableLogProvider assertableLogProvider = new AssertableLogProvider( true );
         File storeDir = directory.directory( "shutdownDbTest" );

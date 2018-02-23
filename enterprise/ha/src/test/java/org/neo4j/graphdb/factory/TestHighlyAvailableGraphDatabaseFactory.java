@@ -35,7 +35,8 @@ public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGrap
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
     }
 
-    public TestHighlyAvailableGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    private TestHighlyAvailableGraphDatabaseFactory addKernelExtensions(
+            Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         getCurrentState().addKernelExtensions( newKernelExtensions );
         return this;

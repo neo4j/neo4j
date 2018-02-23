@@ -87,7 +87,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         };
     }
 
-    public void print( PrintStream out )
+    private void print( PrintStream out )
     {
         for ( LogCall call : logCalls )
         {
@@ -173,7 +173,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             return builder.toString();
         }
 
-        public String toLogLikeString()
+        String toLogLikeString()
         {
             String msg;
             if ( arguments != null )
@@ -333,7 +333,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             this.throwableMatcher = throwableMatcher;
         }
 
-        protected boolean matches( LogCall logCall )
+        boolean matches( LogCall logCall )
         {
             return logCall != null &&
                     contextMatcher.matches( logCall.context ) &&
@@ -687,7 +687,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         return false;
     }
 
-    public boolean containsMatchingLogCall( LogMatcher logMatcher )
+    private boolean containsMatchingLogCall( LogMatcher logMatcher )
     {
         return firstMatchingLogCall( logMatcher ) != null;
     }

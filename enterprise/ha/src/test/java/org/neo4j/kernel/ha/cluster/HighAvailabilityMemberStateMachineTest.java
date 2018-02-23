@@ -85,8 +85,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -106,7 +106,7 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 public class HighAvailabilityMemberStateMachineTest
 {
     @Test
-    public void shouldStartFromPending()
+    void shouldStartFromPending()
     {
         // Given
         HighAvailabilityMemberStateMachine memberStateMachine = buildMockedStateMachine();
@@ -115,7 +115,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void shouldMoveToToMasterFromPendingOnMasterElectedForItself()
+    void shouldMoveToToMasterFromPendingOnMasterElectedForItself()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -135,7 +135,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void shouldRemainToPendingOnMasterElectedForSomeoneElse()
+    void shouldRemainToPendingOnMasterElectedForSomeoneElse()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -155,7 +155,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void shouldSwitchToToSlaveOnMasterAvailableForSomeoneElse()
+    void shouldSwitchToToSlaveOnMasterAvailableForSomeoneElse()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -179,7 +179,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInMasterStateLosingQuorumFromTwoInstancesShouldRemainMaster()
+    void whenInMasterStateLosingQuorumFromTwoInstancesShouldRemainMaster()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -215,7 +215,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInMasterStateLosingQuorumFromThreeInstancesShouldGoToPending()
+    void whenInMasterStateLosingQuorumFromThreeInstancesShouldGoToPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -256,7 +256,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateLosingOtherSlaveShouldNotPutInPending()
+    void whenInSlaveStateLosingOtherSlaveShouldNotPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -292,7 +292,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateWith3MemberClusterLosingMasterShouldPutInPending()
+    void whenInSlaveStateWith3MemberClusterLosingMasterShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -331,7 +331,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateWith2MemberClusterLosingMasterShouldPutInPending()
+    void whenInSlaveStateWith2MemberClusterLosingMasterShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -368,7 +368,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInToMasterStateLosingQuorumShouldPutInPending()
+    void whenInToMasterStateLosingQuorumShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -403,7 +403,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInToSlaveStateLosingQuorumShouldPutInPending()
+    void whenInToSlaveStateLosingQuorumShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -437,7 +437,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenSlaveOnlyIsElectedStayInPending()
+    void whenSlaveOnlyIsElectedStayInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -459,7 +459,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenHAModeSwitcherSwitchesToSlaveTheOtherModeSwitcherDoNotGetTheOldMasterClient() throws Throwable
+    void whenHAModeSwitcherSwitchesToSlaveTheOtherModeSwitcherDoNotGetTheOldMasterClient() throws Throwable
     {
         InstanceId me = new InstanceId( 1 );
         StoreId storeId = newStoreIdForCurrentVersion();
@@ -714,13 +714,13 @@ public class HighAvailabilityMemberStateMachineTest
             return this;
         }
 
-        public StateMachineBuilder withClusterMembers( ObservedClusterMembers clusterMember )
+        StateMachineBuilder withClusterMembers( ObservedClusterMembers clusterMember )
         {
             this.clusterMembers = clusterMember;
             return this;
         }
 
-        public StateMachineBuilder withGuard( AvailabilityGuard guard )
+        StateMachineBuilder withGuard( AvailabilityGuard guard )
         {
             this.guard = guard;
             return this;
@@ -748,7 +748,7 @@ public class HighAvailabilityMemberStateMachineTest
             return clusterMemberListener;
         }
 
-        public void set( ClusterMemberListener clusterMemberListener )
+        void set( ClusterMemberListener clusterMemberListener )
         {
             if ( this.clusterMemberListener != null )
             {
@@ -840,7 +840,7 @@ public class HighAvailabilityMemberStateMachineTest
         {
         }
 
-        public void switchToSlave( InstanceId me )
+        void switchToSlave( InstanceId me )
         {
             InstanceId someOneElseThanMyself = new InstanceId( me.toIntegerIndex() + 1 );
             listener.memberIsAvailable( "master", someOneElseThanMyself, URI.create( "cluster://127.0.0.1:2390?serverId=2" ), null );

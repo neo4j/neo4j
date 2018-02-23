@@ -48,12 +48,12 @@ import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ExecutingQueryTest
 {
@@ -68,7 +68,7 @@ public class ExecutingQueryTest
     private ExecutingQuery subQuery = createExecutingquery( 2, "goodbye world", page, clock, cpuClock, heapAllocation );
 
     @Test
-    public void shouldReportElapsedTime()
+    void shouldReportElapsedTime()
     {
         // when
         clock.forward( 10, TimeUnit.SECONDS );
@@ -79,7 +79,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldTransitionBetweenStates()
+    void shouldTransitionBetweenStates()
     {
         // initial
         assertEquals( "planning", query.snapshot().status() );
@@ -113,7 +113,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportPlanningTime()
+    void shouldReportPlanningTime()
     {
         // when
         clock.forward( 124, TimeUnit.MILLISECONDS );
@@ -134,7 +134,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportWaitTime()
+    void shouldReportWaitTime()
     {
         // given
         query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
@@ -186,7 +186,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportQueryWaitTime()
+    void shouldReportQueryWaitTime()
     {
         // given
         query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
@@ -215,7 +215,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportCpuTime()
+    void shouldReportCpuTime()
     {
         // given
         cpuClock.add( 60, TimeUnit.MILLISECONDS );
@@ -228,7 +228,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldNotReportCpuTimeIfUnavailable()
+    void shouldNotReportCpuTimeIfUnavailable()
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
@@ -253,7 +253,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportHeapAllocation()
+    void shouldReportHeapAllocation()
     {
         // given
         heapAllocation.add( 4096 );
@@ -273,7 +273,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldNotReportHeapAllocationIfUnavailable()
+    void shouldNotReportHeapAllocationIfUnavailable()
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
@@ -298,7 +298,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportLockCount()
+    void shouldReportLockCount()
     {
         // given
         lockCount = 11;
@@ -314,7 +314,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportPageHitsAndFaults()
+    void shouldReportPageHitsAndFaults()
     {
         // given
         page.hits( 7 );
@@ -338,7 +338,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void includeQueryExecutorThreadName()
+    void includeQueryExecutorThreadName()
     {
         String queryDescription = query.toString();
         assertTrue( queryDescription.contains( "threadExecutingTheQueryName=" + Thread.currentThread().getName() ) );
@@ -349,7 +349,7 @@ public class ExecutingQueryTest
         return query.lockTracer().waitForLock( false, resourceType( resourceType ), resourceId );
     }
 
-    static ResourceType resourceType( String name )
+    private static ResourceType resourceType( String name )
     {
         return new ResourceType()
         {
@@ -429,7 +429,7 @@ public class ExecutingQueryTest
             return faults;
         }
 
-        public void faults( long increment )
+        void faults( long increment )
         {
             faults += increment;
         }
@@ -462,7 +462,7 @@ public class ExecutingQueryTest
             return hits;
         }
 
-        public void hits( long increment )
+        void hits( long increment )
         {
             hits += increment;
         }

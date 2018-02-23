@@ -45,18 +45,18 @@ import static org.junit.jupiter.api.Assertions.fail;
  * explicit methods: {@link Transaction#acquireReadLock(org.neo4j.graphdb.PropertyContainer) acquireReadLock}
  * and {@link Transaction#acquireWriteLock(org.neo4j.graphdb.PropertyContainer) acquireWriteLock}.
  */
-public class NestedTransactionLocksIT
+class NestedTransactionLocksIT
 {
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }
@@ -73,7 +73,7 @@ public class NestedTransactionLocksIT
     }
 
     @Test
-    public void nestedTransactionCanAcquireLocksFromTransactionObject() throws Exception
+    void nestedTransactionCanAcquireLocksFromTransactionObject() throws Exception
     {
         // given
         Node resource = createNode();

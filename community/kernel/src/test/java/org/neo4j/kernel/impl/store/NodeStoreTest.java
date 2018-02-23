@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.store;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -60,11 +60,11 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
@@ -91,7 +91,7 @@ public class NodeStoreTest
     private IdGeneratorFactory idGeneratorFactory;
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( neoStores != null )
         {
@@ -100,7 +100,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstFromSingleRecordDynamicLongArray()
+    void shouldReadFirstFromSingleRecordDynamicLongArray()
     {
         // GIVEN
         Long expectedId = 12L;
@@ -116,7 +116,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstAsNullFromEmptyDynamicLongArray()
+    void shouldReadFirstAsNullFromEmptyDynamicLongArray()
     {
         // GIVEN
         Long expectedId = null;
@@ -132,7 +132,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstFromTwoRecordDynamicLongArray()
+    void shouldReadFirstFromTwoRecordDynamicLongArray()
     {
         // GIVEN
         Long expectedId = 12L;
@@ -149,7 +149,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldCombineProperFiveByteLabelField() throws Exception
+    void shouldCombineProperFiveByteLabelField() throws Exception
     {
         // GIVEN
         // -- a store
@@ -175,7 +175,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords()
+    void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords()
     {
         // GIVEN
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
@@ -188,7 +188,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords()
+    void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords()
     {
         // GIVEN
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
@@ -202,7 +202,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldTellNodeInUse() throws Exception
+    void shouldTellNodeInUse() throws Exception
     {
         // Given
         EphemeralFileSystemAbstraction fs = efs.get();
@@ -222,7 +222,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException
+    void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException
     {
         // GIVEN we have a NodeStore with data that spans several pages...
         EphemeralFileSystemAbstraction fs = efs.get();
@@ -265,7 +265,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldCloseStoreFileOnFailureToOpen()
+    void shouldCloseStoreFileOnFailureToOpen()
     {
         // GIVEN
         final MutableBoolean fired = new MutableBoolean();
@@ -301,7 +301,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldFreeSecondaryUnitIdOfDeletedRecord() throws Exception
+    void shouldFreeSecondaryUnitIdOfDeletedRecord() throws Exception
     {
         // GIVEN
         EphemeralFileSystemAbstraction fs = efs.get();
@@ -324,7 +324,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldFreeSecondaryUnitIdOfShrunkRecord() throws Exception
+    void shouldFreeSecondaryUnitIdOfShrunkRecord() throws Exception
     {
         // GIVEN
         EphemeralFileSystemAbstraction fs = efs.get();
@@ -348,7 +348,7 @@ public class NodeStoreTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void ensureHeavy()
+    void ensureHeavy()
     {
         long[] labels = LongStream.range( 1, 1000 ).toArray();
         NodeRecord node = new NodeRecord( 5 );

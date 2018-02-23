@@ -57,10 +57,10 @@ public class LogHeaderReaderTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldReadALogHeaderFromAByteChannel() throws IOException
+    void shouldReadALogHeaderFromAByteChannel() throws IOException
     {
         // given
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
@@ -81,7 +81,7 @@ public class LogHeaderReaderTest
     }
 
     @Test
-    public void shouldFailWhenUnableToReadALogHeaderFromAChannel() throws IOException
+    void shouldFailWhenUnableToReadALogHeaderFromAChannel() throws IOException
     {
         // given
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
@@ -102,7 +102,7 @@ public class LogHeaderReaderTest
     }
 
     @Test
-    public void shouldReadALogHeaderFromAFile() throws IOException
+    void shouldReadALogHeaderFromAFile() throws IOException
     {
         // given
         final File file = testDirectory.file( "ReadLogHeader" );
@@ -125,7 +125,7 @@ public class LogHeaderReaderTest
     }
 
     @Test
-    public void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
+    void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
     {
         // given
         final File file = testDirectory.file( "ReadLogHeader" );
@@ -144,7 +144,7 @@ public class LogHeaderReaderTest
     }
 
     @Test
-    public void shouldReadALongString() throws IOException
+    void shouldReadALongString() throws IOException
     {
         // given
 

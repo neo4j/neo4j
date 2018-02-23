@@ -53,7 +53,7 @@ public class SecurityLogTest
                     SecuritySettings.store_security_log_rotation_delay.name(), "1ms" ) );
 
     @Test
-    public void shouldRotateLog() throws IOException
+    void shouldRotateLog() throws IOException
     {
         SecurityLog securityLog = new SecurityLog( config, fileSystemRule.get(), Runnable::run );
         securityLog.info( "line 1" );
@@ -74,7 +74,7 @@ public class SecurityLogTest
     }
 
     @Test
-    public void logUseSystemTimeZoneIfConfigured() throws Exception
+    void logUseSystemTimeZoneIfConfigured() throws Exception
     {
         TimeZone defaultTimeZone = TimeZone.getDefault();
         try
@@ -103,7 +103,7 @@ public class SecurityLogTest
     }
 
     @Test
-    public void shouldHonorLogLevel() throws Throwable
+    void shouldHonorLogLevel() throws Throwable
     {
         writeAllLevelsAndShutdown( withLogLevel( Level.DEBUG ), "debug" );
         writeAllLevelsAndShutdown( withLogLevel( Level.INFO ), "info" );

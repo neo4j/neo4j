@@ -364,7 +364,7 @@ public class RESTRequestGenerator
         private final String entity;
         private final JaxRsResponse response;
 
-        public ResponseEntity( ClientResponse response, String entity )
+        ResponseEntity( ClientResponse response, String entity )
         {
             this.response = new JaxRsResponse( response, entity );
             this.entity = entity;

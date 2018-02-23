@@ -43,15 +43,15 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_id_batch_size;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class ReuseExcessBatchIdsOnRestartIT
+class ReuseExcessBatchIdsOnRestartIT
 {
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
 
     // Knowing that ids are grabbed in batches internally we only create one node and later assert
     // that the excess ids that were only grabbed, but not used can be reused.
     @Test
-    public void shouldReuseExcessBatchIdsWhichWerentUsedBeforeClose() throws Exception
+    void shouldReuseExcessBatchIdsWhichWerentUsedBeforeClose() throws Exception
     {
         // given
         Node firstNode;
@@ -76,7 +76,7 @@ public class ReuseExcessBatchIdsOnRestartIT
     }
 
     @Test
-    public void shouldBeAbleToReuseAllIdsInConcurrentCommitsWithRestart()
+    void shouldBeAbleToReuseAllIdsInConcurrentCommitsWithRestart()
     {
         assertTimeout( ofMillis( 30_000 ), () -> {
             //  given

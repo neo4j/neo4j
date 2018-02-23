@@ -33,22 +33,22 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 
-public class TestJavascriptSecurityRestrictions
+class TestJavascriptSecurityRestrictions
 {
 
-    public static void methodThatShouldNotBeCallable()
+    static void methodThatShouldNotBeCallable()
     {
 
     }
 
     @BeforeAll
-    public static void doBullshitGlobalStateCrap()
+    static void doBullshitGlobalStateCrap()
     {
         GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
     }
 
     @Test
-    public void shouldBeAbleToAccessWhiteListedThings()
+    void shouldBeAbleToAccessWhiteListedThings()
     {
         // Given
         String classThatShouldBeInaccessible = TestJavascriptSecurityRestrictions.class.getName();
@@ -65,7 +65,7 @@ public class TestJavascriptSecurityRestrictions
     }
 
     @Test
-    public void shouldNotBeAbleToImportUnsafeClasses()
+    void shouldNotBeAbleToImportUnsafeClasses()
     {
         assertThrows( EvaluationException.class, () -> {
             // Given
@@ -80,7 +80,7 @@ public class TestJavascriptSecurityRestrictions
     }
 
     @Test
-    public void shouldNotBeAbleToUseReflectionToInstantiateThings()
+    void shouldNotBeAbleToUseReflectionToInstantiateThings()
     {
         assertThrows( EvaluationException.class, () -> {
             // Given

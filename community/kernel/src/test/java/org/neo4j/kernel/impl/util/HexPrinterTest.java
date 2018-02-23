@@ -28,10 +28,10 @@ import java.nio.ByteBuffer;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HexPrinterTest
+class HexPrinterTest
 {
     @Test
-    public void shouldPrintACoupleOfLines()
+    void shouldPrintACoupleOfLines()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -54,7 +54,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintUserSpecifiedBytesGroupingFormat()
+    void shouldPrintUserSpecifiedBytesGroupingFormat()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -77,7 +77,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine()
+    void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -100,7 +100,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintUserSpecifiedLineNumberFormat()
+    void shouldPrintUserSpecifiedLineNumberFormat()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -125,7 +125,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldStartFromUserSpecifiedLineNumber()
+    void shouldStartFromUserSpecifiedLineNumber()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -150,7 +150,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintPartOfByteBuffer()
+    void shouldPrintPartOfByteBuffer()
     {
         ByteBuffer bytes = ByteBuffer.allocate( 1024 );
         for ( byte value = 0; value < 33; value++ )
@@ -162,7 +162,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldOnlyPrintBytesWrittenToBuffer()
+    void shouldOnlyPrintBytesWrittenToBuffer()
     {
         // Given
         ByteBuffer bytes = ByteBuffer.allocate( 1024 );

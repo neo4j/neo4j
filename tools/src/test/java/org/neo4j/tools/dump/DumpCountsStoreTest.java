@@ -55,7 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( SuppressOutputExtension.class )
-public class DumpCountsStoreTest
+class DumpCountsStoreTest
 {
     private static final int START_LABEL_ID = 1;
     private static final int END_LABEL_ID = 2;
@@ -77,10 +77,10 @@ public class DumpCountsStoreTest
             IndexDescriptorFactory.forLabel( INDEX_LABEL_ID, INDEX_PROPERTY_KEY_ID );
 
     @Resource
-    public SuppressOutput suppressOutput;
+    private SuppressOutput suppressOutput;
 
     @Test
-    public void dumpMetadata()
+    void dumpMetadata()
     {
         DumpCountsStore countsStore = getCountStore();
 
@@ -100,7 +100,7 @@ public class DumpCountsStoreTest
     }
 
     @Test
-    public void dumpNodeCount()
+    void dumpNodeCount()
     {
         DumpCountsStore countsStore = getCountStore();
         countsStore.visitNodeCount( NODE_LABEL_ID, 70 );
@@ -109,7 +109,7 @@ public class DumpCountsStoreTest
     }
 
     @Test
-    public void dumpRelationshipCount()
+    void dumpRelationshipCount()
     {
         DumpCountsStore countsStore = getCountStore();
         countsStore.visitRelationshipCount( START_LABEL_ID, TYPE_ID, END_LABEL_ID, 5 );
@@ -119,7 +119,7 @@ public class DumpCountsStoreTest
     }
 
     @Test
-    public void dumpUnknownKey()
+    void dumpUnknownKey()
     {
         DumpCountsStore countsStore = getCountStore();
         countsStore.visitUnknownKey( new BigEndianByteArrayBuffer( "unknownKey".getBytes() ),
@@ -130,7 +130,7 @@ public class DumpCountsStoreTest
     }
 
     @Test
-    public void dumpIndexStatistic()
+    void dumpIndexStatistic()
     {
         DumpCountsStore countsStore = getCountStore();
         countsStore.visitIndexStatistics( indexId, 3, 4 );
@@ -140,7 +140,7 @@ public class DumpCountsStoreTest
     }
 
     @Test
-    public void dumpIndexSample()
+    void dumpIndexSample()
     {
         DumpCountsStore countsStore = getCountStore();
         countsStore.visitIndexSample( indexId, 1, 2 );

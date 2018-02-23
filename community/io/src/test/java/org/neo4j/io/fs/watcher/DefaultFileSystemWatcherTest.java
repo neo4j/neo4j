@@ -62,11 +62,11 @@ public class DefaultFileSystemWatcherTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private WatchService watchServiceMock = mock( WatchService.class );
 
     @Test
-    public void fileWatchRegistrationIsIllegal() throws Exception
+    void fileWatchRegistrationIsIllegal() throws Exception
     {
         DefaultFileSystemWatcher watcher = createWatcher();
 
@@ -77,7 +77,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void registerMultipleDirectoriesForMonitoring() throws Exception
+    void registerMultipleDirectoriesForMonitoring() throws Exception
     {
         try ( DefaultFileSystemWatcher watcher = new DefaultFileSystemWatcher(
                 FileSystems.getDefault().newWatchService() ) )
@@ -91,7 +91,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void notifyListenersOnDeletion() throws InterruptedException
+    void notifyListenersOnDeletion() throws InterruptedException
     {
         TestFileSystemWatcher watcher = createWatcher();
         AssertableFileEventListener listener1 = new AssertableFileEventListener();
@@ -115,7 +115,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void notifyListenersOnModification() throws InterruptedException
+    void notifyListenersOnModification() throws InterruptedException
     {
         TestFileSystemWatcher watcher = createWatcher();
         AssertableFileEventListener listener1 = new AssertableFileEventListener();
@@ -142,7 +142,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void stopWatchingAndCloseEverythingOnClosed() throws IOException
+    void stopWatchingAndCloseEverythingOnClosed() throws IOException
     {
         TestFileSystemWatcher watcher = createWatcher();
         watcher.close();
@@ -152,7 +152,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void skipEmptyEvent() throws InterruptedException
+    void skipEmptyEvent() throws InterruptedException
     {
         TestFileSystemWatcher watcher = createWatcher();
 
@@ -209,7 +209,7 @@ public class DefaultFileSystemWatcherTest
             closed = true;
         }
 
-        public boolean isClosed()
+        boolean isClosed()
         {
             return closed;
         }

@@ -43,13 +43,13 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class TestSslCertificateFactory
+class TestSslCertificateFactory
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldCreateASelfSignedCertificate() throws Exception
+    void shouldCreateASelfSignedCertificate() throws Exception
     {
         // Given
         PkiUtils sslFactory = new PkiUtils();
@@ -70,7 +70,7 @@ public class TestSslCertificateFactory
     }
 
     @Test
-    public void shouldLoadPEMCertificates() throws Throwable
+    void shouldLoadPEMCertificates() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
@@ -86,7 +86,7 @@ public class TestSslCertificateFactory
     }
 
     @Test
-    public void shouldLoadPEMPrivateKey() throws Throwable
+    void shouldLoadPEMPrivateKey() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
@@ -106,7 +106,7 @@ public class TestSslCertificateFactory
      * the certificate data.
      */
     @Test
-    public void shouldLoadBinaryCertificates() throws Throwable
+    void shouldLoadBinaryCertificates() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
@@ -133,7 +133,7 @@ public class TestSslCertificateFactory
      * the private key data
      */
     @Test
-    public void shouldLoadBinaryPrivateKey() throws Throwable
+    void shouldLoadBinaryPrivateKey() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );

@@ -30,13 +30,13 @@ import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
@@ -51,10 +51,10 @@ import static org.neo4j.io.ByteUnit.tebiBytes;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 
-public class MemoryRecommendationsCommandTest
+class MemoryRecommendationsCommandTest
 {
     @Test
-    public void mustRecommendOSMemory()
+    void mustRecommendOSMemory()
     {
         assertThat( recommendOsMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
         assertThat( recommendOsMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
@@ -64,7 +64,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void mustRecommendHeapMemory()
+    void mustRecommendHeapMemory()
     {
         assertThat( recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
         assertThat( recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
@@ -75,7 +75,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void mustRecommendPageCacheMemory()
+    void mustRecommendPageCacheMemory()
     {
         assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
         assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
@@ -89,7 +89,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void bytesToStringMustBeParseableBySettings()
+    void bytesToStringMustBeParseableBySettings()
     {
         Setting<Long> setting = buildSetting( "arg", BYTES ).build();
         for ( int i = 1; i < 10_000; i++ )
@@ -111,7 +111,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
+    void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
     {
         StringBuilder output = new StringBuilder();
         OutsideWorld outsideWorld = new RealOutsideWorld()

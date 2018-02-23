@@ -27,10 +27,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TextUtilTest
+class TextUtilTest
 {
     @Test
-    public void shouldReplaceVariablesWithValuesInTemplateString()
+    void shouldReplaceVariablesWithValuesInTemplateString()
     {
         // given
         String template = "This is a $FIRST that $SECOND $THIRD!";
@@ -47,7 +47,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldTokenizeStringWithWithoutQuotes()
+    void shouldTokenizeStringWithWithoutQuotes()
     {
         // given
         String untokenized = "First Second Third";
@@ -60,7 +60,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldTokenizeStringWithQuotes()
+    void shouldTokenizeStringWithQuotes()
     {
         // given
         String untokenized = "First \"Second one\" Third \"And a fourth\"";
@@ -73,7 +73,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldTokenStringWithWithQuotesAndEscapedSpaces()
+    void shouldTokenStringWithWithQuotesAndEscapedSpaces()
     {
         // given
         String untokenized = "First \"Second one\" Third And\\ a\\ fourth";
@@ -86,7 +86,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldPreserveBackslashes()
+    void shouldPreserveBackslashes()
     {
         // given
         String untokenized = "First C:\\a\\b\\c";

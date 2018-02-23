@@ -29,10 +29,10 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -40,10 +40,10 @@ import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDy
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
-public class NodeRecordTest
+class NodeRecordTest
 {
     @Test
-    public void cloneShouldProduceExactCopy()
+    void cloneShouldProduceExactCopy()
     {
         // Given
         long relId = 1337L;
@@ -67,7 +67,7 @@ public class NodeRecordTest
     }
 
     @Test
-    public void shouldListLabelRecordsInUse()
+    void shouldListLabelRecordsInUse()
     {
         // Given
         NodeRecord node = new NodeRecord( 1, false, -1, -1 );
@@ -88,7 +88,7 @@ public class NodeRecordTest
     }
 
     @Test
-    public void shouldToStringBothUsedAndUnusedDynamicLabelRecords()
+    void shouldToStringBothUsedAndUnusedDynamicLabelRecords()
     {
         // GIVEN
         IdSequence ids = mock( IdSequence.class );

@@ -27,11 +27,11 @@ import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
+class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
 {
     private final RecordFormat<RECORD> actual;
 
-    public ForcedSecondaryUnitRecordFormat( RecordFormat<RECORD> actual )
+    ForcedSecondaryUnitRecordFormat( RecordFormat<RECORD> actual )
     {
         this.actual = actual;
     }

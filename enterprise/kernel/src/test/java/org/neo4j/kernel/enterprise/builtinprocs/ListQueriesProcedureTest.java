@@ -608,7 +608,7 @@ public class ListQueriesProcedureTest
             finishLatch.await();
         }
 
-        public T resource()
+        T resource()
         {
             return resource;
         }

@@ -39,14 +39,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
-public class ThresholdBasedPruneStrategyTest
+class ThresholdBasedPruneStrategyTest
 {
     private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
     private final LogFiles files = mock( TransactionLogFiles.class );
     private final Threshold threshold = mock( Threshold.class );
 
     @Test
-    public void shouldNotDeleteAnythingIfThresholdDoesNotAllow()
+    void shouldNotDeleteAnythingIfThresholdDoesNotAllow()
     {
         // Given
         File fileName0 = new File( "logical.log.v0" );
@@ -89,7 +89,7 @@ public class ThresholdBasedPruneStrategyTest
     }
 
     @Test
-    public void shouldDeleteJustWhatTheThresholdSays()
+    void shouldDeleteJustWhatTheThresholdSays()
     {
         // Given
         when( threshold.reached( any(), eq( 6L ), any() ) )

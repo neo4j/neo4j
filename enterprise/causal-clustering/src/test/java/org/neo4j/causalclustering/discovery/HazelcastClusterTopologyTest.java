@@ -44,8 +44,8 @@ import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -54,14 +54,14 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buil
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.toCoreMemberMap;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class HazelcastClusterTopologyTest
+class HazelcastClusterTopologyTest
 {
     private static final Set<String> GROUPS = asSet( "group1", "group2", "group3" );
 
     private final HazelcastInstance hzInstance = mock( HazelcastInstance.class );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         @SuppressWarnings( "unchecked" )
         MultiMap<String,String> serverGroupsMMap = mock( MultiMap.class );
@@ -70,7 +70,7 @@ public class HazelcastClusterTopologyTest
     }
 
     @Test
-    public void shouldCollectMembersAsAMap() throws Exception
+    void shouldCollectMembersAsAMap() throws Exception
     {
         // given
         Set<Member> hazelcastMembers = new HashSet<>();
@@ -111,7 +111,7 @@ public class HazelcastClusterTopologyTest
     }
 
     @Test
-    public void shouldLogAndExcludeMembersWithMissingAttributes() throws Exception
+    void shouldLogAndExcludeMembersWithMissingAttributes() throws Exception
     {
         // given
         Set<Member> hazelcastMembers = new HashSet<>();

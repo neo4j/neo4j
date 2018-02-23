@@ -30,13 +30,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class FreeIdFilteredIdGeneratorTest
+class FreeIdFilteredIdGeneratorTest
 {
 
     private IdGenerator idGenerator = mock( IdGenerator.class );
 
     @Test
-    public void freeIdIfConditionSatisfied()
+    void freeIdIfConditionSatisfied()
     {
         FreeIdFilteredIdGenerator generator = createFilteredIdGenerator( idGenerator, () -> true );
         generator.freeId( 1 );
@@ -45,7 +45,7 @@ public class FreeIdFilteredIdGeneratorTest
     }
 
     @Test
-    public void skipFreeIdIfConditionIsNotSatisfied()
+    void skipFreeIdIfConditionIsNotSatisfied()
     {
         FreeIdFilteredIdGenerator generator = createFilteredIdGenerator( idGenerator, () -> false );
         generator.freeId( 1 );
@@ -54,7 +54,7 @@ public class FreeIdFilteredIdGeneratorTest
     }
 
     @Test
-    public void freeIdOnlyWhenConditionSatisfied()
+    void freeIdOnlyWhenConditionSatisfied()
     {
         MutableBoolean condition = new MutableBoolean();
         FreeIdFilteredIdGenerator generator = createFilteredIdGenerator( idGenerator, condition::booleanValue );

@@ -46,12 +46,12 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     private static long bare, start, end;
     private static RelationshipTestSupport.StartNode sparse, dense;
 
-    protected boolean supportsDirectTraversal()
+    private boolean supportsDirectTraversal()
     {
         return true;
     }
 
-    protected boolean supportsSparseNodes()
+    private boolean supportsSparseNodes()
     {
         return true;
     }
@@ -82,7 +82,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldNotAccessGroupsOfBareNode()
+    void shouldNotAccessGroupsOfBareNode()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -99,7 +99,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldTraverseRelationshipsOfGivenType()
+    void shouldTraverseRelationshipsOfGivenType()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -161,7 +161,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldFollowSpecificRelationship()
+    void shouldFollowSpecificRelationship()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -225,7 +225,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldHaveBeenAbleToCreateDenseAndSparseNodes()
+    void shouldHaveBeenAbleToCreateDenseAndSparseNodes()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor() )
@@ -241,52 +241,52 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroups() throws Exception
+    void shouldTraverseSparseNodeViaGroups() throws Exception
     {
         traverseViaGroups( sparse, false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroups() throws Exception
+    void shouldTraverseDenseNodeViaGroups() throws Exception
     {
         traverseViaGroups( dense, false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( sparse, true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( dense, true );
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroups() throws Exception
+    void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
         Assume.assumeTrue( supportsSparseNodes() && supportsDirectTraversal() );
         traverseWithoutGroups( sparse, false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroups() throws Exception
+    void shouldTraverseDenseNodeWithoutGroups() throws Exception
     {
         Assume.assumeTrue( supportsDirectTraversal() );
         traverseWithoutGroups( dense, false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         Assume.assumeTrue( supportsSparseNodes() );
         traverseWithoutGroups( sparse, true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         Assume.assumeTrue( supportsDirectTraversal() );
         traverseWithoutGroups( dense, true );

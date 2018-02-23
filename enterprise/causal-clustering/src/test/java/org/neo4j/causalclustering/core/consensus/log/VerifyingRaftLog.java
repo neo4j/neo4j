@@ -108,7 +108,7 @@ class VerifyingRaftLog implements RaftLog
         verifyUsing( other );
     }
 
-    public void verifyUsing( RaftLog other ) throws IOException
+    private void verifyUsing( RaftLog other ) throws IOException
     {
         assertEquals( expected.appendIndex(), other.appendIndex() );
 

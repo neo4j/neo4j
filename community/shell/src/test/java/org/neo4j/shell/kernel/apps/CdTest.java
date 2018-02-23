@@ -44,10 +44,10 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class CdTest
+class CdTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     private final Output silence = new SilentLocalOutput();
     private final Session session = new Session( "test" );
@@ -55,7 +55,7 @@ public class CdTest
     private GraphDatabaseShellServer server;
 
     @BeforeEach
-    public void setup() throws Exception
+    void setup() throws Exception
     {
         db = dbRule.getGraphDatabaseAPI();
         server = new GraphDatabaseShellServer( db );
@@ -63,13 +63,13 @@ public class CdTest
     }
 
     @AfterEach
-    public void shutdown() throws Exception
+    void shutdown() throws Exception
     {
         server.shutdown();
     }
 
     @Test
-    public void shouldProvideTabCompletions() throws Exception
+    void shouldProvideTabCompletions() throws Exception
     {
         // GIVEN
         Node root = createNodeWithSomeSubNodes( "Mattias", "Magnus", "Tobias" );

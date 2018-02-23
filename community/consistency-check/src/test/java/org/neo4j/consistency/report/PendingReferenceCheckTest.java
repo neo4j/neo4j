@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 
-public class PendingReferenceCheckTest
+class PendingReferenceCheckTest
 {
     // given
     {
@@ -49,7 +49,7 @@ public class PendingReferenceCheckTest
     private final PendingReferenceCheck<PropertyRecord> referenceCheck;
 
     @Test
-    public void shouldAllowSkipAfterSkip()
+    void shouldAllowSkipAfterSkip()
     {
         // given
         referenceCheck.skip();
@@ -58,7 +58,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldAllowSkipAfterCheckReference()
+    void shouldAllowSkipAfterCheckReference()
     {
         // given
         referenceCheck.checkReference( new PropertyRecord( 0 ), null );
@@ -67,7 +67,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldAllowSkipAfterCheckDiffReference()
+    void shouldAllowSkipAfterCheckDiffReference()
     {
         // given
         referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
@@ -76,7 +76,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckReferenceAfterSkip()
+    void shouldNotAllowCheckReferenceAfterSkip()
     {
         // given
         referenceCheck.skip();
@@ -95,7 +95,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckDiffReferenceAfterSkip()
+    void shouldNotAllowCheckDiffReferenceAfterSkip()
     {
         // given
         referenceCheck.skip();
@@ -114,7 +114,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckReferenceAfterCheckReference()
+    void shouldNotAllowCheckReferenceAfterCheckReference()
     {
         // given
         referenceCheck.checkReference( new PropertyRecord( 0 ), null );
@@ -133,7 +133,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckDiffReferenceAfterCheckReference()
+    void shouldNotAllowCheckDiffReferenceAfterCheckReference()
     {
         // given
         referenceCheck.checkReference( new PropertyRecord( 0 ), null );
@@ -152,7 +152,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckReferenceAfterCheckDiffReference()
+    void shouldNotAllowCheckReferenceAfterCheckDiffReference()
     {
         // given
         referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
@@ -171,7 +171,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckDiffReferenceAfterCheckDiffReference()
+    void shouldNotAllowCheckDiffReferenceAfterCheckDiffReference()
     {
         // given
         referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );

@@ -51,56 +51,56 @@ public class InputEntityCacherTokenCreationTest
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     @Resource
-    public RandomRule randomRule;
+    private RandomRule randomRule;
 
     @Test
-    public void notAllowCreationOfUnsupportedNumberOfProperties() throws IOException
+    void notAllowCreationOfUnsupportedNumberOfProperties() throws IOException
     {
         initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
         cacheNodeWithProperties( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
-    public void allowCreationOfSupportedNumberOfProperties() throws IOException
+    void allowCreationOfSupportedNumberOfProperties() throws IOException
     {
         cacheNodeWithProperties( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
-    public void notAllowCreationOfUnsupportedNumberOfGroups() throws IOException
+    void notAllowCreationOfUnsupportedNumberOfGroups() throws IOException
     {
         initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
         cacheGroups( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
-    public void allowCreationOfSupportedNumberOfGroups() throws IOException
+    void allowCreationOfSupportedNumberOfGroups() throws IOException
     {
         cacheGroups( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
-    public void notAllowCreationOfUnsupportedNumberOfLabels() throws IOException
+    void notAllowCreationOfUnsupportedNumberOfLabels() throws IOException
     {
         initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
         cacheLabels( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
-    public void allowCreationOfSupportedNumberOfLabels() throws IOException
+    void allowCreationOfSupportedNumberOfLabels() throws IOException
     {
         cacheLabels( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
-    public void notAllowCreationOfUnsupportedNumberOfRelationshipTypes() throws IOException
+    void notAllowCreationOfUnsupportedNumberOfRelationshipTypes() throws IOException
     {
         initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
         cacheRelationship( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
-    public void allowCreationOfSupportedNumberOfRelationshipTypes() throws IOException
+    void allowCreationOfSupportedNumberOfRelationshipTypes() throws IOException
     {
         cacheRelationship( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }

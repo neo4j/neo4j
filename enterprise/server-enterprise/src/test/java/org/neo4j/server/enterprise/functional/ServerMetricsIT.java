@@ -46,15 +46,15 @@ import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class ServerMetricsIT
+class ServerMetricsIT
 {
     @Resource
-    public TestDirectory folder;
+    private TestDirectory folder;
     @Resource
     public SuppressOutput suppressOutput;
 
     @Test
-    public void shouldShowServerMetrics() throws Throwable
+    void shouldShowServerMetrics() throws Throwable
     {
         // Given
         String path = folder.directory().getAbsolutePath();

@@ -42,10 +42,10 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.matchers.CommonMatchers.hasSuppressed;
 
-public class MessageProcessingHandlerTest
+class MessageProcessingHandlerTest
 {
     @Test
-    public void shouldCallHaltOnUnexpectedFailures() throws Exception
+    void shouldCallHaltOnUnexpectedFailures() throws Exception
     {
         // Given
         BoltResponseMessageHandler<IOException> msgHandler = newResponseHandlerMock();
@@ -66,25 +66,25 @@ public class MessageProcessingHandlerTest
     }
 
     @Test
-    public void shouldLogOriginalErrorWhenOutputIsClosed() throws Exception
+    void shouldLogOriginalErrorWhenOutputIsClosed() throws Exception
     {
         testLoggingOfOriginalErrorWhenOutputIsClosed( false );
     }
 
     @Test
-    public void shouldLogOriginalFatalErrorWhenOutputIsClosed() throws Exception
+    void shouldLogOriginalFatalErrorWhenOutputIsClosed() throws Exception
     {
         testLoggingOfOriginalErrorWhenOutputIsClosed( true );
     }
 
     @Test
-    public void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception
+    void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception
     {
         testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( false );
     }
 
     @Test
-    public void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception
+    void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception
     {
         testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( true );
     }

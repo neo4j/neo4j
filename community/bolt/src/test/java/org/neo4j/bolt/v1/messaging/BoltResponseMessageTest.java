@@ -73,7 +73,7 @@ public class BoltResponseMessageTest
     private final Neo4jPack neo4jPack = new Neo4jPackV1();
 
     @Test
-    public void shouldHandleCommonMessages() throws Throwable
+    void shouldHandleCommonMessages() throws Throwable
     {
         assertSerializes( new RecordMessage( record( longValue( 1L ), stringValue( "b" ), longValue( 2L ) ) ) );
         assertSerializes( new SuccessMessage( VirtualValues.EMPTY_MAP ) );
@@ -82,7 +82,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializeBasicTypes() throws Throwable
+    void shouldSerializeBasicTypes() throws Throwable
     {
         assertSerializesNeoValue( null );
         assertSerializesNeoValue( true );
@@ -116,7 +116,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializeNode() throws Throwable
+    void shouldSerializeNode() throws Throwable
     {
         NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), VirtualValues
                 .map( new String[]{"name", "age"},
@@ -128,7 +128,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializeRelationship() throws Throwable
+    void shouldSerializeRelationship() throws Throwable
     {
         RelationshipValue rel = relationshipValue( 12L,
                 nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
@@ -141,7 +141,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializePaths() throws Throwable
+    void shouldSerializePaths() throws Throwable
     {
         assertThat( serialized( PATH_WITH_LENGTH_ZERO ),
                 equalTo( "B1 71 91 B3 50 91 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +

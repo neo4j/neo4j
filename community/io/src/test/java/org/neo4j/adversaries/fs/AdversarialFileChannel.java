@@ -28,7 +28,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 
 @SuppressWarnings( "unchecked" )
-public class AdversarialFileChannel extends StoreFileChannel
+class AdversarialFileChannel extends StoreFileChannel
 {
     private final StoreChannel delegate;
     private final Adversary adversary;

@@ -51,13 +51,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * will successfully join with a full version of the store.
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class InstanceJoinIT
+class InstanceJoinIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void makeSureSlaveCanJoinEvenIfTooFarBackComparedToMaster() throws Exception
+    void makeSureSlaveCanJoinEvenIfTooFarBackComparedToMaster() throws Exception
     {
         String key = "foo";
         String value = "bar";

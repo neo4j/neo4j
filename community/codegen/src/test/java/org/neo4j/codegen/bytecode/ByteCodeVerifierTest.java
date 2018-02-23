@@ -36,10 +36,10 @@ import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.bytecode.ByteCode.VERIFY_GENERATED_BYTECODE;
 
-public class ByteCodeVerifierTest
+class ByteCodeVerifierTest
 {
     @Test
-    public void shouldVerifyBytecode() throws Throwable
+    void shouldVerifyBytecode() throws Throwable
     {
         // given
         CodeGenerator generator = generateCode( BYTECODE, VERIFY_GENERATED_BYTECODE );

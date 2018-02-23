@@ -53,7 +53,7 @@ import static org.neo4j.scheduler.JobScheduler.Group;
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 import static org.neo4j.test.ReflectionUtil.replaceValueInPrivateField;
 
-public class Neo4jJobSchedulerTest
+class Neo4jJobSchedulerTest
 {
     private final AtomicInteger invocations = new AtomicInteger();
     private final LifeSupport life = new LifeSupport();
@@ -62,7 +62,7 @@ public class Neo4jJobSchedulerTest
     private final Runnable countInvocationsJob = invocations::incrementAndGet;
 
     @AfterEach
-    public void stopScheduler()
+    void stopScheduler()
     {
         life.shutdown();
     }
@@ -70,7 +70,7 @@ public class Neo4jJobSchedulerTest
     // Tests schedules a recurring job to run 5 times with 100ms in between.
     // The timeout of 10s should be enough.
     @Test
-    public void shouldRunRecurringJob()
+    void shouldRunRecurringJob()
     {
         assertTimeout( ofMillis( 10_000 ), () -> {
             //  Given
@@ -92,7 +92,7 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void shouldCancelRecurringJob() throws Exception
+    void shouldCancelRecurringJob() throws Exception
     {
         // Given
         long period = 2;
@@ -123,7 +123,7 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void shouldRunWithDelay() throws Throwable
+    void shouldRunWithDelay() throws Throwable
     {
         // Given
         life.start();
@@ -144,7 +144,7 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void shouldNotSwallowExceptions() throws Exception
+    void shouldNotSwallowExceptions() throws Exception
     {
         // given
         Neo4jJobScheduler neo4jJobScheduler = new Neo4jJobScheduler();
@@ -175,7 +175,7 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void shouldNotifyCancelListeners()
+    void shouldNotifyCancelListeners()
     {
         // GIVEN
         Neo4jJobScheduler neo4jJobScheduler = new Neo4jJobScheduler();

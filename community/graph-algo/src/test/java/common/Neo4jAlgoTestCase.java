@@ -19,10 +19,10 @@
  */
 package common;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +54,7 @@ public abstract class Neo4jAlgoTestCase
 {
     protected static GraphDatabaseService graphDb;
     protected static SimpleGraphBuilder graph;
-    protected Transaction tx;
+    private Transaction tx;
 
     public enum MyRelTypes implements RelationshipType
     {
@@ -139,7 +139,7 @@ public abstract class Neo4jAlgoTestCase
         }
     }
 
-    public String getPathDef( Path path )
+    protected String getPathDef( Path path )
     {
         StringBuilder builder = new StringBuilder();
         for ( Node node : path.nodes() )
@@ -153,7 +153,7 @@ public abstract class Neo4jAlgoTestCase
         return builder.toString();
     }
 
-    public void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
+    private void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
     {
         List<String> unexpectedDefs = new ArrayList<>();
         try ( ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator( paths.iterator() ) )
@@ -179,12 +179,12 @@ public abstract class Neo4jAlgoTestCase
         assertTrue( pathDefs.isEmpty(), "These were expected, but not found: " + pathDefs.toString() );
     }
 
-    public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
+    protected void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
     {
         assertPaths( paths, new ArrayList<>( Arrays.asList( pathDefinitions ) ) );
     }
 
-    public void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )
+    protected void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )
     {
         List<String> pathDefs = new ArrayList<>( );
         for ( Path path : expectedPaths )
@@ -194,7 +194,7 @@ public abstract class Neo4jAlgoTestCase
         assertPaths( actualPaths, pathDefs );
     }
 
-    public void assertPathDef( Path expected, Path actual )
+    protected void assertPathDef( Path expected, Path actual )
     {
         int expectedLength = expected.length();
         int actualLength = actual.length();

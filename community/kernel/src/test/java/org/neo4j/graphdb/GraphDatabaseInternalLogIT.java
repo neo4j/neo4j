@@ -46,10 +46,10 @@ public class GraphDatabaseInternalLogIT
 {
     public static final String INTERNAL_LOG_FILE = "debug.log";
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Test
-    public void shouldWriteToInternalDiagnosticsLog() throws Exception
+    void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
         new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
@@ -66,7 +66,7 @@ public class GraphDatabaseInternalLogIT
     }
 
     @Test
-    public void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
+    void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
     {
         // Given
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
@@ -88,7 +88,7 @@ public class GraphDatabaseInternalLogIT
     }
 
     @Test
-    public void shouldWriteDebugToInternalDiagnosticsLogForEnabledContexts() throws Exception
+    void shouldWriteDebugToInternalDiagnosticsLogForEnabledContexts() throws Exception
     {
         // Given
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )

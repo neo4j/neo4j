@@ -23,14 +23,14 @@ import java.util.function.Function;
 
 import org.neo4j.values.StructureBuilder;
 
-public final class InputMappingStructureBuilder<Input, Internal, Result> implements StructureBuilder<Input,Result>
+final class InputMappingStructureBuilder<Input, Internal, Result> implements StructureBuilder<Input,Result>
 {
     public static <R> StructureBuilder<Object,R> fromValues( StructureBuilder<? super Value,R> builder )
     {
         return mapping( Values::of, builder );
     }
 
-    public static <I, N, O> StructureBuilder<I,O> mapping( Function<I,N> mapping, StructureBuilder<N,O> builder )
+    private static <I, N, O> StructureBuilder<I,O> mapping( Function<I,N> mapping, StructureBuilder<N,O> builder )
     {
         return new InputMappingStructureBuilder<>( mapping, builder );
     }

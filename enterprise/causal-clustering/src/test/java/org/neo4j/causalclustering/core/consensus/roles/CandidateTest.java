@@ -53,7 +53,7 @@ import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.r
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 @ExtendWith( MockitoExtension.class )
-public class CandidateTest
+class CandidateTest
 {
     private MemberId myself = member( 0 );
     private MemberId member1 = member( 1 );
@@ -62,7 +62,7 @@ public class CandidateTest
     private LogProvider logProvider = NullLogProvider.getInstance();
 
     @Test
-    public void shouldBeElectedLeaderOnReceivingGrantedVoteResponseWithCurrentTerm() throws Exception
+    void shouldBeElectedLeaderOnReceivingGrantedVoteResponseWithCurrentTerm() throws Exception
     {
         // given
         RaftState state = RaftStateBuilder.raftState()
@@ -91,7 +91,7 @@ public class CandidateTest
     }
 
     @Test
-    public void shouldStayAsCandidateOnReceivingDeniedVoteResponseWithCurrentTerm() throws Exception
+    void shouldStayAsCandidateOnReceivingDeniedVoteResponseWithCurrentTerm() throws Exception
     {
         // given
         RaftState state = newState();
@@ -108,7 +108,7 @@ public class CandidateTest
     }
 
     @Test
-    public void shouldUpdateTermOnReceivingVoteResponseWithLaterTerm() throws Exception
+    void shouldUpdateTermOnReceivingVoteResponseWithLaterTerm() throws Exception
     {
         // given
         RaftState state = newState();
@@ -128,7 +128,7 @@ public class CandidateTest
     }
 
     @Test
-    public void shouldRejectVoteResponseWithOldTerm() throws Exception
+    void shouldRejectVoteResponseWithOldTerm() throws Exception
     {
         // given
         RaftState state = newState();
@@ -147,7 +147,7 @@ public class CandidateTest
     }
 
     @Test
-    public void shouldDeclineVoteRequestsIfFromSameTerm() throws Throwable
+    void shouldDeclineVoteRequestsIfFromSameTerm() throws Throwable
     {
         // given
         RaftState raftState = newState();
@@ -168,7 +168,7 @@ public class CandidateTest
     }
 
     @Test
-    public void shouldBecomeFollowerIfReceiveVoteRequestFromLaterTerm() throws Throwable
+    void shouldBecomeFollowerIfReceiveVoteRequestFromLaterTerm() throws Throwable
     {
         // given
         RaftState raftState = newState();
@@ -193,7 +193,7 @@ public class CandidateTest
     }
 
     @Test
-    public void shouldDeclinePreVoteFromSameTerm() throws Throwable
+    void shouldDeclinePreVoteFromSameTerm() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -217,7 +217,7 @@ public class CandidateTest
     }
 
     @Test
-    public void shouldBecomeFollowerIfReceivePreVoteRequestFromLaterTerm() throws Throwable
+    void shouldBecomeFollowerIfReceivePreVoteRequestFromLaterTerm() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -244,7 +244,7 @@ public class CandidateTest
         );
     }
 
-    public RaftState newState() throws IOException
+    private RaftState newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

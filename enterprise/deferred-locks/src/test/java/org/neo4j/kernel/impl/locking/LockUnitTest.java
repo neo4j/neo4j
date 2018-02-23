@@ -27,10 +27,10 @@ import java.util.List;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LockUnitTest
+class LockUnitTest
 {
     @Test
-    public void exclusiveLocksAppearFirst()
+    void exclusiveLocksAppearFirst()
     {
         LockUnit unit1 = new LockUnit( ResourceTypes.NODE, 1, true );
         LockUnit unit2 = new LockUnit( ResourceTypes.NODE, 2, false );
@@ -45,7 +45,7 @@ public class LockUnitTest
     }
 
     @Test
-    public void exclusiveOrderedByResourceTypes()
+    void exclusiveOrderedByResourceTypes()
     {
         LockUnit unit1 = new LockUnit( ResourceTypes.NODE, 1, true );
         LockUnit unit2 = new LockUnit( ResourceTypes.RELATIONSHIP, 1, true );

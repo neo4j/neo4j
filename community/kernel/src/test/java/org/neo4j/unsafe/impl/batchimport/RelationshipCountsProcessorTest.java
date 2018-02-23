@@ -36,7 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RelationshipCountsProcessorTest
+class RelationshipCountsProcessorTest
 {
 
     private static final int ANY = -1;
@@ -44,7 +44,7 @@ public class RelationshipCountsProcessorTest
     private final CountsAccessor.Updater countsUpdater = mock( CountsAccessor.Updater.class );
 
     @Test
-    public void shouldHandleBigNumberOfLabelsAndRelationshipTypes()
+    void shouldHandleBigNumberOfLabelsAndRelationshipTypes()
     {
         /*
          * This test ensures that the RelationshipCountsProcessor does not attempt to allocate a negative amount
@@ -75,7 +75,7 @@ public class RelationshipCountsProcessorTest
     }
 
     @Test
-    public void testRelationshipCountersUpdates()
+    void testRelationshipCountersUpdates()
     {
         int relationTypes = 2;
         int labels = 3;

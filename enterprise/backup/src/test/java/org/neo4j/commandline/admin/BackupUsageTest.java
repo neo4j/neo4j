@@ -39,17 +39,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 @ExtendWith( SuppressOutputExtension.class )
-public class BackupUsageTest
+class BackupUsageTest
 {
     private static final Path HERE = Paths.get( "." );
 
     @Resource
-    public SuppressOutput suppressOutput;
+    private SuppressOutput suppressOutput;
 
     private final CommandLocator commandLocator = CommandLocator.fromServiceLocator();
 
     @Test
-    public void outputMatchesExpectedForMissingBackupDir()
+    void outputMatchesExpectedForMissingBackupDir()
     {
         // when
         String output = runBackup();
@@ -66,7 +66,7 @@ public class BackupUsageTest
     }
 
     @Test
-    public void missingBackupName()
+    void missingBackupName()
     {
         // when
         String output = runBackup( "--backup-dir=target" );
@@ -83,7 +83,7 @@ public class BackupUsageTest
     }
 
     @Test
-    public void incorrectBackupDirectory() throws IOException
+    void incorrectBackupDirectory() throws IOException
     {
         // when
         Path backupDirectoryResolved = HERE.toRealPath().resolve( "non_existing_dir" );

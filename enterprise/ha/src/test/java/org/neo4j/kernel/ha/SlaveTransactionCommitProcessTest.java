@@ -22,14 +22,12 @@ package org.neo4j.kernel.ha;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -41,14 +39,12 @@ import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
-public class SlaveTransactionCommitProcessTest
+class SlaveTransactionCommitProcessTest
 {
     private AtomicInteger lastSeenEventIdentifier;
     private Master master;
@@ -58,7 +54,7 @@ public class SlaveTransactionCommitProcessTest
     private SlaveTransactionCommitProcess commitProcess;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         lastSeenEventIdentifier = new AtomicInteger( -1 );
         master = mock( Master.class );
@@ -81,7 +77,7 @@ public class SlaveTransactionCommitProcessTest
     }
 
     @Test
-    public void shouldForwardLockIdentifierToMaster() throws Exception
+    void shouldForwardLockIdentifierToMaster() throws Exception
     {
         // Given
         when( master.commit( requestContext, tx ) ).thenReturn( response );
@@ -94,7 +90,7 @@ public class SlaveTransactionCommitProcessTest
     }
 
     @Test
-    public void mustTranslateComExceptionsToTransientTransactionFailures()
+    void mustTranslateComExceptionsToTransientTransactionFailures()
     {
         assertThrows( TransientTransactionFailureException.class, () -> {
             when( master.commit( requestContext, tx ) ).thenThrow( new ComException() );

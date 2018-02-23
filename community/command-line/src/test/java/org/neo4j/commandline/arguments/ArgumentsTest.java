@@ -38,13 +38,13 @@ public class ArgumentsTest
     private Arguments builder;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         builder = new Arguments();
     }
 
     @Test
-    public void throwsOnUnexpectedLongArgument() throws Exception
+    void throwsOnUnexpectedLongArgument() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "unrecognized option: 'stacktrace'" );
@@ -53,7 +53,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void throwsOnUnexpectedLongArgumentWithValue() throws Exception
+    void throwsOnUnexpectedLongArgumentWithValue() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "unrecognized option: 'stacktrace'" );
@@ -62,7 +62,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void throwsOnUnexpectedShortArgument() throws Exception
+    void throwsOnUnexpectedShortArgument() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "unrecognized option: 'f'" );
@@ -71,7 +71,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void throwsOnUnexpectedShortArgumentWithValue() throws Exception
+    void throwsOnUnexpectedShortArgumentWithValue() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "unrecognized option: 'f'" );
@@ -80,7 +80,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void throwsOnUnexpectedPositionalArgument() throws Exception
+    void throwsOnUnexpectedPositionalArgument() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "unrecognized arguments: 'bob sob'" );
@@ -89,7 +89,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void throwsOnUnexpectedPositionalArgumentWhenExpectingSome() throws Exception
+    void throwsOnUnexpectedPositionalArgumentWhenExpectingSome() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "unrecognized arguments: 'three four'" );
@@ -100,7 +100,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void throwsOnTooFewPositionalArguments() throws Exception
+    void throwsOnTooFewPositionalArguments() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "not enough arguments" );
@@ -111,7 +111,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void argumentNoValue() throws Exception
+    void argumentNoValue() throws Exception
     {
         Arguments args = builder.withArgument( new OptionalBooleanArg( "flag", false, "description" ) );
 
@@ -123,7 +123,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void argumentWithEquals() throws Exception
+    void argumentWithEquals() throws Exception
     {
         Arguments args = builder.withArgument( new OptionalBooleanArg( "flag", false, "description" ) );
 
@@ -135,7 +135,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void argumentWithSpace() throws Exception
+    void argumentWithSpace() throws Exception
     {
         Arguments args = builder.withArgument( new OptionalBooleanArg( "flag", false, "description" ) );
 
@@ -147,13 +147,13 @@ public class ArgumentsTest
     }
 
     @Test
-    public void withDatabaseUsage()
+    void withDatabaseUsage()
     {
         assertEquals( "[--database=<name>]", builder.withDatabase().usage() );
     }
 
     @Test
-    public void withDatabaseDescription()
+    void withDatabaseDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>   Name of database. [default:graph.db]" ),
@@ -161,14 +161,14 @@ public class ArgumentsTest
     }
 
     @Test
-    public void withDatabaseToUsage()
+    void withDatabaseToUsage()
     {
         assertEquals( "[--database=<name>] --to=<destination-path>", builder.withDatabase().withTo(
                 "Destination file." ).usage() );
     }
 
     @Test
-    public void withDatabaseToDescription()
+    void withDatabaseToDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>         Name of database. [default:graph.db]%n" +
@@ -177,7 +177,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void withDatabaseToMultilineDescription()
+    void withDatabaseToMultilineDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>         Name of database. [default:graph.db]%n" +
@@ -189,7 +189,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void longNamesTriggerNewLineFormatting()
+    void longNamesTriggerNewLineFormatting()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>%n" +
@@ -209,7 +209,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void descriptionShouldHandleExistingNewlines()
+    void descriptionShouldHandleExistingNewlines()
     {
         assertEquals( String.format( "This is the first line%n" +
                         "And this is the second line%n" +
@@ -224,7 +224,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void wrappingHandlesBothKindsOfLineEndingsAndOutputsPlatformDependentOnes()
+    void wrappingHandlesBothKindsOfLineEndingsAndOutputsPlatformDependentOnes()
     {
         assertEquals( String.format( "One with Linux%n" +
                         "One with Windows%n" +

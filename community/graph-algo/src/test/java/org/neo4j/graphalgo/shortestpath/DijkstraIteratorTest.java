@@ -36,30 +36,28 @@ import org.neo4j.graphdb.Relationship;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DijkstraIteratorTest extends Neo4jAlgoTestCase
+class DijkstraIteratorTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void testRun()
+    void testRun()
     {
         new TestDijkstra().runTest();
     }
 
-    protected class TestDijkstra extends Dijkstra<Double>
+    class TestDijkstra extends Dijkstra<Double>
     {
-        public TestDijkstra()
+        TestDijkstra()
         {
             super( 0.0, null, null, CommonEvaluators.doubleCostEvaluator( "cost" ),
                 new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
                 MyRelTypes.R1 );
         }
 
-        protected class TestIterator extends Dijkstra<Double>.DijstraIterator
+        class TestIterator extends Dijkstra<Double>.DijstraIterator
         {
-            public TestIterator( Node startNode,
-                HashMap<Node,List<Relationship>> predecessors,
-                HashMap<Node,Double> mySeen, HashMap<Node,Double> otherSeen,
-                HashMap<Node,Double> myDistances,
-                HashMap<Node,Double> otherDistances, boolean backwards )
+            TestIterator( Node startNode, HashMap<Node,List<Relationship>> predecessors, HashMap<Node,Double> mySeen,
+                    HashMap<Node,Double> otherSeen, HashMap<Node,Double> myDistances,
+                    HashMap<Node,Double> otherDistances, boolean backwards )
             {
                 super( startNode, predecessors, mySeen, otherSeen, myDistances,
                     otherDistances, backwards );
@@ -67,7 +65,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
         }
 
         @Test
-        public void runTest()
+        void runTest()
         {
             graph.makeEdge( "start", "a", "cost", (double) 1 );
             graph.makeEdge( "a", "x", "cost", (double) 9 );

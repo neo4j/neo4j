@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest.paging;
 
-import java.util.regex.Pattern;
-
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-public class HexMatcher extends TypeSafeMatcher<String>
+import java.util.regex.Pattern;
+
+class HexMatcher extends TypeSafeMatcher<String>
 {
     private static final Pattern pattern = Pattern.compile( "[a-fA-F0-9]*" );
     private String candidate;

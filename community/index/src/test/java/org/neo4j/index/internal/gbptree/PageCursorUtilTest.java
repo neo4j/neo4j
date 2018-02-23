@@ -35,13 +35,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil._6B_MASK;
 
 @ExtendWith( RandomExtension.class )
-public class PageCursorUtilTest
+class PageCursorUtilTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldPutAndGet6BLongs()
+    void shouldPutAndGet6BLongs()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );
@@ -63,7 +63,7 @@ public class PageCursorUtilTest
     }
 
     @Test
-    public void shouldFailOnInvalidValues()
+    void shouldFailOnInvalidValues()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );

@@ -29,26 +29,26 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class CypherLoggingTest
+class CypherLoggingTest
 {
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService database;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         database = new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentDatabase();
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         database.shutdown();
     }
 
     @Test
-    public void shouldNotLogQueries()
+    void shouldNotLogQueries()
     {
         // when
         database.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );

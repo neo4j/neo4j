@@ -24,18 +24,18 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class Neo4jAdminUsageTest
+class Neo4jAdminUsageTest
 {
     private Usage usageCmd;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         usageCmd = new Usage( AdminTool.scriptName, CommandLocator.fromServiceLocator() );
     }
 
     @Test
-    public void verifyUsageMatchesExpectedCommands()
+    void verifyUsageMatchesExpectedCommands()
     {
         final StringBuilder sb = new StringBuilder();
         usageCmd.print( s -> sb.append( s ).append( "\n" ) );

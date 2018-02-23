@@ -34,10 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class PrimitiveIntCollectionsTest
+class PrimitiveIntCollectionsTest
 {
     @Test
-    public void arrayOfItemsAsIterator()
+    void arrayOfItemsAsIterator()
     {
         // GIVEN
         int[] items = new int[] { 2, 5, 234 };
@@ -50,7 +50,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void convertCollectionToLongArray()
+    void convertCollectionToLongArray()
     {
         PrimitiveIntSet heapSet = PrimitiveIntCollections.asSet( new int[]{1, 2, 3} );
         PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet( GlobalMemoryTracker.INSTANCE );
@@ -61,7 +61,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void concatenateTwoIterators()
+    void concatenateTwoIterators()
     {
         // GIVEN
         PrimitiveIntIterator firstItems = PrimitiveIntCollections.iterator( 10, 3, 203, 32 );
@@ -75,7 +75,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void filter()
+    void filter()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -88,7 +88,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void deduplicate()
+    void deduplicate()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
@@ -131,7 +131,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void iteratorAsSet()
+    void iteratorAsSet()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -155,7 +155,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldNotContinueToCallNextOnHasNextFalse()
+    void shouldNotContinueToCallNextOnHasNextFalse()
     {
         // GIVEN
         AtomicInteger count = new AtomicInteger( 2 );
@@ -181,7 +181,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldDeduplicate()
+    void shouldDeduplicate()
     {
         // GIVEN
         int[] array = new int[] {1, 6, 2, 5, 6, 1, 6};
@@ -194,7 +194,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void copyMap()
+    void copyMap()
     {
         PrimitiveIntObjectMap<Object> originalMap = Primitive.intObjectMap();
         originalMap.put( 1, "a" );
@@ -237,7 +237,7 @@ public class PrimitiveIntCollectionsTest
         assertNoMoreItems( iterator );
     }
 
-    private int[] reverse( int[] items )
+    int[] reverse( int[] items )
     {
         int[] result = new int[items.length];
         for ( int i = 0; i < items.length; i++ )

@@ -26,18 +26,18 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SimpleBitSetTest
+class SimpleBitSetTest
 {
 
     @Test
-    public void put()
+    void put()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -58,7 +58,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void putAndRemove()
+    void putAndRemove()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -78,7 +78,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void putOtherBitSet()
+    void putOtherBitSet()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -105,7 +105,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void removeOtherBitSet()
+    void removeOtherBitSet()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -132,7 +132,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void resize()
+    void resize()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 8 );
@@ -148,7 +148,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void shouldAllowIterating()
+    void shouldAllowIterating()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 64 );
@@ -165,7 +165,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointOnUnchangedSetMustDoNothing()
+    void checkPointOnUnchangedSetMustDoNothing()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -177,7 +177,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointOnUnchangedSetButWithDifferentKeyMustUpdateSet()
+    void checkPointOnUnchangedSetButWithDifferentKeyMustUpdateSet()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -190,7 +190,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointOnChangedSetMustClearState()
+    void checkPointOnChangedSetMustClearState()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -204,7 +204,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointMustBeAbleToExpandCapacity()
+    void checkPointMustBeAbleToExpandCapacity()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -218,7 +218,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void modificationsMustTakeWriteLocks()
+    void modificationsMustTakeWriteLocks()
     {
         // We can observe that a write lock was taken, by seeing that an optimistic read lock was invalidated.
         SimpleBitSet set = new SimpleBitSet( 16 );

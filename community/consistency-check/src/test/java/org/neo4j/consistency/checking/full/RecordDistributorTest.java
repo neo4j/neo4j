@@ -30,10 +30,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class RecordDistributorTest
+class RecordDistributorTest
 {
     @Test
-    public void shouldDistributeRelationshipRecordsByNodeId() throws Exception
+    void shouldDistributeRelationshipRecordsByNodeId() throws Exception
     {
         // GIVEN
         QueueDistributor<RelationshipRecord> distributor = new RelationshipNodesQueueDistributor( 5, 100 );

@@ -50,12 +50,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ReplicatedTokenHolderTest
+class ReplicatedTokenHolderTest
 {
     private Dependencies dependencies = mock( Dependencies.class );
 
     @Test
-    public void shouldStoreInitialTokens()
+    void shouldStoreInitialTokens()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
@@ -70,7 +70,7 @@ public class ReplicatedTokenHolderTest
     }
 
     @Test
-    public void shouldReturnExistingTokenId()
+    void shouldReturnExistingTokenId()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
@@ -86,7 +86,7 @@ public class ReplicatedTokenHolderTest
     }
 
     @Test
-    public void shouldReplicateTokenRequestForNewToken() throws Exception
+    void shouldReplicateTokenRequestForNewToken() throws Exception
     {
         // given
         StorageEngine storageEngine = mockedStorageEngine();

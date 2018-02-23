@@ -58,7 +58,7 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.time.Clocks.systemClock;
 
-public class SlaveLocksClientConcurrentTest
+class SlaveLocksClientConcurrentTest
 {
     private static ExecutorService executor;
 
@@ -68,19 +68,19 @@ public class SlaveLocksClientConcurrentTest
     private AvailabilityGuard availabilityGuard;
 
     @BeforeAll
-    public static void initExecutor()
+    static void initExecutor()
     {
         executor = newCachedThreadPool();
     }
 
     @AfterAll
-    public static void closeExecutor()
+    static void closeExecutor()
     {
         executor.shutdownNow();
     }
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         master = mock( Master.class, new LockedOnMasterAnswer() );
         lockManager = new ForsetiLockManager( defaults(), systemClock(), ResourceTypes.values() );
@@ -91,7 +91,7 @@ public class SlaveLocksClientConcurrentTest
     }
 
     @Test
-    public void readersCanAcquireLockAsSoonAsItReleasedOnMaster() throws InterruptedException
+    void readersCanAcquireLockAsSoonAsItReleasedOnMaster() throws InterruptedException
     {
         assertTimeout( ofMillis( 1000 ), () -> {
             SlaveLocksClient reader = createClient();
@@ -210,9 +210,9 @@ public class SlaveLocksClientConcurrentTest
 
     private abstract class ResourceWorker implements Runnable
     {
-        protected final SlaveLocksClient locksClient;
-        protected final ResourceType resourceType;
-        protected final long id;
+        final SlaveLocksClient locksClient;
+        final ResourceType resourceType;
+        final long id;
 
         ResourceWorker( SlaveLocksClient locksClient, ResourceType resourceType, long id )
         {

@@ -32,18 +32,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class UpdatePullerSchedulerTest
+class UpdatePullerSchedulerTest
 {
     private UpdatePuller updatePuller;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         updatePuller = mock( UpdatePuller.class );
     }
 
     @Test
-    public void skipUpdatePullingSchedulingWithZeroInterval()
+    void skipUpdatePullingSchedulingWithZeroInterval()
     {
         JobScheduler jobScheduler = mock( JobScheduler.class );
         UpdatePullerScheduler pullerScheduler =
@@ -59,7 +59,7 @@ public class UpdatePullerSchedulerTest
     }
 
     @Test
-    public void scheduleUpdatePulling() throws Throwable
+    void scheduleUpdatePulling() throws Throwable
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler( false );
         UpdatePullerScheduler pullerScheduler =

@@ -24,15 +24,15 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class DelegateInvocationHandlerTest
+class DelegateInvocationHandlerTest
 {
     @Test
-    public void shouldNotBeAbleToUseValueBeforeHardened()
+    void shouldNotBeAbleToUseValueBeforeHardened()
     {
         // GIVEN
         DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
@@ -52,7 +52,7 @@ public class DelegateInvocationHandlerTest
     }
 
     @Test
-    public void throwsWhenDelegateIsNotSet()
+    void throwsWhenDelegateIsNotSet()
     {
         DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
 
@@ -68,7 +68,7 @@ public class DelegateInvocationHandlerTest
     }
 
     @Test
-    public void shouldBeAbleToUseCementedValueOnceDelegateSet()
+    void shouldBeAbleToUseCementedValueOnceDelegateSet()
     {
         // GIVEN
         DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
@@ -82,7 +82,7 @@ public class DelegateInvocationHandlerTest
     }
 
     @Test
-    public void shouldBeAbleToUseCementedValueOnceHardened()
+    void shouldBeAbleToUseCementedValueOnceHardened()
     {
         // GIVEN
         DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
@@ -96,7 +96,7 @@ public class DelegateInvocationHandlerTest
     }
 
     @Test
-    public void setDelegateShouldBeAbleToOverridePreviousHarden()
+    void setDelegateShouldBeAbleToOverridePreviousHarden()
     {
         /* This test case stems from a race condition where a thread switching role to slave and
          * HaKernelPanicHandler thread were competing to harden the master delegate handler.

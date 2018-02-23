@@ -34,24 +34,24 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.PropertyType;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongArray;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongString;
 
-public class DatabaseContentVerifier
+class DatabaseContentVerifier
 {
     private final String longString = makeLongString();
     private final int[] longArray = makeLongArray();
     private final GraphDatabaseService database;
     private final int numberOfUnrelatedNodes;
 
-    public DatabaseContentVerifier( GraphDatabaseService database, int numberOfUnrelatedNodes )
+    DatabaseContentVerifier( GraphDatabaseService database, int numberOfUnrelatedNodes )
     {
         this.database = database;
         this.numberOfUnrelatedNodes = numberOfUnrelatedNodes;
@@ -90,7 +90,7 @@ public class DatabaseContentVerifier
         assertEquals( expectedCount, nodeCount );
     }
 
-    public void verifyProperties( PropertyContainer node )
+    private void verifyProperties( PropertyContainer node )
     {
         try
         {

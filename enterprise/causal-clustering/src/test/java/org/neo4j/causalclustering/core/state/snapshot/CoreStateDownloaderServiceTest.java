@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotDownloader.OPERATION_NAME;
 
-public class CoreStateDownloaderServiceTest
+class CoreStateDownloaderServiceTest
 {
     private final MemberId someMember = new MemberId( UUID.randomUUID() );
     private final AdvertisedSocketAddress someMemberAddress = new AdvertisedSocketAddress( "localhost", 1234 );
@@ -58,20 +58,20 @@ public class CoreStateDownloaderServiceTest
     private Neo4jJobScheduler neo4jJobScheduler;
 
     @BeforeEach
-    public void create()
+    void create()
     {
         neo4jJobScheduler = new Neo4jJobScheduler();
         neo4jJobScheduler.init();
     }
 
     @AfterEach
-    public void shutdown()
+    void shutdown()
     {
         neo4jJobScheduler.shutdown();
     }
 
     @Test
-    public void shouldRunPersistentDownloader() throws Exception
+    void shouldRunPersistentDownloader() throws Exception
     {
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
@@ -89,7 +89,7 @@ public class CoreStateDownloaderServiceTest
     }
 
     @Test
-    public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime()
+    void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime()
     {
         AtomicInteger schedules = new AtomicInteger();
         CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );

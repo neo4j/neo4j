@@ -41,47 +41,47 @@ import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-public class PathRepresentationTest
+class PathRepresentationTest
 {
 
     @Test
-    public void shouldHaveLength()
+    void shouldHaveLength()
     {
         assertNotNull( pathrep().length() );
     }
 
     @Test
-    public void shouldHaveStartNodeLink()
+    void shouldHaveStartNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().startNode() );
     }
 
     @Test
-    public void shouldHaveEndNodeLink()
+    void shouldHaveEndNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().endNode() );
     }
 
     @Test
-    public void shouldHaveNodeList()
+    void shouldHaveNodeList()
     {
         assertNotNull( pathrep().nodes() );
     }
 
     @Test
-    public void shouldHaveRelationshipList()
+    void shouldHaveRelationshipList()
     {
         assertNotNull( pathrep().relationships() );
     }
 
     @Test
-    public void shouldHaveDirectionList()
+    void shouldHaveDirectionList()
     {
         assertNotNull( pathrep().directions() );
     }
 
     @Test
-    public void shouldSerialiseToMap()
+    void shouldSerialiseToMap()
     {
         Map<String, Object> repr = serialize( pathrep() );
         assertNotNull( repr );
@@ -128,7 +128,7 @@ public class PathRepresentationTest
         return new PathRepresentation<>( path( a, link( ab, b ), link( cb, c ), link( cd, d ) ) );
     }
 
-    public static void verifySerialisation( Map<String, Object> pathrep )
+    private static void verifySerialisation( Map<String,Object> pathrep )
     {
         assertNotNull( pathrep.get( "length" ) );
         int length = Integer.parseInt(pathrep.get("length").toString());

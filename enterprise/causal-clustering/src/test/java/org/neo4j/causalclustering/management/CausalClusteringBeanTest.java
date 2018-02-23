@@ -50,7 +50,7 @@ import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIR
 import static org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule.ID_ALLOCATION_NAME;
 import static org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule.LOCK_TOKEN_NAME;
 
-public class CausalClusteringBeanTest
+class CausalClusteringBeanTest
 {
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private final GraphDatabaseAPI db = mock( CoreGraphDatabase.class );
@@ -60,7 +60,7 @@ public class CausalClusteringBeanTest
     private CausalClustering ccBean;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         KernelData kernelData =
                 new DefaultKernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.defaults(), db );
@@ -76,7 +76,7 @@ public class CausalClusteringBeanTest
     }
 
     @Test
-    public void getCurrentRoleFromRaftMachine()
+    void getCurrentRoleFromRaftMachine()
     {
         when( raftMachine.currentRole() ).thenReturn( Role.LEADER, Role.FOLLOWER, Role.CANDIDATE );
         assertEquals( "LEADER", ccBean.getRole() );
@@ -85,7 +85,7 @@ public class CausalClusteringBeanTest
     }
 
     @Test
-    public void returnSumOfRaftLogDirectory() throws Exception
+    void returnSumOfRaftLogDirectory() throws Exception
     {
         File raftLogDirectory = new File( clusterStateDirectory.get(), RAFT_LOG_DIRECTORY_NAME );
         fs.mkdirs( raftLogDirectory );
@@ -97,7 +97,7 @@ public class CausalClusteringBeanTest
     }
 
     @Test
-    public void excludeRaftLogFromReplicatedStateSize() throws Exception
+    void excludeRaftLogFromReplicatedStateSize() throws Exception
     {
         File stateDir = clusterStateDirectory.get();
 

@@ -21,10 +21,10 @@ package org.neo4j.causalclustering.core.consensus.outcome;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLogEntry;
 
-public class BatchAppendLogEntriesTest
+class BatchAppendLogEntriesTest
 {
     private final Log log = NullLog.getInstance();
     private RaftLogEntry entryA = new RaftLogEntry( 0, valueOf( 100 ) );
@@ -43,7 +43,7 @@ public class BatchAppendLogEntriesTest
     private RaftLogEntry entryD = new RaftLogEntry( 3, valueOf( 400 ) );
 
     @Test
-    public void shouldApplyMultipleEntries() throws Exception
+    void shouldApplyMultipleEntries() throws Exception
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
@@ -61,7 +61,7 @@ public class BatchAppendLogEntriesTest
     }
 
     @Test
-    public void shouldApplyFromOffsetOnly() throws Exception
+    void shouldApplyFromOffsetOnly() throws Exception
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
@@ -78,7 +78,7 @@ public class BatchAppendLogEntriesTest
     }
 
     @Test
-    public void applyTo()
+    void applyTo()
     {
         //Test that batch commands apply entries to the cache.
 

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
@@ -60,13 +59,13 @@ import static org.neo4j.kernel.impl.store.StoreFile.NEO_STORE;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class StoreMigratorTest
+class StoreMigratorTest
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldNotDoActualStoreMigrationBetween3_0_5_and_next() throws Exception
+    void shouldNotDoActualStoreMigrationBetween3_0_5_and_next() throws Exception
     {
         // GIVEN a store in vE.H.0 format
         File storeDir = directory.directory();
@@ -103,7 +102,7 @@ public class StoreMigratorTest
     }
 
     @Test
-    public void detectObsoleteCountStoresToRebuildDuringMigration()
+    void detectObsoleteCountStoresToRebuildDuringMigration()
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         PageCache pageCache = mock( PageCache.class );

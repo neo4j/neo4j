@@ -31,14 +31,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSamePrimitiveItems;
 
-public class LongDiffSetsTest
+class LongDiffSetsTest
 {
 
     // TODO empty diffset EMPTY
     // TODO null/isEmpty elements
 
     @Test
-    public void shouldContainSourceForEmptyDiffSets()
+    void shouldContainSourceForEmptyDiffSets()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
@@ -52,7 +52,7 @@ public class LongDiffSetsTest
     }
 
     @Test
-    public void shouldContainFilteredSourceForDiffSetsWithRemovedElements()
+    void shouldContainFilteredSourceForDiffSetsWithRemovedElements()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
@@ -68,7 +68,7 @@ public class LongDiffSetsTest
     }
 
     @Test
-    public void shouldContainFilteredSourceForDiffSetsWithAddedElements()
+    void shouldContainFilteredSourceForDiffSetsWithAddedElements()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
@@ -84,7 +84,7 @@ public class LongDiffSetsTest
     }
 
     @Test
-    public void shouldContainAddedElementsForDiffSetsWithAddedElements()
+    void shouldContainAddedElementsForDiffSetsWithAddedElements()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );

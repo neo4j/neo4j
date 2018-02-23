@@ -33,10 +33,10 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
-public class CalculateDenseNodesStepTest
+class CalculateDenseNodesStepTest
 {
     @Test
-    public void shouldNotProcessLoopsTwice() throws Exception
+    void shouldNotProcessLoopsTwice() throws Exception
     {
         // GIVEN
         NodeRelationshipCache cache = mock( NodeRelationshipCache.class );

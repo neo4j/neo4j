@@ -50,15 +50,15 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class DumpProcessInformationTest
+class DumpProcessInformationTest
 {
     private static final String SIGNAL = "here";
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @BeforeEach
-    public void checkEnvironment()
+    void checkEnvironment()
     {
         assumeTrue( commandExists( "jps" ) );
         assumeTrue( commandExists( "jstack -h" ) );
@@ -76,7 +76,7 @@ public class DumpProcessInformationTest
         }
     }
     @Test
-    public void shouldDumpProcessInformation() throws Exception
+    void shouldDumpProcessInformation() throws Exception
     {
         // GIVEN
         File directory = testDirectory.directory( "dump" );

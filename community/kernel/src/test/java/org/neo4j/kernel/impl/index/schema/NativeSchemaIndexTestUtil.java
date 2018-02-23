@@ -62,7 +62,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
     final FileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
-    protected final RandomRule random = new RandomRule();
+    final RandomRule random = new RandomRule();
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 

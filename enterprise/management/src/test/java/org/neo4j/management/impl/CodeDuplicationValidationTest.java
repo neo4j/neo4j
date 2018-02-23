@@ -19,9 +19,9 @@
  */
 package org.neo4j.management.impl;
 
-import javax.management.ObjectName;
-
 import org.junit.jupiter.api.Test;
+
+import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
@@ -36,7 +36,7 @@ import org.neo4j.management.TransactionManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CodeDuplicationValidationTest
+class CodeDuplicationValidationTest
 {
     private class DefaultManagementSupport extends ManagementSupport
     {
@@ -59,20 +59,20 @@ public class CodeDuplicationValidationTest
     }
 
     @Test
-    public void kernelBeanTypeNameMatchesExpected()
+    void kernelBeanTypeNameMatchesExpected()
     {
         assertEquals( Kernel.class.getName(), KernelProxy.KERNEL_BEAN_TYPE );
         assertEquals( Kernel.NAME, KernelProxy.KERNEL_BEAN_NAME );
     }
 
     @Test
-    public void mbeanQueryAttributeNameMatchesMethodName() throws Exception
+    void mbeanQueryAttributeNameMatchesMethodName() throws Exception
     {
         assertEquals( ObjectName.class, Kernel.class.getMethod( "get" + KernelProxy.MBEAN_QUERY ).getReturnType() );
     }
 
     @Test
-    public void interfacesGetsTheSameBeanNames()
+    void interfacesGetsTheSameBeanNames()
     {
         assertEqualBeanName( Kernel.class );
         assertEqualBeanName( Primitives.class );
@@ -92,7 +92,7 @@ public class CodeDuplicationValidationTest
     }
 
     @Test
-    public void generatesEqualObjectNames()
+    void generatesEqualObjectNames()
     {
         assertEquals( new DefaultManagementSupport().createMBeanQuery( "test-instance" ),
                 new CustomManagementSupport().createMBeanQuery( "test-instance" ) );

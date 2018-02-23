@@ -24,7 +24,7 @@ import java.util.List;
 
 public abstract class MessageRecorder<T>
 {
-    protected List<T> messages = new ArrayList<>();
+    List<T> messages = new ArrayList<>();
 
     public List<T> asList()
     {

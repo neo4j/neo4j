@@ -27,8 +27,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
@@ -37,10 +37,10 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 /**
  * Test read access to committed label data.
  */
-public class StorageLayerLabelTest extends StorageLayerTest
+class StorageLayerLabelTest extends StorageLayerTest
 {
     @Test
-    public void should_be_able_to_list_labels_for_node() throws Exception
+    void should_be_able_to_list_labels_for_node() throws Exception
     {
         // GIVEN
         long nodeId;
@@ -62,7 +62,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
     }
 
     @Test
-    public void should_be_able_to_get_label_name_for_label() throws Exception
+    void should_be_able_to_get_label_name_for_label() throws Exception
     {
         // GIVEN
         String labelName = label1.name();
@@ -76,7 +76,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
     }
 
     @Test
-    public void labels_should_not_leak_out_as_properties()
+    void labels_should_not_leak_out_as_properties()
     {
         // GIVEN
         Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
@@ -86,7 +86,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
     }
 
     @Test
-    public void should_return_all_nodes_with_label()
+    void should_return_all_nodes_with_label()
     {
         // GIVEN
         Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );

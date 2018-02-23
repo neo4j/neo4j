@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
-public class AuthorizationHeadersTest
+class AuthorizationHeadersTest
 {
     @Test
-    public void shouldParseHappyPath()
+    void shouldParseHappyPath()
     {
         // Given
         String username = "jake";
@@ -47,7 +47,7 @@ public class AuthorizationHeadersTest
     }
 
     @Test
-    public void shouldHandleSadPaths()
+    void shouldHandleSadPaths()
     {
         // When & then
         assertNull( decode( "" ) );

@@ -38,7 +38,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class RelationshipTestSupport
+class RelationshipTestSupport
 {
     private RelationshipTestSupport()
     {

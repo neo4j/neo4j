@@ -19,29 +19,30 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
+import org.junit.jupiter.api.Test;
+
+import java.util.Collection;
+
+import org.neo4j.causalclustering.core.consensus.log.segmented.OpenEndRangeMap.ValueRange;
+
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collection;
-
-import org.junit.jupiter.api.Test;
-import org.neo4j.causalclustering.core.consensus.log.segmented.OpenEndRangeMap.ValueRange;
-
-public class OpenEndRangeMapTest
+class OpenEndRangeMapTest
 {
     private OpenEndRangeMap<Integer,String> ranges = new OpenEndRangeMap<>();
 
     @Test
-    public void shouldFindNothingInEmptyMap()
+    void shouldFindNothingInEmptyMap()
     {
         assertRange( -100, 100, new ValueRange<>( null, null ) );
     }
 
     @Test
-    public void shouldFindSingleRange()
+    void shouldFindSingleRange()
     {
         // when
         ranges.replaceFrom( 0, "A" );
@@ -52,7 +53,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldHandleMultipleRanges()
+    void shouldHandleMultipleRanges()
     {
         // when
         ranges.replaceFrom(  0, "A" );
@@ -67,7 +68,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldTruncateAtPreviousEntry()
+    void shouldTruncateAtPreviousEntry()
     {
         // given
         ranges.replaceFrom(  0, "A" );
@@ -85,7 +86,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldTruncateBeforePreviousEntry()
+    void shouldTruncateBeforePreviousEntry()
     {
         // given
         ranges.replaceFrom(  0, "A" );
@@ -103,7 +104,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldTruncateSeveralEntries()
+    void shouldTruncateSeveralEntries()
     {
         // given
         ranges.replaceFrom(  0, "A" );
@@ -124,7 +125,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldOnlyPruneWholeEntries()
+    void shouldOnlyPruneWholeEntries()
     {
         // given
         ranges.replaceFrom(  0, "A" );

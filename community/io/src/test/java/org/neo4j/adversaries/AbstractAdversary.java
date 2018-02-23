@@ -24,9 +24,9 @@ import java.util.Random;
 @SuppressWarnings( "unchecked" )
 public abstract class AbstractAdversary implements Adversary
 {
-    protected final Random rng;
+    final Random rng;
 
-    public AbstractAdversary()
+    AbstractAdversary()
     {
         rng = new Random();
     }
@@ -36,7 +36,7 @@ public abstract class AbstractAdversary implements Adversary
         rng.setSeed( seed );
     }
 
-    protected void throwOneOf( Class<? extends Throwable>... types )
+    void throwOneOf( Class<? extends Throwable>... types )
     {
         int choice = rng.nextInt( types.length );
         Class<? extends Throwable> type = types[choice];
@@ -52,7 +52,7 @@ public abstract class AbstractAdversary implements Adversary
         sneakyThrow( throwable );
     }
 
-    public static void sneakyThrow( Throwable throwable )
+    private static void sneakyThrow( Throwable throwable )
     {
         AbstractAdversary._sneakyThrow( throwable );
     }

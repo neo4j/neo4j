@@ -60,7 +60,7 @@ public class KernelTransactionTimeoutMonitorIT
     private static final int NODE_ID = 0;
     private ExecutorService executor;
 
-    protected DatabaseRule createDatabaseRule()
+    DatabaseRule createDatabaseRule()
     {
         return new EmbeddedDatabaseRule()
                 .withSetting( GraphDatabaseSettings.transaction_monitor_check_interval, "100ms" );

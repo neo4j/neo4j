@@ -64,7 +64,7 @@ public class StoreFactoryTest
     private PageCache pageCache;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         FileSystemAbstraction fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
@@ -88,7 +88,7 @@ public class StoreFactoryTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( neoStores != null )
         {
@@ -97,7 +97,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
+    void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
     {
         // When
         neoStores = storeFactory( defaults() ).openAllNeoStores( true );
@@ -108,7 +108,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
+    void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
     {
         // When
         neoStores = storeFactory( defaults() ).openAllNeoStores( true );
@@ -119,7 +119,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSpecificCountsTrackerForReadOnlyDatabase() throws IOException
+    void shouldHaveSpecificCountsTrackerForReadOnlyDatabase() throws IOException
     {
         // when
         StoreFactory readOnlyStoreFactory = storeFactory( defaults( read_only, TRUE ) );
@@ -131,7 +131,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldThrowWhenOpeningNonExistingNeoStores()
+    void shouldThrowWhenOpeningNonExistingNeoStores()
     {
         assertThrows( StoreNotFoundException.class, () -> {
             try ( NeoStores neoStores = storeFactory( defaults() ).openAllNeoStores() )
@@ -142,7 +142,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldDelegateDeletionOptionToStores()
+    void shouldDelegateDeletionOptionToStores()
     {
         // GIVEN
         StoreFactory storeFactory = storeFactory( defaults(), DELETE_ON_CLOSE );
@@ -157,7 +157,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
+    void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
         StoreFactory storeFactory = storeFactory( defaults() );
         FileSystemAbstraction fs = fsRule.get();
@@ -166,7 +166,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
+    void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
     {
         StoreFactory storeFactory = storeFactory( defaults() );
         storeFactory.openAllNeoStores( true ).close();

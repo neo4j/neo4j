@@ -39,10 +39,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
-public class CommitProcessStateMachineCollaborationTest
+class CommitProcessStateMachineCollaborationTest
 {
     @Test
-    public void shouldFailTransactionIfLockSessionChanges()
+    void shouldFailTransactionIfLockSessionChanges()
     {
         // given
         int initialLockSessionId = 23;

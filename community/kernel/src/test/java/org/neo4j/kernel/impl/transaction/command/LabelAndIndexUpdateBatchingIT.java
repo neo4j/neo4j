@@ -55,13 +55,13 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  * the batch state, to be applied at the end of the batch. Hence the node would be forgotten when the
  * index was being built.
  */
-public class LabelAndIndexUpdateBatchingIT
+class LabelAndIndexUpdateBatchingIT
 {
     private static final String PROPERTY_KEY = "key";
     private static final Label LABEL = Label.label( "label" );
 
     @Test
-    public void indexShouldIncludeNodesCreatedPreviouslyInBatch() throws Exception
+    void indexShouldIncludeNodesCreatedPreviouslyInBatch() throws Exception
     {
         // GIVEN a transaction stream leading up to this issue
         // perform the transactions from db-level and extract the transactions as commands

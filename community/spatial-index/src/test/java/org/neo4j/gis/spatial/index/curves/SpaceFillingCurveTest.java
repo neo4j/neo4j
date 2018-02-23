@@ -19,7 +19,6 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -36,13 +35,13 @@ import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.SubCurve3D;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointLeft;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointRight;
 
-public class SpaceFillingCurveTest
+class SpaceFillingCurveTest
 {
     private static final boolean verbose = false;
     private static final boolean debug = false;
@@ -69,7 +68,7 @@ public class SpaceFillingCurveTest
     // Set of tests for 2D ZOrderCurve at various levels
     //
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtLevel1()
+    void shouldCreateSimple2DZOrderCurveAtLevel1()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         ZOrderSpaceFillingCurve2D curve = new ZOrderSpaceFillingCurve2D( envelope, 1 );
@@ -81,7 +80,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtLevel2()
+    void shouldCreateSimple2DZOrderCurveAtLevel2()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         ZOrderSpaceFillingCurve2D curve = new ZOrderSpaceFillingCurve2D( envelope, 2 );
@@ -105,35 +104,35 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtLevel3()
+    void shouldCreateSimple2DZOrderCurveAtLevel3()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         assertAtLevel( new ZOrderSpaceFillingCurve2D( envelope, 3 ), envelope );
     }
 
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtLevel4()
+    void shouldCreateSimple2DZOrderCurveAtLevel4()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         assertAtLevel( new ZOrderSpaceFillingCurve2D( envelope, 4 ), envelope );
     }
 
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtLevel5()
+    void shouldCreateSimple2DZOrderCurveAtLevel5()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         assertAtLevel( new ZOrderSpaceFillingCurve2D( envelope, 5 ), envelope );
     }
 
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtLevel24()
+    void shouldCreateSimple2DZOrderCurveAtLevel24()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         assertAtLevel( new ZOrderSpaceFillingCurve2D( envelope, 24 ), envelope );
     }
 
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtManyLevels()
+    void shouldCreateSimple2DZOrderCurveAtManyLevels()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8}, new double[]{8, 8} );
         for ( int level = 1; level <= ZOrderSpaceFillingCurve2D.MAX_LEVEL; level++ )
@@ -147,26 +146,26 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple2DZOrderCurveAtLevelDefault()
+    void shouldCreateSimple2DZOrderCurveAtLevelDefault()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         assertAtLevel( new ZOrderSpaceFillingCurve2D( envelope ), envelope );
     }
 
     @Test
-    public void shouldCreate2DZOrderCurveWithRectangularEnvelope()
+    void shouldCreate2DZOrderCurveWithRectangularEnvelope()
     {
         assert2DAtLevel( new Envelope( -8, 8, -20, 20 ), 3 );
     }
 
     @Test
-    public void shouldCreate2DZOrderCurveWithNonCenteredEnvelope()
+    void shouldCreate2DZOrderCurveWithNonCenteredEnvelope()
     {
         assert2DAtLevel( new Envelope( 2, 7, 2, 7 ), 3 );
     }
 
     @Test
-    public void shouldWorkWithNormalGPSCoordinatesZOrder()
+    void shouldWorkWithNormalGPSCoordinatesZOrder()
     {
         Envelope envelope = new Envelope( -180, 180, -90, 90 );
         ZOrderSpaceFillingCurve2D curve = new ZOrderSpaceFillingCurve2D( envelope );
@@ -174,7 +173,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet2DZOrderSearchTilesForManyLevels()
+    void shouldGet2DZOrderSearchTilesForManyLevels()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         for ( int level = 1; level <= ZOrderSpaceFillingCurve2D.MAX_LEVEL; level++ )
@@ -197,7 +196,7 @@ public class SpaceFillingCurveTest
     //
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtLevel1()
+    void shouldCreateSimple2DHilbertCurveAtLevel1()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, 1 );
@@ -209,7 +208,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtLevel2()
+    void shouldCreateSimple2DHilbertCurveAtLevel2()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, 2 );
@@ -233,31 +232,31 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtLevel3()
+    void shouldCreateSimple2DHilbertCurveAtLevel3()
     {
         assert2DAtLevel( new Envelope( -8, 8, -8, 8 ), 3 );
     }
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtLevel4()
+    void shouldCreateSimple2DHilbertCurveAtLevel4()
     {
         assert2DAtLevel( new Envelope( -8, 8, -8, 8 ), 4 );
     }
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtLevel5()
+    void shouldCreateSimple2DHilbertCurveAtLevel5()
     {
         assert2DAtLevel( new Envelope( -8, 8, -8, 8 ), 5 );
     }
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtLevel24()
+    void shouldCreateSimple2DHilbertCurveAtLevel24()
     {
         assert2DAtLevel( new Envelope( -8, 8, -8, 8 ), 24 );
     }
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtManyLevels()
+    void shouldCreateSimple2DHilbertCurveAtManyLevels()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8}, new double[]{8, 8} );
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
@@ -271,33 +270,33 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple2DHilbertCurveAtLevelDefault()
+    void shouldCreateSimple2DHilbertCurveAtLevelDefault()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         assertAtLevel( new HilbertSpaceFillingCurve2D( envelope ), envelope );
     }
 
     @Test
-    public void shouldCreate2DHilbertCurveWithRectangularEnvelope()
+    void shouldCreate2DHilbertCurveWithRectangularEnvelope()
     {
         assert2DAtLevel( new Envelope( -8, 8, -20, 20 ), 3 );
     }
 
     @Test
-    public void shouldCreate2DHilbertCurveWithNonCenteredEnvelope()
+    void shouldCreate2DHilbertCurveWithNonCenteredEnvelope()
     {
         assert2DAtLevel( new Envelope( 2, 7, 2, 7 ), 3 );
     }
 
     @Test
-    public void shouldCreate2DHilbertCurveOfThreeLevelsFromExampleInThePaper()
+    void shouldCreate2DHilbertCurveOfThreeLevelsFromExampleInThePaper()
     {
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( new Envelope( 0, 8, 0, 8 ), 3 );
         assertThat( "Example should evaluate to 101110", curve.derivedValueFor( new double[]{6, 4} ), equalTo( 46L ) );
     }
 
     @Test
-    public void shouldWorkWithNormalGPSCoordinatesHilbert()
+    void shouldWorkWithNormalGPSCoordinatesHilbert()
     {
         Envelope envelope = new Envelope( -180, 180, -90, 90 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope );
@@ -305,7 +304,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet2DHilbertSearchTilesForLevel1()
+    void shouldGet2DHilbertSearchTilesForLevel1()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, 1 );
@@ -318,7 +317,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet2DHilbertSearchTilesForLevel2()
+    void shouldGet2DHilbertSearchTilesForLevel2()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, 2 );
@@ -333,7 +332,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet2DHilbertSearchTilesForLevel3()
+    void shouldGet2DHilbertSearchTilesForLevel3()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, 3 );
@@ -344,7 +343,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet2DHilbertSearchTilesForManyLevels()
+    void shouldGet2DHilbertSearchTilesForManyLevels()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
@@ -363,7 +362,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet2DHilbertSearchTilesForWideRangeAtManyLevels()
+    void shouldGet2DHilbertSearchTilesForWideRangeAtManyLevels()
     {
         final int xmin = -100;
         final int xmax = 100;
@@ -439,7 +438,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldHaveReasonableCoveredArea()
+    void shouldHaveReasonableCoveredArea()
     {
         final double minExtent = 0.000001;
         final double maxAspect = 100.0;
@@ -455,7 +454,7 @@ public class SpaceFillingCurveTest
         String formatBody = "%5d  %-42s   %7.2f%7.2f%7.2f   %7.2f%7d%7d   %7.2f%7d%7d";
 
         Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
-        // For all 2D levels
+        // For all levels
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             log( "" );
@@ -530,142 +529,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldHaveReasonableCoveredVolume()
-    {
-        final double minExtent = 0.000001;
-        final double maxAspect = 100.0;
-        Envelope envelope = new Envelope( new double[]{-100, -100, -100}, new double[]{100, 100, 100} );
-        // Chosen to be smaller than 10, and "random" enough to not intersect with tile borders on higher levels.
-        final double rectangleStepsPerDimension = 3.789;
-        final double extensionFactor = 8;
-        String formatHeader1 = "Level  Depth Limitation Configuration                  Area Ratio              Ranges                  Depth";
-        String formatHeader2 = "                                                        avg    min    max       avg    min    max       avg    min    max";
-        String formatBody = "%5d  %-42s   %7.2f%7.2f%7.2f   %7.2f%7d%7d   %7.2f%7d%7d";
-
-        // For all 3D levels
-        for ( int level = 7; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level += 3 )
-        {
-            log( "" );
-            log( formatHeader1 );
-            log( formatHeader2 );
-            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{new StandardConfiguration( 1 ), new StandardConfiguration( 2 ),
-                    new StandardConfiguration( 3 ), new StandardConfiguration( 4 ), new PartialOverlapConfiguration( 1, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 1, 0.99, 0.5 ), new PartialOverlapConfiguration( 2, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 2, 0.99, 0.5 ), new PartialOverlapConfiguration( 3, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 3, 0.99, 0.5 ), new PartialOverlapConfiguration( 4, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 4, 0.99, 0.5 )} )
-            {
-                MonitorDoubleStats areaStats = new MonitorDoubleStats();
-                MonitorStats rangeStats = new MonitorStats();
-                MonitorStats maxDepthStats = new MonitorStats();
-                HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, level );
-
-                double[] extent = new double[3];
-                // For differently shaped rectangles
-                for ( extent[0] = minExtent; extent[0] <= envelope.getMax( 0 ); extent[0] *= extensionFactor )
-                {
-                    for ( extent[1] = minExtent; extent[1] <= envelope.getMax( 1 ); extent[1] *= extensionFactor )
-                    {
-                        for ( extent[2] = minExtent; extent[2] <= envelope.getMax( 2 ); extent[2] *= extensionFactor )
-                        {
-                            // Filter out very thin rectangles
-                            double aspectXY = extent[0] > extent[1] ? (extent[0] / extent[1]) : (extent[1] / extent[0]);
-                            double aspectYZ = extent[1] > extent[2] ? (extent[1] / extent[2]) : (extent[2] / extent[1]);
-                            double aspectZX = extent[2] > extent[0] ? (extent[2] / extent[0]) : (extent[0] / extent[2]);
-                            if ( aspectXY < maxAspect && aspectYZ < maxAspect && aspectZX < maxAspect )
-                            {
-                                double[] offset = new double[3];
-                                // For different positions of the rectangle
-                                for ( offset[0] = 0; envelope.getMin( 0 ) + offset[0] + extent[0] <= envelope.getMax( 0 );
-                                        offset[0] += (envelope.getWidth( 0 ) - extent[0]) / rectangleStepsPerDimension )
-                                {
-                                    for ( offset[1] = 0; envelope.getMin( 1 ) + offset[1] + extent[1] <= envelope.getMax( 1 );
-                                            offset[1] += (envelope.getWidth( 1 ) - extent[1]) / rectangleStepsPerDimension )
-                                    {
-                                        for ( offset[2] = 0; envelope.getMin( 2 ) + offset[2] + extent[2] <= envelope.getMax( 2 );
-                                                offset[2] += (envelope.getWidth( 2 ) - extent[2]) / rectangleStepsPerDimension )
-                                        {
-                                            HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
-                                            final double[] startPoint = Arrays.copyOf( envelope.getMin(), 3 );
-                                            final double[] endPoint = Arrays.copyOf( extent, 3 );
-                                            for ( int i = 0; i < 3; i++ )
-                                            {
-                                                startPoint[i] += offset[i];
-                                                endPoint[i] += startPoint[i];
-                                            }
-                                            Envelope searchEnvelope = new Envelope( startPoint, endPoint );
-                                            final long start = System.currentTimeMillis();
-                                            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, config, monitor );
-                                            final long end = System.currentTimeMillis();
-                                            debug( String.format( "Results for level %d, with search %s.", level, searchEnvelope.toString() ) );
-                                            debug( String.format( "Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
-                                                    monitor.getSearchArea(), monitor.getCoveredArea(),
-                                                    (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
-                                            int[] counts = monitor.getCounts();
-                                            for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
-                                            {
-                                                debug( "\t" + i + "\t" + counts[i] );
-                                            }
-
-                                            areaStats.add( (double) (monitor.getCoveredArea()) / monitor.getSearchArea() );
-                                            rangeStats.add( ranges.size() );
-                                            maxDepthStats.add( monitor.getHighestDepth() );
-
-                                            assertThat( String.format( "Search size was bigger than covered size for level %d, with search %s", level,
-                                                    searchEnvelope.toString() ), monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Average over all runs on this level
-                log( String.format( formatBody, level, config.toString(),
-                        areaStats.avg(), areaStats.min, areaStats.max,
-                        rangeStats.avg(), rangeStats.min, rangeStats.max,
-                        maxDepthStats.avg(), maxDepthStats.min, maxDepthStats.max ) );
-            }
-        }
-    }
-
-    /**
-     * This test can be uses to reproduce a bug with a single search envelope, if {@link #shouldHaveReasonableCoveredArea()}
-     * fails an assertion. It should be ignored by default.
-     */
-    @Disabled
-    public void debugSingle()
-    {
-        final int xmin = -100;
-        final int xmax = 100;
-        final int ymin = -100;
-        final int ymax = 100;
-
-        final int level = 1;
-        final double xStart = -0x1.9p6;
-        final double xEnd = -0x1.8ffffd60e94eep6;
-        final double yStart = 0x1.8ff5c28f5c28ep6;
-        final double yEnd = 0x1.8ffffffffffffp6;
-
-        Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
-        HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-        Envelope searchEnvelope = new Envelope( xStart, xEnd, yStart, yEnd );
-        HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
-        List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
-
-        log( String.format( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd ) );
-        log( String.format( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() ) );
-        log( "Ranges: " + ranges.size() );
-        int[] counts = monitor.getCounts();
-        for ( int i = 0; i <= curve.getMaxLevel(); i++ )
-        {
-            log( "\t" + i + "\t" + counts[i] );
-        }
-    }
-
-    @Test
-    public void shouldGet2DHilbertSearchTilesForCenterRangeAndTraverseToBottom()
+    void shouldGet2DHilbertSearchTilesForCenterRangeAndTraverseToBottom()
     {
         TraverseToBottomConfiguration configuration = new TraverseToBottomConfiguration();
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
@@ -684,7 +548,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGiveRangesWithinMaxValuesWhenMatchingWholeEnvelopeAtMaxLevel()
+    void shouldGiveRangesWithinMaxValuesWhenMatchingWholeEnvelopeAtMaxLevel()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope );
@@ -734,7 +598,7 @@ public class SpaceFillingCurveTest
     //
 
     @Test
-    public void shouldRotate3DNPointsLeft()
+    void shouldRotate3DNPointsLeft()
     {
         assertThat( rotateNPointLeft( 0b000 ), equalTo( 0b000 ) );
         assertThat( rotateNPointLeft( 0b001 ), equalTo( 0b010 ) );
@@ -747,7 +611,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldRotate3DNPointsRight()
+    void shouldRotate3DNPointsRight()
     {
         assertThat( rotateNPointRight( 0b000 ), equalTo( 0b000 ) );
         assertThat( rotateNPointRight( 0b001 ), equalTo( 0b100 ) );
@@ -760,7 +624,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevel1()
+    void shouldCreateSimple3DHilbertCurveAtLevel1()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 1 );
@@ -776,7 +640,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevel2()
+    void shouldCreateSimple3DHilbertCurveAtLevel2()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 2 );
@@ -801,7 +665,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevel3()
+    void shouldCreateSimple3DHilbertCurveAtLevel3()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 3 );
@@ -811,7 +675,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevel4()
+    void shouldCreateSimple3DHilbertCurveAtLevel4()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 4 );
@@ -821,7 +685,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevel5()
+    void shouldCreateSimple3DHilbertCurveAtLevel5()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 5 );
@@ -831,7 +695,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevel6()
+    void shouldCreateSimple3DHilbertCurveAtLevel6()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 6 );
@@ -841,7 +705,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevel7()
+    void shouldCreateSimple3DHilbertCurveAtLevel7()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 7 );
@@ -851,7 +715,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtManyLevels()
+    void shouldCreateSimple3DHilbertCurveAtManyLevels()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         for ( int level = 1; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level++ )
@@ -865,28 +729,28 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldCreateSimple3DHilbertCurveAtLevelDefault()
+    void shouldCreateSimple3DHilbertCurveAtLevelDefault()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         assertAtLevel( new HilbertSpaceFillingCurve3D( envelope ), envelope );
     }
 
     @Test
-    public void shouldCreate3DHilbertCurveWithRectangularEnvelope()
+    void shouldCreate3DHilbertCurveWithRectangularEnvelope()
     {
         Envelope envelope = new Envelope( new double[]{-8, -20, -15}, new double[]{8, 0, 15} );
         assertAtLevel( new HilbertSpaceFillingCurve3D( envelope ), envelope );
     }
 
     @Test
-    public void shouldCreate3DHilbertCurveWithNonCenteredEnvelope()
+    void shouldCreate3DHilbertCurveWithNonCenteredEnvelope()
     {
         Envelope envelope = new Envelope( new double[]{2, 2, 2}, new double[]{7, 7, 7} );
         assertAtLevel( new HilbertSpaceFillingCurve3D( envelope ), envelope );
     }
 
     @Test
-    public void shouldWorkWithNormalGPSCoordinatesAndHeight()
+    void shouldWorkWithNormalGPSCoordinatesAndHeight()
     {
         Envelope envelope = new Envelope( new double[]{-180, -90, 0}, new double[]{180, 90, 10000} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope );
@@ -894,7 +758,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet3DSearchTilesForLevel1()
+    void shouldGet3DSearchTilesForLevel1()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 1 );
@@ -913,7 +777,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet3DSearchTilesForLevel2()
+    void shouldGet3DSearchTilesForLevel2()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 2 );
@@ -937,7 +801,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet3DSearchTilesForLevel3()
+    void shouldGet3DSearchTilesForLevel3()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, 3 );
@@ -950,7 +814,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldGet3DSearchTilesForManyLevels()
+    void shouldGet3DSearchTilesForManyLevels()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         for ( int level = 1; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level++ )
@@ -973,7 +837,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldStepMoreThanDistanceOneForZOrderOnlyHalfTime()
+    void shouldStepMoreThanDistanceOneForZOrderOnlyHalfTime()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8}, new double[]{8, 8} );
         for ( int level = 1; level < 8; level++ )
@@ -984,7 +848,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldNeverStepMoreThanDistanceOneForHilbert2D()
+    void shouldNeverStepMoreThanDistanceOneForHilbert2D()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8}, new double[]{8, 8} );
         for ( int level = 1; level < 8; level++ )
@@ -995,7 +859,7 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void shouldNotStepMoreThanDistanceOneMoreThan10Percent()
+    void shouldNotStepMoreThanDistanceOneMoreThan10Percent()
     {
         Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
         for ( int level = 1; level < 8; level++ )
@@ -1053,7 +917,7 @@ public class SpaceFillingCurveTest
         }
     }
 
-    private void printMapping()
+    void printMapping()
     {
         HashMap<Integer,Map<SubCurve3D,HilbertCurve3D>> map = new HashMap<>();
         for ( Map.Entry<SubCurve3D,HilbertCurve3D> entry : HilbertSpaceFillingCurve3D.curves.entrySet() )
@@ -1084,7 +948,7 @@ public class SpaceFillingCurveTest
         }
     }
 
-    private void assertTiles( List<SpaceFillingCurve.LongRange> results, List<SpaceFillingCurve.LongRange> expected )
+    void assertTiles( List<SpaceFillingCurve.LongRange> results, List<SpaceFillingCurve.LongRange> expected )
     {
         assertTiles( results, expected.toArray( new SpaceFillingCurve.LongRange[expected.size()] ) );
     }

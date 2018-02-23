@@ -40,10 +40,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ConcurrentTransactionAccessTest
+class ConcurrentTransactionAccessTest
 {
     @Test
-    public void shouldThrowSpecificExceptionOnConcurrentTransactionAccess() throws Exception
+    void shouldThrowSpecificExceptionOnConcurrentTransactionAccess() throws Exception
     {
         // given
         TransactionRegistry registry =

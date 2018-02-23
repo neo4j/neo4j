@@ -45,10 +45,10 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
 
-public class IndexSamplingControllerTest
+class IndexSamplingControllerTest
 {
     @Test
-    public void shouldStartASamplingJobForEachIndexInTheDB()
+    void shouldStartASamplingJobForEachIndexInTheDB()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -66,7 +66,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartAJobIfTheIndexIsNotOnline()
+    void shouldNotStartAJobIfTheIndexIsNotOnline()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -82,7 +82,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartAJobIfTheTrackerCannotHandleIt()
+    void shouldNotStartAJobIfTheTrackerCannotHandleIt()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -98,7 +98,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotEmptyQueueConcurrently()
+    void shouldNotEmptyQueueConcurrently()
     {
         // given
         final AtomicInteger totalCount = new AtomicInteger( 0 );
@@ -161,7 +161,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldSampleAllTheIndexes()
+    void shouldSampleAllTheIndexes()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -184,7 +184,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldSampleAllTheOnlineIndexes()
+    void shouldSampleAllTheOnlineIndexes()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -205,7 +205,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartOtherSamplingWhenSamplingAllTheIndexes()
+    void shouldNotStartOtherSamplingWhenSamplingAllTheIndexes()
     {
         // given
         final AtomicInteger totalCount = new AtomicInteger( 0 );
@@ -256,7 +256,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldRecoverOnlineIndex()
+    void shouldRecoverOnlineIndex()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( true ) );
@@ -272,7 +272,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotRecoverOfflineIndex()
+    void shouldNotRecoverOfflineIndex()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( true ) );
@@ -286,7 +286,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotRecoverOnlineIndexIfNotNeeded()
+    void shouldNotRecoverOnlineIndexIfNotNeeded()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -300,7 +300,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldSampleIndex()
+    void shouldSampleIndex()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -323,7 +323,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartForSingleIndexAJobIfTheTrackerCannotHandleIt()
+    void shouldNotStartForSingleIndexAJobIfTheTrackerCannotHandleIt()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );

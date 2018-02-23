@@ -48,7 +48,7 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class JmxQueryProcedureTest
+class JmxQueryProcedureTest
 {
 
     private MBeanServer jmxServer;
@@ -57,7 +57,7 @@ public class JmxQueryProcedureTest
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void shouldHandleBasicMBean() throws Throwable
+    void shouldHandleBasicMBean() throws Throwable
     {
         // given
         when( jmxServer.getAttribute( beanName, "name" ) ).thenReturn( "Hello, world!" );
@@ -79,7 +79,7 @@ public class JmxQueryProcedureTest
     }
 
     @Test
-    public void shouldHandleMBeanThatThrowsOnGetAttribute() throws Throwable
+    void shouldHandleMBeanThatThrowsOnGetAttribute() throws Throwable
     {
         // given some JVM MBeans do not allow accessing their attributes, despite marking
         // then as readable
@@ -107,7 +107,7 @@ public class JmxQueryProcedureTest
     }
 
     @Test
-    public void shouldHandleCompositeAttributes() throws Throwable
+    void shouldHandleCompositeAttributes() throws Throwable
     {
         // given
         ObjectName beanName = new ObjectName( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" );
@@ -153,7 +153,7 @@ public class JmxQueryProcedureTest
     }
 
     @Test
-    public void shouldConvertAllStandardBeansWithoutError() throws Throwable
+    void shouldConvertAllStandardBeansWithoutError() throws Throwable
     {
         // given
         MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
@@ -171,7 +171,7 @@ public class JmxQueryProcedureTest
     }
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         jmxServer = mock( MBeanServer.class );
         beanName = new ObjectName( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" );

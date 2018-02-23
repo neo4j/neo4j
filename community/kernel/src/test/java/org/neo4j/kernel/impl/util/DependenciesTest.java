@@ -26,14 +26,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class DependenciesTest
+class DependenciesTest
 {
     @Test
-    public void givenSatisfiedTypeWhenResolveWithTypeThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithTypeThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -49,7 +49,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithSuperTypeThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithSuperTypeThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -65,7 +65,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithInterfaceThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithInterfaceThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -81,7 +81,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithSubInterfaceThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithSubInterfaceThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -97,7 +97,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeInParentWhenResolveWithTypeInEmptyDependenciesThenInstanceReturned()
+    void givenSatisfiedTypeInParentWhenResolveWithTypeInEmptyDependenciesThenInstanceReturned()
     {
         // Given
         Dependencies parent = new Dependencies(  );
@@ -114,7 +114,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeInParentAndDependenciesWhenResolveWithTypeInDependenciesThenInstanceReturned()
+    void givenSatisfiedTypeInParentAndDependenciesWhenResolveWithTypeInDependenciesThenInstanceReturned()
     {
         // Given
         Dependencies parent = new Dependencies(  );
@@ -132,7 +132,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenEmptyDependenciesWhenResolveWithTypeThenException()
+    void givenEmptyDependenciesWhenResolveWithTypeThenException()
     {
         // Given
         Dependencies dependencies = new Dependencies( );

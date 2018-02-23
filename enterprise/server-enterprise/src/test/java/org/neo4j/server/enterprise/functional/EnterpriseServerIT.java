@@ -49,15 +49,15 @@ import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.mode;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class EnterpriseServerIT
+class EnterpriseServerIT
 {
     @Resource
-    public TestDirectory folder;
+    private TestDirectory folder;
     @Resource
     public SuppressOutput suppressOutput;
 
     @Test
-    public void shouldBeAbleToStartInHAMode() throws Throwable
+    void shouldBeAbleToStartInHAMode() throws Throwable
     {
         // Given
         int clusterPort = PortAuthority.allocatePort();
@@ -90,7 +90,7 @@ public class EnterpriseServerIT
     }
 
     @Test
-    public void shouldRequireAuthorizationForHAStatusEndpoints() throws Exception
+    void shouldRequireAuthorizationForHAStatusEndpoints() throws Exception
     {
         // Given
         int clusterPort = PortAuthority.allocatePort();
@@ -123,7 +123,7 @@ public class EnterpriseServerIT
     }
 
     @Test
-    public void shouldAllowDisablingAuthorizationOnHAStatusEndpoints() throws Exception
+    void shouldAllowDisablingAuthorizationOnHAStatusEndpoints() throws Exception
     {
         // Given
         int clusterPort = PortAuthority.allocatePort();

@@ -220,7 +220,7 @@ public class Neo4jMatchers
         };
     }
 
-    public static Set<String> asLabelNameSet( Iterable<Label> enums )
+    private static Set<String> asLabelNameSet( Iterable<Label> enums )
     {
         return Iterables.asSet( map( Label::name, enums ) );
     }
@@ -352,7 +352,7 @@ public class Neo4jMatchers
     public static class PropertyMatcher extends TypeSafeDiagnosingMatcher<PropertyContainer>
     {
 
-        public final String propertyName;
+        final String propertyName;
 
         private PropertyMatcher( String propertyName )
         {
@@ -483,7 +483,7 @@ public class Neo4jMatchers
 
         protected abstract Iterable<T> manifest();
 
-        public Collection<T> collection()
+        Collection<T> collection()
         {
             try ( Transaction ignore = db.beginTx() )
             {
@@ -682,7 +682,7 @@ public class Neo4jMatchers
         }
     }
 
-    public static Collection<Object> arrayAsCollection( Object arrayValue )
+    private static Collection<Object> arrayAsCollection( Object arrayValue )
     {
         assert arrayValue.getClass().isArray();
 

@@ -116,7 +116,7 @@ class SessionRule implements TestRule
         return newMachine( boltChannel, Clock.systemUTC() );
     }
 
-    BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock )
+    private BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock )
     {
         if ( boltFactory == null )
         {

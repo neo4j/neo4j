@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class RelationshipPropertyExistenceConstraintCreationIT
+class RelationshipPropertyExistenceConstraintCreationIT
         extends AbstractConstraintCreationIT<RelExistenceConstraintDescriptor,RelationTypeSchemaDescriptor>
 {
     @Override

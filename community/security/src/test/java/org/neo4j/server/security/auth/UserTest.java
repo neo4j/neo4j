@@ -28,10 +28,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class UserTest
+class UserTest
 {
     @Test
-    public void shouldBuildImmutableUser()
+    void shouldBuildImmutableUser()
     {
         Credential abc = Credential.forPassword( "123abc" );
         Credential fruit = Credential.forPassword( "fruit" );

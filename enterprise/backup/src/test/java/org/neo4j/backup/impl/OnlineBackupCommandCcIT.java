@@ -154,7 +154,7 @@ public class OnlineBackupCommandCcIT
         }
     }
 
-    public static CoreGraphDatabase clusterDatabase( Cluster cluster )
+    private static CoreGraphDatabase clusterDatabase( Cluster cluster )
     {
         return clusterLeader( cluster ).database();
     }
@@ -170,7 +170,7 @@ public class OnlineBackupCommandCcIT
         return cluster;
     }
 
-    public static DbRepresentation createSomeData( Cluster cluster )
+    private static DbRepresentation createSomeData( Cluster cluster )
     {
         try
         {
@@ -188,7 +188,7 @@ public class OnlineBackupCommandCcIT
         return cluster.getDbWithRole( Role.LEADER );
     }
 
-    public static DbRepresentation getBackupDbRepresentation( String name, File backupDir )
+    private static DbRepresentation getBackupDbRepresentation( String name, File backupDir )
     {
         Config config = Config.defaults();
         config.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );

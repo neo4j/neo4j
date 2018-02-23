@@ -29,10 +29,10 @@ import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntString;
 
-public class FieldSignatureTest
+class FieldSignatureTest
 {
     @Test
-    public void equalsShouldConsiderName()
+    void equalsShouldConsiderName()
     {
         assertEquals( inputField( "name", NTString ), inputField( "name", NTString ), "input without default" );
         assertNotEquals(
@@ -61,7 +61,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void shouldTypeCheckDefaultValue()
+    void shouldTypeCheckDefaultValue()
     {
         // when
         try
@@ -79,7 +79,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void equalsShouldConsiderType()
+    void equalsShouldConsiderType()
     {
         assertEquals( inputField( "name", NTString ), inputField( "name", NTString ), "input without default" );
         assertNotEquals(
@@ -102,7 +102,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void equalsShouldConsiderDefaultValue()
+    void equalsShouldConsiderDefaultValue()
     {
         assertEquals(
                 inputField( "name", Neo4jTypes.NTString, ntString( "foo" ) ),
@@ -113,7 +113,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void equalsShouldConsiderDeprecation()
+    void equalsShouldConsiderDeprecation()
     {
         assertEquals(
                 outputField( "name", Neo4jTypes.NTString, true ),

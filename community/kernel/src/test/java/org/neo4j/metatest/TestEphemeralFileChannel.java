@@ -43,7 +43,7 @@ public class TestEphemeralFileChannel
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Test
-    public void smoke() throws Exception
+    void smoke() throws Exception
     {
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         StoreChannel channel = fs.open( new File( "yo" ), OpenMode.READ_WRITE );
@@ -106,7 +106,7 @@ public class TestEphemeralFileChannel
     }
 
     @Test
-    public void absoluteVersusRelative() throws Exception
+    void absoluteVersusRelative() throws Exception
     {
         // GIVEN
         File file = new File( "myfile" );
@@ -127,7 +127,7 @@ public class TestEphemeralFileChannel
     }
 
     @Test
-    public void listFiles() throws Exception
+    void listFiles() throws Exception
     {
         /* GIVEN
          *                        root

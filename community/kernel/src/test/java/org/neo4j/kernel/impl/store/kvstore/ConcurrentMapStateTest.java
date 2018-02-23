@@ -40,14 +40,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.kvstore.EntryUpdater.noUpdates;
 
-public class ConcurrentMapStateTest
+class ConcurrentMapStateTest
 {
     private final ReadableState<String> store = mock( ReadableState.class );
     private final File file = mock( File.class );
     private final Lock lock = mock( Lock.class );
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         KeyFormat keyFormat = mock( KeyFormat.class );
         when( keyFormat.valueSize() ).thenReturn( Long.BYTES );
@@ -55,7 +55,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate()
+    void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate()
     {
         // given
         long initialVersion = 42;
@@ -73,7 +73,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap()
+    void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap()
     {
         // given
         long initialVersion = 42;
@@ -92,7 +92,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder()
+    void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder()
     {
         // given
         long initialVersion = 42;
@@ -121,7 +121,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder()
+    void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder()
     {
         // given
         long initialVersion = 42;
@@ -150,7 +150,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion()
+    void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion()
     {
         // given
         long initialVersion = 42;
@@ -165,7 +165,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void markDirtyVersionLookupOnKeyUpdate() throws IOException
+    void markDirtyVersionLookupOnKeyUpdate() throws IOException
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;
@@ -186,7 +186,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void markDirtyVersionLookupOnKeyReset() throws IOException
+    void markDirtyVersionLookupOnKeyReset() throws IOException
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;
@@ -204,7 +204,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void doNotMarkVersionAsDirtyOnAnotherKeyUpdate() throws IOException
+    void doNotMarkVersionAsDirtyOnAnotherKeyUpdate() throws IOException
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;

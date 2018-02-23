@@ -30,10 +30,10 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
-public class TokenHolderTest
+class TokenHolderTest
 {
     @Test
-    public void shouldClearTokensAsPartOfInitialTokenLoading()
+    void shouldClearTokensAsPartOfInitialTokenLoading()
     {
         // GIVEN
         TokenCreator creator = mock( TokenCreator.class );

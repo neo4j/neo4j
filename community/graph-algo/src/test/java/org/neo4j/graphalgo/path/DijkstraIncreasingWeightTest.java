@@ -51,10 +51,10 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
+class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void canFetchLongerPaths()
+    void canFetchLongerPaths()
     {
         /*
          *    1-(b)-1
@@ -89,7 +89,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldReturnPathsInIncreasingOrderOfCost()
+    void shouldReturnPathsInIncreasingOrderOfCost()
     {
         /*
          *
@@ -141,7 +141,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testForLoops()
+    void testForLoops()
     {
         /*
          *
@@ -196,7 +196,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testKShortestPaths()
+    void testKShortestPaths()
     {
         /*
          *      ----- (e) - 3 - (f) ---
@@ -253,7 +253,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void withState()
+    void withState()
     {
         /* Graph
          *

@@ -38,13 +38,13 @@ import static org.neo4j.kernel.impl.util.Converters.regexFiles;
 import static org.neo4j.kernel.impl.util.Converters.toOptionalHostnamePortFromRawAddress;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ConvertersTest
+class ConvertersTest
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldSortFilesByNumberCleverly() throws Exception
+    void shouldSortFilesByNumberCleverly() throws Exception
     {
         // GIVEN
         File file1 = existenceOfFile( "file1" );
@@ -61,7 +61,7 @@ public class ConvertersTest
     }
 
     @Test
-    public void canProcessPortFromAGivenString()
+    void canProcessPortFromAGivenString()
     {
         // given
         String addressWithPorts = "hostname:1234";
@@ -75,7 +75,7 @@ public class ConvertersTest
     }
 
     @Test
-    public void emptyOptionalWhenPortIsMissing()
+    void emptyOptionalWhenPortIsMissing()
     {
         //given
         String addressWithoutPorts = "hostname";
@@ -88,7 +88,7 @@ public class ConvertersTest
     }
 
     @Test
-    public void canProcessHostnameFromAGivenAddress()
+    void canProcessHostnameFromAGivenAddress()
     {
         // given
         String addressWithPorts = "hostname:1234";
@@ -102,7 +102,7 @@ public class ConvertersTest
     }
 
     @Test
-    public void canProcessHostnameWithoutPort()
+    void canProcessHostnameWithoutPort()
     {
         // given
         String addressWithoutPort = "hostname";
@@ -116,7 +116,7 @@ public class ConvertersTest
     }
 
     @Test
-    public void emptyOptionalWhenOnlyPort()
+    void emptyOptionalWhenOnlyPort()
     {
         // given
         String portOnlyAddress = ":1234";

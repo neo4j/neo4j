@@ -36,10 +36,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 @SuppressWarnings( "unchecked" )
-public class LeaderOnlyLockManagerTest
+class LeaderOnlyLockManagerTest
 {
     @Test
-    public void shouldIssueLocksOnLeader() throws Exception
+    void shouldIssueLocksOnLeader() throws Exception
     {
         // given
         MemberId me = member( 0 );
@@ -64,7 +64,7 @@ public class LeaderOnlyLockManagerTest
     }
 
     @Test
-    public void shouldNotIssueLocksOnNonLeader() throws Exception
+    void shouldNotIssueLocksOnNonLeader() throws Exception
     {
         // given
         MemberId me = member( 0 );

@@ -45,7 +45,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BackupStrategyWrapperTest
+class BackupStrategyWrapperTest
 {
     private BackupStrategy backupStrategyImplementation = mock( BackupStrategy.class );
     private OutsideWorld outsideWorld = mock( OutsideWorld.class );
@@ -70,7 +70,7 @@ public class BackupStrategyWrapperTest
     private Log log = mock( Log.class );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( desiredBackupLocation );
@@ -84,7 +84,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void lifecycleIsRun() throws Throwable
+    void lifecycleIsRun() throws Throwable
     {
         // when
         subject.doBackup( onlineBackupContext );
@@ -97,7 +97,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void fullBackupIsPerformedWhenNoOtherBackupExists()
+    void fullBackupIsPerformedWhenNoOtherBackupExists()
     {
         // given
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );
@@ -113,7 +113,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void fullBackupIsIgnoredIfNoOtherBackupAndNotFallback()
+    void fullBackupIsIgnoredIfNoOtherBackupAndNotFallback()
     {
         // given there is an existing backup
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );
@@ -132,7 +132,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void fullBackupIsNotPerformedWhenAnIncrementalBackupIsSuccessful()
+    void fullBackupIsNotPerformedWhenAnIncrementalBackupIsSuccessful()
     {
         // given
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -146,7 +146,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void failedIncrementalFallsBackToFullWhenOptionSet()
+    void failedIncrementalFallsBackToFullWhenOptionSet()
     {
         // given conditions for incremental exist
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -164,7 +164,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void fallbackDoesNotHappenIfNotSpecified()
+    void fallbackDoesNotHappenIfNotSpecified()
     {
         // given
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -180,7 +180,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void failedBackupsDontMoveExisting() throws IOException
+    void failedBackupsDontMoveExisting() throws IOException
     {
         // given a backup already exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -205,7 +205,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void successfulFullBackupsMoveExistingBackup() throws IOException
+    void successfulFullBackupsMoveExistingBackup() throws IOException
     {
         // given backup exists
         Path desiredBackupLocation = Paths.get( "some-preexisting-backup" );
@@ -247,7 +247,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void failureDuringMoveCausesAbsoluteFailure() throws IOException
+    void failureDuringMoveCausesAbsoluteFailure() throws IOException
     {
         // given moves fail
         doThrow( IOException.class ).when( backupCopyService ).moveBackupLocation( any(), any() );
@@ -278,7 +278,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void performingFullBackupInvokesRecovery()
+    void performingFullBackupInvokesRecovery()
     {
         // given full backup flag is set
         when( requiredArguments.isFallbackToFull() ).thenReturn( true );
@@ -291,7 +291,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void performingIncrementalBackupDoesNotInvokeRecovery()
+    void performingIncrementalBackupDoesNotInvokeRecovery()
     {
         // given backup exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -308,7 +308,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void successfulBackupsAreRecovered()
+    void successfulBackupsAreRecovered()
     {
         // given
         fallbackToFullPasses();
@@ -321,7 +321,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void unsuccessfulBackupsAreNotRecovered()
+    void unsuccessfulBackupsAreNotRecovered()
     {
         // given
         bothBackupsFail();
@@ -334,7 +334,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void successfulFullBackupsAreRecoveredEvenIfNoBackupExisted()
+    void successfulFullBackupsAreRecoveredEvenIfNoBackupExisted()
     {
         // given a backup exists
         when( backupCopyService.backupExists( desiredBackupLocation ) ).thenReturn( false );
@@ -352,7 +352,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void recoveryIsPerformedBeforeRename() throws IOException
+    void recoveryIsPerformedBeforeRename() throws IOException
     {
         // given
         fallbackToFullPasses();
@@ -367,7 +367,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void logsAreClearedAfterIncrementalBackup() throws IOException
+    void logsAreClearedAfterIncrementalBackup() throws IOException
     {
         // given backup exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -383,7 +383,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void logsAreNotClearedWhenIncrementalNotSuccessful() throws IOException
+    void logsAreNotClearedWhenIncrementalNotSuccessful() throws IOException
     {
         // given backup exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -399,7 +399,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void logsAreClearedWhenFullBackupIsSuccessful() throws IOException
+    void logsAreClearedWhenFullBackupIsSuccessful() throws IOException
     {
         // given a backup doesn't exist
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );
@@ -415,7 +415,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void logsAreNotClearedWhenFullBackupIsNotSuccessful() throws IOException
+    void logsAreNotClearedWhenFullBackupIsNotSuccessful() throws IOException
     {
         // given a backup doesn't exist
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );
@@ -431,7 +431,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void logsWhenIncrementalFailsAndFallbackToFull()
+    void logsWhenIncrementalFailsAndFallbackToFull()
     {
         // given backup exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );

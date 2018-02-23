@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class PrimitiveLongIntMapRIT
 {
     @Test
-    public void thoroughlyTestIt()
+    void thoroughlyTestIt()
     {
         long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
         while ( currentTimeMillis() < endTime )
@@ -104,7 +104,7 @@ public class PrimitiveLongIntMapRIT
         return Maps::new;
     }
 
-    protected Action<Maps,String> generateAction( Random random, Maps from )
+    private Action<Maps,String> generateAction( Random random, Maps from )
     {
         boolean anExisting = !from.normalMap.isEmpty() && random.nextInt( 3 ) == 0;
         long key = anExisting ?

@@ -21,7 +21,6 @@ package org.neo4j.test;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -32,10 +31,10 @@ import org.neo4j.time.FakeClock;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
-public class InputStreamAwaiterTest
+class InputStreamAwaiterTest
 {
     @Test
-    public void shouldWaitForALineWithoutBlocking() throws Exception
+    void shouldWaitForALineWithoutBlocking() throws Exception
     {
         // given
         FakeClock clock = getFakeClock();
@@ -48,7 +47,7 @@ public class InputStreamAwaiterTest
     }
 
     @Test
-    public void shouldTimeoutWhenDifferentContentProvided() throws Exception
+    void shouldTimeoutWhenDifferentContentProvided() throws Exception
     {
         // given
         FakeClock clock = getFakeClock();
@@ -71,7 +70,7 @@ public class InputStreamAwaiterTest
     }
 
     @Test
-    public void shouldTimeoutWhenNoContentProvided() throws Exception
+    void shouldTimeoutWhenNoContentProvided() throws Exception
     {
         // given
         FakeClock clock = getFakeClock();

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -44,12 +44,12 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
@@ -66,14 +66,14 @@ public class TestGraphProperties
     private TestGraphDatabaseFactory factory;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         factory = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
     }
 
     @Test
-    public void basicProperties()
+    void basicProperties()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
@@ -107,7 +107,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void getNonExistentGraphPropertyWithDefaultValue()
+    void getNonExistentGraphPropertyWithDefaultValue()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
@@ -119,7 +119,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void setManyGraphProperties()
+    void setManyGraphProperties()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
 
@@ -146,7 +146,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void setBigArrayGraphProperty()
+    void setBigArrayGraphProperty()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         long[] array = new long[1000];
@@ -172,7 +172,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void firstRecordOtherThanZeroIfNotFirst()
+    void firstRecordOtherThanZeroIfNotFirst()
     {
         File storeDir = new File( "/store/dir" ).getAbsoluteFile();
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
@@ -200,7 +200,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void graphPropertiesAreLockedPerTx() throws Exception
+    void graphPropertiesAreLockedPerTx() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
 
@@ -245,7 +245,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void twoUncleanInARow() throws Exception
+    void twoUncleanInARow() throws Exception
     {
         File storeDir = new File( "dir" );
         try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir ) )
@@ -262,7 +262,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
@@ -280,7 +280,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void shouldBeAbleToCreateLongGraphPropertyChainsAndReadTheCorrectNextPointerFromTheStore()
+    void shouldBeAbleToCreateLongGraphPropertyChainsAndReadTheCorrectNextPointerFromTheStore()
     {
         GraphDatabaseService database = factory.newImpermanentDatabase();
 
@@ -348,12 +348,12 @@ public class TestGraphProperties
             super( name, initialState );
         }
 
-        public boolean hasProperty( final String key ) throws Exception
+        boolean hasProperty( final String key ) throws Exception
         {
             return execute( state -> state.properties.hasProperty( key ) );
         }
 
-        public void commitTx() throws Exception
+        void commitTx() throws Exception
         {
             execute( (WorkerCommand<State,Void>) state ->
             {

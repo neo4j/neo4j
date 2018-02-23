@@ -46,16 +46,16 @@ import static org.neo4j.metrics.MetricsTestHelper.readLongValueAndAssert;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class RotatableCsvOutputIT
+class RotatableCsvOutputIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private File outputPath;
     private GraphDatabaseService database;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         outputPath = testDirectory.directory( "metrics" );
         database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -66,13 +66,13 @@ public class RotatableCsvOutputIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         database.shutdown();
     }
 
     @Test
-    public void rotateMetricsFile() throws InterruptedException, IOException
+    void rotateMetricsFile() throws InterruptedException, IOException
     {
         try ( Transaction transaction = database.beginTx() )
         {

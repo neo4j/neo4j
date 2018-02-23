@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
-public abstract class CollectingIndexUpdater implements IndexUpdater
+abstract class CollectingIndexUpdater implements IndexUpdater
 {
-    protected final ArrayList<IndexEntryUpdate<?>> updates = new ArrayList<>();
+    final ArrayList<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
     @Override
     public void process( IndexEntryUpdate<?> update )

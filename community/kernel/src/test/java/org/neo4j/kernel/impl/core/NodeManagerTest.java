@@ -36,28 +36,28 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 
-public class NodeManagerTest
+class NodeManagerTest
 {
     private GraphDatabaseAPI db;
 
     @BeforeEach
-    public void init()
+    void init()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterEach
-    public void stop()
+    void stop()
     {
         db.shutdown();
     }
 
     @Test
-    public void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
+    void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
         {
@@ -91,7 +91,7 @@ public class NodeManagerTest
     }
 
     @Test
-    public void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
+    void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();

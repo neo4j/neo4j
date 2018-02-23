@@ -46,7 +46,7 @@ import org.neo4j.storageengine.api.lock.WaitStrategy;
 @RunWith( Parameterized.class )
 public class ForsetiFalseDeadlockTest
 {
-    public static class Fixture
+    static class Fixture
     {
         private final int iterations;
         private final LockManager lockManager;
@@ -191,9 +191,9 @@ public class ForsetiFalseDeadlockTest
                     }
                 };
 
-        public abstract void acquire( Locks.Client client, ResourceType resourceType, int resource );
+        protected abstract void acquire( Locks.Client client, ResourceType resourceType, int resource );
 
-        public abstract void release( Locks.Client client, ResourceType resourceType, int resource );
+        protected abstract void release( Locks.Client client, ResourceType resourceType, int resource );
     }
 
     public enum LockManager
@@ -215,7 +215,7 @@ public class ForsetiFalseDeadlockTest
                     }
                 };
 
-        public abstract Locks create( ResourceType resourceType );
+        protected abstract Locks create( ResourceType resourceType );
     }
 
     @Parameterized.Parameters( name = "{0}" )
@@ -387,7 +387,7 @@ public class ForsetiFalseDeadlockTest
         }
     }
 
-    public static class BlockedCallable implements Callable<Void>
+    static class BlockedCallable implements Callable<Void>
     {
         private final BinaryLatch startLatch;
         private final ThrowingAction<Exception> delegate;

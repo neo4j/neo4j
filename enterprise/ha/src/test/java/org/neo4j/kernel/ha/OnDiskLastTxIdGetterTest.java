@@ -46,7 +46,7 @@ public class OnDiskLastTxIdGetterTest
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void testGetLastTxIdNoFilePresent()
+    void testGetLastTxIdNoFilePresent()
     {
         // This is a sign that we have some bad coupling on our hands.
         // We currently have to do this because of our lifecycle and construction ordering.
@@ -55,7 +55,7 @@ public class OnDiskLastTxIdGetterTest
     }
 
     @Test
-    public void lastTransactionIdIsBaseTxIdWhileNeoStoresAreStopped()
+    void lastTransactionIdIsBaseTxIdWhileNeoStoresAreStopped()
     {
         final StoreFactory storeFactory = new StoreFactory(
                 new File( "store" ), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),

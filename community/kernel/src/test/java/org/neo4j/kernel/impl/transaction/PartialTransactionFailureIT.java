@@ -62,13 +62,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * we should still be able to recover to a consistent state.
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class PartialTransactionFailureIT
+class PartialTransactionFailureIT
 {
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
 
     @Test
-    public void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction()
+    void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction()
             throws Exception
     {
         final ClassGuardedAdversary adversary = new ClassGuardedAdversary(

@@ -30,10 +30,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class QueryEngineProviderTest
+class QueryEngineProviderTest
 {
     @Test
-    public void shouldUsePickTheEngineWithLowestPriority()
+    void shouldUsePickTheEngineWithLowestPriority()
     {
         // Given
         QueryEngineProvider provider1 = mock( QueryEngineProvider.class );
@@ -56,7 +56,7 @@ public class QueryEngineProviderTest
     }
 
     @Test
-    public void shouldPickTheOneAndOnlyQueryEngineAvailable()
+    void shouldPickTheOneAndOnlyQueryEngineAvailable()
     {
         // Given
         QueryEngineProvider provider = mock( QueryEngineProvider.class );

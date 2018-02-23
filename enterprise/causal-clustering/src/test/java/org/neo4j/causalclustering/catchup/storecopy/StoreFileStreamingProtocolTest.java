@@ -20,8 +20,8 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -55,13 +55,13 @@ public class StoreFileStreamingProtocolTest
     private PageCache pageCache;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         pageCache = pageCacheRule.getPageCache( fs.get() );
     }
 
     @Test
-    public void shouldStreamResources() throws Exception
+    void shouldStreamResources() throws Exception
     {
         // given
         StoreFileStreamingProtocol protocol = new StoreFileStreamingProtocol();
@@ -98,7 +98,7 @@ public class StoreFileStreamingProtocolTest
     }
 
     @Test
-    public void shouldBeAbleToEndWithFailure()
+    void shouldBeAbleToEndWithFailure()
     {
         // given
         StoreFileStreamingProtocol protocol = new StoreFileStreamingProtocol();
@@ -115,7 +115,7 @@ public class StoreFileStreamingProtocolTest
     }
 
     @Test
-    public void shouldBeAbleToEndWithSuccess()
+    void shouldBeAbleToEndWithSuccess()
     {
         // given
         StoreFileStreamingProtocol protocol = new StoreFileStreamingProtocol();

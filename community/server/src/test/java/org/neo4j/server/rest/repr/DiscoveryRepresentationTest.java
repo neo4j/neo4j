@@ -29,10 +29,10 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class DiscoveryRepresentationTest
+class DiscoveryRepresentationTest
 {
     @Test
-    public void shouldCreateAMapContainingDataAndManagementURIs()
+    void shouldCreateAMapContainingDataAndManagementURIs()
     {
         String managementUri = "/management";
         String dataUri = "/data";

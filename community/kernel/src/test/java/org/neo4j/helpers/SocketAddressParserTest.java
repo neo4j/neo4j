@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class SocketAddressParserTest
+class SocketAddressParserTest
 {
     @Test
-    public void shouldCreateAdvertisedSocketAddressWithLeadingWhitespace()
+    void shouldCreateAdvertisedSocketAddressWithLeadingWhitespace()
     {
         // given
         String addressString = whitespace( 1 ) + "localhost:9999";
@@ -43,7 +43,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldCreateAdvertisedSocketAddressWithTrailingWhitespace()
+    void shouldCreateAdvertisedSocketAddressWithTrailingWhitespace()
     {
         // given
         String addressString = "localhost:9999" + whitespace( 2 );
@@ -57,7 +57,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldFailToCreateSocketAddressWithMixedInWhitespace()
+    void shouldFailToCreateSocketAddressWithMixedInWhitespace()
     {
         String addressString = "localhost" + whitespace( 1 ) + ":9999";
         try
@@ -72,7 +72,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldFailToCreateSocketWithTrailingNonNumbers()
+    void shouldFailToCreateSocketWithTrailingNonNumbers()
     {
         String addressString = "localhost:9999abc";
         try
@@ -87,7 +87,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldFailOnMissingPort()
+    void shouldFailOnMissingPort()
     {
         String addressString = "localhost:";
         try
@@ -102,7 +102,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportDomainNameWithPort()
+    void shouldSupportDomainNameWithPort()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( "my.domain:123", SocketAddress::new );
 
@@ -112,7 +112,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportWildcardWithPort()
+    void shouldSupportWildcardWithPort()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( "0.0.0.0:123", SocketAddress::new );
 
@@ -123,7 +123,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportPortOnly()
+    void shouldSupportPortOnly()
     {
         SocketAddress socketAddress = SocketAddressParser.deriveSocketAddress( "setting.name", ":123",
                 "my.domain", 456, SocketAddress::new );
@@ -135,7 +135,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportDefaultValue()
+    void shouldSupportDefaultValue()
     {
         SocketAddress socketAddress = SocketAddressParser.deriveSocketAddress( "setting.name", null,
                 "my.domain", 456, SocketAddress::new );
@@ -147,7 +147,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportDefaultWildcard()
+    void shouldSupportDefaultWildcard()
     {
         SocketAddress socketAddress = SocketAddressParser.deriveSocketAddress( "setting.name", null,
                 "0.0.0.0", 456, SocketAddress::new );
@@ -159,7 +159,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportDefaultIPv6Wildcard()
+    void shouldSupportDefaultIPv6Wildcard()
     {
         SocketAddress socketAddress = SocketAddressParser.deriveSocketAddress( "setting.name", null,
                 "::", 456, SocketAddress::new );
@@ -171,7 +171,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportDefaultIPv6Value()
+    void shouldSupportDefaultIPv6Value()
     {
         SocketAddress socketAddress = SocketAddressParser.deriveSocketAddress( "setting.name", null,
                 "fe80:1:2::4", 456, SocketAddress::new );
@@ -183,7 +183,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldNotUseDefaultsWhenSettingValueSupplied()
+    void shouldNotUseDefaultsWhenSettingValueSupplied()
     {
         SocketAddress socketAddress = SocketAddressParser.deriveSocketAddress( "setting.name", "[fe80:3:4::6]:456",
                 "fe80:1:2::4", 123, SocketAddress::new );
@@ -195,7 +195,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportIPv6Wildcard()
+    void shouldSupportIPv6Wildcard()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( "[::]:123", SocketAddress::new );
 
@@ -206,7 +206,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportIPv6Localhost()
+    void shouldSupportIPv6Localhost()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( "[::1]:123", SocketAddress::new );
 
@@ -217,7 +217,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportIPv6WithZoneId()
+    void shouldSupportIPv6WithZoneId()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( "[fe80::b279:2f%en0]:123", SocketAddress::new );
 
@@ -228,7 +228,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportIPv6AddressWithBrackets()
+    void shouldSupportIPv6AddressWithBrackets()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( "[fe80:1:2:3:4::5]:123", SocketAddress::new );
 
@@ -239,7 +239,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportIPv6AddressWithoutBrackets()
+    void shouldSupportIPv6AddressWithoutBrackets()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( "fe80:1:2:3:4::5:123", SocketAddress::new );
 
@@ -250,7 +250,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldSupportIPv6WildcardWithoutBrackets()
+    void shouldSupportIPv6WildcardWithoutBrackets()
     {
         SocketAddress socketAddress = SocketAddressParser.socketAddress( ":::123", SocketAddress::new );
 

@@ -36,10 +36,10 @@ import static org.neo4j.codegen.TypeReference.extending;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
-public class ByteCodeUtilsTest
+class ByteCodeUtilsTest
 {
     @Test
-    public void shouldTranslateTypeNames()
+    void shouldTranslateTypeNames()
     {
         //primitive types
         assertTypeName( int.class, "I" );
@@ -68,7 +68,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldDescribeMethodWithNoParameters()
+    void shouldDescribeMethodWithNoParameters()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -82,7 +82,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldDescribeMethodWithParameters()
+    void shouldDescribeMethodWithParameters()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -98,7 +98,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void signatureShouldBeNullWhenNotGeneric()
+    void signatureShouldBeNullWhenNotGeneric()
     {
         // GIVEN
         TypeReference reference = typeReference( String.class );
@@ -111,7 +111,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void signatureShouldBeCorrectWhenGeneric()
+    void signatureShouldBeCorrectWhenGeneric()
     {
         // GIVEN
         TypeReference reference = TypeReference.parameterizedType( List.class, String.class );
@@ -124,7 +124,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void methodSignatureShouldBeNullWhenNotGeneric()
+    void methodSignatureShouldBeNullWhenNotGeneric()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -140,7 +140,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void methodSignatureShouldBeCorrectWhenGeneric()
+    void methodSignatureShouldBeCorrectWhenGeneric()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -156,7 +156,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldHandleGenericReturnType()
+    void shouldHandleGenericReturnType()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -175,7 +175,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldHandleGenericThrows()
+    void shouldHandleGenericThrows()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );

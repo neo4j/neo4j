@@ -61,7 +61,7 @@ public class ClusterMetricsTest
     private final LifeSupport life = new LifeSupport();
 
     @Test
-    public void clusterMetricsReportMasterAvailable()
+    void clusterMetricsReportMasterAvailable()
     {
         // given
         Supplier<ClusterMembers> clusterMembers =
@@ -81,7 +81,7 @@ public class ClusterMetricsTest
     }
 
     @Test
-    public void clusterMetricsReportSlaveAvailable()
+    void clusterMetricsReportSlaveAvailable()
     {
         // given
         Supplier<ClusterMembers> clusterMembers =
@@ -116,7 +116,7 @@ public class ClusterMetricsTest
         private int isMasterValue;
         private int isAvailableValue;
 
-        protected TestReporter( MetricRegistry registry )
+        TestReporter( MetricRegistry registry )
         {
             super( registry, "TestReporter", MetricFilter.ALL, TimeUnit.MILLISECONDS, TimeUnit.MILLISECONDS );
         }

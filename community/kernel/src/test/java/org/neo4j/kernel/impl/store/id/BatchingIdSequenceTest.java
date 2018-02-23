@@ -26,10 +26,10 @@ import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class BatchingIdSequenceTest
+class BatchingIdSequenceTest
 {
     @Test
-    public void ShouldSkipNullId()
+    void ShouldSkipNullId()
     {
         BatchingIdSequence idSequence = new BatchingIdSequence();
 
@@ -51,7 +51,7 @@ public class BatchingIdSequenceTest
     }
 
     @Test
-    public void resetShouldSetDefault()
+    void resetShouldSetDefault()
     {
         BatchingIdSequence idSequence = new BatchingIdSequence();
 
@@ -69,7 +69,7 @@ public class BatchingIdSequenceTest
     }
 
     @Test
-    public void shouldSkipReservedIdWhenGettingBatches()
+    void shouldSkipReservedIdWhenGettingBatches()
     {
         // GIVEN
         int batchSize = 10;

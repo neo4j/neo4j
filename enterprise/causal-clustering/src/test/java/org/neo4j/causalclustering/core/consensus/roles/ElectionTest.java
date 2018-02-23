@@ -53,7 +53,7 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @ExtendWith( MockitoExtension.class )
-public class ElectionTest
+class ElectionTest
 {
     private MemberId myself = member( 0 );
 
@@ -67,7 +67,7 @@ public class ElectionTest
     private Outbound<MemberId, RaftMessages.RaftMessage> outbound;
 
     @Test
-    public void candidateShouldWinElectionAndBecomeLeader() throws Exception
+    void candidateShouldWinElectionAndBecomeLeader() throws Exception
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -101,7 +101,7 @@ public class ElectionTest
     }
 
     @Test
-    public void candidateShouldLoseElectionAndRemainCandidate() throws Exception
+    void candidateShouldLoseElectionAndRemainCandidate() throws Exception
     {
         // Note the etcd implementation seems to diverge from the paper here, since the paper suggests that it should
         // remain as a candidate
@@ -134,7 +134,7 @@ public class ElectionTest
     }
 
     @Test
-    public void candidateShouldVoteForTheSameCandidateInTheSameTerm() throws Exception
+    void candidateShouldVoteForTheSameCandidateInTheSameTerm() throws Exception
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();

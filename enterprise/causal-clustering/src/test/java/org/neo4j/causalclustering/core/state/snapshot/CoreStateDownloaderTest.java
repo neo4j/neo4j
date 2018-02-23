@@ -52,7 +52,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
-public class CoreStateDownloaderTest
+class CoreStateDownloaderTest
 {
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
     private final Lifecycle startStopLife = mock( Lifecycle.class );
@@ -77,7 +77,7 @@ public class CoreStateDownloaderTest
                     snapshotService, commitStateHelper );
 
     @BeforeEach
-    public void commonMocking()
+    void commonMocking()
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
@@ -85,7 +85,7 @@ public class CoreStateDownloaderTest
     }
 
     @Test
-    public void shouldDownloadCompleteStoreWhenEmpty() throws Throwable
+    void shouldDownloadCompleteStoreWhenEmpty() throws Throwable
     {
         // given
         StoreId remoteStoreId = new StoreId( 5, 6, 7, 8 );
@@ -101,7 +101,7 @@ public class CoreStateDownloaderTest
     }
 
     @Test
-    public void shouldStopDatabaseDuringDownload() throws Throwable
+    void shouldStopDatabaseDuringDownload() throws Throwable
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( true );
@@ -117,7 +117,7 @@ public class CoreStateDownloaderTest
     }
 
     @Test
-    public void shouldNotOverwriteNonEmptyMismatchingStore() throws Exception
+    void shouldNotOverwriteNonEmptyMismatchingStore() throws Exception
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
@@ -141,7 +141,7 @@ public class CoreStateDownloaderTest
     }
 
     @Test
-    public void shouldCatchupIfPossible() throws Exception
+    void shouldCatchupIfPossible() throws Exception
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
@@ -157,7 +157,7 @@ public class CoreStateDownloaderTest
     }
 
     @Test
-    public void shouldDownloadWholeStoreIfCannotCatchUp() throws Exception
+    void shouldDownloadWholeStoreIfCannotCatchUp() throws Exception
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );

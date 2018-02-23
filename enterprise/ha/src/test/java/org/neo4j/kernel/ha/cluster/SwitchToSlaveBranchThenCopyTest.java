@@ -98,7 +98,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
-public class SwitchToSlaveBranchThenCopyTest
+class SwitchToSlaveBranchThenCopyTest
 {
     private final UpdatePuller updatePuller = mockWithLifecycle( SlaveUpdatePuller.class );
     private final PullerFactory pullerFactory = mock( PullerFactory.class );
@@ -108,7 +108,7 @@ public class SwitchToSlaveBranchThenCopyTest
     private final StoreId storeId = newStoreIdForCurrentVersion( 42, 42, 42, 42 );
 
     @Test
-    public void shouldRestartServicesIfCopyStoreFails() throws Throwable
+    void shouldRestartServicesIfCopyStoreFails() throws Throwable
     {
         when( updatePuller.tryPullUpdates() ).thenReturn( true );
 
@@ -155,7 +155,7 @@ public class SwitchToSlaveBranchThenCopyTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldHandleBranchedStoreWhenMyStoreIdDiffersFromMasterStoreId() throws Throwable
+    void shouldHandleBranchedStoreWhenMyStoreIdDiffersFromMasterStoreId() throws Throwable
     {
         // Given
         SwitchToSlaveBranchThenCopy switchToSlave = newSwitchToSlaveSpy();
@@ -189,7 +189,7 @@ public class SwitchToSlaveBranchThenCopyTest
     }
 
     @Test
-    public void shouldHandleBranchedStoreWhenHandshakeFailsWithBranchedDataException() throws Throwable
+    void shouldHandleBranchedStoreWhenHandshakeFailsWithBranchedDataException() throws Throwable
     {
         // Given
         SwitchToSlaveBranchThenCopy switchToSlave = newSwitchToSlaveSpy();
@@ -220,7 +220,7 @@ public class SwitchToSlaveBranchThenCopyTest
     }
 
     @Test
-    public void shouldReturnNullIfWhenFailingToPullingUpdatesFromMaster() throws Throwable
+    void shouldReturnNullIfWhenFailingToPullingUpdatesFromMaster() throws Throwable
     {
         // Given
         SwitchToSlaveBranchThenCopy switchToSlave = newSwitchToSlaveSpy();
@@ -238,7 +238,7 @@ public class SwitchToSlaveBranchThenCopyTest
     }
 
     @Test
-    public void updatesPulledAndPullingScheduledOnSwitchToSlave() throws Throwable
+    void updatesPulledAndPullingScheduledOnSwitchToSlave() throws Throwable
     {
         SwitchToSlaveBranchThenCopy switchToSlave = newSwitchToSlaveSpy();
 

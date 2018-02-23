@@ -57,7 +57,7 @@ import static org.neo4j.helper.StressTestingHelper.fromEnv;
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
  */
-public class BackupServiceStressTesting
+class BackupServiceStressTesting
 {
     private static final String DEFAULT_DURATION_IN_MINUTES = "30";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
@@ -67,7 +67,7 @@ public class BackupServiceStressTesting
     private static final String DEFAULT_TX_PRUNE = "50 files";
 
     @Test
-    public void shouldBehaveCorrectlyUnderStress() throws Exception
+    void shouldBehaveCorrectlyUnderStress() throws Exception
     {
         long durationInMinutes = parseLong( fromEnv( "BACKUP_SERVICE_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
         String directory = fromEnv( "BACKUP_SERVICE_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );

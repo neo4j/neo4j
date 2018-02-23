@@ -49,13 +49,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class DatabaseImporterTest
+class DatabaseImporterTest
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Test
-    public void requiresFromArgument()
+    void requiresFromArgument()
     {
         String[] arguments = {"--mode=database", "--database=bar"};
 
@@ -72,7 +72,7 @@ public class DatabaseImporterTest
     }
 
     @Test
-    public void failIfSourceIsNotAStore()
+    void failIfSourceIsNotAStore()
     {
         File from = testDir.directory( "empty" );
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
@@ -89,7 +89,7 @@ public class DatabaseImporterTest
     }
 
     @Test
-    public void copiesDatabaseFromOldLocationToNewLocation() throws Exception
+    void copiesDatabaseFromOldLocationToNewLocation() throws Exception
     {
         File home = testDir.directory( "home" );
 
@@ -106,7 +106,7 @@ public class DatabaseImporterTest
     }
 
     @Test
-    public void removesOldMessagesLog() throws Exception
+    void removesOldMessagesLog() throws Exception
     {
         File home = testDir.directory( "home" );
 

@@ -35,13 +35,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestIdReuse
 {
     @Test
-    public void makeSureIdsGetsReusedForPropertyStore()
+    void makeSureIdsGetsReusedForPropertyStore()
     {
         makeSureIdsGetsReused( "neostore.propertystore.db", 10, 200 );
     }
 
     @Test
-    public void makeSureIdsGetsReusedForArrayStore()
+    void makeSureIdsGetsReusedForArrayStore()
     {
         long[] array = new long[500];
         for ( int i = 0; i < array.length; i++ )
@@ -52,7 +52,7 @@ public class TestIdReuse
     }
 
     @Test
-    public void makeSureIdsGetsReusedForStringStore()
+    void makeSureIdsGetsReusedForStringStore()
     {
         String string = "something";
         for ( int i = 0; i < 100; i++ )

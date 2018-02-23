@@ -41,13 +41,13 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class NodeStoreScanTest
+class NodeStoreScanTest
 {
     private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
     private final NodeStore nodeStore = mock( NodeStore.class );
 
     @Test
-    public void shouldGiveBackCompletionPercentage()
+    void shouldGiveBackCompletionPercentage()
     {
         // given
         long total = 10;
@@ -101,7 +101,7 @@ public class NodeStoreScanTest
             return (float) progress.getCompleted() / (float) progress.getTotal();
         }
 
-        public void setStoreScan( StoreScan<?> storeScan )
+        void setStoreScan( StoreScan<?> storeScan )
         {
             this.storeScan = storeScan;
         }

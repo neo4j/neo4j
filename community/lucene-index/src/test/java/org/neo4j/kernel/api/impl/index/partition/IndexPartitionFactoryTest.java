@@ -45,20 +45,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class IndexPartitionFactoryTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     private Directory directory;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         directory = DirectoryFactory.PERSISTENT.open( testDirectory.directory() );
     }
 
     @Test
-    public void createReadOnlyPartition() throws Exception
+    void createReadOnlyPartition() throws Exception
     {
         prepareIndex();
         try ( AbstractIndexPartition indexPartition =
@@ -71,7 +71,7 @@ public class IndexPartitionFactoryTest
     }
 
     @Test
-    public void createWritablePartition() throws Exception
+    void createWritablePartition() throws Exception
     {
         try ( AbstractIndexPartition indexPartition =
                       new WritableIndexPartitionFactory( IndexWriterConfigs::standard )

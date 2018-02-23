@@ -31,10 +31,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SecurityFilterTest
+class SecurityFilterTest
 {
     @Test
-    public void shouldPassThroughRequestToAnUnsecuredPath() throws Exception
+    void shouldPassThroughRequestToAnUnsecuredPath() throws Exception
     {
         // given
         SecurityRule rule = mock( SecurityRule.class );
@@ -55,7 +55,7 @@ public class SecurityFilterTest
     }
 
     @Test
-    public void shouldActivateRuleThatRejectsTheRequestForAMatchingPath() throws Exception
+    void shouldActivateRuleThatRejectsTheRequestForAMatchingPath() throws Exception
     {
         // given
         SecurityRule rule = mock( SecurityRule.class );
@@ -77,7 +77,7 @@ public class SecurityFilterTest
     }
 
     @Test
-    public void shouldActivateRuleThatAcceptsTheRequestForAMatchingPath() throws Exception
+    void shouldActivateRuleThatAcceptsTheRequestForAMatchingPath() throws Exception
     {
         // given
         SecurityRule rule = mock( SecurityRule.class );
@@ -101,7 +101,7 @@ public class SecurityFilterTest
     }
 
     @Test
-    public void shouldRemoveRules() throws Exception
+    void shouldRemoveRules() throws Exception
     {
         // given
         SecurityRule securityRule1 = mock( SecurityRule.class );

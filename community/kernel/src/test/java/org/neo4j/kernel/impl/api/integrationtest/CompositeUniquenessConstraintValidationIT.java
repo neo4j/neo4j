@@ -29,7 +29,6 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
@@ -102,7 +101,7 @@ public class CompositeUniquenessConstraintValidationIT
     private KernelTransaction transaction;
     private Statement statement;
     private GraphDatabaseAPI graphDatabaseAPI;
-    protected InwardKernel kernel;
+    private InwardKernel kernel;
 
     @Before
     public void setup() throws Exception
@@ -323,7 +322,7 @@ public class CompositeUniquenessConstraintValidationIT
         statement = transaction.acquireStatement();
     }
 
-    protected void commit() throws TransactionFailureException
+    private void commit() throws TransactionFailureException
     {
         statement.close();
         statement = null;

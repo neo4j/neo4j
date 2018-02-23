@@ -50,10 +50,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
-public class RemoteStoreTest
+class RemoteStoreTest
 {
     @Test
-    public void shouldCopyStoreFilesAndPullTransactions() throws Exception
+    void shouldCopyStoreFilesAndPullTransactions() throws Exception
     {
         // given
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
@@ -77,7 +77,7 @@ public class RemoteStoreTest
     }
 
     @Test
-    public void shouldSetLastPulledTransactionId() throws Exception
+    void shouldSetLastPulledTransactionId() throws Exception
     {
         // given
         long lastFlushedTxId = 12;
@@ -108,7 +108,7 @@ public class RemoteStoreTest
     }
 
     @Test
-    public void shouldCloseDownTxLogWriterIfTxStreamingFails() throws Exception
+    void shouldCloseDownTxLogWriterIfTxStreamingFails() throws Exception
     {
         // given
         StoreId storeId = new StoreId( 1, 2, 3, 4 );

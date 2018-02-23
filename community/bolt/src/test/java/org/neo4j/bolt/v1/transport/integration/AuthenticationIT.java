@@ -63,8 +63,8 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class AuthenticationIT extends AbstractBoltTransportsTest
 {
-    protected EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    protected Neo4jWithSocket server =
+    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private Neo4jWithSocket server =
             new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
 
     @Rule
@@ -523,7 +523,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
             return true;
         }
 
-        public boolean gotSpecialMessage()
+        boolean gotSpecialMessage()
         {
             return specialMessage != null;
         }

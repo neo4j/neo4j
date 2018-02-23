@@ -62,7 +62,7 @@ public class LogMatchers
     {
     }
 
-    public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
+    private static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
         File logFile = new File( logPath );
         StoreChannel fileChannel = fileSystem.open( logFile, OpenMode.READ );

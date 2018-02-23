@@ -22,13 +22,12 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
-
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 
-public class GroupCacheTest
+class GroupCacheTest
 {
     @Test
-    public void shouldHandleSingleByteCount()
+    void shouldHandleSingleByteCount()
     {
         // given
         int max = 256;
@@ -52,7 +51,7 @@ public class GroupCacheTest
     }
 
     @Test
-    public void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds()
+    void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds()
     {
         // given
         int max = 257;

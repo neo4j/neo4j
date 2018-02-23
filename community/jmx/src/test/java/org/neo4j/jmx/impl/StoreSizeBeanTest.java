@@ -76,7 +76,7 @@ import static org.neo4j.kernel.impl.store.StoreFile.SCHEMA_STORE;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.ID;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
-public class StoreSizeBeanTest
+class StoreSizeBeanTest
 {
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private final File storeDir = new File( "" );
@@ -88,12 +88,12 @@ public class StoreSizeBeanTest
     private StoreSize storeSizeBean;
     private File storeDirAbsolute;
 
-    public StoreSizeBeanTest() throws IOException
+    StoreSizeBeanTest() throws IOException
     {
     }
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         DataSourceManager dataSourceManager = new DataSourceManager();
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
@@ -171,49 +171,49 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void verifyGroupingOfNodeRelatedFiles() throws Exception
+    void verifyGroupingOfNodeRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(1, 4 ), storeSizeBean.getNodeStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfPropertyRelatedFiles() throws Exception
+    void verifyGroupingOfPropertyRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 5, 10 ), storeSizeBean.getPropertyStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfStringRelatedFiles() throws Exception
+    void verifyGroupingOfStringRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(11, 12 ), storeSizeBean.getStringStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfArrayRelatedFiles() throws Exception
+    void verifyGroupingOfArrayRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(13, 14 ), storeSizeBean.getArrayStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfRelationshipRelatedFiles() throws Exception
+    void verifyGroupingOfRelationshipRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 15, 22 ), storeSizeBean.getRelationshipStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfLabelRelatedFiles() throws Exception
+    void verifyGroupingOfLabelRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 23, 26 ), storeSizeBean.getLabelStoreSize() );
     }
 
     @Test
-    public void verifyGroupingOfCountStoreRelatedFiles() throws Exception
+    void verifyGroupingOfCountStoreRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 29, 29), storeSizeBean.getCountStoreSize() );
@@ -222,21 +222,21 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void verifyGroupingOfSchemaRelatedFiles() throws Exception
+    void verifyGroupingOfSchemaRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 27, 28 ), storeSizeBean.getSchemaStoreSize() );
     }
 
     @Test
-    public void sumAllFiles() throws Exception
+    void sumAllFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 0, 29 ), storeSizeBean.getTotalStoreSize() );
     }
 
     @Test
-    public void shouldCountAllLogFiles() throws Throwable
+    void shouldCountAllLogFiles() throws Throwable
     {
         createFileOfSize( logFiles.getLogFileForVersion( 0 ), 1 );
         createFileOfSize( logFiles.getLogFileForVersion( 1 ), 2 );
@@ -245,7 +245,7 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void shouldCountAllIndexFiles() throws Exception
+    void shouldCountAllIndexFiles() throws Exception
     {
         // Explicit index file
         File explicitIndex = new File( storeDir, "explicitIndex" );

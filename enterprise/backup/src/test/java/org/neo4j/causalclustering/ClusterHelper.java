@@ -29,9 +29,9 @@ import org.neo4j.test.DbRepresentation;
 
 public class ClusterHelper
 {
-    public static final Label label = Label.label( "any_label" );
-    public static final String PROP_NAME = "name";
-    public static final String PROP_RANDOM = "random";
+    private static final Label label = Label.label( "any_label" );
+    private static final String PROP_NAME = "name";
+    private static final String PROP_RANDOM = "random";
 
     /**
      * Used by non-cc

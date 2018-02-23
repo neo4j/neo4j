@@ -44,14 +44,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
-public class TransactionBatchCommitterTest
+class TransactionBatchCommitterTest
 {
     private final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
     private final TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldCommitSmallBatch() throws Exception
+    void shouldCommitSmallBatch() throws Exception
     {
         // given
         long safeZone = 10;
@@ -67,7 +67,7 @@ public class TransactionBatchCommitterTest
     }
 
     @Test
-    public void shouldCommitLargeBatch() throws Exception
+    void shouldCommitLargeBatch() throws Exception
     {
         // given
         long safeZone = 10;
@@ -83,7 +83,7 @@ public class TransactionBatchCommitterTest
     }
 
     @Test
-    public void shouldNotBlockTransactionsForSmallBatch() throws Exception
+    void shouldNotBlockTransactionsForSmallBatch() throws Exception
     {
         // given
         long safeZone = 10;
@@ -100,7 +100,7 @@ public class TransactionBatchCommitterTest
     }
 
     @Test
-    public void shouldBlockTransactionsForLargeBatch() throws Exception
+    void shouldBlockTransactionsForLargeBatch() throws Exception
     {
         // given
         long safeZone = 10;
@@ -118,7 +118,7 @@ public class TransactionBatchCommitterTest
     }
 
     @Test
-    public void shouldTerminateOutdatedTransactions() throws Exception
+    void shouldTerminateOutdatedTransactions() throws Exception
     {
         // given
         long safeZone = 10;

@@ -22,24 +22,22 @@ package org.neo4j.server.security.auth;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assume.assumeTrue;
 
-public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
+class AuthorizationWhitelistIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
 
     @Test
-    public void shouldWhitelistBrowser() throws Exception
+    void shouldWhitelistBrowser() throws Exception
     {
         // Given
         assumeTrue( browserIsLoaded() );
@@ -55,7 +53,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldNotWhitelistConsoleService() throws Exception
+    void shouldNotWhitelistConsoleService() throws Exception
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
@@ -70,7 +68,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldNotWhitelistDB() throws Exception
+    void shouldNotWhitelistDB() throws Exception
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
@@ -85,7 +83,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     }
 
     @AfterEach
-    public void cleanup()
+    void cleanup()
     {
         if ( server != null )
         {

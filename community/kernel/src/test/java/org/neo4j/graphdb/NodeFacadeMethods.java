@@ -27,7 +27,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 @SuppressWarnings( "UnusedDeclaration" )
-public class NodeFacadeMethods
+class NodeFacadeMethods
 {
     private static final RelationshipType FOO = withName( "foo" );
     private static final RelationshipType BAR = withName( "bar" );

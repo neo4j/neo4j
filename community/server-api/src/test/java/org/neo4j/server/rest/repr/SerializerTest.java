@@ -23,14 +23,14 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
-public class SerializerTest
+class SerializerTest
 {
 
     @Test
-    public void shouldPrependBaseUriToRelativePaths()
+    void shouldPrependBaseUriToRelativePaths()
     {
         String baseUrl = "http://baseurl/";
         Serializer serializer = new Serializer( URI.create( baseUrl ), null )

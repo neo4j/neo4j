@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -48,8 +47,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -75,7 +74,7 @@ public class ReadReplicaStartupProcessTest
     private File storeDir = new File( "store-dir" );
 
     @BeforeEach
-    public void commonMocking() throws IOException
+    void commonMocking() throws IOException
     {
         Map<MemberId,CoreServerInfo> members = new HashMap<>();
         members.put( memberId, mock( CoreServerInfo.class ) );
@@ -91,7 +90,7 @@ public class ReadReplicaStartupProcessTest
     }
 
     @Test
-    public void shouldReplaceEmptyStoreWithRemote() throws Throwable
+    void shouldReplaceEmptyStoreWithRemote() throws Throwable
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( true );
@@ -120,7 +119,7 @@ public class ReadReplicaStartupProcessTest
     }
 
     @Test
-    public void shouldNotStartWithMismatchedNonEmptyStore() throws Throwable
+    void shouldNotStartWithMismatchedNonEmptyStore() throws Throwable
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
@@ -148,7 +147,7 @@ public class ReadReplicaStartupProcessTest
     }
 
     @Test
-    public void shouldStartWithMatchingDatabase() throws Throwable
+    void shouldStartWithMatchingDatabase() throws Throwable
     {
         // given
         when( remoteStore.getStoreId( any() ) ).thenReturn( localStoreId );
@@ -167,7 +166,7 @@ public class ReadReplicaStartupProcessTest
     }
 
     @Test
-    public void stopShouldStopTheDatabaseAndStopPolling() throws Throwable
+    void stopShouldStopTheDatabaseAndStopPolling() throws Throwable
     {
         // given
         when( remoteStore.getStoreId( any() ) ).thenReturn( localStoreId );

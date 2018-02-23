@@ -97,7 +97,7 @@ public class BackupCoreIT
         } ).database();
     }
 
-    static String backupAddress( Cluster cluster )
+    private static String backupAddress( Cluster cluster )
     {
         return cluster.getDbWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
     }

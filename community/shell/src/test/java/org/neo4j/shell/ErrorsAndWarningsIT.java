@@ -28,19 +28,19 @@ import java.io.InputStream;
 import java.io.PrintStream;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
 
-public class ErrorsAndWarningsIT extends AbstractShellIT
+class ErrorsAndWarningsIT extends AbstractShellIT
 {
     @BeforeEach
-    public void setup()
+    void setup()
     {
         makeServerRemotelyAvailable();
     }
 
     @Test
-    public void unsupportedQueryShouldBeSilent()
+    void unsupportedQueryShouldBeSilent()
     {
         // When
         InputStream realStdin = System.in;

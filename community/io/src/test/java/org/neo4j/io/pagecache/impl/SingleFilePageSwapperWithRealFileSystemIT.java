@@ -23,7 +23,7 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwapperTest
+class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwapperTest
 {
     @Override
     protected boolean isRootAccessible()
@@ -32,13 +32,13 @@ public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwa
     }
 
     @Override
-    protected File getFile()
+    File getFile()
     {
         return testDir.file( super.getFile().getName() );
     }
 
     @Override
-    protected FileSystemAbstraction getFs()
+    FileSystemAbstraction getFs()
     {
         return  getRealFileSystem();
     }

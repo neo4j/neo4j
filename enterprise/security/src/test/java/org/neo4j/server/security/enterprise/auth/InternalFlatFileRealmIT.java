@@ -55,18 +55,18 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class InternalFlatFileRealmIT
 {
-    File userStoreFile;
-    File roleStoreFile;
+    private File userStoreFile;
+    private File roleStoreFile;
 
-    TestJobScheduler jobScheduler = new TestJobScheduler();
-    LogProvider logProvider = NullLogProvider.getInstance();
-    InternalFlatFileRealm realm;
-    EvilFileSystem fs;
+    private TestJobScheduler jobScheduler = new TestJobScheduler();
+    private LogProvider logProvider = NullLogProvider.getInstance();
+    private InternalFlatFileRealm realm;
+    private EvilFileSystem fs;
 
     private static int LARGE_NUMBER = 123;
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         fs = new EvilFileSystem( new EphemeralFileSystemAbstraction() );
         userStoreFile = new File( "dbms", "auth" );
@@ -87,14 +87,14 @@ public class InternalFlatFileRealmIT
     }
 
     @AfterEach
-    public void tearDown() throws Throwable
+    void tearDown() throws Throwable
     {
         realm.shutdown();
         fs.close();
     }
 
     @Test
-    public void shouldReloadAuthFiles() throws Exception
+    void shouldReloadAuthFiles() throws Exception
     {
         fs.addUserRoleFilePair(
                 "Hanna:SHA-256,FE0056C37E,A543:\n" +
@@ -112,7 +112,7 @@ public class InternalFlatFileRealmIT
     }
 
     @Test
-    public void shouldReloadAuthFilesUntilValid() throws Exception
+    void shouldReloadAuthFilesUntilValid() throws Exception
     {
         // we start with invalid auth file
         fs.addUserRoleFilePair(
@@ -148,7 +148,7 @@ public class InternalFlatFileRealmIT
     }
 
     @Test
-    public void shouldEventuallyFailReloadAttempts()
+    void shouldEventuallyFailReloadAttempts()
     {
         // the roles file has non-existent users
         fs.addUserRoleFilePair(

@@ -43,14 +43,14 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
  *
  * No behaviour is examined here - interactions with context and actions taken are not tested. See other tests for that.
  */
-public class HighAvailabilityMemberStateTest
+class HighAvailabilityMemberStateTest
 {
-    public static final URI SampleUri = URI.create( "ha://foo" );
+    private static final URI SampleUri = URI.create( "ha://foo" );
     private InstanceId myId;
     private HighAvailabilityMemberContext context;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         myId = new InstanceId( 1 );
         context = mock( HighAvailabilityMemberContext.class );
@@ -58,7 +58,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testPendingMasterIsElected()
+    void testPendingMasterIsElected()
     {
         // CASE 1: Got MasterIsElected for me - should switch to TO_MASTER
         HighAvailabilityMemberState newState = PENDING.masterIsElected( context, myId );
@@ -70,7 +70,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testPendingMasterIsAvailable()
+    void testPendingMasterIsAvailable()
     {
         // CASE 1: Got MasterIsAvailable for me - should not happen
         HighAvailabilityMemberState illegal = PENDING.masterIsAvailable( context, myId, SampleUri );
@@ -83,7 +83,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testPendingSlaveIsAvailable()
+    void testPendingSlaveIsAvailable()
     {
         // CASE 1: Got SlaveIsAvailable for me - should not happen, that's what TO_SLAVE exists for
         HighAvailabilityMemberState illegal = PENDING.slaveIsAvailable( context, myId, SampleUri );
@@ -95,7 +95,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testToMasterMasterIsElected()
+    void testToMasterMasterIsElected()
     {
         // CASE 1: Got MasterIsElected for me - it's ok, continue in TO_MASTER
         HighAvailabilityMemberState newState = TO_MASTER.masterIsElected( context, myId );
@@ -107,7 +107,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testToMasterMasterIsAvailable()
+    void testToMasterMasterIsAvailable()
     {
         // CASE 1: Got MasterIsAvailable for me - it's ok, that means we completed switching and should to to MASTER
         HighAvailabilityMemberState newState = TO_MASTER.masterIsAvailable( context, myId, SampleUri );
@@ -120,7 +120,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testToMasterSlaveIsAvailable()
+    void testToMasterSlaveIsAvailable()
     {
         // CASE 1: Got SlaveIsAvailable for me - not ok, i'm currently switching to master
         HighAvailabilityMemberState illegal = TO_MASTER.slaveIsAvailable( context, myId,
@@ -133,7 +133,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testMasterMasterIsElected()
+    void testMasterMasterIsElected()
     {
         // CASE 1: Got MasterIsElected for me. Should remain master.
         HighAvailabilityMemberState newState = MASTER.masterIsElected( context, myId );
@@ -145,7 +145,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testMasterMasterIsAvailable()
+    void testMasterMasterIsAvailable()
     {
         // CASE 1: Got MasterIsAvailable for someone else - should fail.
         HighAvailabilityMemberState illegal = MASTER.masterIsAvailable( context, new InstanceId(
@@ -158,7 +158,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testMasterSlaveIsAvailable()
+    void testMasterSlaveIsAvailable()
     {
         // CASE 1: Got SlaveIsAvailable for me - should fail.
         HighAvailabilityMemberState illegal = MASTER.slaveIsAvailable( context, myId, SampleUri );
@@ -170,7 +170,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testToSlaveMasterIsElected()
+    void testToSlaveMasterIsElected()
     {
         // CASE 1: Got MasterIsElected for me - should switch to TO_MASTER
         HighAvailabilityMemberState newState = TO_SLAVE.masterIsElected( context, myId );
@@ -182,7 +182,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testToSlaveMasterIsAvailable()
+    void testToSlaveMasterIsAvailable()
     {
         // CASE 1: Got MasterIsAvailable for me - should fail, i am currently trying to become slave
         HighAvailabilityMemberState illegal = TO_SLAVE.masterIsAvailable( context, myId,
@@ -202,7 +202,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testToSlaveSlaveIsAvailable()
+    void testToSlaveSlaveIsAvailable()
     {
         // CASE 1: It is me that that is available as slave - cool, go to SLAVE
         HighAvailabilityMemberState newState = TO_SLAVE.slaveIsAvailable( context, myId, SampleUri );
@@ -215,7 +215,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testSlaveMasterIsElected()
+    void testSlaveMasterIsElected()
     {
         // CASE 1: It is me that got elected master - should switch to TO_MASTER
         HighAvailabilityMemberState newState = SLAVE.masterIsElected( context, myId );
@@ -233,7 +233,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testSlaveMasterIsAvailable()
+    void testSlaveMasterIsAvailable()
     {
         // CASE 1: It is me who is available as master - i don't think so
         HighAvailabilityMemberState illegal = SLAVE.masterIsAvailable( context, myId, SampleUri );
@@ -252,7 +252,7 @@ public class HighAvailabilityMemberStateTest
     }
 
     @Test
-    public void testSlaveSlaveIsAvailable()
+    void testSlaveSlaveIsAvailable()
     {
         // CASE 1 and only - always remain in SLAVE
         assertEquals( SLAVE, SLAVE.slaveIsAvailable( mock( HighAvailabilityMemberContext.class ), mock( InstanceId.class), SampleUri ) );

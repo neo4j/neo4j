@@ -26,10 +26,10 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StringEncoderTest
+class StringEncoderTest
 {
     @Test
-    public void shouldEncodeStringWithZeroLength()
+    void shouldEncodeStringWithZeroLength()
     {
         // GIVEN
         Encoder encoder = new StringEncoder();
@@ -42,7 +42,7 @@ public class StringEncoderTest
     }
 
     @Test
-    public void shouldEncodeStringWithAnyLength()
+    void shouldEncodeStringWithAnyLength()
     {
         // GIVEN
         Encoder encoder = new StringEncoder();

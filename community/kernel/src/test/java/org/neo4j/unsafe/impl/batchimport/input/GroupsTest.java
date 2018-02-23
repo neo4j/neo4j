@@ -31,10 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.Groups.LOWEST_NONGLOBAL_ID;
 
-public class GroupsTest
+class GroupsTest
 {
     @Test
-    public void shouldHandleConcurrentGetOrCreate() throws Throwable
+    void shouldHandleConcurrentGetOrCreate() throws Throwable
     {
         // GIVEN
         Groups groups = new Groups();
@@ -58,7 +58,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGetOrCreate()
+    void shouldSupportMixedGroupModeInGetOrCreate()
     {
         // given
         Groups groups = new Groups();
@@ -69,7 +69,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGetOrCreate2()
+    void shouldSupportMixedGroupModeInGetOrCreate2()
     {
         // given
         Groups groups = new Groups();
@@ -80,7 +80,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldGetCreatedGroup()
+    void shouldGetCreatedGroup()
     {
         // given
         Groups groups = new Groups();
@@ -95,7 +95,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldGetGlobalGroup()
+    void shouldGetGlobalGroup()
     {
         // given
         Groups groups = new Groups();
@@ -109,7 +109,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGet()
+    void shouldSupportMixedGroupModeInGet()
     {
         // given
         Groups groups = new Groups();
@@ -120,7 +120,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldFailOnGettingNonExistentGroup()
+    void shouldFailOnGettingNonExistentGroup()
     {
         assertThrows( HeaderException.class, () -> {
             // given

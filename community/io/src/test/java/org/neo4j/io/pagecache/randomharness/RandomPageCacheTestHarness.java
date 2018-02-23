@@ -282,7 +282,7 @@ public class RandomPageCacheTestHarness implements Closeable
      * Write out a textual description of the last run iteration, including the exact plan and what thread
      * executed which command, and the random seed that can be used to recreate that plan for improved repeatability.
      */
-    public void describePreviousRun( PrintStream out )
+    private void describePreviousRun( PrintStream out )
     {
         out.println( "randomSeed = " + randomSeed );
         out.println( "commandCount = " + commandCount );
@@ -332,7 +332,7 @@ public class RandomPageCacheTestHarness implements Closeable
      *
      * The run will stop at the first failure, if any, and print a description of it to System.err.
      */
-    public void run( int iterations, long iterationTimeout, TimeUnit unit ) throws Exception
+    private void run( int iterations, long iterationTimeout, TimeUnit unit ) throws Exception
     {
         try
         {

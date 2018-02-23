@@ -39,9 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
-public final class TestKernelExtension extends KernelExtensionFactoryContractTest
+final class TestKernelExtension extends KernelExtensionFactoryContractTest
 {
-    public TestKernelExtension()
+    TestKernelExtension()
     {
         super( DummyExtensionFactory.EXTENSION_ID, DummyExtensionFactory.class );
     }
@@ -50,7 +50,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
      * Check that lifecycle status of extension is STARTED
      */
     @Test
-    public void shouldBeStarted()
+    void shouldBeStarted()
     {
         GraphDatabaseAPI graphdb = graphdb( 0 );
         try
@@ -68,7 +68,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
      * Check that dependencies can be accessed
      */
     @Test
-    public void dependenciesCanBeRetrieved()
+    void dependenciesCanBeRetrieved()
     {
         GraphDatabaseAPI graphdb = graphdb( 0 );
         try
@@ -90,7 +90,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
      * Check that lifecycle status of extension is SHUTDOWN
      */
     @Test
-    public void shouldBeShutdown()
+    void shouldBeShutdown()
     {
         GraphDatabaseAPI graphdb = graphdb( 0 );
         graphdb.shutdown();

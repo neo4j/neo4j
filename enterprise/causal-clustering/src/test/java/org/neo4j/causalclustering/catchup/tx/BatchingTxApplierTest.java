@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
-public class BatchingTxApplierTest
+class BatchingTxApplierTest
 {
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
     private final TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
@@ -63,26 +63,26 @@ public class BatchingTxApplierTest
                     PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY, getInstance() );
 
     @BeforeEach
-    public void before()
+    void before()
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( startTxId );
         txApplier.start();
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         txApplier.stop();
     }
 
     @Test
-    public void shouldHaveCorrectDefaults()
+    void shouldHaveCorrectDefaults()
     {
         assertEquals( startTxId, txApplier.lastQueuedTxId() );
     }
 
     @Test
-    public void shouldApplyBatch() throws Exception
+    void shouldApplyBatch() throws Exception
     {
         // given
         txApplier.queue( createTxWithId( startTxId + 1 ) );
@@ -98,7 +98,7 @@ public class BatchingTxApplierTest
     }
 
     @Test
-    public void shouldIgnoreOutOfOrderTransactions() throws Exception
+    void shouldIgnoreOutOfOrderTransactions() throws Exception
     {
         // given
         txApplier.queue( createTxWithId( startTxId + 4 ) ); // ignored
@@ -121,7 +121,7 @@ public class BatchingTxApplierTest
     }
 
     @Test
-    public void shouldBeAbleToQueueMaxBatchSize() throws Exception
+    void shouldBeAbleToQueueMaxBatchSize() throws Exception
     {
         // given
         long endTxId = startTxId + maxBatchSize;
@@ -138,7 +138,7 @@ public class BatchingTxApplierTest
     }
 
     @Test
-    public void shouldGiveUpQueueingOnStop()
+    void shouldGiveUpQueueingOnStop()
     {
         assertTimeout( ofMillis( 3_000 ), () -> {
             //  given

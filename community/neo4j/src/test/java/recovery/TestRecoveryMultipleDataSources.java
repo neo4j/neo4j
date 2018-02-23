@@ -44,10 +44,10 @@ import static java.lang.System.exit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class TestRecoveryMultipleDataSources
+class TestRecoveryMultipleDataSources
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     /**
      * Tests an issue where loading all relationship types and property indexes after
@@ -59,7 +59,7 @@ public class TestRecoveryMultipleDataSources
      * of it would be that there would seem to be no relationship types in the database.
      */
     @Test
-    public void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
+    void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
         File storeDir = testDirectory.graphDbDir();
@@ -82,7 +82,7 @@ public class TestRecoveryMultipleDataSources
         }
     }
 
-    public static void main( String[] args ) throws IOException
+    static void main( String[] args ) throws IOException
     {
         if ( args.length != 1 )
         {

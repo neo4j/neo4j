@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class EntryTimespanThresholdTest
+class EntryTimespanThresholdTest
 {
     private final File file = mock( File.class );
     private final LogFileInformation source = mock( LogFileInformation.class );
@@ -45,7 +45,7 @@ public class EntryTimespanThresholdTest
     private Clock clock = Clock.fixed( Instant.ofEpochMilli( 1000 ), ZoneOffset.UTC );
 
     @Test
-    public void shouldReturnFalseWhenTimeIsEqualOrAfterTheLowerLimit() throws IOException
+    void shouldReturnFalseWhenTimeIsEqualOrAfterTheLowerLimit() throws IOException
     {
         // given
         final EntryTimespanThreshold threshold =
@@ -62,7 +62,7 @@ public class EntryTimespanThresholdTest
     }
 
     @Test
-    public void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException
+    void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException
     {
         // given
         final EntryTimespanThreshold threshold =
@@ -79,7 +79,7 @@ public class EntryTimespanThresholdTest
     }
 
     @Test
-    public void shouldThrowIfTheLogCannotBeRead() throws IOException
+    void shouldThrowIfTheLogCannotBeRead() throws IOException
     {
         // given
         final EntryTimespanThreshold threshold =

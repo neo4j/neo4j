@@ -34,10 +34,10 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.staging.ControlledStep.stepWithAverageOf;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
-public class StageExecutionTest
+class StageExecutionTest
 {
     @Test
-    public void shouldOrderStepsAscending()
+    void shouldOrderStepsAscending()
     {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();
@@ -60,7 +60,7 @@ public class StageExecutionTest
     }
 
     @Test
-    public void shouldOrderStepsDescending()
+    void shouldOrderStepsDescending()
     {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();

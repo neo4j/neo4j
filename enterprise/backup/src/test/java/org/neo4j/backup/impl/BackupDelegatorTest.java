@@ -44,18 +44,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BackupDelegatorTest
+class BackupDelegatorTest
 {
     private RemoteStore remoteStore;
     private CatchUpClient catchUpClient;
     private StoreCopyClient storeCopyClient;
 
-    BackupDelegator subject;
+    private BackupDelegator subject;
 
     private final AdvertisedSocketAddress anyAddress = new AdvertisedSocketAddress( "any.address", 1234 );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         remoteStore = mock( RemoteStore.class );
         catchUpClient = mock( CatchUpClient.class );
@@ -64,7 +64,7 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void tryCatchingUpDelegatesToRemoteStore() throws StoreCopyFailedException, IOException
+    void tryCatchingUpDelegatesToRemoteStore() throws StoreCopyFailedException, IOException
     {
         // given
         AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "neo4j.com", 5432 );
@@ -79,7 +79,7 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void startDelegatesToCatchUpClient()
+    void startDelegatesToCatchUpClient()
     {
         // when
         subject.start();
@@ -89,7 +89,7 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void stopDelegatesToCatchUpClient()
+    void stopDelegatesToCatchUpClient()
     {
         // when
         subject.stop();
@@ -99,7 +99,7 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void fetchStoreIdDelegatesToStoreCopyClient() throws StoreIdDownloadFailedException
+    void fetchStoreIdDelegatesToStoreCopyClient() throws StoreIdDownloadFailedException
     {
         // given
         AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "neo4.com", 935 );
@@ -116,7 +116,7 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void retrieveStoreDelegatesToStoreCopyService()
+    void retrieveStoreDelegatesToStoreCopyService()
             throws StoreCopyFailedException, StreamingTransactionsFailedException, CatchupAddressResolutionException
     {
         // given

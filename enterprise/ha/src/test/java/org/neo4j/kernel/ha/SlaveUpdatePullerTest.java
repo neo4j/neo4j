@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.OngoingStubbing;
@@ -47,10 +47,10 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.CleanupRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -84,7 +84,7 @@ public class SlaveUpdatePullerTest
     public final CleanupRule cleanup = new CleanupRule();
 
     @BeforeEach
-    public void setUp() throws Throwable
+    void setUp() throws Throwable
     {
         when( requestContextFactory.newRequestContext() ).thenReturn( new RequestContext( 42, 42, 42, 42, 42 ) );
         when( config.get( HaSettings.pull_interval ) ).thenReturn( Duration.ofSeconds( 1 ) );
@@ -96,7 +96,7 @@ public class SlaveUpdatePullerTest
     }
 
     @AfterEach
-    public void tearDown() throws Throwable
+    void tearDown() throws Throwable
     {
         updatePuller.stop();
         jobScheduler.stop();
@@ -104,7 +104,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void initialisationMustBeIdempotent()
+    void initialisationMustBeIdempotent()
     {
         updatePuller.start();
         updatePuller.start();
@@ -113,7 +113,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void shouldStopPullingAfterStop() throws Throwable
+    void shouldStopPullingAfterStop() throws Throwable
     {
         // WHEN
         updatePuller.pullUpdates();
@@ -133,7 +133,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void keepPullingUpdatesOnConsecutiveCalls() throws Throwable
+    void keepPullingUpdatesOnConsecutiveCalls() throws Throwable
     {
         // WHEN
         updatePuller.pullUpdates();
@@ -155,7 +155,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void falseOnTryPullUpdatesOnInactivePuller() throws Throwable
+    void falseOnTryPullUpdatesOnInactivePuller() throws Throwable
     {
         // GIVEN
         updatePuller.stop();
@@ -168,7 +168,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void shouldThrowIfPullerInitiallyInactiveStrict() throws Throwable
+    void shouldThrowIfPullerInitiallyInactiveStrict() throws Throwable
     {
         // GIVEN
         Condition condition = mock( Condition.class );
@@ -187,7 +187,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void shouldThrowIfPullerBecomesInactiveWhileWaitingStrict() throws Exception
+    void shouldThrowIfPullerBecomesInactiveWhileWaitingStrict() throws Exception
     {
         // GIVEN
         Condition condition = mock( Condition.class );
@@ -211,7 +211,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void shouldHandleInvalidEpochByNotifyingItsHandler() throws Exception
+    void shouldHandleInvalidEpochByNotifyingItsHandler() throws Exception
     {
         // GIVEN
         doThrow( InvalidEpochException.class ).when( master ).pullUpdates( any( RequestContext.class ) );
@@ -225,7 +225,7 @@ public class SlaveUpdatePullerTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldCopeWithHardExceptionsLikeOutOfMemory() throws Exception
+    void shouldCopeWithHardExceptionsLikeOutOfMemory() throws Exception
     {
         // GIVEN
         OutOfMemoryError oom = new OutOfMemoryError();
@@ -246,7 +246,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void shouldCapExcessiveComExceptionLogging() throws Exception
+    void shouldCapExcessiveComExceptionLogging() throws Exception
     {
         OngoingStubbing<Response<Void>> updatePullStubbing = when( master.pullUpdates( any( RequestContext.class ) ) );
         updatePullStubbing.thenThrow( new ComException() );
@@ -278,7 +278,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void shouldCapExcessiveInvalidEpochExceptionLogging() throws Exception
+    void shouldCapExcessiveInvalidEpochExceptionLogging() throws Exception
     {
         OngoingStubbing<Response<Void>> updatePullStubbing = when( master.pullUpdates( any( RequestContext.class ) ) );
         updatePullStubbing.thenThrow( new InvalidEpochException( 2, 1 ) );

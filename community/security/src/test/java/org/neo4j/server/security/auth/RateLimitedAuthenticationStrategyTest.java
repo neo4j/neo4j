@@ -30,14 +30,14 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class RateLimitedAuthenticationStrategyTest
+class RateLimitedAuthenticationStrategyTest
 {
     @Test
-    public void shouldReturnSuccessForValidAttempt()
+    void shouldReturnSuccessForValidAttempt()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -49,7 +49,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldReturnFailureForInvalidAttempt()
+    void shouldReturnFailureForInvalidAttempt()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -61,7 +61,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldNotSlowRequestRateOnLessThanMaxFailedAttempts()
+    void shouldNotSlowRequestRateOnLessThanMaxFailedAttempts()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -77,7 +77,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldSlowRequestRateOnMultipleFailedAttempts()
+    void shouldSlowRequestRateOnMultipleFailedAttempts()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -100,7 +100,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldSlowRequestRateOnMultipleFailedAttemptsWhereAttemptIsValid()
+    void shouldSlowRequestRateOnMultipleFailedAttemptsWhereAttemptIsValid()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -123,13 +123,13 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldAllowUnlimitedFailedAttemptsWhenMaxFailedAttemptsIsZero()
+    void shouldAllowUnlimitedFailedAttemptsWhenMaxFailedAttemptsIsZero()
     {
         testUnlimitedFailedAuthAttempts( 0 );
     }
 
     @Test
-    public void shouldAllowUnlimitedFailedAttemptsWhenMaxFailedAttemptsIsNegative()
+    void shouldAllowUnlimitedFailedAttemptsWhenMaxFailedAttemptsIsNegative()
     {
         testUnlimitedFailedAuthAttempts( -42 );
     }

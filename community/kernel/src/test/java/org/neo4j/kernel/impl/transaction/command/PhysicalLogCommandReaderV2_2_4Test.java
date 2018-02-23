@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PhysicalLogCommandReaderV2_2_4Test
+class PhysicalLogCommandReaderV2_2_4Test
 {
     @Test
-    public void shouldReadNoKeyIdAsMinusOne() throws Exception
+    void shouldReadNoKeyIdAsMinusOne() throws Exception
     {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();

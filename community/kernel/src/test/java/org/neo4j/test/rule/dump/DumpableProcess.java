@@ -34,7 +34,7 @@ public class DumpableProcess extends UnicastRemoteObject
         new DumpableProcess().traceableMethod( args[0] );
     }
 
-    public synchronized void traceableMethod( String signal ) throws Exception
+    private synchronized void traceableMethod( String signal ) throws Exception
     {
         // The parent process will listen to this signal to know that it's here.
         System.out.println( signal );

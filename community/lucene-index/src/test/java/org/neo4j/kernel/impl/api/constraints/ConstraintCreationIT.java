@@ -42,16 +42,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class ConstraintCreationIT
+class ConstraintCreationIT
 {
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
 
     private static final Label LABEL = Label.label( "label1" );
     private static final long indexId = 1;
 
     @Test
-    public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
+    void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();

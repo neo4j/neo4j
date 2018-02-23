@@ -69,10 +69,10 @@ public class MultiPaxosServer
         new MultiPaxosServer().start();
     }
 
-    protected Cluster cluster;
-    protected AtomicBroadcast broadcast;
+    private Cluster cluster;
+    private AtomicBroadcast broadcast;
 
-    public void start()
+    private void start()
             throws IOException
     {
         broadcastSerializer = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() );

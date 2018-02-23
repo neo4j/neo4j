@@ -41,14 +41,14 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Iterators.count;
 
-public class TestAutoIndexing
+class TestAutoIndexing
 {
     private GraphDatabaseAPI graphDb;
     private Transaction tx;
@@ -74,14 +74,14 @@ public class TestAutoIndexing
     }
 
     @BeforeEach
-    public void startDb()
+    void startDb()
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().setConfig( getConfig() ).newGraphDatabase();
     }
 
     @AfterEach
-    public void stopDb()
+    void stopDb()
     {
         if ( tx != null )
         {
@@ -97,7 +97,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testNodeAutoIndexFromAPISanity()
+    void testNodeAutoIndexFromAPISanity()
     {
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "test_uuid" );
@@ -123,7 +123,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testAutoIndexesReportReadOnly()
+    void testAutoIndexesReportReadOnly()
     {
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         try ( Transaction tx = graphDb.beginTx() )
@@ -141,7 +141,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testChangesAreVisibleInTransaction()
+    void testChangesAreVisibleInTransaction()
     {
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "nodeProp" );
@@ -178,7 +178,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testRelationshipAutoIndexFromAPISanity()
+    void testRelationshipAutoIndexFromAPISanity()
     {
         final String propNameToIndex = "test";
         AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
@@ -211,7 +211,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testConfigAndAPICompatibility()
+    void testConfigAndAPICompatibility()
     {
         stopDb();
         config = new HashMap<>();
@@ -238,7 +238,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testSmallGraphWithNonIndexableProps()
+    void testSmallGraphWithNonIndexableProps()
     {
         stopDb();
         config = new HashMap<>();
@@ -342,7 +342,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDefaultIsOff()
+    void testDefaultIsOff()
     {
         newTransaction();
         Node node1 = graphDb.createNode();
@@ -354,7 +354,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDefaulIfOffIsForEverything()
+    void testDefaulIfOffIsForEverything()
     {
         graphDb.index().getNodeAutoIndexer().setEnabled( true );
         newTransaction();
@@ -374,7 +374,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDefaultIsOffIfExplicit()
+    void testDefaultIsOffIfExplicit()
     {
         stopDb();
         config = new HashMap<>();
@@ -401,7 +401,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDefaultsAreSeparateForNodesAndRelationships()
+    void testDefaultsAreSeparateForNodesAndRelationships()
     {
         stopDb();
         config = new HashMap<>();
@@ -432,7 +432,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testStartStopAutoIndexing()
+    void testStartStopAutoIndexing()
     {
         stopDb();
         config = new HashMap<>();
@@ -464,7 +464,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testStopMonitoringProperty()
+    void testStopMonitoringProperty()
     {
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.setEnabled( true );
@@ -500,7 +500,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testGettingAutoIndexByNameReturnsSomethingReadOnly()
+    void testGettingAutoIndexByNameReturnsSomethingReadOnly()
     {
         // Create the node and relationship auto-indexes
         graphDb.index().getNodeAutoIndexer().setEnabled( true );
@@ -555,7 +555,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testRemoveUnloadedHeavyProperty()
+    void testRemoveUnloadedHeavyProperty()
     {
         /*
          * Checks a bug where removing non-cached heavy properties
@@ -584,7 +584,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testRemoveRelationshipRemovesDocument()
+    void testRemoveRelationshipRemovesDocument()
     {
         AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "foo" );
@@ -619,7 +619,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDeletingNodeRemovesItFromAutoIndex()
+    void testDeletingNodeRemovesItFromAutoIndex()
     {
         AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
         nodeAutoIndexer.startAutoIndexingProperty( "foo" );
@@ -648,7 +648,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void shouldOnlyDeleteAffectedKeyWhenRemovingPropertyFromNode()
+    void shouldOnlyDeleteAffectedKeyWhenRemovingPropertyFromNode()
     {
         // GIVEN a node with two auto-indexed properties
         String key1 = "foo";

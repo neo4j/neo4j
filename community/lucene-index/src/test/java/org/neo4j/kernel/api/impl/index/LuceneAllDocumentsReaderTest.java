@@ -37,25 +37,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class LuceneAllDocumentsReaderTest
+class LuceneAllDocumentsReaderTest
 {
 
     private final PartitionSearcher partitionSearcher1 = createPartitionSearcher( 1, 0, 2 );
     private final PartitionSearcher partitionSearcher2 = createPartitionSearcher( 2, 1, 2 );
 
-    public LuceneAllDocumentsReaderTest() throws IOException
+    LuceneAllDocumentsReaderTest() throws IOException
     {
     }
 
     @Test
-    public void allDocumentsMaxCount()
+    void allDocumentsMaxCount()
     {
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
         assertEquals( 3, allDocumentsReader.maxCount());
     }
 
     @Test
-    public void closeCorrespondingSearcherOnClose() throws IOException
+    void closeCorrespondingSearcherOnClose() throws IOException
     {
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
         allDocumentsReader.close();
@@ -65,7 +65,7 @@ public class LuceneAllDocumentsReaderTest
     }
 
     @Test
-    public void readAllDocuments()
+    void readAllDocuments()
     {
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
         List<Document> documents = Iterators.asList( allDocumentsReader.iterator() );

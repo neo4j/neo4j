@@ -26,16 +26,16 @@ import java.io.IOException;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 
-public class LockWorkFailureDump
+class LockWorkFailureDump
 {
     private final File file;
 
-    public LockWorkFailureDump( File file )
+    LockWorkFailureDump( File file )
     {
         this.file = file;
     }
 
-    public File dumpState( Locks lm, LockWorker... workers ) throws IOException
+    File dumpState( Locks lm, LockWorker... workers ) throws IOException
     {
         FileOutputStream out = new FileOutputStream( file, false );
         FormattedLogProvider logProvider = FormattedLogProvider.withoutAutoFlush().toOutputStream( out );

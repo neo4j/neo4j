@@ -40,7 +40,7 @@ public class DatabaseTest
     private Database arg = new Database();
 
     @Test
-    public void parseDatabaseShouldThrowOnPath()
+    void parseDatabaseShouldThrowOnPath()
     {
         Path path = Paths.get( "data", "databases", "graph.db" );
         expected.expect( IllegalArgumentException.class );
@@ -49,7 +49,7 @@ public class DatabaseTest
     }
 
     @Test
-    public void parseDatabaseName()
+    void parseDatabaseName()
     {
         assertEquals( "bob.db", arg.parse( Args.parse( "--database=bob.db" ) ) );
     }

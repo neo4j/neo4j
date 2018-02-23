@@ -54,7 +54,7 @@ import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 @EnableRuleMigrationSupport
 public abstract class PageCacheTestSupport<T extends PageCache>
 {
-    protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
+    static final long SHORT_TIMEOUT_MILLIS = 10_000;
     protected static final long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected static final long LONG_TIMEOUT_MILLIS = 360_000;
     protected static ExecutorService executor;
@@ -74,16 +74,16 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    protected int recordSize = 9;
-    protected int maxPages = 20;
+    int recordSize = 9;
+    int maxPages = 20;
 
-    protected int pageCachePageSize;
-    protected int recordsPerFilePage;
-    protected int recordCount;
+    int pageCachePageSize;
+    int recordsPerFilePage;
+    int recordCount;
     protected int filePageSize;
-    protected ByteBuffer bufA;
+    ByteBuffer bufA;
     protected FileSystemAbstraction fs;
-    protected T pageCache;
+    T pageCache;
 
     private Fixture<T> fixture;
 
@@ -110,9 +110,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         fs.close();
     }
 
-    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
-                                       PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
-                                       VersionContextSupplier versionContextSupplier )
+    final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
+            PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier versionContextSupplier )
     {
         T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier );
         pageCachePageSize = pageCache.pageSize();
@@ -137,8 +136,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return createPageCache( fs, maxPages, tracer, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY );
     }
 
-    protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-                                    PageCursorTracerSupplier cursorTracerSupplier )
+    final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
+            PageCursorTracerSupplier cursorTracerSupplier )
     {
         if ( pageCache != null )
         {
@@ -148,17 +147,17 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return pageCache;
     }
 
-    protected void configureStandardPageCache()
+    void configureStandardPageCache()
     {
         getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
-    protected final void tearDownPageCache( T pageCache )
+    private void tearDownPageCache( T pageCache )
     {
         fixture.tearDownPageCache( pageCache );
     }
 
-    protected final FileSystemAbstraction createFileSystemAbstraction()
+    private FileSystemAbstraction createFileSystemAbstraction()
     {
         return fixture.getFileSystemAbstraction();
     }
@@ -168,20 +167,20 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return fixture.file( pathname );
     }
 
-    protected void ensureExists( File file ) throws IOException
+    void ensureExists( File file ) throws IOException
     {
         fs.mkdirs( file.getParentFile() );
         fs.create( file ).close();
     }
 
-    protected File existingFile( String name ) throws IOException
+    File existingFile( String name ) throws IOException
     {
         File file = file( name );
         ensureExists( file );
         return file;
     }
 
-    protected void ensureDirectoryExists( File dir )
+    private void ensureDirectoryExists( File dir )
     {
         fs.mkdir( dir );
     }
@@ -198,7 +197,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      * <p>
      * This does the do-while-retry loop internally.
      */
-    protected void verifyRecordsMatchExpected( PageCursor cursor ) throws IOException
+    void verifyRecordsMatchExpected( PageCursor cursor ) throws IOException
     {
         ByteBuffer expectedPageContents = ByteBuffer.allocate( filePageSize );
         ByteBuffer actualPageContents = ByteBuffer.allocate( filePageSize );
@@ -228,7 +227,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      * <p>
      * This does the do-while-retry loop internally.
      */
-    protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents ) throws IOException
+    void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents ) throws IOException
     {
         ByteBuffer expectedPageContents = ByteBuffer.allocate( filePageSize );
         for ( int i = 0; i < recordsPerFilePage; i++ )
@@ -248,14 +247,14 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         assertRecords( pageId, actual, expected );
     }
 
-    protected void assertRecords( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
+    private void assertRecords( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
     {
         byte[] actualBytes = actualPageContents.array();
         byte[] expectedBytes = expectedPageContents.array();
         assertRecords( pageId, actualBytes, expectedBytes );
     }
 
-    protected void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
+    private void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
     {
         int estimatedPageId = estimateId( actualBytes );
         assertThat(
@@ -267,7 +266,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
                 byteArray( expectedBytes ) );
     }
 
-    protected int estimateId( byte[] record )
+    private int estimateId( byte[] record )
     {
         return ByteBuffer.wrap( record ).getInt() - 1;
     }
@@ -276,7 +275,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      * Fill the page bound by the cursor with records that can be verified with
      * {@link #verifyRecordsMatchExpected(PageCursor)} or {@link #verifyRecordsInFile(java.io.File, int)}.
      */
-    protected void writeRecords( PageCursor cursor )
+    void writeRecords( PageCursor cursor )
     {
         cursor.setOffset( 0 );
         for ( int i = 0; i < recordsPerFilePage; i++ )
@@ -287,10 +286,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected void generateFileWithRecords(
-            File file,
-            int recordCount,
-            int recordSize ) throws IOException
+    void generateFileWithRecords( File file, int recordCount, int recordSize ) throws IOException
     {
         try ( StoreChannel channel = fs.open( file, OpenMode.READ_WRITE ) )
         {
@@ -298,7 +294,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize )
+    void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize )
             throws IOException
     {
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
@@ -314,7 +310,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected static void generateRecordForId( long id, ByteBuffer buf )
+    static void generateRecordForId( long id, ByteBuffer buf )
     {
         buf.position( 0 );
         int x = (int) (id + 1);
@@ -327,7 +323,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         buf.position( 0 );
     }
 
-    protected void verifyRecordsInFile( File file, int recordCount ) throws IOException
+    void verifyRecordsInFile( File file, int recordCount ) throws IOException
     {
         try ( StoreChannel channel = fs.open( file, OpenMode.READ ) )
         {
@@ -335,7 +331,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected void verifyRecordsInFile( ReadableByteChannel channel, int recordCount ) throws IOException
+    void verifyRecordsInFile( ReadableByteChannel channel, int recordCount ) throws IOException
     {
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
         ByteBuffer observation = ByteBuffer.allocate( recordSize );
@@ -348,7 +344,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected Runnable $close( final PagedFile file )
+    Runnable $close( final PagedFile file )
     {
         return () ->
         {
@@ -365,16 +361,15 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     public abstract static class Fixture<T extends PageCache>
     {
-        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
-                                           PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
-                                           VersionContextSupplier contextSupplier );
+        protected abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
+                PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier );
 
-        public abstract void tearDownPageCache( T pageCache );
+        protected abstract void tearDownPageCache( T pageCache );
 
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
         private Function<String,File> fileConstructor = File::new;
 
-        public final FileSystemAbstraction getFileSystemAbstraction()
+        final FileSystemAbstraction getFileSystemAbstraction()
         {
             return fileSystemAbstractionSupplier.get();
         }
@@ -386,7 +381,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             return this;
         }
 
-        public final File file( String pathname ) throws IOException
+        final File file( String pathname ) throws IOException
         {
             return fileConstructor.apply( pathname ).getCanonicalFile();
         }

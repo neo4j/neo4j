@@ -42,7 +42,7 @@ public class IndexEntryUpdateTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
-    public void indexEntryUpdatesShouldBeEqual()
+    void indexEntryUpdatesShouldBeEqual()
     {
         IndexEntryUpdate<?> a = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> b = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
@@ -51,7 +51,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void addShouldRetainValues()
+    void addShouldRetainValues()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> multi = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4, 5 ), multiValue );
@@ -61,7 +61,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void removeShouldRetainValues()
+    void removeShouldRetainValues()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> multi = IndexEntryUpdate
@@ -72,7 +72,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void addShouldThrowIfAskedForChanged()
+    void addShouldThrowIfAskedForChanged()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         thrown.expect( UnsupportedOperationException.class );
@@ -80,7 +80,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void removeShouldThrowIfAskedForChanged()
+    void removeShouldThrowIfAskedForChanged()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         thrown.expect( UnsupportedOperationException.class );
@@ -88,7 +88,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void updatesShouldEqualRegardlessOfCreationMethod()
+    void updatesShouldEqualRegardlessOfCreationMethod()
     {
         IndexEntryUpdate<?> singleAdd = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         Value[] singleAsArray = {singleValue};
@@ -108,7 +108,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void changedShouldRetainValues()
+    void changedShouldRetainValues()
     {
         Value singleAfter = Values.of( "Hello" );
         IndexEntryUpdate<?> singleChange = IndexEntryUpdate

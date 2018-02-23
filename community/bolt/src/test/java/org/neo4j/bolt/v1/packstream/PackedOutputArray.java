@@ -26,8 +26,8 @@ import java.nio.ByteBuffer;
 
 public class PackedOutputArray implements PackOutput
 {
-    ByteArrayOutputStream raw;
-    DataOutputStream data;
+    private ByteArrayOutputStream raw;
+    private DataOutputStream data;
 
     public PackedOutputArray()
     {

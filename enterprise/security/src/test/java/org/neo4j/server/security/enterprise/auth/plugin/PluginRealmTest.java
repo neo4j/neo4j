@@ -33,14 +33,14 @@ import static java.lang.String.format;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class PluginRealmTest
+class PluginRealmTest
 {
     private Config config = mock( Config.class );
     private AssertableLogProvider log = new AssertableLogProvider();
     private SecurityLog securityLog = new SecurityLog( log.getLog( this.getClass() ) );
 
     @Test
-    public void shouldLogToSecurityLogFromAuthPlugin() throws Throwable
+    void shouldLogToSecurityLogFromAuthPlugin() throws Throwable
     {
         PluginRealm pluginRealm = new PluginRealm( new LoggingAuthPlugin(), config, securityLog, Clock.systemUTC(),
                 mock( SecureHasher.class ) );
@@ -49,7 +49,7 @@ public class PluginRealmTest
     }
 
     @Test
-    public void shouldLogToSecurityLogFromAuthenticationPlugin() throws Throwable
+    void shouldLogToSecurityLogFromAuthenticationPlugin() throws Throwable
     {
         PluginRealm pluginRealm = new PluginRealm(
                 new LoggingAuthenticationPlugin(),
@@ -60,7 +60,7 @@ public class PluginRealmTest
     }
 
     @Test
-    public void shouldLogToSecurityLogFromAuthorizationPlugin() throws Throwable
+    void shouldLogToSecurityLogFromAuthorizationPlugin() throws Throwable
     {
         PluginRealm pluginRealm = new PluginRealm(
                 null,

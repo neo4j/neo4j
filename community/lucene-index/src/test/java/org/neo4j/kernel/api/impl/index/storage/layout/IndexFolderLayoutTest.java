@@ -25,12 +25,12 @@ import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class IndexFolderLayoutTest
+class IndexFolderLayoutTest
 {
     private final File indexRoot = new File( "indexRoot" );
 
     @Test
-    public void testIndexFolder()
+    void testIndexFolder()
     {
         IndexFolderLayout indexLayout = createTestIndex();
         File indexFolder = indexLayout.getIndexFolder();
@@ -39,7 +39,7 @@ public class IndexFolderLayoutTest
     }
 
     @Test
-    public void testIndexPartitionFolder()
+    void testIndexPartitionFolder()
     {
         IndexFolderLayout indexLayout = createTestIndex();
 

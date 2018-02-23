@@ -42,7 +42,7 @@ public class LogVersionUpgradeCheckerTest
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void noThrowWhenLatestVersionAndUpgradeIsNotAllowed()
+    void noThrowWhenLatestVersionAndUpgradeIsNotAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
@@ -50,7 +50,7 @@ public class LogVersionUpgradeCheckerTest
     }
 
     @Test
-    public void throwWhenVersionIsOlderAndUpgradeIsNotAllowed()
+    void throwWhenVersionIsOlderAndUpgradeIsNotAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 
@@ -60,7 +60,7 @@ public class LogVersionUpgradeCheckerTest
     }
 
     @Test
-    public void stillAcceptLatestVersionWhenUpgradeIsAllowed()
+    void stillAcceptLatestVersionWhenUpgradeIsAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
@@ -68,7 +68,7 @@ public class LogVersionUpgradeCheckerTest
     }
 
     @Test
-    public void acceptOlderLogsWhenUpgradeIsAllowed()
+    void acceptOlderLogsWhenUpgradeIsAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 

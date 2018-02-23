@@ -38,7 +38,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class KernelTransactionTimeoutMonitorTest
+class KernelTransactionTimeoutMonitorTest
 {
     private static final int EXPECTED_REUSE_COUNT = 2;
     private KernelTransactions kernelTransactions;
@@ -47,7 +47,7 @@ public class KernelTransactionTimeoutMonitorTest
     private LogService logService;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         kernelTransactions = mock( KernelTransactions.class );
         fakeClock = Clocks.fakeClock();
@@ -56,7 +56,7 @@ public class KernelTransactionTimeoutMonitorTest
     }
 
     @Test
-    public void terminateExpiredTransactions()
+    void terminateExpiredTransactions()
     {
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 1, 3 );
@@ -93,7 +93,7 @@ public class KernelTransactionTimeoutMonitorTest
     }
 
     @Test
-    public void skipTransactionWithoutTimeout()
+    void skipTransactionWithoutTimeout()
     {
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 3, 0 );

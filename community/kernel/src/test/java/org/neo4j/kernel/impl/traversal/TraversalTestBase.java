@@ -56,7 +56,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         return true;
     }
 
-    protected Node node( String name )
+    Node node( String name )
     {
         return nodes.get( name );
     }
@@ -66,12 +66,12 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         return getGraphDb().getNodeById( id );
     }
 
-    protected Transaction beginTx()
+    Transaction beginTx()
     {
         return getGraphDb().beginTx();
     }
 
-    protected void createGraph( String... description )
+    void createGraph( String... description )
     {
         nodes = createGraph( GraphDescription.create( description ) );
     }
@@ -86,7 +86,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         }
     }
 
-    protected Node getNodeWithName( String name )
+    Node getNodeWithName( String name )
     {
         ResourceIterable<Node> allNodes = getGraphDb().getAllNodes();
         try ( ResourceIterator<Node> nodeIterator = allNodes.iterator() )
@@ -107,7 +107,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         return null;
     }
 
-    protected void assertLevels( Traverser traverser, Stack<Set<String>> levels )
+    void assertLevels( Traverser traverser, Stack<Set<String>> levels )
     {
         Set<String> current = levels.pop();
 
@@ -127,12 +127,12 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         assertTrue( "Should be empty", current.isEmpty() );
     }
 
-    protected static final Representation<PropertyContainer> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation( "name" );
+    static final Representation<PropertyContainer> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation( "name" );
 
-    protected static final Representation<Relationship> RELATIONSHIP_TYPE_REPRESENTATION =
+    private static final Representation<Relationship> RELATIONSHIP_TYPE_REPRESENTATION =
             item -> item.getType().name();
 
-    protected interface Representation<T>
+    interface Representation<T>
     {
         String represent( T item );
     }
@@ -140,7 +140,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
     protected static final class PropertyRepresentation implements
             Representation<PropertyContainer>
     {
-        public PropertyRepresentation( String key )
+        PropertyRepresentation( String key )
         {
             this.key = key;
         }
@@ -160,13 +160,12 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         private final Representation<? super Node> nodes;
         private final Representation<? super Relationship> rel;
 
-        public RelationshipRepresentation( Representation<? super Node> nodes )
+        RelationshipRepresentation( Representation<? super Node> nodes )
         {
             this( nodes, RELATIONSHIP_TYPE_REPRESENTATION );
         }
 
-        public RelationshipRepresentation( Representation<? super Node> nodes,
-                Representation<? super Relationship> rel )
+        RelationshipRepresentation( Representation<? super Node> nodes, Representation<? super Relationship> rel )
         {
             this.nodes = nodes;
             this.rel = rel;
@@ -186,7 +185,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
     {
         private final Representation<? super Node> nodes;
 
-        public NodePathRepresentation( Representation<? super Node> nodes )
+        NodePathRepresentation( Representation<? super Node> nodes )
         {
             this.nodes = nodes;
 
@@ -205,14 +204,12 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         }
     }
 
-    protected <T> void expect( Iterable<? extends T> items,
-            Representation<T> representation, String... expected )
+    private <T> void expect( Iterable<? extends T> items, Representation<T> representation, String... expected )
     {
         expect( items, representation, new HashSet<>( Arrays.asList( expected ) ) );
     }
 
-    protected <T> void expect( Iterable<? extends T> items,
-            Representation<T> representation, Set<String> expected )
+    private <T> void expect( Iterable<? extends T> items, Representation<T> representation, Set<String> expected )
     {
         Collection<String> encounteredItems = new ArrayList<>();
         try ( Transaction tx = beginTx() )
@@ -232,24 +229,23 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         }
     }
 
-    protected void expectNodes( Traverser traverser, String... nodes )
+    void expectNodes( Traverser traverser, String... nodes )
     {
         expect( traverser.nodes(), NAME_PROPERTY_REPRESENTATION, nodes );
     }
 
-    protected void expectRelationships( Traverser traverser,
-            String... relationships )
+    void expectRelationships( Traverser traverser, String... relationships )
     {
         expect( traverser.relationships(), new RelationshipRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), relationships );
     }
 
-    protected void expectPaths( Traverser traverser, String... paths )
+    void expectPaths( Traverser traverser, String... paths )
     {
         expectPaths( traverser, new HashSet<>( Arrays.asList( paths ) ) );
     }
 
-    protected void expectPaths( Traverser traverser, Set<String> expected )
+    void expectPaths( Traverser traverser, Set<String> expected )
     {
         expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );
@@ -277,8 +273,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         }
     }
 
-    public static <T> void assertContainsInOrder( Collection<T> collection,
-            T... expectedItems )
+    private static <T> void assertContainsInOrder( Collection<T> collection, T... expectedItems )
     {
         String collectionString = join( ", ", collection.toArray() );
         assertEquals( collectionString, expectedItems.length, collection.size() );
@@ -289,13 +284,12 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         }
     }
 
-    public static <T> void assertContainsInOrder( Iterable<T> collection,
-            T... expectedItems )
+    static <T> void assertContainsInOrder( Iterable<T> collection, T... expectedItems )
     {
         assertContainsInOrder( Iterables.asCollection( collection ), expectedItems );
     }
 
-    public static <T> String join( String delimiter, T... items )
+    private static <T> String join( String delimiter, T... items )
     {
         StringBuilder buffer = new StringBuilder();
         for ( T item : items )

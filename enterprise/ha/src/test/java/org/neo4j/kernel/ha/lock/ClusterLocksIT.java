@@ -62,8 +62,8 @@ public class ClusterLocksIT
 {
     private static final long TIMEOUT_MILLIS = 120_000;
 
-    public final ExpectedException expectedException = none();
-    public final ClusterRule clusterRule = new ClusterRule();
+    private final ExpectedException expectedException = none();
+    private final ClusterRule clusterRule = new ClusterRule();
 
     @Rule
     public final RuleChain rules = outerRule( expectedException ).around( clusterRule );
@@ -71,7 +71,7 @@ public class ClusterLocksIT
     private ClusterManager.ManagedCluster cluster;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         cluster = clusterRule.withSharedSetting( tx_push_factor, "2" )
                 .withInstanceSetting( lock_manager, i -> "community" )
@@ -81,7 +81,7 @@ public class ClusterLocksIT
     private final Label testLabel = label( "testLabel" );
 
     @Test
-    public void lockCleanupOnModeSwitch() throws Throwable
+    void lockCleanupOnModeSwitch() throws Throwable
     {
         assertTimeout( ofMillis( TIMEOUT_MILLIS ), () -> {
             HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -101,7 +101,7 @@ public class ClusterLocksIT
     }
 
     @Test
-    public void oneOrTheOtherShouldDeadlock() throws Throwable
+    void oneOrTheOtherShouldDeadlock() throws Throwable
     {
         AtomicInteger deadlockCount = new AtomicInteger();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -148,7 +148,7 @@ public class ClusterLocksIT
     }
 
     @Test
-    public void aPendingMemberShouldBeAbleToServeReads() throws Throwable
+    void aPendingMemberShouldBeAbleToServeReads() throws Throwable
     {
         // given
         createNodeOnMaster( testLabel, cluster.getMaster() );

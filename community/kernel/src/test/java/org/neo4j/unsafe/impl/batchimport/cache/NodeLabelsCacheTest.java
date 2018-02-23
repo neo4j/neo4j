@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class NodeLabelsCacheTest
+class NodeLabelsCacheTest
 {
     @Test
-    public void shouldCacheSmallSetOfLabelsPerNode()
+    void shouldCacheSmallSetOfLabelsPerNode()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, CHUNK_SIZE );
@@ -50,7 +50,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldHandleLargeAmountOfLabelsPerNode()
+    void shouldHandleLargeAmountOfLabelsPerNode()
     {
         // GIVEN
         int highLabelId = 1000;
@@ -69,7 +69,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldHandleLabelsForManyNodes()
+    void shouldHandleLabelsForManyNodes()
     {
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
@@ -94,7 +94,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldEndTargetArrayWithMinusOne()
+    void shouldEndTargetArrayWithMinusOne()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 10 );
@@ -114,7 +114,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever()
+    void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 0 );
@@ -129,7 +129,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldSupportConcurrentGet() throws Throwable
+    void shouldSupportConcurrentGet() throws Throwable
     {
         // GIVEN
         int highLabelId = 10;

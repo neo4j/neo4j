@@ -49,10 +49,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultMasterImplSPITest
+class DefaultMasterImplSPITest
 {
     @Test
-    public void flushStoreFilesWithCorrectCheckpointTriggerName() throws IOException
+    void flushStoreFilesWithCorrectCheckpointTriggerName() throws IOException
     {
         CheckPointer checkPointer = mock( CheckPointer.class );
 

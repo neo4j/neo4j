@@ -151,8 +151,8 @@ public abstract class ProcedureInteractionTestBase<S>
 
     EnterpriseUserManager userManager;
 
-    protected NeoInteractionLevel<S> neo;
-    protected TransportTestUtil util;
+    NeoInteractionLevel<S> neo;
+    private TransportTestUtil util;
     File securityLog;
 
     Map<String,String> defaultConfiguration() throws IOException
@@ -217,7 +217,7 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
-    protected String[] with( String[] strs, String... moreStr )
+    String[] with( String[] strs, String... moreStr )
     {
         return Stream.concat( Arrays.stream( strs ), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
@@ -524,7 +524,7 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
-    static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+    private static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
             MapValue expected )
     {
         List<Map<String,Object>> result = r.stream().collect( toList() );
@@ -587,7 +587,7 @@ public abstract class ProcedureInteractionTestBase<S>
         ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 
-    protected Object toRawValue( Object value )
+    Object toRawValue( Object value )
     {
         if ( value instanceof AnyValue )
         {
@@ -885,10 +885,10 @@ public abstract class ProcedureInteractionTestBase<S>
     }
 
     @SuppressWarnings( "unused" )
-    public static class ClassWithFunctions
+    static class ClassWithFunctions
     {
         @Context
-        public GraphDatabaseService db;
+        GraphDatabaseService db;
 
         @UserFunction( name = "test.nonAllowedFunc" )
         public String nonAllowedFunc()

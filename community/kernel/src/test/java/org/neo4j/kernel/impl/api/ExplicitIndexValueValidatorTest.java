@@ -24,11 +24,11 @@ import org.mockito.Mockito;
 
 import org.neo4j.kernel.impl.util.Validator;
 
-public class ExplicitIndexValueValidatorTest extends IndexSimpleValueValidatorTest
+class ExplicitIndexValueValidatorTest extends IndexSimpleValueValidatorTest
 {
 
     @Test
-    public void nullToStringIsNotAllowed()
+    void nullToStringIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "has null toString" );
@@ -39,7 +39,7 @@ public class ExplicitIndexValueValidatorTest extends IndexSimpleValueValidatorTe
     }
 
     @Override
-    protected Validator<Object> getValidator()
+    Validator<Object> getValidator()
     {
         return ExplicitIndexValueValidator.INSTANCE;
     }

@@ -41,10 +41,10 @@ import static java.lang.System.getProperty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class RmiPublicationIT
+class RmiPublicationIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     public static File createDefaultConfigFile( File path ) throws IOException
     {
@@ -59,13 +59,13 @@ public class RmiPublicationIT
     }
 
     @Test
-    public void jvmShouldDieEvenIfWeLeaveSameJvmClientIsLeftHanging() throws Exception
+    void jvmShouldDieEvenIfWeLeaveSameJvmClientIsLeftHanging() throws Exception
     {
         assertEquals( 0, spawnJvm( DontShutdownClient.class, "client" ) );
     }
 
     @Test
-    public void jvmShouldDieEvenIfLocalServerIsLeftHanging() throws Exception
+    void jvmShouldDieEvenIfLocalServerIsLeftHanging() throws Exception
     {
         assertEquals( 0, spawnJvm( DontShutdownLocalServer.class, "server" ) );
     }

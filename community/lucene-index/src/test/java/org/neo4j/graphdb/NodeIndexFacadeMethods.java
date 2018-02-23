@@ -24,7 +24,7 @@ import org.neo4j.graphdb.index.Index;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-public class NodeIndexFacadeMethods
+class NodeIndexFacadeMethods
 {
     private static final FacadeMethod<Index<Node>> GET = new FacadeMethod<Index<Node>>( "IndexHits<T> get( String " +
             "key, Object value )" )

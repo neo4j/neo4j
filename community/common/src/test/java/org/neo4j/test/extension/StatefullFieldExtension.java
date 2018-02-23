@@ -26,7 +26,7 @@ import java.lang.reflect.Field;
 import java.util.function.Function;
 import javax.annotation.Resource;
 
-public abstract class StatefullFieldExtension<T> implements TestInstancePostProcessor
+abstract class StatefullFieldExtension<T> implements TestInstancePostProcessor
 {
     protected abstract String getFieldKey();
 
@@ -50,12 +50,12 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
 
     }
 
-    protected T getStoredValue( ExtensionContext context )
+    T getStoredValue( ExtensionContext context )
     {
         return getStore( context ).get( getFieldKey(), getFieldType() );
     }
 
-    protected void removeStoredValue( ExtensionContext context )
+    void removeStoredValue( ExtensionContext context )
     {
         getStore( context ).remove( getFieldKey(), getFieldType() );
     }
@@ -67,7 +67,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
                 (Function<String,Object>) s -> createField() );
     }
 
-    protected ExtensionContext.Store getStore( ExtensionContext extensionContext )
+    ExtensionContext.Store getStore( ExtensionContext extensionContext )
     {
         return extensionContext.getStore( ExtensionContext.Namespace.create( getClass() ) );
     }

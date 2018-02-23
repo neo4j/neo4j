@@ -37,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @author Anders Nawroth
  */
-public class RelatedNodesQuestionTest
+class RelatedNodesQuestionTest
 {
     @Test
-    public void question5346011()
+    void question5346011()
     {
         GraphDatabaseService service = new TestGraphDatabaseFactory().newImpermanentDatabase();
         try ( Transaction tx = service.beginTx() )

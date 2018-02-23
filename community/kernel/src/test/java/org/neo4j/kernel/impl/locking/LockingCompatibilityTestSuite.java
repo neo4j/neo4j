@@ -92,16 +92,16 @@ public abstract class LockingCompatibilityTestSuite
         @Rule
         public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
 
-        protected final LockingCompatibilityTestSuite suite;
+        final LockingCompatibilityTestSuite suite;
 
-        protected Locks locks;
-        protected Locks.Client clientA;
-        protected Locks.Client clientB;
-        protected Locks.Client clientC;
+        Locks locks;
+        Locks.Client clientA;
+        Locks.Client clientB;
+        Locks.Client clientC;
 
         private final Map<Locks.Client, OtherThreadRule<Void>> clientToThreadMap = new HashMap<>();
 
-        public Compatibility( LockingCompatibilityTestSuite suite )
+        Compatibility( LockingCompatibilityTestSuite suite )
         {
             this.suite = suite;
         }
@@ -136,7 +136,7 @@ public abstract class LockingCompatibilityTestSuite
             private final OtherThreadRule<Void> thread;
             private final Locks.Client client;
 
-            protected LockCommand( OtherThreadRule<Void> thread, Locks.Client client )
+            LockCommand( OtherThreadRule<Void> thread, Locks.Client client )
             {
                 this.thread = thread;
                 this.client = client;
@@ -177,11 +177,8 @@ public abstract class LockingCompatibilityTestSuite
             }
         }
 
-        protected LockCommand acquireExclusive(
-                final Locks.Client client,
-                final LockTracer tracer,
-                final ResourceType resourceType,
-                final long key )
+        LockCommand acquireExclusive( final Locks.Client client, final LockTracer tracer,
+                final ResourceType resourceType, final long key )
         {
             return new LockCommand( clientToThreadMap.get( client ), client )
             {
@@ -193,10 +190,7 @@ public abstract class LockingCompatibilityTestSuite
             };
         }
 
-        protected LockCommand acquireShared(
-                Locks.Client client,
-                final LockTracer tracer,
-                final ResourceType resourceType,
+        LockCommand acquireShared( Locks.Client client, final LockTracer tracer, final ResourceType resourceType,
                 final long key )
         {
             return new LockCommand( clientToThreadMap.get( client ), client )
@@ -224,7 +218,7 @@ public abstract class LockingCompatibilityTestSuite
             };
         }
 
-        protected void assertNotWaiting( Locks.Client client, Future<Object> lock )
+        void assertNotWaiting( Locks.Client client, Future<Object> lock )
         {
             try
             {
@@ -236,7 +230,7 @@ public abstract class LockingCompatibilityTestSuite
             }
         }
 
-        protected void assertWaiting( Locks.Client client, Future<Object> lock )
+        void assertWaiting( Locks.Client client, Future<Object> lock )
         {
             try
             {

@@ -50,7 +50,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ExplicitIndexTransactionStateImplTest
+class ExplicitIndexTransactionStateImplTest
 {
     private final Map<String,String> config = singletonMap( IndexManager.PROVIDER, "test" );
     private final IndexImplementation provider = mock( IndexImplementation.class );
@@ -58,7 +58,7 @@ public class ExplicitIndexTransactionStateImplTest
     private IndexConfigStore indexConfigStore;
 
     @Test
-    public void tracksNodeCommands()
+    void tracksNodeCommands()
     {
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
 
@@ -86,7 +86,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void tracksRelationshipCommands()
+    void tracksRelationshipCommands()
     {
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
 
@@ -114,7 +114,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void nodeIndexDeletionRemovesCommands()
+    void nodeIndexDeletionRemovesCommands()
     {
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
 
@@ -136,7 +136,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void relationshipIndexDeletionRemovesCommands()
+    void relationshipIndexDeletionRemovesCommands()
     {
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
 
@@ -158,7 +158,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void removalOfNodeIndexDoesNotClearRelationshipCommandsForRelationshipIndexWithSameName()
+    void removalOfNodeIndexDoesNotClearRelationshipCommandsForRelationshipIndexWithSameName()
     {
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
 
@@ -182,7 +182,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void removalOfRelationshipIndexDoesNotClearNodeCommandsForNodeIndexWithSameName()
+    void removalOfRelationshipIndexDoesNotClearNodeCommandsForNodeIndexWithSameName()
     {
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
 
@@ -206,7 +206,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldReportIndexExists()
+    void shouldReportIndexExists()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
@@ -221,7 +221,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldReportIndexExistsWithMatchingConfiguration()
+    void shouldReportIndexExistsWithMatchingConfiguration()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
@@ -237,7 +237,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldThrowOnIndexExistsWithMismatchingConfiguration()
+    void shouldThrowOnIndexExistsWithMismatchingConfiguration()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
@@ -263,7 +263,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldReportIndexDoesNotExist()
+    void shouldReportIndexDoesNotExist()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();

@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -57,7 +56,7 @@ import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class SharedDiscoveryServiceIT
+class SharedDiscoveryServiceIT
 {
     private static final long TIMEOUT_MS = 15_000;
     private static final long RUN_TIME_MS = 1000;
@@ -66,7 +65,7 @@ public class SharedDiscoveryServiceIT
     private NullLogProvider userLogProvider = getInstance();
 
     @Test
-    public void shouldDiscoverCompleteTargetSetWithoutDeadlocks()
+    void shouldDiscoverCompleteTargetSetWithoutDeadlocks()
     {
         assertTimeout( ofMillis( TIMEOUT_MS ), () -> {
             //  given

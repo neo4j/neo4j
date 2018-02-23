@@ -37,17 +37,17 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.core.AnyOf.anyOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class ConnectToRandomCoreServerStrategyTest
+class ConnectToRandomCoreServerStrategyTest
 {
     @Test
-    public void shouldConnectToRandomCoreServer() throws Exception
+    void shouldConnectToRandomCoreServer() throws Exception
     {
         // given
         MemberId memberId1 = new MemberId( UUID.randomUUID() );

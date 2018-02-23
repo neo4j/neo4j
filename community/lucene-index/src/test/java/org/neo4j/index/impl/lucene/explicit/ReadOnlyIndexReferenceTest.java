@@ -45,13 +45,13 @@ public class ReadOnlyIndexReferenceTest
     private ReadOnlyIndexReference indexReference = new ReadOnlyIndexReference( identifier, searcher );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( searcher.getIndexReader() ).thenReturn( reader );
     }
 
     @Test
-    public void obtainingWriterIsUnsupported()
+    void obtainingWriterIsUnsupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         expectedException.expectMessage( "Read only indexes do not have index writers." );
@@ -59,7 +59,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void markAsStaleIsUnsupported()
+    void markAsStaleIsUnsupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         expectedException.expectMessage( "Read only indexes can't be marked as stale." );
@@ -67,13 +67,13 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void checkAndClearStaleAlwaysFalse()
+    void checkAndClearStaleAlwaysFalse()
     {
         assertFalse( indexReference.checkAndClearStale() );
     }
 
     @Test
-    public void disposeClosingSearcherAndMarkAsClosed() throws IOException
+    void disposeClosingSearcherAndMarkAsClosed() throws IOException
     {
         indexReference.dispose();
 
@@ -82,7 +82,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void detachIndexReferenceWhenSomeReferencesExist() throws IOException
+    void detachIndexReferenceWhenSomeReferencesExist() throws IOException
     {
         indexReference.incRef();
         indexReference.detachOrClose();
@@ -91,7 +91,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void closeIndexReferenceWhenNoReferenceExist() throws IOException
+    void closeIndexReferenceWhenNoReferenceExist() throws IOException
     {
         indexReference.detachOrClose();
 
@@ -101,7 +101,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void doNotCloseInstanceWhenSomeReferenceExist()
+    void doNotCloseInstanceWhenSomeReferenceExist()
     {
         indexReference.incRef();
         assertFalse( indexReference.close() );
@@ -110,7 +110,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void closeDetachedIndexReferencedOnlyOnce() throws IOException
+    void closeDetachedIndexReferencedOnlyOnce() throws IOException
     {
         indexReference.incRef();
         indexReference.detachOrClose();
@@ -123,7 +123,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void doNotCloseDetachedIndexReferencedMoreThenOnce() throws IOException
+    void doNotCloseDetachedIndexReferencedMoreThenOnce() throws IOException
     {
         indexReference.incRef();
         indexReference.incRef();
@@ -135,7 +135,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void doNotCloseReferencedIndex()
+    void doNotCloseReferencedIndex()
     {
         indexReference.incRef();
         assertFalse( indexReference.close() );
@@ -143,7 +143,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void closeNotReferencedIndex()
+    void closeNotReferencedIndex()
     {
         assertTrue( indexReference.close() );
     }

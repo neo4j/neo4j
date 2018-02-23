@@ -45,7 +45,7 @@ import org.neo4j.test.extension.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( MockitoExtension.class )
-public class RaftMessageProcessingTest
+class RaftMessageProcessingTest
 {
     private static ChannelMarshal<ReplicatedContent> serializer = new SafeChannelMarshal<ReplicatedContent>()
     {
@@ -93,13 +93,13 @@ public class RaftMessageProcessingTest
     private EmbeddedChannel channel;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         channel = new EmbeddedChannel( new RaftMessageEncoder( serializer ), new RaftMessageDecoder( serializer, Clock.systemUTC() ) );
     }
 
     @Test
-    public void shouldEncodeAndDecodeVoteRequest()
+    void shouldEncodeAndDecodeVoteRequest()
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
@@ -115,7 +115,7 @@ public class RaftMessageProcessingTest
     }
 
     @Test
-    public void shouldEncodeAndDecodeVoteResponse()
+    void shouldEncodeAndDecodeVoteResponse()
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
@@ -131,7 +131,7 @@ public class RaftMessageProcessingTest
     }
 
     @Test
-    public void shouldEncodeAndDecodeAppendEntriesRequest()
+    void shouldEncodeAndDecodeAppendEntriesRequest()
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
@@ -150,7 +150,7 @@ public class RaftMessageProcessingTest
     }
 
     @Test
-    public void shouldEncodeAndDecodeAppendEntriesResponse()
+    void shouldEncodeAndDecodeAppendEntriesResponse()
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
@@ -167,7 +167,7 @@ public class RaftMessageProcessingTest
     }
 
     @Test
-    public void shouldEncodeAndDecodeNewEntryRequest()
+    void shouldEncodeAndDecodeNewEntryRequest()
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );

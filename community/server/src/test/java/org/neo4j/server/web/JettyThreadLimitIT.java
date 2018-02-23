@@ -40,7 +40,7 @@ public class JettyThreadLimitIT
     public SuppressOutput suppressOutput = suppressAll();
 
     @Test
-    public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
+    void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
         Jetty9WebServer server = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults() );
         int numCores = 1;

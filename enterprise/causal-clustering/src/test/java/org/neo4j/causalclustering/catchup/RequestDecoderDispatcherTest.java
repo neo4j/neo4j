@@ -44,7 +44,7 @@ public class RequestDecoderDispatcherTest
     }
 
     @Test
-    public void shouldDispatchToRegisteredDecoder() throws Exception
+    void shouldDispatchToRegisteredDecoder() throws Exception
     {
         // given
         RequestDecoderDispatcher<State> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
@@ -68,7 +68,7 @@ public class RequestDecoderDispatcherTest
     }
 
     @Test
-    public void shouldLogAWarningIfThereIsNoDecoderForTheMessageType() throws Exception
+    void shouldLogAWarningIfThereIsNoDecoderForTheMessageType() throws Exception
     {
         // given
         RequestDecoderDispatcher<State> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );

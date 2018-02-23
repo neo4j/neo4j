@@ -32,9 +32,8 @@ public class SingleSourceShortestPathBFSTest extends
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode )
     {
-        SingleSourceShortestPathBFS sourceBFS = new SingleSourceShortestPathBFS(
+        return new SingleSourceShortestPathBFS(
             startNode, Direction.BOTH, MyRelTypes.R1 );
-        return sourceBFS;
     }
 
     @Override

@@ -27,13 +27,13 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 public class MandatoryTransactionsForRelationshipTest extends AbstractMandatoryTransactionsTest<Relationship>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade()
+    void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnRelationshipFacade()
+    void shouldTerminateWhenCallingMethodsOnRelationshipFacade()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_RELATIONSHIP_FACADE_METHODS );
     }

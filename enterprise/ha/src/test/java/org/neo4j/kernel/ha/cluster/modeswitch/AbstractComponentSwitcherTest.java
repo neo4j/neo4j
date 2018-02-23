@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class AbstractComponentSwitcherTest
 {
     @Test
-    public void switchesToMaster() throws Throwable
+    void switchesToMaster() throws Throwable
     {
         DelegateInvocationHandler<Component> delegate = new DelegateInvocationHandler<>( Component.class );
         TestComponentSwitcher switcher = new TestComponentSwitcher( delegate );
@@ -39,7 +39,7 @@ public class AbstractComponentSwitcherTest
     }
 
     @Test
-    public void switchesToSlave() throws Throwable
+    void switchesToSlave() throws Throwable
     {
         DelegateInvocationHandler<Component> delegate = new DelegateInvocationHandler<>( Component.class );
         TestComponentSwitcher switcher = new TestComponentSwitcher( delegate );
@@ -50,7 +50,7 @@ public class AbstractComponentSwitcherTest
     }
 
     @Test
-    public void switchesToPending() throws Throwable
+    void switchesToPending() throws Throwable
     {
         DelegateInvocationHandler<Component> delegate = new DelegateInvocationHandler<>( Component.class );
         TestComponentSwitcher switcher = new TestComponentSwitcher( delegate );

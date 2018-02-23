@@ -53,14 +53,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class DbStructureInvocationTracingAcceptanceTest
+class DbStructureInvocationTracingAcceptanceTest
 {
     private final String packageName = "org.neo4j.kernel.impl.util.data";
     private final String className = "XXYYZZData";
     private final String classNameWithPackage = packageName + "." + className;
 
     @Test
-    public void outputCompilesWithoutErrors() throws IOException
+    void outputCompilesWithoutErrors() throws IOException
     {
         // GIVEN
         StringBuilder output = new StringBuilder();
@@ -77,7 +77,7 @@ public class DbStructureInvocationTracingAcceptanceTest
     }
 
     @Test
-    public void compiledOutputCreatesInputTrace() throws IOException
+    void compiledOutputCreatesInputTrace() throws IOException
     {
         // GIVEN
         StringBuilder output = new StringBuilder();
@@ -97,7 +97,7 @@ public class DbStructureInvocationTracingAcceptanceTest
     }
 
     @Test
-    public void compiledOutputProducesSameCompiledOutputIfCompiledAgain() throws IOException
+    void compiledOutputProducesSameCompiledOutputIfCompiledAgain() throws IOException
     {
         // GIVEN
         StringBuilder output1 = new StringBuilder();
@@ -240,7 +240,7 @@ public class DbStructureInvocationTracingAcceptanceTest
             super( URI.create( "mem:///" + className + Kind.CLASS.extension ), Kind.CLASS );
         }
 
-        public byte[] getBytes()
+        byte[] getBytes()
         {
             return byteCodeStream.toByteArray();
         }

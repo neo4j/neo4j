@@ -45,26 +45,26 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
-public class PooledConcurrentMergeSchedulerTest
+class PooledConcurrentMergeSchedulerTest
 {
 
     private TestPooledConcurrentMergeScheduler mergeScheduler;
     private IndexWriter indexWriter = mock( IndexWriter.class );
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         mergeScheduler = new TestPooledConcurrentMergeScheduler();
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         mergeScheduler.getExecutionLatch().countDown();
     }
 
     @Test
-    public void doNotAddMergeTaskWhenWriterDoesNotHaveMergesToDo() throws Exception
+    void doNotAddMergeTaskWhenWriterDoesNotHaveMergesToDo() throws Exception
     {
         IndexWriter indexWriter = mock( IndexWriter.class );
 
@@ -74,7 +74,7 @@ public class PooledConcurrentMergeSchedulerTest
     }
 
     @Test
-    public void addMergeTaskWhenWriterHasOneMergeToPerform() throws IOException
+    void addMergeTaskWhenWriterHasOneMergeToPerform() throws IOException
     {
         SegmentCommitInfo segmentCommitInfo = getSegmentCommitInfo();
 
@@ -87,7 +87,7 @@ public class PooledConcurrentMergeSchedulerTest
     }
 
     @Test
-    public void addTwoMergeTasksWhenWriterHastwoMergeToPerform() throws IOException
+    void addTwoMergeTasksWhenWriterHastwoMergeToPerform() throws IOException
     {
         SegmentCommitInfo segmentCommitInfo = getSegmentCommitInfo();
 
@@ -100,7 +100,7 @@ public class PooledConcurrentMergeSchedulerTest
     }
 
     @Test
-    public void writerCloseWaitForMergesInMergeQueue() throws IOException
+    void writerCloseWaitForMergesInMergeQueue() throws IOException
     {
         assertTimeout( ofMillis( 10_000 ), () -> {
             indexWriter = mock( IndexWriter.class );

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.Response;
@@ -43,13 +42,13 @@ import org.neo4j.test.server.EntityOutputFormat;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PagingTraversalTest
+class PagingTraversalTest
 {
 
     private static final String BASE_URI = "http://neo4j.org:7474/";
@@ -61,7 +60,7 @@ public class PagingTraversalTest
     private GraphDatabaseFacade graph;
 
     @BeforeEach
-    public void startDatabase()
+    void startDatabase()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
@@ -75,13 +74,13 @@ public class PagingTraversalTest
     }
 
     @AfterEach
-    public void shutdownDatabase()
+    void shutdownDatabase()
     {
         this.graph.shutdown();
     }
 
     @Test
-    public void shouldLodgeAPagingTraverserAndTraverseTheFirstPageBeforeRespondingWith201()
+    void shouldLodgeAPagingTraverserAndTraverseTheFirstPageBeforeRespondingWith201()
     {
         Response response = createAPagedTraverser();
         assertEquals( 201, response.getStatus() );
@@ -95,7 +94,7 @@ public class PagingTraversalTest
     }
 
     @Test
-    public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200()
+    void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200()
     {
         Response response = createAPagedTraverser();
 
@@ -110,14 +109,14 @@ public class PagingTraversalTest
     }
 
     @Test
-    public void shouldRespondWith404WhenNoSuchTraversalRegistered()
+    void shouldRespondWith404WhenNoSuchTraversalRegistered()
     {
         Response response = service.pagedTraverse( "anUnlikelyTraverserId", TraverserReturnType.node );
         assertEquals( 404, response.getStatus() );
     }
 
     @Test
-    public void shouldRespondWith404WhenTraversalHasExpired()
+    void shouldRespondWith404WhenTraversalHasExpired()
     {
         Response response = createAPagedTraverser();
         ((FakeClock) leaseManager.getClock()).forward( enoughMinutesToExpireTheTraversal(), TimeUnit.MINUTES );
@@ -135,7 +134,7 @@ public class PagingTraversalTest
     }
 
     @Test
-    public void shouldRespondWith400OnNegativePageSize()
+    void shouldRespondWith400OnNegativePageSize()
     {
         long arbitraryStartNodeId = 1L;
         int negativePageSize = -5;
@@ -147,7 +146,7 @@ public class PagingTraversalTest
     }
 
     @Test
-    public void shouldRespondWith400OnLeaseTime()
+    void shouldRespondWith400OnLeaseTime()
     {
         long arbitraryStartNodeId = 1L;
         int arbitraryPageSize = 5;
@@ -159,7 +158,7 @@ public class PagingTraversalTest
     }
 
     @Test
-    public void shouldRenewLeaseAtEachTraversal()
+    void shouldRenewLeaseAtEachTraversal()
     {
         Response response = createAPagedTraverser();
 
@@ -180,7 +179,7 @@ public class PagingTraversalTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveALeaseOnceOnly()
+    void shouldBeAbleToRemoveALeaseOnceOnly()
     {
         Response response = createAPagedTraverser();
         String traverserId = parseTraverserIdFromLocationUri( response );

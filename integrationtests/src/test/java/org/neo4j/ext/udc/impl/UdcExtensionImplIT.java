@@ -88,14 +88,14 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
  * {@link org.neo4j.helpers.Service#load}.
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class UdcExtensionImplIT extends LocalServerTestBase
+class UdcExtensionImplIT extends LocalServerTestBase
 {
     private static final String VersionPattern = "(\\d\\.\\d+(([.-]).*)?)|(dev)";
     private static final Condition<Integer> IS_ZERO = value -> value == 0;
     private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
     @Resource
-    public TestDirectory path;
+    private TestDirectory path;
 
     private PingerHandler handler;
     private Map<String,String> config;
@@ -125,7 +125,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @AfterEach
-    public void cleanup() throws IOException
+    void cleanup() throws IOException
     {
         cleanup( graphdb );
     }
@@ -134,7 +134,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
      * Expect the counts to be initialized.
      */
     @Test
-    public void shouldLoadWhenNormalGraphdbIsCreated() throws Exception
+    void shouldLoadWhenNormalGraphdbIsCreated() throws Exception
     {
         // When
         Map<String, String> config = Collections.singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
@@ -148,7 +148,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
      * Expect separate counts for each graphdb.
      */
     @Test
-    public void shouldLoadForEachCreatedGraphdb() throws IOException
+    void shouldLoadForEachCreatedGraphdb() throws IOException
     {
         Map<String, String> config = Collections.singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         GraphDatabaseService graphdb1 = createDatabase( path.directory( "first-db" ), config );
@@ -161,7 +161,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
+    void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
         // When
         graphdb = new TestGraphDatabaseFactory().
@@ -176,7 +176,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldRecordSuccessesWhenThereIsAServer() throws Exception
+    void shouldRecordSuccessesWhenThereIsAServer() throws Exception
     {
         // When
         graphdb = createDatabase( config );
@@ -187,7 +187,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToSpecifySourceWithConfig() throws Exception
+    void shouldBeAbleToSpecifySourceWithConfig() throws Exception
     {
         // When
         config.put( UdcSettings.udc_source.name(), "unit-testing" );
@@ -199,7 +199,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldRecordDatabaseMode() throws Exception
+    void shouldRecordDatabaseMode() throws Exception
     {
         // When
         graphdb = createDatabase( config );
@@ -210,7 +210,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldRecordClusterName() throws Exception
+    void shouldRecordClusterName() throws Exception
     {
         // When
         graphdb = createDatabase( config );
@@ -257,7 +257,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToReadDefaultRegistration() throws Exception
+    void shouldBeAbleToReadDefaultRegistration() throws Exception
     {
         // When
         graphdb = createDatabase( config );
@@ -268,7 +268,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToDetermineTestTagFromClasspath() throws Exception
+    void shouldBeAbleToDetermineTestTagFromClasspath() throws Exception
     {
         // When
         graphdb = createDatabase( config );
@@ -279,7 +279,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToDetermineEditionFromClasspath() throws Exception
+    void shouldBeAbleToDetermineEditionFromClasspath() throws Exception
     {
         // When
         graphdb = createDatabase( config );
@@ -290,7 +290,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToDetermineUserAgent() throws Exception
+    void shouldBeAbleToDetermineUserAgent() throws Exception
     {
         // Given
         graphdb = createDatabase( config );
@@ -304,7 +304,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToDetermineUserAgents() throws Exception
+    void shouldBeAbleToDetermineUserAgents() throws Exception
     {
         // Given
         graphdb = createDatabase( config );
@@ -321,7 +321,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldIncludeMacAddressInConfig() throws Exception
+    void shouldIncludeMacAddressInConfig() throws Exception
     {
         // When
         graphdb = createDatabase( config );
@@ -332,7 +332,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldIncludePrefixedSystemProperties() throws Exception
+    void shouldIncludePrefixedSystemProperties() throws Exception
     {
         withSystemProperty( UdcConstants.UDC_PROPERTY_PREFIX + ".test", "udc-property", () ->
         {
@@ -349,7 +349,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldNotIncludeDistributionForWindows() throws Exception
+    void shouldNotIncludeDistributionForWindows() throws Exception
     {
         withSystemProperty( "os.name", "Windows", () ->
         {
@@ -361,7 +361,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldIncludeDistributionForLinux() throws Exception
+    void shouldIncludeDistributionForLinux() throws Exception
     {
         if ( !SystemUtils.IS_OS_LINUX )
         {
@@ -374,7 +374,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldNotIncludeDistributionForMacOS() throws Exception
+    void shouldNotIncludeDistributionForMacOS() throws Exception
     {
         withSystemProperty( "os.name", "Mac OS X", () ->
         {
@@ -386,7 +386,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldIncludeVersionInConfig() throws Exception
+    void shouldIncludeVersionInConfig() throws Exception
     {
         graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
@@ -395,7 +395,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldOverrideSourceWithSystemProperty() throws Exception
+    void shouldOverrideSourceWithSystemProperty() throws Exception
     {
         withSystemProperty( UdcSettings.udc_source.name(), "overridden", () ->
         {
@@ -408,7 +408,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldMatchAllValidVersions()
+    void shouldMatchAllValidVersions()
     {
         assertTrue( "1.8.M07".matches( VersionPattern ) );
         assertTrue( "1.8.RC1".matches( VersionPattern ) );
@@ -424,14 +424,14 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldFilterPlusBuildNumbers()
+    void shouldFilterPlusBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9.0-M01+00001" ),
                 is( equalTo( "1.9.0-M01" ) ) );
     }
 
     @Test
-    public void shouldNotFilterSnapshotBuildNumbers()
+    void shouldNotFilterSnapshotBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "2.0-SNAPSHOT" ),
                 is( equalTo( "2.0-SNAPSHOT" ) ) );
@@ -439,13 +439,13 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldNotFilterReleaseBuildNumbers()
+    void shouldNotFilterReleaseBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
     }
 
     @Test
-    public void shouldUseTheCustomConfiguration()
+    void shouldUseTheCustomConfiguration()
     {
         // Given
         config.put( UdcSettings.udc_source.name(), "my_source" );
@@ -491,7 +491,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         fail("Failure was expected");
     }
 
-    private GraphDatabaseService createDatabase()
+    GraphDatabaseService createDatabase()
     {
         return createDatabase( null, null );
     }
@@ -534,12 +534,12 @@ public class UdcExtensionImplIT extends LocalServerTestBase
             this.value = value;
         }
 
-        public T getValue()
+        T getValue()
         {
             return value;
         }
 
-        public void setValue( T value )
+        void setValue( T value )
         {
             this.value = value;
         }

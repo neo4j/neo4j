@@ -65,7 +65,7 @@ public class TransactionStatusResultTest
     private TransactionDependenciesResolver blockerResolver = new TransactionDependenciesResolver( snapshotsMap );
 
     @Test
-    public void statusOfTransactionWithSingleQuery() throws InvalidArgumentsException
+    void statusOfTransactionWithSingleQuery() throws InvalidArgumentsException
     {
         snapshotsMap.put( transactionHandle, singletonList( createQuerySnapshot( 7L ) ) );
         TransactionStatusResult statusResult =
@@ -75,7 +75,7 @@ public class TransactionStatusResultTest
     }
 
     @Test
-    public void statusOfTransactionWithoutRunningQuery() throws InvalidArgumentsException
+    void statusOfTransactionWithoutRunningQuery() throws InvalidArgumentsException
     {
         snapshotsMap.put( transactionHandle, emptyList() );
         TransactionStatusResult statusResult =
@@ -85,7 +85,7 @@ public class TransactionStatusResultTest
     }
 
     @Test
-    public void statusOfTransactionWithMultipleQueries() throws InvalidArgumentsException
+    void statusOfTransactionWithMultipleQueries() throws InvalidArgumentsException
     {
         snapshotsMap.put( transactionHandle, asList( createQuerySnapshot( 7L ), createQuerySnapshot( 8L ) ) );
         TransactionStatusResult statusResult =
@@ -95,7 +95,7 @@ public class TransactionStatusResultTest
     }
 
     @Test
-    public void statusOfTransactionWithDifferentTimeZone() throws InvalidArgumentsException
+    void statusOfTransactionWithDifferentTimeZone() throws InvalidArgumentsException
     {
         snapshotsMap.put( transactionHandle, singletonList( createQuerySnapshot( 7L ) ) );
         TransactionStatusResult statusResult =

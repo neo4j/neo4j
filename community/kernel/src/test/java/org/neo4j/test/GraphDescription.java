@@ -310,7 +310,7 @@ public class GraphDescription implements GraphDefinition
         return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ), false, false );
     }
 
-    public static void destroy( Map<String, Node> nodes )
+    private static void destroy( Map<String,Node> nodes )
     {
         if ( nodes.isEmpty() )
         {
@@ -427,7 +427,7 @@ public class GraphDescription implements GraphDefinition
         this.autoIndexRelationships = autoIndexRelationships;
     }
 
-    static String defined( String name )
+    private static String defined( String name )
     {
         if ( name == null || name.equals( "" ) )
         {

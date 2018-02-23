@@ -35,12 +35,12 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-public class UpdateCapturingIndexAccessor implements IndexAccessor
+class UpdateCapturingIndexAccessor implements IndexAccessor
 {
     private final IndexAccessor actual;
     private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
-    public UpdateCapturingIndexAccessor( IndexAccessor actual, Collection<IndexEntryUpdate<?>> initialUpdates )
+    UpdateCapturingIndexAccessor( IndexAccessor actual, Collection<IndexEntryUpdate<?>> initialUpdates )
     {
         this.actual = actual;
         if ( initialUpdates != null )

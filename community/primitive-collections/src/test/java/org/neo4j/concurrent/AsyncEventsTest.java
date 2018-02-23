@@ -41,18 +41,18 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
-public class AsyncEventsTest
+class AsyncEventsTest
 {
     private ExecutorService executor;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         executor = Executors.newCachedThreadPool();
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         executor.shutdown();
     }
@@ -73,14 +73,14 @@ public class AsyncEventsTest
             eventsProcessed.offer( event );
         }
 
-        public Event poll( long timeout, TimeUnit unit ) throws InterruptedException
+        Event poll( long timeout, TimeUnit unit ) throws InterruptedException
         {
             return eventsProcessed.poll( timeout, unit );
         }
     }
 
     @Test
-    public void eventsMustBeProcessedByBackgroundThread() throws Exception
+    void eventsMustBeProcessedByBackgroundThread() throws Exception
     {
         EventConsumer consumer = new EventConsumer();
 
@@ -102,7 +102,7 @@ public class AsyncEventsTest
     }
 
     @Test
-    public void mustNotProcessEventInSameThreadWhenNotShutDown() throws Exception
+    void mustNotProcessEventInSameThreadWhenNotShutDown() throws Exception
     {
         EventConsumer consumer = new EventConsumer();
 
@@ -118,7 +118,7 @@ public class AsyncEventsTest
     }
 
     @Test
-    public void mustProcessEventsDirectlyWhenShutDown() throws Exception
+    void mustProcessEventsDirectlyWhenShutDown() throws Exception
     {
         assertTimeout( ofSeconds( 10 ), () ->
         {
@@ -144,7 +144,7 @@ public class AsyncEventsTest
     }
 
     @Test
-    public void concurrentlyPublishedEventsMustAllBeProcessed() throws Exception
+    void concurrentlyPublishedEventsMustAllBeProcessed() throws Exception
     {
         assertTimeout( ofSeconds( 10 ), () ->
         {
@@ -203,7 +203,7 @@ public class AsyncEventsTest
     }
 
     @Test
-    public void awaitingShutdownMustBlockUntilAllMessagesHaveBeenProcessed() throws Exception
+    void awaitingShutdownMustBlockUntilAllMessagesHaveBeenProcessed() throws Exception
     {
         final Event specialShutdownObservedEvent = new Event();
         final CountDownLatch awaitStartLatch = new CountDownLatch( 1 );

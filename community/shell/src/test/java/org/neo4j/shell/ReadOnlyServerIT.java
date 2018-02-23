@@ -29,16 +29,16 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
 
-public class ReadOnlyServerIT extends AbstractShellIT
+class ReadOnlyServerIT extends AbstractShellIT
 {
     @Override
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws RemoteException
+    ShellServer newServer( GraphDatabaseAPI db ) throws RemoteException
     {
         return new GraphDatabaseShellServer( new ReadOnlyGraphDatabaseProxy( db ) );
     }
 
     @Test
-    public void executeReadCommands() throws Exception
+    void executeReadCommands() throws Exception
     {
         Relationship[] rels = createRelationshipChain( 3 );
         executeCommand( "cd " + getStartNodeId(rels[0]) );
@@ -49,7 +49,7 @@ public class ReadOnlyServerIT extends AbstractShellIT
     }
 
     @Test
-    public void readOnlyTransactionsShouldNotFail() throws Exception
+    void readOnlyTransactionsShouldNotFail() throws Exception
     {
         Relationship[] rels = createRelationshipChain( 3 );
         executeCommand( "begin" );
@@ -75,7 +75,7 @@ public class ReadOnlyServerIT extends AbstractShellIT
     }
 
     @Test
-    public void executeWriteCommands() throws Exception
+    void executeWriteCommands() throws Exception
     {
         executeCommandExpectingException( "mknode", "read only" );
     }

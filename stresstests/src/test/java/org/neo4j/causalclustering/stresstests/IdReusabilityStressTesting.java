@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -85,13 +85,13 @@ public class IdReusabilityStressTesting
     private DefaultFileSystemAbstraction fs;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fs = defaultFileSystemRule.get();
     }
 
     @Test
-    public void shouldBehaveCorrectlyUnderStress() throws Exception
+    void shouldBehaveCorrectlyUnderStress() throws Exception
     {
         int numberOfCores = parseInt( fromEnv( "ID_REUSE_STRESS_NUMBER_OF_CORES", DEFAULT_NUMBER_OF_CORES ) );
         long durationInMinutes = parseLong( fromEnv( "ID_REUSE_STRESS_DURATION_IN_MINUTES", DEFAULT_DURATION_IN_MINUTES ) );

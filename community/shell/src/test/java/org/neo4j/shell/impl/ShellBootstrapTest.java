@@ -31,10 +31,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ShellBootstrapTest
+class ShellBootstrapTest
 {
     @Test
-    public void shouldPickUpAllConfigOptions() throws Exception
+    void shouldPickUpAllConfigOptions() throws Exception
     {
         // GIVEN
         String host = "test";

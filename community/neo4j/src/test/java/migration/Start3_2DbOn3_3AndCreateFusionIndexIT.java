@@ -58,7 +58,7 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
 @ExtendWith( {TestDirectoryExtension.class} )
-public class Start3_2DbOn3_3AndCreateFusionIndexIT
+class Start3_2DbOn3_3AndCreateFusionIndexIT
 {
     private static final String ZIP_FILE = "3_2-db.zip";
 
@@ -68,11 +68,11 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     private static final String KEY2 = "key2";
 
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Disabled( "Here as reference for how 3.2 db was created" )
     @Test
-    public void create3_2Database() throws Exception
+    void create3_2Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
@@ -87,7 +87,7 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     }
 
     @Test
-    public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
         File storeDir = unzip( getClass(), ZIP_FILE, directory.absolutePath() );

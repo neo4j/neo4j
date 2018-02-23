@@ -38,10 +38,10 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 
-public class GetServersProcedureV2Test
+class GetServersProcedureV2Test
 {
     @Test
-    public void shouldHaveCorrectSignature()
+    void shouldHaveCorrectSignature()
     {
         // given
         GetServersProcedureForMultiDC proc = new GetServersProcedureForMultiDC( null );
@@ -59,7 +59,7 @@ public class GetServersProcedureV2Test
     }
 
     @Test
-    public void shouldPassClientContextToPlugin() throws Exception
+    void shouldPassClientContextToPlugin() throws Exception
     {
         // given
         LoadBalancingPlugin plugin = mock( LoadBalancingPlugin.class );

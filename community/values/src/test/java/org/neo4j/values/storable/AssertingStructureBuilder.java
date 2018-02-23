@@ -19,17 +19,17 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.neo4j.values.StructureBuilder;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public final class AssertingStructureBuilder<Input, Result> implements StructureBuilder<Input,Result>
@@ -39,12 +39,12 @@ public final class AssertingStructureBuilder<Input, Result> implements Structure
         return new AssertingStructureBuilder<>( builder );
     }
 
-    public static Matcher<Exception> exception( Class<? extends Exception> type, String message )
+    private static Matcher<Exception> exception( Class<? extends Exception> type, String message )
     {
         return exception( type, equalTo( message ) );
     }
 
-    public static Matcher<Exception> exception( Class<? extends Exception> type, Matcher<String> message )
+    private static Matcher<Exception> exception( Class<? extends Exception> type, Matcher<String> message )
     {
         return new TypeSafeMatcher<Exception>( type )
         {
@@ -81,7 +81,7 @@ public final class AssertingStructureBuilder<Input, Result> implements Structure
         assertThrows( exception( type, message ) );
     }
 
-    public void assertThrows( Matcher<Exception> matches )
+    private void assertThrows( Matcher<Exception> matches )
     {
         try
         {

@@ -19,10 +19,10 @@
  */
 package org.neo4j.index;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -70,12 +70,12 @@ public abstract class Neo4jTestCase
         }
     }
 
-    protected boolean manageMyOwnTxFinish()
+    private boolean manageMyOwnTxFinish()
     {
         return false;
     }
 
-    protected void finishTx( boolean commit )
+    private void finishTx( boolean commit )
     {
         if ( tx == null )
         {
@@ -137,8 +137,7 @@ public abstract class Neo4jTestCase
         assertContains( asCollection( items ), expectedItems );
     }
 
-    public static <T> void assertContainsInOrder( Collection<T> collection,
-            T... expectedItems )
+    private static <T> void assertContainsInOrder( Collection<T> collection, T... expectedItems )
     {
         String collectionString = join( ", ", collection.toArray() );
         assertEquals( expectedItems.length, collection.size(), collectionString );
@@ -155,7 +154,7 @@ public abstract class Neo4jTestCase
         assertContainsInOrder( asCollection( collection ), expectedItems );
     }
 
-    public static <T> Collection<T> asCollection( Iterable<T> iterable )
+    private static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
         List<T> list = new ArrayList<>();
         for ( T item : iterable )
@@ -165,7 +164,7 @@ public abstract class Neo4jTestCase
         return list;
     }
 
-    public static <T> String join( String delimiter, T... items )
+    private static <T> String join( String delimiter, T... items )
     {
         StringBuilder buffer = new StringBuilder();
         for ( T item : items )

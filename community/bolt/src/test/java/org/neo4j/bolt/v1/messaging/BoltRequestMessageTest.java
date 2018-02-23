@@ -66,7 +66,7 @@ public class BoltRequestMessageTest
     private final Neo4jPack neo4jPack = new Neo4jPackV1();
 
     @Test
-    public void shouldHandleCommonMessages() throws Throwable
+    void shouldHandleCommonMessages() throws Throwable
     {
         assertSerializes( init( "MyClient/1.0", map( "scheme", "basic" ) ) );
         assertSerializes( ackFailure() );
@@ -77,7 +77,7 @@ public class BoltRequestMessageTest
     }
 
     @Test
-    public void shouldHandleParameterizedStatements() throws Throwable
+    void shouldHandleParameterizedStatements() throws Throwable
     {
         // Given
         MapValue parameters = ValueUtils.asMapValue( map( "n", 12L ) );
@@ -93,7 +93,7 @@ public class BoltRequestMessageTest
     //"B1 71 91 B3 4E 0C 92 |84 55 73 65 72 | 86 42 61 6E\n61 6E 61 A284 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E"
     //"B1 71 91 B3 4E 0C 92 |86 42 61 6E 61 6E 61| 84 55\n73 65 72 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E
     @Test
-    public void shouldSerializeNode() throws Throwable
+    void shouldSerializeNode() throws Throwable
     {
         NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), map( new String[]{"name", "age"},
                 new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
@@ -104,7 +104,7 @@ public class BoltRequestMessageTest
     }
 
     @Test
-    public void shouldSerializeRelationship() throws Throwable
+    void shouldSerializeRelationship() throws Throwable
     {
         RelationshipValue rel = relationshipValue( 12L,
                 nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),

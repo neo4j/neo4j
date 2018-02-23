@@ -35,18 +35,18 @@ import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class BinaryLatchTest
+class BinaryLatchTest
 {
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     @AfterAll
-    public static void shutDownExecutor()
+    static void shutDownExecutor()
     {
         executor.shutdown();
     }
 
     @Test
-    public void releaseThenAwaitDoesNotBlock()
+    void releaseThenAwaitDoesNotBlock()
     {
         assertTimeout( ofSeconds( 3 ), () ->
         {
@@ -57,7 +57,7 @@ public class BinaryLatchTest
     }
 
     @Test
-    public void releaseMustUnblockAwaiters()
+    void releaseMustUnblockAwaiters()
     {
         assertTimeout( ofSeconds( 10 ), () ->
         {
@@ -90,7 +90,7 @@ public class BinaryLatchTest
     }
 
     @Test
-    public void stressLatch() throws Exception
+    void stressLatch() throws Exception
     {
         assertTimeout( ofMinutes( 1 ), () ->
         {

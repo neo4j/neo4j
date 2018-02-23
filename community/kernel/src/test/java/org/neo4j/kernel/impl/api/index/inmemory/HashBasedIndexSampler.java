@@ -27,11 +27,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
-public class HashBasedIndexSampler implements IndexSampler
+class HashBasedIndexSampler implements IndexSampler
 {
     private final Map<List<Object>,Set<Long>> data;
 
-    public HashBasedIndexSampler( Map<List<Object>,Set<Long>> data )
+    HashBasedIndexSampler( Map<List<Object>,Set<Long>> data )
     {
         this.data = data;
     }

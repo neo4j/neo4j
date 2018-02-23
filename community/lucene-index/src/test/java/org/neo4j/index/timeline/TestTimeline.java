@@ -40,22 +40,21 @@ import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.Collections.sort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 
-public class TestTimeline
+class TestTimeline
 {
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }
@@ -218,60 +217,60 @@ public class TestTimeline
     // ======== The tests
 
     @Test
-    public void makeSureFirstAndLastAreReturnedCorrectlyNode()
+    void makeSureFirstAndLastAreReturnedCorrectlyNode()
     {
         makeSureFirstAndLastAreReturnedCorrectly( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureFirstAndLastAreReturnedCorrectlyRelationship()
+    void makeSureFirstAndLastAreReturnedCorrectlyRelationship()
     {
         makeSureFirstAndLastAreReturnedCorrectly( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectOrderNode()
+    void makeSureRangesAreReturnedInCorrectOrderNode()
     {
         makeSureRangesAreReturnedInCorrectOrder( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectOrderRelationship()
+    void makeSureRangesAreReturnedInCorrectOrderRelationship()
     {
         makeSureRangesAreReturnedInCorrectOrder( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectReversedOrderNode()
+    void makeSureRangesAreReturnedInCorrectReversedOrderNode()
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectReversedOrderRelationship()
+    void makeSureRangesAreReturnedInCorrectReversedOrderRelationship()
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureUncommittedChangesAreSortedCorrectlyNode()
+    void makeSureUncommittedChangesAreSortedCorrectlyNode()
     {
         makeSureUncommittedChangesAreSortedCorrectly( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureUncommittedChangesAreSortedCorrectlyRelationship()
+    void makeSureUncommittedChangesAreSortedCorrectlyRelationship()
     {
         makeSureUncommittedChangesAreSortedCorrectly( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureWeCanQueryLowerDefaultThan1970Node()
+    void makeSureWeCanQueryLowerDefaultThan1970Node()
     {
         makeSureWeCanQueryLowerDefaultThan1970( nodeCreator, nodeTimeline() );
     }
     @Test
-    public void makeSureWeCanQueryLowerDefaultThan1970Relationship()
+    void makeSureWeCanQueryLowerDefaultThan1970Relationship()
     {
         makeSureWeCanQueryLowerDefaultThan1970( relationshipCreator, relationshipTimeline() );
     }

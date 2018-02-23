@@ -51,7 +51,7 @@ import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 
-public class SchemaCacheTest
+class SchemaCacheTest
 {
     private final SchemaRule hans = newIndexRule( 1, 0, 5 );
     private final SchemaRule witch = nodePropertyExistenceConstraintRule( 2, 3, 6 );
@@ -59,7 +59,7 @@ public class SchemaCacheTest
     private final ConstraintRule robot = relPropertyExistenceConstraintRule( 7L, 8, 9 );
 
     @Test
-    public void should_construct_schema_cache()
+    void should_construct_schema_cache()
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
@@ -71,7 +71,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void addRemoveIndexes()
+    void addRemoveIndexes()
     {
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
         SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
@@ -89,7 +89,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void addSchemaRules()
+    void addSchemaRules()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -106,7 +106,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void should_list_constraints()
+    void should_list_constraints()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -145,7 +145,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void should_remove_constraints()
+    void should_remove_constraints()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -173,7 +173,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void adding_constraints_should_be_idempotent()
+    void adding_constraints_should_be_idempotent()
     {
         // given
         SchemaCache cache = newSchemaCache();
@@ -190,7 +190,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldResolveIndexDescriptor()
+    void shouldResolveIndexDescriptor()
     {
         // Given
         SchemaCache cache = newSchemaCache();
@@ -208,7 +208,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldReturnNullWhenNoIndexExists()
+    void shouldReturnNullWhenNoIndexExists()
     {
         // Given
         SchemaCache schemaCache = newSchemaCache();
@@ -221,7 +221,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldListConstraintsForLabel()
+    void shouldListConstraintsForLabel()
     {
         // Given
         ConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
@@ -244,7 +244,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldListConstraintsForSchema()
+    void shouldListConstraintsForSchema()
     {
         // Given
         ConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
@@ -264,7 +264,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldListConstraintsForRelationshipType()
+    void shouldListConstraintsForRelationshipType()
     {
         // Given
         ConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, 1, 1 );
@@ -285,7 +285,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void concurrentSchemaRuleAdd() throws Throwable
+    void concurrentSchemaRuleAdd() throws Throwable
     {
         SchemaCache cache = newSchemaCache();
         Race race = new Race();
@@ -309,7 +309,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void concurrentSchemaRuleRemove() throws Throwable
+    void concurrentSchemaRuleRemove() throws Throwable
     {
         SchemaCache cache = newSchemaCache();
         int indexNumber = 20;

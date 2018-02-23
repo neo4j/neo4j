@@ -37,10 +37,10 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.event.ErrorState.TX_MANAGER_NOT_OK;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class DatabaseHealthTest
+class DatabaseHealthTest
 {
     @Test
-    public void shouldGenerateDatabasePanicEvents()
+    void shouldGenerateDatabasePanicEvents()
     {
         // GIVEN
         DatabasePanicEventGenerator generator = mock( DatabasePanicEventGenerator.class );
@@ -57,7 +57,7 @@ public class DatabaseHealthTest
     }
 
     @Test
-    public void shouldLogDatabasePanicEvent()
+    void shouldLogDatabasePanicEvent()
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -81,7 +81,7 @@ public class DatabaseHealthTest
     }
 
     @Test
-    public void healDatabaseWithoutCriticalErrors()
+    void healDatabaseWithoutCriticalErrors()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
@@ -98,7 +98,7 @@ public class DatabaseHealthTest
     }
 
     @Test
-    public void databaseWithCriticalErrorsCanNotBeHealed()
+    void databaseWithCriticalErrorsCanNotBeHealed()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),

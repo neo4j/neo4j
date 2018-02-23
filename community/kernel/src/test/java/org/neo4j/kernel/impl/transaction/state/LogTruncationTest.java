@@ -71,7 +71,7 @@ import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
  * need to be able to handle the log ending mid-way through reading it.
  */
-public class LogTruncationTest
+class LogTruncationTest
 {
     private final InMemoryClosableChannel inMemoryChannel = new InMemoryClosableChannel();
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
@@ -143,7 +143,7 @@ public class LogTruncationTest
     }
 
     @Test
-    public void testSerializationInFaceOfLogTruncation() throws Exception
+    void testSerializationInFaceOfLogTruncation() throws Exception
     {
         for ( Command cmd : enumerateCommands() )
         {
@@ -220,7 +220,7 @@ public class LogTruncationTest
     }
 
     @Test
-    public void testInMemoryLogChannel() throws Exception
+    void testInMemoryLogChannel() throws Exception
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         for ( int i = 0; i < 25; i++ )

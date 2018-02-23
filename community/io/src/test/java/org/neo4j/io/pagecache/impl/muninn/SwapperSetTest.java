@@ -44,16 +44,16 @@ public class SwapperSetTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    SwapperSet set;
+    private SwapperSet set;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         set = new SwapperSet();
     }
 
     @Test
-    public void mustReturnAllocationWithSwapper()
+    void mustReturnAllocationWithSwapper()
     {
         DummyPageSwapper a = new DummyPageSwapper( "a", 42 );
         DummyPageSwapper b = new DummyPageSwapper( "b", 43 );
@@ -66,7 +66,7 @@ public class SwapperSetTest
     }
 
     @Test
-    public void accessingFreedAllocationMustReturnNull()
+    void accessingFreedAllocationMustReturnNull()
     {
         short id = set.allocate( new DummyPageSwapper( "a", 42 ) );
         set.free( id );
@@ -74,7 +74,7 @@ public class SwapperSetTest
     }
 
     @Test
-    public void doubleFreeMustThrow()
+    void doubleFreeMustThrow()
     {
         int id = set.allocate( new DummyPageSwapper( "a", 42 ) );
         set.free( id );
@@ -84,7 +84,7 @@ public class SwapperSetTest
     }
 
     @Test
-    public void freedIdsMustNotBeReusedBeforeVacuum()
+    void freedIdsMustNotBeReusedBeforeVacuum()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
         PrimitiveIntSet ids = Primitive.intSet( 10_000 );
@@ -106,7 +106,7 @@ public class SwapperSetTest
     }
 
     @Test
-    public void freedAllocationsMustBecomeAvailableAfterVacuum()
+    void freedAllocationsMustBecomeAvailableAfterVacuum()
     {
         PrimitiveIntSet allocated = Primitive.intSet();
         PrimitiveIntSet freed = Primitive.intSet();
@@ -146,7 +146,7 @@ public class SwapperSetTest
     }
 
     @Test
-    public void vacuumMustNotDustOffAnyIdsWhenNoneHaveBeenFreed()
+    void vacuumMustNotDustOffAnyIdsWhenNoneHaveBeenFreed()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
         for ( int i = 0; i < 100; i++ )
@@ -162,7 +162,7 @@ public class SwapperSetTest
     }
 
     @Test
-    public void mustNotUseZeroAsSwapperId()
+    void mustNotUseZeroAsSwapperId()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
         Matcher<Short> isNotZero = is( not( (short) 0 ) );
@@ -173,21 +173,21 @@ public class SwapperSetTest
     }
 
     @Test
-    public void gettingAllocationZeroMustThrow()
+    void gettingAllocationZeroMustThrow()
     {
         exception.expect( IllegalArgumentException.class );
         set.getAllocation( (short) 0 );
     }
 
     @Test
-    public void freeOfIdZeroMustThrow()
+    void freeOfIdZeroMustThrow()
     {
         exception.expect( IllegalArgumentException.class );
         set.free( 0 );
     }
 
     @Test
-    public void mustKeepTrackOfAvailableSwapperIds()
+    void mustKeepTrackOfAvailableSwapperIds()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
         short initial = Short.MAX_VALUE - 1;

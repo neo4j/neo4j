@@ -45,7 +45,7 @@ public class SocketConnection implements TransportConnection
         this.socket = socket;
     }
 
-    protected void setSocket( Socket socket )
+    void setSocket( Socket socket )
     {
         this.socket = socket;
     }

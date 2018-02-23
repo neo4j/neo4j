@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AbstractCheckPointThresholdTest
+class AbstractCheckPointThresholdTest
 {
     @Test
-    public void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue()
+    void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue()
     {
         // Given
         String description = "description";
@@ -43,7 +43,7 @@ public class AbstractCheckPointThresholdTest
     }
 
     @Test
-    public void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse()
+    void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse()
     {
         // Given
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );

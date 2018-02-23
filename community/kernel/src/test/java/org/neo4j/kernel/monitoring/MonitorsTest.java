@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class MonitorsTest
+class MonitorsTest
 {
     interface MyMonitor
     {
@@ -38,7 +38,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldProvideNoOpDelegate()
+    void shouldProvideNoOpDelegate()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -52,7 +52,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldRegister()
+    void shouldRegister()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -72,7 +72,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldUnregister()
+    void shouldUnregister()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -93,7 +93,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldRespectTags()
+    void shouldRespectTags()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -114,7 +114,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldTellIfMonitorHasListeners()
+    void shouldTellIfMonitorHasListeners()
     {
         // Given
         Monitors monitors = new Monitors();

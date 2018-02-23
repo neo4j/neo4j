@@ -30,28 +30,27 @@ import org.neo4j.graphdb.Direction;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class EccentricityTest extends Neo4jAlgoTestCase
+class EccentricityTest extends Neo4jAlgoTestCase
 {
-    protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
+    private SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
                 new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
-    Eccentricity<Double> getCentralityAlgorithm()
+    private Eccentricity<Double> getCentralityAlgorithm()
     {
         return new Eccentricity<>( getSingleSourceShortestPath(), 0.0, graph.getAllNodes(), new DoubleComparator() );
     }
 
-    protected void assertCentrality( Eccentricity<Double> centrality,
-        String nodeId, Double value )
+    private void assertCentrality( Eccentricity<Double> centrality, String nodeId, Double value )
     {
         assertTrue( centrality.getCentrality( graph.getNode( nodeId ) ).equals(
             value ) );
     }
 
     @Test
-    public void testBox()
+    void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
         Eccentricity<Double> centrality = getCentralityAlgorithm();
@@ -62,7 +61,7 @@ public class EccentricityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testPlusShape()
+    void testPlusShape()
     {
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
@@ -75,7 +74,7 @@ public class EccentricityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testChain()
+    void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
         Eccentricity<Double> centrality = getCentralityAlgorithm();

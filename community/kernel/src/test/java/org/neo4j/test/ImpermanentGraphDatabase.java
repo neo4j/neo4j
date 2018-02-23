@@ -60,7 +60,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static final boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
 
-    protected static final File PATH = new File( "target/test-data/impermanent-db" );
+    static final File PATH = new File( "target/test-data/impermanent-db" );
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
@@ -80,7 +80,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * since an ImpermanentGraphDatabase should not have any mention of a store directory in
      * any case.
      */
-    public ImpermanentGraphDatabase( File storeDir )
+    protected ImpermanentGraphDatabase( File storeDir )
     {
         this( storeDir, new HashMap<>() );
     }
@@ -129,7 +129,8 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return newDependencies().kernelExtensions( kernelExtensions );
     }
 
-    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    private ImpermanentGraphDatabase( File storeDir, Map<String,String> params,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         super( storeDir, params, dependencies );
         trackUnclosedUse( storeDir );

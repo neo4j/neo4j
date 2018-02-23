@@ -42,10 +42,10 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class TxStateVisitorTest
+class TxStateVisitorTest
 {
     @Test
-    public void shouldSeeAddedRelationshipProperties() throws Exception
+    void shouldSeeAddedRelationshipProperties() throws Exception
     {
         // Given
         long relId = 1L;
@@ -78,7 +78,7 @@ public class TxStateVisitorTest
     private final Collection<Integer> noRemoved = Collections.emptySet();
 
     @BeforeEach
-    public void before()
+    void before()
     {
         state = new TxState();
     }
@@ -161,9 +161,9 @@ public class TxStateVisitorTest
             }
         }
 
-        public List<PropertyChange> nodePropertyChanges = new ArrayList<>();
-        public List<PropertyChange> relPropertyChanges = new ArrayList<>();
-        public List<PropertyChange> graphPropertyChanges = new ArrayList<>();
+        List<PropertyChange> nodePropertyChanges = new ArrayList<>();
+        List<PropertyChange> relPropertyChanges = new ArrayList<>();
+        List<PropertyChange> graphPropertyChanges = new ArrayList<>();
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>

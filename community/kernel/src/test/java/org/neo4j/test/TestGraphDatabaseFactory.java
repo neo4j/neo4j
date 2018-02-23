@@ -173,7 +173,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    public TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    private TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         getCurrentState().addKernelExtensions( newKernelExtensions );
         return this;
@@ -250,7 +250,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
 
-        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
+        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
                 DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
         {
             super( databaseInfo, editionFactory );
@@ -305,7 +305,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                 }
             }
 
-            protected FileSystemAbstraction createNewFileSystem()
+            FileSystemAbstraction createNewFileSystem()
             {
                 return super.createFileSystemAbstraction();
             }

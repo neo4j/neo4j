@@ -25,7 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 
-public class CapturingSender implements BatchSender, Iterable<Object>
+class CapturingSender implements BatchSender, Iterable<Object>
 {
     private final Collection<Object> sent = new ArrayList<>();
 

@@ -31,10 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HighestTransactionIdTest
+class HighestTransactionIdTest
 {
     @Test
-    public void shouldHardSetHighest()
+    void shouldHardSetHighest()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( 10, 10, 10 );
@@ -47,7 +47,7 @@ public class HighestTransactionIdTest
     }
 
     @Test
-    public void shouldOnlyKeepTheHighestOffered()
+    void shouldOnlyKeepTheHighestOffered()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );
@@ -61,7 +61,7 @@ public class HighestTransactionIdTest
     }
 
     @Test
-    public void shouldKeepHighestDuringConcurrentOfferings() throws Throwable
+    void shouldKeepHighestDuringConcurrentOfferings() throws Throwable
     {
         // GIVEN
         final HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );

@@ -26,10 +26,10 @@ import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class EnvelopeTest
+class EnvelopeTest
 {
     @Test
-    public void shouldCreateBasic2DEnvelopes()
+    void shouldCreateBasic2DEnvelopes()
     {
         for ( double width = 0.0; width < 10.0; width += 2.5 )
         {
@@ -46,7 +46,7 @@ public class EnvelopeTest
     }
 
     @Test
-    public void shouldHandleIntersectionsIn1D()
+    void shouldHandleIntersectionsIn1D()
     {
         double width_x = 1.0;
         double width_y = 1.0;
@@ -93,7 +93,7 @@ public class EnvelopeTest
     }
 
     @Test
-    public void shouldHandleIntersectionsIn2D()
+    void shouldHandleIntersectionsIn2D()
     {
         Envelope left = new Envelope( 0.0, 1.0, 0.0, 1.0 );
         testOverlaps(left, new Envelope( 0.0, 1.0, 0.0, 1.0 ), true, 1.0, 1.0);        // copies

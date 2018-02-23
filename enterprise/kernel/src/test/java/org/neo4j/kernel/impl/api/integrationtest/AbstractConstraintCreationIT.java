@@ -41,7 +41,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -57,9 +56,9 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -94,7 +93,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     abstract DESCRIPTOR makeDescriptor( int typeId, int propertyKeyId );
 
     @BeforeEach
-    public void createKeys() throws Exception
+    void createKeys() throws Exception
     {
         TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
         this.typeId = initializeLabelOrRelType( tokenWriteOperations, KEY );
@@ -104,14 +103,14 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Override
-    protected GraphDatabaseService createGraphDatabase()
+    GraphDatabaseService createGraphDatabase()
     {
         return new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
                 .newEmbeddedDatabase( testDir.graphDbDir() );
     }
 
     @Test
-    public void shouldBeAbleToStoreAndRetrieveConstraint() throws Exception
+    void shouldBeAbleToStoreAndRetrieveConstraint() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AUTH_DISABLED );
@@ -135,7 +134,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldBeAbleToStoreAndRetrieveConstraintAfterRestart() throws Exception
+    void shouldBeAbleToStoreAndRetrieveConstraintAfterRestart() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AUTH_DISABLED );
@@ -161,7 +160,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotPersistConstraintCreatedInAbortedTransaction() throws Exception
+    void shouldNotPersistConstraintCreatedInAbortedTransaction() throws Exception
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
@@ -180,7 +179,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotStoreConstraintThatIsRemovedInTheSameTransaction() throws Exception
+    void shouldNotStoreConstraintThatIsRemovedInTheSameTransaction() throws Exception
     {
         // given
         try ( Statement statement = statementInNewTransaction( AUTH_DISABLED ) )
@@ -206,7 +205,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldDropConstraint() throws Exception
+    void shouldDropConstraint() throws Exception
     {
         // given
         Constraint constraint;
@@ -234,7 +233,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotCreateConstraintThatAlreadyExists() throws Exception
+    void shouldNotCreateConstraintThatAlreadyExists() throws Exception
     {
         // given
         {
@@ -261,7 +260,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotRemoveConstraintThatGetsReAdded() throws Exception
+    void shouldNotRemoveConstraintThatGetsReAdded() throws Exception
     {
         // given
         Constraint constraint;
@@ -295,7 +294,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldClearSchemaStateWhenConstraintIsCreated() throws Exception
+    void shouldClearSchemaStateWhenConstraintIsCreated() throws Exception
     {
         // given
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
@@ -312,7 +311,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldClearSchemaStateWhenConstraintIsDropped() throws Exception
+    void shouldClearSchemaStateWhenConstraintIsDropped() throws Exception
     {
         // given
         Constraint constraint;
@@ -339,7 +338,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotDropConstraintThatDoesNotExist() throws Exception
+    void shouldNotDropConstraintThatDoesNotExist() throws Exception
     {
         // given
         Constraint constraint = newConstraintObject( descriptor );
@@ -369,7 +368,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotLeaveAnyStateBehindAfterFailingToCreateConstraint()
+    void shouldNotLeaveAnyStateBehindAfterFailingToCreateConstraint()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -402,7 +401,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldBeAbleToResolveConflictsAndRecreateConstraintAfterFailingToCreateItDueToConflict()
+    void shouldBeAbleToResolveConflictsAndRecreateConstraintAfterFailingToCreateItDueToConflict()
             throws Exception
     {
         // given
@@ -438,7 +437,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void changedConstraintsShouldResultInTransientFailure()
+    void changedConstraintsShouldResultInTransientFailure()
     {
         // Given
         Runnable constraintCreation = () ->

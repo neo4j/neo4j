@@ -34,10 +34,10 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat.RECORD_SIZE;
 
-public class TestJumpingIdGenerator
+class TestJumpingIdGenerator
 {
     @Test
-    public void testIt()
+    void testIt()
     {
         int sizePerJump = 1000;
         IdGeneratorFactory factory = new JumpingIdGeneratorFactory( sizePerJump );
@@ -69,7 +69,7 @@ public class TestJumpingIdGenerator
     }
 
     @Test
-    public void testOffsettedFileChannel() throws Exception
+    void testOffsettedFileChannel() throws Exception
     {
         try ( JumpingFileSystemAbstraction offsettedFileSystem = new JumpingFileSystemAbstraction( 10 ) )
         {

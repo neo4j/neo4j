@@ -66,15 +66,15 @@ import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.TAS
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
 
-public class BatchingMultipleIndexPopulatorTest
+class BatchingMultipleIndexPopulatorTest
 {
-    public static final int propertyId = 1;
-    public static final int labelId = 1;
+    private static final int propertyId = 1;
+    private static final int labelId = 1;
     private final IndexDescriptor index1 = IndexDescriptorFactory.forLabel(1, 1);
     private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel(42, 42);
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         clearProperty( QUEUE_THRESHOLD_NAME );
         clearProperty( TASK_QUEUE_SIZE_NAME );
@@ -83,7 +83,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void populateFromQueueDoesNothingIfThresholdNotReached() throws Exception
+    void populateFromQueueDoesNothingIfThresholdNotReached() throws Exception
     {
         setProperty( QUEUE_THRESHOLD_NAME, 5 );
 
@@ -106,7 +106,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void populateFromQueuePopulatesWhenThresholdReached() throws Exception
+    void populateFromQueuePopulatesWhenThresholdReached() throws Exception
     {
         setProperty( QUEUE_THRESHOLD_NAME, 2 );
 
@@ -143,7 +143,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void executorShutdownAfterStoreScanCompletes() throws Exception
+    void executorShutdownAfterStoreScanCompletes() throws Exception
     {
         NodeUpdates update = nodeUpdates( 1, propertyId, "foo", labelId );
         IndexStoreView storeView = newStoreView( update );
@@ -164,7 +164,7 @@ public class BatchingMultipleIndexPopulatorTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void executorForcefullyShutdownIfStoreScanFails() throws Exception
+    void executorForcefullyShutdownIfStoreScanFails() throws Exception
     {
         IndexStoreView storeView = mock( IndexStoreView.class );
         StoreScan<Exception> failingStoreScan = mock( StoreScan.class );
@@ -196,7 +196,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void pendingBatchesFlushedAfterStoreScan() throws Exception
+    void pendingBatchesFlushedAfterStoreScan() throws Exception
     {
         NodeUpdates update1 = nodeUpdates( 1, propertyId, "foo", labelId );
         NodeUpdates update2 = nodeUpdates( 2, propertyId, "bar", labelId );
@@ -217,7 +217,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void batchIsFlushedWhenThresholdReached() throws Exception
+    void batchIsFlushedWhenThresholdReached() throws Exception
     {
         setProperty( BATCH_SIZE_NAME, 2 );
 
@@ -238,7 +238,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void populatorMarkedAsFailed() throws Exception
+    void populatorMarkedAsFailed() throws Exception
     {
         setProperty( BATCH_SIZE_NAME, 2 );
 
@@ -271,7 +271,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void populatorMarkedAsFailedAndUpdatesNotAdded() throws Exception
+    void populatorMarkedAsFailedAndUpdatesNotAdded() throws Exception
     {
         setProperty( BATCH_SIZE_NAME, 2 );
 
@@ -299,7 +299,7 @@ public class BatchingMultipleIndexPopulatorTest
     }
 
     @Test
-    public void shouldApplyBatchesInParallel() throws Exception
+    void shouldApplyBatchesInParallel() throws Exception
     {
         // given
         setProperty( BATCH_SIZE_NAME, 2 );

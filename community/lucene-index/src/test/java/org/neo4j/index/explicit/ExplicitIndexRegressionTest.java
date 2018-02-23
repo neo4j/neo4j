@@ -33,13 +33,13 @@ import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class ExplicitIndexRegressionTest
+class ExplicitIndexRegressionTest
 {
     @Resource
-    public ImpermanentDatabaseRule graphdb;
+    private ImpermanentDatabaseRule graphdb;
 
     @Test
-    public void shouldAccessAndUpdateIndexInSameTransaction()
+    void shouldAccessAndUpdateIndexInSameTransaction()
     {
         try ( Transaction tx = graphdb.beginTx() )
         {

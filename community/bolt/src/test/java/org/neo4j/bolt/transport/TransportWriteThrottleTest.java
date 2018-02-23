@@ -315,12 +315,12 @@ public class TransportWriteThrottleTest
             unlockCount.incrementAndGet();
         }
 
-        public int lockCallCount()
+        int lockCallCount()
         {
             return lockCount.get();
         }
 
-        public int unlockCallCount()
+        int unlockCallCount()
         {
             return unlockCount.get();
         }

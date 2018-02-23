@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER_TX_STATE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.GROUP;
@@ -37,16 +38,15 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_LOOP
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_OUTGOING_OF_TYPE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeGroup;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
-import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-public class ReferencesTest
+class ReferencesTest
 {
     // This value the largest possible high limit id +1 (see HighLimitV3_1_0)
     private static long MAX_ID_LIMIT = 1L << 50;
 
     @Test
-    public void shouldPreserveNoId()
+    void shouldPreserveNoId()
     {
         assertThat( RelationshipReferenceEncoding.encodeForFiltering( NO_ID ), equalTo( (long) NO_ID ) );
         assertThat( RelationshipReferenceEncoding.encodeForTxStateFiltering( NO_ID ), equalTo( (long) NO_ID ) );
@@ -59,7 +59,7 @@ public class ReferencesTest
     }
 
     @Test
-    public void shouldClearFlags()
+    void shouldClearFlags()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -81,7 +81,7 @@ public class ReferencesTest
     // Relationship
 
     @Test
-    public void encodeForFiltering()
+    void encodeForFiltering()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -95,7 +95,7 @@ public class ReferencesTest
     }
 
     @Test
-    public void encodeForTxStateFiltering()
+    void encodeForTxStateFiltering()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -109,7 +109,7 @@ public class ReferencesTest
     }
 
     @Test
-    public void encodeFromGroup()
+    void encodeFromGroup()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -122,7 +122,7 @@ public class ReferencesTest
     }
 
     @Test
-    public void encodeNoIncomingRels()
+    void encodeNoIncomingRels()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -136,7 +136,7 @@ public class ReferencesTest
     }
 
     @Test
-    public void encodeNoOutgoingRels()
+    void encodeNoOutgoingRels()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -150,7 +150,7 @@ public class ReferencesTest
     }
 
     @Test
-    public void encodeNoLoopRels()
+    void encodeNoLoopRels()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -165,7 +165,7 @@ public class ReferencesTest
     // Group
 
     @Test
-    public void encodeRelationship()
+    void encodeRelationship()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )

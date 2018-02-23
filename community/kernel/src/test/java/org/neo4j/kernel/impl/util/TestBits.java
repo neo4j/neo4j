@@ -24,15 +24,15 @@ import org.junit.jupiter.api.Test;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 
-public class TestBits
+class TestBits
 {
     @Test
-    public void asBytes()
+    void asBytes()
     {
         int numberOfBytes = 14;
         Bits bits = bits( numberOfBytes );
@@ -49,7 +49,7 @@ public class TestBits
     }
 
     @Test
-    public void doubleAsBytes()
+    void doubleAsBytes()
     {
         double[] array1 = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
         Bits bits = Bits.bits( array1.length * 8 );
@@ -64,7 +64,7 @@ public class TestBits
     }
 
     @Test
-    public void doubleAsBytesWithOffset()
+    void doubleAsBytesWithOffset()
     {
         double[] array1 = new double[]{1.0, 2.0, 3.0, 4.0, 5.0};
         Bits bits = Bits.bits( array1.length * 8 );
@@ -84,7 +84,7 @@ public class TestBits
     }
 
     @Test
-    public void writeAndRead()
+    void writeAndRead()
     {
         for ( int b = 5; b <= 8; b++ )
         {
@@ -108,7 +108,7 @@ public class TestBits
     }
 
     @Test
-    public void writeAndReadByteBuffer()
+    void writeAndReadByteBuffer()
     {
         byte[] bytes = new byte[512];
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order( ByteOrder.LITTLE_ENDIAN );
@@ -121,7 +121,7 @@ public class TestBits
     }
 
     @Test
-    public void numberToStringSeparatesAfter8Bits()
+    void numberToStringSeparatesAfter8Bits()
     {
         StringBuilder builder = new StringBuilder();
         Bits.numberToString(builder, 0b11111111, 2);

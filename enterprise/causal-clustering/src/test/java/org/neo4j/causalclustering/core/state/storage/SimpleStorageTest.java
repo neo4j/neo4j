@@ -37,7 +37,7 @@ public class SimpleStorageTest
     public EphemeralFileSystemRule fsa = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldWriteAndReadState() throws Exception
+    void shouldWriteAndReadState() throws Exception
     {
         // given
         SimpleStorage<MemberId> storage = new SimpleFileStorage<>( fsa.get(), new File( "state-dir" ),

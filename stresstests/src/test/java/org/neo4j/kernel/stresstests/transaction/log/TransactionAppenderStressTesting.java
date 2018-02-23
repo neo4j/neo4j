@@ -32,21 +32,21 @@ import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
-import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
  */
-public class TransactionAppenderStressTesting
+class TransactionAppenderStressTesting
 {
     private static final String DEFAULT_DURATION_IN_MINUTES = "5";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ), "working" ).getPath();
     private static final String DEFAULT_NUM_THREADS = "10";
 
     @Test
-    public void shouldBehaveCorrectlyUnderStress() throws Throwable
+    void shouldBehaveCorrectlyUnderStress() throws Throwable
     {
         int durationInMinutes = parseInt( fromEnv( "TX_APPENDER_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
         File workingDirectory = new File( fromEnv( "TX_APPENDER_WORKING_DIRECTORY", DEFAULT_WORKING_DIR ) );

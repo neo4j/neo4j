@@ -68,7 +68,7 @@ public class HaIdGeneratorFactoryTest
     private HaIdGeneratorFactory fac;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         master = mock( Master.class );
         masterDelegate = new DelegateInvocationHandler<>( Master.class );
@@ -78,7 +78,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void slaveIdGeneratorShouldReturnFromAssignedRange()
+    void slaveIdGeneratorShouldReturnFromAssignedRange()
     {
         // GIVEN
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 123, 0 );
@@ -97,7 +97,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void slaveIdGeneratorShouldAskForMoreWhenRangeIsOver()
+    void slaveIdGeneratorShouldAskForMoreWhenRangeIsOver()
     {
         // GIVEN
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 42 + 123, 0 );
@@ -128,7 +128,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void shouldUseDefraggedIfPresent()
+    void shouldUseDefraggedIfPresent()
     {
         // GIVEN
         long[] defragIds = {42, 27172828, 314159};
@@ -147,7 +147,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void shouldMoveFromDefraggedToRange()
+    void shouldMoveFromDefraggedToRange()
     {
         // GIVEN
         long[] defragIds = {42, 27172828, 314159};
@@ -166,7 +166,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void slaveShouldNeverAllowReducingHighId()
+    void slaveShouldNeverAllowReducingHighId()
     {
         // GIVEN
         final int highIdFromAllocation = 123;
@@ -186,7 +186,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void shouldDeleteIdGeneratorsAsPartOfSwitchingToSlave()
+    void shouldDeleteIdGeneratorsAsPartOfSwitchingToSlave()
     {
         // GIVEN we're in master mode. We do that to allow HaIdGeneratorFactory to open id generators at all
         fac.switchToMaster();
@@ -205,7 +205,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void shouldDeleteIdGeneratorsAsPartOfOpenAfterSwitchingToSlave()
+    void shouldDeleteIdGeneratorsAsPartOfOpenAfterSwitchingToSlave()
     {
         // GIVEN we're in master mode. We do that to allow HaIdGeneratorFactory to open id generators at all
         fac.switchToSlave();
@@ -221,7 +221,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void shouldTranslateComExceptionsIntoTransientTransactionFailures()
+    void shouldTranslateComExceptionsIntoTransientTransactionFailures()
     {
         assertThrows( TransientTransactionFailureException.class, () -> {
             when( master.allocateIds( isNull(), any( IdType.class ) ) ).thenThrow( new ComException() );
@@ -231,7 +231,7 @@ public class HaIdGeneratorFactoryTest
     }
 
     @Test
-    public void shouldNotUseForbiddenMinusOneIdFromIdBatches()
+    void shouldNotUseForbiddenMinusOneIdFromIdBatches()
     {
         // GIVEN
         long[] defragIds = {3, 5};

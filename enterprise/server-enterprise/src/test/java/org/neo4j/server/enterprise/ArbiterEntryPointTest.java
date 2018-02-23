@@ -30,13 +30,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.commandline.Util.neo4jVersion;
 
-public class ArbiterEntryPointTest
+class ArbiterEntryPointTest
 {
     private PrintStream realSystemOut;
     private PrintStream fakeSystemOut;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         realSystemOut = System.out;
         fakeSystemOut = mock( PrintStream.class );
@@ -44,13 +44,13 @@ public class ArbiterEntryPointTest
     }
 
     @AfterEach
-    public void teardown()
+    void teardown()
     {
         System.setOut( realSystemOut );
     }
 
     @Test
-    public void mainPrintsVersion()
+    void mainPrintsVersion()
     {
         // when
         ArbiterEntryPoint.main( new String[]{ "--version" } );

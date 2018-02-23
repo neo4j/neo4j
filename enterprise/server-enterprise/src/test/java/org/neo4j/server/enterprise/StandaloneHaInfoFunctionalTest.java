@@ -45,23 +45,23 @@ import static org.neo4j.server.rest.MasterInfoService.IS_SLAVE_PATH;
 import static org.neo4j.test.server.ha.EnterpriseServerHelper.createNonPersistentServer;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class StandaloneHaInfoFunctionalTest
+class StandaloneHaInfoFunctionalTest
 {
     private static OpenEnterpriseNeoServer server;
 
     @Resource
-    public TestDirectory target;
+    private TestDirectory target;
     @Resource
     public SuppressOutput suppressOutput;
 
     @BeforeEach
-    public void before() throws IOException
+    void before() throws IOException
     {
         server = createNonPersistentServer(target.directory());
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         if ( server != null )
         {
@@ -70,7 +70,7 @@ public class StandaloneHaInfoFunctionalTest
     }
 
     @Test
-    public void testHaDiscoveryOnStandaloneReturns403()
+    void testHaDiscoveryOnStandaloneReturns403()
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
@@ -84,7 +84,7 @@ public class StandaloneHaInfoFunctionalTest
     }
 
     @Test
-    public void testIsMasterOnStandaloneReturns403()
+    void testIsMasterOnStandaloneReturns403()
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
@@ -93,7 +93,7 @@ public class StandaloneHaInfoFunctionalTest
     }
 
     @Test
-    public void testIsSlaveOnStandaloneReturns403()
+    void testIsSlaveOnStandaloneReturns403()
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
@@ -102,7 +102,7 @@ public class StandaloneHaInfoFunctionalTest
     }
 
     @Test
-    public void testDiscoveryListingOnStandaloneDoesNotContainHA() throws Exception
+    void testDiscoveryListingOnStandaloneDoesNotContainHA() throws Exception
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server );
 

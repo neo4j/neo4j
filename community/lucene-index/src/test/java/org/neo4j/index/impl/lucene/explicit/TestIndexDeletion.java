@@ -47,7 +47,7 @@ import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.explicit.Contains.contains;
 import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.FULLTEXT_CONFIG;
 
-public class TestIndexDeletion
+class TestIndexDeletion
 {
     private static final String INDEX_NAME = "index";
     private static GraphDatabaseService graphDb;
@@ -59,19 +59,19 @@ public class TestIndexDeletion
     private List<WorkThread> workers;
 
     @BeforeAll
-    public static void setUpStuff()
+    static void setUpStuff()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterAll
-    public static void tearDownStuff()
+    static void tearDownStuff()
     {
         graphDb.shutdown();
     }
 
     @AfterEach
-    public void commitTx() throws Exception
+    void commitTx() throws Exception
     {
         finishTx( true );
         for ( WorkThread worker : workers )
@@ -82,12 +82,12 @@ public class TestIndexDeletion
         }
     }
 
-    public void rollbackTx()
+    private void rollbackTx()
     {
         finishTx( false );
     }
 
-    public void finishTx( boolean success )
+    private void finishTx( boolean success )
     {
         if ( tx != null )
         {
@@ -101,7 +101,7 @@ public class TestIndexDeletion
     }
 
     @BeforeEach
-    public void createInitialData()
+    void createInitialData()
     {
         beginTx();
         index = graphDb.index().forNodes( INDEX_NAME );
@@ -117,7 +117,7 @@ public class TestIndexDeletion
         workers = new ArrayList<>();
     }
 
-    public void beginTx()
+    private void beginTx()
     {
         if ( tx == null )
         {
@@ -125,14 +125,14 @@ public class TestIndexDeletion
         }
     }
 
-    void restartTx()
+    private void restartTx()
     {
         finishTx( true );
         beginTx();
     }
 
     @Test
-    public void shouldBeAbleToDeleteAndRecreateIndex()
+    void shouldBeAbleToDeleteAndRecreateIndex()
     {
         restartTx();
         assertContains( index.query( key, "own" ) );
@@ -148,7 +148,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void shouldNotBeDeletedWhenDeletionRolledBack()
+    void shouldNotBeDeletedWhenDeletionRolledBack()
     {
         restartTx();
         index.delete();
@@ -161,7 +161,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex()
+    void shouldThrowIllegalStateForActionsAfterDeletedOnIndex()
     {
         restartTx();
         index.delete();
@@ -178,7 +178,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex2()
+    void shouldThrowIllegalStateForActionsAfterDeletedOnIndex2()
     {
         restartTx();
         index.delete();
@@ -195,7 +195,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex3()
+    void shouldThrowIllegalStateForActionsAfterDeletedOnIndex3()
     {
         assertThrows( IllegalStateException.class, () -> {
             restartTx();
@@ -205,7 +205,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex4()
+    void shouldThrowIllegalStateForActionsAfterDeletedOnIndex4()
     {
         assertThrows( IllegalStateException.class, () -> {
             restartTx();
@@ -216,7 +216,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void deleteInOneTxShouldNotAffectTheOther() throws Exception
+    void deleteInOneTxShouldNotAffectTheOther() throws Exception
     {
         index.delete();
 
@@ -227,7 +227,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void deleteAndCommitShouldBePublishedToOtherTransaction2() throws Exception
+    void deleteAndCommitShouldBePublishedToOtherTransaction2() throws Exception
     {
         WorkThread firstTx = createWorker( "First" );
         WorkThread secondTx = createWorker( "Second" );
@@ -261,7 +261,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void indexDeletesShouldNotByVisibleUntilCommit() throws Exception
+    void indexDeletesShouldNotByVisibleUntilCommit() throws Exception
     {
         commitTx();
 
@@ -280,7 +280,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx()
+    void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx()
     {
         // create and index a node
         Index<Node> nodeIndex = graphDb.index().forNodes( "index" );

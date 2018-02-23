@@ -138,34 +138,34 @@ import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     @Test
-    public void mustReportConfiguredMaxPages()
+    void mustReportConfiguredMaxPages()
     {
         configureStandardPageCache();
         assertThat( pageCache.maxCachedPages(), is( (long) maxPages ) );
     }
 
     @Test
-    public void mustReportConfiguredCachePageSize()
+    void mustReportConfiguredCachePageSize()
     {
         configureStandardPageCache();
         assertThat( pageCache.pageSize(), is( pageCachePageSize ) );
     }
 
     @Test
-    public void mustHaveAtLeastTwoPages()
+    void mustHaveAtLeastTwoPages()
     {
         expectedException.expect( IllegalArgumentException.class );
         getPageCache( fs, 1, NULL, PageCursorTracerSupplier.NULL );
     }
 
     @Test
-    public void mustAcceptTwoPagesAsMinimumConfiguration()
+    void mustAcceptTwoPagesAsMinimumConfiguration()
     {
         getPageCache( fs, 2, NULL, PageCursorTracerSupplier.NULL );
     }
 
     @Test
-    public void gettingNameFromMappedFileMustMatchMappedFileName() throws Exception
+    void gettingNameFromMappedFileMustMatchMappedFileName() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -176,7 +176,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustClosePageSwapperFactoryOnPageCacheClose() throws Exception
+    void mustClosePageSwapperFactoryOnPageCacheClose() throws Exception
     {
         AtomicBoolean closed = new AtomicBoolean();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
@@ -224,7 +224,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void closingOfPageCacheMustBeConsideredSuccessfulEvenIfPageSwapperFactoryCloseThrows()
+    void closingOfPageCacheMustBeConsideredSuccessfulEvenIfPageSwapperFactoryCloseThrows()
     {
         AtomicInteger closed = new AtomicInteger();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
@@ -253,7 +253,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustReadExistingData() throws IOException
+    void mustReadExistingData() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -276,7 +276,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustScanInTheMiddleOfTheFile() throws IOException
+    void mustScanInTheMiddleOfTheFile() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -301,7 +301,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writesFlushedFromPageFileMustBeExternallyObservable() throws IOException
+    void writesFlushedFromPageFileMustBeExternallyObservable() throws IOException
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -325,7 +325,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCacheFlushAndForceMustThrowOnNullIOPSLimiter() throws Exception
+    void pageCacheFlushAndForceMustThrowOnNullIOPSLimiter() throws Exception
     {
         configureStandardPageCache();
         expectedException.expect( IllegalArgumentException.class );
@@ -333,7 +333,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pagedFileFlushAndForceMustThrowOnNullIOPSLimiter() throws Exception
+    void pagedFileFlushAndForceMustThrowOnNullIOPSLimiter() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -344,7 +344,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCacheFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
+    void pageCacheFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
     {
         int pagesToDirty = 10_000;
         PageCache cache = getPageCache( fs, nextPowerOf2( 2 * pagesToDirty ), NULL, PageCursorTracerSupplier.NULL );
@@ -368,7 +368,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pagedFileFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
+    void pagedFileFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
     {
         int pagesToDirty = 10_000;
         PageCache cache = getPageCache( fs, nextPowerOf2( pagesToDirty ), NULL, PageCursorTracerSupplier.NULL );
@@ -401,7 +401,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
+    void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
     {
         assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () -> {
             PageCache cache = getPageCache( fs, 20, NULL, PageCursorTracerSupplier.NULL );
@@ -449,7 +449,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writesFlushedFromPageCacheMustBeExternallyObservable() throws IOException
+    void writesFlushedFromPageCacheMustBeExternallyObservable() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -471,7 +471,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writesToPagesMustNotBleedIntoAdjacentPages() throws IOException
+    void writesToPagesMustNotBleedIntoAdjacentPages() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -504,7 +504,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void channelMustBeForcedAfterPagedFileFlushAndForce() throws Exception
+    void channelMustBeForcedAfterPagedFileFlushAndForce() throws Exception
     {
         final AtomicInteger writeCounter = new AtomicInteger();
         final AtomicInteger forceCounter = new AtomicInteger();
@@ -530,7 +530,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void channelsMustBeForcedAfterPageCacheFlushAndForce() throws Exception
+    void channelsMustBeForcedAfterPageCacheFlushAndForce() throws Exception
     {
         final AtomicInteger writeCounter = new AtomicInteger();
         final AtomicInteger forceCounter = new AtomicInteger();
@@ -589,7 +589,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void firstNextCallMustReturnFalseWhenTheFileIsEmptyAndNoGrowIsSpecified() throws IOException
+    void firstNextCallMustReturnFalseWhenTheFileIsEmptyAndNoGrowIsSpecified() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -603,7 +603,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextMustReturnTrueThenFalseWhenThereIsOnlyOnePageInTheFileAndNoGrowIsSpecified() throws IOException
+    void nextMustReturnTrueThenFalseWhenThereIsOnlyOnePageInTheFileAndNoGrowIsSpecified() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -622,7 +622,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void closingWithoutCallingNextMustLeavePageUnpinnedAndUntouched() throws IOException
+    void closingWithoutCallingNextMustLeavePageUnpinnedAndUntouched() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -650,7 +650,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextWithNegativeInitialPageIdMustReturnFalse() throws Exception
+    void nextWithNegativeInitialPageIdMustReturnFalse() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -669,7 +669,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextWithNegativePageIdMustReturnFalse() throws Exception
+    void nextWithNegativePageIdMustReturnFalse() throws Exception
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordCount, recordSize );
@@ -693,7 +693,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void rewindMustStartScanningOverFromTheBeginning() throws IOException
+    void rewindMustStartScanningOverFromTheBeginning() throws IOException
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -724,7 +724,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustCloseFileChannelWhenTheLastHandleIsUnmapped() throws Exception
+    void mustCloseFileChannelWhenTheLastHandleIsUnmapped() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             assumeTrue( fs.getClass() == EphemeralFileSystemAbstraction.class,
@@ -740,7 +740,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void dirtyPagesMustBeFlushedWhenTheCacheIsClosed() throws IOException
+    void dirtyPagesMustBeFlushedWhenTheCacheIsClosed() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -767,7 +767,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void dirtyPagesMustBeFlushedWhenThePagedFileIsClosed() throws IOException
+    void dirtyPagesMustBeFlushedWhenThePagedFileIsClosed() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -789,7 +789,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @RepeatedTest( 100 )
-    public void flushingDuringPagedFileCloseMustRetryUntilItSucceeds() throws IOException
+    void flushingDuringPagedFileCloseMustRetryUntilItSucceeds() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
@@ -836,7 +836,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFilesInClosedCacheMustThrow() throws IOException
+    void mappingFilesInClosedCacheMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -847,7 +847,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void flushingClosedCacheMustThrow() throws IOException
+    void flushingClosedCacheMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -858,7 +858,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileWithPageSizeGreaterThanCachePageSizeMustThrow() throws IOException
+    void mappingFileWithPageSizeGreaterThanCachePageSizeMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -868,7 +868,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileWithPageSizeSmallerThanLongSizeBytesMustThrow() throws IOException
+    void mappingFileWithPageSizeSmallerThanLongSizeBytesMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             // Because otherwise we cannot ensure that our branch-free bounds checking always lands within a page boundary.
@@ -879,7 +879,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileWithPageSizeSmallerThanLongSizeBytesMustThrowEvenWithAnyPageSizeOpenOptionAndNoExistingMapping()
+    void mappingFileWithPageSizeSmallerThanLongSizeBytesMustThrowEvenWithAnyPageSizeOpenOptionAndNoExistingMapping()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             //  Because otherwise we cannot ensure that our branch-free bounds checking always lands within a page boundary.
@@ -891,7 +891,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileWithPageZeroPageSizeMustThrowEvenWithExistingMapping() throws Exception
+    void mappingFileWithPageZeroPageSizeMustThrowEvenWithExistingMapping() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -906,7 +906,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileWithPageZeroPageSizeAndAnyPageSizeOpenOptionMustNotThrowGivenExistingMapping()
+    void mappingFileWithPageZeroPageSizeAndAnyPageSizeOpenOptionMustNotThrowGivenExistingMapping()
             throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
@@ -922,7 +922,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileWithPageSizeEqualToCachePageSizeMustNotThrow() throws IOException
+    void mappingFileWithPageSizeEqualToCachePageSizeMustNotThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -932,7 +932,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void notSpecifyingAnyPfFlagsMustThrow() throws IOException
+    void notSpecifyingAnyPfFlagsMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -945,7 +945,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void notSpecifyingAnyPfLockFlagsMustThrow() throws IOException
+    void notSpecifyingAnyPfLockFlagsMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -958,7 +958,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void specifyingBothReadAndWriteLocksMustThrow() throws IOException
+    void specifyingBothReadAndWriteLocksMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -971,7 +971,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustNotPinPagesAfterNextReturnsFalse() throws Exception
+    void mustNotPinPagesAfterNextReturnsFalse() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final CountDownLatch startLatch = new CountDownLatch( 1 );
@@ -1017,7 +1017,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextMustResetTheCursorOffset() throws IOException
+    void nextMustResetTheCursorOffset() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1056,7 +1056,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextMustAdvanceCurrentPageId() throws IOException
+    void nextMustAdvanceCurrentPageId() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1073,7 +1073,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextToSpecificPageIdMustAdvanceFromThatPointOn() throws IOException
+    void nextToSpecificPageIdMustAdvanceFromThatPointOn() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1092,7 +1092,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void currentPageIdIsUnboundBeforeFirstNextAndAfterRewind() throws IOException
+    void currentPageIdIsUnboundBeforeFirstNextAndAfterRewind() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1110,7 +1110,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCursorMustKnowCurrentFilePageSize() throws IOException
+    void pageCursorMustKnowCurrentFilePageSize() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1128,7 +1128,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCursorMustKnowCurrentFile() throws Exception
+    void pageCursorMustKnowCurrentFile() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1146,67 +1146,67 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readingFromUnboundReadCursorMustThrow()
+    void readingFromUnboundReadCursorMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkUnboundReadCursorAccess ) );
     }
 
     @Test
-    public void readingFromUnboundWriteCursorMustThrow()
+    void readingFromUnboundWriteCursorMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkUnboundWriteCursorAccess ) );
     }
 
     @Test
-    public void readingFromPreviouslyBoundCursorMustThrow()
+    void readingFromPreviouslyBoundCursorMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundWriteCursorAccess ) );
     }
 
     @Test
-    public void writingToUnboundCursorMustThrow()
+    void writingToUnboundCursorMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkUnboundWriteCursorAccess ) );
     }
 
     @Test
-    public void writingToPreviouslyBoundCursorMustThrow()
+    void writingToPreviouslyBoundCursorMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAccess ) );
     }
 
     @Test
-    public void readFromReadCursorAfterNextReturnsFalseMustThrow()
+    void readFromReadCursorAfterNextReturnsFalseMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkReadCursorAfterFailedNext ) );
     }
 
     @Test
-    public void readFromPreviouslyBoundReadCursorAfterNextReturnsFalseMustThrow()
+    void readFromPreviouslyBoundReadCursorAfterNextReturnsFalseMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundReadCursorAfterFailedNext ) );
     }
 
     @Test
-    public void readFromWriteCursorAfterNextReturnsFalseMustThrow()
+    void readFromWriteCursorAfterNextReturnsFalseMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkWriteCursorAfterFailedNext ) );
     }
 
     @Test
-    public void readFromPreviouslyBoundWriteCursorAfterNextReturnsFalseMustThrow()
+    void readFromPreviouslyBoundWriteCursorAfterNextReturnsFalseMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext ) );
     }
 
     @Test
-    public void writeAfterNextReturnsFalseMustThrow()
+    void writeAfterNextReturnsFalseMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkWriteCursorAfterFailedNext ) );
     }
 
     @Test
-    public void writeToPreviouslyBoundCursorAfterNextReturnsFalseMustThrow()
+    void writeToPreviouslyBoundCursorAfterNextReturnsFalseMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext ) );
     }
@@ -1344,7 +1344,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void tryMappedPagedFileShouldReportMappedFilePresent() throws Exception
+    void tryMappedPagedFileShouldReportMappedFilePresent() throws Exception
     {
         configureStandardPageCache();
         final File file = file( "a" );
@@ -1359,7 +1359,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception
+    void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception
     {
         configureStandardPageCache();
         final Optional<PagedFile> dontExist = pageCache.getExistingMapping( new File( "dont_exist" ) );
@@ -1367,7 +1367,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustListExistingMappings() throws Exception
+    void mustListExistingMappings() throws Exception
     {
         configureStandardPageCache();
         File f1 = existingFile( "1" );
@@ -1388,7 +1388,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void listExistingMappingsMustThrowOnClosedPageCache() throws Exception
+    void listExistingMappingsMustThrowOnClosedPageCache() throws Exception
     {
         configureStandardPageCache();
         T pc = pageCache;
@@ -1399,7 +1399,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageMustBeAccessibleWithNoGrowSpecified() throws IOException
+    void lastPageMustBeAccessibleWithNoGrowSpecified() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1458,7 +1458,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageMustBeAccessibleWithNoGrowSpecifiedEvenIfLessThanFilePageSize() throws IOException
+    void lastPageMustBeAccessibleWithNoGrowSpecifiedEvenIfLessThanFilePageSize() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1516,7 +1516,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void firstPageMustBeAccessibleWithNoGrowSpecifiedIfItIsTheOnlyPage() throws IOException
+    void firstPageMustBeAccessibleWithNoGrowSpecifiedIfItIsTheOnlyPage() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1551,7 +1551,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void firstPageMustBeAccessibleEvenIfTheFileIsNonEmptyButSmallerThanFilePageSize() throws IOException
+    void firstPageMustBeAccessibleEvenIfTheFileIsNonEmptyButSmallerThanFilePageSize() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             generateFileWithRecords( file( "a" ), 1, recordSize );
@@ -1586,7 +1586,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void firstPageMustNotBeAccessibleIfFileIsEmptyAndNoGrowSpecified() throws IOException
+    void firstPageMustNotBeAccessibleIfFileIsEmptyAndNoGrowSpecified() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1619,7 +1619,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void newlyWrittenPagesMustBeAccessibleWithNoGrow() throws IOException
+    void newlyWrittenPagesMustBeAccessibleWithNoGrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1665,7 +1665,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readLockImpliesNoGrow() throws IOException
+    void readLockImpliesNoGrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1691,7 +1691,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     // This is so because on some machines this test takes a very long time to run. Verifying in the end
     // that at least there were some correct reads is good enough.
     @Test
-    public void retryMustResetCursorOffset() throws Exception
+    void retryMustResetCursorOffset() throws Exception
     {
         // The general idea here, is that we have a page with a particular value in its 0th position.
         // We also have a thread that constantly writes to the middle of the page, so it modifies
@@ -1760,7 +1760,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextWithPageIdMustAllowTraversingInReverse() throws IOException
+    void nextWithPageIdMustAllowTraversingInReverse() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1781,7 +1781,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextWithPageIdMustReturnFalseIfPageIdIsBeyondFilePageRangeAndNoGrowSpecified() throws IOException
+    void nextWithPageIdMustReturnFalseIfPageIdIsBeyondFilePageRangeAndNoGrowSpecified() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1806,7 +1806,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pagesAddedWithNextWithPageIdMustBeAccessibleWithNoGrowSpecified() throws IOException
+    void pagesAddedWithNextWithPageIdMustBeAccessibleWithNoGrowSpecified() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1842,7 +1842,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
+    void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1915,7 +1915,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileSecondTimeWithLesserPageSizeMustThrow() throws Exception
+    void mappingFileSecondTimeWithLesserPageSizeMustThrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1928,7 +1928,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileSecondTimeWithGreaterPageSizeMustThrow() throws Exception
+    void mappingFileSecondTimeWithGreaterPageSizeMustThrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1941,7 +1941,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void allowOpeningMultipleReadAndWriteCursorsPerThread() throws Exception
+    void allowOpeningMultipleReadAndWriteCursorsPerThread() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -1976,7 +1976,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustNotLiveLockIfWeRunOutOfEvictablePages() throws Exception
+    void mustNotLiveLockIfWeRunOutOfEvictablePages() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2007,7 +2007,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeLocksMustNotBeExclusive() throws Exception
+    void writeLocksMustNotBeExclusive() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2029,7 +2029,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeLockMustInvalidateInnerReadLock() throws Exception
+    void writeLockMustInvalidateInnerReadLock() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2052,7 +2052,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeLockMustInvalidateExistingReadLock() throws Exception
+    void writeLockMustInvalidateExistingReadLock() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2087,7 +2087,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeUnlockMustInvalidateReadLocks() throws Exception
+    void writeUnlockMustInvalidateReadLocks() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2121,7 +2121,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustNotFlushCleanPagesWhenEvicting() throws Exception
+    void mustNotFlushCleanPagesWhenEvicting() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final AtomicBoolean observedWrite = new AtomicBoolean();
@@ -2186,7 +2186,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void evictionMustFlushPagesToTheRightFiles() throws IOException
+    void evictionMustFlushPagesToTheRightFiles() throws IOException
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2276,7 +2276,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading() throws IOException
+    void tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
@@ -2337,7 +2337,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void tracerMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting() throws IOException
+    void tracerMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             long pagesToGenerate = 142;
@@ -2397,7 +2397,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void tracerMustBeNotifiedOfReadAndWritePins() throws Exception
+    void tracerMustBeNotifiedOfReadAndWritePins() throws Exception
     {
         final AtomicInteger writeCount = new AtomicInteger();
         final AtomicInteger readCount = new AtomicInteger();
@@ -2440,7 +2440,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdOfEmptyFileIsLessThanZero() throws IOException
+    void lastPageIdOfEmptyFileIsLessThanZero() throws IOException
     {
         configureStandardPageCache();
 
@@ -2451,7 +2451,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdOfFileWithOneByteIsZero() throws IOException
+    void lastPageIdOfFileWithOneByteIsZero() throws IOException
     {
         StoreChannel channel = fs.create( file( "a" ) );
         channel.write( wrap( new byte[]{1} ) );
@@ -2466,7 +2466,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdOfFileWithExactlyTwoPagesWorthOfDataIsOne() throws IOException
+    void lastPageIdOfFileWithExactlyTwoPagesWorthOfDataIsOne() throws IOException
     {
         configureStandardPageCache();
 
@@ -2480,7 +2480,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdOfFileWithExactlyTwoPagesAndOneByteWorthOfDataIsTwo() throws IOException
+    void lastPageIdOfFileWithExactlyTwoPagesAndOneByteWorthOfDataIsTwo() throws IOException
     {
         configureStandardPageCache();
 
@@ -2497,7 +2497,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdMustNotIncreaseWhenReadingToEndWithReadLock() throws IOException
+    void lastPageIdMustNotIncreaseWhenReadingToEndWithReadLock() throws IOException
     {
         configureStandardPageCache();
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -2518,7 +2518,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdMustNotIncreaseWhenReadingToEndWithNoGrowAndWriteLock() throws IOException
+    void lastPageIdMustNotIncreaseWhenReadingToEndWithNoGrowAndWriteLock() throws IOException
     {
         configureStandardPageCache();
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -2547,7 +2547,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdMustIncreaseWhenScanningPastEndWithWriteLock() throws IOException
+    void lastPageIdMustIncreaseWhenScanningPastEndWithWriteLock() throws IOException
     {
         configureStandardPageCache();
         generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize );
@@ -2567,7 +2567,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdMustIncreaseWhenJumpingPastEndWithWriteLock() throws IOException
+    void lastPageIdMustIncreaseWhenJumpingPastEndWithWriteLock() throws IOException
     {
         configureStandardPageCache();
         generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize );
@@ -2590,7 +2590,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void lastPageIdFromUnmappedFileMustThrow() throws IOException
+    void lastPageIdFromUnmappedFileMustThrow() throws IOException
     {
         configureStandardPageCache();
 
@@ -2605,7 +2605,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void cursorOffsetMustBeUpdatedReadAndWrite() throws IOException
+    void cursorOffsetMustBeUpdatedReadAndWrite() throws IOException
     {
         configureStandardPageCache();
 
@@ -2683,7 +2683,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void closeOnPageCacheMustThrowIfFilesAreStillMapped() throws IOException
+    void closeOnPageCacheMustThrowIfFilesAreStillMapped() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2697,7 +2697,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pagedFileIoMustThrowIfFileIsUnmapped() throws IOException
+    void pagedFileIoMustThrowIfFileIsUnmapped() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2722,13 +2722,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         } );
     }
 
-    protected void closeThisPagedFile( PagedFile pagedFile ) throws IOException
+    private void closeThisPagedFile( PagedFile pagedFile ) throws IOException
     {
         pagedFile.close();
     }
 
     @Test
-    public void writeLockedPageCursorNextMustThrowIfFileIsUnmapped() throws IOException
+    void writeLockedPageCursorNextMustThrowIfFileIsUnmapped() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2752,7 +2752,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeLockedPageCursorNextWithIdMustThrowIfFileIsUnmapped() throws IOException
+    void writeLockedPageCursorNextWithIdMustThrowIfFileIsUnmapped() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2767,7 +2767,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readLockedPageCursorNextMustThrowIfFileIsUnmapped() throws IOException
+    void readLockedPageCursorNextMustThrowIfFileIsUnmapped() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2784,7 +2784,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readLockedPageCursorNextWithIdMustThrowIfFileIsUnmapped() throws IOException
+    void readLockedPageCursorNextWithIdMustThrowIfFileIsUnmapped() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2801,7 +2801,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeLockedPageMustBlockFileUnmapping() throws Exception
+    void writeLockedPageMustBlockFileUnmapping() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2819,7 +2819,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void optimisticReadLockedPageMustNotBlockFileUnmapping() throws Exception
+    void optimisticReadLockedPageMustNotBlockFileUnmapping() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             generateFileWithRecords( file( "a" ), 1, recordSize );
@@ -2837,7 +2837,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void advancingPessimisticReadLockingCursorAfterUnmappingMustThrow() throws Exception
+    void advancingPessimisticReadLockingCursorAfterUnmappingMustThrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2856,7 +2856,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void advancingOptimisticReadLockingCursorAfterUnmappingMustThrow() throws Exception
+    void advancingOptimisticReadLockingCursorAfterUnmappingMustThrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2884,7 +2884,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readingAndRetryingOnPageWithOptimisticReadLockingAfterUnmappingMustNotThrow() throws Exception
+    void readingAndRetryingOnPageWithOptimisticReadLockingAfterUnmappingMustNotThrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -2916,7 +2916,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryFromUnboundReadCursorMustNotThrow() throws Exception
+    void shouldRetryFromUnboundReadCursorMustNotThrow() throws Exception
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage, recordSize );
@@ -2928,7 +2928,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryFromUnboundWriteCursorMustNotThrow() throws Exception
+    void shouldRetryFromUnboundWriteCursorMustNotThrow() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -2940,7 +2940,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryFromUnboundLinkedReadCursorMustNotThrow() throws Exception
+    void shouldRetryFromUnboundLinkedReadCursorMustNotThrow() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -2957,7 +2957,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryFromUnboundLinkedWriteCursorMustNotThrow() throws Exception
+    void shouldRetryFromUnboundLinkedWriteCursorMustNotThrow() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -2974,7 +2974,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryOnWriteParentOfClosedLinkedCursorMustNotThrow() throws Exception
+    void shouldRetryOnWriteParentOfClosedLinkedCursorMustNotThrow() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -2991,7 +2991,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryOnReadParentOfClosedLinkedCursorMustNotThrow() throws Exception
+    void shouldRetryOnReadParentOfClosedLinkedCursorMustNotThrow() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -3008,7 +3008,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryOnReadParentOnDirtyPageOfClosedLinkedCursorMustNotThrow() throws Exception
+    void shouldRetryOnReadParentOnDirtyPageOfClosedLinkedCursorMustNotThrow() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -3029,7 +3029,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
+    void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
     {
         getPageCache( fs, maxPages, NULL, PageCursorTracerSupplier.NULL );
         File file = file( "a" );
@@ -3048,7 +3048,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCursorCloseShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
+    void pageCursorCloseShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
     {
         getPageCache( fs, maxPages, NULL, PageCursorTracerSupplier.NULL );
         File file = file( "a" );
@@ -3067,7 +3067,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCursorCloseWithClosedLinkedCursorShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
+    void pageCursorCloseWithClosedLinkedCursorShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
@@ -3093,7 +3093,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageCursorCloseMustNotClosePreviouslyLinkedCursorThatGotReused() throws Exception
+    void pageCursorCloseMustNotClosePreviouslyLinkedCursorThatGotReused() throws Exception
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
@@ -3115,55 +3115,55 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void getByteBeyondPageEndMustThrow()
+    void getByteBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getByte ) );
     }
 
     @Test
-    public void putByteBeyondPageEndMustThrow()
+    void putByteBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putByte( (byte) 42 ) ) );
     }
 
     @Test
-    public void getShortBeyondPageEndMustThrow()
+    void getShortBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getShort ) );
     }
 
     @Test
-    public void putShortBeyondPageEndMustThrow()
+    void putShortBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putShort( (short) 42 ) ) );
     }
 
     @Test
-    public void getIntBeyondPageEndMustThrow()
+    void getIntBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getInt ) );
     }
 
     @Test
-    public void putIntBeyondPageEndMustThrow()
+    void putIntBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putInt( 42 ) ) );
     }
 
     @Test
-    public void putLongBeyondPageEndMustThrow()
+    void putLongBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putLong( 42 ) ) );
     }
 
     @Test
-    public void getLongBeyondPageEndMustThrow()
+    void getLongBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getLong ) );
     }
 
     @Test
-    public void putBytesBeyondPageEndMustThrow() throws IOException
+    void putBytesBeyondPageEndMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final byte[] bytes = new byte[]{1, 2, 3};
@@ -3172,13 +3172,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void putBytesRepeatedByteBeyondPageEndMustThrow()
+    void putBytesRepeatedByteBeyondPageEndMustThrow()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putBytes( 3, (byte) 1 ) ) );
     }
 
     @Test
-    public void getBytesBeyondPageEndMustThrow() throws IOException
+    void getBytesBeyondPageEndMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final byte[] bytes = new byte[3];
@@ -3187,7 +3187,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void putBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
+    void putBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final byte[] bytes = new byte[]{1, 2, 3};
@@ -3196,7 +3196,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void getBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
+    void getBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final byte[] bytes = new byte[3];
@@ -3227,7 +3227,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustClearBoundsFlagWhenReturningTrue() throws Exception
+    void shouldRetryMustClearBoundsFlagWhenReturningTrue() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3250,7 +3250,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustNotClearBoundsFlagWhenReturningFalse() throws Exception
+    void shouldRetryMustNotClearBoundsFlagWhenReturningFalse() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3273,7 +3273,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextThatReturnsTrueMustNotClearBoundsFlagOnReadCursor() throws Exception
+    void nextThatReturnsTrueMustNotClearBoundsFlagOnReadCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3296,7 +3296,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextThatReturnsTrueMustNotClearBoundsFlagOnWriteCursor() throws Exception
+    void nextThatReturnsTrueMustNotClearBoundsFlagOnWriteCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3314,7 +3314,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextThatReturnsFalseMustNotClearBoundsFlagOnReadCursor() throws Exception
+    void nextThatReturnsFalseMustNotClearBoundsFlagOnReadCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3337,7 +3337,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextThatReturnsFalseMustNotClearBoundsFlagOnWriteCursor() throws Exception
+    void nextThatReturnsFalseMustNotClearBoundsFlagOnWriteCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3357,7 +3357,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextWithPageIdThatReturnsTrueMustNotClearBoundsFlagOnReadCursor() throws Exception
+    void nextWithPageIdThatReturnsTrueMustNotClearBoundsFlagOnReadCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3380,7 +3380,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextWithPageIdMustNotClearBoundsFlagOnWriteCursor() throws Exception
+    void nextWithPageIdMustNotClearBoundsFlagOnWriteCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3398,7 +3398,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void settingOutOfBoundsCursorOffsetMustRaiseBoundsFlag() throws IOException
+    void settingOutOfBoundsCursorOffsetMustRaiseBoundsFlag() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3423,7 +3423,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void manuallyRaisedBoundsFlagMustBeObservable() throws Exception
+    void manuallyRaisedBoundsFlagMustBeObservable() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
@@ -3441,7 +3441,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageFaultForWriteMustThrowIfOutOfStorageSpace() throws IOException
+    void pageFaultForWriteMustThrowIfOutOfStorageSpace() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final AtomicInteger writeCounter = new AtomicInteger();
@@ -3489,7 +3489,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pageFaultForReadMustThrowIfOutOfStorageSpace() throws IOException
+    void pageFaultForReadMustThrowIfOutOfStorageSpace() throws IOException
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             final AtomicInteger writeCounter = new AtomicInteger();
@@ -3550,7 +3550,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustRecoverViaFileCloseFromFullDriveWhenMoreStorageBecomesAvailable() throws IOException
+    void mustRecoverViaFileCloseFromFullDriveWhenMoreStorageBecomesAvailable() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             final AtomicBoolean hasSpace = new AtomicBoolean();
@@ -3608,7 +3608,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustRecoverViaFileFlushFromFullDriveWhenMoreStorageBecomesAvailable() throws Exception
+    void mustRecoverViaFileFlushFromFullDriveWhenMoreStorageBecomesAvailable() throws Exception
     {
 
         final AtomicBoolean hasSpace = new AtomicBoolean();
@@ -3667,7 +3667,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void dataFromDifferentFilesMustNotBleedIntoEachOther()
+    void dataFromDifferentFilesMustNotBleedIntoEachOther()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             //  The idea with this test is, that the pages for fileA are larger than
@@ -3733,7 +3733,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void freshlyCreatedPagesMustContainAllZeros() throws IOException
+    void freshlyCreatedPagesMustContainAllZeros() throws IOException
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             ThreadLocalRandom rng = current();
@@ -3775,7 +3775,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void optimisticReadLockMustFaultOnRetryIfPageHasBeenEvicted() throws Exception
+    void optimisticReadLockMustFaultOnRetryIfPageHasBeenEvicted() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             final byte a = 'a';
@@ -3864,7 +3864,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void pagesMustReturnToFreelistIfSwapInThrows() throws IOException
+    void pagesMustReturnToFreelistIfSwapInThrows() throws IOException
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -3915,7 +3915,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     // This test has no timeout because one may want to run it on a CPU
     // emulator, where it's not unthinkable for it to take minutes.
     @Test
-    public void mustSupportUnalignedWordAccesses() throws Exception
+    void mustSupportUnalignedWordAccesses() throws Exception
     {
         getPageCache( fs, 5, NULL, PageCursorTracerSupplier.NULL );
         int pageSize = pageCache.pageSize();
@@ -3948,7 +3948,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @RepeatedTest( 50 )
-    public void mustEvictPagesFromUnmappedFiles()
+    void mustEvictPagesFromUnmappedFiles()
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             //  GIVEN mapping then unmapping
@@ -3974,7 +3974,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustReadZerosFromBeyondEndOfFile() throws Exception
+    void mustReadZerosFromBeyondEndOfFile() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             StandardRecordFormat recordFormat = new StandardRecordFormat();
@@ -4061,7 +4061,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustSyncDeviceWhenFlushAndForcingPagedFile() throws Exception
+    void mustSyncDeviceWhenFlushAndForcingPagedFile() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             AtomicInteger syncDeviceCounter = new AtomicInteger();
@@ -4088,7 +4088,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustSyncDeviceWhenFlushAndForcingPageCache() throws Exception
+    void mustSyncDeviceWhenFlushAndForcingPageCache() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             AtomicInteger syncDeviceCounter = new AtomicInteger();
@@ -4118,7 +4118,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustThrowWhenMappingNonExistingFile()
+    void mustThrowWhenMappingNonExistingFile()
     {
         assertThrows( NoSuchFileException.class, () -> {
             configureStandardPageCache();
@@ -4127,7 +4127,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustCreateNonExistingFileWithCreateOption() throws Exception
+    void mustCreateNonExistingFileWithCreateOption() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -4140,7 +4140,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustIgnoreCreateOptionIfFileAlreadyExists() throws Exception
+    void mustIgnoreCreateOptionIfFileAlreadyExists() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -4153,7 +4153,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustIgnoreCertainOpenOptions() throws Exception
+    void mustIgnoreCertainOpenOptions() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -4167,7 +4167,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustThrowOnUnsupportedOpenOptions() throws Exception
+    void mustThrowOnUnsupportedOpenOptions() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -4199,7 +4199,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mappingFileWithTruncateOptionMustTruncateFile() throws Exception
+    void mappingFileWithTruncateOptionMustTruncateFile() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -4221,7 +4221,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     @SuppressWarnings( "unused" )
     @Test
-    public void mappingAlreadyMappedFileWithTruncateOptionMustThrow() throws Exception
+    void mappingAlreadyMappedFileWithTruncateOptionMustThrow() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile first = pageCache.map( file( "a" ), filePageSize ) )
@@ -4235,7 +4235,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustThrowIfFileIsClosedMoreThanItIsMapped() throws Exception
+    void mustThrowIfFileIsClosedMoreThanItIsMapped() throws Exception
     {
         configureStandardPageCache();
         PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4245,7 +4245,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void fileMappedWithDeleteOnCloseMustNotExistAfterUnmap() throws Exception
+    void fileMappedWithDeleteOnCloseMustNotExistAfterUnmap() throws Exception
     {
         configureStandardPageCache();
         pageCache.map( file( "a" ), filePageSize, DELETE_ON_CLOSE ).close();
@@ -4254,7 +4254,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void fileMappedWithDeleteOnCloseMustNotExistAfterLastUnmap() throws Exception
+    void fileMappedWithDeleteOnCloseMustNotExistAfterLastUnmap() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -4267,7 +4267,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void fileMappedWithDeleteOnCloseShouldNotFlushDirtyPagesOnClose() throws Exception
+    void fileMappedWithDeleteOnCloseShouldNotFlushDirtyPagesOnClose() throws Exception
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
@@ -4283,7 +4283,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustFlushAllDirtyPagesWhenClosingPagedFileThatIsNotMappedWithDeleteOnClose() throws Exception
+    void mustFlushAllDirtyPagesWhenClosingPagedFileThatIsNotMappedWithDeleteOnClose() throws Exception
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
@@ -4328,7 +4328,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void fileMappedWithDeleteOnCloseMustNotLeakDirtyPages()
+    void fileMappedWithDeleteOnCloseMustNotLeakDirtyPages()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -4347,7 +4347,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustNotThrowWhenMappingFileWithDifferentFilePageSizeAndAnyPageSizeIsSpecified() throws Exception
+    void mustNotThrowWhenMappingFileWithDifferentFilePageSizeAndAnyPageSizeIsSpecified() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile ignore = pageCache.map( file( "a" ), filePageSize ) )
@@ -4357,7 +4357,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustCopyIntoSameSizedWritePageCursor() throws Exception
+    void mustCopyIntoSameSizedWritePageCursor() throws Exception
     {
         configureStandardPageCache();
         int bytes = 200;
@@ -4418,7 +4418,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustCopyIntoLargerPageCursor() throws Exception
+    void mustCopyIntoLargerPageCursor() throws Exception
     {
         configureStandardPageCache();
         int smallPageSize = 16;
@@ -4444,7 +4444,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustCopyIntoSmallerPageCursor() throws Exception
+    void mustCopyIntoSmallerPageCursor() throws Exception
     {
         configureStandardPageCache();
         int smallPageSize = 16;
@@ -4469,7 +4469,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void mustThrowOnCopyIntoReadPageCursor() throws Exception
+    void mustThrowOnCopyIntoReadPageCursor() throws Exception
     {
         configureStandardPageCache();
         int pageSize = 17;
@@ -4497,7 +4497,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void copyToPageCursorMustCheckBounds() throws Exception
+    void copyToPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
         int pageSize = 16;
@@ -4552,7 +4552,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void copyToHeapByteBufferFromReadPageCursorMustCheckBounds() throws Exception
+    void copyToHeapByteBufferFromReadPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
         ByteBuffer buffer = ByteBuffer.allocate( filePageSize );
@@ -4567,7 +4567,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void copyToDirectByteBufferFromReadPageCursorMustCheckBounds() throws Exception
+    void copyToDirectByteBufferFromReadPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
         ByteBuffer buffer = ByteBuffer.allocateDirect( filePageSize );
@@ -4582,7 +4582,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void copyToHeapByteBufferFromWritePageCursorMustCheckBounds() throws Exception
+    void copyToHeapByteBufferFromWritePageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
         ByteBuffer buffer = ByteBuffer.allocate( filePageSize );
@@ -4597,7 +4597,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void copyToDirectByteBufferFromWritePageCursorMustCheckBounds() throws Exception
+    void copyToDirectByteBufferFromWritePageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
         ByteBuffer buffer = ByteBuffer.allocateDirect( filePageSize );
@@ -4690,7 +4690,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void copyToReadOnlyHeapByteBufferMustThrow() throws Exception
+    void copyToReadOnlyHeapByteBufferMustThrow() throws Exception
     {
         configureStandardPageCache();
         ByteBuffer buf = ByteBuffer.allocate( filePageSize ).asReadOnlyBuffer();
@@ -4705,7 +4705,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void copyToReadOnlyDirectByteBufferMustThrow() throws Exception
+    void copyToReadOnlyDirectByteBufferMustThrow() throws Exception
     {
         configureStandardPageCache();
         ByteBuffer buf = ByteBuffer.allocateDirect( filePageSize ).asReadOnlyBuffer();
@@ -4720,7 +4720,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustNotRaiseOutOfBoundsOnLengthWithinPageBoundary() throws Exception
+    void shiftBytesMustNotRaiseOutOfBoundsOnLengthWithinPageBoundary() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4737,7 +4737,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustRaiseOutOfBoundsOnLengthLargerThanPageSize() throws Exception
+    void shiftBytesMustRaiseOutOfBoundsOnLengthLargerThanPageSize() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4750,7 +4750,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustRaiseOutOfBoundsOnNegativeLength() throws Exception
+    void shiftBytesMustRaiseOutOfBoundsOnNegativeLength() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4763,7 +4763,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustRaiseOutOfBoundsOnNegativeSource() throws Exception
+    void shiftBytesMustRaiseOutOfBoundsOnNegativeSource() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4776,7 +4776,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustRaiseOutOfBoundsOnOverSizedSource() throws Exception
+    void shiftBytesMustRaiseOutOfBoundsOnOverSizedSource() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4791,7 +4791,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustRaiseOutOfBoundsOnBufferUnderflow() throws Exception
+    void shiftBytesMustRaiseOutOfBoundsOnBufferUnderflow() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4804,7 +4804,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustRaiseOutOfBoundsOnBufferOverflow() throws Exception
+    void shiftBytesMustRaiseOutOfBoundsOnBufferOverflow() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4817,7 +4817,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustThrowOnReadCursor() throws Exception
+    void shiftBytesMustThrowOnReadCursor() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4832,7 +4832,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustShiftBytesToTheRightOverlapping() throws Exception
+    void shiftBytesMustShiftBytesToTheRightOverlapping() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4874,7 +4874,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustShiftBytesToTheRightNotOverlapping() throws Exception
+    void shiftBytesMustShiftBytesToTheRightNotOverlapping() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4919,7 +4919,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustShiftBytesToTheLeftOverlapping() throws Exception
+    void shiftBytesMustShiftBytesToTheLeftOverlapping() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -4961,7 +4961,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shiftBytesMustShiftBytesToTheLeftNotOverlapping() throws Exception
+    void shiftBytesMustShiftBytesToTheLeftNotOverlapping() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5014,7 +5014,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readCursorsCanOpenLinkedCursor() throws Exception
+    void readCursorsCanOpenLinkedCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5032,7 +5032,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeCursorsCanOpenLinkedCursor() throws Exception
+    void writeCursorsCanOpenLinkedCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5050,7 +5050,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void closingParentCursorMustCloseLinkedCursor() throws Exception
+    void closingParentCursorMustCloseLinkedCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5075,7 +5075,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writeCursorWithNoGrowCanOpenLinkedCursorWithNoGrow() throws Exception
+    void writeCursorWithNoGrowCanOpenLinkedCursorWithNoGrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5094,7 +5094,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void openingLinkedCursorMustCloseExistingLinkedCursor() throws Exception
+    void openingLinkedCursorMustCloseExistingLinkedCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5131,7 +5131,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryOnParentCursorMustReturnTrueIfLinkedCursorNeedsRetry() throws Exception
+    void shouldRetryOnParentCursorMustReturnTrueIfLinkedCursorNeedsRetry() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5155,7 +5155,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void checkAndClearBoundsFlagMustCheckAndClearLinkedCursor() throws Exception
+    void checkAndClearBoundsFlagMustCheckAndClearLinkedCursor() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5172,7 +5172,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustClearBoundsFlagIfLinkedCursorNeedsRetry() throws Exception
+    void shouldRetryMustClearBoundsFlagIfLinkedCursorNeedsRetry() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5195,7 +5195,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void checkAndClearCursorExceptionMustNotThrowIfNoExceptionIsSet() throws Exception
+    void checkAndClearCursorExceptionMustNotThrowIfNoExceptionIsSet() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5221,7 +5221,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void checkAndClearCursorExceptionMustThrowIfExceptionIsSet() throws Exception
+    void checkAndClearCursorExceptionMustThrowIfExceptionIsSet() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5255,7 +5255,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void checkAndClearCursorExceptionMustClearExceptionIfSet() throws Exception
+    void checkAndClearCursorExceptionMustClearExceptionIfSet() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5293,7 +5293,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextMustClearCursorExceptionIfSet() throws Exception
+    void nextMustClearCursorExceptionIfSet() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5317,7 +5317,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void nextWithIdMustClearCursorExceptionIfSet() throws Exception
+    void nextWithIdMustClearCursorExceptionIfSet() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5341,7 +5341,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustClearCursorExceptionIfItReturnsTrue() throws Exception
+    void shouldRetryMustClearCursorExceptionIfItReturnsTrue() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5359,7 +5359,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustNotClearCursorExceptionIfItReturnsFalse() throws Exception
+    void shouldRetryMustNotClearCursorExceptionIfItReturnsFalse() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -5386,7 +5386,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustClearCursorExceptionIfLinkedShouldRetryReturnsTrue() throws Exception
+    void shouldRetryMustClearCursorExceptionIfLinkedShouldRetryReturnsTrue() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5409,7 +5409,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustClearLinkedCursorExceptionIfItReturnsTrue() throws Exception
+    void shouldRetryMustClearLinkedCursorExceptionIfItReturnsTrue() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5432,7 +5432,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustClearLinkedCursorExceptionIfLinkedShouldRetryReturnsTrue() throws Exception
+    void shouldRetryMustClearLinkedCursorExceptionIfLinkedShouldRetryReturnsTrue() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5455,7 +5455,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustNotClearCursorExceptionIfBothItAndLinkedShouldRetryReturnsFalse() throws Exception
+    void shouldRetryMustNotClearCursorExceptionIfBothItAndLinkedShouldRetryReturnsFalse() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -5484,7 +5484,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldRetryMustNotClearLinkedCursorExceptionIfBothItAndLinkedShouldRetryReturnsFalse() throws Exception
+    void shouldRetryMustNotClearLinkedCursorExceptionIfBothItAndLinkedShouldRetryReturnsFalse() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -5513,7 +5513,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void checkAndClearCursorExceptionMustThrowIfLinkedCursorHasErrorSet() throws Exception
+    void checkAndClearCursorExceptionMustThrowIfLinkedCursorHasErrorSet() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5557,7 +5557,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void checkAndClearCursorMustNotThrowIfErrorHasBeenSetButTheCursorHasBeenClosed() throws Exception
+    void checkAndClearCursorMustNotThrowIfErrorHasBeenSetButTheCursorHasBeenClosed() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5591,7 +5591,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void openingLinkedCursorOnClosedCursorMustThrow() throws Exception
+    void openingLinkedCursorOnClosedCursorMustThrow() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5625,7 +5625,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void settingNullCursorExceptionMustThrow() throws Exception
+    void settingNullCursorExceptionMustThrow() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5657,7 +5657,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void clearCursorExceptionMustUnsetErrorCondition() throws Exception
+    void clearCursorExceptionMustUnsetErrorCondition() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5677,7 +5677,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void clearCursorExceptionMustUnsetErrorConditionOnLinkedCursor() throws Exception
+    void clearCursorExceptionMustUnsetErrorConditionOnLinkedCursor() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5701,7 +5701,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readableByteChannelMustBeOpenUntilClosed() throws Exception
+    void readableByteChannelMustBeOpenUntilClosed() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5719,7 +5719,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readableByteChannelMustReadAllBytesInFile() throws Exception
+    void readableByteChannelMustReadAllBytesInFile() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5734,7 +5734,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @RepeatedTest( 5 )
-    public void readableByteChannelMustReadAllBytesInFileConsistently() throws Exception
+    void readableByteChannelMustReadAllBytesInFileConsistently() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5753,7 +5753,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void readingFromClosedReadableByteChannelMustThrow() throws Exception
+    void readingFromClosedReadableByteChannelMustThrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             File file = file( "a" );
@@ -5771,7 +5771,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writableByteChannelMustBeOpenUntilClosed() throws Exception
+    void writableByteChannelMustBeOpenUntilClosed() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             configureStandardPageCache();
@@ -5789,7 +5789,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writableByteChannelMustWriteAllBytesInFile() throws Exception
+    void writableByteChannelMustWriteAllBytesInFile() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             File file = file( "a" );
@@ -5809,7 +5809,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void writingToClosedWritableByteChannelMustThrow() throws Exception
+    void writingToClosedWritableByteChannelMustThrow() throws Exception
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> {
             File file = file( "a" );
@@ -5826,7 +5826,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void sizeOfEmptyFileMustBeZero() throws Exception
+    void sizeOfEmptyFileMustBeZero() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
@@ -5836,7 +5836,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void fileSizeMustIncreaseInPageIncrements() throws Exception
+    void fileSizeMustIncreaseInPageIncrements() throws Exception
     {
         configureStandardPageCache();
         long increment = filePageSize;
@@ -5851,7 +5851,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void shouldZeroAllBytesOnClear() throws Exception
+    void shouldZeroAllBytesOnClear() throws Exception
     {
         // GIVEN
         configureStandardPageCache();
@@ -5897,7 +5897,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void isWriteLockingMustBeTrueForCursorOpenedWithSharedWriteLock() throws Exception
+    void isWriteLockingMustBeTrueForCursorOpenedWithSharedWriteLock() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5908,7 +5908,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void isWriteLockingMustBeFalseForCursorOpenedWithSharedReadLock() throws Exception
+    void isWriteLockingMustBeFalseForCursorOpenedWithSharedReadLock() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5919,7 +5919,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void eagerFlushMustWriteToFileOnUnpin() throws Exception
+    void eagerFlushMustWriteToFileOnUnpin() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -5934,7 +5934,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultNextReadOnInMemoryPages() throws Exception
+    void noFaultNextReadOnInMemoryPages() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5946,7 +5946,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultNextWriteOnInMemoryPages() throws Exception
+    void noFaultNextWriteOnInMemoryPages() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5958,7 +5958,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultNextLinkedReadOnInMemoryPages() throws Exception
+    void noFaultNextLinkedReadOnInMemoryPages() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -5970,7 +5970,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultNextLinkedWriteOnInMemoryPages() throws Exception
+    void noFaultNextLinkedWriteOnInMemoryPages() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -6002,7 +6002,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultReadOfPagesNotInMemory() throws Exception
+    void noFaultReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
@@ -6032,7 +6032,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultWriteOnPagesNotInMemory() throws Exception
+    void noFaultWriteOnPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
@@ -6049,7 +6049,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultLinkedReadOfPagesNotInMemory() throws Exception
+    void noFaultLinkedReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
@@ -6065,7 +6065,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultLinkedWriteOnPagesNotInMemory() throws Exception
+    void noFaultLinkedWriteOnPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
@@ -6118,7 +6118,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultNextReadMustStrideForwardMonotonically() throws Exception
+    void noFaultNextReadMustStrideForwardMonotonically() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );
@@ -6147,7 +6147,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void noFaultReadCursorMustCopeWithPageEviction() throws Exception
+    void noFaultReadCursorMustCopeWithPageEviction() throws Exception
     {
         configureStandardPageCache();
         File file = file( "a" );

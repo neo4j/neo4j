@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.core.consensus.log;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,19 +43,19 @@ public abstract class RaftLogVerificationIT
     protected abstract long operations();
 
     @BeforeEach
-    public void before() throws Throwable
+    void before() throws Throwable
     {
         raftLog = new VerifyingRaftLog( createRaftLog() );
     }
 
     @AfterEach
-    public void after() throws Throwable
+    void after() throws Throwable
     {
         raftLog.verify();
     }
 
     @Test
-    public void verifyAppend() throws Throwable
+    void verifyAppend() throws Throwable
     {
         for ( int i = 0; i < operations(); i++ )
         {
@@ -64,7 +64,7 @@ public abstract class RaftLogVerificationIT
     }
 
     @Test
-    public void verifyAppendWithIntermittentTruncation() throws Throwable
+    void verifyAppendWithIntermittentTruncation() throws Throwable
     {
         for ( int i = 0; i < operations(); i++ )
         {
@@ -77,7 +77,7 @@ public abstract class RaftLogVerificationIT
     }
 
     @Test
-    public void randomAppendAndTruncate() throws Exception
+    void randomAppendAndTruncate() throws Exception
     {
         ThreadLocalRandom tlr = ThreadLocalRandom.current();
         // given
@@ -99,7 +99,7 @@ public abstract class RaftLogVerificationIT
     }
 
     @Test
-    public void shouldBeAbleToAppendAfterSkip() throws Throwable
+    void shouldBeAbleToAppendAfterSkip() throws Throwable
     {
         int term = 0;
         raftLog.append( new RaftLogEntry( term, valueOf( 10 ) ) );

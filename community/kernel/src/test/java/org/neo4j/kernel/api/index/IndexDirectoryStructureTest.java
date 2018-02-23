@@ -32,7 +32,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-public class IndexDirectoryStructureTest
+class IndexDirectoryStructureTest
 {
     private final Descriptor provider = new Descriptor( "test", "0.5" );
     private final File databaseStoreDir = new File( "db" ).getAbsoluteFile();
@@ -40,7 +40,7 @@ public class IndexDirectoryStructureTest
     private final long indexId = 15;
 
     @Test
-    public void shouldSeeCorrectDirectoriesForProviderKey()
+    void shouldSeeCorrectDirectoriesForProviderKey()
     {
         assertCorrectDirectories( directoriesByProviderKey( databaseStoreDir ).forProvider( provider ),
                 path( baseIndexDirectory, provider.getKey() ),
@@ -48,7 +48,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldSeeCorrectDirectoriesForProvider()
+    void shouldSeeCorrectDirectoriesForProvider()
     {
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( provider ),
                 path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion() ),
@@ -56,7 +56,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldSeeCorrectDirectoriesForSubProvider()
+    void shouldSeeCorrectDirectoriesForSubProvider()
     {
         IndexDirectoryStructure parentStructure = directoriesByProvider( databaseStoreDir ).forProvider( provider );
         Descriptor subProvider = new Descriptor( "sub", "0.3" );
@@ -67,7 +67,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldHandleWeirdCharactersInProviderKey()
+    void shouldHandleWeirdCharactersInProviderKey()
     {
         Descriptor providerWithWeirdName = new Descriptor( "native+lucene", "1.0" );
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( providerWithWeirdName ),

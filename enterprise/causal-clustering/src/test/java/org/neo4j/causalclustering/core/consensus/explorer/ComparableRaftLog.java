@@ -25,9 +25,9 @@ import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 
-public class ComparableRaftLog extends InMemoryRaftLog
+class ComparableRaftLog extends InMemoryRaftLog
 {
-    public ComparableRaftLog( ReadableRaftLog raftLog ) throws IOException
+    ComparableRaftLog( ReadableRaftLog raftLog ) throws IOException
     {
         try ( RaftLogCursor cursor = raftLog.getEntryCursor( 0 ) )
         {

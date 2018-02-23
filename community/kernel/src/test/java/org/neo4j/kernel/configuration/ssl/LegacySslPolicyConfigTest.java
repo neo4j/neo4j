@@ -29,10 +29,10 @@ import org.neo4j.kernel.configuration.Config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.certificates_directory;
 
-public class LegacySslPolicyConfigTest
+class LegacySslPolicyConfigTest
 {
     @Test
-    public void shouldBeFoundInServerDefaults()
+    void shouldBeFoundInServerDefaults()
     {
         // given
         Config serverDefaultConfig = Config.builder().withServerDefaults().build();

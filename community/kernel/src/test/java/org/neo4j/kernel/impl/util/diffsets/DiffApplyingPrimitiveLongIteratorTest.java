@@ -27,20 +27,20 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 
-public class DiffApplyingPrimitiveLongIteratorTest
+class DiffApplyingPrimitiveLongIteratorTest
 {
     @Test
-    public void iterateOnlyOverAddedElementsWhenSourceIsEmpty()
+    void iterateOnlyOverAddedElementsWhenSourceIsEmpty()
     {
         PrimitiveLongIterator emptySource = emptyIterator();
         PrimitiveLongSet added = setOf( 1L, 2L );
@@ -52,7 +52,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
     }
 
     @Test
-    public void appendSourceElementsDuringIteration()
+    void appendSourceElementsDuringIteration()
     {
         PrimitiveLongIterator source = iterator( 4L, 5L );
         PrimitiveLongSet added = setOf( 1L, 2L );
@@ -64,7 +64,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
     }
 
     @Test
-    public void doNotIterateTwiceOverSameElementsWhenItsPartOfSourceAndAdded()
+    void doNotIterateTwiceOverSameElementsWhenItsPartOfSourceAndAdded()
     {
         PrimitiveLongIterator source = iterator( 4L, 5L );
         PrimitiveLongSet added = setOf( 1L, 4L );
@@ -77,7 +77,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
     }
 
     @Test
-    public void doNotIterateOverDeletedElement()
+    void doNotIterateOverDeletedElement()
     {
         PrimitiveLongIterator source = iterator( 3L, 5L );
         PrimitiveLongSet added = setOf( 1L );

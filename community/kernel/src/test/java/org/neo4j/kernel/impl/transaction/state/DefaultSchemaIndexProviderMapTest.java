@@ -24,16 +24,15 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static java.util.Arrays.asList;
-
-public class DefaultSchemaIndexProviderMapTest
+class DefaultSchemaIndexProviderMapTest
 {
     @Test
-    public void shouldNotSupportMultipleProvidersWithSameDescriptor()
+    void shouldNotSupportMultipleProvidersWithSameDescriptor()
     {
         // given
         SchemaIndexProvider.Descriptor descriptor = new SchemaIndexProvider.Descriptor( "provider", "1.2" );
@@ -55,7 +54,7 @@ public class DefaultSchemaIndexProviderMapTest
     }
 
     @Test
-    public void shouldThrowOnLookupOnUnknownProvider()
+    void shouldThrowOnLookupOnUnknownProvider()
     {
         // given
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );

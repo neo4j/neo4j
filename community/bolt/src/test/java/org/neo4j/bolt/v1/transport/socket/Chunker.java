@@ -34,7 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /** Helper to chunk up serialized data for testing */
-public class Chunker
+class Chunker
 {
     private Chunker()
     {

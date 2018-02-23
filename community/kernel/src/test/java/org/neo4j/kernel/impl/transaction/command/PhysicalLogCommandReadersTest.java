@@ -29,17 +29,17 @@ import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 
-public class PhysicalLogCommandReadersTest
+class PhysicalLogCommandReadersTest
 {
     private static final long ID = 42;
     private static final byte IN_USE_FLAG = Record.IN_USE.byteValue();
@@ -52,30 +52,30 @@ public class PhysicalLogCommandReadersTest
     private static final long OWNING_NODE = 42;
 
     @Test
-    public void readRelGroupWithHugeTypeInV2_2_4() throws IOException
+    void readRelGroupWithHugeTypeInV2_2_4() throws IOException
     {
         assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_4() );
     }
 
     @Test
-    public void readRelGroupWithHugeTypeInV2_2_10() throws IOException
+    void readRelGroupWithHugeTypeInV2_2_10() throws IOException
     {
         assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_10() );
     }
 
     @Test
-    public void readRelGroupWithHugeTypeInV3_0() throws IOException
+    void readRelGroupWithHugeTypeInV3_0() throws IOException
     {
         assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0() );
     }
 
     @Test
-    public void readRelGroupWithHugeTypeInV3_0_2() throws IOException
+    void readRelGroupWithHugeTypeInV3_0_2() throws IOException
     {
         assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_2() );
     }
 
-    private static void assertDoesNotKnowAboutRelGroups( CommandReader reader )
+    static void assertDoesNotKnowAboutRelGroups( CommandReader reader )
     {
         try
         {

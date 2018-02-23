@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
 
-public class LucenePartitionedIndexStressTesting
+class LucenePartitionedIndexStressTesting
 {
     private static final String LABEL = "label";
     private static final String PROPERTY_PREFIX = "property";
@@ -80,7 +80,7 @@ public class LucenePartitionedIndexStressTesting
     private File storeDir;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         storeDir = prepareStoreDir();
         System.out.println( String.format( "Starting database at: %s", storeDir ) );
@@ -91,7 +91,7 @@ public class LucenePartitionedIndexStressTesting
     }
 
     @AfterEach
-    public void tearDown() throws IOException
+    void tearDown() throws IOException
     {
         db.shutdown();
         populators.shutdown();
@@ -99,7 +99,7 @@ public class LucenePartitionedIndexStressTesting
     }
 
     @Test
-    public void indexCreationStressTest() throws Exception
+    void indexCreationStressTest() throws Exception
     {
         createIndexes();
         createUniqueIndexes();

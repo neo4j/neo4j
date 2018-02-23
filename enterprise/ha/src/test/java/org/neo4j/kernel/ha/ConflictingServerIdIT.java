@@ -38,13 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ConflictingServerIdIT
+class ConflictingServerIdIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void testConflictingIdDoesNotSilentlyFail()
+    void testConflictingIdDoesNotSilentlyFail()
     {
         HighlyAvailableGraphDatabase master = null;
         HighlyAvailableGraphDatabase dbWithId21 = null;

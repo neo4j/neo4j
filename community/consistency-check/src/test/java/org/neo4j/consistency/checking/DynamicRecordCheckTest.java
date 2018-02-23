@@ -56,7 +56,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordNotInUse()
+    void shouldNotReportAnythingForRecordNotInUse()
     {
         // given
         DynamicRecord property = notInUse( record( 42 ) );
@@ -69,7 +69,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordThatDoesNotReferenceOtherRecords()
+    void shouldNotReportAnythingForRecordThatDoesNotReferenceOtherRecords()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ), blockSize / 2 ) );
@@ -82,7 +82,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordWithConsistentReferences()
+    void shouldNotReportAnythingForRecordWithConsistentReferences()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ) ) );
@@ -97,7 +97,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportNextRecordNotInUse()
+    void shouldReportNextRecordNotInUse()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ) ) );
@@ -113,7 +113,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportSelfReferentialNext()
+    void shouldReportSelfReferentialNext()
     {
         // given
         DynamicRecord property = add( inUse( fill( record( 42 ) ) ) );
@@ -128,7 +128,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportNonFullRecordWithNextReference()
+    void shouldReportNonFullRecordWithNextReference()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ), blockSize - 1 ) );
@@ -144,7 +144,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportInvalidDataLength()
+    void shouldReportInvalidDataLength()
     {
         // given
         DynamicRecord property = inUse( record( 42 ) );
@@ -159,7 +159,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportEmptyRecord()
+    void shouldReportEmptyRecord()
     {
         // given
         DynamicRecord property = inUse( record( 42 ) );
@@ -173,7 +173,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportRecordWithEmptyNext()
+    void shouldReportRecordWithEmptyNext()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ) ) );
@@ -189,7 +189,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportCorrectTypeBasedOnProperBitsOnly()
+    void shouldReportCorrectTypeBasedOnProperBitsOnly()
     {
         // given
         DynamicRecord property = inUse( record( 42 ) );
@@ -211,7 +211,7 @@ public abstract class DynamicRecordCheckTest
 
     // utilities
 
-    DynamicRecord fill( DynamicRecord record )
+    private DynamicRecord fill( DynamicRecord record )
     {
         return fill( record, blockSize );
     }
@@ -221,9 +221,9 @@ public abstract class DynamicRecordCheckTest
     abstract DynamicRecord record( long id );
 
     @RunWith( JUnit4.class )
-    public static class StringDynamicRecordCheckTest extends DynamicRecordCheckTest
+    static class StringDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public StringDynamicRecordCheckTest()
+        StringDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.STRING ), 66 );
         }
@@ -243,9 +243,9 @@ public abstract class DynamicRecordCheckTest
     }
 
     @RunWith( JUnit4.class )
-    public static class ArrayDynamicRecordCheckTest extends DynamicRecordCheckTest
+    static class ArrayDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public ArrayDynamicRecordCheckTest()
+        ArrayDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.ARRAY ), 66 );
         }
@@ -265,9 +265,9 @@ public abstract class DynamicRecordCheckTest
     }
 
     @RunWith( JUnit4.class )
-    public static class SchemaDynamicRecordCheckTest extends DynamicRecordCheckTest
+    static class SchemaDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public SchemaDynamicRecordCheckTest()
+        SchemaDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( SchemaStore.BLOCK_SIZE ), DynamicStore.SCHEMA ),
                    SchemaStore.BLOCK_SIZE );

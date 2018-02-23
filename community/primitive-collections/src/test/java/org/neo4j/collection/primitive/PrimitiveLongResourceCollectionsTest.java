@@ -28,14 +28,14 @@ import org.neo4j.graphdb.Resource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PrimitiveLongResourceCollectionsTest
+class PrimitiveLongResourceCollectionsTest
 {
     private static final LongPredicate EVEN = value -> value % 2 == 0;
 
     // ITERATOR
 
     @Test
-    public void simpleIterator()
+    void simpleIterator()
     {
         // Given
         CountingResource resource = new CountingResource();
@@ -54,7 +54,7 @@ public class PrimitiveLongResourceCollectionsTest
     // FILTER
 
     @Test
-    public void filterItems()
+    void filterItems()
     {
         // Given
         CountingResource resource = new CountingResource();
@@ -76,7 +76,7 @@ public class PrimitiveLongResourceCollectionsTest
     // CONCAT
 
     @Test
-    public void concatIterators()
+    void concatIterators()
     {
         // Given
         CountingResource resource = new CountingResource();

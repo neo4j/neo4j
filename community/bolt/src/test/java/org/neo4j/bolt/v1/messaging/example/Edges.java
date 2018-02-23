@@ -30,17 +30,17 @@ import static org.neo4j.bolt.v1.messaging.example.Nodes.DAVE;
 import static org.neo4j.bolt.v1.messaging.example.Support.NO_PROPERTIES;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 public class Edges
 {
     // Relationship types
-    public static final TextValue KNOWS = stringValue( "KNOWS" );
-    public static final TextValue LIKES = stringValue( "LIKES" );
-    public static final TextValue DISLIKES = stringValue( "DISLIKES" );
-    public static final TextValue MARRIED_TO = stringValue( "MARRIED_TO" );
-    public static final TextValue WORKS_FOR = stringValue( "WORKS_FOR" );
+    private static final TextValue KNOWS = stringValue( "KNOWS" );
+    private static final TextValue LIKES = stringValue( "LIKES" );
+    private static final TextValue DISLIKES = stringValue( "DISLIKES" );
+    private static final TextValue MARRIED_TO = stringValue( "MARRIED_TO" );
+    private static final TextValue WORKS_FOR = stringValue( "WORKS_FOR" );
 
     // Edges
     public static final RelationshipValue ALICE_KNOWS_BOB =

@@ -21,8 +21,6 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
-import static java.lang.String.format;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -30,10 +28,10 @@ import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class PointTest
+class PointTest
 {
     @Test
-    public void cartesianShouldEqualItself()
+    void cartesianShouldEqualItself()
     {
         assertEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, 1.0, 2.0 ) );
         assertEqual( pointValue( Cartesian, -1.0, 2.0 ), pointValue( Cartesian, -1.0, 2.0 ) );
@@ -42,14 +40,14 @@ public class PointTest
     }
 
     @Test
-    public void cartesianShouldNotEqualOtherPoint()
+    void cartesianShouldNotEqualOtherPoint()
     {
         assertNotEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, 3.0, 4.0 ) );
         assertNotEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, -1.0, 2.0 ) );
     }
 
     @Test
-    public void geographicShouldEqualItself()
+    void geographicShouldEqualItself()
     {
         assertEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, 1.0, 2.0 ) );
         assertEqual( pointValue( WGS84, -1.0, 2.0 ), pointValue( WGS84, -1.0, 2.0 ) );
@@ -58,20 +56,20 @@ public class PointTest
     }
 
     @Test
-    public void geographicShouldNotEqualOtherPoint()
+    void geographicShouldNotEqualOtherPoint()
     {
         assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, 3.0, 4.0 ) );
         assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, -1.0, 2.0 ) );
     }
 
     @Test
-    public void geographicShouldNotEqualCartesian()
+    void geographicShouldNotEqualCartesian()
     {
         assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( Cartesian, 1.0, 2.0 ) );
     }
 
     @Test
-    public void shouldHaveValueGroup()
+    void shouldHaveValueGroup()
     {
         assertTrue( pointValue( Cartesian, 1, 2 ).valueGroup() != null );
         assertTrue( pointValue( WGS84, 1, 2 ).valueGroup() != null );

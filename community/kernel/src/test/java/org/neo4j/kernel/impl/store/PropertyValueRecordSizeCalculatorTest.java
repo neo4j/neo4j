@@ -34,16 +34,16 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( RandomExtension.class )
-public class PropertyValueRecordSizeCalculatorTest
+class PropertyValueRecordSizeCalculatorTest
 {
     private static final int PROPERTY_RECORD_SIZE = PropertyRecordFormat.RECORD_SIZE;
     private static final int DYNAMIC_RECORD_SIZE = 120;
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldIncludePropertyRecordSize()
+    void shouldIncludePropertyRecordSize()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -56,7 +56,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldIncludeDynamicRecordSizes()
+    void shouldIncludeDynamicRecordSizes()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -69,7 +69,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldSpanMultiplePropertyRecords()
+    void shouldSpanMultiplePropertyRecords()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();

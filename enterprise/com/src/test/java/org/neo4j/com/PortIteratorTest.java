@@ -25,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class PortIteratorTest
+class PortIteratorTest
 {
     @Test
-    public void shouldCountUp()
+    void shouldCountUp()
     {
         PortIterator portIterator = new PortIterator( new int[]{6000, 6005} );
 
@@ -42,7 +42,7 @@ public class PortIteratorTest
     }
 
     @Test
-    public void shouldCountDown()
+    void shouldCountDown()
     {
         PortIterator portIterator = new PortIterator( new int[]{6005, 6000} );
 
@@ -56,7 +56,7 @@ public class PortIteratorTest
     }
 
     @Test
-    public void shouldNotSupportRemove()
+    void shouldNotSupportRemove()
     {
         try
         {

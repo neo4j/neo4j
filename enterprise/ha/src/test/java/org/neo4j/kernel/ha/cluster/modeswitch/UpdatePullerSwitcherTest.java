@@ -36,13 +36,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class UpdatePullerSwitcherTest
+class UpdatePullerSwitcherTest
 {
     private UpdatePullerSwitcher modeSwitcher;
     private SlaveUpdatePuller slaveUpdatePuller;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         @SuppressWarnings( "unchecked" )
         DelegateInvocationHandler<UpdatePuller> invocationHandler = mock( DelegateInvocationHandler.class );
@@ -55,14 +55,14 @@ public class UpdatePullerSwitcherTest
     }
 
     @Test
-    public void masterUpdatePuller()
+    void masterUpdatePuller()
     {
         UpdatePuller masterPuller = modeSwitcher.getMasterImpl();
         assertSame( MasterUpdatePuller.INSTANCE, masterPuller );
     }
 
     @Test
-    public void slaveUpdatePuller()
+    void slaveUpdatePuller()
     {
         UpdatePuller updatePuller = modeSwitcher.getSlaveImpl();
         assertSame( slaveUpdatePuller, updatePuller );
@@ -70,7 +70,7 @@ public class UpdatePullerSwitcherTest
     }
 
     @Test
-    public void switchToPendingTest()
+    void switchToPendingTest()
     {
         modeSwitcher.switchToSlave();
         verify( slaveUpdatePuller ).start();

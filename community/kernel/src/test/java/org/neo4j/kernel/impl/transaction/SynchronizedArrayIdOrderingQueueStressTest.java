@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -34,12 +35,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-public class SynchronizedArrayIdOrderingQueueStressTest
+class SynchronizedArrayIdOrderingQueueStressTest
 {
     private static final int THRESHOLD = 100;
 
     @Test
-    public void shouldWithstandHighStressAndStillKeepOrder() throws Exception
+    void shouldWithstandHighStressAndStillKeepOrder() throws Exception
     {
         // GIVEN an ordering queue w/ low initial size as to also exercise resize under stress
         VerifyingIdOrderingQueue queue = new VerifyingIdOrderingQueue(
@@ -118,7 +119,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
             delegate.waitFor( value );
         }
 
-        public int getNumberOfOrderlyRemovedIds()
+        int getNumberOfOrderlyRemovedIds()
         {
             return removedCount.get();
         }
@@ -173,7 +174,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
             start();
         }
 
-        public void awaitFinish() throws Exception
+        void awaitFinish() throws Exception
         {
             join();
             if ( exception != null )
@@ -224,7 +225,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         private int stride;
         private final int max = 5;
 
-        public int next()
+        int next()
         {
             return (stride++ % max) + 1;
         }

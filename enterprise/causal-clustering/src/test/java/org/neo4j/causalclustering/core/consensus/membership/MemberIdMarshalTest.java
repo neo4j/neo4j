@@ -25,18 +25,18 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
-import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class MemberIdMarshalTest
+class MemberIdMarshalTest
 {
     @Test
-    public void shouldSerializeAndDeserialize() throws Exception
+    void shouldSerializeAndDeserialize() throws Exception
     {
         // given
         MemberId.Marshal marshal = new MemberId.Marshal();
@@ -53,7 +53,7 @@ public class MemberIdMarshalTest
     }
 
     @Test
-    public void shouldThrowExceptionForHalfWrittenInstance() throws Exception
+    void shouldThrowExceptionForHalfWrittenInstance() throws Exception
     {
         // given
         // a CoreMember and a ByteBuffer to write it to

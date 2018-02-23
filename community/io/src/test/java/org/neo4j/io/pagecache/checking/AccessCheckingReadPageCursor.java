@@ -24,11 +24,11 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
-public class AccessCheckingReadPageCursor extends DelegatingPageCursor
+class AccessCheckingReadPageCursor extends DelegatingPageCursor
 {
     private boolean hasReadWithoutShouldRetry;
 
-    public AccessCheckingReadPageCursor( PageCursor delegate )
+    AccessCheckingReadPageCursor( PageCursor delegate )
     {
         super( delegate );
     }

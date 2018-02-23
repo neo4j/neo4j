@@ -24,28 +24,28 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ShiroCaffeineCacheTest
+class ShiroCaffeineCacheTest
 {
     private ShiroCaffeineCache<Integer,String> cache;
     private FakeTicker fakeTicker;
     private long TTL = 100;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fakeTicker = new FakeTicker();
         cache = new ShiroCaffeineCache<>( fakeTicker::read, Runnable::run, TTL, 5, true );
     }
 
     @Test
-    public void shouldFailToCreateAuthCacheForTTLZeroIfUsingTLL()
+    void shouldFailToCreateAuthCacheForTTLZeroIfUsingTLL()
     {
         new ShiroCaffeineCache<>( fakeTicker::read, Runnable::run, 0, 5, false );
         try
@@ -64,20 +64,20 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldNotGetNonExistentValue()
+    void shouldNotGetNonExistentValue()
     {
         assertThat( cache.get( 1 ), equalTo( null ) );
     }
 
     @Test
-    public void shouldPutAndGet()
+    void shouldPutAndGet()
     {
         cache.put( 1, "1" );
         assertThat( cache.get( 1 ), equalTo( "1" ) );
     }
 
     @Test
-    public void shouldNotReturnExpiredValueThroughPut()
+    void shouldNotReturnExpiredValueThroughPut()
     {
         assertNull( cache.put( 1, "first" ));
         assertThat( cache.put( 1, "second" ), equalTo( "first" ) );
@@ -86,7 +86,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldRemove()
+    void shouldRemove()
     {
         assertNull( cache.remove( 1 ) );
         cache.put( 1, "1" );
@@ -94,7 +94,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldClear()
+    void shouldClear()
     {
         cache.put( 1, "1" );
         cache.put( 2, "2" );
@@ -104,7 +104,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldGetKeys()
+    void shouldGetKeys()
     {
         cache.put( 1, "1" );
         cache.put( 2, "1" );
@@ -113,7 +113,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldGetValues()
+    void shouldGetValues()
     {
         cache.put( 1, "1" );
         cache.put( 2, "1" );
@@ -122,7 +122,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldNotListExpiredValues()
+    void shouldNotListExpiredValues()
     {
         cache.put( 1, "1" );
         fakeTicker.advance( TTL + 1, MILLISECONDS );
@@ -132,7 +132,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldNotGetExpiredValues()
+    void shouldNotGetExpiredValues()
     {
         cache.put( 1, "1" );
         fakeTicker.advance( TTL + 1, MILLISECONDS );
@@ -143,7 +143,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldNotGetKeysForExpiredValues()
+    void shouldNotGetKeysForExpiredValues()
     {
         cache.put( 1, "1" );
         fakeTicker.advance( TTL + 1, MILLISECONDS );
@@ -153,7 +153,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldRemoveIfExceededCapacity()
+    void shouldRemoveIfExceededCapacity()
     {
         cache.put( 1, "one" );
         cache.put( 2, "two" );
@@ -166,7 +166,7 @@ public class ShiroCaffeineCacheTest
     }
 
     @Test
-    public void shouldGetValueAfterTimePassed()
+    void shouldGetValueAfterTimePassed()
     {
         cache.put( 1, "foo" );
         fakeTicker.advance( TTL - 1, MILLISECONDS );

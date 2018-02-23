@@ -65,7 +65,7 @@ import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @ExtendWith( MockitoExtension.class )
-public class MultipleIndexPopulatorTest
+class MultipleIndexPopulatorTest
 {
     @Mock
     private IndexStoreView indexStoreView;
@@ -79,7 +79,7 @@ public class MultipleIndexPopulatorTest
     private final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 1, 1 );
 
     @Test
-    public void testMultiplePopulatorsCreation() throws Exception
+    void testMultiplePopulatorsCreation() throws Exception
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -93,7 +93,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePopulatorCreationFailure() throws IOException
+    void testMultiplePopulatorCreationFailure() throws IOException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -115,7 +115,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testHasPopulators()
+    void testHasPopulators()
     {
         assertFalse( multipleIndexPopulator.hasPopulators() );
 
@@ -125,7 +125,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testIndexAllNodes()
+    void testIndexAllNodes()
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -141,7 +141,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFailPopulator() throws IOException
+    void testFailPopulator() throws IOException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -156,7 +156,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFailByPopulation() throws IOException
+    void testFailByPopulation() throws IOException
     {
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
@@ -171,7 +171,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFailByPopulationRemovesPopulator() throws IOException
+    void testFailByPopulationRemovesPopulator() throws IOException
     {
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
@@ -188,7 +188,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFailByNonExistingPopulation() throws IOException
+    void testFailByNonExistingPopulation() throws IOException
     {
         IndexPopulation nonExistingPopulation = mock( IndexPopulation.class );
         IndexPopulator populator = createIndexPopulator();
@@ -201,7 +201,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void closeMultipleIndexPopulator()
+    void closeMultipleIndexPopulator()
             throws IOException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
@@ -219,7 +219,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFlipAfterPopulation() throws Exception
+    void testFlipAfterPopulation() throws Exception
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -234,7 +234,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void populationsRemovedDuringFlip()
+    void populationsRemovedDuringFlip()
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -250,7 +250,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testCancelPopulation() throws IOException
+    void testCancelPopulation() throws IOException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -267,7 +267,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testIndexFlip() throws IOException
+    void testIndexFlip() throws IOException
     {
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
         FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
@@ -293,7 +293,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePopulatorUpdater()
+    void testMultiplePopulatorUpdater()
             throws IOException, IndexEntryConflictException
     {
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
@@ -316,7 +316,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testNonApplicableUpdaterDoNotUpdatePopulator()
+    void testNonApplicableUpdaterDoNotUpdatePopulator()
             throws IOException, IndexEntryConflictException
     {
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
@@ -334,7 +334,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testPropertyUpdateFailure()
+    void testPropertyUpdateFailure()
             throws IOException, IndexEntryConflictException
     {
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
@@ -355,7 +355,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePropertyUpdateFailures()
+    void testMultiplePropertyUpdateFailures()
             throws IOException, IndexEntryConflictException
     {
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );

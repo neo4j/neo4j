@@ -26,10 +26,10 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-public class DefaultFileDeletionEventListenerTest
+class DefaultFileDeletionEventListenerTest
 {
     @Test
-    public void notificationInLogAboutFileDeletion()
+    void notificationInLogAboutFileDeletion()
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
@@ -43,7 +43,7 @@ public class DefaultFileDeletionEventListenerTest
     }
 
     @Test
-    public void noNotificationForTransactionLogs()
+    void noNotificationForTransactionLogs()
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );

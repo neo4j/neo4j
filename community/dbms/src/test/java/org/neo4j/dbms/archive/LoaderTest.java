@@ -46,13 +46,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class LoaderTest
+class LoaderTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat
+    void shouldGiveAClearErrorMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.file( "the-destination" ).toPath();
@@ -68,7 +68,7 @@ public class LoaderTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchiveIsNotInGzipFormat() throws IOException
+    void shouldGiveAClearErrorMessageIfTheArchiveIsNotInGzipFormat() throws IOException
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Files.write( archive, asList( "some incorrectly formatted data" ) );
@@ -85,7 +85,7 @@ public class LoaderTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchiveIsNotInTarFormat() throws IOException
+    void shouldGiveAClearErrorMessageIfTheArchiveIsNotInTarFormat() throws IOException
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         try ( GzipCompressorOutputStream compressor =
@@ -109,7 +109,7 @@ public class LoaderTest
     }
 
     @Test
-    public void shouldGiveAClearErrorIfTheDestinationAlreadyExists() throws IOException, IncorrectFormat
+    void shouldGiveAClearErrorIfTheDestinationAlreadyExists() throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.directory( "the-destination" ).toPath();
@@ -125,7 +125,7 @@ public class LoaderTest
     }
 
     @Test
-    public void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists() throws IOException, IncorrectFormat
+    void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists() throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.file( "the-destination" ).toPath();
@@ -142,7 +142,7 @@ public class LoaderTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryDoesntExist()
+    void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryDoesntExist()
             throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
@@ -159,7 +159,7 @@ public class LoaderTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryDoesntExist()
+    void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryDoesntExist()
             throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
@@ -177,7 +177,7 @@ public class LoaderTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsAFile()
+    void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsAFile()
             throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
@@ -196,7 +196,7 @@ public class LoaderTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
-    public void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsNotWritable()
+    void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsNotWritable()
             throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
@@ -215,7 +215,7 @@ public class LoaderTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
-    public void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryIsNotWritable()
+    void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryIsNotWritable()
             throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();

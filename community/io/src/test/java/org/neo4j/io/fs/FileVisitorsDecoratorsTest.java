@@ -87,8 +87,8 @@ public class FileVisitorsDecoratorsTest
     }
 
     @SuppressWarnings( "unchecked" )
-    public FileVisitor<Path> wrapped = mock( FileVisitor.class );
-    public FileVisitor<Path> decorator;
+    private FileVisitor<Path> wrapped = mock( FileVisitor.class );
+    private FileVisitor<Path> decorator;
 
     @Before
     public void setup()

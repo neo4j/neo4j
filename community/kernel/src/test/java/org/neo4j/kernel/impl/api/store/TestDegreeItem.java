@@ -21,18 +21,13 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.storageengine.api.DegreeItem;
 
-public class TestDegreeItem implements DegreeItem
+class TestDegreeItem implements DegreeItem
 {
     private final int type;
     private final long outgoing;
     private final long incoming;
 
-    public TestDegreeItem( DegreeItem item )
-    {
-        this( item.type(), item.outgoing(), item.incoming() );
-    }
-
-    public TestDegreeItem( int type, long outgoing, long incoming )
+    TestDegreeItem( int type, long outgoing, long incoming )
     {
         this.type = type;
         this.outgoing = outgoing;

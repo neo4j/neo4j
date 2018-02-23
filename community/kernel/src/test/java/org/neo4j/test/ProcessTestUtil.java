@@ -34,7 +34,7 @@ import static java.util.Arrays.asList;
 import static org.neo4j.io.proc.ProcessUtil.getClassPath;
 import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
 
-public class ProcessTestUtil
+class ProcessTestUtil
 {
     private ProcessTestUtil()
     {
@@ -53,7 +53,7 @@ public class ProcessTestUtil
         }
     }
 
-    public static Future<Integer> startSubProcess( Class<?> mainClass, String... arguments ) throws IOException
+    private static Future<Integer> startSubProcess( Class<?> mainClass, String... arguments ) throws IOException
     {
         List<String> args = new ArrayList<>();
         args.addAll( asList( getJavaExecutable().toString(), "-cp", getClassPath(), mainClass.getName() ) );

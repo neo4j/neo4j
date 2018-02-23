@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.util;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class MovingAverageTest
+class MovingAverageTest
 {
     @Test
-    public void shouldHaveAverageMovingWithChanges()
+    void shouldHaveAverageMovingWithChanges()
     {
         // GIVEN
         MovingAverage average = new MovingAverage( 5 );

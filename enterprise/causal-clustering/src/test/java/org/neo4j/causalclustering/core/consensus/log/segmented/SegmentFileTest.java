@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -70,13 +70,13 @@ public class SegmentFileTest
     private ReaderPool readerPool = spy( new ReaderPool( 0, logProvider, fileNames, fsRule.get(), Clocks.fakeClock() ) );
 
     @BeforeEach
-    public void before()
+    void before()
     {
         fsRule.get().mkdirs( baseDir );
     }
 
     @Test
-    public void shouldReportCorrectInitialValues() throws Exception
+    void shouldReportCorrectInitialValues() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, version,
                 contentMarshal, logProvider, segmentHeader ) )
@@ -91,7 +91,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldBeAbleToWriteAndRead() throws Exception
+    void shouldBeAbleToWriteAndRead() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )
@@ -112,7 +112,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldBeAbleToReadFromOffset() throws Exception
+    void shouldBeAbleToReadFromOffset() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )
@@ -136,7 +136,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldBeAbleToRepeatedlyReadWrittenValues() throws Exception
+    void shouldBeAbleToRepeatedlyReadWrittenValues() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )
@@ -167,7 +167,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldBeAbleToCloseOnlyAfterWriterIsClosed() throws Exception
+    void shouldBeAbleToCloseOnlyAfterWriterIsClosed() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )
@@ -184,7 +184,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldCallDisposeHandlerAfterLastReaderIsClosed() throws Exception
+    void shouldCallDisposeHandlerAfterLastReaderIsClosed() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )
@@ -209,7 +209,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldHandleReaderPastEndCorrectly() throws Exception
+    void shouldHandleReaderPastEndCorrectly() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )
@@ -234,7 +234,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldHaveIdempotentCloseMethods() throws Exception
+    void shouldHaveIdempotentCloseMethods() throws Exception
     {
         // given
         SegmentFile segment =
@@ -254,7 +254,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldCatchDoubleCloseReaderErrors() throws Exception
+    void shouldCatchDoubleCloseReaderErrors() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )
@@ -273,7 +273,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldNotReturnReaderExperiencingErrorToPool() throws Exception
+    void shouldNotReturnReaderExperiencingErrorToPool() throws Exception
     {
         // given
         StoreChannel channel = mock( StoreChannel.class );
@@ -310,7 +310,7 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldPruneReaderPoolOnClose() throws Exception
+    void shouldPruneReaderPoolOnClose() throws Exception
     {
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal,
                 logProvider, segmentHeader ) )

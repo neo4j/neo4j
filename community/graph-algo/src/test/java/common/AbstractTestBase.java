@@ -57,12 +57,12 @@ public abstract class AbstractTestBase
         return graphdb.getNodeById( id );
     }
 
-    protected static Transaction beginTx()
+    private static Transaction beginTx()
     {
         return graphdb.beginTx();
     }
 
-    protected interface Representation<T>
+    interface Representation<T>
     {
         String represent( T item );
     }
@@ -95,8 +95,8 @@ public abstract class AbstractTestBase
         expect( items, representation, new HashSet<>( Arrays.asList( expected ) ) );
     }
 
-    protected static <T> void expect( Iterable<? extends T> items,
-            Representation<T> representation, Set<String> expected )
+    private static <T> void expect( Iterable<? extends T> items, Representation<T> representation,
+            Set<String> expected )
     {
         try ( Transaction tx = beginTx() )
         {

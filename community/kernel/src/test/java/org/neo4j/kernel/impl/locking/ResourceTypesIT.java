@@ -25,8 +25,8 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
 import org.neo4j.memory.GlobalMemoryTracker;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
@@ -35,10 +35,10 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
  * This is an *IT integration test because it uses a large amount of memory.
  * Approximately 1.2 GBs goes into the map we use to check for collisions.
  */
-public class ResourceTypesIT
+class ResourceTypesIT
 {
     @Test
-    public void indexEntryHashing()
+    void indexEntryHashing()
     {
         int collisions = 0;
         try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( 35_000_000, GlobalMemoryTracker.INSTANCE ) )

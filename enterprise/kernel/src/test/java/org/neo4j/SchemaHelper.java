@@ -42,7 +42,7 @@ public final class SchemaHelper
         createIndex( db, label.name(), property );
     }
 
-    public static void createIndex( GraphDatabaseService db, String label, String property )
+    private static void createIndex( GraphDatabaseService db, String label, String property )
     {
         db.execute( format( "CREATE INDEX ON :`%s`(`%s`)", label, property ) );
     }

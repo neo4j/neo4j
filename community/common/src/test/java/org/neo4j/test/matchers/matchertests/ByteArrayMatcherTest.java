@@ -21,15 +21,15 @@ package org.neo4j.test.matchers.matchertests;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
-public class ByteArrayMatcherTest
+class ByteArrayMatcherTest
 {
     @Test
-    public void metaTestForByteArrayMatcher()
+    void metaTestForByteArrayMatcher()
     {
         byte[] a = new byte[] { 1, -2, 3 };
         byte[] b = new byte[] { 1, 3, -2 };

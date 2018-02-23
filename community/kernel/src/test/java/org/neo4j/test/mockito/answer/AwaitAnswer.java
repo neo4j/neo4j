@@ -30,7 +30,7 @@ public class AwaitAnswer<T> implements Answer<T>
 {
     private final CountDownLatch latch;
     private final Answer<T> result;
-    public AwaitAnswer( CountDownLatch latch, Answer<T> result )
+    private AwaitAnswer( CountDownLatch latch, Answer<T> result )
     {
         this.latch = latch;
         this.result = result;
@@ -48,7 +48,7 @@ public class AwaitAnswer<T> implements Answer<T>
         return result == null ? null : result.answer( invocation );
     }
 
-    public <R> Answer<R> then( Answer<R> result )
+    private <R> Answer<R> then( Answer<R> result )
     {
         return new AwaitAnswer<>( latch, result );
     }

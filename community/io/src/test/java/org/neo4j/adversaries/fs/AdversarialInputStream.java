@@ -25,12 +25,12 @@ import java.io.InputStream;
 import org.neo4j.adversaries.Adversary;
 
 @SuppressWarnings( "unchecked" )
-public class AdversarialInputStream extends InputStream
+class AdversarialInputStream extends InputStream
 {
     private final InputStream inputStream;
     private final Adversary adversary;
 
-    public AdversarialInputStream( InputStream inputStream, Adversary adversary )
+    AdversarialInputStream( InputStream inputStream, Adversary adversary )
     {
         this.inputStream = inputStream;
         this.adversary = adversary;

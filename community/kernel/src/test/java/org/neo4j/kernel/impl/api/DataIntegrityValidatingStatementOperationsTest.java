@@ -62,16 +62,16 @@ public class DataIntegrityValidatingStatementOperationsTest
     @Rule
     public ExpectedException exception = none();
 
-    LabelSchemaDescriptor descriptor = forLabel( 0, 7 );
-    IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 7 );
-    IndexDescriptor uniqueIndex = uniqueForLabel( 0, 7 );
+    private LabelSchemaDescriptor descriptor = forLabel( 0, 7 );
+    private IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 7 );
+    private IndexDescriptor uniqueIndex = uniqueForLabel( 0, 7 );
     private SchemaReadOperations innerRead;
     private SchemaWriteOperations innerWrite;
     private KeyWriteOperations innerKeyWrite;
     private DataIntegrityValidatingStatementOperations ops;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         innerKeyWrite = mock( KeyWriteOperations.class );
         innerRead = mock( SchemaReadOperations.class );
@@ -80,7 +80,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowReAddingIndex() throws Exception
+    void shouldDisallowReAddingIndex() throws Exception
     {
         // GIVEN
         when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( index );
@@ -101,7 +101,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
+    void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
         when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
@@ -122,7 +122,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
+    void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // GIVEN
         when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( null );
@@ -143,7 +143,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
+    void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
         when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
@@ -164,7 +164,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
+    void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
     {
         // GIVEN
         when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
@@ -185,7 +185,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
+    void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
     {
         // GIVEN
         when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
@@ -206,7 +206,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowNullOrEmptyPropertyKey()
+    void shouldDisallowNullOrEmptyPropertyKey()
     {
         try
         {
@@ -228,7 +228,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowNullOrEmptyLabelName() throws Exception
+    void shouldDisallowNullOrEmptyLabelName() throws Exception
     {
         try
         {
@@ -250,39 +250,39 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldFailInvalidLabelNames()
+    void shouldFailInvalidLabelNames()
     {
         assertThrows( SchemaKernelException.class, () -> ops.labelGetOrCreateForName( state, "" ) );
     }
 
     @Test
-    public void shouldFailOnNullLabel()
+    void shouldFailOnNullLabel()
     {
         assertThrows( SchemaKernelException.class, () -> ops.labelGetOrCreateForName( state, null ) );
     }
 
     @Test
-    public void shouldFailIndexCreateOnRepeatedPropertyId()
+    void shouldFailIndexCreateOnRepeatedPropertyId()
     {
         assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.indexCreate( state, forLabel( 0, 1, 1 ) ) );
     }
 
     @Test
-    public void shouldFailNodeExistenceCreateOnRepeatedPropertyId()
+    void shouldFailNodeExistenceCreateOnRepeatedPropertyId()
     {
         assertThrows( RepeatedPropertyInCompositeSchemaException.class,
                 () -> ops.nodePropertyExistenceConstraintCreate( state, forLabel( 0, 1, 1 ) ) );
     }
 
     @Test
-    public void shouldFailRelExistenceCreateOnRepeatedPropertyId()
+    void shouldFailRelExistenceCreateOnRepeatedPropertyId()
     {
         assertThrows( RepeatedPropertyInCompositeSchemaException.class,
                 () -> ops.relationshipPropertyExistenceConstraintCreate( state, forRelType( 0, 1, 1 ) ) );
     }
 
     @Test
-    public void shouldFailUniquenessCreateOnRepeatedPropertyId()
+    void shouldFailUniquenessCreateOnRepeatedPropertyId()
     {
         assertThrows( RepeatedPropertyInCompositeSchemaException.class,
                 () -> ops.uniquePropertyConstraintCreate( state, forLabel( 0, 1, 1 ) ) );

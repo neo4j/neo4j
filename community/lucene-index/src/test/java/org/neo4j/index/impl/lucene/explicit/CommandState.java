@@ -24,7 +24,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 
-public class CommandState
+class CommandState
 {
     final Index<Node> index;
     final GraphDatabaseService graphDb;
@@ -32,7 +32,7 @@ public class CommandState
     public volatile boolean alive = true;
     public volatile Node node;
 
-    public CommandState( Index<Node> index, GraphDatabaseService graphDb, Node node )
+    CommandState( Index<Node> index, GraphDatabaseService graphDb, Node node )
     {
         this.index = index;
         this.graphDb = graphDb;

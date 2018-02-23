@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.net.InetSocketAddress;
-
 import org.junit.jupiter.api.Test;
+
+import java.net.InetSocketAddress;
 
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ClientConnectionInfoTest
+class ClientConnectionInfoTest
 {
     @Test
-    public void connectionDetailsForBoltQuerySource()
+    void connectionDetailsForBoltQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection = new BoltConnectionInfo(
@@ -54,7 +54,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForHttpQuerySource()
+    void connectionDetailsForHttpQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection =
@@ -72,7 +72,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForEmbeddedQuerySource()
+    void connectionDetailsForEmbeddedQuerySource()
     {
         // when
         String connectionDetails = ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails();
@@ -82,7 +82,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForShellSession()
+    void connectionDetailsForShellSession()
     {
         // given
         ClientConnectionInfo clientConnection = new ShellConnectionInfo( 1 ).withUsername( "FULL" );

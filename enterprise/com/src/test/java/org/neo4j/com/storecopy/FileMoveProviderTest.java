@@ -52,22 +52,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class FileMoveProviderTest
+class FileMoveProviderTest
 {
     private DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
     private EphemeralFileSystemAbstraction ephemeralFileSystemAbstraction = new EphemeralFileSystemAbstraction();
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private FileMoveProvider subject;
 
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    private PageCacheRule pageCacheRule = new PageCacheRule();
     private PageCache pageCache;
     private FileMoveActionInformer fileMoveActionInformer;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         pageCache = pageCacheRule.getPageCache( ephemeralFileSystemAbstraction );
         fileMoveActionInformer = mock( FileMoveActionInformer.class );
@@ -75,7 +75,7 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void moveSingleFiles() throws IOException
+    void moveSingleFiles() throws IOException
     {
         // given
         File sharedParent = testDirectory.cleanDirectory( "shared_parent" );
@@ -96,7 +96,7 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void singleDirectoriesAreNotMoved() throws IOException
+    void singleDirectoriesAreNotMoved() throws IOException
     {
         // given
         File sharedParent = testDirectory.cleanDirectory( "shared_parent" );
@@ -120,7 +120,7 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void moveNestedFiles() throws IOException
+    void moveNestedFiles() throws IOException
     {
         // given
         File sharedParent = testDirectory.cleanDirectory( "shared_parent" );
@@ -154,7 +154,7 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void filesAreMovedViaPageCacheWhenNecessary() throws IOException
+    void filesAreMovedViaPageCacheWhenNecessary() throws IOException
     {
         // given there is a file on the default file system
         File parentDirectory = testDirectory.cleanDirectory( "parent" );
@@ -191,7 +191,7 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void filesAreMovedBeforeDirectories() throws IOException
+    void filesAreMovedBeforeDirectories() throws IOException
     {
         // given there is a file contained in a directory
         File parentDirectory = testDirectory.cleanDirectory( "parent" );

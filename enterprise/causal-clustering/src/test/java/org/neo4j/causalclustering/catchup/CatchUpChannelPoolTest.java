@@ -27,10 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CatchUpChannelPoolTest
+class CatchUpChannelPoolTest
 {
     @Test
-    public void shouldReUseAChannelThatWasReleased()
+    void shouldReUseAChannelThatWasReleased()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );
@@ -45,7 +45,7 @@ public class CatchUpChannelPoolTest
     }
 
     @Test
-    public void shouldCreateANewChannelIfFirstChannelIsDisposed()
+    void shouldCreateANewChannelIfFirstChannelIsDisposed()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );
@@ -60,7 +60,7 @@ public class CatchUpChannelPoolTest
     }
 
     @Test
-    public void shouldCreateANewChannelIfFirstChannelIsStillActive()
+    void shouldCreateANewChannelIfFirstChannelIsStillActive()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );
@@ -74,7 +74,7 @@ public class CatchUpChannelPoolTest
     }
 
     @Test
-    public void shouldCleanUpOnClose()
+    void shouldCleanUpOnClose()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );

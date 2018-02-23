@@ -40,10 +40,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 
-public class OnlineIndexSamplingJobTest
+class OnlineIndexSamplingJobTest
 {
     @Test
-    public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
+    void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
         OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStoreView, "Foo", logProvider );
@@ -58,7 +58,7 @@ public class OnlineIndexSamplingJobTest
     }
 
     @Test
-    public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
+    void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
         OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStoreView, "Foo", logProvider );
@@ -83,7 +83,7 @@ public class OnlineIndexSamplingJobTest
     private final long indexSize = 23L;
 
     @BeforeEach
-    public void setup() throws IndexNotFoundKernelException
+    void setup() throws IndexNotFoundKernelException
     {
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.newReader() ).thenReturn( indexReader );

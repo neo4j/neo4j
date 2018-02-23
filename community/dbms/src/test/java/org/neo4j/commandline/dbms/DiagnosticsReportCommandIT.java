@@ -52,30 +52,30 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class DiagnosticsReportCommandIT
+class DiagnosticsReportCommandIT
 {
     @Resource
     public SuppressOutput suppressOutput;
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseService database;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .newGraphDatabase();
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         database.shutdown();
     }
 
     @Test
-    public void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException, CommandFailed, IncorrectUsage
+    void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException, CommandFailed, IncorrectUsage
     {
         long pid = getPID();
         assertThat( pid, is( not( 0 ) ) );

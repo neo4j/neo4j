@@ -48,14 +48,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class GraphDatabaseServiceExecuteTest
+class GraphDatabaseServiceExecuteTest
 {
 
     @Resource
-    public ImpermanentDatabaseRule graphDb;
+    private ImpermanentDatabaseRule graphDb;
 
     @Test
-    public void shouldExecuteCypher()
+    void shouldExecuteCypher()
     {
         // given
         final long before;
@@ -79,7 +79,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldNotReturnInternalGeographicPointType()
+    void shouldNotReturnInternalGeographicPointType()
     {
         // when
         Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
@@ -99,7 +99,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldNotReturnInternalCartesianPointType()
+    void shouldNotReturnInternalCartesianPointType()
     {
         // when
         Result execute = graphDb.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
@@ -119,7 +119,7 @@ public class GraphDatabaseServiceExecuteTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotReturnInternalPointWhenInArray()
+    void shouldNotReturnInternalPointWhenInArray()
     {
         // when
         Result execute = graphDb.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
@@ -131,7 +131,7 @@ public class GraphDatabaseServiceExecuteTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotReturnInternalPointWhenInMap()
+    void shouldNotReturnInternalPointWhenInMap()
     {
         // when
         Result execute = graphDb.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
@@ -142,7 +142,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext()
+    void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext()
     {
         // given a point create by one cypher query
         Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
@@ -159,7 +159,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalPointAsParameterToQuery()
+    void shouldBeAbleToUseExternalPointAsParameterToQuery()
     {
         // given a point created from public interface
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
@@ -175,7 +175,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalGeometryAsParameterToQuery()
+    void shouldBeAbleToUseExternalGeometryAsParameterToQuery()
     {
         // given a point created from public interface
         Geometry geometry = makeFakePointAsGeometry( 144.317718, -37.031738, makeWGS84() );
@@ -191,7 +191,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalPointArrayAsParameterToQuery()
+    void shouldBeAbleToUseExternalPointArrayAsParameterToQuery()
     {
         // given a point created from public interface
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
@@ -208,7 +208,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
+    void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
         Procedures procedures =
@@ -227,7 +227,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
+    void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
         Procedures procedures =
@@ -323,7 +323,7 @@ public class GraphDatabaseServiceExecuteTest
         };
     }
 
-    public static class PointProcs
+    private static class PointProcs
     {
         @Procedure( "spatial.point" )
         public Stream<PointResult> spatialPoint( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
@@ -339,21 +339,21 @@ public class GraphDatabaseServiceExecuteTest
         }
     }
 
-    public static class PointResult
+    static class PointResult
     {
-        public Point point;
+        Point point;
 
-        public PointResult( Point point )
+        PointResult( Point point )
         {
             this.point = point;
         }
     }
 
-    public static class GeometryResult
+    static class GeometryResult
     {
-        public Geometry geometry;
+        Geometry geometry;
 
-        public GeometryResult( Geometry geometry )
+        GeometryResult( Geometry geometry )
         {
             this.geometry = geometry;
         }

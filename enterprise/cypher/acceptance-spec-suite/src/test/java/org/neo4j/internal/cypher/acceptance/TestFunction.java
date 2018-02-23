@@ -33,7 +33,7 @@ import org.neo4j.procedure.UserFunction;
 public class TestFunction
 {
     @Context
-    public GraphDatabaseService db;
+    private GraphDatabaseService db;
 
     @UserFunction( "test.toSet" )
     public List<Object> toSet( @Name( "values" ) List<Object> list )

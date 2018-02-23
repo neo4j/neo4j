@@ -47,10 +47,10 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class CoreStateMachinesTest
+class CoreStateMachinesTest
 {
     @Test
-    public void shouldAllowForBatchingOfTransactions()
+    void shouldAllowForBatchingOfTransactions()
     {
         try ( CommandDispatcher dispatcher = coreStateMachines.commandDispatcher() )
         {
@@ -67,7 +67,7 @@ public class CoreStateMachinesTest
     }
 
     @Test
-    public void shouldApplyTransactionBatchAsSoonAsThereIsADifferentKindOfRequestInTheBatch()
+    void shouldApplyTransactionBatchAsSoonAsThereIsADifferentKindOfRequestInTheBatch()
     {
         try ( CommandDispatcher dispatcher = coreStateMachines.commandDispatcher() )
         {
@@ -116,7 +116,7 @@ public class CoreStateMachinesTest
     }
 
     @Test
-    public void shouldReturnLastAppliedOfAllStateMachines()
+    void shouldReturnLastAppliedOfAllStateMachines()
     {
         // tx state machines are backed by the same store (the tx log) so they should return the same lastApplied
         StateMachine<?>[] txSMs = new StateMachine[]{labelTokenSM, relationshipTypeTokenSM, propertyKeyTokenSM, txSM};

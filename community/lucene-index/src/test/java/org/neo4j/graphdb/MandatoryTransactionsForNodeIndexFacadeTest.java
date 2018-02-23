@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
+
 import org.neo4j.graphdb.index.Index;
 
 import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_METHODS;
@@ -27,7 +28,7 @@ import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_MET
 public class MandatoryTransactionsForNodeIndexFacadeTest extends AbstractMandatoryTransactionsTest<Index<Node>>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade()
+    void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_INDEX_FACADE_METHODS );
     }

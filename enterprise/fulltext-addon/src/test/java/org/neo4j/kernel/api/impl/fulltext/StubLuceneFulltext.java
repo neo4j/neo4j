@@ -25,7 +25,7 @@ import static java.util.Collections.singletonList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 
-public class StubLuceneFulltext extends LuceneFulltext
+class StubLuceneFulltext extends LuceneFulltext
 {
     StubLuceneFulltext()
     {

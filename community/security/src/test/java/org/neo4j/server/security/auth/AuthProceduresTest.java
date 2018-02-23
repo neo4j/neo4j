@@ -43,7 +43,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void shouldFailWhenDeprecatedChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
+    void shouldFailWhenDeprecatedChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
     {
         // Given
         Object[] inputArray = new Object[1];
@@ -62,7 +62,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
+    void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
     {
         // Given
         Object[] inputArray = new Object[1];

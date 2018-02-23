@@ -31,9 +31,9 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class ReaderPoolTest
+class ReaderPoolTest
 {
     private final File base = new File( "base" );
     private final FileNames fileNames = new FileNames( base );
@@ -52,19 +52,19 @@ public class ReaderPoolTest
     private ReaderPool pool = new ReaderPool( 2, getInstance(), fileNames, fsa, clock );
 
     @BeforeEach
-    public void before()
+    void before()
     {
         fsa.mkdirs( base );
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         fsa.close();
     }
 
     @Test
-    public void shouldReacquireReaderFromPool() throws Exception
+    void shouldReacquireReaderFromPool() throws Exception
     {
         // given
         Reader reader = pool.acquire( 0, 0 );
@@ -79,7 +79,7 @@ public class ReaderPoolTest
     }
 
     @Test
-    public void shouldPruneOldReaders() throws Exception
+    void shouldPruneOldReaders() throws Exception
     {
         // given
         Reader readerA = spy( pool.acquire( 0, 0 ) );
@@ -100,7 +100,7 @@ public class ReaderPoolTest
     }
 
     @Test
-    public void shouldNotReturnPrunedReaders() throws Exception
+    void shouldNotReturnPrunedReaders() throws Exception
     {
         Reader readerA = pool.acquire( 0, 0 );
         Reader readerB = pool.acquire( 0, 0 );
@@ -120,7 +120,7 @@ public class ReaderPoolTest
     }
 
     @Test
-    public void shouldDisposeSuperfluousReaders() throws Exception
+    void shouldDisposeSuperfluousReaders() throws Exception
     {
         // given
         Reader readerA = spy( pool.acquire( 0, 0 ) );
@@ -143,7 +143,7 @@ public class ReaderPoolTest
     }
 
     @Test
-    public void shouldDisposeAllReleasedReaders() throws Exception
+    void shouldDisposeAllReleasedReaders() throws Exception
     {
         // given
         Reader readerA = spy( pool.acquire( 0, 0 ) );
@@ -164,7 +164,7 @@ public class ReaderPoolTest
     }
 
     @Test
-    public void shouldPruneReadersOfVersion() throws Exception
+    void shouldPruneReadersOfVersion() throws Exception
     {
         // given
         pool = new ReaderPool( 8, getInstance(), fileNames, fsa, clock );

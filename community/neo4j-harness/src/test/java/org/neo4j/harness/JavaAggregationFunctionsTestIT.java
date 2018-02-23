@@ -43,7 +43,7 @@ public class JavaAggregationFunctionsTestIT
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    public static class MyFunctions
+    private static class MyFunctions
     {
         @UserAggregationFunction
         public EliteAggregator myFunc()
@@ -74,7 +74,7 @@ public class JavaAggregationFunctionsTestIT
     }
 
     @Test
-    public void shouldLaunchWithDeclaredFunctions() throws Exception
+    void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
         try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
@@ -100,7 +100,7 @@ public class JavaAggregationFunctionsTestIT
     }
 
     @Test
-    public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
+    void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
         try ( ServerControls server = createServer( MyFunctions.class ).newServer() )

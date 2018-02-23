@@ -34,10 +34,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class CacheSmallStoresRecordAccessTest
+class CacheSmallStoresRecordAccessTest
 {
     @Test
-    public void shouldDelegateLookupForMostStores()
+    void shouldDelegateLookupForMostStores()
     {
         // given
         RecordAccess delegate = mock( RecordAccess.class );
@@ -59,7 +59,7 @@ public class CacheSmallStoresRecordAccessTest
     }
 
     @Test
-    public void shouldServePropertyKeysAndRelationshipLabelsFromSuppliedArrayCaches()
+    void shouldServePropertyKeysAndRelationshipLabelsFromSuppliedArrayCaches()
     {
         // given
         RecordAccess delegate = mock( RecordAccess.class );

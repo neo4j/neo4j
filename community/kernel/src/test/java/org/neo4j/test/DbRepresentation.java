@@ -54,7 +54,7 @@ public class DbRepresentation
         return of( db, true );
     }
 
-    public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
+    private static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
     {
         int retryCount = 5;
         while ( true )
@@ -93,7 +93,7 @@ public class DbRepresentation
         return of( storeDir, true, config );
     }
 
-    public static DbRepresentation of( File storeDir, boolean includeIndexes, Config config )
+    private static DbRepresentation of( File storeDir, boolean includeIndexes, Config config )
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         builder.setConfig( config.getRaw() );
@@ -115,7 +115,7 @@ public class DbRepresentation
         return compareWith( (DbRepresentation) obj ).isEmpty();
     }
 
-    public Collection<String> compareWith( DbRepresentation other )
+    private Collection<String> compareWith( DbRepresentation other )
     {
         Collection<String> diffList = new ArrayList<>();
         DiffReport diff = new CollectionDiffReport( diffList );
@@ -254,7 +254,7 @@ public class DbRepresentation
             }
         }
 
-        protected void compareWith( NodeRep other, DiffReport diff )
+        void compareWith( NodeRep other, DiffReport diff )
         {
             if ( other.id != id )
             {
@@ -356,7 +356,7 @@ public class DbRepresentation
             }
         }
 
-        protected boolean compareWith( PropertiesRep other, DiffReport diff )
+        boolean compareWith( PropertiesRep other, DiffReport diff )
         {
             boolean equals = props.equals( other.props );
             if ( !equals )

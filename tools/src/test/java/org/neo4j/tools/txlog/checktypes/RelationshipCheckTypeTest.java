@@ -25,10 +25,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RelationshipCheckTypeTest
+class RelationshipCheckTypeTest
 {
     @Test
-    public void inUseRecordEquality()
+    void inUseRecordEquality()
     {
         RelationshipRecord record1 = new RelationshipRecord( 1 );
         record1.initialize( true, 1, 2, 3, 4, 5, 6, 7, 8, true, false );
@@ -42,7 +42,7 @@ public class RelationshipCheckTypeTest
     }
 
     @Test
-    public void notInUseRecordEquality()
+    void notInUseRecordEquality()
     {
         RelationshipRecord record1 = new RelationshipRecord( 1 );
         record1.initialize( false, 1, 2, 3, 4, 5, 6, 7, 8, true, false );

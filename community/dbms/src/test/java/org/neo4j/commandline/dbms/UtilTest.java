@@ -36,25 +36,25 @@ import static org.neo4j.commandline.Util.isSameOrChildPath;
 import static org.neo4j.commandline.Util.neo4jVersion;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class UtilTest
+class UtilTest
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void canonicalPath()
+    void canonicalPath()
     {
         assertNotNull( Util.canonicalPath( "foo" ).getParent() );
     }
 
     @Test
-    public void returnsAVersion()
+    void returnsAVersion()
     {
         assertNotNull( neo4jVersion(), "A version should be returned" );
     }
 
     @Test
-    public void correctlyIdentifySameOrChildFile()
+    void correctlyIdentifySameOrChildFile()
     {
         assertTrue( isSameOrChildFile( directory.directory(), directory.directory( "a" ) ) );
         assertTrue( isSameOrChildFile( directory.directory(), directory.directory() ) );
@@ -65,7 +65,7 @@ public class UtilTest
     }
 
     @Test
-    public void correctlyIdentifySameOrChildPath()
+    void correctlyIdentifySameOrChildPath()
     {
         assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory( "a" ).toPath() ) );
         assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory().toPath() ) );

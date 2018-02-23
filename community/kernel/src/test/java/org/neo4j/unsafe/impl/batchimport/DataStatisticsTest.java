@@ -34,13 +34,13 @@ import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( RandomExtension.class )
-public class DataStatisticsTest
+class DataStatisticsTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldSumCounts() throws Throwable
+    void shouldSumCounts() throws Throwable
     {
         // given
         DataStatistics stats = new DataStatistics( 1, 2, new RelationshipTypeCount[0] );
@@ -79,7 +79,7 @@ public class DataStatisticsTest
     }
 
     @Test
-    public void shouldGrowArrayProperly()
+    void shouldGrowArrayProperly()
     {
         // given
         DataStatistics stats = new DataStatistics( 1, 1, new RelationshipTypeCount[0] );

@@ -30,10 +30,10 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.slice;
 import static org.neo4j.values.virtual.VirtualValues.take;
 
-public class ListSliceTest
+class ListSliceTest
 {
     @Test
-    public void shouldSliceList()
+    void shouldSliceList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -50,7 +50,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldReturnEmptyListIfEmptyRange()
+    void shouldReturnEmptyListIfEmptyRange()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -64,7 +64,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldHandleExceedingRange()
+    void shouldHandleExceedingRange()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -82,7 +82,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldHandleNegativeStart()
+    void shouldHandleNegativeStart()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -98,7 +98,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldBeAbleToDropFromList()
+    void shouldBeAbleToDropFromList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -115,7 +115,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldBeAbleToTakeFromList()
+    void shouldBeAbleToTakeFromList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),

@@ -52,13 +52,13 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 
 @ExtendWith( RandomExtension.class )
-public class NativeAllEntriesLabelScanReaderTest
+class NativeAllEntriesLabelScanReaderTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldSeeNonOverlappingRanges() throws Exception
+    void shouldSeeNonOverlappingRanges() throws Exception
     {
         int rangeSize = 4;
         // new ranges at: 0, 4, 8, 12 ...
@@ -70,7 +70,7 @@ public class NativeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldSeeOverlappingRanges() throws Exception
+    void shouldSeeOverlappingRanges() throws Exception
     {
         int rangeSize = 4;
         // new ranges at: 0, 4, 8, 12 ...
@@ -82,7 +82,7 @@ public class NativeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldSeeRangesFromRandomData() throws Exception
+    void shouldSeeRangesFromRandomData() throws Exception
     {
         List<Labels> labels = randomData();
 

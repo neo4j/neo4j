@@ -29,20 +29,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TreeStateTest
+class TreeStateTest
 {
     private final int pageSize = 256;
     private PageAwareByteArrayCursor cursor;
 
     @BeforeEach
-    public void initiateCursor()
+    void initiateCursor()
     {
         cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next();
     }
 
     @Test
-    public void readEmptyStateShouldThrow()
+    void readEmptyStateShouldThrow()
     {
         // GIVEN empty state
 
@@ -54,7 +54,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldReadValidPage()
+    void shouldReadValidPage()
     {
         // GIVEN valid state
         long pageId = cursor.getCurrentPageId();
@@ -70,7 +70,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void readBrokenStateShouldFail()
+    void readBrokenStateShouldFail()
     {
         // GIVEN broken state
         long pageId = cursor.getCurrentPageId();
@@ -89,7 +89,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidStableGeneration()
+    void shouldNotWriteInvalidStableGeneration()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION + 1;
@@ -108,7 +108,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidUnstableGeneration()
+    void shouldNotWriteInvalidUnstableGeneration()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION + 1;

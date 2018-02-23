@@ -33,7 +33,7 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
     private final T[] expectedItems;
     private String message;
 
-    public Contains( T... expectedItems )
+    private Contains( T... expectedItems )
     {
         this.expectedItems = expectedItems;
     }

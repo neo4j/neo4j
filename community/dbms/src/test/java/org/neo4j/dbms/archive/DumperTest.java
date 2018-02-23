@@ -43,13 +43,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class DumperTest
+class DumperTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException
+    void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
@@ -66,7 +66,7 @@ public class DumperTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheDirectoryDoesntExist() throws IOException
+    void shouldGiveAClearErrorMessageIfTheDirectoryDoesntExist() throws IOException
     {
         Path directory = testDirectory.file( "a-directory" ).toPath();
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
@@ -82,7 +82,7 @@ public class DumperTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryDoesntExist() throws IOException
+    void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryDoesntExist() throws IOException
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
@@ -98,7 +98,7 @@ public class DumperTest
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsAFile() throws IOException
+    void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsAFile() throws IOException
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
@@ -116,7 +116,7 @@ public class DumperTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
-    public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
+    void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();

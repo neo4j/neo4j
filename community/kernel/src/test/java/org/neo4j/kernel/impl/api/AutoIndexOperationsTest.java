@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 
-public class AutoIndexOperationsTest
+class AutoIndexOperationsTest
 {
     private final DataWriteOperations ops = mock(DataWriteOperations.class);
     private final PropertyKeyTokenHolder tokens = mock( PropertyKeyTokenHolder.class );
@@ -51,7 +51,7 @@ public class AutoIndexOperationsTest
     private final String indexedPropertyName2 = "baz";
 
     @BeforeEach
-    public void setup() throws TokenNotFoundException
+    void setup() throws TokenNotFoundException
     {
         when(tokens.getTokenById( nonIndexedProperty )).thenReturn( new Token( nonIndexedPropertyName, nonIndexedProperty ) );
         when(tokens.getTokenById( indexedProperty )).thenReturn( new Token( indexedPropertyName, indexedProperty ) );
@@ -60,7 +60,7 @@ public class AutoIndexOperationsTest
     }
 
     @Test
-    public void shouldNotRemoveFromIndexForNonAutoIndexedProperty() throws Exception
+    void shouldNotRemoveFromIndexForNonAutoIndexedProperty() throws Exception
     {
         // Given
         index.startAutoIndexingProperty( indexedPropertyName );
@@ -73,7 +73,7 @@ public class AutoIndexOperationsTest
     }
 
     @Test
-    public void shouldRemoveSpecificValueFromIndexForAutoIndexedProperty() throws Exception
+    void shouldRemoveSpecificValueFromIndexForAutoIndexedProperty() throws Exception
     {
         // Given
         long nodeId = 11;
@@ -93,7 +93,7 @@ public class AutoIndexOperationsTest
     }
 
     @Test
-    public void shouldNotAddToIndexForNonAutoIndexedProperty() throws Exception
+    void shouldNotAddToIndexForNonAutoIndexedProperty() throws Exception
     {
         // Given
         index.startAutoIndexingProperty( indexedPropertyName );
@@ -106,7 +106,7 @@ public class AutoIndexOperationsTest
     }
 
     @Test
-    public void shouldNotAddOrRemoveFromIndexForNonAutoIndexedProperty() throws Exception
+    void shouldNotAddOrRemoveFromIndexForNonAutoIndexedProperty() throws Exception
     {
         // Given
         index.startAutoIndexingProperty( indexedPropertyName );

@@ -61,15 +61,15 @@ import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_USAGE_RATIO;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class PageCacheMetricsIT
+class PageCacheMetricsIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private File metricsDirectory;
     private GraphDatabaseService database;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         metricsDirectory = testDirectory.directory( "metrics" );
         database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -83,13 +83,13 @@ public class PageCacheMetricsIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         database.shutdown();
     }
 
     @Test
-    public void pageCacheMetrics() throws Exception
+    void pageCacheMetrics() throws Exception
     {
         Label testLabel = Label.label( "testLabel" );
         try ( Transaction transaction = database.beginTx() )

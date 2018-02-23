@@ -30,10 +30,10 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class FirstValidRuleTest
+class FirstValidRuleTest
 {
     @Test
-    public void shouldUseResultOfFirstNonEmpty()
+    void shouldUseResultOfFirstNonEmpty()
     {
         // given
         Filter<Integer> removeValuesOfFive = data -> data.stream().filter( value -> value != 5 ).collect( Collectors.toSet() );

@@ -125,7 +125,7 @@ public class PageCountRecordFormat extends RecordFormat
             this.buf = ByteBuffer.wrap( bytes );
         }
 
-        public short getRecordId()
+        short getRecordId()
         {
             return buf.getShort( 0 );
         }

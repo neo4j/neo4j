@@ -44,7 +44,7 @@ public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
 
     private final byte[] expected;
 
-    public ByteArrayMatcher( byte[] expected )
+    private ByteArrayMatcher( byte[] expected )
     {
         this.expected = expected;
     }

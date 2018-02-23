@@ -29,14 +29,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class KernelTransactionMonitorSchedulerTest
+class KernelTransactionMonitorSchedulerTest
 {
 
     private final JobScheduler scheduler = mock( JobScheduler.class );
     private final KernelTransactionTimeoutMonitor transactionTimeoutMonitor = mock( KernelTransactionTimeoutMonitor.class );
 
     @Test
-    public void scheduleRecurringMonitorJobIfConfigured()
+    void scheduleRecurringMonitorJobIfConfigured()
     {
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler(1);
         transactionMonitorScheduler.start();
@@ -46,7 +46,7 @@ public class KernelTransactionMonitorSchedulerTest
     }
 
     @Test
-    public void doNotScheduleMonitorJobIfDisabled()
+    void doNotScheduleMonitorJobIfDisabled()
     {
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler( 0 );
         transactionMonitorScheduler.start();

@@ -52,8 +52,7 @@ public class GraphDescription implements GraphDefinition
             end = parts[2];
         }
 
-        public Relationship create( GraphDatabaseService graphdb,
-                Map<String, Node> nodes )
+        Relationship create( GraphDatabaseService graphdb, Map<String,Node> nodes )
         {
             Node startNode = getNode( graphdb, nodes, start );
             Node endNode = getNode( graphdb, nodes, end );

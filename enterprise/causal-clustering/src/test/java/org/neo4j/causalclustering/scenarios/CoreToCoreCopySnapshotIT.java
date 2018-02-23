@@ -54,7 +54,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class CoreToCoreCopySnapshotIT
 {
-    protected static final int NR_CORE_MEMBERS = 3;
+    private static final int NR_CORE_MEMBERS = 3;
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule()
@@ -86,7 +86,7 @@ public class CoreToCoreCopySnapshotIT
         assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
     }
 
-    protected void deleteDirectoryRecursively( File directory, int id ) throws IOException
+    private void deleteDirectoryRecursively( File directory, int id ) throws IOException
     {
         // Extracted so the inheriting test in the block device repository can override it. id is used there.
         FileUtils.deleteRecursively( directory );

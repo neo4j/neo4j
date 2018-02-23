@@ -39,7 +39,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 
-public class TxStateCompositeIndexTest
+class TxStateCompositeIndexTest
 {
     private TransactionState state;
 
@@ -49,13 +49,13 @@ public class TxStateCompositeIndexTest
     private final IndexDescriptor indexOn_2_2_3_4 = IndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
 
     @BeforeEach
-    public void before()
+    void before()
     {
         state = new TxState();
     }
 
     @Test
-    public void shouldScanOnAnEmptyTxState()
+    void shouldScanOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
@@ -65,7 +65,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekOnAnEmptyTxState()
+    void shouldSeekOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets =
@@ -76,7 +76,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldScanWhenThereAreNewNodes()
+    void shouldScanWhenThereAreNewNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -90,7 +90,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreNewStringNodes()
+    void shouldSeekWhenThereAreNewStringNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -105,7 +105,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreNewNumberNodes()
+    void shouldSeekWhenThereAreNewNumberNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringProperties( 42L, 43L );
@@ -120,7 +120,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldHandleMixedAddsAndRemovesEntry()
+    void shouldHandleMixedAddsAndRemovesEntry()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -136,7 +136,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreManyEntriesWithTheSameValues()
+    void shouldSeekWhenThereAreManyEntriesWithTheSameValues()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -152,7 +152,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekInComplexMix()
+    void shouldSeekInComplexMix()
     {
         // GIVEN
         ValueTuple[] values2_1 = Iterators.array(

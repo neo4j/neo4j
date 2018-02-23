@@ -29,10 +29,10 @@ import java.util.TimeZone;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestFormat
+class TestFormat
 {
     @Test
-    public void dateTime() throws Exception
+    void dateTime() throws Exception
     {
         // Date
         long timeWithDate = System.currentTimeMillis();
@@ -46,7 +46,7 @@ public class TestFormat
     }
 
     @Test
-    public void dateTimeWithTimeZone() throws Exception
+    void dateTimeWithTimeZone() throws Exception
     {
         String zoneOffset = "+03:00";
         TimeZone zone = TimeZone.getTimeZone( "GMT" + zoneOffset );

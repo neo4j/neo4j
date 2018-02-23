@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class OutOfOrderDeliveryTest
+class OutOfOrderDeliveryTest
 {
     @Test
-    public void shouldReOrder() throws Exception
+    void shouldReOrder() throws Exception
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ) ) );

@@ -258,7 +258,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
             }
         }
 
-        public long getLockIdentityHashCode()
+        long getLockIdentityHashCode()
         {
             return lockIdentityHashCode;
         }

@@ -44,17 +44,17 @@ class ExpectedTransactionData
     final Set<Relationship> expectedCreatedRelationships = new HashSet<>();
     final Set<Node> expectedDeletedNodes = new HashSet<>();
     final Set<Relationship> expectedDeletedRelationships = new HashSet<>();
-    final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedAssignedNodeProperties =
+    private final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedAssignedNodeProperties =
             new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Node>>dontCreate() ) );
-    final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedAssignedRelationshipProperties =
+    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedAssignedRelationshipProperties =
             new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Relationship>>dontCreate() ) );
-    final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedRemovedNodeProperties =
+    private final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedRemovedNodeProperties =
             new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Node>>dontCreate() ) );
-    final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedRemovedRelationshipProperties =
+    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedRemovedRelationshipProperties =
             new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Relationship>>dontCreate() ) );
-    final Map<Node, Set<String>> expectedAssignedLabels =
+    private final Map<Node, Set<String>> expectedAssignedLabels =
             new AutoCreatingHashMap<>( AutoCreatingHashMap.<String>valuesOfTypeHashSet() );
-    final Map<Node, Set<String>> expectedRemovedLabels =
+    private final Map<Node, Set<String>> expectedRemovedLabels =
             new AutoCreatingHashMap<>( AutoCreatingHashMap.<String>valuesOfTypeHashSet() );
     private final boolean ignoreAdditionalData;
 
@@ -368,8 +368,8 @@ class ExpectedTransactionData
         return result;
     }
 
-    <T extends PropertyContainer> void checkAssigned(
-            Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T extends PropertyContainer> void checkAssigned( Map<T,Map<String,PropertyEntryImpl<T>>> map,
+            PropertyEntry<T> entry )
     {
         PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
         if ( expected != null )
@@ -378,8 +378,8 @@ class ExpectedTransactionData
         }
     }
 
-    <T extends PropertyContainer> void checkRemoved(
-            Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T extends PropertyContainer> void checkRemoved( Map<T,Map<String,PropertyEntryImpl<T>>> map,
+            PropertyEntry<T> entry )
     {
         PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
         if ( expected != null )
@@ -388,8 +388,8 @@ class ExpectedTransactionData
         }
     }
 
-    <T extends PropertyContainer> PropertyEntryImpl<T> fetchExpectedPropertyEntry(
-            Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T extends PropertyContainer> PropertyEntryImpl<T> fetchExpectedPropertyEntry(
+            Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         T entity = entry.entity();
         boolean hasEntity = map.containsKey( entity );

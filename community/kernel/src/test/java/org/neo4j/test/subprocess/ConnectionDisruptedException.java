@@ -19,9 +19,9 @@
  */
 package org.neo4j.test.subprocess;
 
-public class ConnectionDisruptedException extends IllegalStateException
+class ConnectionDisruptedException extends IllegalStateException
 {
-    public ConnectionDisruptedException( Throwable cause )
+    ConnectionDisruptedException( Throwable cause )
     {
         super( "Subprocess connection disrupted", cause );
     }

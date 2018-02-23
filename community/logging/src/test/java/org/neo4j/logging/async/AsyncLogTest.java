@@ -44,7 +44,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class AsyncLogTest
 {
-    public static Iterable<Arguments> parameters()
+    private static Iterable<Arguments> parameters()
     {
         List<Arguments> parameters = new ArrayList<>();
         for ( Invocation invocation : Invocation.values() )
@@ -65,7 +65,7 @@ public class AsyncLogTest
 
     @ParameterizedTest( name = "{0} {1}.log({2})" )
     @MethodSource( "parameters" )
-    public void shouldLogAsynchronously( Invocation invocation, Level level, Style style )
+    void shouldLogAsynchronously( Invocation invocation, Level level, Style style )
     {
         // given
         AssertableLogProvider logging = new AssertableLogProvider();
@@ -209,7 +209,7 @@ public class AsyncLogTest
             events.add( event );
         }
 
-        public void process()
+        void process()
         {
             for ( AsyncLogEvent event : events )
             {
@@ -379,7 +379,7 @@ public class AsyncLogTest
             this.builder = builder;
         }
 
-        public AssertableLogProvider.LogMatcher matcher()
+        AssertableLogProvider.LogMatcher matcher()
         {
             return requireNonNull( matcher, "invalid use, no matcher built" );
         }

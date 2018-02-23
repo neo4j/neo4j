@@ -38,7 +38,7 @@ public class IndexSimpleValueValidatorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void nullIsNotAllowed()
+    void nullIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Null value" );
@@ -46,7 +46,7 @@ public class IndexSimpleValueValidatorTest
     }
 
     @Test
-    public void tooLongStringIsNotAllowed()
+    void tooLongStringIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage(
@@ -56,7 +56,7 @@ public class IndexSimpleValueValidatorTest
     }
 
     @Test
-    public void stringOverExceedLimitNotAllowed()
+    void stringOverExceedLimitNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage(
@@ -66,7 +66,7 @@ public class IndexSimpleValueValidatorTest
     }
 
     @Test
-    public void numberIsValidValue()
+    void numberIsValidValue()
     {
         getValidator().validate( 5 );
         getValidator().validate( 5.0d );
@@ -75,7 +75,7 @@ public class IndexSimpleValueValidatorTest
     }
 
     @Test
-    public void shortStringIsValidValue()
+    void shortStringIsValidValue()
     {
         getValidator().validate( RandomStringUtils.randomAlphabetic( 5 ) );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 10 ) );
@@ -84,7 +84,7 @@ public class IndexSimpleValueValidatorTest
         getValidator().validate( RandomStringUtils.randomAlphabetic( IndexValueLengthValidator.MAX_TERM_LENGTH ) );
     }
 
-    protected Validator<Object> getValidator()
+    Validator<Object> getValidator()
     {
         return object -> INSTANCE.validate( Values.of( object ) );
     }

@@ -57,7 +57,7 @@ import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
  */
-public class CheckPointingLogRotationStressTesting
+class CheckPointingLogRotationStressTesting
 {
     private static final String DEFAULT_DURATION_IN_MINUTES = "5";
     private static final String DEFAULT_STORE_DIR = new File( getProperty( "java.io.tmpdir" ), "store" ).getPath();
@@ -89,7 +89,7 @@ public class CheckPointingLogRotationStressTesting
     };
 
     @Test
-    public void shouldBehaveCorrectlyUnderStress() throws Throwable
+    void shouldBehaveCorrectlyUnderStress() throws Throwable
     {
         long durationInMinutes =
                 parseLong( fromEnv( "CHECK_POINT_LOG_ROTATION_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );

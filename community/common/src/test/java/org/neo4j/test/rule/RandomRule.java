@@ -260,7 +260,7 @@ public class RandomRule implements TestRule
 
     @Retention( RetentionPolicy.RUNTIME )
     @Target( ElementType.METHOD )
-    public @interface Seed
+    @interface Seed
     {
         long value();
     }

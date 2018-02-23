@@ -31,10 +31,10 @@ import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTING;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
-public class ServerStartupErrorsTest
+class ServerStartupErrorsTest
 {
     @Test
-    public void shouldDescribeUpgradeFailureInAFriendlyWay()
+    void shouldDescribeUpgradeFailureInAFriendlyWay()
     {
         // given
         AssertableLogProvider logging = new AssertableLogProvider();

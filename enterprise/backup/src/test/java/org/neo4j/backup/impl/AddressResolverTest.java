@@ -28,22 +28,22 @@ import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AddressResolverTest
+class AddressResolverTest
 {
 
-    AddressResolver subject;
+    private AddressResolver subject;
 
     // Parameters
-    Config defaultConfig = Config.defaults();
+    private Config defaultConfig = Config.defaults();
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         subject = new AddressResolver();
     }
 
     @Test
-    public void noPortResolvesToDefault_ha()
+    void noPortResolvesToDefault_ha()
     {
         // given
         Integer portIsNotSupplied = null;
@@ -56,7 +56,7 @@ public class AddressResolverTest
     }
 
     @Test
-    public void suppliedPortResolvesToGiven_ha()
+    void suppliedPortResolvesToGiven_ha()
     {
         // given
         Integer portIsSupplied = 1234;

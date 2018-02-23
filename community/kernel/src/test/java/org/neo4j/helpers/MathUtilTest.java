@@ -24,16 +24,16 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.helpers.MathUtil.numbersEqual;
 
-public class MathUtilTest
+class MathUtilTest
 {
     @Test
-    public void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstDoubleNaN()
+    void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstDoubleNaN()
     {
         assertFalse( numbersEqual( Double.NaN, 0 ) );
     }
 
     @Test
-    public void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstInfinities()
+    void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstInfinities()
     {
         assertFalse( numbersEqual( Double.NEGATIVE_INFINITY, Long.MIN_VALUE ) );
         assertFalse( numbersEqual( Double.POSITIVE_INFINITY, Long.MAX_VALUE ) );

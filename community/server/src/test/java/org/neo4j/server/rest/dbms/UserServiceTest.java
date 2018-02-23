@@ -57,15 +57,15 @@ import static org.mockito.Mockito.when;
 
 public class UserServiceTest
 {
-    protected static final User NEO4J_USER = new User.Builder( "neo4j", Credential.forPassword( "neo4j" ) )
+    private static final User NEO4J_USER = new User.Builder( "neo4j", Credential.forPassword( "neo4j" ) )
             .withRequiredPasswordChange( true ).build();
 
-    protected final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
+    private final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
     protected final UserRepository userRepository = new InMemoryUserRepository();
 
     protected UserManagerSupplier userManagerSupplier;
     protected LoginContext neo4jContext;
-    protected Principal neo4jPrinciple;
+    private Principal neo4jPrinciple;
 
     protected void setupAuthManagerAndSubject()
     {

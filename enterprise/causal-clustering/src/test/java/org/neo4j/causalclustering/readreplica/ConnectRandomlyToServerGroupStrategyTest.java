@@ -31,15 +31,15 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
-import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isIn;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
 
-public class ConnectRandomlyToServerGroupStrategyTest
+class ConnectRandomlyToServerGroupStrategyTest
 {
 
     @Test
-    public void shouldConnectToGroupDefinedInStrategySpecificConfig()
+    void shouldConnectToGroupDefinedInStrategySpecificConfig()
     {
         // given
         final String targetServerGroup = "target_server_group";

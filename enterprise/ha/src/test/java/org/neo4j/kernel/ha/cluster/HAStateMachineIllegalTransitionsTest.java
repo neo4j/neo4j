@@ -43,7 +43,7 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
  * set the instance to PENDING state and ask for an election, in the hopes that the result will come with
  * proper ordering and therefore cause a proper state transition chain to MASTER or SLAVE.
  */
-public class HAStateMachineIllegalTransitionsTest
+class HAStateMachineIllegalTransitionsTest
 {
     private final InstanceId me = new InstanceId( 1 );
     private ClusterMemberListener memberListener;
@@ -51,7 +51,7 @@ public class HAStateMachineIllegalTransitionsTest
     private Election election;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
 
@@ -70,7 +70,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterAvailableWhenInPending()
+    void shouldProperlyHandleMasterAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, masterIsAvailable for itself should leave it to PENDING
@@ -89,7 +89,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleSlaveAvailableWhenInPending()
+    void shouldProperlyHandleSlaveAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, slaveIsAvailable for itself should set it to PENDING
@@ -107,7 +107,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave()
+    void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave()
     {
         /*
          * If the instance is in TO_SLAVE and a masterIsAvailable comes that does not refer to the elected master,
@@ -136,7 +136,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingMasterAvailableMessage()
+    void shouldProperlyHandleConflictingMasterAvailableMessage()
     {
         /*
          * If the instance is currently in TO_MASTER and a masterIsAvailable comes for another instance, then
@@ -164,7 +164,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster()
+    void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster()
     {
         /*
          * If the instance is in TO_MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -191,7 +191,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster()
+    void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster()
     {
         /*
          * If the instance is in MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -225,7 +225,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInMasterState()
+    void shouldProperlyHandleMasterIsAvailableWhenInMasterState()
     {
         /*
          * If the instance is in MASTER state and a masterIsAvailable is received for another instance, then
@@ -261,7 +261,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInSlaveState()
+    void shouldProperlyHandleMasterIsAvailableWhenInSlaveState()
     {
         /*
          * If the instance is in SLAVE state and receives masterIsAvailable for an instance different than the

@@ -51,10 +51,10 @@ import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
  */
 @EnableRuleMigrationSupport
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class ReadTransactionLogWritingTest
+class ReadTransactionLogWritingTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbr;
+    private ImpermanentDatabaseRule dbr;
 
     private final Label label = label( "Test" );
     private Node node;
@@ -62,7 +62,7 @@ public class ReadTransactionLogWritingTest
     private long logEntriesWrittenBeforeReadOperations;
 
     @BeforeEach
-    public void createDataset()
+    void createDataset()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
@@ -79,7 +79,7 @@ public class ReadTransactionLogWritingTest
     }
 
     @Test
-    public void shouldNotWriteAnyLogCommandInPureReadTransaction()
+    void shouldNotWriteAnyLogCommandInPureReadTransaction()
     {
         // WHEN
         executeTransaction( getRelationships() );

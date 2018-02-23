@@ -35,10 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class MemberIsUnavailableTest
+class MemberIsUnavailableTest
 {
     @Test
-    public void shouldBeSerializedWhenClusterUriIsNull() throws IOException
+    void shouldBeSerializedWhenClusterUriIsNull() throws IOException
     {
         // Given
         MemberIsUnavailable message = new MemberIsUnavailable( "master", new InstanceId( 1 ), null );
@@ -51,7 +51,7 @@ public class MemberIsUnavailableTest
     }
 
     @Test
-    public void shouldBeDeserializedWhenClusterUriIsNull() throws Exception
+    void shouldBeDeserializedWhenClusterUriIsNull() throws Exception
     {
         // Given
         MemberIsUnavailable message = new MemberIsUnavailable( "slave", new InstanceId( 1 ), null );

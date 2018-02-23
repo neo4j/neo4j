@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TransactionMetadataCacheTest
+class TransactionMetadataCacheTest
 {
     @Test
-    public void shouldReturnNullWhenMissingATxInTheCache()
+    void shouldReturnNullWhenMissingATxInTheCache()
     {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );
@@ -44,7 +44,7 @@ public class TransactionMetadataCacheTest
     }
 
     @Test
-    public void shouldReturnTheTxValueTIfInTheCached()
+    void shouldReturnTheTxValueTIfInTheCached()
     {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );
@@ -66,7 +66,7 @@ public class TransactionMetadataCacheTest
     }
 
     @Test
-    public void shouldThrowWhenCachingATxWithNegativeOffsetPosition()
+    void shouldThrowWhenCachingATxWithNegativeOffsetPosition()
     {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );
@@ -90,7 +90,7 @@ public class TransactionMetadataCacheTest
     }
 
     @Test
-    public void shouldClearTheCache()
+    void shouldClearTheCache()
     {
         // given
         final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );

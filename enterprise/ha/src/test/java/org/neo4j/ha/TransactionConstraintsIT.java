@@ -75,7 +75,7 @@ public class TransactionConstraintsIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( dumpInfo ).around( exception );
 
-    protected ClusterManager.ManagedCluster cluster;
+    private ClusterManager.ManagedCluster cluster;
 
     @Before
     public void setup()

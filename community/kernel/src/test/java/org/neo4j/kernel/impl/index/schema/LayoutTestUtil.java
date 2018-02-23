@@ -43,7 +43,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
     private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
 
-    final IndexDescriptor indexDescriptor;
+    private final IndexDescriptor indexDescriptor;
 
     LayoutTestUtil( IndexDescriptor indexDescriptor )
     {
@@ -133,7 +133,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         return indexEntryUpdates;
     }
 
-    protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
+    IndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
     {
         return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
     }

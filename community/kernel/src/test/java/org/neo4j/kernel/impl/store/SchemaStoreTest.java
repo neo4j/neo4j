@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -64,7 +64,7 @@ public class SchemaStoreTest
     private StoreFactory storeFactory;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
@@ -77,13 +77,13 @@ public class SchemaStoreTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         neoStores.close();
     }
 
     @Test
-    public void storeAndLoadSchemaRule() throws Exception
+    void storeAndLoadSchemaRule() throws Exception
     {
         // GIVEN
         IndexRule indexRule = IndexRule.indexRule( store.nextId(),
@@ -101,7 +101,7 @@ public class SchemaStoreTest
     }
 
     @Test
-    public void storeAndLoadCompositeSchemaRule() throws Exception
+    void storeAndLoadCompositeSchemaRule() throws Exception
     {
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
@@ -120,7 +120,7 @@ public class SchemaStoreTest
     }
 
     @Test
-    public void storeAndLoad_Big_CompositeSchemaRule() throws Exception
+    void storeAndLoad_Big_CompositeSchemaRule() throws Exception
     {
         // GIVEN
         IndexRule indexRule = IndexRule.indexRule( store.nextId(),
@@ -138,7 +138,7 @@ public class SchemaStoreTest
     }
 
     @Test
-    public void storeAndLoadAllRules()
+    void storeAndLoadAllRules()
     {
         // GIVEN
         long indexId = store.nextId();

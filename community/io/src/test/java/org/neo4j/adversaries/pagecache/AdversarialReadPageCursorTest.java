@@ -28,10 +28,10 @@ import org.neo4j.test.rule.PageCacheRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AdversarialReadPageCursorTest
+class AdversarialReadPageCursorTest
 {
     @Test
-    public void shouldNotMessUpUnrelatedSegmentOnReadBytes() throws Exception
+    void shouldNotMessUpUnrelatedSegmentOnReadBytes() throws Exception
     {
         // Given
         byte[] buf = new byte[4];

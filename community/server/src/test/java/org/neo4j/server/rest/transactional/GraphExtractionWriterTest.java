@@ -53,7 +53,7 @@ import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-public class GraphExtractionWriterTest
+class GraphExtractionWriterTest
 {
     private final Node n1 = node( 17, properties( property( "name", "n1" ) ), "Foo" );
     private final Node n2 = node( 666, properties( property( "name", "n2" ) ) );
@@ -64,7 +64,7 @@ public class GraphExtractionWriterTest
             id -> false, id -> false );
 
     @Test
-    public void shouldExtractNodesFromRow() throws Exception
+    void shouldExtractNodesFromRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -83,7 +83,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractRelationshipsFromRowAndNodesFromRelationships() throws Exception
+    void shouldExtractRelationshipsFromRowAndNodesFromRelationships() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -99,7 +99,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractPathFromRowAndExtractNodesAndRelationshipsFromPath() throws Exception
+    void shouldExtractPathFromRowAndExtractNodesAndRelationshipsFromPath() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -114,7 +114,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromMapInTheRow() throws Exception
+    void shouldExtractGraphFromMapInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -132,7 +132,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromListInTheRow() throws Exception
+    void shouldExtractGraphFromListInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -150,7 +150,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromListInMapInTheRow() throws Exception
+    void shouldExtractGraphFromListInMapInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -170,7 +170,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromMapInListInTheRow() throws Exception
+    void shouldExtractGraphFromMapInListInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();

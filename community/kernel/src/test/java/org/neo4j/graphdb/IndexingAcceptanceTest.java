@@ -59,6 +59,8 @@ import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
 import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
+import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -71,19 +73,19 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class IndexingAcceptanceTest
+class IndexingAcceptanceTest
 {
-    public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
+    private static final String LONG_STRING = "a long string that has to be stored in dynamic records";
 
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     private Label LABEL1;
     private Label LABEL2;
     private Label LABEL3;
 
     @BeforeEach
-    public void setupLabels( TestInfo testInfo )
+    void setupLabels( TestInfo testInfo )
     {
         String testName = testInfo.getDisplayName();
         LABEL1 = Label.label( "LABEL1-" + testName );
@@ -103,7 +105,7 @@ public class IndexingAcceptanceTest
      * the underlying add/remove vs. change internal details.
      */
     @Test
-    public void shouldInterpretPropertyAsChangedEvenIfPropertyMovesFromOneRecordToAnother()
+    void shouldInterpretPropertyAsChangedEvenIfPropertyMovesFromOneRecordToAnother()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -140,7 +142,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction()
+    void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -180,7 +182,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void searchingForNodeByPropertyShouldWorkWithoutIndex()
+    void searchingForNodeByPropertyShouldWorkWithoutIndex()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -191,7 +193,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void searchingUsesIndexWhenItExists()
+    void searchingUsesIndexWhenItExists()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -203,7 +205,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime()
+    void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -236,7 +238,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce()
+    void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -273,7 +275,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void searchingByLabelAndPropertyReturnsEmptyWhenMissingLabelOrProperty()
+    void searchingByLabelAndPropertyReturnsEmptyWhenMissingLabelOrProperty()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -283,7 +285,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction()
+    void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -297,7 +299,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void createdNodeShouldShowUpWithinTransaction()
+    void createdNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -319,7 +321,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void deletedNodeShouldShowUpWithinTransaction()
+    void deletedNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -341,7 +343,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void createdNodeShouldShowUpInIndexQuery()
+    void createdNodeShouldShowUpInIndexQuery()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -363,7 +365,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldBeAbleToQuerySupportedPropertyTypes()
+    void shouldBeAbleToQuerySupportedPropertyTypes()
     {
         // GIVEN
         String property = "name";
@@ -418,7 +420,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldRetrieveMultipleNodesWithSameValueFromIndex()
+    void shouldRetrieveMultipleNodesWithSameValueFromIndex()
     {
         // this test was included here for now as a precondition for the following test
 
@@ -448,7 +450,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldThrowWhenMulitpleResultsForSingleNode()
+    void shouldThrowWhenMulitpleResultsForSingleNode()
     {
         // given
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
@@ -480,7 +482,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldAddIndexedPropertyToNodeWithDynamicLabels()
+    void shouldAddIndexedPropertyToNodeWithDynamicLabels()
     {
         // Given
         int indexesCount = 20;
@@ -531,7 +533,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldSupportIndexSeekByPrefix()
+    void shouldSupportIndexSeekByPrefix()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
@@ -556,7 +558,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix()
+    void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
@@ -583,7 +585,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
+    void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
@@ -616,7 +618,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
+    void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN

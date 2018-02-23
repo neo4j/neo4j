@@ -40,10 +40,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BackupImplTest
+class BackupImplTest
 {
     @Test
-    public void flushStoreFilesWithCorrectCheckpointTriggerName()
+    void flushStoreFilesWithCorrectCheckpointTriggerName()
     {
         StoreCopyServer storeCopyServer = mock( StoreCopyServer.class );
         when( storeCopyServer.flushStoresAndStreamStoreFiles( anyString(), any( StoreWriter.class ), anyBoolean() ) )

@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
-public class TestKernelEvents
+class TestKernelEvents
 {
     private static final String PATH = "target/var/neodb";
 
@@ -40,13 +40,13 @@ public class TestKernelEvents
     private static final Object RESOURCE2 = new Object();
 
     @BeforeAll
-    public static void doBefore()
+    static void doBefore()
     {
         deleteFileOrDirectory( PATH );
     }
 
     @Test
-    public void testRegisterUnregisterHandlers()
+    void testRegisterUnregisterHandlers()
     {
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         KernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
@@ -106,7 +106,7 @@ public class TestKernelEvents
     }
 
     @Test
-    public void testShutdownEvents()
+    void testShutdownEvents()
     {
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         DummyKernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )

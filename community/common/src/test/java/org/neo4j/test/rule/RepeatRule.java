@@ -56,7 +56,7 @@ public class RepeatRule implements TestRule
         this( false, 1 );
     }
 
-    public RepeatRule( boolean printRepeats, int defaultRepeats )
+    private RepeatRule( boolean printRepeats, int defaultRepeats )
     {
         this.printRepeats = printRepeats;
         this.defaultTimes = defaultRepeats;

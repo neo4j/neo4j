@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes,RawBytes>
+class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes,RawBytes>
 {
     @Override
     TestLayout<RawBytes,RawBytes> getLayout()

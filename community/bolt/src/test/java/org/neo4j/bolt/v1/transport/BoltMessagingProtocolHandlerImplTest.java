@@ -53,10 +53,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.transport.TransportThrottleGroup.NO_THROTTLE;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class BoltMessagingProtocolHandlerImplTest
+class BoltMessagingProtocolHandlerImplTest
 {
     @Test
-    public void shouldNotTalkToChannelDirectlyOnFatalError()
+    void shouldNotTalkToChannelDirectlyOnFatalError()
     {
         // Given
         Channel outputChannel = newChannelMock();
@@ -83,7 +83,7 @@ public class BoltMessagingProtocolHandlerImplTest
     }
 
     @Test
-    public void closesInputAndOutput()
+    void closesInputAndOutput()
     {
         Channel outputChannel = mock( Channel.class );
         ByteBufAllocator allocator = mock( ByteBufAllocator.class );
@@ -104,7 +104,7 @@ public class BoltMessagingProtocolHandlerImplTest
     }
 
     @Test
-    public void messageProcessingErrorIsLogged()
+    void messageProcessingErrorIsLogged()
     {
         RuntimeException error = new RuntimeException( "Unexpected error!" );
         ByteBuf data = newThrowingByteBuf( error );
@@ -127,7 +127,7 @@ public class BoltMessagingProtocolHandlerImplTest
     }
 
     @Test
-    public void shouldHaveCorrectVersion()
+    void shouldHaveCorrectVersion()
     {
         BoltMessagingProtocolHandler handler = newHandler( mock( BoltChannel.class, RETURNS_MOCKS ), mock( BoltConnection.class ) );
 

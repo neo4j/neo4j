@@ -20,14 +20,15 @@
 package org.neo4j.collection.primitive;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveLongPeekingIteratorTest
+class PrimitiveLongPeekingIteratorTest
 {
     @Test
-    public void shouldDetectMultipleValues()
+    void shouldDetectMultipleValues()
     {
         // GIVEN
         long[] values = new long[] { 1, 2, 3 };
@@ -45,7 +46,7 @@ public class PrimitiveLongPeekingIteratorTest
     }
 
     @Test
-    public void shouldDetectSingleValue()
+    void shouldDetectSingleValue()
     {
         // GIVEN
         long[] values = new long[] { 1 };

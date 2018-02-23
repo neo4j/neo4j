@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.IOException;
 import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
@@ -47,16 +46,16 @@ import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class FixturesTestIT
+class FixturesTestIT
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Resource
     public SuppressOutput suppressOutput;
 
     @Test
-    public void shouldAccepSingleCypherFileAsFixture() throws Exception
+    void shouldAccepSingleCypherFileAsFixture() throws Exception
     {
         // Given
         File targetFolder = testDir.directory();
@@ -78,7 +77,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldAcceptFolderWithCypFilesAsFixtures() throws Exception
+    void shouldAcceptFolderWithCypFilesAsFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -105,7 +104,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleMultipleFixtures() throws Exception
+    void shouldHandleMultipleFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -133,7 +132,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleStringFixtures() throws Exception
+    void shouldHandleStringFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -152,7 +151,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldIgnoreEmptyFixtureFiles() throws Exception
+    void shouldIgnoreEmptyFixtureFiles() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -173,7 +172,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleFixturesWithSyntaxErrorsGracefully() throws Exception
+    void shouldHandleFixturesWithSyntaxErrorsGracefully() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -194,7 +193,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleFunctionFixtures() throws Exception
+    void shouldHandleFunctionFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();

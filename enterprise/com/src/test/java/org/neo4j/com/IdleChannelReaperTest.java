@@ -33,13 +33,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class IdleChannelReaperTest
+class IdleChannelReaperTest
 {
     private static final int THRESHOLD = 100;
     private static final NullLogProvider NO_LOGGING = NullLogProvider.getInstance();
 
     @Test
-    public void shouldNotCloseAnyRecentlyActiveChannels()
+    void shouldNotCloseAnyRecentlyActiveChannels()
     {
         // given
         FakeClock clock = Clocks.fakeClock();
@@ -57,7 +57,7 @@ public class IdleChannelReaperTest
     }
 
     @Test
-    public void shouldCloseAnyChannelsThatHaveBeenIdleForLongerThanThreshold()
+    void shouldCloseAnyChannelsThatHaveBeenIdleForLongerThanThreshold()
     {
         // given
         FakeClock clock = Clocks.fakeClock();
@@ -76,7 +76,7 @@ public class IdleChannelReaperTest
     }
 
     @Test
-    public void shouldNotCloseAChannelThatHasBeenIdleForMoreThanHalfThresholdButIsStillOpenConnectedAndBound()
+    void shouldNotCloseAChannelThatHasBeenIdleForMoreThanHalfThresholdButIsStillOpenConnectedAndBound()
     {
         // given
         FakeClock clock = Clocks.fakeClock();
@@ -98,7 +98,7 @@ public class IdleChannelReaperTest
     }
 
     @Test
-    public void shouldNotTryToCloseAChannelThatHasBeenRemoved()
+    void shouldNotTryToCloseAChannelThatHasBeenRemoved()
     {
         // given
         FakeClock clock = Clocks.fakeClock();
@@ -120,7 +120,7 @@ public class IdleChannelReaperTest
     }
 
     @Test
-    public void shouldNotTryToCloseAChannelThatWasRecentlyActive()
+    void shouldNotTryToCloseAChannelThatWasRecentlyActive()
     {
         // given
         FakeClock clock = Clocks.fakeClock();

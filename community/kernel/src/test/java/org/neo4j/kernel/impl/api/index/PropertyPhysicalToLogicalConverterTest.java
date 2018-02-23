@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -54,7 +54,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private NeoStores neoStores;
 
     @Test
-    public void shouldConvertInlinedAddedProperty()
+    void shouldConvertInlinedAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -69,7 +69,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedChangedProperty()
+    void shouldConvertInlinedChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -87,7 +87,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldIgnoreInlinedUnchangedProperty()
+    void shouldIgnoreInlinedUnchangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -102,7 +102,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedRemovedProperty()
+    void shouldConvertInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -119,7 +119,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicAddedProperty()
+    void shouldConvertDynamicAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -133,7 +133,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicChangedProperty()
+    void shouldConvertDynamicChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -149,7 +149,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicInlinedRemovedProperty()
+    void shouldConvertDynamicInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -165,7 +165,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldTreatPropertyThatMovedToAnotherRecordAsChange()
+    void shouldTreatPropertyThatMovedToAnotherRecordAsChange()
     {
         // GIVEN
         int key = 12;
@@ -222,7 +222,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private final long[] labels = new long[]{11};
 
     @BeforeEach
-    public void before()
+    void before()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
@@ -235,7 +235,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         neoStores.close();
     }

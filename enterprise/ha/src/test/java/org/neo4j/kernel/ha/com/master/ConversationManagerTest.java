@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( MockitoExtension.class )
-public class ConversationManagerTest
+class ConversationManagerTest
 {
 
     @Mock
@@ -53,7 +53,7 @@ public class ConversationManagerTest
     private ConversationManager conversationManager;
 
     @Test
-    public void testStart()
+    void testStart()
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
         when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
@@ -69,7 +69,7 @@ public class ConversationManagerTest
     }
 
     @Test
-    public void testStop()
+    void testStop()
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
         when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
@@ -85,7 +85,7 @@ public class ConversationManagerTest
     }
 
     @Test
-    public void testConversationWorkflow() throws Exception
+    void testConversationWorkflow() throws Exception
     {
         RequestContext requestContext = getRequestContext();
         conversationManager = getConversationManager();
@@ -105,7 +105,7 @@ public class ConversationManagerTest
     }
 
     @Test
-    public void testConversationStop()
+    void testConversationStop()
     {
         RequestContext requestContext = getRequestContext();
         conversationManager = getConversationManager();

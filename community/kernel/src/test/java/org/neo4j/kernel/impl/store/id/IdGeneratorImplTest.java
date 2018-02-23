@@ -51,7 +51,7 @@ public class IdGeneratorImplTest
     private final File file = new File( "ids" );
 
     @Test
-    public void shouldNotAcceptMinusOne()
+    void shouldNotAcceptMinusOne()
     {
         // GIVEN
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
@@ -64,7 +64,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void throwsWhenNextIdIsTooHigh()
+    void throwsWhenNextIdIsTooHigh()
     {
         long maxId = 10;
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
@@ -82,7 +82,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void throwsWhenGivenHighIdIsTooHigh()
+    void throwsWhenGivenHighIdIsTooHigh()
     {
         long maxId = 10;
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
@@ -98,7 +98,7 @@ public class IdGeneratorImplTest
      * It will just be never returned from {@link IdGeneratorImpl#nextId()}.
      */
     @Test
-    public void highIdCouldBeSetToReservedId()
+    void highIdCouldBeSetToReservedId()
     {
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
         IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, Long.MAX_VALUE, false, IdType.NODE, () -> 0L );
@@ -109,7 +109,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void correctDefragCountWhenHaveIdsInFile()
+    void correctDefragCountWhenHaveIdsInFile()
     {
         IdGeneratorImpl.createGenerator( fsr.get(), file, 100, false );
         IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, IdType.NODE, () -> 100L );
@@ -124,7 +124,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void shouldReadHighIdUsingStaticMethod() throws Exception
+    void shouldReadHighIdUsingStaticMethod() throws Exception
     {
         // GIVEN
         long highId = 12345L;
@@ -138,7 +138,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void shouldReadDefragCountUsingStaticMethod() throws Exception
+    void shouldReadDefragCountUsingStaticMethod() throws Exception
     {
         EphemeralFileSystemAbstraction fs = fsr.get();
         IdGeneratorImpl.createGenerator( fs, file, 0, false );
@@ -159,7 +159,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void shouldBeAbleToReadWrittenGenerator()
+    void shouldBeAbleToReadWrittenGenerator()
     {
         // Given
         IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
@@ -175,7 +175,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void constructorShouldCallHighIdSupplierOnNonExistingIdFile()
+    void constructorShouldCallHighIdSupplierOnNonExistingIdFile()
     {
         // Given
         // An empty file (default, nothing to do)
@@ -195,7 +195,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void constructorShouldNotCallHighIdSupplierOnCleanIdFile()
+    void constructorShouldNotCallHighIdSupplierOnCleanIdFile()
     {
         // Given
         // A non empty, clean id file

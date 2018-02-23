@@ -453,7 +453,7 @@ public class KeyValueStoreFileFormatTest
         }
     }
 
-    static void assertEntries( final int expected, KeyValueStoreFile file ) throws IOException
+    private static void assertEntries( final int expected, KeyValueStoreFile file ) throws IOException
     {
         class Visitor implements KeyValueVisitor
         {
@@ -479,7 +479,7 @@ public class KeyValueStoreFileFormatTest
         visitor.done();
     }
 
-    static KeyValueVisitor expectData( final Data expected )
+    private static KeyValueVisitor expectData( final Data expected )
     {
         expected.index = 0; // reset the visitor
         return ( key, value ) ->
@@ -496,7 +496,7 @@ public class KeyValueStoreFileFormatTest
         };
     }
 
-    static void assertEqualContent( byte[] expected, ReadableBuffer actual )
+    private static void assertEqualContent( byte[] expected, ReadableBuffer actual )
     {
         for ( int i = 0; i < expected.length; i++ )
         {
@@ -607,7 +607,7 @@ public class KeyValueStoreFileFormatTest
         }
     }
 
-    static void write( byte[] source, WritableBuffer target )
+    private static void write( byte[] source, WritableBuffer target )
     {
         for ( int i = 0; i < source.length; i++ )
         {
@@ -615,7 +615,7 @@ public class KeyValueStoreFileFormatTest
         }
     }
 
-    static DataProvider noData()
+    private static DataProvider noData()
     {
         return new DataProvider()
         {
@@ -649,7 +649,7 @@ public class KeyValueStoreFileFormatTest
         }
     }
 
-    static Map<String,byte[]> noHeaders()
+    private static Map<String,byte[]> noHeaders()
     {
         return Collections.emptyMap();
     }

@@ -49,13 +49,13 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 
 @ExtendWith( OtherThreadExtension.class )
-public class RelationshipIT extends KernelIntegrationTest
+class RelationshipIT extends KernelIntegrationTest
 {
     @Resource
-    public OtherThreadRule<Object> otherThread;
+    private OtherThreadRule<Object> otherThread;
 
     @Test
-    public void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception
+    void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -115,7 +115,7 @@ public class RelationshipIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldInterleaveModifiedRelationshipsWithExistingOnes() throws Exception
+    void shouldInterleaveModifiedRelationshipsWithExistingOnes() throws Exception
     {
         // given
         long refNode;
@@ -151,7 +151,7 @@ public class RelationshipIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldReturnRelsWhenAskingForRelsWhereOnlySomeTypesExistInCurrentRel() throws Exception
+    void shouldReturnRelsWhenAskingForRelsWhereOnlySomeTypesExistInCurrentRel() throws Exception
     {
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
@@ -168,7 +168,7 @@ public class RelationshipIT extends KernelIntegrationTest
     }
 
     @Test
-    public void askingForNonExistantReltypeOnDenseNodeShouldNotCorruptState() throws Exception
+    void askingForNonExistantReltypeOnDenseNodeShouldNotCorruptState() throws Exception
     {
         // Given a dense node with one type of rels
         long[] rels = new long[200];

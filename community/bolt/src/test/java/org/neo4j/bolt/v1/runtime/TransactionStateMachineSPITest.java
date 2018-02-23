@@ -51,13 +51,13 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( OtherThreadExtension.class )
-public class TransactionStateMachineSPITest
+class TransactionStateMachineSPITest
 {
     @Resource
-    public OtherThreadRule<Void> otherThread;
+    private OtherThreadRule<Void> otherThread;
 
     @Test
-    public void throwsWhenTxAwaitDurationExpires()
+    void throwsWhenTxAwaitDurationExpires()
     {
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
@@ -94,7 +94,7 @@ public class TransactionStateMachineSPITest
     }
 
     @Test
-    public void doesNotWaitWhenTxIdUpToDate() throws Exception
+    void doesNotWaitWhenTxIdUpToDate() throws Exception
     {
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );

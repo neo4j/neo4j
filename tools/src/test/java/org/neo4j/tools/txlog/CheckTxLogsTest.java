@@ -59,10 +59,10 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -82,7 +82,7 @@ public class CheckTxLogsTest
     private final File storeDirectory = new File( "db" );
 
     @Test
-    public void shouldReportNoInconsistenciesFromValidLog() throws Exception
+    void shouldReportNoInconsistenciesFromValidLog() throws Exception
     {
         // Given
         File log = logFile( 1 );
@@ -130,7 +130,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportNodeInconsistenciesFromSingleLog() throws IOException
+    void shouldReportNodeInconsistenciesFromSingleLog() throws IOException
     {
         // Given
         File log = logFile( 1 );
@@ -181,7 +181,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportTransactionIdAndInconsistencyCount() throws IOException
+    void shouldReportTransactionIdAndInconsistencyCount() throws IOException
     {
         // Given
         File log = logFile( 1 );
@@ -242,7 +242,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportNodeInconsistenciesFromDifferentLogs() throws IOException
+    void shouldReportNodeInconsistenciesFromDifferentLogs() throws IOException
     {
         // Given
         File log1 = logFile( 1 );
@@ -310,7 +310,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportPropertyInconsistenciesFromSingleLog() throws IOException
+    void shouldReportPropertyInconsistenciesFromSingleLog() throws IOException
     {
         // Given
         File log = logFile( 1 );
@@ -357,7 +357,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportPropertyInconsistenciesFromDifferentLogs() throws IOException
+    void shouldReportPropertyInconsistenciesFromDifferentLogs() throws IOException
     {
         // Given
         File log1 = logFile( 1 );
@@ -436,7 +436,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportRelationshipInconsistenciesFromSingleLog() throws IOException
+    void shouldReportRelationshipInconsistenciesFromSingleLog() throws IOException
     {
         // Given
         File log = logFile( 1 );
@@ -486,7 +486,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportRelationshipInconsistenciesFromDifferentLogs() throws IOException
+    void shouldReportRelationshipInconsistenciesFromDifferentLogs() throws IOException
     {
         // Given
         File log1 = logFile( 1 );
@@ -555,7 +555,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportRelationshipGroupInconsistenciesFromSingleLog() throws IOException
+    void shouldReportRelationshipGroupInconsistenciesFromSingleLog() throws IOException
     {
         // Given
         File log = logFile( 1 );
@@ -607,7 +607,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportRelationshipGroupInconsistenciesFromDifferentLogs() throws IOException
+    void shouldReportRelationshipGroupInconsistenciesFromDifferentLogs() throws IOException
     {
         // Given
         File log1 = logFile( 1 );
@@ -678,7 +678,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportNeoStoreInconsistenciesFromSingleLog() throws IOException
+    void shouldReportNeoStoreInconsistenciesFromSingleLog() throws IOException
     {
         // Given
         File log = logFile( 1 );
@@ -722,7 +722,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportNeoStoreInconsistenciesFromDifferentLogs() throws IOException
+    void shouldReportNeoStoreInconsistenciesFromDifferentLogs() throws IOException
     {
         // Given
         File log1 = logFile( 1 );
@@ -781,7 +781,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldDetectAnInconsistentCheckPointPointingToALogFileGreaterThanMaxLogVersion() throws Exception
+    void shouldDetectAnInconsistentCheckPointPointingToALogFileGreaterThanMaxLogVersion() throws Exception
     {
         // given
         File log = logFile( 1 );
@@ -802,7 +802,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldDetectAnInconsistentCheckPointPointingToAByteOffsetNotInTheFile() throws Exception
+    void shouldDetectAnInconsistentCheckPointPointingToAByteOffsetNotInTheFile() throws Exception
     {
         // given
         ensureLogExists( logFile( 1 ) );
@@ -823,7 +823,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldNotReportInconsistencyIfTheCheckPointAreValidOrTheyReferToPrunedLogs() throws Exception
+    void shouldNotReportInconsistencyIfTheCheckPointAreValidOrTheyReferToPrunedLogs() throws Exception
     {
         // given
         writeCheckPoint( logFile( 1 ), 0, LOG_HEADER_SIZE );
@@ -841,7 +841,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportAnInconsistencyIfTxIdSequenceIsNotStrictlyIncreasing() throws Exception
+    void shouldReportAnInconsistencyIfTxIdSequenceIsNotStrictlyIncreasing() throws Exception
     {
         // given
         LongFunction<Command.NodeCommand> newNodeCommandFunction =
@@ -866,7 +866,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportAnInconsistencyIfTxIdSequenceHasGaps() throws Exception
+    void shouldReportAnInconsistencyIfTxIdSequenceHasGaps() throws Exception
     {
         // given
         LongFunction<Command.NodeCommand> newNodeCommandFunction =
@@ -891,7 +891,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportNoInconsistenciesIfTxIdSequenceIsStriclyIncreasingAndHasNoGaps() throws Exception
+    void shouldReportNoInconsistenciesIfTxIdSequenceIsStriclyIncreasingAndHasNoGaps() throws Exception
     {
         // given
 
@@ -916,7 +916,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void closeLogEntryCursorAfterValidation() throws IOException
+    void closeLogEntryCursorAfterValidation() throws IOException
     {
         ensureLogExists( logFile( 1 ) );
         writeCheckPoint( logFile( 2 ), 1, 42 );

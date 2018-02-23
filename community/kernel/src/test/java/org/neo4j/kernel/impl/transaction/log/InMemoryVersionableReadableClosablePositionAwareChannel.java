@@ -32,7 +32,7 @@ public class InMemoryVersionableReadableClosablePositionAwareChannel extends InM
         this( 0, CURRENT_LOG_VERSION );
     }
 
-    public InMemoryVersionableReadableClosablePositionAwareChannel( long version, byte formatVersion )
+    private InMemoryVersionableReadableClosablePositionAwareChannel( long version, byte formatVersion )
     {
         this.version = version;
         this.formatVersion = formatVersion;

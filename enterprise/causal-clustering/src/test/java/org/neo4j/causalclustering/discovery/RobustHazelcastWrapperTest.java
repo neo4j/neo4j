@@ -28,10 +28,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RobustHazelcastWrapperTest
+class RobustHazelcastWrapperTest
 {
     @Test
-    public void shouldReconnectIfHazelcastConnectionInvalidated() throws Exception
+    void shouldReconnectIfHazelcastConnectionInvalidated() throws Exception
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );

@@ -22,9 +22,9 @@ package org.neo4j.server.security.enterprise.auth.integration.bolt;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
@@ -76,9 +76,9 @@ public class BoltConnectionManagementIT
 {
     private HostnamePort address;
 
-    protected TransportConnection admin;
-    protected TransportConnection user;
-    protected TransportTestUtil util;
+    private TransportConnection admin;
+    private TransportConnection user;
+    private TransportTestUtil util;
 
     @Parameterized.Parameter()
     public Factory<TransportConnection> cf;
@@ -121,12 +121,12 @@ public class BoltConnectionManagementIT
         }
     }
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    private TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
     }
 
-    protected Consumer<Map<String, String>> getSettingsFunction()
+    private Consumer<Map<String, String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
     }
@@ -404,7 +404,7 @@ public class BoltConnectionManagementIT
             return false;
         }
 
-        public Map<String, Long> result()
+        Map<String, Long> result()
         {
             return resultMap;
         }

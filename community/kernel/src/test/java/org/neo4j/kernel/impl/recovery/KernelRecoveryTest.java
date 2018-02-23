@@ -53,7 +53,7 @@ public class KernelRecoveryTest
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test
-    public void shouldHandleWritesProperlyAfterRecovery() throws Exception
+    void shouldHandleWritesProperlyAfterRecovery() throws Exception
     {
         // Given
         EphemeralFileSystemAbstraction fs = fsRule.get();

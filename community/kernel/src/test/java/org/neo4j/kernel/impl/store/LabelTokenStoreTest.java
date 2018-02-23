@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NOT_IN_USE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public class LabelTokenStoreTest
+class LabelTokenStoreTest
 {
     private final File file = mock( File.class );
     private final IdGeneratorFactory generatorFactory = mock( IdGeneratorFactory.class );
@@ -54,7 +54,7 @@ public class LabelTokenStoreTest
     private final Config config = defaults();
 
     @Test
-    public void forceGetRecordSkipInUsecheck() throws IOException
+    void forceGetRecordSkipInUsecheck() throws IOException
     {
         LabelTokenStore store = new UnusedLabelTokenStore();
         LabelTokenRecord record = store.getRecord( 7, store.newRecord(), FORCE );
@@ -62,7 +62,7 @@ public class LabelTokenStoreTest
     }
 
     @Test
-    public void getRecord()
+    void getRecord()
     {
         assertThrows( InvalidRecordException.class, () -> {
             when( pageCursor.getByte() ).thenReturn( NOT_IN_USE.byteValue() );

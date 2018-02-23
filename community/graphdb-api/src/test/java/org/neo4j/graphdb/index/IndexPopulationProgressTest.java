@@ -25,22 +25,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
-public class IndexPopulationProgressTest
+class IndexPopulationProgressTest
 {
     @Test
-    public void testNone()
+    void testNone()
     {
         assertEquals( 0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0.01 );
     }
 
     @Test
-    public void testDone()
+    void testDone()
     {
         assertEquals( 100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0.01 );
     }
 
     @Test
-    public void testNegativeCompleted()
+    void testNegativeCompleted()
     {
         try
         {
@@ -54,7 +54,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testNegativeTotal()
+    void testNegativeTotal()
     {
         try
         {
@@ -68,7 +68,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testAllZero()
+    void testAllZero()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 0 );
         assertEquals( 0, progress.getCompletedCount() );
@@ -77,7 +77,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testCompletedZero()
+    void testCompletedZero()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 1 );
         assertEquals( 1, progress.getTotalCount() );
@@ -86,7 +86,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testCompletedGreaterThanTotal()
+    void testCompletedGreaterThanTotal()
     {
         try
         {
@@ -100,21 +100,21 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testGetCompletedPercentage()
+    void testGetCompletedPercentage()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 50.0f, progress.getCompletedPercentage(), 0.01f );
     }
 
     @Test
-    public void testGetCompleted()
+    void testGetCompleted()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 1L, progress.getCompletedCount() );
     }
 
     @Test
-    public void testGetTotal()
+    void testGetTotal()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 2L, progress.getTotalCount() );

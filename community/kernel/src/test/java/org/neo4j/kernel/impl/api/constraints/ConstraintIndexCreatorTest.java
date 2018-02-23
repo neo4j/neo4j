@@ -86,7 +86,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
-public class ConstraintIndexCreatorTest
+class ConstraintIndexCreatorTest
 {
     private static final int PROPERTY_KEY_ID = 456;
     private static final int LABEL_ID = 123;
@@ -96,7 +96,7 @@ public class ConstraintIndexCreatorTest
     private final Monitors monitors = new Monitors();
 
     @Test
-    public void shouldCreateIndexInAnotherTransaction() throws Exception
+    void shouldCreateIndexInAnotherTransaction() throws Exception
     {
         // given
         StatementOperationParts constraintCreationContext = mockedParts();
@@ -131,7 +131,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldDropIndexIfPopulationFails() throws Exception
+    void shouldDropIndexIfPopulationFails() throws Exception
     {
         // given
         StatementOperationParts constraintCreationContext = mockedParts();
@@ -180,7 +180,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldDropIndexInAnotherTransaction() throws Exception
+    void shouldDropIndexInAnotherTransaction() throws Exception
     {
         // given
         StubKernel kernel = new StubKernel();
@@ -200,7 +200,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldReleaseLabelLockWhileAwaitingIndexPopulation() throws Exception
+    void shouldReleaseLabelLockWhileAwaitingIndexPopulation() throws Exception
     {
         // given
         StubKernel kernel = new StubKernel();
@@ -232,7 +232,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldReuseExistingOrphanedConstraintIndex() throws Exception
+    void shouldReuseExistingOrphanedConstraintIndex() throws Exception
     {
         // given
         StatementOperationParts constraintCreationContext = mockedParts();
@@ -273,7 +273,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldFailOnExistingOwnedConstraintIndex() throws Exception
+    void shouldFailOnExistingOwnedConstraintIndex() throws Exception
     {
         // given
         StatementOperationParts constraintCreationContext = mockedParts();

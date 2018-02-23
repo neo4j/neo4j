@@ -63,22 +63,22 @@ public class TestNetwork<T>
         outboundChannels.values().forEach( Outbound::reconnect );
     }
 
-    public void disconnectInbound( T endpoint )
+    private void disconnectInbound( T endpoint )
     {
         inboundChannels.get( endpoint ).disconnect();
     }
 
-    public void reconnectInbound( T endpoint )
+    private void reconnectInbound( T endpoint )
     {
         inboundChannels.get( endpoint ).reconnect();
     }
 
-    public void disconnectOutbound( T endpoint )
+    private void disconnectOutbound( T endpoint )
     {
         outboundChannels.get( endpoint ).disconnect();
     }
 
-    public void reconnectOutbound( T endpoint )
+    private void reconnectOutbound( T endpoint )
     {
         outboundChannels.get( endpoint ).reconnect();
     }
@@ -135,13 +135,13 @@ public class TestNetwork<T>
             outboundChannels.put( me, this );
         }
 
-        public void start()
+        void start()
         {
             networkThread = new NetworkThread();
             networkThread.start();
         }
 
-        public void stop() throws InterruptedException
+        void stop() throws InterruptedException
         {
             networkThread.kill();
         }
@@ -162,12 +162,12 @@ public class TestNetwork<T>
             networkThread.scheduleDelivery( destination, message, atMillis );
         }
 
-        public void disconnect()
+        void disconnect()
         {
             disconnected = true;
         }
 
-        public void reconnect()
+        void reconnect()
         {
             disconnected = false;
         }
@@ -187,7 +187,7 @@ public class TestNetwork<T>
                 return res;
             } );
 
-            public void kill() throws InterruptedException
+            void kill() throws InterruptedException
             {
                 done = true;
                 this.interrupt();
@@ -231,7 +231,7 @@ public class TestNetwork<T>
                 }
             }
 
-            public synchronized void scheduleDelivery( T destination, Message message, long atMillis )
+            synchronized void scheduleDelivery( T destination, Message message, long atMillis )
             {
                 if ( !disconnected )
                 {
@@ -297,20 +297,20 @@ public class TestNetwork<T>
             inboundChannels.put( endpoint, this );
         }
 
-        public void start()
+        void start()
         {
             networkThread = new NetworkThread();
             networkThread.start();
         }
 
-        public void stop() throws InterruptedException
+        void stop() throws InterruptedException
         {
             networkThread.kill();
         }
 
         private volatile boolean disconnected;
 
-        public synchronized void deliver( Message message )
+        synchronized void deliver( Message message )
         {
             if ( !disconnected )
             {
@@ -325,12 +325,12 @@ public class TestNetwork<T>
             this.handler = handler;
         }
 
-        public void disconnect()
+        void disconnect()
         {
             disconnected = true;
         }
 
-        public void reconnect()
+        void reconnect()
         {
             disconnected = false;
         }
@@ -339,7 +339,7 @@ public class TestNetwork<T>
         {
             private volatile boolean done;
 
-            public void kill() throws InterruptedException
+            void kill() throws InterruptedException
             {
                 done = true;
                 this.interrupt();

@@ -110,7 +110,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     protected abstract void createCompositeIndex( GraphDatabaseService graphDb, String label, String... properties ) throws Exception;
 
     @Test
-    public void shouldPerformExactLookup() throws Exception
+    void shouldPerformExactLookup() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -185,7 +185,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformExactLookupInCompositeIndex() throws Exception
+    void shouldPerformExactLookupInCompositeIndex() throws Exception
     {
         // given
         int label = token.nodeLabel( "Person" );
@@ -207,7 +207,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringPrefixSearch() throws Exception
+    void shouldPerformStringPrefixSearch() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -228,7 +228,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringSuffixSearch() throws Exception
+    void shouldPerformStringSuffixSearch() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -248,7 +248,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringContainmentSearch() throws Exception
+    void shouldPerformStringContainmentSearch() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -268,7 +268,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringRangeSearch() throws Exception
+    void shouldPerformStringRangeSearch() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -313,7 +313,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformNumericRangeSearch() throws Exception
+    void shouldPerformNumericRangeSearch() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -351,7 +351,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformIndexScan() throws Exception
+    void shouldPerformIndexScan() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -371,7 +371,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForNumbers() throws Exception
+    void shouldRespectOrderCapabilitiesForNumbers() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -392,7 +392,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForStrings() throws Exception
+    void shouldRespectOrderCapabilitiesForStrings() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -413,7 +413,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForWildcard() throws Exception
+    void shouldRespectOrderCapabilitiesForWildcard() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -542,7 +542,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldGetNoIndex()
+    void shouldGetNoIndex()
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
@@ -555,7 +555,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInIndexScan() throws Exception
+    void shouldNotFindDeletedNodeInIndexScan() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -579,7 +579,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInIndexSeek() throws Exception
+    void shouldNotFindDeletedNodeInIndexSeek() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -598,7 +598,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDNodeWithRemovedLabelInIndexSeek() throws Exception
+    void shouldNotFindDNodeWithRemovedLabelInIndexSeek() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -617,7 +617,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInIndexSeek() throws Exception
+    void shouldNotFindUpdatedNodeInIndexSeek() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -636,7 +636,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInIndexSeek() throws Exception
+    void shouldFindUpdatedNodeInIndexSeek() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -656,7 +656,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInIndexSeek() throws Exception
+    void shouldFindSwappedNodeInIndexSeek() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -677,7 +677,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInRangeSearch() throws Exception
+    void shouldNotFindDeletedNodeInRangeSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -700,7 +700,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInRangeSearch() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInRangeSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -723,7 +723,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInRangeSearch() throws Exception
+    void shouldNotFindUpdatedNodeInRangeSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -746,7 +746,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInRangeSearch() throws Exception
+    void shouldFindUpdatedNodeInRangeSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -767,7 +767,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInRangeSearch() throws Exception
+    void shouldFindSwappedNodeInRangeSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -790,7 +790,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInPrefixSearch() throws Exception
+    void shouldNotFindDeletedNodeInPrefixSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -809,7 +809,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInPrefixSearch() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInPrefixSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -828,7 +828,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInPrefixSearch() throws Exception
+    void shouldNotFindUpdatedNodeInPrefixSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -847,7 +847,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInPrefixSearch() throws Exception
+    void shouldFindUpdatedNodeInPrefixSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -867,7 +867,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInPrefixSearch() throws Exception
+    void shouldFindSwappedNodeInPrefixSearch() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -888,7 +888,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInCompositeIndex() throws Exception
+    void shouldNotFindDeletedNodeInCompositeIndex() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Person" );
@@ -909,7 +909,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInCompositeIndex() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInCompositeIndex() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Person" );
@@ -929,7 +929,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInCompositeIndex() throws Exception
+    void shouldNotFindUpdatedNodeInCompositeIndex() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Person" );
@@ -951,7 +951,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInCompositeIndex() throws Exception
+    void shouldFindUpdatedNodeInCompositeIndex() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Person" );
@@ -974,7 +974,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInCompositeIndex() throws Exception
+    void shouldFindSwappedNodeInCompositeIndex() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Person" );

@@ -34,10 +34,10 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class LearnerContextImplTest
+class LearnerContextImplTest
 {
     @Test
-    public void shouldOnlyLogLearnMissOnce()
+    void shouldOnlyLogLearnMissOnce()
     {
         // Given
         final AssertableLogProvider logProvider = new AssertableLogProvider();

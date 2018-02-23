@@ -71,7 +71,7 @@ public class TestMasterCommittingAtSlave
             containsString( "communication" ), any( Object[].class ), any( Throwable.class ) );
 
     @Test
-    public void commitSuccessfullyToTheFirstOne()
+    void commitSuccessfullyToTheFirstOne()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -80,7 +80,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitACoupleOfTransactionsSuccessfully()
+    void commitACoupleOfTransactionsSuccessfully()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -91,7 +91,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitFailureAtFirstOneShouldMoveOnToNext()
+    void commitFailureAtFirstOneShouldMoveOnToNext()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder(), true );
         propagator.committed( 2, MasterServerId );
@@ -102,7 +102,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitSuccessfullyAtThreeSlaves()
+    void commitSuccessfullyAtThreeSlaves()
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -120,7 +120,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitSuccessfullyOnSomeOfThreeSlaves()
+    void commitSuccessfullyOnSomeOfThreeSlaves()
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder(), false, true, true );
         propagator.committed( 2, MasterServerId );
@@ -134,7 +134,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void roundRobinSingleSlave()
+    void roundRobinSingleSlave()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, roundRobin() );
         for ( long tx = 2; tx <= 6; tx++ )
@@ -149,7 +149,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void roundRobinSomeFailing()
+    void roundRobinSomeFailing()
     {
         TransactionPropagator propagator = newPropagator( 4, 2, roundRobin(), false, true );
         for ( long tx = 2; tx <= 6; tx++ )
@@ -173,7 +173,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void notEnoughSlavesSuccessful()
+    void notEnoughSlavesSuccessful()
     {
         TransactionPropagator propagator = newPropagator( 3, 2, givenOrder(), true, true );
         propagator.committed( 2, MasterServerId );
@@ -185,7 +185,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void testFixedPriorityStrategy()
+    void testFixedPriorityStrategy()
     {
         int[] serverIds = new int[]{55, 101, 66};
         SlavePriority fixed = SlavePriorities.fixedDescending();

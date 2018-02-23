@@ -27,15 +27,15 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
-public class RecordStresser implements Callable<Void>
+class RecordStresser implements Callable<Void>
 {
     private final PagedFile pagedFile;
     private final Condition condition;
@@ -45,12 +45,8 @@ public class RecordStresser implements Callable<Void>
     private final TinyLockManager locks;
     private long countSum;
 
-    public RecordStresser( PagedFile pagedFile,
-                           Condition condition,
-                           int maxRecords,
-                           RecordFormat format,
-                           int threadId,
-                           TinyLockManager locks )
+    RecordStresser( PagedFile pagedFile, Condition condition, int maxRecords, RecordFormat format, int threadId,
+            TinyLockManager locks )
     {
         this.pagedFile = pagedFile;
         this.condition = condition;

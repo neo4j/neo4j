@@ -37,12 +37,12 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestIndexDelectionFs
+class TestIndexDelectionFs
 {
     private static GraphDatabaseAPI db;
 
     @BeforeAll
-    public static void doBefore() throws IOException
+    static void doBefore() throws IOException
     {
         File directory = new File( "target/test-data/deletion" );
         FileUtils.deleteRecursively( directory );
@@ -50,13 +50,13 @@ public class TestIndexDelectionFs
     }
 
     @AfterAll
-    public static void doAfter()
+    static void doAfter()
     {
         db.shutdown();
     }
 
     @Test
-    public void indexDeleteShouldDeleteDirectory()
+    void indexDeleteShouldDeleteDirectory()
     {
         String indexName = "index";
         String otherIndexName = "other-index";

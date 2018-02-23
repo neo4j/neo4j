@@ -60,16 +60,16 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class PageCacheCountersIT
+class PageCacheCountersIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private GraphDatabaseService db;
     private ExecutorService executors;
     private int numberOfWorkers;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         numberOfWorkers = getRuntime().availableProcessors();
@@ -77,7 +77,7 @@ public class PageCacheCountersIT
     }
 
     @AfterEach
-    public void tearDown() throws InterruptedException
+    void tearDown() throws InterruptedException
     {
         executors.shutdown();
         executors.awaitTermination( 5, SECONDS );
@@ -85,7 +85,7 @@ public class PageCacheCountersIT
     }
 
     @RepeatedTest( 5 )
-    public void pageCacheCountersAreSumOfPageCursorCounters() throws Exception
+    void pageCacheCountersAreSumOfPageCursorCounters() throws Exception
     {
         assertTimeout( ofMillis( 60_000 ), () -> {
             List<NodeCreator> nodeCreators = new ArrayList<>( numberOfWorkers );
@@ -236,7 +236,7 @@ public class PageCacheCountersIT
             return unpins;
         }
 
-        public long getHits()
+        long getHits()
         {
             return hits;
         }

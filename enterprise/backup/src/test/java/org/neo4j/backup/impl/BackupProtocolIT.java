@@ -46,22 +46,22 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class BackupProtocolIT
+class BackupProtocolIT
 {
     @Test
-    public void shouldGatherForensicsInFullBackupRequest()
+    void shouldGatherForensicsInFullBackupRequest()
     {
         shouldGatherForensicsInFullBackupRequest( true );
     }
 
     @Test
-    public void shouldSkipGatheringForensicsInFullBackupRequest()
+    void shouldSkipGatheringForensicsInFullBackupRequest()
     {
         shouldGatherForensicsInFullBackupRequest( false );
     }
 
     @Test
-    public void shouldHandleNoForensicsSpecifiedInFullBackupRequest() throws Exception
+    void shouldHandleNoForensicsSpecifiedInFullBackupRequest() throws Exception
     {
         TheBackupInterface backup = mock( TheBackupInterface.class );
         RequestContext ctx = new RequestContext( 0, 1, 0, -1, 12 );

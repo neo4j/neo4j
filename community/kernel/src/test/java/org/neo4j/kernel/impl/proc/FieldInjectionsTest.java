@@ -38,7 +38,7 @@ public class FieldInjectionsTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldNotAllowClassesWithNonInjectedFields() throws Throwable
+    void shouldNotAllowClassesWithNonInjectedFields() throws Throwable
     {
         // Given
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
@@ -55,7 +55,7 @@ public class FieldInjectionsTest
     }
 
     @Test
-    public void shouldNotAllowNonPublicFieldsForInjection() throws Throwable
+    void shouldNotAllowNonPublicFieldsForInjection() throws Throwable
     {
         // Given
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
@@ -69,7 +69,7 @@ public class FieldInjectionsTest
     }
 
     @Test
-    public void staticFieldsAreAllowed() throws Throwable
+    void staticFieldsAreAllowed() throws Throwable
     {
         // Given
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
@@ -82,7 +82,7 @@ public class FieldInjectionsTest
     }
 
     @Test
-    public void inheritanceIsAllowed() throws Throwable
+    void inheritanceIsAllowed() throws Throwable
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();
@@ -104,7 +104,7 @@ public class FieldInjectionsTest
     }
 
     @Test
-    public void syntheticsAllowed() throws Throwable
+    void syntheticsAllowed() throws Throwable
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();
@@ -124,52 +124,52 @@ public class FieldInjectionsTest
         assertEquals( 1337, syntheticField.innerField );
     }
 
-    public static class ProcedureWithNonInjectedMemberFields
+    private static class ProcedureWithNonInjectedMemberFields
     {
         public boolean someState;
     }
 
-    public static class ProcedureWithPrivateMemberField
+    private static class ProcedureWithPrivateMemberField
     {
         @Context
         private boolean someState;
     }
 
-    public static class ProcedureWithStaticFields
+    private static class ProcedureWithStaticFields
     {
         private static boolean someState;
     }
 
-    public static class ParentProcedure
+    static class ParentProcedure
     {
         @Context
-        public int parentField;
+        int parentField;
     }
 
-    public static class ChildProcedure extends ParentProcedure
+    static class ChildProcedure extends ParentProcedure
     {
         @Context
-        public int childField;
+        int childField;
     }
 
     //The outer class is just here to force a synthetic field in the inner class.
     //This is not a realistic scenario but we merely want to make sure the loader
     //does not choke on synthetic fields since compilers, e.g. groovy, can generate
     //these.
-    public static class Outer
+    static class Outer
     {
         ClassWithSyntheticField classWithSyntheticField()
         {
             return new ClassWithSyntheticField();
         }
 
-        public class ClassWithSyntheticField
+        class ClassWithSyntheticField
         {
             //this class will have a generated field:
             //synthetic Outer this$0;
 
             @Context
-            public int innerField;
+            int innerField;
         }
     }
 }

@@ -59,9 +59,9 @@ public class InputCacheTest
     private static final int countPerThread = 10_000;
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
     @Resource
-    public RandomRule randomRule;
+    private RandomRule randomRule;
 
     private final int threads = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool( threads );
@@ -71,7 +71,7 @@ public class InputCacheTest
     public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule );
 
     @Test
-    public void shouldCacheAndRetrieveNodes() throws Exception
+    void shouldCacheAndRetrieveNodes() throws Exception
     {
         // GIVEN
         try ( InputCache cache =
@@ -94,7 +94,7 @@ public class InputCacheTest
     }
 
     @Test
-    public void shouldCacheAndRetrieveRelationships() throws Exception
+    void shouldCacheAndRetrieveRelationships() throws Exception
     {
         // GIVEN
         try ( InputCache cache =

@@ -43,7 +43,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
-public class NonUniqueDatabaseIndexPopulatingUpdaterTest
+class NonUniqueDatabaseIndexPopulatingUpdaterTest
 {
     private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptorFactory.forLabel( 1, 42 );
     private static final int SAMPLING_BUFFER_SIZE_LIMIT = 100;
@@ -51,7 +51,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
             .forLabel( 1, 42, 43 );
 
     @Test
-    public void addedNodePropertiesIncludedInSample() throws Exception
+    void addedNodePropertiesIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -65,7 +65,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void addedNodeCompositePropertiesIncludedInSample() throws Exception
+    void addedNodeCompositePropertiesIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -78,7 +78,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void changedNodePropertiesIncludedInSample() throws Exception
+    void changedNodePropertiesIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -94,7 +94,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void changedNodeCompositePropertiesIncludedInSample() throws Exception
+    void changedNodeCompositePropertiesIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -112,7 +112,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void removedNodePropertyIncludedInSample() throws Exception
+    void removedNodePropertyIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -130,7 +130,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void removedNodeCompositePropertyIncludedInSample() throws Exception
+    void removedNodeCompositePropertyIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -148,7 +148,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void nodePropertyUpdatesIncludedInSample() throws Exception
+    void nodePropertyUpdatesIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -171,7 +171,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void nodeCompositePropertyUpdatesIncludedInSample() throws Exception
+    void nodeCompositePropertyUpdatesIncludedInSample() throws Exception
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -196,7 +196,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void additionsDeliveredToIndexWriter() throws Exception
+    void additionsDeliveredToIndexWriter() throws Exception
     {
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
@@ -220,7 +220,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void changesDeliveredToIndexWriter() throws Exception
+    void changesDeliveredToIndexWriter() throws Exception
     {
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
@@ -246,7 +246,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    public void removalsDeliveredToIndexWriter() throws Exception
+    void removalsDeliveredToIndexWriter() throws Exception
     {
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );

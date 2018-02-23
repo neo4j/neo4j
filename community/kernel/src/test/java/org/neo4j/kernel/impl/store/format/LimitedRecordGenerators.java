@@ -40,7 +40,7 @@ import static java.lang.Math.toIntExact;
 
 public class LimitedRecordGenerators implements RecordGenerators
 {
-    static final long NULL = -1;
+    private static final long NULL = -1;
 
     private final Randoms random;
     private final int entityBits;
@@ -56,8 +56,8 @@ public class LimitedRecordGenerators implements RecordGenerators
         this( random, entityBits, propertyBits, nodeLabelBits, tokenBits, nullValue, 0.2f );
     }
 
-    public LimitedRecordGenerators( Randoms random, int entityBits, int propertyBits, int nodeLabelBits,
-            int tokenBits, long nullValue, float fractionNullValues )
+    private LimitedRecordGenerators( Randoms random, int entityBits, int propertyBits, int nodeLabelBits, int tokenBits,
+            long nullValue, float fractionNullValues )
     {
         this.random = random;
         this.entityBits = entityBits;

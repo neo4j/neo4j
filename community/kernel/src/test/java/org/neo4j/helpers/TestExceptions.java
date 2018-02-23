@@ -27,10 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestExceptions
+class TestExceptions
 {
     @Test
-    public void canPeelExceptions()
+    void canPeelExceptions()
     {
         // given
         Throwable expected;
@@ -50,7 +50,7 @@ public class TestExceptions
     }
 
     @Test
-    public void canPeelUsingConveniencePredicate()
+    void canPeelUsingConveniencePredicate()
     {
         // given
         Throwable expected;
@@ -70,7 +70,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldDetectContainsOneOfSome()
+    void shouldDetectContainsOneOfSome()
     {
         // GIVEN
         Throwable cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
@@ -82,7 +82,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldSetMessage()
+    void shouldSetMessage()
     {
         // GIVEN
         String initialMessage = "Initial message";

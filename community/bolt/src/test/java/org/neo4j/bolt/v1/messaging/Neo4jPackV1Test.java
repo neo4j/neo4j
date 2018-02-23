@@ -84,7 +84,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldBeAbleToPackAndUnpackList() throws IOException
+    void shouldBeAbleToPackAndUnpackList() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -107,7 +107,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldBeAbleToPackAndUnpackMap() throws IOException
+    void shouldBeAbleToPackAndUnpackMap() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -134,7 +134,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldFailWhenTryingToPackAndUnpackMapContainingNullKeys() throws IOException
+    void shouldFailWhenTryingToPackAndUnpackMapContainingNullKeys() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -162,7 +162,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldErrorOnUnpackingMapWithDuplicateKeys() throws IOException
+    void shouldErrorOnUnpackingMapWithDuplicateKeys() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -184,7 +184,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldNotBeAbleToUnpackNode() throws IOException
+    void shouldNotBeAbleToUnpackNode() throws IOException
     {
         // Expect
         exception.expect( BoltIOException.class );
@@ -193,7 +193,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldNotBeAbleToUnpackRelationship() throws IOException
+    void shouldNotBeAbleToUnpackRelationship() throws IOException
     {
         // Expect
         exception.expect( BoltIOException.class );
@@ -202,7 +202,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldNotBeAbleToUnpackPaths() throws IOException
+    void shouldNotBeAbleToUnpackPaths() throws IOException
     {
         for ( PathValue path : ALL_PATHS )
         {
@@ -214,7 +214,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldTreatSingleCharAsSingleCharacterString() throws IOException
+    void shouldTreatSingleCharAsSingleCharacterString() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -228,7 +228,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldTreatCharArrayAsListOfStrings() throws IOException
+    void shouldTreatCharArrayAsListOfStrings() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -243,7 +243,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    public void shouldPackUtf8() throws IOException
+    void shouldPackUtf8() throws IOException
     {
         // Given
         String value = "\uD83D\uDE31";

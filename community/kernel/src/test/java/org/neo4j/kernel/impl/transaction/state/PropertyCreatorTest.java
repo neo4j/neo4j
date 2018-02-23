@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class PropertyCreatorTest
+class PropertyCreatorTest
 {
     private final IdSequence idGenerator = new BatchingIdSequence();
     private final PropertyCreator creator = new PropertyCreator( null, null, idGenerator, new PropertyTraverser(), false );
@@ -55,7 +55,7 @@ public class PropertyCreatorTest
     private final MyPrimitiveProxy primitive = new MyPrimitiveProxy();
 
     @Test
-    public void shouldAddPropertyToEmptyChain()
+    void shouldAddPropertyToEmptyChain()
     {
         // GIVEN
         existingChain();
@@ -68,7 +68,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherFullRecords()
+    void shouldAddPropertyToChainContainingOtherFullRecords()
     {
         // GIVEN
         existingChain(
@@ -86,7 +86,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherNonFullRecords()
+    void shouldAddPropertyToChainContainingOtherNonFullRecords()
     {
         // GIVEN
         existingChain(
@@ -103,7 +103,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle()
+    void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle()
     {
         // GIVEN
         existingChain(
@@ -120,7 +120,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangeOnlyProperty()
+    void shouldChangeOnlyProperty()
     {
         // GIVEN
         existingChain( record( property( 0, "one" ) ) );
@@ -133,7 +133,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyInChainWithOthersBeforeIt()
+    void shouldChangePropertyInChainWithOthersBeforeIt()
     {
         // GIVEN
         existingChain(
@@ -150,7 +150,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyInChainWithOthersAfterIt()
+    void shouldChangePropertyInChainWithOthersAfterIt()
     {
         // GIVEN
         existingChain(
@@ -167,7 +167,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyToBiggerInFullChain()
+    void shouldChangePropertyToBiggerInFullChain()
     {
         // GIVEN
         existingChain( record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ) );
@@ -182,7 +182,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyToBiggerInChainWithHoleAfter()
+    void shouldChangePropertyToBiggerInChainWithHoleAfter()
     {
         // GIVEN
         existingChain(
@@ -200,7 +200,7 @@ public class PropertyCreatorTest
 
     // change property so that it gets bigger and fits in a record earlier in the chain
     @Test
-    public void shouldChangePropertyToBiggerInChainWithHoleBefore()
+    void shouldChangePropertyToBiggerInChainWithHoleBefore()
     {
         // GIVEN
         existingChain(

@@ -42,16 +42,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith( {ImpermanentDatabaseExtension.class} )
-public class PagedTraverserTest
+class PagedTraverserTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     private static final int LIST_LENGTH = 100;
     private Node startNode;
 
     @BeforeEach
-    public void clearDb()
+    void clearDb()
     {
         createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseAPI() );
     }
@@ -81,7 +81,7 @@ public class PagedTraverserTest
     }
 
     @Test
-    public void shouldPageThroughResultsForWhollyDivisiblePageSize()
+    void shouldPageThroughResultsForWhollyDivisiblePageSize()
     {
         Traverser myTraverser = simpleListTraverser();
         PagedTraverser traversalPager = new PagedTraverser( myTraverser, LIST_LENGTH / 10 );
@@ -109,7 +109,7 @@ public class PagedTraverserTest
     }
 
     @Test
-    public void shouldPageThroughResultsForNonWhollyDivisiblePageSize()
+    void shouldPageThroughResultsForNonWhollyDivisiblePageSize()
     {
         int awkwardPageSize = 7;
         Traverser myTraverser = simpleListTraverser();

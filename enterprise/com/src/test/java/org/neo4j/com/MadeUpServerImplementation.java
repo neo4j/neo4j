@@ -100,7 +100,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
                 ResourceReleaser.NO_OP );
     }
 
-    protected CommittedTransactionRepresentation createTransaction( long txId )
+    private CommittedTransactionRepresentation createTransaction( long txId )
     {
         return new CommittedTransactionRepresentation(
                 new LogEntryStart( 0, 0, 0, 0, new byte[0], null ),

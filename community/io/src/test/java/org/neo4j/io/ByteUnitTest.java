@@ -21,9 +21,9 @@ package org.neo4j.io;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.Byte;
 import static org.neo4j.io.ByteUnit.ExbiByte;
@@ -41,10 +41,10 @@ import static org.neo4j.io.ByteUnit.parse;
 import static org.neo4j.io.ByteUnit.pebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
 
-public class ByteUnitTest
+class ByteUnitTest
 {
     @Test
-    public void convertZero()
+    void convertZero()
     {
         assertThat( Byte.toBytes( 0 ), is( 0L ) );
         assertThat( Byte.toKibiBytes( 0 ), is( 0L ) );
@@ -104,7 +104,7 @@ public class ByteUnitTest
     }
 
     @Test
-    public void convertOneToEIC()
+    void convertOneToEIC()
     {
         assertThat( KibiByte.toBytes( 1 ), is( 1024L ) );
         assertThat( KibiByte.toKibiBytes( 1 ), is( 1L ) );
@@ -156,7 +156,7 @@ public class ByteUnitTest
     }
 
     @Test
-    public void unitsAsBytes()
+    void unitsAsBytes()
     {
         assertThat( bytes( 1 ), is( 1L ) );
         assertThat( kibiBytes( 1 ), is( 1024L ) );
@@ -233,7 +233,7 @@ public class ByteUnitTest
     }
 
     @Test
-    public void bytesToString()
+    void bytesToString()
     {
         assertEquals( "1B", ByteUnit.bytesToString( 1 ) );
         assertEquals( "10B", ByteUnit.bytesToString( 10 ) );
@@ -249,31 +249,31 @@ public class ByteUnitTest
     }
 
     @Test
-    public void mustThrowWhenParsingInvalidUnit()
+    void mustThrowWhenParsingInvalidUnit()
     {
         assertThrows( IllegalArgumentException.class, () -> parse( "1 XB" ) );
     }
 
     @Test
-    public void mustThrowWhenParsingUnitInterjectedWithNumber()
+    void mustThrowWhenParsingUnitInterjectedWithNumber()
     {
         assertThrows( IllegalArgumentException.class, () -> parse( "1K2i3B" ) );
     }
 
     @Test
-    public void mustThrowWhenParsingNonNumbericTest()
+    void mustThrowWhenParsingNonNumbericTest()
     {
         assertThrows( IllegalArgumentException.class, () -> parse( "abc" ) );
     }
 
     @Test
-    public void mustThrowWhenParsingOnlyUnit()
+    void mustThrowWhenParsingOnlyUnit()
     {
         assertThrows( IllegalArgumentException.class, () -> parse( "MiB" ) );
     }
 
     @Test
-    public void mustThrowWhenParsingUnitBeforeValue()
+    void mustThrowWhenParsingUnitBeforeValue()
     {
         assertThrows( IllegalArgumentException.class, () -> parse( "MiB 1" ) );
     }

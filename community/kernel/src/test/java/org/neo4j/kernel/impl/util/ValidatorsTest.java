@@ -33,13 +33,13 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ValidatorsTest
+class ValidatorsTest
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldFindFilesByRegex() throws Exception
+    void shouldFindFilesByRegex() throws Exception
     {
         // GIVEN
         existenceOfFile( "abc" );
@@ -55,7 +55,7 @@ public class ValidatorsTest
     }
 
     @Test
-    public void shouldValidateInList()
+    void shouldValidateInList()
     {
         try
         {

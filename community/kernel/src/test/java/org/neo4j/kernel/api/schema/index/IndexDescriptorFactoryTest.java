@@ -28,12 +28,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
-public class IndexDescriptorFactoryTest
+class IndexDescriptorFactoryTest
 {
     private static final int LABEL_ID = 0;
 
     @Test
-    public void shouldCreateIndexDescriptors()
+    void shouldCreateIndexDescriptors()
     {
         IndexDescriptor desc;
 
@@ -43,7 +43,7 @@ public class IndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateUniqueIndexDescriptors()
+    void shouldCreateUniqueIndexDescriptors()
     {
         IndexDescriptor desc;
 
@@ -53,7 +53,7 @@ public class IndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateIndexDescriptorsFromSchema()
+    void shouldCreateIndexDescriptorsFromSchema()
     {
         IndexDescriptor desc;
 
@@ -67,7 +67,7 @@ public class IndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateEqualDescriptors()
+    void shouldCreateEqualDescriptors()
     {
         IndexDescriptor desc1;
         IndexDescriptor desc2;
@@ -81,7 +81,7 @@ public class IndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldGiveNiceUserDescriptions()
+    void shouldGiveNiceUserDescriptions()
     {
         assertThat( IndexDescriptorFactory.forLabel( 1, 2 ).userDescription( simpleNameLookup ),
                 equalTo( "Index( GENERAL, :Label1(property2) )" ) );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-public class HistogramMonitor implements SpaceFillingCurveMonitor
+class HistogramMonitor implements SpaceFillingCurveMonitor
 {
     private int[] counts;
     private int highestDepth;

@@ -19,21 +19,21 @@
  */
 package org.neo4j.server.rest.repr.util;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RFC1123Test
+class RFC1123Test
 {
     private final Calendar calendar = Calendar.getInstance( RFC1123.GMT, Locale.US );
 
     @Test
-    public void shouldParseRFC1123() throws Exception
+    void shouldParseRFC1123() throws Exception
     {
         // given
         String input = "Mon, 15 Aug 2005 15:52:01 +0000";
@@ -53,7 +53,7 @@ public class RFC1123Test
     }
 
     @Test
-    public void shouldFormatRFC1123() throws Exception
+    void shouldFormatRFC1123() throws Exception
     {
         // given
         String input = "Mon, 15 Aug 2005 15:52:01 +0000";
@@ -66,7 +66,7 @@ public class RFC1123Test
     }
 
     @Test
-    public void shouldReturnSameInstanceInSameThread()
+    void shouldReturnSameInstanceInSameThread()
     {
         // given
         RFC1123 instance = RFC1123.instance();

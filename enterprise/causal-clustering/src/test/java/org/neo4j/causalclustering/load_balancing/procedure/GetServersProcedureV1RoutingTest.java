@@ -46,14 +46,14 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class GetServersProcedureV1RoutingTest
+class GetServersProcedureV1RoutingTest
 {
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
     private Config config = Config.defaults();
 
     @ParameterizedTest
     @ValueSource( ints = {1, 2} )
-    public void shouldReturnEndpointsInDifferentOrders( int serverClass ) throws Exception
+    void shouldReturnEndpointsInDifferentOrders( int serverClass ) throws Exception
     {
         // given
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );

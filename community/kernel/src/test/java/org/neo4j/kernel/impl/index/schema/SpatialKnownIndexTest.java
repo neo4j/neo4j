@@ -59,7 +59,7 @@ public class SpatialKnownIndexTest
     private final FileSystemRule fsRule = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fsRule.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
-    protected final RandomRule random = new RandomRule();
+    private final RandomRule random = new RandomRule();
     @Rule
     public final RuleChain rules = outerRule( fsRule ).around( directory ).around( pageCacheRule ).around( random );
 

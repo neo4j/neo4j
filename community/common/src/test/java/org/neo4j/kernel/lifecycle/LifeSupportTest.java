@@ -26,19 +26,19 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class LifeSupportTest
+class LifeSupportTest
 {
     @Test
-    public void testOkLifecycle() throws LifecycleException
+    void testOkLifecycle() throws LifecycleException
     {
         LifeSupport lifeSupport = newLifeSupport();
 
@@ -81,7 +81,7 @@ public class LifeSupportTest
     }
 
     @Test()
-    public void testFailingInit()
+    void testFailingInit()
     {
         LifeSupport lifeSupport = newLifeSupport();
 
@@ -109,7 +109,7 @@ public class LifeSupportTest
     }
 
     @Test()
-    public void testFailingStart()
+    void testFailingStart()
     {
         LifeSupport lifeSupport = newLifeSupport();
 
@@ -137,7 +137,7 @@ public class LifeSupportTest
     }
 
     @Test()
-    public void testFailingStartAndFailingStop()
+    void testFailingStartAndFailingStop()
     {
         LifeSupport lifeSupport = newLifeSupport();
 
@@ -170,7 +170,7 @@ public class LifeSupportTest
     }
 
     @Test()
-    public void testFailingStop()
+    void testFailingStop()
         throws LifecycleException
     {
         LifeSupport lifeSupport = newLifeSupport();
@@ -201,7 +201,7 @@ public class LifeSupportTest
     }
 
     @Test()
-    public void testFailingShutdown()
+    void testFailingShutdown()
         throws LifecycleException
     {
         LifeSupport lifeSupport = newLifeSupport();
@@ -232,7 +232,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testAddInstanceWhenInitInitsInstance()
+    void testAddInstanceWhenInitInitsInstance()
         throws LifecycleException
     {
         LifeSupport support = newLifeSupport();
@@ -250,7 +250,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testAddInstanceWhenStartedStartsInstance()
+    void testAddInstanceWhenStartedStartsInstance()
         throws LifecycleException
     {
         LifeSupport support = newLifeSupport();
@@ -271,7 +271,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testAddInstanceWhenStoppedInitsInstance()
+    void testAddInstanceWhenStoppedInitsInstance()
         throws LifecycleException
     {
         LifeSupport support = newLifeSupport();
@@ -293,7 +293,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testAddInstanceWhenShutdownDoesNotAffectInstance()
+    void testAddInstanceWhenShutdownDoesNotAffectInstance()
         throws LifecycleException
     {
         LifeSupport support = newLifeSupport();
@@ -313,7 +313,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testInitFailsShutdownWorks() throws Throwable
+    void testInitFailsShutdownWorks() throws Throwable
     {
         //given
         LifeSupport lifeSupport = newLifeSupport();
@@ -337,7 +337,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testInitFailsShutdownFails() throws Throwable
+    void testInitFailsShutdownFails() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle lifecycle1 = mock( Lifecycle.class );
@@ -364,7 +364,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testStartFailsStopWorks() throws Throwable
+    void testStartFailsStopWorks() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle lifecycle = mock( Lifecycle.class );
@@ -385,7 +385,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testStartFailsStopFails() throws Throwable
+    void testStartFailsStopFails() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle lifecycle1 = mock( Lifecycle.class );
@@ -412,7 +412,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testStopFailsShutdownWorks() throws Throwable
+    void testStopFailsShutdownWorks() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle lifecycle = mock( Lifecycle.class );
@@ -434,7 +434,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void testStopFailsShutdownFails() throws Throwable
+    void testStopFailsShutdownFails() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle lifecycle1 = mock( Lifecycle.class );
@@ -462,7 +462,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void tryToStopComponentOnStartFailure() throws Throwable
+    void tryToStopComponentOnStartFailure() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle component = mock( Lifecycle.class );
@@ -488,7 +488,7 @@ public class LifeSupportTest
     }
 
     @Test
-    public void tryToShutdownComponentOnInitFailure() throws Throwable
+    void tryToShutdownComponentOnInitFailure() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle component = mock( Lifecycle.class );
@@ -513,7 +513,7 @@ public class LifeSupportTest
         verify( component ).shutdown();
     }
 
-    public static class LifecycleMock implements Lifecycle
+    static class LifecycleMock implements Lifecycle
     {
 
         Throwable initThrowable;
@@ -579,7 +579,7 @@ public class LifeSupportTest
             }
         }
 
-        public LifecycleStatus getStatus()
+        LifecycleStatus getStatus()
         {
             return transitions.get( transitions.size() - 1 );
         }

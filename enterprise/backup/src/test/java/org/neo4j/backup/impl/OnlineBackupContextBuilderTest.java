@@ -63,7 +63,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 public class OnlineBackupContextBuilderTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public ExpectedException expected = ExpectedException.none();
     @Rule
@@ -74,7 +74,7 @@ public class OnlineBackupContextBuilderTest
     private Path configFile;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         homeDir = testDirectory.directory( "home" ).toPath();
         configDir = testDirectory.directory( "config" ).toPath();
@@ -84,7 +84,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void unspecifiedHostnameIsEmptyOptional() throws Exception
+    void unspecifiedHostnameIsEmptyOptional() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=:1234" ) );
@@ -95,7 +95,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void unspecifiedPortIsEmptyOptional() throws Exception
+    void unspecifiedPortIsEmptyOptional() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=abc" ) );
@@ -106,7 +106,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void acceptHostWithTrailingPort() throws Exception
+    void acceptHostWithTrailingPort() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=foo.bar.server:" ) );
@@ -116,7 +116,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void acceptPortWithPrecedingEmptyHost() throws Exception
+    void acceptPortWithPrecedingEmptyHost() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=:1234" ) );
@@ -126,7 +126,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void acceptBothIfSpecified() throws Exception
+    void acceptBothIfSpecified() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=foo.bar.server:1234" ) );
@@ -136,7 +136,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void backupDirectoryArgumentIsMandatory() throws Exception
+    void backupDirectoryArgumentIsMandatory() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "Missing argument 'backup-dir'" );
@@ -144,7 +144,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void shouldDefaultTimeoutToTwentyMinutes() throws Exception
+    void shouldDefaultTimeoutToTwentyMinutes() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( "--backup-dir=/", "--name=mybackup" );
@@ -154,7 +154,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void shouldInterpretAUnitlessTimeoutAsSeconds() throws Exception
+    void shouldInterpretAUnitlessTimeoutAsSeconds() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( "--timeout=10", "--backup-dir=/", "--name=mybackup" );
@@ -164,7 +164,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void shouldParseATimeoutWithUnits() throws Exception
+    void shouldParseATimeoutWithUnits() throws Exception
     {
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--timeout=10h" ) );
@@ -174,7 +174,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void shouldTreatNameArgumentAsMandatory() throws Exception
+    void shouldTreatNameArgumentAsMandatory() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "Missing argument 'name'" );
@@ -184,7 +184,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void reportDirMustBeAPath() throws Exception
+    void reportDirMustBeAPath() throws Exception
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "cc-report-dir must be a path" );
@@ -193,7 +193,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void errorHandledForNonExistingAdditionalConfigFile() throws Exception
+    void errorHandledForNonExistingAdditionalConfigFile() throws Exception
     {
         // given
         Path additionalConf = homeDir.resolve( "neo4j.conf" );
@@ -208,7 +208,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void prioritiseConfigDirOverHomeDir() throws Exception
+    void prioritiseConfigDirOverHomeDir() throws Exception
     {
         // given
         Files.write( configFile, singletonList( "causal_clustering.minimum_core_cluster_size_at_startup=4" ), WRITE );
@@ -229,7 +229,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void prioritiseAdditionalOverConfigDir() throws Exception
+    void prioritiseAdditionalOverConfigDir() throws Exception
     {
         // given
         Files.write( configFile, asList(
@@ -251,7 +251,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void mustIgnorePageCacheConfigInConfigFile() throws Exception
+    void mustIgnorePageCacheConfigInConfigFile() throws Exception
     {
         // given
         Files.write( configFile, singletonList( pagecache_memory.name() + "=42m" ) );
@@ -265,7 +265,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void mustIgnorePageCacheConfigInAdditionalConfigFile() throws Exception
+    void mustIgnorePageCacheConfigInAdditionalConfigFile() throws Exception
     {
         // given
         Path additionalConf = homeDir.resolve( "additional-neo4j.conf" );
@@ -280,7 +280,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void mustRespectPageCacheConfigFromCommandLineArguments() throws Exception
+    void mustRespectPageCacheConfigFromCommandLineArguments() throws Exception
     {
         // when
         OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
@@ -291,7 +291,7 @@ public class OnlineBackupContextBuilderTest
     }
 
     @Test
-    public void logsMustBePlacedInTargetBackupDirectory() throws Exception
+    void logsMustBePlacedInTargetBackupDirectory() throws Exception
     {
         // when
         String name = "mybackup";

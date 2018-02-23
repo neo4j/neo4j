@@ -34,14 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TransactionChecksumLookupTest
+class TransactionChecksumLookupTest
 {
 
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 1, 1, 1 ) );
         when( transactionIdStore.getUpgradeTransaction() ).thenReturn( new TransactionId( 2, 2, 2 ) );
@@ -50,21 +50,21 @@ public class TransactionChecksumLookupTest
     }
 
     @Test
-    public void lookupChecksumUsingUpgradeTransaction() throws Exception
+    void lookupChecksumUsingUpgradeTransaction() throws Exception
     {
         TransactionChecksumLookup checksumLookup = new TransactionChecksumLookup( transactionIdStore, transactionStore );
         assertEquals(2, checksumLookup.applyAsLong( 2 ));
     }
 
     @Test
-    public void lookupChecksumUsingCommittedTransaction() throws Exception
+    void lookupChecksumUsingCommittedTransaction() throws Exception
     {
         TransactionChecksumLookup checksumLookup = new TransactionChecksumLookup( transactionIdStore, transactionStore );
         assertEquals(1, checksumLookup.applyAsLong( 1 ));
     }
 
     @Test
-    public void lookupChecksumUsingTransactionStore() throws Exception
+    void lookupChecksumUsingTransactionStore() throws Exception
     {
         TransactionChecksumLookup checksumLookup = new TransactionChecksumLookup( transactionIdStore, transactionStore );
         assertEquals(3, checksumLookup.applyAsLong( 3 ));

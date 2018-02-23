@@ -31,10 +31,10 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class UserSerializationTest
+class UserSerializationTest
 {
     @Test
-    public void shouldSerializeAndDeserialize() throws Exception
+    void shouldSerializeAndDeserialize() throws Exception
     {
         // Given
         UserSerialization serialization = new UserSerialization();
@@ -58,7 +58,7 @@ public class UserSerializationTest
      * this is your reminder to make sure to build this is in a backwards compatible way.
      */
     @Test
-    public void shouldReadV1SerializationFormat() throws Exception
+    void shouldReadV1SerializationFormat() throws Exception
     {
         // Given
         UserSerialization serialization = new UserSerialization();

@@ -38,7 +38,7 @@ public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemor
 
     private final SchemaIndexProvider singleProvider;
 
-    public interface Dependencies
+    interface Dependencies
     {
     }
 

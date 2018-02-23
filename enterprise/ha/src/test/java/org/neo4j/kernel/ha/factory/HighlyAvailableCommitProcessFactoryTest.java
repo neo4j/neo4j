@@ -31,15 +31,15 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class HighlyAvailableCommitProcessFactoryTest
+class HighlyAvailableCommitProcessFactoryTest
 {
     @Test
-    public void createReadOnlyCommitProcess()
+    void createReadOnlyCommitProcess()
     {
         HighlyAvailableCommitProcessFactory factory = new HighlyAvailableCommitProcessFactory(
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
@@ -53,7 +53,7 @@ public class HighlyAvailableCommitProcessFactoryTest
     }
 
     @Test
-    public void createRegularCommitProcess()
+    void createRegularCommitProcess()
     {
         HighlyAvailableCommitProcessFactory factory = new HighlyAvailableCommitProcessFactory(
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );

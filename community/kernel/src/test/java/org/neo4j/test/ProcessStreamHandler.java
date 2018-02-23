@@ -60,8 +60,8 @@ public class ProcessStreamHandler
         this( process, quiet, prefix, failureHandler, System.out, System.err );
     }
 
-    public ProcessStreamHandler( Process process, boolean quiet, String prefix,
-            StreamExceptionHandler failureHandler, PrintStream out, PrintStream err )
+    private ProcessStreamHandler( Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler,
+            PrintStream out, PrintStream err )
     {
         this.process = process;
         this.out = new Thread( new StreamConsumer( process.getInputStream(), out, quiet, prefix, failureHandler ) );

@@ -34,8 +34,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -43,10 +43,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class UpdateRecordsStepTest
+class UpdateRecordsStepTest
 {
     @Test
-    public void ioThroughputStatDoesNotOverflow()
+    void ioThroughputStatDoesNotOverflow()
     {
         // store with huge record size to force overflow and not create huge batch of records
         RecordStore<NodeRecord> store = mock( RecordStore.class );
@@ -69,7 +69,7 @@ public class UpdateRecordsStepTest
     }
 
     @Test
-    public void recordWithReservedIdIsSkipped()
+    void recordWithReservedIdIsSkipped()
     {
         RecordStore<NodeRecord> store = mock( NodeStore.class );
         StageControl stageControl = mock( StageControl.class );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.ports.allocation;
 
-public interface PortProvider
+interface PortProvider
 {
     int getNextFreePort( String trace );
 }

@@ -26,19 +26,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ReferenceCounterTest
+class ReferenceCounterTest
 {
     private ReferenceCounter refCount = new ReferenceCounter();
 
     @Test
-    public void shouldHaveValidInitialBehaviour()
+    void shouldHaveValidInitialBehaviour()
     {
         assertEquals( 0, refCount.get() );
         assertTrue( refCount.tryDispose() );
     }
 
     @Test
-    public void shouldNotBeAbleToDisposeWhenActive()
+    void shouldNotBeAbleToDisposeWhenActive()
     {
         // when
         refCount.increase();
@@ -48,7 +48,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldBeAbleToDisposeInactive()
+    void shouldBeAbleToDisposeInactive()
     {
         // given
         refCount.increase();
@@ -64,7 +64,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldNotGiveReferenceWhenDisposed()
+    void shouldNotGiveReferenceWhenDisposed()
     {
         // given
         refCount.tryDispose();
@@ -74,7 +74,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldAdjustCounterWithReferences()
+    void shouldAdjustCounterWithReferences()
     {
         // when / then
         refCount.increase();
@@ -94,7 +94,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldThrowIllegalStateExceptionWhenDecreasingPastZero()
+    void shouldThrowIllegalStateExceptionWhenDecreasingPastZero()
     {
         // given
         refCount.increase();
@@ -113,7 +113,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldThrowIllegalStateExceptionWhenDecreasingOnDisposed()
+    void shouldThrowIllegalStateExceptionWhenDecreasingOnDisposed()
     {
         // given
         refCount.tryDispose();

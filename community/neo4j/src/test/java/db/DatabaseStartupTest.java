@@ -44,13 +44,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class DatabaseStartupTest
+class DatabaseStartupTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void startTheDatabaseWithWrongVersionShouldFailWithUpgradeNotAllowed() throws Throwable
+    void startTheDatabaseWithWrongVersionShouldFailWithUpgradeNotAllowed() throws Throwable
     {
         // given
         // create a store
@@ -87,7 +87,7 @@ public class DatabaseStartupTest
     }
 
     @Test
-    public void startTheDatabaseWithWrongVersionShouldFailAlsoWhenUpgradeIsAllowed() throws Throwable
+    void startTheDatabaseWithWrongVersionShouldFailAlsoWhenUpgradeIsAllowed() throws Throwable
     {
         // given
         // create a store

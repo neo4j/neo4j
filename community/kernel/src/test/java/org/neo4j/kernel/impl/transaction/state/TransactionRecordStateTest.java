@@ -39,7 +39,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
@@ -124,14 +123,14 @@ public class TransactionRecordStateTest
     private final long[] secondLabelId = new long[]{4};
     private final long[] bothLabelIds = new long[]{3, 4};
 
-    public static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node,
+    private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node,
             int type )
     {
         assertNull( getRelationshipGroup( recordChangeSet, node, type ) );
     }
 
-    public static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet,
-            long nodeId, int type, int outCount, int inCount )
+    private static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet, long nodeId, int type,
+            int outCount, int inCount )
     {
         RelationshipGroupRecord group = getRelationshipGroup( recordChangeSet,
                 recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), type ).forReadingData();
@@ -198,7 +197,7 @@ public class TransactionRecordStateTest
     private RecordChangeSet recordChangeSet;
 
     @Test
-    public void shouldCreateEqualNodePropertyUpdatesOnRecoveryOfCreatedNode() throws Exception
+    void shouldCreateEqualNodePropertyUpdatesOnRecoveryOfCreatedNode() throws Exception
     {
         /* There was an issue where recovering a tx where a node with a label and a property
          * was created resulted in two exact copies of NodePropertyUpdates. */
@@ -238,7 +237,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldWriteProperPropertyRecordsWhenOnlyChangingLinkage() throws Exception
+    void shouldWriteProperPropertyRecordsWhenOnlyChangingLinkage() throws Exception
     {
         /* There was an issue where GIVEN:
          *
@@ -296,7 +295,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertLabelAdditionToNodePropertyUpdates() throws Exception
+    void shouldConvertLabelAdditionToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -320,7 +319,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertMixedLabelAdditionAndSetPropertyToNodePropertyUpdates() throws Exception
+    void shouldConvertMixedLabelAdditionAndSetPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -346,7 +345,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertLabelRemovalToNodePropertyUpdates() throws Exception
+    void shouldConvertLabelRemovalToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -369,7 +368,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertMixedLabelRemovalAndRemovePropertyToNodePropertyUpdates() throws Exception
+    void shouldConvertMixedLabelRemovalAndRemovePropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -395,7 +394,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertMixedLabelRemovalAndAddPropertyToNodePropertyUpdates() throws Exception
+    void shouldConvertMixedLabelRemovalAndAddPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -421,7 +420,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertChangedPropertyToNodePropertyUpdates() throws Exception
+    void shouldConvertChangedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -450,7 +449,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertRemovedPropertyToNodePropertyUpdates() throws Exception
+    void shouldConvertRemovedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -478,7 +477,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldDeleteDynamicLabelsForDeletedNode() throws Throwable
+    void shouldDeleteDynamicLabelsForDeletedNode() throws Throwable
     {
         // GIVEN a store that has got a node with a dynamic label record
         NeoStores store = neoStoresRule.builder().build();
@@ -497,7 +496,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldDeleteDynamicLabelsForDeletedNodeForRecoveredTransaction() throws Throwable
+    void shouldDeleteDynamicLabelsForDeletedNodeForRecoveredTransaction() throws Throwable
     {
         // GIVEN a store that has got a node with a dynamic label record
         NeoStores store = neoStoresRule.builder().build();
@@ -521,7 +520,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldExtractCreatedCommandsInCorrectOrder() throws Throwable
+    void shouldExtractCreatedCommandsInCorrectOrder() throws Throwable
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder()
@@ -550,7 +549,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldExtractUpdateCommandsInCorrectOrder() throws Throwable
+    void shouldExtractUpdateCommandsInCorrectOrder() throws Throwable
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder()
@@ -594,7 +593,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldIgnoreRelationshipGroupCommandsForGroupThatIsCreatedAndDeletedInThisTx() throws Exception
+    void shouldIgnoreRelationshipGroupCommandsForGroupThatIsCreatedAndDeletedInThisTx() throws Exception
     {
         /*
          * This test verifies that there are no transaction commands generated for a state diff that contains a
@@ -635,7 +634,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldExtractDeleteCommandsInCorrectOrder() throws Exception
+    void shouldExtractDeleteCommandsInCorrectOrder() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder()
@@ -681,7 +680,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldValidateConstraintIndexAsPartOfExtraction() throws Throwable
+    void shouldValidateConstraintIndexAsPartOfExtraction() throws Throwable
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -700,7 +699,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldCreateProperBeforeAndAfterPropertyCommandsWhenAddingProperty() throws Exception
+    void shouldCreateProperBeforeAndAfterPropertyCommandsWhenAddingProperty() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -726,7 +725,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertAddedPropertyToNodePropertyUpdates() throws Exception
+    void shouldConvertAddedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -749,7 +748,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldLockUpdatedNodes() throws Exception
+    void shouldLockUpdatedNodes() throws Exception
     {
         // given
         LockService locks = mock( LockService.class, new Answer<Object>()
@@ -822,7 +821,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
+    void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder()
@@ -884,7 +883,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes() throws Exception
+    void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         NeoStores neoStores = neoStoresRule.builder()
@@ -920,7 +919,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeDifferentDirection()
+    void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeDifferentDirection()
             throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
@@ -946,7 +945,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeSameDirection()
+    void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeSameDirection()
             throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
@@ -971,7 +970,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithOneType() throws Exception
+    void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithOneType() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         NeoStores neoStores = neoStoresRule.builder()
@@ -991,7 +990,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes() throws Exception
+    void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         NeoStores neoStores = neoStoresRule.builder()
@@ -1073,7 +1072,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldSortRelationshipGroups() throws Throwable
+    void shouldSortRelationshipGroups() throws Throwable
     {
         // GIVEN
         int type5 = 5;
@@ -1143,7 +1142,7 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldPrepareRelevantRecords() throws Exception
+    void shouldPrepareRelevantRecords() throws Exception
     {
         // GIVEN
         PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( Standard.LATEST_RECORD_FORMATS );

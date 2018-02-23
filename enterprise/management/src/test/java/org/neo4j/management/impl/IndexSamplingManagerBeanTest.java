@@ -38,21 +38,21 @@ import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
 import static org.neo4j.management.impl.IndexSamplingManagerBean.StoreAccess;
 
-public class IndexSamplingManagerBeanTest
+class IndexSamplingManagerBeanTest
 {
 
-    public static final String EXISTING_LABEL = "label";
-    public static final String NON_EXISTING_LABEL = "bogusLabel";
-    public static final int LABEL_ID = 42;
-    public static final String EXISTING_PROPERTY = "prop";
-    public static final String NON_EXISTING_PROPERTY = "bogusProp";
-    public static final int PROPERTY_ID = 43;
+    private static final String EXISTING_LABEL = "label";
+    private static final String NON_EXISTING_LABEL = "bogusLabel";
+    private static final int LABEL_ID = 42;
+    private static final String EXISTING_PROPERTY = "prop";
+    private static final String NON_EXISTING_PROPERTY = "bogusProp";
+    private static final int PROPERTY_ID = 43;
     private NeoStoreDataSource dataSource;
     private StoreReadLayer storeReadLayer;
     private IndexingService indexingService;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         dataSource = mock( NeoStoreDataSource.class );
         storeReadLayer = mock( StoreReadLayer.class );
@@ -68,7 +68,7 @@ public class IndexSamplingManagerBeanTest
     }
 
     @Test
-    public void samplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
+    void samplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
     {
         // Given
         StoreAccess storeAccess = new StoreAccess();
@@ -83,7 +83,7 @@ public class IndexSamplingManagerBeanTest
     }
 
     @Test
-    public void forceSamplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
+    void forceSamplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
     {
         // Given
         StoreAccess storeAccess = new StoreAccess();
@@ -98,7 +98,7 @@ public class IndexSamplingManagerBeanTest
     }
 
     @Test
-    public void exceptionThrownWhenMissingLabel()
+    void exceptionThrownWhenMissingLabel()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // Given
@@ -111,7 +111,7 @@ public class IndexSamplingManagerBeanTest
     }
 
     @Test
-    public void exceptionThrownWhenMissingProperty()
+    void exceptionThrownWhenMissingProperty()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // Given
@@ -124,7 +124,7 @@ public class IndexSamplingManagerBeanTest
     }
 
     @Test
-    public void exceptionThrownWhenNotRegistered()
+    void exceptionThrownWhenNotRegistered()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // Given

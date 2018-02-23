@@ -46,12 +46,12 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class NativeLabelScanStoreChaosIT
 {
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
     @Resource
-    public RandomRule randomRule;
+    private RandomRule randomRule;
 
     @Test
-    public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
+    void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
     {
         // GIVEN
         Node node1 = createLabeledNode( Labels.First );
@@ -67,7 +67,7 @@ public class NativeLabelScanStoreChaosIT
     }
 
     @Test
-    public void rebuildCorruptedLabelScanStoreToStartup() throws Exception
+    void rebuildCorruptedLabelScanStoreToStartup() throws Exception
     {
         Node node = createLabeledNode( Labels.First );
 

@@ -70,7 +70,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
     }
 
     @Test
-    public void shouldManageRandomTraversals()
+    void shouldManageRandomTraversals()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();

@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -26,18 +28,16 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Test;
-
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.mock;
 
-public class TopologyTest
+class TopologyTest
 {
     @Test
-    public void identicalTopologiesShouldHaveNoDifference()
+    void identicalTopologiesShouldHaveNoDifference()
     {
         // given
         Map<MemberId,ReadReplicaInfo> readReplicaMembers = randomMembers( 5 );
@@ -53,7 +53,7 @@ public class TopologyTest
     }
 
     @Test
-    public void shouldDetectAddedMembers()
+    void shouldDetectAddedMembers()
     {
         // given
         Map<MemberId,ReadReplicaInfo> initialMembers = randomMembers( 3 );
@@ -74,7 +74,7 @@ public class TopologyTest
     }
 
     @Test
-    public void shouldDetectRemovedMembers()
+    void shouldDetectRemovedMembers()
     {
         Map<MemberId,ReadReplicaInfo> initialMembers = randomMembers( 3 );
 
@@ -94,7 +94,7 @@ public class TopologyTest
     }
 
     @Test
-    public void shouldDetectAddedAndRemovedMembers()
+    void shouldDetectAddedAndRemovedMembers()
     {
         // given
         int initialQuantity = 4;

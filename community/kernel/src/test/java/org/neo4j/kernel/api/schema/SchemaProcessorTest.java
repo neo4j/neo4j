@@ -30,13 +30,13 @@ import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class SchemaProcessorTest
+class SchemaProcessorTest
 {
     private static final int LABEL_ID = 0;
     private static final int REL_TYPE_ID = 0;
 
     @Test
-    public void shouldHandleCorrectDescriptorVersions()
+    void shouldHandleCorrectDescriptorVersions()
     {
         List<String> callHistory = new ArrayList<>();
         SchemaProcessor processor = new SchemaProcessor()

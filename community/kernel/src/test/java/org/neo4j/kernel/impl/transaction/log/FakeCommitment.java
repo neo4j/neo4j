@@ -33,7 +33,7 @@ public class FakeCommitment implements Commitment
         this( id, transactionIdStore, false );
     }
 
-    public FakeCommitment( long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted )
+    private FakeCommitment( long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted )
     {
         this.id = id;
         this.transactionIdStore = transactionIdStore;

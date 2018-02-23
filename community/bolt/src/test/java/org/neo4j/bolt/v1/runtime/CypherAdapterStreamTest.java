@@ -61,10 +61,10 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class CypherAdapterStreamTest
+class CypherAdapterStreamTest
 {
     @Test
-    public void shouldIncludeBasicMetadata() throws Throwable
+    void shouldIncludeBasicMetadata() throws Throwable
     {
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
@@ -115,7 +115,7 @@ public class CypherAdapterStreamTest
     }
 
     @Test
-    public void shouldIncludePlanIfPresent() throws Throwable
+    void shouldIncludePlanIfPresent() throws Throwable
     {
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
@@ -152,7 +152,7 @@ public class CypherAdapterStreamTest
     }
 
     @Test
-    public void shouldIncludeProfileIfPresent() throws Throwable
+    void shouldIncludeProfileIfPresent() throws Throwable
     {
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
@@ -206,7 +206,7 @@ public class CypherAdapterStreamTest
     }
 
     @Test
-    public void shouldIncludeNotificationsIfPresent() throws Throwable
+    void shouldIncludeNotificationsIfPresent() throws Throwable
     {
         // Given
         QueryResult result = mock( QueryResult.class );

@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.core.consensus.vote;
 
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.identity.MemberId;
 
 public abstract class AnyVoteResponseBuilder<T extends RaftMessages.AnyVote.Response>
 {
-    protected AnyVoteResponseBuilder( Constructor<T> constructor )
+    AnyVoteResponseBuilder( Constructor<T> constructor )
     {
         this.constructor = constructor;
     }

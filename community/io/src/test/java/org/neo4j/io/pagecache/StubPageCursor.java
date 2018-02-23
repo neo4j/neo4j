@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -34,7 +33,7 @@ public class StubPageCursor extends PageCursor
 {
     private final long pageId;
     private final int pageSize;
-    protected ByteBuffer page;
+    private ByteBuffer page;
     private int currentOffset;
     private boolean observedOverflow;
     private String cursorErrorMessage;

@@ -55,13 +55,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ImportCommandTest
+class ImportCommandTest
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Test
-    public void defaultsToCsvWhenModeNotSpecified() throws Exception
+    void defaultsToCsvWhenModeNotSpecified() throws Exception
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
@@ -85,7 +85,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void acceptsNodeMetadata() throws Exception
+    void acceptsNodeMetadata() throws Exception
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
@@ -106,7 +106,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void acceptsRelationshipsMetadata() throws Exception
+    void acceptsRelationshipsMetadata() throws Exception
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
@@ -127,7 +127,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void requiresDatabaseArgument() throws Exception
+    void requiresDatabaseArgument() throws Exception
     {
         try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
         {
@@ -149,7 +149,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void failIfInvalidModeSpecified() throws Exception
+    void failIfInvalidModeSpecified() throws Exception
     {
         try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
         {
@@ -171,7 +171,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void failIfDestinationDatabaseAlreadyExists() throws Exception
+    void failIfDestinationDatabaseAlreadyExists() throws Exception
     {
         try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
         {
@@ -193,7 +193,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

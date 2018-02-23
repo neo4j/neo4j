@@ -29,12 +29,11 @@ import org.neo4j.collection.RawIterator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.csv.reader.Readables.wrap;
 
-public class MultiReadableTest
+class MultiReadableTest
 {
     @Test
-    public void shouldReadFromMultipleReaders() throws Exception
+    void shouldReadFromMultipleReaders() throws Exception
     {
         // GIVEN
         String[][] data = new String[][] {
@@ -55,7 +54,7 @@ public class MultiReadableTest
     }
 
     @Test
-    public void shouldHandleSourcesEndingWithNewLine() throws Exception
+    void shouldHandleSourcesEndingWithNewLine() throws Exception
     {
         // GIVEN
         String[][] data = new String[][] {
@@ -77,7 +76,7 @@ public class MultiReadableTest
     }
 
     @Test
-    public void shouldTrackAbsolutePosition() throws Exception
+    void shouldTrackAbsolutePosition() throws Exception
     {
         // GIVEN
         String[][] data = new String[][] {
@@ -106,7 +105,7 @@ public class MultiReadableTest
     }
 
     @Test
-    public void shouldNotCrossSourcesInOneRead() throws Exception
+    void shouldNotCrossSourcesInOneRead() throws Exception
     {
         // given
         String source1 = "abcdefghijklm";

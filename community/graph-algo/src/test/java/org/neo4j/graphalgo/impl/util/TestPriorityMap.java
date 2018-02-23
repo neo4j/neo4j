@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestPriorityMap
+class TestPriorityMap
 {
     @Test
-    public void testIt()
+    void testIt()
     {
         PriorityMap<Integer, Integer, Double> map =
             PriorityMap.withSelfKeyNaturalOrder();
@@ -78,7 +78,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void shouldReplaceIfBetter()
+    void shouldReplaceIfBetter()
     {
         // GIVEN
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
@@ -96,7 +96,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void shouldKeepAllPrioritiesIfToldTo()
+    void shouldKeepAllPrioritiesIfToldTo()
     {
         // GIVEN
         int entity = 5;
@@ -116,7 +116,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void inCaseSaveAllPrioritiesShouldHandleNewEntryWithWorsePrio()
+    void inCaseSaveAllPrioritiesShouldHandleNewEntryWithWorsePrio()
     {
         // GIVEN
         int first = 1;
@@ -136,7 +136,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void inCaseSaveAllPrioritiesShouldHandleNewEntryWithBetterPrio()
+    void inCaseSaveAllPrioritiesShouldHandleNewEntryWithBetterPrio()
     {
         // GIVEN
         int first = 1;

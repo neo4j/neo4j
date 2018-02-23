@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
-public class TestExceptionTypeOnInvalidIds
+class TestExceptionTypeOnInvalidIds
 {
     private static final long SMALL_POSSITIVE_INTEGER = 5;
     private static final long SMALL_NEGATIVE_INTEGER = -5;
@@ -58,7 +58,7 @@ public class TestExceptionTypeOnInvalidIds
     private Transaction tx;
 
     @BeforeAll
-    public static void createDatabase()
+    static void createDatabase()
     {
         graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( getRandomStoreDir() );
         File storeDir = getRandomStoreDir();
@@ -74,7 +74,7 @@ public class TestExceptionTypeOnInvalidIds
     }
 
     @AfterAll
-    public static void destroyDatabase()
+    static void destroyDatabase()
     {
         graphDbReadOnly.shutdown();
         graphDbReadOnly = null;
@@ -83,13 +83,13 @@ public class TestExceptionTypeOnInvalidIds
     }
 
     @BeforeEach
-    public void startTransaction()
+    void startTransaction()
     {
         tx = graphdb.beginTx();
     }
 
     @AfterEach
-    public void endTransaction()
+    void endTransaction()
     {
         tx.close();
         tx = null;
@@ -97,7 +97,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test
-    public void getNodeBySmallPossitiveInteger()
+    void getNodeBySmallPossitiveInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( SMALL_POSSITIVE_INTEGER );
@@ -107,7 +107,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getNodeBySmallNegativeInteger()
+    void getNodeBySmallNegativeInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( SMALL_NEGATIVE_INTEGER );
@@ -117,7 +117,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test
-    public void getNodeByBigPossitiveInteger()
+    void getNodeByBigPossitiveInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( BIG_POSSITIVE_INTEGER );
@@ -127,7 +127,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getNodeByBigNegativeInteger()
+    void getNodeByBigNegativeInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( BIG_NEGATIVE_INTEGER );
@@ -137,7 +137,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getNodeBySmallPossitiveLong()
+    void getNodeBySmallPossitiveLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( SMALL_POSSITIVE_LONG );
@@ -147,7 +147,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test
-    public void getNodeBySmallNegativeLong()
+    void getNodeBySmallNegativeLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( SMALL_NEGATIVE_LONG );
@@ -157,7 +157,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getNodeByBigPossitiveLong()
+    void getNodeByBigPossitiveLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( BIG_POSSITIVE_LONG );
@@ -167,7 +167,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* finds the node with id=0, since that what the id truncates to */
     @Test
-    public void getNodeByBigNegativeLong()
+    void getNodeByBigNegativeLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getNodeById( BIG_NEGATIVE_LONG );
@@ -177,7 +177,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test
-    public void getRelationshipBySmallPossitiveInteger()
+    void getRelationshipBySmallPossitiveInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( SMALL_POSSITIVE_INTEGER );
@@ -187,7 +187,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getRelationshipBySmallNegativeInteger()
+    void getRelationshipBySmallNegativeInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( SMALL_NEGATIVE_INTEGER );
@@ -197,7 +197,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test
-    public void getRelationshipByBigPossitiveInteger()
+    void getRelationshipByBigPossitiveInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( BIG_POSSITIVE_INTEGER );
@@ -207,7 +207,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getRelationshipByBigNegativeInteger()
+    void getRelationshipByBigNegativeInteger()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( BIG_NEGATIVE_INTEGER );
@@ -217,7 +217,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getRelationshipBySmallPossitiveLong()
+    void getRelationshipBySmallPossitiveLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( SMALL_POSSITIVE_LONG );
@@ -227,7 +227,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test
-    public void getRelationshipBySmallNegativeLong()
+    void getRelationshipBySmallNegativeLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( SMALL_NEGATIVE_LONG );
@@ -237,7 +237,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test
-    public void getRelationshipByBigPossitiveLong()
+    void getRelationshipByBigPossitiveLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( BIG_POSSITIVE_LONG );
@@ -247,7 +247,7 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test
-    public void getRelationshipByBigNegativeLong()
+    void getRelationshipByBigNegativeLong()
     {
         assertThrows( NotFoundException.class, () -> {
             getRelationshipById( BIG_NEGATIVE_LONG );

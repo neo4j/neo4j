@@ -81,13 +81,13 @@ class InMemoryIndex
         return new OnlineAccessor();
     }
 
-    protected boolean add( long nodeId, Value[] propertyValues, boolean applyIdempotently )
+    boolean add( long nodeId, Value[] propertyValues, boolean applyIdempotently )
     {
         assert propertyValues.length > 0;
         return indexData.add( nodeId, applyIdempotently, propertyValues );
     }
 
-    protected void remove( long nodeId, Value[] propertyValues )
+    void remove( long nodeId, Value[] propertyValues )
     {
         assert propertyValues.length > 0;
         indexData.remove( nodeId, propertyValues );
@@ -177,7 +177,7 @@ class InMemoryIndex
         }
     }
 
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
+    void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
     {
     }
 
@@ -242,7 +242,7 @@ class InMemoryIndex
         }
     }
 
-    protected IndexUpdater newUpdater( IndexUpdateMode mode, boolean populating )
+    IndexUpdater newUpdater( IndexUpdateMode mode, boolean populating )
     {
         return new InMemoryIndexUpdater( populating );
     }

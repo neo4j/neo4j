@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -35,19 +35,19 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
-public class UniquenessConstraintValidationIT extends KernelIntegrationTest
+class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldEnforceOnSetProperty() throws Exception
+    void shouldEnforceOnSetProperty() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", "value1" );
@@ -72,7 +72,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void roundingErrorsFromLongToDoubleShouldNotPreventTxFromCommitting() throws Exception
+    void roundingErrorsFromLongToDoubleShouldNotPreventTxFromCommitting() throws Exception
     {
         // Given
         // a node with a constrained label and a long value
@@ -98,7 +98,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldEnforceUniquenessConstraintOnAddLabelForNumberPropertyOnNodeNotFromTransaction() throws Exception
+    void shouldEnforceUniquenessConstraintOnAddLabelForNumberPropertyOnNodeNotFromTransaction() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", 1 );
@@ -125,7 +125,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldEnforceUniquenessConstraintOnAddLabelForStringProperty() throws Exception
+    void shouldEnforceUniquenessConstraintOnAddLabelForStringProperty() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", "value1" );
@@ -150,7 +150,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode() throws Exception
+    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode() throws Exception
     {
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
@@ -164,7 +164,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception
+    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception
     {
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
@@ -179,7 +179,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty() throws Exception
+    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty() throws Exception
     {
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
@@ -194,7 +194,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty() throws Exception
+    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty() throws Exception
     {
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
@@ -209,7 +209,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldPreventConflictingDataInSameTransaction() throws Exception
+    void shouldPreventConflictingDataInSameTransaction() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", "value1" );
@@ -233,7 +233,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldAllowNoopPropertyUpdate() throws KernelException
+    void shouldAllowNoopPropertyUpdate() throws KernelException
     {
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
@@ -249,7 +249,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldAllowNoopLabelUpdate() throws KernelException
+    void shouldAllowNoopLabelUpdate() throws KernelException
     {
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
@@ -265,7 +265,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldAllowCreationOfNonConflictingData() throws Exception
+    void shouldAllowCreationOfNonConflictingData() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", "value1" );
@@ -287,7 +287,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void unrelatedNodesWithSamePropertyShouldNotInterfereWithUniquenessCheck() throws Exception
+    void unrelatedNodesWithSamePropertyShouldNotInterfereWithUniquenessCheck() throws Exception
     {
         // given
         createConstraint( "Person", "id" );
@@ -315,7 +315,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addingUniqueNodeWithUnrelatedValueShouldNotAffectLookup() throws Exception
+    void addingUniqueNodeWithUnrelatedValueShouldNotAffectLookup() throws Exception
     {
         // given
         createConstraint( "Person", "id" );

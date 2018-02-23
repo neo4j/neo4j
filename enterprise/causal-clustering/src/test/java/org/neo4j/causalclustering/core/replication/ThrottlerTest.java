@@ -35,25 +35,25 @@ import org.neo4j.function.ThrowingSupplier;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class ThrottlerTest
+class ThrottlerTest
 {
     private ExecutorService es = Executors.newCachedThreadPool();
     private ExecutorCompletionService<Integer> ecs = new ExecutorCompletionService<>( es );
 
     @AfterEach
-    public void after() throws InterruptedException
+    void after() throws InterruptedException
     {
         es.shutdown();
         es.awaitTermination( 1, MINUTES );
     }
 
     @Test
-    public void shouldAllowInvocationWhenCreditsAvailable() throws Exception
+    void shouldAllowInvocationWhenCreditsAvailable() throws Exception
     {
         // given
         Throttler throttler = new Throttler( 1000 );
@@ -67,7 +67,7 @@ public class ThrottlerTest
     }
 
     @Test
-    public void shouldAllowSequentialInvocations() throws Exception
+    void shouldAllowSequentialInvocations() throws Exception
     {
         // given
         Throttler throttler = new Throttler( 1000 );
@@ -84,7 +84,7 @@ public class ThrottlerTest
     }
 
     @Test
-    public void shouldAllowOneInvocationOversteppingTheLimit() throws Exception
+    void shouldAllowOneInvocationOversteppingTheLimit() throws Exception
     {
         // given
         Throttler throttler = new Throttler( 1000 );
@@ -100,7 +100,7 @@ public class ThrottlerTest
     }
 
     @Test
-    public void shouldBlockInvocationWhenCreditsNotAvailable() throws Exception
+    void shouldBlockInvocationWhenCreditsNotAvailable() throws Exception
     {
         // given
         Throttler throttler = new Throttler( 1000 );
@@ -124,7 +124,7 @@ public class ThrottlerTest
     }
 
     @Test
-    public void shouldInvokeWhenCreditsBecomeAvailable() throws Exception
+    void shouldInvokeWhenCreditsBecomeAvailable() throws Exception
     {
         // given
         Throttler throttler = new Throttler( 1000 );
@@ -151,7 +151,7 @@ public class ThrottlerTest
     }
 
     @Test
-    public void shouldInvokeMultipleWhenCreditsBecomeAvailable() throws Exception
+    void shouldInvokeMultipleWhenCreditsBecomeAvailable() throws Exception
     {
         // given
         Throttler throttler = new Throttler( 1000 );
@@ -194,7 +194,7 @@ public class ThrottlerTest
             return count.incrementAndGet();
         }
 
-        public int count()
+        int count()
         {
             return count.get();
         }

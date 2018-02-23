@@ -51,7 +51,7 @@ public class EnterpriseSecurityModuleTest
     private LogProvider mockLogProvider;
 
     @Test
-    public void shouldFailOnIllegalRealmNameConfiguration()
+    void shouldFailOnIllegalRealmNameConfiguration()
     {
         // Given
         nativeAuth( true, true );
@@ -68,7 +68,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldFailOnNoAuthenticationMechanism()
+    void shouldFailOnNoAuthenticationMechanism()
     {
         // Given
         nativeAuth( false, true );
@@ -85,7 +85,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldFailOnNoAuthorizationMechanism()
+    void shouldFailOnNoAuthorizationMechanism()
     {
         // Given
         nativeAuth( true, false );
@@ -102,7 +102,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldFailOnIllegalAdvancedRealmConfiguration()
+    void shouldFailOnIllegalAdvancedRealmConfiguration()
     {
         // Given
         nativeAuth( false, false );
@@ -120,7 +120,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldFailOnNotLoadedPluginAuthProvider()
+    void shouldFailOnNotLoadedPluginAuthProvider()
     {
         // Given
         nativeAuth( false, false );
@@ -141,7 +141,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldNotFailNativeWithPluginAuthorizationProvider()
+    void shouldNotFailNativeWithPluginAuthorizationProvider()
     {
         // Given
         nativeAuth( true, true );
@@ -157,7 +157,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldNotFailWithPropertyLevelPermissions()
+    void shouldNotFailWithPropertyLevelPermissions()
     {
         nativeAuth( true, true );
         ldapAuth( false, false );
@@ -173,7 +173,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldFailOnIllegalPropertyLevelPermissions()
+    void shouldFailOnIllegalPropertyLevelPermissions()
     {
         nativeAuth( true, true );
         ldapAuth( false, false );
@@ -193,7 +193,7 @@ public class EnterpriseSecurityModuleTest
     }
 
     @Test
-    public void shouldParsePropertyLevelPermissions()
+    void shouldParsePropertyLevelPermissions()
     {
         nativeAuth( true, true );
         ldapAuth( false, false );
@@ -216,7 +216,7 @@ public class EnterpriseSecurityModuleTest
     // --------- HELPERS ----------
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         config = mock( Config.class );
         mockLogProvider = mock( LogProvider.class );

@@ -29,10 +29,10 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AggregatingIndexSamplerTest
+class AggregatingIndexSamplerTest
 {
     @Test
-    public void samplePartitionedIndex()
+    void samplePartitionedIndex()
     {
         List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );

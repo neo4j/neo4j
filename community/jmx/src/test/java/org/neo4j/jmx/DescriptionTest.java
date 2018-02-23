@@ -36,18 +36,18 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DescriptionTest
+class DescriptionTest
 {
     private static GraphDatabaseService graphdb;
 
     @BeforeAll
-    public static void startDb()
+    static void startDb()
     {
         graphdb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
     @AfterAll
-    public static void stopDb()
+    static void stopDb()
     {
         if ( graphdb != null )
         {
@@ -57,13 +57,13 @@ public class DescriptionTest
     }
 
     @Test
-    public void canGetBeanDescriptionFromMBeanInterface() throws Exception
+    void canGetBeanDescriptionFromMBeanInterface() throws Exception
     {
         assertEquals( Kernel.class.getAnnotation( Description.class ).value(), kernelMBeanInfo().getDescription() );
     }
 
     @Test
-    public void canGetMethodDescriptionFromMBeanInterface() throws Exception
+    void canGetMethodDescriptionFromMBeanInterface() throws Exception
     {
         for ( MBeanAttributeInfo attr : kernelMBeanInfo().getAttributes() )
         {

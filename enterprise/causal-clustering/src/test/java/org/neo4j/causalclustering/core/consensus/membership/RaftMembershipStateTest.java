@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class RaftMembershipStateTest
+class RaftMembershipStateTest
 {
     private RaftMembershipState state = new RaftMembershipState();
 
@@ -45,14 +45,14 @@ public class RaftMembershipStateTest
     private Set<MemberId> membersB = asSet( member( 0 ), member( 1 ), member( 2 ), member( 3 ) );
 
     @Test
-    public void shouldHaveCorrectInitialState()
+    void shouldHaveCorrectInitialState()
     {
         assertThat( state.getLatest(), hasSize( 0 ) );
         assertFalse( state.uncommittedMemberChangeInLog() );
     }
 
     @Test
-    public void shouldUpdateLatestOnAppend()
+    void shouldUpdateLatestOnAppend()
     {
         // when
         state.append( 0, membersA );
@@ -69,7 +69,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldKeepLatestOnCommit()
+    void shouldKeepLatestOnCommit()
     {
         // given
         state.append( 0, membersA );
@@ -85,7 +85,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldLowerUncommittedFlagOnCommit()
+    void shouldLowerUncommittedFlagOnCommit()
     {
         // given
         state.append( 0, membersA );
@@ -99,7 +99,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldRevertToCommittedStateOnTruncation()
+    void shouldRevertToCommittedStateOnTruncation()
     {
         // given
         state.append( 0, membersA );
@@ -116,7 +116,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldNotTruncateEarlierThanIndicated()
+    void shouldNotTruncateEarlierThanIndicated()
     {
         // given
         state.append( 0, membersA );
@@ -132,7 +132,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldMarshalCorrectly() throws Exception
+    void shouldMarshalCorrectly() throws Exception
     {
         // given
         RaftMembershipState.Marshal marshal = new RaftMembershipState.Marshal();
@@ -148,7 +148,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldRefuseToAppendToTheSameIndexTwice()
+    void shouldRefuseToAppendToTheSameIndexTwice()
     {
         // given
         state.append( 0, membersA );

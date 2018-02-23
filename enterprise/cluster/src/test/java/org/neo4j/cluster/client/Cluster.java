@@ -45,7 +45,7 @@ public class Cluster
      * Creates a cluster with a specified name.
      * The name is used in deciding which directory the store files are placed in.
      */
-    public Cluster( @Nonnull String name )
+    private Cluster( @Nonnull String name )
     {
         requireNonNull( name );
         this.name = name;

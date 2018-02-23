@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -50,7 +50,7 @@ public class TestIndexImplOnNeo
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void createDb()
+    void createDb()
     {
         db = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
@@ -64,13 +64,13 @@ public class TestIndexImplOnNeo
     }
 
     @AfterEach
-    public void shutdownDb()
+    void shutdownDb()
     {
         db.shutdown();
     }
 
     @Test
-    public void createIndexWithProviderThatUsesNeoAsDataSource()
+    void createIndexWithProviderThatUsesNeoAsDataSource()
     {
         String indexName = "inneo";
         assertFalse( indexExists( indexName ) );

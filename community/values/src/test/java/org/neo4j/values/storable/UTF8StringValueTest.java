@@ -28,7 +28,6 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
@@ -41,7 +40,7 @@ public class UTF8StringValueTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldHandleDifferentTypesOfStrings()
+    void shouldHandleDifferentTypesOfStrings()
     {
         for ( String string : STRINGS )
         {
@@ -54,7 +53,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldTrimDifferentTypesOfStrings()
+    void shouldTrimDifferentTypesOfStrings()
     {
         for ( String string : STRINGS )
         {
@@ -66,7 +65,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldLTrimDifferentTypesOfStrings()
+    void shouldLTrimDifferentTypesOfStrings()
     {
         for ( String string : STRINGS )
         {
@@ -78,7 +77,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void trimShouldBeSameAsLtrimAndRtrim()
+    void trimShouldBeSameAsLtrimAndRtrim()
     {
         for ( String string : STRINGS )
         {
@@ -88,7 +87,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldSubstring()
+    void shouldSubstring()
     {
         String string = "ü";
         TextValue utf8 = utf8Value( string.getBytes( UTF_8 ) );
@@ -96,7 +95,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldRTrimDifferentTypesOfStrings()
+    void shouldRTrimDifferentTypesOfStrings()
     {
         for ( String string : STRINGS )
         {
@@ -108,7 +107,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldCompareTo()
+    void shouldCompareTo()
     {
         for ( String string1 : STRINGS )
         {
@@ -127,7 +126,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldReverse()
+    void shouldReverse()
     {
         for ( String string : STRINGS )
         {
@@ -139,7 +138,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldHandleOffset()
+    void shouldHandleOffset()
     {
         // Given
         byte[] bytes = "abcdefg".getBytes( UTF_8 );
@@ -164,7 +163,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldHandleTooLargeStartPointInSubstring()
+    void shouldHandleTooLargeStartPointInSubstring()
     {
         // Given
         TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
@@ -177,7 +176,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldHandleTooLargeLengthInSubstring()
+    void shouldHandleTooLargeLengthInSubstring()
     {
         // Given
         TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
@@ -190,7 +189,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldThrowOnNegativeStart()
+    void shouldThrowOnNegativeStart()
     {
         // Given
         TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
@@ -203,7 +202,7 @@ public class UTF8StringValueTest
     }
 
     @Test
-    public void shouldThrowOnNegativeLength()
+    void shouldThrowOnNegativeLength()
     {
         // Given
         TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );

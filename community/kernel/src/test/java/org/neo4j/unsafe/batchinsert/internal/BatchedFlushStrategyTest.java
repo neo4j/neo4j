@@ -22,11 +22,11 @@ package org.neo4j.unsafe.batchinsert.internal;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class BatchedFlushStrategyTest
+class BatchedFlushStrategyTest
 {
 
     @Test
-    public void testFlush()
+    void testFlush()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
@@ -48,7 +48,7 @@ public class BatchedFlushStrategyTest
     }
 
     @Test
-    public void testForceFlush()
+    void testForceFlush()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
@@ -63,7 +63,7 @@ public class BatchedFlushStrategyTest
     }
 
     @Test
-    public void testResetBatchCounterOnForce()
+    void testResetBatchCounterOnForce()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 3 );

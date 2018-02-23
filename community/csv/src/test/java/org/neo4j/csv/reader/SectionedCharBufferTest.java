@@ -26,10 +26,10 @@ import java.io.StringReader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SectionedCharBufferTest
+class SectionedCharBufferTest
 {
     @Test
-    public void shouldCompactIntoItself() throws Exception
+    void shouldCompactIntoItself() throws Exception
     {
         // GIVEN
         Reader data = new StringReader( "01234567" );
@@ -45,7 +45,7 @@ public class SectionedCharBufferTest
     }
 
     @Test
-    public void shouldCompactIntoAnotherBuffer() throws Exception
+    void shouldCompactIntoAnotherBuffer() throws Exception
     {
         // GIVEN
         Reader data = new StringReader( "01234567" );

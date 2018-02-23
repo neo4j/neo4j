@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
+class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
 {
     private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
 

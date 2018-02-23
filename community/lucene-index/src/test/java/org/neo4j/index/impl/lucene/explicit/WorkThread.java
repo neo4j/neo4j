@@ -30,11 +30,11 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.test.OtherThreadExecutor;
 
-public class WorkThread extends OtherThreadExecutor<CommandState>
+class WorkThread extends OtherThreadExecutor<CommandState>
 {
     private volatile boolean txOngoing;
 
-    public WorkThread( String name, Index<Node> index, GraphDatabaseService graphDb, Node node )
+    WorkThread( String name, Index<Node> index, GraphDatabaseService graphDb, Node node )
     {
         super( name, new CommandState( index, graphDb, node ) );
     }

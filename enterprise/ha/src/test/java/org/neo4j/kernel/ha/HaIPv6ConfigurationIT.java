@@ -42,13 +42,13 @@ import org.neo4j.test.rule.TestDirectory;
  * Test various IPv6 configuration options on a single HA instance.
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class HaIPv6ConfigurationIT
+class HaIPv6ConfigurationIT
 {
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
 
     @Test
-    public void testClusterWithLocalhostAddresses() throws Throwable
+    void testClusterWithLocalhostAddresses() throws Throwable
     {
         int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
@@ -70,7 +70,7 @@ public class HaIPv6ConfigurationIT
     }
 
     @Test
-    public void testClusterWithLinkLocalAddress() throws Throwable
+    void testClusterWithLinkLocalAddress() throws Throwable
     {
         InetAddress inetAddress;
 
@@ -122,7 +122,7 @@ public class HaIPv6ConfigurationIT
     }
 
     @Test
-    public void testClusterWithWildcardAddresses() throws Throwable
+    void testClusterWithWildcardAddresses() throws Throwable
     {
         int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()

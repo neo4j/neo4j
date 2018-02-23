@@ -28,10 +28,10 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.Uris.parameter;
 
-public class UrisTest
+class UrisTest
 {
     @Test
-    public void testParam()
+    void testParam()
     {
         URI uri = URI.create("http://localhost/foo?x=a&y=b&z");
 

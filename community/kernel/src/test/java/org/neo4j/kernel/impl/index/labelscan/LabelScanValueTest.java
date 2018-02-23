@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LabelScanValueTest
+class LabelScanValueTest
 {
     @Test
-    public void shouldAddBits()
+    void shouldAddBits()
     {
         // GIVEN
         LabelScanValue value = new LabelScanValue();
@@ -42,7 +42,7 @@ public class LabelScanValueTest
     }
 
     @Test
-    public void shouldRemoveBits()
+    void shouldRemoveBits()
     {
         // GIVEN
         LabelScanValue value = new LabelScanValue();

@@ -103,14 +103,14 @@ public class CsvInputBatchImportIT
     }
 
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
     @Rule
     public  final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
 
     @Test
-    public void shouldImportDataComingFromCsvFiles() throws Exception
+    void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
         Config dbConfig = Config.defaults();
@@ -139,7 +139,7 @@ public class CsvInputBatchImportIT
         }
     }
 
-    public static Input csv( File nodes, File relationships, IdType idType,
+    private static Input csv( File nodes, File relationships, IdType idType,
             org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration, Collector badCollector )
     {
         return new CsvInput(

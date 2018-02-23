@@ -59,7 +59,7 @@ public class ProgressMonitorTest
     public ExpectedException expected = ExpectedException.none();
     @Resource
     public SuppressOutput suppressOutput;
-    public SingleIndicator factory;
+    private SingleIndicator factory;
 
     @BeforeEach
     void setUp()
@@ -74,7 +74,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldReportProgressInTheSpecifiedIntervals( TestInfo testInfo )
+    void shouldReportProgressInTheSpecifiedIntervals( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
@@ -100,7 +100,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldAggregateProgressFromMultipleProcesses( TestInfo testInfo )
+    void shouldAggregateProgressFromMultipleProcesses( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
@@ -150,7 +150,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldNotAllowAddingPartsAfterCompletingMultiPartBuilder( TestInfo testInfo )
+    void shouldNotAllowAddingPartsAfterCompletingMultiPartBuilder( TestInfo testInfo )
     {
         ProgressMonitorFactory.MultiPartBuilder builder =
                 factory.mock( indicatorMock(), 10 ).multipleParts( testInfo.getDisplayName() );
@@ -163,7 +163,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldNotAllowAddingMultiplePartsWithSameIdentifier( TestInfo testInfo )
+    void shouldNotAllowAddingMultiplePartsWithSameIdentifier( TestInfo testInfo )
     {
         ProgressMonitorFactory.MultiPartBuilder builder = Mockito.mock( ProgressMonitorFactory.class )
                                                    .multipleParts( testInfo.getDisplayName() );
@@ -175,7 +175,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldStartProcessAutomaticallyIfNotDoneBefore( TestInfo testInfo )
+    void shouldStartProcessAutomaticallyIfNotDoneBefore( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
@@ -200,7 +200,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldStartMultiPartProcessAutomaticallyIfNotDoneBefore( TestInfo testInfo )
+    void shouldStartMultiPartProcessAutomaticallyIfNotDoneBefore( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
@@ -247,7 +247,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldCompleteMultiPartProgressWithNoPartsImmediately( TestInfo testInfo )
+    void shouldCompleteMultiPartProgressWithNoPartsImmediately( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
@@ -288,7 +288,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentWithTextualIndicator( TestInfo testInfo )
+    void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentWithTextualIndicator( TestInfo testInfo )
             throws Exception
     {
         // given
@@ -308,7 +308,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentEvenWhenStepResolutionIsLower(
+    void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentEvenWhenStepResolutionIsLower(
             TestInfo testInfo )
     {
         // given
@@ -327,7 +327,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldAllowStartingAPartBeforeCompletionOfMultiPartBuilder( TestInfo testInfo )
+    void shouldAllowStartingAPartBeforeCompletionOfMultiPartBuilder( TestInfo testInfo )
     {
         // given
         Indicator indicator = mock( Indicator.class );

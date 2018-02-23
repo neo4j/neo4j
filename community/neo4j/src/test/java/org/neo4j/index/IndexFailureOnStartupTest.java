@@ -56,10 +56,10 @@ public class IndexFailureOnStartupTest
 {
     private static final Label PERSON = Label.label( "Person" );
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
 
     @Test
-    public void failedIndexShouldRepairAutomatically() throws Exception
+    void failedIndexShouldRepairAutomatically() throws Exception
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -79,7 +79,7 @@ public class IndexFailureOnStartupTest
     }
 
     @Test
-    public void shouldNotBeAbleToViolateConstraintWhenBackingIndexFailsToOpen() throws Exception
+    void shouldNotBeAbleToViolateConstraintWhenBackingIndexFailsToOpen() throws Exception
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -107,7 +107,7 @@ public class IndexFailureOnStartupTest
     }
 
     @Test
-    public void shouldArchiveFailedIndex() throws Exception
+    void shouldArchiveFailedIndex() throws Exception
     {
         // given
         db.setConfig( GraphDatabaseSettings.archive_failed_index, "true" );

@@ -73,7 +73,7 @@ public class BoltChannelAutoReadLimiterIT
     private TransportConnection connection;
     private TransportTestUtil util;
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    private TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
 
@@ -85,7 +85,7 @@ public class BoltChannelAutoReadLimiterIT
 
     }
 
-    protected Consumer<Map<String,String>> getSettingsFunction()
+    private Consumer<Map<String,String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
     }

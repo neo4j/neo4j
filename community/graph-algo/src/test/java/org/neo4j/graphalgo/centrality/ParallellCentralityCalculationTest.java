@@ -35,24 +35,22 @@ import org.neo4j.graphdb.Direction;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ParallellCentralityCalculationTest extends Neo4jAlgoTestCase
+class ParallellCentralityCalculationTest extends Neo4jAlgoTestCase
 {
-    protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
+    private SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
                 new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
-    protected void assertCentrality(
-        ShortestPathBasedCentrality<Double,Double> centrality, String nodeId,
-        Double value )
+    private void assertCentrality( ShortestPathBasedCentrality<Double,Double> centrality, String nodeId, Double value )
     {
         assertTrue( centrality.getCentrality( graph.getNode( nodeId ) ).equals(
             value ) );
     }
 
     @Test
-    public void testPlusShape()
+    void testPlusShape()
     {
         // Make graph
         graph.makeEdgeChain( "a,b,c" );

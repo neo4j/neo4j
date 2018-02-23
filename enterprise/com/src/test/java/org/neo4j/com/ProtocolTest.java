@@ -39,10 +39,10 @@ import org.neo4j.storageengine.api.StorageCommand;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ProtocolTest
+class ProtocolTest
 {
     @Test
-    public void shouldSerializeAndDeserializeTransactionRepresentation() throws Exception
+    void shouldSerializeAndDeserializeTransactionRepresentation() throws Exception
     {
         // GIVEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( justOneNode() );

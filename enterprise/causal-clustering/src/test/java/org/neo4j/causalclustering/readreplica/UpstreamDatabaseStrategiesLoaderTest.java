@@ -34,13 +34,13 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.upstream_selection_strategy;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class UpstreamDatabaseStrategiesLoaderTest
+class UpstreamDatabaseStrategiesLoaderTest
 {
 
     private MemberId myself = new MemberId( UUID.randomUUID() );
 
     @Test
-    public void shouldReturnConfiguredClassesOnly()
+    void shouldReturnConfiguredClassesOnly()
     {
         // given
         Config config = Config.defaults( upstream_selection_strategy, "dummy" );
@@ -59,7 +59,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
     }
 
     @Test
-    public void shouldReturnTheFirstStrategyThatWorksFromThoseConfigured()
+    void shouldReturnTheFirstStrategyThatWorksFromThoseConfigured()
     {
         // given
         Config config = Config.defaults( upstream_selection_strategy, "yet-another-dummy,dummy,another-dummy" );

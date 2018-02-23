@@ -42,20 +42,20 @@ import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class KernelSchemaStateFlushingTest
+class KernelSchemaStateFlushingTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     private GraphDatabaseAPI db;
     private InwardKernel kernel;
 
     @Test
-    public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
+    void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
     {
         // given
         String before = commitToSchemaState( "test", "before" );
@@ -71,7 +71,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnCreateIndex() throws Exception
+    void shouldInvalidateSchemaStateOnCreateIndex() throws Exception
     {
         // given
         commitToSchemaState( "test", "before" );
@@ -86,7 +86,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnDropIndex() throws Exception
+    void shouldInvalidateSchemaStateOnDropIndex() throws Exception
     {
         IndexDescriptor descriptor = createIndex();
 
@@ -104,7 +104,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnCreateConstraint() throws Exception
+    void shouldInvalidateSchemaStateOnCreateConstraint() throws Exception
     {
         // given
         commitToSchemaState( "test", "before" );
@@ -119,7 +119,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnDropConstraint() throws Exception
+    void shouldInvalidateSchemaStateOnDropConstraint() throws Exception
     {
         // given
         ConstraintDescriptor descriptor = createConstraint();
@@ -224,14 +224,14 @@ public class KernelSchemaStateFlushingTest
     }
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         db = dbRule.getGraphDatabaseAPI();
         kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }

@@ -34,10 +34,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
-public class PortRangeSocketBinderTest
+class PortRangeSocketBinderTest
 {
     @Test
-    public void shouldReThrowExceptionIfCannotBindToPort()
+    void shouldReThrowExceptionIfCannotBindToPort()
     {
         // given
         HostnamePort localhost = new HostnamePort( "localhost", 9000 );
@@ -58,7 +58,7 @@ public class PortRangeSocketBinderTest
     }
 
     @Test
-    public void shouldReThrowExceptionIfCannotBindToAnyOfThePortsInTheRange()
+    void shouldReThrowExceptionIfCannotBindToAnyOfThePortsInTheRange()
     {
         // given
         HostnamePort localhost = new HostnamePort( "localhost", 9000, 9002 );
@@ -97,7 +97,7 @@ public class PortRangeSocketBinderTest
     }
 
     @Test
-    public void shouldReturnChannelAndSocketIfPortIsFree()
+    void shouldReturnChannelAndSocketIfPortIsFree()
     {
         // given
         HostnamePort localhost = new HostnamePort( "localhost", 9000 );
@@ -115,7 +115,7 @@ public class PortRangeSocketBinderTest
     }
 
     @Test
-    public void shouldReturnChannelAndSocketIfAnyPortsAreFree()
+    void shouldReturnChannelAndSocketIfAnyPortsAreFree()
     {
         // given
         HostnamePort localhost = new HostnamePort( "localhost", 9000, 9001 );
@@ -134,7 +134,7 @@ public class PortRangeSocketBinderTest
     }
 
     @Test
-    public void shouldReturnChannelAndSocketIfPortRangeIsInverted()
+    void shouldReturnChannelAndSocketIfPortRangeIsInverted()
     {
         // given
         HostnamePort localhost = new HostnamePort( "localhost", 9001, 9000 );

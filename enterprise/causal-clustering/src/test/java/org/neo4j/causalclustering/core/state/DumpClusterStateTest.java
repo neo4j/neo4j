@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.state;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -62,13 +62,13 @@ public class DumpClusterStateTest
     private ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, false );
 
     @BeforeEach
-    public void setup() throws ClusterStateException
+    void setup() throws ClusterStateException
     {
         clusterStateDirectory.initialize( fsa.get() );
     }
 
     @Test
-    public void shouldDumpClusterState() throws Exception
+    void shouldDumpClusterState() throws Exception
     {
         // given
         createStates();

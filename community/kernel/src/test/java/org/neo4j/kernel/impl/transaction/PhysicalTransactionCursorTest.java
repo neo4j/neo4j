@@ -47,7 +47,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class PhysicalTransactionCursorTest
+class PhysicalTransactionCursorTest
 {
     private final ReadableLogChannel channel = mock( ReadableLogChannel.class, RETURNS_MOCKS );
     private final LogEntryReader<ReadableLogChannel> entryReader = mock( LogEntryReader.class );
@@ -61,13 +61,13 @@ public class PhysicalTransactionCursorTest
     private PhysicalTransactionCursor<ReadableLogChannel> cursor;
 
     @BeforeEach
-    public void setup() throws IOException
+    void setup() throws IOException
     {
         cursor = new PhysicalTransactionCursor<>( channel, entryReader );
     }
 
     @Test
-    public void shouldCloseTheUnderlyingChannel() throws IOException
+    void shouldCloseTheUnderlyingChannel() throws IOException
     {
         // when
         cursor.close();
@@ -77,7 +77,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldReturnFalseWhenThereAreNoEntries() throws IOException
+    void shouldReturnFalseWhenThereAreNoEntries() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn( NULL_ENTRY );
@@ -91,7 +91,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldReturnFalseWhenThereIsAStartEntryButNoCommitEntries() throws IOException
+    void shouldReturnFalseWhenThereIsAStartEntryButNoCommitEntries() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, NULL_ENTRY );
@@ -105,7 +105,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldCallTheVisitorWithTheFoundTransaction() throws IOException
+    void shouldCallTheVisitorWithTheFoundTransaction() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY );
@@ -123,7 +123,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldSkipCheckPoints() throws IOException
+    void shouldSkipCheckPoints() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn(

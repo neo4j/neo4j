@@ -46,7 +46,7 @@ public class MyExtensionThatAddsInjectable
         return new LifecycleAdapter();
     }
 
-    public interface Dependencies
+    interface Dependencies
     {
         Procedures procedures();
     }

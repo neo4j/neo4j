@@ -72,19 +72,19 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.rule.TestDirectory.DATABASE_DIRECTORY;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class FileWatchIT
+class FileWatchIT
 {
     private static final long TEST_TIMEOUT = 600_000;
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private File storeDir;
     private AssertableLogProvider logProvider;
     private GraphDatabaseService database;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         storeDir = testDirectory.graphDbDir();
         logProvider = new AssertableLogProvider();
@@ -92,14 +92,14 @@ public class FileWatchIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         shutdownDatabaseSilently( database );
     }
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
-    public void notifyAboutStoreFileDeletion() throws Exception
+    void notifyAboutStoreFileDeletion() throws Exception
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
 
@@ -125,7 +125,7 @@ public class FileWatchIT
     }
 
     @Test
-    public void notifyWhenFileWatchingFailToStart()
+    void notifyWhenFileWatchingFailToStart()
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -147,7 +147,7 @@ public class FileWatchIT
     }
 
     @Test
-    public void notifyAboutExplicitIndexFolderRemoval() throws InterruptedException
+    void notifyAboutExplicitIndexFolderRemoval() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             String monitoredDirectory = getExplicitIndexDirectory( storeDir );
@@ -175,7 +175,7 @@ public class FileWatchIT
     }
 
     @Test
-    public void doNotNotifyAboutLuceneIndexFilesDeletion() throws InterruptedException
+    void doNotNotifyAboutLuceneIndexFilesDeletion() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
@@ -217,7 +217,7 @@ public class FileWatchIT
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
-    public void doNotMonitorTransactionLogFiles() throws InterruptedException
+    void doNotMonitorTransactionLogFiles() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
 
@@ -246,7 +246,7 @@ public class FileWatchIT
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
-    public void notifyWhenWholeStoreDirectoryRemoved() throws IOException
+    void notifyWhenWholeStoreDirectoryRemoved() throws IOException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
 

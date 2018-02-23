@@ -45,17 +45,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( {RandomExtension.class, EmbeddedDatabaseExtension.class} )
-public class IndexPopulationFlipRaceIT
+class IndexPopulationFlipRaceIT
 {
     private static final int NODES_PER_INDEX = 10;
 
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldAtomicallyFlipMultipleIndexes() throws Exception
+    void shouldAtomicallyFlipMultipleIndexes() throws Exception
     {
         // A couple of times since this is probabilistic, but also because there seems to be a difference
         // in timings between the first time and all others... which is perhaps super obvious to some, but not to me.

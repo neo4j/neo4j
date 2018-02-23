@@ -33,13 +33,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class SslPolicyConfigValidatorTest
+class SslPolicyConfigValidatorTest
 {
     @SuppressWarnings( "unchecked" )
     private Consumer<String> warnings = mock( Consumer.class );
 
     @Test
-    public void shouldAcceptAllValidPolicyKeys()
+    void shouldAcceptAllValidPolicyKeys()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -65,7 +65,7 @@ public class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldThrowOnUnknownPolicySetting()
+    void shouldThrowOnUnknownPolicySetting()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -84,7 +84,7 @@ public class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldThrowOnDirectPolicySetting()
+    void shouldThrowOnDirectPolicySetting()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -103,7 +103,7 @@ public class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldIgnoreUnknownNonPolicySettings()
+    void shouldIgnoreUnknownNonPolicySettings()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -121,7 +121,7 @@ public class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldComplainWhenMissingMandatoryBaseDirectory()
+    void shouldComplainWhenMissingMandatoryBaseDirectory()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();

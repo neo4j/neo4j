@@ -23,16 +23,16 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.BufferingLog;
 
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_VERSION_WARNING;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_WARNING;
 
-public class JVMCheckerTest
+class JVMCheckerTest
 {
     @Test
-    public void shouldIssueWarningWhenUsingHotspotServerVmVersion7()
+    void shouldIssueWarningWhenUsingHotspotServerVmVersion7()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -43,7 +43,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion8()
+    void shouldNotIssueWarningWhenUsingHotspotServerVmVersion8()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -54,7 +54,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldNotIssueWarningWhenUsingIbmJ9Vm()
+    void shouldNotIssueWarningWhenUsingIbmJ9Vm()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -65,7 +65,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingHotspotServerVmVersion7InThe32BitVersion()
+    void shouldIssueWarningWhenUsingHotspotServerVmVersion7InThe32BitVersion()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -76,7 +76,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingOpenJDKServerVmVersion7()
+    void shouldIssueWarningWhenUsingOpenJDKServerVmVersion7()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -87,7 +87,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingOpenJDKClientVmVersion7()
+    void shouldIssueWarningWhenUsingOpenJDKClientVmVersion7()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -98,7 +98,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingUnsupportedJvm()
+    void shouldIssueWarningWhenUsingUnsupportedJvm()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -109,7 +109,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingUnsupportedJvmVersion()
+    void shouldIssueWarningWhenUsingUnsupportedJvmVersion()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 

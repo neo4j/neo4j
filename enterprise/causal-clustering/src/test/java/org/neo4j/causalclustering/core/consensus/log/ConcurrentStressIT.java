@@ -49,12 +49,12 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
 {
     private static final int MAX_CONTENT_SIZE = 2048;
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
 
     protected abstract T createRaftLog( FileSystemAbstraction fsa, File dir );
 
     @Test
-    public void readAndWrite() throws Throwable
+    void readAndWrite() throws Throwable
     {
         readAndWrite( 5, 2, SECONDS );
     }

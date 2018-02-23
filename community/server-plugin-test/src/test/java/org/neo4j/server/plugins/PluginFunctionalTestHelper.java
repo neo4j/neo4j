@@ -55,7 +55,7 @@ public class PluginFunctionalTestHelper
         return deserializeMap(body);
     }
 
-    protected static Map<String, Object> deserializeMap( final String body ) throws JsonParseException
+    private static Map<String, Object> deserializeMap( final String body ) throws JsonParseException
     {
         Map<String, Object> result = JsonHelper.jsonToMap( body );
         assertThat( result, CoreMatchers.is( not( nullValue() ) ) );
@@ -69,7 +69,7 @@ public class PluginFunctionalTestHelper
         return result;
     }
 
-    protected static String getResponseText( final JaxRsResponse response )
+    private static String getResponseText( final JaxRsResponse response )
     {
         String body = response.getEntity();
 
@@ -77,7 +77,7 @@ public class PluginFunctionalTestHelper
         return body;
     }
 
-    protected static Map<String, Object> makePostMap( String url ) throws JsonParseException
+    static Map<String, Object> makePostMap( String url ) throws JsonParseException
     {
         JaxRsResponse response = new RestRequest().post(url,null);
 
@@ -87,7 +87,7 @@ public class PluginFunctionalTestHelper
         return deserializeMap( body );
     }
 
-    protected static Map<String, Object> makePostMap( String url, Map<String, Object> params )
+    static Map<String, Object> makePostMap( String url, Map<String,Object> params )
             throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
@@ -99,7 +99,7 @@ public class PluginFunctionalTestHelper
         return deserializeMap( body );
     }
 
-    protected static List<Map<String, Object>> makePostList( String url ) throws JsonParseException
+    static List<Map<String, Object>> makePostList( String url ) throws JsonParseException
     {
         JaxRsResponse response = new RestRequest().post(url, null);
 
@@ -109,7 +109,7 @@ public class PluginFunctionalTestHelper
         return deserializeList(body);
     }
 
-    protected static List<Map<String, Object>> makePostList( String url, Map<String, Object> params )
+    static List<Map<String, Object>> makePostList( String url, Map<String,Object> params )
             throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom(params);

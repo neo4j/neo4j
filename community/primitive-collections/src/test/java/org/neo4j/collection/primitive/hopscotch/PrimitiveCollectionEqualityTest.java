@@ -41,13 +41,13 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.Factory;
 import org.neo4j.memory.GlobalMemoryTracker;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @SuppressWarnings( "unchecked" )
 @RunWith( Theories.class )
@@ -72,7 +72,7 @@ public class PrimitiveCollectionEqualityTest
             this.applicableType = applicableType;
         }
 
-        public boolean isApplicable( Factory<? extends PrimitiveCollection> factory )
+        boolean isApplicable( Factory<? extends PrimitiveCollection> factory )
         {
             try ( PrimitiveCollection coll = factory.newInstance() )
             {
@@ -80,7 +80,7 @@ public class PrimitiveCollectionEqualityTest
             }
         }
 
-        public abstract Value<T> randomValue();
+        protected abstract Value<T> randomValue();
     }
 
     // ==== Test Value Producers ====

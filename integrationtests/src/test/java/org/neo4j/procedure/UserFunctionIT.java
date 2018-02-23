@@ -93,7 +93,7 @@ import static org.neo4j.procedure.StringMatcherIgnoresNewlines.containsStringIgn
 public class UserFunctionIT
 {
     @Resource
-    public TestDirectory plugins;
+    private TestDirectory plugins;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -102,7 +102,7 @@ public class UserFunctionIT
     private GraphDatabaseService db;
 
     @Test
-    public void shouldGiveNiceErrorMessageOnWrongStaticType()
+    void shouldGiveNiceErrorMessageOnWrongStaticType()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -117,7 +117,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldGiveNiceErrorMessageWhenNoArguments()
+    void shouldGiveNiceErrorMessageWhenNoArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -134,7 +134,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenMissingArguments()
+    void shouldShowDescriptionWhenMissingArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -152,7 +152,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallDelegatingFunction()
+    void shouldCallDelegatingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -168,7 +168,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallRecursiveFunction()
+    void shouldCallRecursiveFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -184,7 +184,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithGenericArgument()
+    void shouldCallFunctionWithGenericArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -201,7 +201,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithMapArgument()
+    void shouldCallFunctionWithMapArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -217,7 +217,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithMapArgumentContainingNullFromParameter()
+    void shouldCallFunctionWithMapArgumentContainingNullFromParameter()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -233,7 +233,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithNull()
+    void shouldCallFunctionWithNull()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -249,7 +249,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithNullFromParameter()
+    void shouldCallFunctionWithNullFromParameter()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -265,7 +265,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithNodeReturn()
+    void shouldCallFunctionWithNodeReturn()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -283,7 +283,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMissingFunction()
+    void shouldGiveHelpfulErrorOnMissingFunction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -297,7 +297,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnExceptionMidStream()
+    void shouldGiveHelpfulErrorOnExceptionMidStream()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -317,7 +317,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldShowCauseOfError()
+    void shouldShowCauseOfError()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -334,7 +334,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithAccessToDB()
+    void shouldCallFunctionWithAccessToDB()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -354,7 +354,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldLogLikeThereIsNoTomorrow()
+    void shouldLogLikeThereIsNoTomorrow()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -387,7 +387,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldDenyReadOnlyFunctionToPerformWrites()
+    void shouldDenyReadOnlyFunctionToPerformWrites()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -401,7 +401,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallWriteProcedureThroughReadFunction()
+    void shouldNotBeAbleToCallWriteProcedureThroughReadFunction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -415,7 +415,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldDenyReadOnlyFunctionToPerformSchema()
+    void shouldDenyReadOnlyFunctionToPerformSchema()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -430,7 +430,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingFunction()
+    void shouldCoerceLongToDoubleAtRuntimeWhenCallingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -445,7 +445,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingFunction()
+    void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -461,7 +461,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceListOfMixedNumbers()
+    void shouldCoerceListOfMixedNumbers()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -477,7 +477,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceDoubleToLongAtRuntimeWhenCallingFunction()
+    void shouldCoerceDoubleToLongAtRuntimeWhenCallingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -492,7 +492,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyFunction()
+    void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyFunction()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -507,7 +507,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldFailToShutdown()
+    void shouldFailToShutdown()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -522,7 +522,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldBeAbleToWriteAfterCallingReadOnlyFunction()
+    void shouldBeAbleToWriteAfterCallingReadOnlyFunction()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -532,7 +532,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldPreserveSecurityContextWhenSpawningThreadsCreatingTransactionInFunctions() throws Throwable
+    void shouldPreserveSecurityContextWhenSpawningThreadsCreatingTransactionInFunctions() throws Throwable
     {
         // given
         Runnable doIt = () ->
@@ -581,7 +581,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldBeAbleToUseFunctionCallWithPeriodicCommit() throws IOException
+    void shouldBeAbleToUseFunctionCallWithPeriodicCommit() throws IOException
     {
         // GIVEN
         String[] lines = IntStream.rangeClosed( 1, 100 )
@@ -609,7 +609,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldFailIfUsingPeriodicCommitWithReadOnlyQuery() throws IOException
+    void shouldFailIfUsingPeriodicCommitWithReadOnlyQuery() throws IOException
     {
         // GIVEN
         String url = createCsvFile( "13" );
@@ -626,7 +626,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionReturningPaths()
+    void shouldCallFunctionReturningPaths()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -667,7 +667,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldHandleAggregationFunctionInFunctionCall()
+    void shouldHandleAggregationFunctionInFunctionCall()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -682,7 +682,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldHandleNullInList()
+    void shouldHandleNullInList()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -696,7 +696,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldWorkWhenUsingWithToProjectList()
+    void shouldWorkWhenUsingWithToProjectList()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -714,7 +714,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldNotAllowReadFunctionInNoneTransaction()
+    void shouldNotAllowReadFunctionInNoneTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -731,7 +731,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallProcedureWithAllDefaultArgument()
+    void shouldCallProcedureWithAllDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues() AS result" );
@@ -742,7 +742,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldHandleNullAsParameter()
+    void shouldHandleNullAsParameter()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues($p) AS result", map( "p", null ) );
@@ -753,7 +753,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithOneProvidedRestDefaultArgument()
+    void shouldCallFunctionWithOneProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string') AS result" );
@@ -764,7 +764,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithTwoProvidedRestDefaultArgument()
+    void shouldCallFunctionWithTwoProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string', 1337) AS result" );
@@ -775,7 +775,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithThreeProvidedRestDefaultArgument()
+    void shouldCallFunctionWithThreeProvidedRestDefaultArgument()
     {
         //Given/When
         Result res =
@@ -787,7 +787,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithFourProvidedRestDefaultArgument()
+    void shouldCallFunctionWithFourProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute(
@@ -799,7 +799,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionReturningNull()
+    void shouldCallFunctionReturningNull()
     {
         //Given/When
         Result res = db.execute(
@@ -815,7 +815,7 @@ public class UserFunctionIT
      * built-in functions in any shape or form.
      */
     @Test
-    public void shouldListAllUserDefinedFunctions()
+    void shouldListAllUserDefinedFunctions()
     {
         //Given/When
         Result res = db.execute( "CALL dbms.functions()" );
@@ -833,7 +833,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithSameNameAsBuiltIn()
+    void shouldCallFunctionWithSameNameAsBuiltIn()
     {
         //Given/When
         Result res = db.execute( "RETURN this.is.test.only.sum([1337, 2.718281828, 3.1415]) AS result" );
@@ -844,7 +844,7 @@ public class UserFunctionIT
     }
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         exceptionsInFunction.clear();
         File myFunctions = plugins.file( "myFunctions.jar" );
@@ -860,7 +860,7 @@ public class UserFunctionIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( this.db != null )
         {
@@ -868,13 +868,13 @@ public class UserFunctionIT
         }
     }
 
-    public static class ClassWithFunctions
+    static class ClassWithFunctions
     {
         @Context
-        public GraphDatabaseService db;
+        GraphDatabaseService db;
 
         @Context
-        public Log log;
+        Log log;
 
         @UserFunction
         public long integrationTestMe()

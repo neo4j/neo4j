@@ -44,8 +44,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
         return stepWithStats( name, maxProcessors, Keys.avg_processing_time, avg );
     }
 
-    public static ControlledStep<?> stepWithStats( String name, int maxProcessors,
-            Map<Key,Long> statistics )
+    private static ControlledStep<?> stepWithStats( String name, int maxProcessors, Map<Key,Long> statistics )
     {
         ControlledStep<?> step = new ControlledStep<>( name, maxProcessors );
         for ( Map.Entry<Key,Long> statistic : statistics.entrySet() )
@@ -66,12 +65,12 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     private volatile int numberOfProcessors = 1;
     private boolean completed;
 
-    public ControlledStep( String name, int maxProcessors )
+    private ControlledStep( String name, int maxProcessors )
     {
         this( name, maxProcessors, 1 );
     }
 
-    public ControlledStep( String name, int maxProcessors, int initialProcessorCount )
+    private ControlledStep( String name, int maxProcessors, int initialProcessorCount )
     {
         this.maxProcessors = maxProcessors == 0 ? Integer.MAX_VALUE : maxProcessors;
         this.name = name;
@@ -112,7 +111,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
         throw new UnsupportedOperationException( "Cannot participate in actual processing yet" );
     }
 
-    public void setStat( Key key, long value )
+    void setStat( Key key, long value )
     {
         stats.put( key, new ControlledStat( value ) );
     }

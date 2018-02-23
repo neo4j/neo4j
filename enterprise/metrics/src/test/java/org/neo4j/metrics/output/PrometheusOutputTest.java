@@ -39,10 +39,10 @@ import static java.util.Collections.emptySortedMap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrometheusOutputTest
+class PrometheusOutputTest
 {
     @Test
-    public void eventsShouldBeRedirectedToGauges() throws Throwable
+    void eventsShouldBeRedirectedToGauges() throws Throwable
     {
         String serverAddress = "localhost:" + PortAuthority.allocatePort();
         MetricRegistry registry = new MetricRegistry();
@@ -70,7 +70,7 @@ public class PrometheusOutputTest
     }
 
     @Test
-    public void metricsRegisteredAfterStartShouldBeIncluded() throws Throwable
+    void metricsRegisteredAfterStartShouldBeIncluded() throws Throwable
     {
         String serverAddress = "localhost:" + PortAuthority.allocatePort();
         MetricRegistry registry = new MetricRegistry();

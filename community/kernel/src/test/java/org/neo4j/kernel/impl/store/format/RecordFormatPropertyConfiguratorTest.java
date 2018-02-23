@@ -53,7 +53,7 @@ public class RecordFormatPropertyConfiguratorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void keepUserDefinedFormatConfig()
+    void keepUserDefinedFormatConfig()
     {
         Config config = Config.defaults( string_block_size, "36" );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
@@ -62,7 +62,7 @@ public class RecordFormatPropertyConfiguratorTest
     }
 
     @Test
-    public void overrideDefaultValuesForCurrentFormat()
+    void overrideDefaultValuesForCurrentFormat()
     {
         Config config = Config.defaults();
         int testHeaderSize = 17;
@@ -76,7 +76,7 @@ public class RecordFormatPropertyConfiguratorTest
     }
 
     @Test
-    public void checkForMinimumBlockSize()
+    void checkForMinimumBlockSize()
     {
         Config config = Config.defaults();
         int testHeaderSize = 60;

@@ -49,12 +49,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RaftMessageEncodingDecodingTest
+class RaftMessageEncodingDecodingTest
 {
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
 
     @Test
-    public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
+    void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
     {
         MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.AppendEntries.Request request = new AppendEntriesRequestBuilder()
@@ -68,7 +68,7 @@ public class RaftMessageEncodingDecodingTest
     }
 
     @Test
-    public void shouldSerializeAppendRequestWithNoEntries() throws Exception
+    void shouldSerializeAppendRequestWithNoEntries() throws Exception
     {
         MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.AppendEntries.Request request = new AppendEntriesRequestBuilder()
@@ -80,7 +80,7 @@ public class RaftMessageEncodingDecodingTest
     }
 
     @Test
-    public void shouldSerializeAppendResponse() throws Exception
+    void shouldSerializeAppendResponse() throws Exception
     {
         MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.AppendEntries.Response request = new AppendEntriesResponseBuilder()
@@ -92,7 +92,7 @@ public class RaftMessageEncodingDecodingTest
     }
 
     @Test
-    public void shouldSerializeHeartbeats() throws Exception
+    void shouldSerializeHeartbeats() throws Exception
     {
         // Given
         Instant now = Instant.now();
@@ -131,7 +131,7 @@ public class RaftMessageEncodingDecodingTest
     }
 
     @Test
-    public void shouldSerializeVoteRequest() throws Exception
+    void shouldSerializeVoteRequest() throws Exception
     {
         MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.Vote.Request request = new VoteRequestBuilder()
@@ -145,7 +145,7 @@ public class RaftMessageEncodingDecodingTest
     }
 
     @Test
-    public void shouldSerializeVoteResponse() throws Exception
+    void shouldSerializeVoteResponse() throws Exception
     {
         MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.Vote.Response request = new VoteResponseBuilder()

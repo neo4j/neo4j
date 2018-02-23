@@ -57,10 +57,10 @@ import static org.neo4j.metrics.source.db.BoltMetrics.TOTAL_QUEUE_TIME;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class BoltMetricsIT
+class BoltMetricsIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseAPI db;
     private TransportConnection conn;
@@ -68,7 +68,7 @@ public class BoltMetricsIT
     private final TransportTestUtil util = new TransportTestUtil( new Neo4jPackV1() );
 
     @Test
-    public void shouldMonitorBolt() throws Throwable
+    void shouldMonitorBolt() throws Throwable
     {
         int port = PortAuthority.allocatePort();
 
@@ -114,7 +114,7 @@ public class BoltMetricsIT
     }
 
     @AfterEach
-    public void cleanup() throws Exception
+    void cleanup() throws Exception
     {
         conn.disconnect();
         db.shutdown();

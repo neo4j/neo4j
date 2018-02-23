@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
  *
  * @author Tobias Lindaaker
  */
-public class TransactionWriter
+class TransactionWriter
 {
     private final NeoStores neoStores;
 
@@ -59,7 +59,7 @@ public class TransactionWriter
     private final List<Command.RelationshipGroupCommand> relationshipGroupCommands = new ArrayList<>();
     private final List<Command> otherCommands = new ArrayList<>();
 
-    public TransactionWriter( NeoStores neoStores )
+    TransactionWriter( NeoStores neoStores )
     {
         this.neoStores = neoStores;
     }
@@ -99,7 +99,7 @@ public class TransactionWriter
         otherCommands.add( new Command.NeoStoreCommand( before, after ) );
     }
 
-    public void update( LabelTokenRecord before, LabelTokenRecord after )
+    private void update( LabelTokenRecord before, LabelTokenRecord after )
     {
         otherCommands.add( new Command.LabelTokenCommand( before, after ) );
     }
@@ -135,7 +135,7 @@ public class TransactionWriter
         add( before, node );
     }
 
-    public void update( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
+    private void update( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
         after.setInUse( true );
         add( before, after );
@@ -169,7 +169,7 @@ public class TransactionWriter
         updateSchema( beforeRecord, afterRecord, rule );
     }
 
-    public void updateSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
+    private void updateSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
             SchemaRule rule )
     {
         for ( DynamicRecord record : afterRecords )
@@ -232,22 +232,22 @@ public class TransactionWriter
         otherCommands.add( new Command.SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
     }
 
-    public void add( NodeRecord before, NodeRecord after )
+    private void add( NodeRecord before, NodeRecord after )
     {
         nodeCommands.add( new Command.NodeCommand( before, after ) );
     }
 
-    public void add( RelationshipRecord before, RelationshipRecord after )
+    private void add( RelationshipRecord before, RelationshipRecord after )
     {
         relationshipCommands.add( new Command.RelationshipCommand( before, after ) );
     }
 
-    public void add( RelationshipGroupRecord before, RelationshipGroupRecord after )
+    private void add( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
         relationshipGroupCommands.add( new Command.RelationshipGroupCommand( before, after ) );
     }
 
-    public void add( PropertyRecord before, PropertyRecord property )
+    private void add( PropertyRecord before, PropertyRecord property )
     {
         otherCommands.add( new Command.PropertyCommand( before, property ) );
     }
@@ -257,7 +257,7 @@ public class TransactionWriter
         otherCommands.add( new Command.RelationshipTypeTokenCommand( before, after ) );
     }
 
-    public void add( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
+    private void add( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
         otherCommands.add( new Command.PropertyKeyTokenCommand( before, after ) );
     }

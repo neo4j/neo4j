@@ -21,15 +21,14 @@ package org.neo4j.server.web;
 
 import org.junit.jupiter.api.Test;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.server.web.JettyThreadCalculator.MAX_THREADS;
 
-public class JettyThreadCalculatorTest
+class JettyThreadCalculatorTest
 {
     @Test
-    public void shouldHaveCorrectAmountOfThreads()
+    void shouldHaveCorrectAmountOfThreads()
     {
         JettyThreadCalculator jtc = new JettyThreadCalculator( 1 );
         assertEquals( 1, jtc.getAcceptors(), "Wrong acceptor value for 1 core" );
@@ -68,7 +67,7 @@ public class JettyThreadCalculatorTest
     }
 
     @Test
-    public void shouldNotAllowLessThanOneThread()
+    void shouldNotAllowLessThanOneThread()
     {
         try
         {
@@ -82,7 +81,7 @@ public class JettyThreadCalculatorTest
     }
 
     @Test
-    public void shouldNotAllowMoreThanMaxValue()
+    void shouldNotAllowMoreThanMaxValue()
     {
         try
         {

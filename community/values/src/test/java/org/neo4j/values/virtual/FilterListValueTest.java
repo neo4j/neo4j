@@ -29,10 +29,10 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.filter;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class FilterListValueTest
+class FilterListValueTest
 {
     @Test
-    public void shouldFilterList()
+    void shouldFilterList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),

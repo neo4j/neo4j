@@ -59,8 +59,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 {
     private final File neo4jHome;
-    protected final DiscoveryServiceFactory discoveryServiceFactory;
-    protected final File storeDir;
+    private final DiscoveryServiceFactory discoveryServiceFactory;
+    private final File storeDir;
     private final File clusterStateDir;
     private final File raftLogDir;
     private final Map<String,String> config = stringMap();
@@ -68,7 +68,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
     private final String raftListenAddress;
-    protected CoreGraphDatabase database;
+    private CoreGraphDatabase database;
     private final Config memberConfig;
     private final ThreadGroup threadGroup;
     private final Monitors monitors = new Monitors();

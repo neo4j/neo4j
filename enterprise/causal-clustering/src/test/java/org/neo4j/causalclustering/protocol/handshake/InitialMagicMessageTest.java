@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class InitialMagicMessageTest
+class InitialMagicMessageTest
 {
     @Test
-    public void shouldCreateWithCorrectMagicValue()
+    void shouldCreateWithCorrectMagicValue()
     {
         // given
         InitialMagicMessage magicMessage = InitialMagicMessage.instance();
@@ -38,7 +38,7 @@ public class InitialMagicMessageTest
     }
 
     @Test
-    public void shouldHaveCorrectMessageCode() throws Exception
+    void shouldHaveCorrectMessageCode() throws Exception
     {
         byte[] bytes = InitialMagicMessage.CORRECT_MAGIC_VALUE.substring( 0, 4 ).getBytes( "UTF-8" );
         int messageCode = bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);

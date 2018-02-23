@@ -40,10 +40,10 @@ import org.neo4j.tools.dump.inconsistency.ReportInconsistencies;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class InconsistencyReportReaderTest
+class InconsistencyReportReaderTest
 {
     @Test
-    public void shouldReadBasicEntities() throws Exception
+    void shouldReadBasicEntities() throws Exception
     {
         // GIVEN
         ByteArrayOutputStream out = new ByteArrayOutputStream( 1_000 );
@@ -86,7 +86,7 @@ public class InconsistencyReportReaderTest
     }
 
     @Test
-    public void shouldParseRelationshipGroupInconsistencies() throws Exception
+    void shouldParseRelationshipGroupInconsistencies() throws Exception
     {
         // Given
         ReportInconsistencies inconsistencies = new ReportInconsistencies();

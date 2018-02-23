@@ -36,7 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestAutoIndexReopen
+class TestAutoIndexReopen
 {
 
     private GraphDatabaseAPI graphDb;
@@ -46,7 +46,7 @@ public class TestAutoIndexReopen
     private long id3 = -1;
 
     @BeforeEach
-    public void startDb()
+    void startDb()
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().setConfig(new HashMap<>()).newGraphDatabase();
@@ -82,7 +82,7 @@ public class TestAutoIndexReopen
     }
 
     @AfterEach
-    public void stopDb()
+    void stopDb()
     {
         if ( graphDb != null )
         {
@@ -97,7 +97,7 @@ public class TestAutoIndexReopen
     }
 
     @Test
-    public void testForceOpenIfChanged()
+    void testForceOpenIfChanged()
     {
         // do some actions to force the indexreader to be reopened
         try ( Transaction tx = graphDb.beginTx() )

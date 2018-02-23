@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -61,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class WriteTransactionCommandOrderingTest
+class WriteTransactionCommandOrderingTest
 {
     private final AtomicReference<List<String>> currentRecording = new AtomicReference<>();
     private final RecordingRelationshipStore relationshipStore = new RecordingRelationshipStore( currentRecording );
@@ -69,7 +68,7 @@ public class WriteTransactionCommandOrderingTest
     private final RecordingPropertyStore propertyStore = new RecordingPropertyStore( currentRecording );
     private final NeoStores store = mock( NeoStores.class );
 
-    public WriteTransactionCommandOrderingTest()
+    WriteTransactionCommandOrderingTest()
     {
         when( store.getPropertyStore() ).thenReturn( propertyStore );
         when( store.getNodeStore() ).thenReturn( nodeStore );
@@ -110,7 +109,7 @@ public class WriteTransactionCommandOrderingTest
     }
 
     @Test
-    public void shouldExecuteCommandsInTheSameOrderRegardlessOfItBeingRecoveredOrNot() throws Exception
+    void shouldExecuteCommandsInTheSameOrderRegardlessOfItBeingRecoveredOrNot() throws Exception
     {
         // Given
         TransactionRecordState tx = injectAllPossibleCommands();

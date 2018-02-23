@@ -57,7 +57,7 @@ import static org.neo4j.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
 public class DiagnosticsReporterTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
@@ -122,7 +122,7 @@ public class DiagnosticsReporterTest
     }
 
     @Test
-    public void dumpFiles() throws Exception
+    void dumpFiles() throws Exception
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter(  );
         MyProvider myProvider = new MyProvider( fileSystemRule.get() );
@@ -151,7 +151,7 @@ public class DiagnosticsReporterTest
     }
 
     @Test
-    public void shouldContinueAfterError() throws Exception
+    void shouldContinueAfterError() throws Exception
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter(  );
         MyProvider myProvider = new MyProvider( fileSystemRule.get() );

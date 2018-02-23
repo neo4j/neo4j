@@ -31,10 +31,10 @@ import org.neo4j.kernel.ha.cluster.DefaultElectionCredentials;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class DefaultElectionCredentialsTest
+class DefaultElectionCredentialsTest
 {
     @Test
-    public void testCompareToDifferentTxId()
+    void testCompareToDifferentTxId()
     {
         DefaultElectionCredentials highTxId =
                 new DefaultElectionCredentials( 3, 12, false );
@@ -56,7 +56,7 @@ public class DefaultElectionCredentialsTest
     }
 
     @Test
-    public void testCompareToSameTxId()
+    void testCompareToSameTxId()
     {
         // Lower id means higher priority
         DefaultElectionCredentials highSameTxId = new DefaultElectionCredentials( 1, 10, false );
@@ -72,7 +72,7 @@ public class DefaultElectionCredentialsTest
     }
 
     @Test
-    public void testExistingMasterLosesWhenComparedToHigherTxIdHigherId()
+    void testExistingMasterLosesWhenComparedToHigherTxIdHigherId()
     {
         DefaultElectionCredentials currentMaster = new DefaultElectionCredentials( 1, 10, true );
         DefaultElectionCredentials incoming = new DefaultElectionCredentials( 2, 11, false );
@@ -87,7 +87,7 @@ public class DefaultElectionCredentialsTest
     }
 
     @Test
-    public void testExistingMasterWinsWhenComparedToLowerIdSameTxId()
+    void testExistingMasterWinsWhenComparedToLowerIdSameTxId()
     {
         DefaultElectionCredentials currentMaster = new DefaultElectionCredentials( 2, 10, true );
         DefaultElectionCredentials incoming = new DefaultElectionCredentials( 1, 10, false );
@@ -102,7 +102,7 @@ public class DefaultElectionCredentialsTest
     }
 
     @Test
-    public void testExistingMasterWinsWhenComparedToHigherIdLowerTxId()
+    void testExistingMasterWinsWhenComparedToHigherIdLowerTxId()
     {
         DefaultElectionCredentials currentMaster = new DefaultElectionCredentials( 1, 10, true );
         DefaultElectionCredentials incoming = new DefaultElectionCredentials( 2, 9, false );
@@ -117,7 +117,7 @@ public class DefaultElectionCredentialsTest
     }
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         DefaultElectionCredentials sameAsNext =
                 new DefaultElectionCredentials( 1, 10, false );

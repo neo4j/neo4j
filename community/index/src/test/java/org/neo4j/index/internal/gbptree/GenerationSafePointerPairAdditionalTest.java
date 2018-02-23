@@ -29,10 +29,10 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.MAX_GEN
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.write;
 
-public class GenerationSafePointerPairAdditionalTest
+class GenerationSafePointerPairAdditionalTest
 {
     @Test
-    public void shouldFailFastOnTooLargeGenerationOffset()
+    void shouldFailFastOnTooLargeGenerationOffset()
     {
         // GIVEN
         int pageSize = PageCache.PAGE_SIZE;

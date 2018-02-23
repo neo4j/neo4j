@@ -45,19 +45,17 @@ import static java.time.Duration.ofMillis;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.values.storable.Values.of;
 
-public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
+class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 {
     private int labelId;
     private int propertyId1;
     private int propertyId2;
 
     @BeforeEach
-    public void createKeys() throws Exception
+    void createKeys() throws Exception
     {
         TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
         this.labelId = tokenWriteOperations.labelGetOrCreateForName( "Person" );
@@ -84,7 +82,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     // must block other transactions that try to call it with the same arguments
 
     @Test
-    public void shouldFindMatchingNode() throws Exception
+    void shouldFindMatchingNode() throws Exception
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
@@ -102,7 +100,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotFindNonMatchingNode() throws Exception
+    void shouldNotFindNonMatchingNode() throws Exception
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
@@ -119,7 +117,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldCompositeFindMatchingNode() throws Exception
+    void shouldCompositeFindMatchingNode() throws Exception
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
@@ -138,7 +136,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotCompositeFindNonMatchingNode() throws Exception
+    void shouldNotCompositeFindNonMatchingNode() throws Exception
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
@@ -157,7 +155,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldBlockUniqueIndexSeekFromCompetingTransaction()
+    void shouldBlockUniqueIndexSeekFromCompetingTransaction()
     {
         assertTimeout( ofMillis( 10_000 ), () -> {
             //  This is the interleaving that we are trying to verify works correctly:

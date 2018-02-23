@@ -54,20 +54,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith( EmbeddedDatabaseExtension.class )
 public class LuceneFulltextTestSupport
 {
-    protected static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
-    protected static final Log LOG = NullLog.getInstance();
+    private static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
+    private static final Log LOG = NullLog.getInstance();
 
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
 
-    protected static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
+    static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
 
-    protected String analyzer = ANALYZER;
-    protected AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
-    protected GraphDatabaseAPI db;
-    protected JobScheduler scheduler;
-    protected FileSystemAbstraction fs;
-    protected File storeDir;
+    String analyzer = ANALYZER;
+    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
+    GraphDatabaseAPI db;
+    private JobScheduler scheduler;
+    private FileSystemAbstraction fs;
+    private File storeDir;
     private TransactionIdStore transactionIdStore;
 
     @BeforeEach
@@ -80,31 +80,30 @@ public class LuceneFulltextTestSupport
         transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
     }
 
-    protected FulltextProviderImpl createProvider()
+    FulltextProviderImpl createProvider()
     {
         return new FulltextProviderImpl( db, LOG, availabilityGuard, scheduler, transactionIdStore,
                 fs, storeDir, analyzer );
     }
 
-    protected long createNodeIndexableByPropertyValue( Object propertyValue )
+    long createNodeIndexableByPropertyValue( Object propertyValue )
     {
         return createNodeWithProperty( "prop", propertyValue );
     }
 
-    protected long createNodeWithProperty( String propertyKey, Object propertyValue )
+    long createNodeWithProperty( String propertyKey, Object propertyValue )
     {
         Node node = db.createNode();
         node.setProperty( propertyKey, propertyValue );
         return node.getId();
     }
 
-    protected long createRelationshipIndexableByPropertyValue( long firstNodeId, long secondNodeId, Object propertyValue )
+    long createRelationshipIndexableByPropertyValue( long firstNodeId, long secondNodeId, Object propertyValue )
     {
         return createRelationshipWithProperty( firstNodeId, secondNodeId, "prop", propertyValue );
     }
 
-    protected long createRelationshipWithProperty( long firstNodeId, long secondNodeId, String propertyKey,
-                                                 Object propertyValue )
+    long createRelationshipWithProperty( long firstNodeId, long secondNodeId, String propertyKey, Object propertyValue )
     {
         Node first = db.getNodeById( firstNodeId );
         Node second = db.getNodeById( secondNodeId );
@@ -113,46 +112,47 @@ public class LuceneFulltextTestSupport
         return relationship.getId();
     }
 
-    protected void assertExactQueryFindsNothing( ReadOnlyFulltext reader, String query )
+    void assertExactQueryFindsNothing( ReadOnlyFulltext reader, String query )
     {
         assertExactQueryFindsIds( reader, query, false );
     }
 
-    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
+    void assertExactQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
         ScoreEntityIterator result = reader.query( query, matchAll );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertExactQueryFindsIdsInOrder( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
+    void assertExactQueryFindsIdsInOrder( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll,
+            long... ids )
     {
         ScoreEntityIterator result = reader.query( query, matchAll );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
-    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
         assertExactQueryFindsIds( reader, Arrays.asList( query ), matchAll, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
         assertFuzzyQueryFindsIds( reader, Arrays.asList( query ), matchAll, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
+    void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
         ScoreEntityIterator result = reader.fuzzyQuery( query, matchAll );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertFuzzyQueryFindsIdsInOrder( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    void assertFuzzyQueryFindsIdsInOrder( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
         ScoreEntityIterator result = reader.fuzzyQuery( Arrays.asList( query ), matchAll );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
-    protected void assertQueryResultsMatch( ScoreEntityIterator result, long[] ids )
+    private void assertQueryResultsMatch( ScoreEntityIterator result, long[] ids )
     {
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
         while ( result.hasNext() )
@@ -164,7 +164,7 @@ public class LuceneFulltextTestSupport
         assertTrue( set.isEmpty(), "Number of results differ from expected" );
     }
 
-    protected void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )
+    private void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )
     {
         int num = 0;
         float score = Float.MAX_VALUE;
@@ -181,12 +181,12 @@ public class LuceneFulltextTestSupport
         assertEquals( ids.length, num, "Number of results differ from expected" );
     }
 
-    protected void setNodeProp( long nodeId, String value )
+    void setNodeProp( long nodeId, String value )
     {
         setNodeProp( nodeId, "prop", value );
     }
 
-    protected void setNodeProp( long nodeId, String propertyKey, String value )
+    void setNodeProp( long nodeId, String propertyKey, String value )
     {
         try ( Transaction tx = db.beginTx() )
         {

@@ -35,10 +35,10 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 /**
  * Test reading committed node and relationships from disk.
  */
-public class StorageLayerNodeAndRelTest extends StorageLayerTest
+class StorageLayerNodeAndRelTest extends StorageLayerTest
 {
     @Test
-    public void shouldTellIfNodeExists()
+    void shouldTellIfNodeExists()
     {
         // Given
         long created = createLabeledNode( db, map() ).getId();
@@ -58,7 +58,7 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldTellIfRelExists()
+    void shouldTellIfRelExists()
     {
         // Given
         long node = createLabeledNode( db, map() ).getId();

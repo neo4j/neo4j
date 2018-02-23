@@ -38,7 +38,7 @@ public class CharValueTest
     private char[] chars = {' ', '楡', 'a', '7', 'Ö'};
 
     @Test
-    public void shouldHandleDifferentTypesOfChars()
+    void shouldHandleDifferentTypesOfChars()
     {
         for ( char c : chars )
         {
@@ -56,7 +56,7 @@ public class CharValueTest
     }
 
     @Test
-    public void shouldSplit()
+    void shouldSplit()
     {
         CharValue charValue = charValue( 'a' );
         assertThat( charValue.split( "a" ), equalTo( list( EMPTY_STRING, EMPTY_STRING ) ) );
@@ -64,28 +64,28 @@ public class CharValueTest
     }
 
     @Test
-    public void shouldTrim()
+    void shouldTrim()
     {
         assertThat( charValue( 'a' ).trim(), equalTo( charValue( 'a' ) ) );
         assertThat( charValue( ' ' ).trim(), equalTo( EMPTY_STRING ) );
     }
 
     @Test
-    public void shouldLTrim()
+    void shouldLTrim()
     {
         assertThat( charValue( 'a' ).ltrim(), equalTo( charValue( 'a' ) ) );
         assertThat( charValue( ' ' ).ltrim(), equalTo( EMPTY_STRING ) );
     }
 
     @Test
-    public void shouldRTrim()
+    void shouldRTrim()
     {
         assertThat( charValue( 'a' ).rtrim(), equalTo( charValue( 'a' ) ) );
         assertThat( charValue( ' ' ).rtrim(), equalTo( EMPTY_STRING ) );
     }
 
     @Test
-    public void shouldReverse()
+    void shouldReverse()
     {
         for ( char c : chars )
         {
@@ -95,14 +95,14 @@ public class CharValueTest
     }
 
     @Test
-    public void shouldReplace()
+    void shouldReplace()
     {
         assertThat( charValue( 'a' ).replace( "a", "a long string" ), equalTo( stringValue( "a long string" ) ) );
         assertThat( charValue( 'a' ).replace( "b", "a long string" ), equalTo( charValue( 'a' ) ) );
     }
 
     @Test
-    public void shouldSubstring()
+    void shouldSubstring()
     {
         assertThat( charValue( 'a' ).substring( 0, 1 ), equalTo( charValue( 'a' ) ) );
         assertThat( charValue( 'a' ).substring( 1, 3 ), equalTo( EMPTY_STRING ) );

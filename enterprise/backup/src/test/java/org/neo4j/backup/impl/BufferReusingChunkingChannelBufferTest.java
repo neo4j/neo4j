@@ -34,11 +34,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BufferReusingChunkingChannelBufferTest
+class BufferReusingChunkingChannelBufferTest
 {
     @Test
     @SuppressWarnings( "unchecked" )
-    public void newBuffersAreCreatedIfNoFreeBuffersAreAvailable()
+    void newBuffersAreCreatedIfNoFreeBuffersAreAvailable()
     {
         CountingChannelBufferFactory bufferFactory = new CountingChannelBufferFactory();
         BufferReusingChunkingChannelBuffer buffer = newBufferReusingChunkingChannelBuffer( 10, bufferFactory );
@@ -52,7 +52,7 @@ public class BufferReusingChunkingChannelBufferTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void freeBuffersAreReused() throws Exception
+    void freeBuffersAreReused() throws Exception
     {
         CountingChannelBufferFactory bufferFactory = new CountingChannelBufferFactory();
         BufferReusingChunkingChannelBuffer buffer = newBufferReusingChunkingChannelBuffer( 10, bufferFactory );

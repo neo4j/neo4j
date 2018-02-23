@@ -41,15 +41,15 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ExplicitIndexTest
+class ExplicitIndexTest
 {
     private static final long TEST_TIMEOUT = 80_000;
 
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void explicitIndexPopulationWithBunchOfFields() throws Exception
+    void explicitIndexPopulationWithBunchOfFields() throws Exception
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             BatchInserter batchNode = inserter( directory.graphDbDir() );

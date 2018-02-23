@@ -35,20 +35,20 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public class PropertyIT extends KernelIntegrationTest
+class PropertyIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldBeAbleToSetAndReadLargeByteArray() throws Exception
+    void shouldBeAbleToSetAndReadLargeByteArray() throws Exception
     {
         // GIVEN
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -69,7 +69,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldSetNodePropertyValue() throws Exception
+    void shouldSetNodePropertyValue() throws Exception
     {
         // GIVEN
         Value value = Values.of( "bozo" );
@@ -94,7 +94,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRemoveSetNodeProperty() throws Exception
+    void shouldRemoveSetNodeProperty() throws Exception
     {
         // GIVEN
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -119,7 +119,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRemoveSetNodePropertyAcrossTransactions() throws Exception
+    void shouldRemoveSetNodePropertyAcrossTransactions() throws Exception
     {
         // GIVEN
         int propertyKeyId;
@@ -152,7 +152,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRemoveSetExistingProperty() throws Exception
+    void shouldRemoveSetExistingProperty() throws Exception
     {
         // GIVEN
         dbWithNoCache();
@@ -194,7 +194,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldSilentlyNotRemoveMissingNodeProperty() throws Exception
+    void shouldSilentlyNotRemoveMissingNodeProperty() throws Exception
     {
         // GIVEN
         int propertyId;
@@ -218,7 +218,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void nodeHasPropertyIfSet() throws Exception
+    void nodeHasPropertyIfSet() throws Exception
     {
         // GIVEN
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -244,7 +244,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void nodeHasNotPropertyIfUnset() throws Exception
+    void nodeHasNotPropertyIfUnset() throws Exception
     {
         // GIVEN
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -269,7 +269,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRollbackSetNodePropertyValue() throws Exception
+    void shouldRollbackSetNodePropertyValue() throws Exception
     {
         // GIVEN
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -290,7 +290,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldUpdateNodePropertyValue() throws Exception
+    void shouldUpdateNodePropertyValue() throws Exception
     {
         // GIVEN
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -311,7 +311,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldListAllPropertyKeys() throws Exception
+    void shouldListAllPropertyKeys() throws Exception
     {
         // given
         dbWithNoCache();
@@ -339,7 +339,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotAllowModifyingPropertiesOnDeletedNode() throws Exception
+    void shouldNotAllowModifyingPropertiesOnDeletedNode() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -363,7 +363,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
+    void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -390,7 +390,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnNode() throws Exception
+    void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnNode() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -417,7 +417,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
+    void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );

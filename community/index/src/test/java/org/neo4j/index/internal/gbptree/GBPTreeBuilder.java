@@ -66,13 +66,13 @@ class GBPTreeBuilder<KEY,VALUE>
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( File file )
+    private GBPTreeBuilder<KEY,VALUE> with( File file )
     {
         this.file = file;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( PageCache pageCache )
+    private GBPTreeBuilder<KEY,VALUE> with( PageCache pageCache )
     {
         this.pageCache = pageCache;
         return this;

@@ -172,7 +172,7 @@ public class Fixture
             return raftMachine;
         }
 
-        public InMemoryRaftLog raftLog()
+        InMemoryRaftLog raftLog()
         {
             return raftLog;
         }

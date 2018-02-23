@@ -42,7 +42,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class TransactionIdTrackerTest
+class TransactionIdTrackerTest
 {
     private static final Duration DEFAULT_DURATION = ofSeconds( 10 );
 
@@ -52,14 +52,14 @@ public class TransactionIdTrackerTest
     private TransactionIdTracker transactionIdTracker;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( availabilityGuard.isAvailable() ).thenReturn( true );
         transactionIdTracker = new TransactionIdTracker( () -> transactionIdStore, availabilityGuard );
     }
 
     @Test
-    public void shouldReturnImmediatelyForBaseTxIdOrLess() throws Exception
+    void shouldReturnImmediatelyForBaseTxIdOrLess() throws Exception
     {
         // when
         transactionIdTracker.awaitUpToDate( BASE_TX_ID, ofSeconds( 5 ) );
@@ -69,7 +69,7 @@ public class TransactionIdTrackerTest
     }
 
     @Test
-    public void shouldWaitForRequestedVersion() throws Exception
+    void shouldWaitForRequestedVersion() throws Exception
     {
         // given
         long version = 5L;
@@ -82,7 +82,7 @@ public class TransactionIdTrackerTest
     }
 
     @Test
-    public void shouldPropagateTimeoutException() throws Exception
+    void shouldPropagateTimeoutException() throws Exception
     {
         // given
         long version = 5L;
@@ -104,7 +104,7 @@ public class TransactionIdTrackerTest
     }
 
     @Test
-    public void shouldNotWaitIfTheDatabaseIsUnavailable() throws Exception
+    void shouldNotWaitIfTheDatabaseIsUnavailable() throws Exception
     {
         // given
         when( availabilityGuard.isAvailable() ).thenReturn( false );

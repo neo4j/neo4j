@@ -29,10 +29,10 @@ import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class FilterChainTest
+class FilterChainTest
 {
     @Test
-    public void shouldFilterThroughAll()
+    void shouldFilterThroughAll()
     {
         // given
         Filter<Integer> removeValuesOfFive = data -> data.stream().filter( value -> value != 5 ).collect( Collectors.toSet() );

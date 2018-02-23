@@ -37,10 +37,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class CypherSessionTest
+class CypherSessionTest
 {
     @Test
-    public void shouldReturnASingleNode()
+    void shouldReturnASingleNode()
     {
         GraphDatabaseFacade graphdb = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         Database database = new WrappedDatabase( graphdb );

@@ -31,12 +31,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ConfigurableIOLimiterTest
+class ConfigurableIOLimiterTest
 {
     private static final String ORIGIN = "test";
     private ConfigurableIOLimiter limiter;
@@ -60,7 +60,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustPutDefaultLimitOnIOWhenNoLimitIsConfigured()
+    void mustPutDefaultLimitOnIOWhenNoLimitIsConfigured()
     {
         createIOLimiter( Config.defaults() );
 
@@ -74,7 +74,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustNotPutLimitOnIOWhenConfiguredToBeUnlimited()
+    void mustNotPutLimitOnIOWhenConfiguredToBeUnlimited()
     {
         createIOLimiter( -1 );
         assertUnlimited();
@@ -88,7 +88,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustNotPutLimitOnIOWhenLimitingIsDisabledAndNoLimitIsConfigured()
+    void mustNotPutLimitOnIOWhenLimitingIsDisabledAndNoLimitIsConfigured()
     {
         createIOLimiter( Config.defaults() );
         limiter.disableLimit();
@@ -112,7 +112,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustRestrictIORateToConfiguredLimit()
+    void mustRestrictIORateToConfiguredLimit()
     {
         createIOLimiter( 100 );
 
@@ -135,7 +135,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustNotRestrictIOToConfiguredRateWhenLimitIsDisabled()
+    void mustNotRestrictIOToConfiguredRateWhenLimitIsDisabled()
     {
         createIOLimiter( 100 );
 
@@ -165,7 +165,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void dynamicConfigurationUpdateMustBecomeVisible()
+    void dynamicConfigurationUpdateMustBecomeVisible()
     {
         // Create initially unlimited
         createIOLimiter( 0 );
@@ -188,7 +188,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void dynamicConfigurationUpdateEnablingLimiterMustNotDisableLimiter()
+    void dynamicConfigurationUpdateEnablingLimiterMustNotDisableLimiter()
     {
         // Create initially unlimited
         createIOLimiter( 0 );
@@ -207,7 +207,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void dynamicConfigurationUpdateDisablingLimiterMustNotDisableLimiter()
+    void dynamicConfigurationUpdateDisablingLimiterMustNotDisableLimiter()
     {
         // Create initially limited
         createIOLimiter( 100 );

@@ -26,10 +26,10 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PhysicalLogNeoCommandReaderV2Test
+class PhysicalLogNeoCommandReaderV2Test
 {
     @Test
-    public void shouldReadIndexCommandHeaderCorrectly() throws Exception
+    void shouldReadIndexCommandHeaderCorrectly() throws Exception
     {
         // This bug manifested in header byte[1] {0,1,2}, which contains:
         // [x   ,    ] start node needs long
@@ -65,7 +65,7 @@ public class PhysicalLogNeoCommandReaderV2Test
     }
 
     @Test
-    public void shouldProperlyMaskIndexIdFieldInIndexHeader() throws Exception
+    void shouldProperlyMaskIndexIdFieldInIndexHeader() throws Exception
     {
         /* This is how the index command header is laid out
          * [x   ,    ] start node needs long

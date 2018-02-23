@@ -93,7 +93,7 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
         } ).start();
     }
 
-    protected void shutdownProcess()
+    private void shutdownProcess()
     {
         super.shutdown();
     }

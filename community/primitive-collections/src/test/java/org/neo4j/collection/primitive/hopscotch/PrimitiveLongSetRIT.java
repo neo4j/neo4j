@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class PrimitiveLongSetRIT
 {
     @Test
-    public void thoroughlyTestIt()
+    void thoroughlyTestIt()
     {
         long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
         while ( currentTimeMillis() < endTime )
@@ -101,7 +101,7 @@ public class PrimitiveLongSetRIT
         return Sets::new;
     }
 
-    protected Action<Sets,String> generateAction( Random random, Sets from )
+    private Action<Sets,String> generateAction( Random random, Sets from )
     {
         boolean anExisting = !from.normalSet.isEmpty() && random.nextInt( 3 ) == 0;
         long value = anExisting ?

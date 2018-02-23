@@ -230,7 +230,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         return waitUntilThreadState( correctWait, Thread.State.WAITING, Thread.State.TIMED_WAITING );
     }
 
-    public WaitDetails waitUntilBlocked( Predicate<WaitDetails> correctWait ) throws TimeoutException
+    private WaitDetails waitUntilBlocked( Predicate<WaitDetails> correctWait ) throws TimeoutException
     {
         return waitUntilThreadState( correctWait, Thread.State.BLOCKED );
     }
@@ -240,8 +240,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         return waitUntilThreadState( details -> true, possibleStates );
     }
 
-    public WaitDetails waitUntilThreadState( Predicate<WaitDetails> correctWait,
-            final Thread.State... possibleStates ) throws TimeoutException
+    private WaitDetails waitUntilThreadState( Predicate<WaitDetails> correctWait, final Thread.State... possibleStates ) throws TimeoutException
     {
         long end = currentTimeMillis() + timeout;
         WaitDetails details;
@@ -258,7 +257,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         return details;
     }
 
-    public WaitDetails waitUntil( Predicate<Thread> condition ) throws TimeoutException
+    private WaitDetails waitUntil( Predicate<Thread> condition ) throws TimeoutException
     {
         long end = System.currentTimeMillis() + timeout;
         Thread thread = getThread();
@@ -293,7 +292,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     {
         private final StackTraceElement[] stackTrace;
 
-        public WaitDetails( StackTraceElement[] stackTrace )
+        WaitDetails( StackTraceElement[] stackTrace )
         {
             this.stackTrace = stackTrace;
         }

@@ -40,10 +40,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 
-public class NodeLoadingIteratorTest
+class NodeLoadingIteratorTest
 {
     @Test
-    public void shouldHandleAnEmptyIterator()
+    void shouldHandleAnEmptyIterator()
     {
         // given
         NodeLoadingIterator iterator = new NodeLoadingIterator( emptyIterator(), id ->
@@ -56,7 +56,7 @@ public class NodeLoadingIteratorTest
     }
 
     @Test
-    public void shouldHandleANonEmptyIterator()
+    void shouldHandleANonEmptyIterator()
     {
         // given
         Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );
@@ -77,7 +77,7 @@ public class NodeLoadingIteratorTest
     }
 
     @Test
-    public void shouldHandleANonEmptyIteratorWithNotFoundEntities()
+    void shouldHandleANonEmptyIteratorWithNotFoundEntities()
     {
         // given
         Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );

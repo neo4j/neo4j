@@ -42,7 +42,7 @@ public class PropertyValueComparisonTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    Object[] values = new Object[]{
+    private Object[] values = new Object[]{
             // OTHER
             new Object(),
 
@@ -114,49 +114,49 @@ public class PropertyValueComparisonTest
     };
 
     @Test
-    public void valueComparatorShouldRejectLeftNullArgument()
+    void valueComparatorShouldRejectLeftNullArgument()
     {
         thrown.expect( NullPointerException.class );
         PropertyValueComparison.COMPARE_VALUES.compare( null, 1 );
     }
 
     @Test
-    public void valueComparatorShouldRejectRightNullArgument()
+    void valueComparatorShouldRejectRightNullArgument()
     {
         thrown.expect( NullPointerException.class );
         PropertyValueComparison.COMPARE_VALUES.compare( 1, null );
     }
 
     @Test
-    public void numberComparatorShouldRejectLeftNullArgument()
+    void numberComparatorShouldRejectLeftNullArgument()
     {
         thrown.expect( NullPointerException.class );
         PropertyValueComparison.COMPARE_NUMBERS.compare( null, 1 );
     }
 
     @Test
-    public void numberComparatorShouldRejectRightNullArgument()
+    void numberComparatorShouldRejectRightNullArgument()
     {
         thrown.expect( NullPointerException.class );
         PropertyValueComparison.COMPARE_NUMBERS.compare( 1, null );
     }
 
     @Test
-    public void stringComparatorShouldRejectLeftNullArgument()
+    void stringComparatorShouldRejectLeftNullArgument()
     {
         thrown.expect( NullPointerException.class );
         PropertyValueComparison.COMPARE_STRINGS.compare( null, "foo" );
     }
 
     @Test
-    public void stringComparatorShouldRejectRightNullArgument()
+    void stringComparatorShouldRejectRightNullArgument()
     {
         thrown.expect( NullPointerException.class );
         PropertyValueComparison.COMPARE_STRINGS.compare( "foo", null );
     }
 
     @Test
-    public void shouldOrderValuesCorrectly()
+    void shouldOrderValuesCorrectly()
     {
         for ( int i = 0; i < values.length; i++ )
         {

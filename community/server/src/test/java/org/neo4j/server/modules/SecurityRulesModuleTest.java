@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.NullLogProvider;
 
-public class SecurityRulesModuleTest
+class SecurityRulesModuleTest
 {
     @Test
-    public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
+    void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
         new SecurityRulesModule( null, null, NullLogProvider.getInstance() ).stop();
     }

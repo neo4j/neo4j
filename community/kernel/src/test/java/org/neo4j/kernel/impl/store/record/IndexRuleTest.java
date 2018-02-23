@@ -31,10 +31,10 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class IndexRuleTest extends SchemaRuleTestBase
+class IndexRuleTest extends SchemaRuleTestBase
 {
     @Test
-    public void shouldCreateGeneralIndex()
+    void shouldCreateGeneralIndex()
     {
         // GIVEN
         IndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -51,7 +51,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateUniqueIndex()
+    void shouldCreateUniqueIndex()
     {
         // GIVEN
         IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -71,7 +71,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void indexRulesAreEqualBasedOnIndexDescriptor()
+    void indexRulesAreEqualBasedOnIndexDescriptor()
     {
         assertEqualityByDescriptor( forLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );

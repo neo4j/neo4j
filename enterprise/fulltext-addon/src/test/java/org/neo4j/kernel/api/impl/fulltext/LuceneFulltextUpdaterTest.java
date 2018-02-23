@@ -34,10 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.RELATIONSHIPS;
 
-public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
+class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 {
     @Test
-    public void shouldFindNodeWithString() throws Exception
+    void shouldFindNodeWithString() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -67,7 +67,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldFindNodeWithNumber() throws Exception
+    void shouldFindNodeWithNumber() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -93,7 +93,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldFindNodeWithBoolean() throws Exception
+    void shouldFindNodeWithBoolean() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -119,7 +119,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldFindNodeWithArrays() throws Exception
+    void shouldFindNodeWithArrays() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -148,7 +148,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldRepresentPropertyChanges() throws Exception
+    void shouldRepresentPropertyChanges() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -188,7 +188,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldNotFindRemovedNodes() throws Exception
+    void shouldNotFindRemovedNodes() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -226,7 +226,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldNotFindRemovedProperties() throws Exception
+    void shouldNotFindRemovedProperties() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -278,7 +278,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldOnlyIndexIndexedProperties() throws Exception
+    void shouldOnlyIndexIndexedProperties() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -307,7 +307,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldSearchAcrossMultipleProperties() throws Exception
+    void shouldSearchAcrossMultipleProperties() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -338,7 +338,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldOrderResultsBasedOnRelevance() throws Exception
+    void shouldOrderResultsBasedOnRelevance() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -375,7 +375,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldDifferentiateNodesAndRelationships() throws Exception
+    void shouldDifferentiateNodesAndRelationships() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -417,7 +417,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void fuzzyQueryShouldBeFuzzy() throws Exception
+    void fuzzyQueryShouldBeFuzzy() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -451,7 +451,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void fuzzyQueryShouldReturnExactMatchesFirst() throws Exception
+    void fuzzyQueryShouldReturnExactMatchesFirst() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -480,7 +480,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldNotReturnNonMatches() throws Exception
+    void shouldNotReturnNonMatches() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -513,7 +513,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
+    void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
     {
         long firstNodeID;
         long secondNodeID;
@@ -561,7 +561,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldReturnMatchesThatContainLuceneSyntaxCharacters() throws Exception
+    void shouldReturnMatchesThatContainLuceneSyntaxCharacters() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -591,7 +591,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void exactMatchAllShouldOnlyReturnStuffThatMatchesAll() throws Exception
+    void exactMatchAllShouldOnlyReturnStuffThatMatchesAll() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -632,7 +632,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void fuzzyMatchAllShouldOnlyReturnStuffThatKindaMatchesAll() throws Exception
+    void fuzzyMatchAllShouldOnlyReturnStuffThatKindaMatchesAll() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -673,7 +673,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
+    void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
     {
         try ( FulltextProvider provider = createProvider() )
         {
@@ -719,7 +719,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldBeAbleToDropAndReaddIndex() throws Exception
+    void shouldBeAbleToDropAndReaddIndex() throws Exception
     {
         try ( FulltextProviderImpl provider = createProvider() )
         {
@@ -750,7 +750,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void concurrentUpdatesAndIndexChangesShouldResultInValidState() throws Throwable
+    void concurrentUpdatesAndIndexChangesShouldResultInValidState() throws Throwable
     {
         try ( FulltextProvider provider = createProvider() )
         {

@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosable
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class IdAllocationStateTest
+class IdAllocationStateTest
 {
     @Test
-    public void shouldRoundtripToChannel() throws Exception
+    void shouldRoundtripToChannel() throws Exception
     {
         // given
         final IdAllocationState state = new IdAllocationState();
@@ -56,7 +56,7 @@ public class IdAllocationStateTest
     }
 
     @Test
-    public void shouldThrowExceptionForHalfWrittenEntries() throws IOException, EndOfStreamException
+    void shouldThrowExceptionForHalfWrittenEntries() throws IOException, EndOfStreamException
     {
         // given
         final IdAllocationState state = new IdAllocationState();

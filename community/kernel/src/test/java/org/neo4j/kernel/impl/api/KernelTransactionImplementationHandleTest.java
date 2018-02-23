@@ -35,12 +35,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class KernelTransactionImplementationHandleTest
+class KernelTransactionImplementationHandleTest
 {
     private final SystemNanoClock clock = Clocks.nanoClock();
 
     @Test
-    public void returnsCorrectLastTransactionTimestampWhenStarted()
+    void returnsCorrectLastTransactionTimestampWhenStarted()
     {
         long lastCommittedTxTimestamp = 42;
 
@@ -54,7 +54,7 @@ public class KernelTransactionImplementationHandleTest
     }
 
     @Test
-    public void returnsCorrectLastTransactionTimestampWhenStartedForClosedTx()
+    void returnsCorrectLastTransactionTimestampWhenStartedForClosedTx()
     {
         long lastCommittedTxTimestamp = 4242;
 
@@ -68,7 +68,7 @@ public class KernelTransactionImplementationHandleTest
     }
 
     @Test
-    public void isOpenForUnchangedKernelTransactionImplementation()
+    void isOpenForUnchangedKernelTransactionImplementation()
     {
         int reuseCount = 42;
 
@@ -82,7 +82,7 @@ public class KernelTransactionImplementationHandleTest
     }
 
     @Test
-    public void isOpenForReusedKernelTransactionImplementation()
+    void isOpenForReusedKernelTransactionImplementation()
     {
         int initialReuseCount = 42;
         int nextReuseCount = 4242;
@@ -97,7 +97,7 @@ public class KernelTransactionImplementationHandleTest
     }
 
     @Test
-    public void markForTerminationCallsKernelTransactionImplementation()
+    void markForTerminationCallsKernelTransactionImplementation()
     {
         int reuseCount = 42;
         Status.Transaction terminationReason = Status.Transaction.Terminated;
@@ -112,7 +112,7 @@ public class KernelTransactionImplementationHandleTest
     }
 
     @Test
-    public void markForTerminationReturnsTrueWhenSuccessful()
+    void markForTerminationReturnsTrueWhenSuccessful()
     {
         KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
         when( tx.getReuseCount() ).thenReturn( 42 );
@@ -123,7 +123,7 @@ public class KernelTransactionImplementationHandleTest
     }
 
     @Test
-    public void markForTerminationReturnsFalseWhenNotSuccessful()
+    void markForTerminationReturnsFalseWhenNotSuccessful()
     {
         KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
         when( tx.getReuseCount() ).thenReturn( 42 );
@@ -134,7 +134,7 @@ public class KernelTransactionImplementationHandleTest
     }
 
     @Test
-    public void transactionStatisticForReusedTransactionIsNotAvailable()
+    void transactionStatisticForReusedTransactionIsNotAvailable()
     {
         KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
         when( tx.isOpen() ).thenReturn( true );

@@ -66,7 +66,7 @@ public class ExplicitBatchIndexApplierTest
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldOnlyCreateOneApplierPerProvider() throws Exception
+    void shouldOnlyCreateOneApplierPerProvider() throws Exception
     {
         // GIVEN
         Map<String,Integer> names = MapUtil.genericMap( "first", 0, "second", 1 );
@@ -97,7 +97,7 @@ public class ExplicitBatchIndexApplierTest
     }
 
     @Test
-    public void shouldOrderTransactionsMakingExplicitIndexChanges() throws Throwable
+    void shouldOrderTransactionsMakingExplicitIndexChanges() throws Throwable
     {
         // GIVEN
         Map<String,Integer> names = MapUtil.genericMap( "first", 0, "second", 1 );

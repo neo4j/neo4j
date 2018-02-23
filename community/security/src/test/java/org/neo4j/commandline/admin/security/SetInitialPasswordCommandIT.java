@@ -47,7 +47,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class SetInitialPasswordCommandIT
+class SetInitialPasswordCommandIT
 {
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private File confDir;
@@ -58,7 +58,7 @@ public class SetInitialPasswordCommandIT
     private static final String SET_PASSWORD = "set-initial-password";
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         File graphDir = new File( "graph-db" );
         confDir = new File( graphDir, "conf" );
@@ -69,13 +69,13 @@ public class SetInitialPasswordCommandIT
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         fileSystem.close();
     }
 
     @Test
-    public void shouldSetPassword() throws Throwable
+    void shouldSetPassword() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
         assertAuthIniFile( "abc" );
@@ -84,7 +84,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldOverwriteIfSetPasswordAgain() throws Throwable
+    void shouldOverwriteIfSetPasswordAgain() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
         assertAuthIniFile( "abc" );
@@ -95,7 +95,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldWorkWithSamePassword() throws Throwable
+    void shouldWorkWithSamePassword() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
         assertAuthIniFile( "neo4j" );
@@ -106,7 +106,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1()
+    void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
         assertNoAuthIniFile();
@@ -127,7 +127,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2()
+    void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
         assertNoAuthIniFile();
@@ -149,7 +149,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldErrorIfRealUsersAlreadyExist() throws Throwable
+    void shouldErrorIfRealUsersAlreadyExist() throws Throwable
     {
         // Given
         File authFile = getAuthFile( "auth" );

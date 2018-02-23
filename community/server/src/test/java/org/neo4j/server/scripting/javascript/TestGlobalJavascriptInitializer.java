@@ -25,11 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.neo4j.server.rest.web.ScriptExecutionMode;
 
-public class TestGlobalJavascriptInitializer
+class TestGlobalJavascriptInitializer
 {
 
     @Test
-    public void shouldNotAllowChangingMode()
+    void shouldNotAllowChangingMode()
     {
         assertThrows( RuntimeException.class, () -> {
             // Given
@@ -41,7 +41,7 @@ public class TestGlobalJavascriptInitializer
     }
 
     @Test
-    public void initializingTheSameModeTwiceIsFine()
+    void initializingTheSameModeTwiceIsFine()
     {
         // Given
         GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );

@@ -36,13 +36,13 @@ import static org.neo4j.collection.primitive.PrimitiveArrays.union;
 
 //TODO:
 @Disabled
-public class PrimitiveArraysUnionTest
+class PrimitiveArraysUnionTest
 {
     private static final long SEED = ThreadLocalRandom.current().nextLong();
     private static final Random random = new Random( SEED );
     private static final int MINIMUM_RANDOM_SIZE = 10;
 
-    public static Iterable<Object[]> parameters()
+    private static Iterable<Object[]> parameters()
     {
         List<Object[]> inputs = Stream.generate( PrimitiveArraysUnionTest::randomInput ).limit( 300 )
                 .collect( Collectors.toList() );
@@ -68,7 +68,7 @@ public class PrimitiveArraysUnionTest
 
     @ParameterizedTest
     @MethodSource( {"parameters"} )
-    public void testUnion( int[] lhs, int[] rhs, int[] expected ) throws Exception
+    void testUnion( int[] lhs, int[] rhs, int[] expected ) throws Exception
     {
         int[] actual = union( lhs, rhs );
         if ( lhs == expected || rhs == expected )

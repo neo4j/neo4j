@@ -25,12 +25,12 @@ import java.time.ZoneId;
 
 import org.neo4j.time.SystemNanoClock;
 
-public class CallTrackingClock extends SystemNanoClock
+class CallTrackingClock extends SystemNanoClock
 {
     private final SystemNanoClock actual;
     private volatile int nanosCalls;
 
-    public CallTrackingClock( SystemNanoClock actual )
+    CallTrackingClock( SystemNanoClock actual )
     {
         this.actual = actual;
     }
@@ -72,7 +72,7 @@ public class CallTrackingClock extends SystemNanoClock
         }
     }
 
-    public int callsToNanos()
+    int callsToNanos()
     {
         return nanosCalls;
     }

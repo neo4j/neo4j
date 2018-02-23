@@ -30,29 +30,29 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
-public class TestImpermanentGraphDatabase
+class TestImpermanentGraphDatabase
 {
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void createDb()
+    void createDb()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         db.shutdown();
     }
 
     @Test
-    public void should_keep_data_between_start_and_shutdown()
+    void should_keep_data_between_start_and_shutdown()
     {
         createNode();
 
@@ -60,7 +60,7 @@ public class TestImpermanentGraphDatabase
     }
 
     @Test
-    public void data_should_not_survive_shutdown()
+    void data_should_not_survive_shutdown()
     {
         createNode();
         db.shutdown();
@@ -71,7 +71,7 @@ public class TestImpermanentGraphDatabase
     }
 
     @Test
-    public void should_remove_all_data()
+    void should_remove_all_data()
     {
         try ( Transaction tx = db.beginTx() )
         {

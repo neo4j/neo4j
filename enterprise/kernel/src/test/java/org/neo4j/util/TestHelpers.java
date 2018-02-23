@@ -43,7 +43,7 @@ public class TestHelpers
         return executionIsExpectedToFail( runnable, RuntimeException.class );
     }
 
-    public static <E extends Exception> E executionIsExpectedToFail( Runnable runnable, Class<E> exceptionClass )
+    private static <E extends Exception> E executionIsExpectedToFail( Runnable runnable, Class<E> exceptionClass )
     {
         try
         {

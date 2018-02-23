@@ -42,7 +42,7 @@ public class MapConverterTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldHandleNullString()
+    void shouldHandleNullString()
     {
         // Given
         String mapString = "null";
@@ -55,7 +55,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleEmptyMap()
+    void shouldHandleEmptyMap()
     {
         // Given
         String mapString = "{}";
@@ -68,7 +68,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleEmptyMapWithSpaces()
+    void shouldHandleEmptyMapWithSpaces()
     {
         // Given
         String mapString = " {  }  ";
@@ -81,7 +81,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleSingleQuotedValue()
+    void shouldHandleSingleQuotedValue()
     {
         // Given
         String mapString = "{key: 'value'}";
@@ -94,7 +94,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleEscapedSingleQuotedInValue1()
+    void shouldHandleEscapedSingleQuotedInValue1()
     {
         // Given
         String mapString = "{key: 'va\'lue'}";
@@ -107,7 +107,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleEscapedSingleQuotedInValue2()
+    void shouldHandleEscapedSingleQuotedInValue2()
     {
         // Given
         String mapString = "{key: \"va\'lue\"}";
@@ -120,7 +120,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleEscapedDoubleQuotedInValue1()
+    void shouldHandleEscapedDoubleQuotedInValue1()
     {
         // Given
         String mapString = "{key: \"va\"lue\"}";
@@ -133,7 +133,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleEscapedDoubleQuotedInValue2()
+    void shouldHandleEscapedDoubleQuotedInValue2()
     {
         // Given
         String mapString = "{key: 'va\"lue'}";
@@ -146,7 +146,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleDoubleQuotedValue()
+    void shouldHandleDoubleQuotedValue()
     {
         // Given
         String mapString = "{key: \"value\"}";
@@ -159,7 +159,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleSingleQuotedKey()
+    void shouldHandleSingleQuotedKey()
     {
         // Given
         String mapString = "{'key;: 'value'}";
@@ -172,7 +172,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleDoubleQuotedKey()
+    void shouldHandleDoubleQuotedKey()
     {
         // Given
         String mapString = "{\"key\": \"value\"}";
@@ -185,7 +185,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleKeyWithEscapedSingleQuote()
+    void shouldHandleKeyWithEscapedSingleQuote()
     {
         // Given
         String mapString = "{\"k\'ey\": \"value\"}";
@@ -198,7 +198,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleKeyWithEscapedDoubleQuote()
+    void shouldHandleKeyWithEscapedDoubleQuote()
     {
         // Given
         String mapString = "{\"k\"ey\": \"value\"}";
@@ -211,7 +211,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleIntegerValue()
+    void shouldHandleIntegerValue()
     {
         // Given
         String mapString = "{key: 1337}";
@@ -224,7 +224,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleFloatValue()
+    void shouldHandleFloatValue()
     {
         // Given
         String mapString = "{key: 2.718281828}";
@@ -237,7 +237,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleNullValue()
+    void shouldHandleNullValue()
     {
         // Given
         String mapString = "{key: null}";
@@ -250,7 +250,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleFalseValue()
+    void shouldHandleFalseValue()
     {
         // Given
         String mapString = "{key: false}";
@@ -263,7 +263,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleTrueValue()
+    void shouldHandleTrueValue()
     {
         // Given
         String mapString = "{key: true}";
@@ -276,7 +276,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldHandleMultipleKeys()
+    void shouldHandleMultipleKeys()
     {
         // Given
         String mapString = "{k1: 2.718281828, k2: 'e'}";
@@ -289,7 +289,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldFailWhenDuplicateKey()
+    void shouldFailWhenDuplicateKey()
     {
         // Given
         String mapString = "{k1: 2.718281828, k1: 'e'}";
@@ -304,7 +304,7 @@ public class MapConverterTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleNestedMaps()
+    void shouldHandleNestedMaps()
     {
         // Given
         String mapString = "{k1: 1337, k2: { k1 : 1337, k2: {k1: 1337}}}";
@@ -322,7 +322,7 @@ public class MapConverterTest
     }
 
     @Test
-    public void shouldFailOnMalformedMap()
+    void shouldFailOnMalformedMap()
     {
         // Given
         String mapString = "{k1: 2.718281828, k2: 'e'}}";
@@ -337,7 +337,7 @@ public class MapConverterTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleMapsWithLists()
+    void shouldHandleMapsWithLists()
     {
         // Given
         String mapString = "{k1: [1337, 42]}";

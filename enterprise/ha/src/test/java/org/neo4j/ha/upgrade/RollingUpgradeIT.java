@@ -39,7 +39,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.backup.OnlineBackup;
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -381,7 +380,7 @@ public class RollingUpgradeIT
         assertTrue( "Something wrong with the backup", backup.isConsistent() );
     }
 
-    public void doComplexLoad( GraphDatabaseAPI db, long center )
+    private void doComplexLoad( GraphDatabaseAPI db, long center )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -445,7 +444,7 @@ public class RollingUpgradeIT
         }
     }
 
-    public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode ) throws InterruptedException
+    private void verifyComplexLoad( GraphDatabaseAPI db, long centralNode ) throws InterruptedException
     {
         db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         try ( Transaction tx = db.beginTx() )

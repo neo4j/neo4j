@@ -41,16 +41,16 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DiscoveryServiceTest
+class DiscoveryServiceTest
 {
     private String baseUri;
     private AdvertisedSocketAddress boltAddress;
@@ -59,7 +59,7 @@ public class DiscoveryServiceTest
     private final NeoServer neoServer = mock( NeoServer.class, Answers.RETURNS_DEEP_STUBS );
 
     @BeforeEach
-    public void setUp() throws URISyntaxException
+    void setUp() throws URISyntaxException
     {
         baseUri = "http://www.example.com";
         boltAddress = new AdvertisedSocketAddress( "www.example.com", 7687 );
@@ -96,7 +96,7 @@ public class DiscoveryServiceTest
     }
 
     @Test
-    public void shouldReturnValidJSON() throws Exception
+    void shouldReturnValidJSON() throws Exception
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
@@ -116,7 +116,7 @@ public class DiscoveryServiceTest
     }
 
     @Test
-    public void shouldReturnBoltURI() throws Exception
+    void shouldReturnBoltURI() throws Exception
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
@@ -124,7 +124,7 @@ public class DiscoveryServiceTest
     }
 
     @Test
-    public void shouldReturnDataURI() throws Exception
+    void shouldReturnDataURI() throws Exception
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
@@ -132,7 +132,7 @@ public class DiscoveryServiceTest
     }
 
     @Test
-    public void shouldReturnManagementURI() throws Exception
+    void shouldReturnManagementURI() throws Exception
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
@@ -140,7 +140,7 @@ public class DiscoveryServiceTest
     }
 
     @Test
-    public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
+    void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
     {
         Config mockConfig = mock( Config.class );
         URI browserUri = new URI( "/browser/" );

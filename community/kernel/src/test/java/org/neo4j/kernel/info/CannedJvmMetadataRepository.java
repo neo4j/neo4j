@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.info;
 
-public class CannedJvmMetadataRepository extends JvmMetadataRepository
+class CannedJvmMetadataRepository extends JvmMetadataRepository
 {
     private final String javaVmName;
     private final String javaVersion;
 
-    public CannedJvmMetadataRepository( String javaVmName, String javaVersion )
+    CannedJvmMetadataRepository( String javaVmName, String javaVersion )
     {
         this.javaVmName = javaVmName;
         this.javaVersion = javaVersion;

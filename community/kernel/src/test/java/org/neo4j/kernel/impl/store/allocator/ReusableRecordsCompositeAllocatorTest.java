@@ -29,11 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ReusableRecordsCompositeAllocatorTest
+class ReusableRecordsCompositeAllocatorTest
 {
 
     @Test
-    public void allocateReusableRecordsAndSwitchToDefaultWhenExhausted()
+    void allocateReusableRecordsAndSwitchToDefaultWhenExhausted()
     {
         DynamicRecord dynamicRecord1 = new DynamicRecord( 1 );
         DynamicRecord dynamicRecord2 = new DynamicRecord( 2 );

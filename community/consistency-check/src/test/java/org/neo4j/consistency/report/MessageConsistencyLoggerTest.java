@@ -26,7 +26,7 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.logging.AssertableLogProvider;
 
-public class MessageConsistencyLoggerTest
+class MessageConsistencyLoggerTest
 {
     private static final AssertableLogProvider.LogMatcherBuilder INLOG = AssertableLogProvider.inLog( MessageConsistencyLoggerTest.class );
     // given
@@ -39,7 +39,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatErrorForRecord()
+    void shouldFormatErrorForRecord()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
@@ -59,7 +59,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFlattenAMultiLineMessageToASingleLine()
+    void shouldFlattenAMultiLineMessageToASingleLine()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2 );
@@ -71,7 +71,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatWarningForRecord()
+    void shouldFormatWarningForRecord()
     {
         // when
         logger.warning( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
@@ -83,7 +83,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatLogForChangedRecord()
+    void shouldFormatLogForChangedRecord()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), new NeoStoreRecord(), "sample message", 1, 2 );

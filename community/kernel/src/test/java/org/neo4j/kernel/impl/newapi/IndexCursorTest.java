@@ -26,10 +26,10 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IndexCursorTest
+class IndexCursorTest
 {
     @Test
-    public void shouldClosePreviousBeforeReinitialize()
+    void shouldClosePreviousBeforeReinitialize()
     {
         // given
         StubIndexCursor cursor = new StubIndexCursor();

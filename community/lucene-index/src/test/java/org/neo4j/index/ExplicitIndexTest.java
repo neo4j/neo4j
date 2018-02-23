@@ -51,12 +51,12 @@ public class ExplicitIndexTest
     private static final RelationshipType TYPE = RelationshipType.withName( "TYPE" );
 
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void removalOfNodeIndexDoesNotInfluenceRelationshipIndexWithSameName()
+    void removalOfNodeIndexDoesNotInfluenceRelationshipIndexWithSameName()
     {
         String indexName = "index";
 
@@ -85,7 +85,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void removalOfRelationshipIndexDoesNotInfluenceNodeIndexWithSameName()
+    void removalOfRelationshipIndexDoesNotInfluenceNodeIndexWithSameName()
     {
         String indexName = "index";
 
@@ -114,7 +114,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void shouldThrowIllegalArgumentChangingTypeOfFieldOnNodeIndex()
+    void shouldThrowIllegalArgumentChangingTypeOfFieldOnNodeIndex()
     {
         String indexName = "index";
 
@@ -147,7 +147,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void shouldThrowIllegalArgumentChangingTypeOfFieldOnRelationshipIndex()
+    void shouldThrowIllegalArgumentChangingTypeOfFieldOnRelationshipIndex()
     {
         String indexName = "index";
 
@@ -181,7 +181,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void shouldBeAbleToAddNodesAfterRemovalOfKey()
+    void shouldBeAbleToAddNodesAfterRemovalOfKey()
     {
         String indexName = "index";
         long nodeId;
@@ -217,7 +217,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void indexContentsShouldStillBeOrderedAfterRemovalOfKey()
+    void indexContentsShouldStillBeOrderedAfterRemovalOfKey()
     {
         String indexName = "index";
         try ( Transaction tx = db.beginTx() )
@@ -289,7 +289,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void relationshipIndexShouldBeAbleToReindexInSameTransaction()
+    void relationshipIndexShouldBeAbleToReindexInSameTransaction()
     {
         // Create relationship and index
         Node startNode;
@@ -328,7 +328,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void getSingleMustNotCloseStatementTwice()
+    void getSingleMustNotCloseStatementTwice()
     {
         // given
         String indexName = "index";

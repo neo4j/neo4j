@@ -81,18 +81,18 @@ public class PhysicalLogicalTransactionStoreTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
     private File testDir;
     private Monitors monitors = new Monitors();
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         testDir = dir.graphDbDir();
     }
 
     @Test
-    public void extractTransactionFromLogFilesSkippingLastLogFileWithoutHeader() throws IOException
+    void extractTransactionFromLogFilesSkippingLastLogFileWithoutHeader() throws IOException
     {
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 100 );
@@ -129,7 +129,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldOpenCleanStore() throws Exception
+    void shouldOpenCleanStore() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -156,7 +156,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldOpenAndRecoverExistingData() throws Exception
+    void shouldOpenAndRecoverExistingData() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -251,7 +251,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldExtractMetadataFromExistingTransaction() throws Exception
+    void shouldExtractMetadataFromExistingTransaction() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -297,7 +297,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound() throws Exception
+    void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound() throws Exception
     {
         // GIVEN
         LogFiles logFiles = mock( LogFiles.class );
@@ -328,7 +328,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldThrowNoSuchTransactionExceptionIfLogFileIsMissing() throws Exception
+    void shouldThrowNoSuchTransactionExceptionIfLogFileIsMissing() throws Exception
     {
         // GIVEN
         LogFile logFile = mock( LogFile.class );

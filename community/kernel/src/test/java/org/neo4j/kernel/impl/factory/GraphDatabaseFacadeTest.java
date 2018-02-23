@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
@@ -59,7 +59,7 @@ public class GraphDatabaseFacadeTest
     public final ExpectedException expectedException = ExpectedException.none();
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
@@ -81,7 +81,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void beginTransactionWithCustomTimeout()
+    void beginTransactionWithCustomTimeout()
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 
@@ -89,7 +89,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void beginTransaction()
+    void beginTransaction()
     {
         graphDatabaseFacade.beginTx();
 
@@ -98,7 +98,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout()
+    void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout()
     {
         graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
         verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
@@ -110,7 +110,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void executeQueryStartDefaultTransaction()
+    void executeQueryStartDefaultTransaction()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, null );

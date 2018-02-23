@@ -36,10 +36,10 @@ import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile.maxPage;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileTest.CataloguePage.findPage;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileTest.CataloguePage.page;
 
-public class KeyValueStoreFileTest
+class KeyValueStoreFileTest
 {
     @Test
-    public void shouldFindPageInPageCatalogue()
+    void shouldFindPageInPageCatalogue()
     {
         assertEquals( 0, findPage( 50, page( 1, 100 ) ), "(single page) in middle of range" );
         assertEquals( 0, findPage( 1, page( 1, 100 ) ), "(single page) at beginning of range" );
@@ -95,7 +95,7 @@ public class KeyValueStoreFileTest
     }
 
     @Test
-    public void shouldComputeMaxPage()
+    void shouldComputeMaxPage()
     {
         assertEquals( 0, maxPage( 1024, 4, 100 ), "less than one page" );
         assertEquals( 0, maxPage( 1024, 4, 256 ), "exactly one page" );
@@ -105,7 +105,7 @@ public class KeyValueStoreFileTest
     }
 
     @Test
-    public void shouldFindRecordInPage() throws Exception
+    void shouldFindRecordInPage() throws Exception
     {
         // given
         byte[] key = new byte[1];
@@ -128,7 +128,7 @@ public class KeyValueStoreFileTest
     }
 
     @Test
-    public void shouldFindRecordInPageWithDuplicates() throws Exception
+    void shouldFindRecordInPageWithDuplicates() throws Exception
     {
         // given
         final byte[] keys = new byte[]{1, 2, 2, 3, 4};
@@ -158,7 +158,7 @@ public class KeyValueStoreFileTest
     }
 
     @Test
-    public void shouldThrowOnOutOfBoundsPageAccess()
+    void shouldThrowOnOutOfBoundsPageAccess()
     {
         assertThrows( UnderlyingStorageException.class, () -> {
             // given
@@ -187,7 +187,7 @@ public class KeyValueStoreFileTest
     }
 
     @Test
-    public void shouldFindFirstRecordGreaterThanIfNoExactMatch() throws Exception
+    void shouldFindFirstRecordGreaterThanIfNoExactMatch() throws Exception
     {
         // given
         byte[] key = new byte[1];

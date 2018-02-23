@@ -90,12 +90,12 @@ public class ActiveDirectoryAuthenticationIT
         };
     }
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    private TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
     }
 
-    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
+    private Consumer<Map<Setting<?>,String>> getSettingsFunction()
     {
         return settings ->
         {
@@ -122,14 +122,14 @@ public class ActiveDirectoryAuthenticationIT
         settings.put( SecuritySettings.ldap_authorization_system_password, "ProudListingsMedia1" );
     };
 
-    public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
+    private Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
 
     private HostnamePort address;
     private TransportConnection client;
     private TransportTestUtil util;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         this.client = cf.newInstance();
         this.address = server.lookupDefaultConnector();
@@ -137,7 +137,7 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @AfterEach
-    public void teardown() throws Exception
+    void teardown() throws Exception
     {
         if ( client != null )
         {
@@ -151,14 +151,14 @@ public class ActiveDirectoryAuthenticationIT
     //       They are here as a convenience for running local testing.
 
     @Test
-    public void shouldNotBeAbleToLoginUnknownUserOnEC2() throws Throwable
+    void shouldNotBeAbleToLoginUnknownUserOnEC2() throws Throwable
     {
 
         assertAuthFail( "unknown", "ProudListingsMedia1" );
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextOnEC2() throws Throwable
     {
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
@@ -166,7 +166,7 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeReaderOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeReaderOnEC2() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings );
 
@@ -176,14 +176,14 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContextOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContextOnEC2() throws Throwable
     {
         assertAuth( "tank", "ProudListingsMedia1" );
         assertWriteSucceeds();
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizePublisherOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizePublisherOnEC2() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings );
 
@@ -192,14 +192,14 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextOnEC2() throws Throwable
     {
         assertAuth( "smith", "ProudListingsMedia1" );
         assertReadFails( "'smith' with no roles" );
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeNoPermissionUserOnEC2() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings );
 
@@ -214,7 +214,7 @@ public class ActiveDirectoryAuthenticationIT
     //        system properties that will not be re-read)
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeReaderUsingLdapsOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeReaderUsingLdapsOnEC2() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings
                 .andThen( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" ) ) );
@@ -225,7 +225,7 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPSOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPSOnEC2() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings(
                 settings -> settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" ) );
@@ -236,7 +236,7 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeReaderUsingStartTlsOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeReaderUsingStartTlsOnEC2() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings
                 .andThen( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) ) );
@@ -247,7 +247,7 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingStartTlsOnEC2() throws Throwable
+    void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingStartTlsOnEC2() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) );
 
@@ -257,7 +257,7 @@ public class ActiveDirectoryAuthenticationIT
     }
 
     @Test
-    public void shouldBeAbleToAccessEC2ActiveDirectoryInstance() throws Throwable
+    void shouldBeAbleToAccessEC2ActiveDirectoryInstance() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings ->
         {
@@ -311,7 +311,7 @@ public class ActiveDirectoryAuthenticationIT
                 "The client is unauthorized due to authentication failure." ) ) );
     }
 
-    protected void assertReadSucceeds() throws Exception
+    private void assertReadSucceeds() throws Exception
     {
         // When
         client.send( util.chunk(
@@ -322,7 +322,7 @@ public class ActiveDirectoryAuthenticationIT
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    protected void assertReadFails( String username ) throws Exception
+    private void assertReadFails( String username ) throws Exception
     {
         // When
         client.send( util.chunk(
@@ -335,7 +335,7 @@ public class ActiveDirectoryAuthenticationIT
                         String.format( "Read operations are not allowed for user %s.", username ) ) ) );
     }
 
-    protected void assertWriteSucceeds() throws Exception
+    private void assertWriteSucceeds() throws Exception
     {
         // When
         client.send( util.chunk(
@@ -346,7 +346,7 @@ public class ActiveDirectoryAuthenticationIT
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    protected void assertWriteFails( String username ) throws Exception
+    private void assertWriteFails( String username ) throws Exception
     {
         // When
         client.send( util.chunk(

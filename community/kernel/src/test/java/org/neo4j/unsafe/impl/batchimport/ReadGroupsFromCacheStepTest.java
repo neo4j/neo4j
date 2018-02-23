@@ -38,10 +38,10 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
-public class ReadGroupsFromCacheStepTest
+class ReadGroupsFromCacheStepTest
 {
     @Test
-    public void shouldProduceCompleteBatchesPerOwner()
+    void shouldProduceCompleteBatchesPerOwner()
     {
         // GIVEN
         Configuration config = Configuration.withBatchSize( DEFAULT, 10 );
@@ -69,7 +69,7 @@ public class ReadGroupsFromCacheStepTest
         assertEquals( 4, processCounter.get() );
     }
 
-    protected static List<RelationshipGroupRecord> groups( Group... groups )
+    static List<RelationshipGroupRecord> groups( Group... groups )
     {
         List<RelationshipGroupRecord> records = new ArrayList<>();
         for ( Group group : groups )
@@ -85,12 +85,12 @@ public class ReadGroupsFromCacheStepTest
         return records;
     }
 
-    protected static class Group
+    static class Group
     {
         final long owningNode;
         final int count;
 
-        public Group( long owningNode, int count )
+        Group( long owningNode, int count )
         {
             this.owningNode = owningNode;
             this.count = count;

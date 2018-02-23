@@ -21,7 +21,7 @@ package org.neo4j.tooling.procedure.procedures.invalid.duplicated;
 
 import org.neo4j.procedure.UserFunction;
 
-public class UserFunction1
+class UserFunction1
 {
 
     @UserFunction

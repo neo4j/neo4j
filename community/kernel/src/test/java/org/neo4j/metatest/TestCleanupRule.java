@@ -31,10 +31,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class TestCleanupRule
+class TestCleanupRule
 {
     @Test
-    public void shouldCleanupAutoCloseable() throws Throwable
+    void shouldCleanupAutoCloseable() throws Throwable
     {
         // GIVEN
         CleanupRule rule = new CleanupRule();
@@ -48,7 +48,7 @@ public class TestCleanupRule
     }
 
     @Test
-    public void shouldCleanupObjectWithAppropriateCloseMethod() throws Throwable
+    void shouldCleanupObjectWithAppropriateCloseMethod() throws Throwable
     {
         // GIVEN
         CleanupRule rule = new CleanupRule();
@@ -62,7 +62,7 @@ public class TestCleanupRule
     }
 
     @Test
-    public void shouldCleanupMultipleObjectsInReverseAddedOrder() throws Throwable
+    void shouldCleanupMultipleObjectsInReverseAddedOrder() throws Throwable
     {
         // GIVEN
         CleanupRule rule = new CleanupRule();
@@ -79,7 +79,7 @@ public class TestCleanupRule
     }
 
     @Test
-    public void shouldTellUserIllegalArgumentIfSo()
+    void shouldTellUserIllegalArgumentIfSo()
     {
         // GIVEN
         CleanupRule rule = new CleanupRule();

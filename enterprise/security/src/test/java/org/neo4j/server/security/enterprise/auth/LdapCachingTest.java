@@ -49,14 +49,14 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
 
-public class LdapCachingTest
+class LdapCachingTest
 {
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
@@ -65,7 +65,7 @@ public class LdapCachingTest
     private Function<String, Integer> token;
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         token = s -> -1;
         SecurityLog securityLog = mock( SecurityLog.class );
@@ -107,7 +107,7 @@ public class LdapCachingTest
     }
 
     @Test
-    public void shouldCacheAuthenticationInfo() throws InvalidAuthTokenException
+    void shouldCacheAuthenticationInfo() throws InvalidAuthTokenException
     {
         // Given
         authManager.login( authToken( "mike", "123" ) );
@@ -121,7 +121,7 @@ public class LdapCachingTest
     }
 
     @Test
-    public void shouldCacheAuthorizationInfo() throws InvalidAuthTokenException
+    void shouldCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
         EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
@@ -136,7 +136,7 @@ public class LdapCachingTest
     }
 
     @Test
-    public void shouldInvalidateAuthorizationCacheAfterTTL() throws InvalidAuthTokenException
+    void shouldInvalidateAuthorizationCacheAfterTTL() throws InvalidAuthTokenException
     {
         // Given
         EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
@@ -159,7 +159,7 @@ public class LdapCachingTest
     }
 
     @Test
-    public void shouldInvalidateAuthenticationCacheAfterTTL() throws InvalidAuthTokenException
+    void shouldInvalidateAuthenticationCacheAfterTTL() throws InvalidAuthTokenException
     {
         // Given
         Map<String,Object> mike = authToken( "mike", "123" );
@@ -182,7 +182,7 @@ public class LdapCachingTest
     }
 
     @Test
-    public void shouldInvalidateAuthenticationCacheOnDemand() throws InvalidAuthTokenException
+    void shouldInvalidateAuthenticationCacheOnDemand() throws InvalidAuthTokenException
     {
         // Given
         Map<String,Object> mike = authToken( "mike", "123" );

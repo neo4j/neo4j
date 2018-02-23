@@ -34,22 +34,22 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CheckPointThresholdTestSupport
 {
-    protected Config config;
-    protected FakeClock clock;
+    private Config config;
+    FakeClock clock;
     protected LogPruning logPruning;
-    protected LogProvider logProvider;
-    protected Integer intervalTx;
-    protected Duration intervalTime;
+    private LogProvider logProvider;
+    Integer intervalTx;
+    Duration intervalTime;
     protected Consumer<String> notTriggered;
-    protected BlockingQueue<String> triggerConsumer;
+    private BlockingQueue<String> triggerConsumer;
     protected Consumer<String> triggered;
 
     @BeforeEach
@@ -71,12 +71,12 @@ public class CheckPointThresholdTestSupport
         config.augment( stringMap( GraphDatabaseSettings.check_point_policy.name(), policy ) );
     }
 
-    protected void withIntervalTime( String time )
+    void withIntervalTime( String time )
     {
         config.augment( stringMap( GraphDatabaseSettings.check_point_interval_time.name(), time ) );
     }
 
-    protected void withIntervalTx( int count )
+    void withIntervalTx( int count )
     {
         config.augment( stringMap( GraphDatabaseSettings.check_point_interval_tx.name(), String.valueOf( count ) ) );
     }

@@ -41,7 +41,7 @@ public class LockManagerImplTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void shouldAllowGetReadWriteLocks()
+    void shouldAllowGetReadWriteLocks()
     {
         // given
         LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
@@ -63,7 +63,7 @@ public class LockManagerImplTest
     }
 
     @Test
-    public void shouldNotBePossibleReleaseNotExistingLock()
+    void shouldNotBePossibleReleaseNotExistingLock()
     {
         // given
         LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
@@ -79,7 +79,7 @@ public class LockManagerImplTest
     }
 
     @Test
-    public void shouldCleanupNotUsedLocks()
+    void shouldCleanupNotUsedLocks()
     {
         // given
         LockResource node = new LockResource( ResourceTypes.NODE, 1L );
@@ -105,7 +105,7 @@ public class LockManagerImplTest
     }
 
     @Test
-    public void shouldReleaseNotAcquiredLocks()
+    void shouldReleaseNotAcquiredLocks()
     {
 
         // given

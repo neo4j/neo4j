@@ -37,10 +37,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings( "unchecked" )
-public class StoreProcessorTaskTest
+class StoreProcessorTaskTest
 {
     @Test
-    public void singlePassShouldOnlyProcessTheStoreOnce()
+    void singlePassShouldOnlyProcessTheStoreOnce()
     {
         // given
         StoreProcessor singlePassProcessor = mock( StoreProcessor.class );

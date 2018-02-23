@@ -28,8 +28,8 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -60,7 +60,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     private final CallableProcedure procedure = procedure( signature );
 
     @Test
-    public void shouldGetProcedureByName() throws Throwable
+    void shouldGetProcedureByName() throws Throwable
     {
         // Given
         kernel.registerProcedure( procedure );
@@ -75,7 +75,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldGetBuiltInProcedureByName() throws Throwable
+    void shouldGetBuiltInProcedureByName() throws Throwable
     {
         // When
         ProcedureSignature found = readOperationsInNewTransaction()
@@ -88,7 +88,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldGetAllProcedures() throws Throwable
+    void shouldGetAllProcedures() throws Throwable
     {
         // Given
         kernel.registerProcedure( procedure );
@@ -108,7 +108,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs()
+    void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs()
             throws ProcedureException, TransactionFailureException
     {
         // Then
@@ -121,7 +121,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldCallReadOnlyProcedure() throws Throwable
+    void shouldCallReadOnlyProcedure() throws Throwable
     {
         // Given
         kernel.registerProcedure( procedure );
@@ -136,7 +136,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void registeredProcedureShouldGetReadOperations() throws Throwable
+    void registeredProcedureShouldGetReadOperations() throws Throwable
     {
         // Given
         kernel.registerProcedure( new CallableProcedure.BasicProcedure( signature )

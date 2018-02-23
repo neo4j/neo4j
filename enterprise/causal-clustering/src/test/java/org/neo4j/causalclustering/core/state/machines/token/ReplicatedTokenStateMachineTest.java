@@ -19,10 +19,10 @@
  */
 package org.neo4j.causalclustering.core.state.machines.token;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -47,13 +47,13 @@ import static org.neo4j.causalclustering.core.state.machines.token.ReplicatedTok
 import static org.neo4j.causalclustering.core.state.machines.token.TokenType.LABEL;
 import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
 
-public class ReplicatedTokenStateMachineTest
+class ReplicatedTokenStateMachineTest
 {
     private final int EXPECTED_TOKEN_ID = 1;
     private final int UNEXPECTED_TOKEN_ID = 1024;
 
     @Test
-    public void shouldCreateTokenId()
+    void shouldCreateTokenId()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
@@ -70,7 +70,7 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldAllocateTokenIdToFirstReplicateRequest()
+    void shouldAllocateTokenIdToFirstReplicateRequest()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
@@ -93,7 +93,7 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldStoreRaftLogIndexInTransactionHeader()
+    void shouldStoreRaftLogIndexInTransactionHeader()
     {
         // given
         int logIndex = 1;

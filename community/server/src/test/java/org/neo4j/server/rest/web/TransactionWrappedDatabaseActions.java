@@ -45,11 +45,11 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
  * Some methods are _not_ wrapped: those are the ones that return a representation which is later serialised,
  * as that requires a transaction. For those, the test have scaffolding added.
  */
-public class TransactionWrappedDatabaseActions extends DatabaseActions
+class TransactionWrappedDatabaseActions extends DatabaseActions
 {
     private final GraphDatabaseAPI graph;
 
-    public TransactionWrappedDatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graph )
+    TransactionWrappedDatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graph )
     {
         super( leaseManager, graph );
         this.graph = graph;

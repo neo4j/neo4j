@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import static org.neo4j.helpers.FutureAdapter.VOID;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
-public class IndexProxyAdapter implements IndexProxy
+class IndexProxyAdapter implements IndexProxy
 {
     @Override
     public void start()

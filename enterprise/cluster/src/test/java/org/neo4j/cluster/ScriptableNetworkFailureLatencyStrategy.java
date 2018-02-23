@@ -32,8 +32,8 @@ import org.neo4j.cluster.com.message.MessageType;
 public class ScriptableNetworkFailureLatencyStrategy
     implements NetworkLatencyStrategy
 {
-    List<String> nodesDown = new ArrayList<>();
-    List<String[]> linksDown = new ArrayList<>();
+    private List<String> nodesDown = new ArrayList<>();
+    private List<String[]> linksDown = new ArrayList<>();
 
     public ScriptableNetworkFailureLatencyStrategy nodeIsDown( String id )
     {

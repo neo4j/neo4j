@@ -36,18 +36,18 @@ import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
 
-public class ClusterMembersSnapshotTest
+class ClusterMembersSnapshotTest
 {
     private static final String URI = "http://me";
 
     @Test
-    public void snapshotListPrunesSameMemberOnIdenticalAvailabilityEvents() throws Exception
+    void snapshotListPrunesSameMemberOnIdenticalAvailabilityEvents() throws Exception
     {
         // GIVEN
         // -- a snapshot containing one member with a role
@@ -73,7 +73,7 @@ public class ClusterMembersSnapshotTest
     }
 
     @Test
-    public void snapshotListShouldContainOnlyOneEventForARoleWithTheSameIdWhenSwitchingFromMasterToSlave()
+    void snapshotListShouldContainOnlyOneEventForARoleWithTheSameIdWhenSwitchingFromMasterToSlave()
             throws Exception
     {
         // GIVEN
@@ -100,7 +100,7 @@ public class ClusterMembersSnapshotTest
     }
 
     @Test
-    public void snapshotListShouldContainOnlyOneEventForARoleWithTheSameIdWhenSwitchingFromSlaveToMaster()
+    void snapshotListShouldContainOnlyOneEventForARoleWithTheSameIdWhenSwitchingFromSlaveToMaster()
             throws Exception
     {
         // GIVEN
@@ -127,7 +127,7 @@ public class ClusterMembersSnapshotTest
     }
 
     @Test
-    public void snapshotListPrunesOtherMemberWithSameMasterRole() throws Exception
+    void snapshotListPrunesOtherMemberWithSameMasterRole() throws Exception
     {
         // GIVEN
         // -- a snapshot containing one member with a role
@@ -155,7 +155,7 @@ public class ClusterMembersSnapshotTest
     }
 
     @Test
-    public void snapshotListDoesNotPruneOtherMemberWithSlaveRole() throws Exception
+    void snapshotListDoesNotPruneOtherMemberWithSlaveRole() throws Exception
     {
         // GIVEN
         // -- a snapshot containing one member with a role

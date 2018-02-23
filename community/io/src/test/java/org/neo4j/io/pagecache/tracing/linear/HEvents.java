@@ -137,7 +137,7 @@ class HEvents
         }
     }
 
-    public static class FlushHEvent extends IntervalHEvent implements FlushEvent
+    static class FlushHEvent extends IntervalHEvent implements FlushEvent
     {
         private long filePageId;
         private long cachePageId;
@@ -281,7 +281,7 @@ class HEvents
         }
     }
 
-    public static class PageFaultHEvent extends IntervalHEvent implements PageFaultEvent
+    static class PageFaultHEvent extends IntervalHEvent implements PageFaultEvent
     {
         private int bytesRead;
         private long cachePageId;
@@ -338,7 +338,7 @@ class HEvents
         }
     }
 
-    public static class EvictionHEvent extends IntervalHEvent implements EvictionEvent, FlushEventOpportunity
+    static class EvictionHEvent extends IntervalHEvent implements EvictionEvent, FlushEventOpportunity
     {
         private long filePageId;
         private File file;
@@ -457,13 +457,13 @@ class HEvents
 
         abstract void printBody( PrintStream out, String exceptionLinePrefix );
 
-        protected final void print( PrintStream out, File file )
+        final void print( PrintStream out, File file )
         {
             out.print( ", file:" );
             out.print( file == null ? "<null>" : file.getPath() );
         }
 
-        protected final void print( PrintStream out, Throwable exception, String linePrefix )
+        final void print( PrintStream out, Throwable exception, String linePrefix )
         {
             if ( exception != null )
             {
@@ -495,7 +495,7 @@ class HEvents
 
     public abstract static class IntervalHEvent extends HEvent
     {
-        protected LinearHistoryTracer tracer;
+        LinearHistoryTracer tracer;
 
         IntervalHEvent( LinearHistoryTracer tracer )
         {

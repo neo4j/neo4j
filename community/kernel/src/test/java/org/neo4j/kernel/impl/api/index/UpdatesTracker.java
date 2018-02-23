@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public class UpdatesTracker
+class UpdatesTracker
 {
     private int created;
     private int updated;

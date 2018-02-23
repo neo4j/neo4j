@@ -36,14 +36,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class DefaultCheckPointerTracerTest
+class DefaultCheckPointerTracerTest
 {
     private final FakeClock clock = Clocks.fakeClock();
     private final Monitor monitor = mock( Monitor.class );
     private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
     @Test
-    public void shouldCountEventsAnAccumulatedTotalTime()
+    void shouldCountEventsAnAccumulatedTotalTime()
     {
         DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
 
@@ -61,7 +61,7 @@ public class DefaultCheckPointerTracerTest
     }
 
     @Test
-    public void shouldReturnZeroIfNoDataIsAvailable()
+    void shouldReturnZeroIfNoDataIsAvailable()
     {
         DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
 

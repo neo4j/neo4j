@@ -62,22 +62,22 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
-public class ImportPanicIT
+class ImportPanicIT
 {
     private static final int BUFFER_SIZE = 1000;
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     /**
      * There was this problem where some steps and in particular parallel CSV input parsing that
      * paniced would hang the import entirely.
      */
     @Test
-    public void shouldExitAndThrowExceptionOnPanic() throws Exception
+    void shouldExitAndThrowExceptionOnPanic() throws Exception
     {
         // GIVEN
         BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs, null, Configuration.DEFAULT,

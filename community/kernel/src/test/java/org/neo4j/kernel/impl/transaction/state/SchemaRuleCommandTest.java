@@ -60,15 +60,15 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
-public class SchemaRuleCommandTest
+class SchemaRuleCommandTest
 {
 
     private final int labelId = 2;
@@ -95,7 +95,7 @@ public class SchemaRuleCommandTest
             PROVIDER_DESCRIPTOR );
 
     @Test
-    public void shouldWriteCreatedSchemaRuleToStore() throws Exception
+    void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
         SchemaRecord beforeRecords = serialize( rule, id, false, false);
@@ -111,7 +111,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldCreateIndexForCreatedSchemaRule() throws Exception
+    void shouldCreateIndexForCreatedSchemaRule() throws Exception
     {
         // GIVEN
         SchemaRecord beforeRecords = serialize( rule, id, false, false);
@@ -127,7 +127,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldSetLatestConstraintRule() throws Exception
+    void shouldSetLatestConstraintRule() throws Exception
     {
         // Given
         SchemaRecord beforeRecords = serialize( rule, id, true, true);
@@ -148,7 +148,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldDropSchemaRuleFromStore() throws Exception
+    void shouldDropSchemaRuleFromStore() throws Exception
     {
         // GIVEN
         SchemaRecord beforeRecords = serialize( rule, id, true, true);
@@ -164,7 +164,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldDropSchemaRuleFromIndex() throws Exception
+    void shouldDropSchemaRuleFromIndex() throws Exception
     {
         // GIVEN
         SchemaRecord beforeRecords = serialize( rule, id, true, true);
@@ -180,7 +180,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldWriteSchemaRuleToLog() throws Exception
+    void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
         SchemaRecord beforeRecords = serialize( rule, id, false, false);
@@ -202,7 +202,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
+    void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
     {
         // GIVEN
         SchemaRecord beforeRecords = serialize( rule, id, true, true);

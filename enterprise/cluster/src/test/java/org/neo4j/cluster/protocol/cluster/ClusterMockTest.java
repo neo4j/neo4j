@@ -71,7 +71,7 @@ import static org.junit.Assert.assertTrue;
 public class ClusterMockTest
 {
 
-    public static NetworkMock DEFAULT_NETWORK()
+    static NetworkMock DEFAULT_NETWORK()
     {
         return new NetworkMock( NullLogService.getInstance(), new Monitors(), 10,
                 new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 10 ),
@@ -81,17 +81,17 @@ public class ClusterMockTest
         );
     }
 
-    List<TestProtocolServer> servers = new ArrayList<>();
-    List<Cluster> out = new ArrayList<>();
-    List<Cluster> in = new ArrayList<>();
-    Map<Integer, URI> members = new HashMap<>();
+    private List<TestProtocolServer> servers = new ArrayList<>();
+    private List<Cluster> out = new ArrayList<>();
+    private List<Cluster> in = new ArrayList<>();
+    private Map<Integer, URI> members = new HashMap<>();
 
     @Rule
     public LoggerRule logger = new LoggerRule( Level.OFF );
 
-    public NetworkMock network;
+    private NetworkMock network;
 
-    ClusterTestScript script;
+    private ClusterTestScript script;
 
     @After
     public void tearDown()
@@ -108,8 +108,7 @@ public class ClusterMockTest
 
     }
 
-    protected void testCluster( int nrOfServers, NetworkMock mock,
-                                ClusterTestScript script )
+    void testCluster( int nrOfServers, NetworkMock mock, ClusterTestScript script )
             throws URISyntaxException
     {
         int[] serverIds = new int[nrOfServers];
@@ -120,8 +119,8 @@ public class ClusterMockTest
         testCluster( serverIds, null, mock, script );
     }
 
-    protected void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock,
-                                ClusterTestScript script )
+    void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock,
+            ClusterTestScript script )
             throws URISyntaxException
     {
         this.script = script;
@@ -265,7 +264,7 @@ public class ClusterMockTest
         } );
     }
 
-    public void verifyConfigurations( VerifyInstanceConfiguration[] toCheckAgainst )
+    private void verifyConfigurations( VerifyInstanceConfiguration[] toCheckAgainst )
     {
         logger.getLogger().fine( "Verify configurations against given" );
 
@@ -320,7 +319,7 @@ public class ClusterMockTest
         }
     }
 
-    public void verifyConfigurations( String description )
+    private void verifyConfigurations( String description )
     {
         logger.getLogger().fine( "Verify configurations" );
 
@@ -425,7 +424,7 @@ public class ClusterMockTest
         }
     }
 
-    public interface ClusterTestScript
+    interface ClusterTestScript
     {
         int rounds();
 
@@ -435,10 +434,10 @@ public class ClusterMockTest
     public class ClusterTestScriptDSL
             implements ClusterTestScript
     {
-        public abstract class ClusterAction
+        abstract class ClusterAction
                 implements Runnable
         {
-            public long time;
+            long time;
         }
 
         private final Queue<ClusterAction> actions = new LinkedList<>();
@@ -448,13 +447,13 @@ public class ClusterMockTest
         private int rounds = 100;
         private long now;
 
-        public ClusterTestScriptDSL rounds( int n )
+        ClusterTestScriptDSL rounds( int n )
         {
             rounds = n;
             return this;
         }
 
-        public ClusterTestScriptDSL join( int time, final int joinServer, final int... joinServers )
+        ClusterTestScriptDSL join( int time, final int joinServer, final int... joinServers )
         {
             return addAction( new ClusterAction()
             {
@@ -546,7 +545,7 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScriptDSL leave( long time, final int leaveServer )
+        ClusterTestScriptDSL leave( long time, final int leaveServer )
         {
             return addAction( new ClusterAction()
             {
@@ -568,7 +567,7 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScriptDSL down( int time, final int serverDown )
+        ClusterTestScriptDSL down( int time, final int serverDown )
         {
             return addAction( new ClusterAction()
             {
@@ -583,7 +582,7 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScriptDSL up( int time, final int serverUp )
+        ClusterTestScriptDSL up( int time, final int serverUp )
         {
             return addAction( new ClusterAction()
             {
@@ -599,7 +598,7 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScriptDSL broadcast( int time, final int server, final Object value )
+        ClusterTestScriptDSL broadcast( int time, final int server, final Object value )
         {
             return addAction( new ClusterAction()
             {
@@ -619,7 +618,7 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScriptDSL sleep( final int sleepTime )
+        ClusterTestScriptDSL sleep( final int sleepTime )
         {
             return addAction( new ClusterAction()
             {
@@ -631,7 +630,7 @@ public class ClusterMockTest
             }, sleepTime );
         }
 
-        public ClusterTestScriptDSL message( int time, final String msg )
+        ClusterTestScriptDSL message( int time, final String msg )
         {
             return addAction( new ClusterAction()
             {
@@ -643,7 +642,7 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScriptDSL verifyConfigurations( final String description, long time )
+        ClusterTestScriptDSL verifyConfigurations( final String description, long time )
         {
             return addAction( new ClusterAction()
             {
@@ -678,7 +677,7 @@ public class ClusterMockTest
             }
         }
 
-        public ClusterTestScriptDSL getRoles( final Map<String, InstanceId> roles )
+        ClusterTestScriptDSL getRoles( final Map<String,InstanceId> roles )
         {
             return addAction( new ClusterAction()
             {
@@ -690,7 +689,7 @@ public class ClusterMockTest
             }, 0 );
         }
 
-        public ClusterTestScriptDSL verifyCoordinatorRoleSwitched( final Map<String, InstanceId> comparedTo )
+        ClusterTestScriptDSL verifyCoordinatorRoleSwitched( final Map<String,InstanceId> comparedTo )
         {
             return addAction( new ClusterAction()
             {

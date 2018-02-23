@@ -40,20 +40,20 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HelpCommandTest
+class HelpCommandTest
 {
     @Mock
     private Consumer<String> out;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         MockitoAnnotations.initMocks( this );
     }
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void printsUnknownCommandWhenUnknownCommandIsProvided()
+    void printsUnknownCommandWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         when( commandLocator.getAllProviders() ).thenReturn( Collections.EMPTY_LIST );
@@ -73,7 +73,7 @@ public class HelpCommandTest
     }
 
     @Test
-    public void printsAvailableCommandsWhenUnknownCommandIsProvided()
+    void printsAvailableCommandsWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
@@ -99,7 +99,7 @@ public class HelpCommandTest
     }
 
     @Test
-    public void testAdminUsage() throws Exception
+    void testAdminUsage() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
@@ -147,7 +147,7 @@ public class HelpCommandTest
     }
 
     @Test
-    public void showsArgumentsAndDescriptionForSpecifiedCommand() throws Exception
+    void showsArgumentsAndDescriptionForSpecifiedCommand() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );

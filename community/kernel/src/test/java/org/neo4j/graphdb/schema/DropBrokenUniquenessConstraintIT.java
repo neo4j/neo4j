@@ -39,16 +39,16 @@ import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class DropBrokenUniquenessConstraintIT
+class DropBrokenUniquenessConstraintIT
 {
     private final Label label = Label.label( "Label" );
     private final String key = "key";
 
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
 
     @Test
-    public void shouldDropUniquenessConstraintWithBrokenBackingIndex()
+    void shouldDropUniquenessConstraintWithBrokenBackingIndex()
     {
         // given
         try ( Transaction tx = db.beginTx() )

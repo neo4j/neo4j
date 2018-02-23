@@ -38,7 +38,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.ResourceReleaser.NO_OP;
 
-public class AbstractTokenCreatorTest
+class AbstractTokenCreatorTest
 {
     private final Master master = mock( Master.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
@@ -61,13 +61,13 @@ public class AbstractTokenCreatorTest
     };
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( requestContextFactory.newRequestContext() ).thenReturn( context );
     }
 
     @Test
-    public void shouldCreateALabelOnMasterAndApplyItLocally()
+    void shouldCreateALabelOnMasterAndApplyItLocally()
     {
         // GIVEN
         int responseValue = response.response();
@@ -80,7 +80,7 @@ public class AbstractTokenCreatorTest
     }
 
     @Test
-    public void shouldThrowIfCreateThrowsAnException()
+    void shouldThrowIfCreateThrowsAnException()
     {
         // GIVEN
         RuntimeException re = new RuntimeException( "IO" );

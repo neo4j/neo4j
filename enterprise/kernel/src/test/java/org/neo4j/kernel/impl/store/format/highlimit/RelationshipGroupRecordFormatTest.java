@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.NULL;
 
-public class RelationshipGroupRecordFormatTest
+class RelationshipGroupRecordFormatTest
 {
 
     private RelationshipGroupRecordFormat recordFormat;
@@ -47,7 +47,7 @@ public class RelationshipGroupRecordFormatTest
     private ConstantIdSequence idSequence;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         recordFormat = new RelationshipGroupRecordFormat();
         pageCursor = new FixedLinkedStubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
@@ -55,13 +55,13 @@ public class RelationshipGroupRecordFormatTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         pageCursor.close();
     }
 
     @Test
-    public void readWriteFixedReferencesRecord() throws Exception
+    void readWriteFixedReferencesRecord() throws Exception
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
@@ -75,7 +75,7 @@ public class RelationshipGroupRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenOneOfTheReferencesIsMissing() throws IOException
+    void useFixedReferenceFormatWhenOneOfTheReferencesIsMissing() throws IOException
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
@@ -84,7 +84,7 @@ public class RelationshipGroupRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenOneOfTheReferencesReferenceTooBig() throws IOException
+    void useVariableLengthFormatWhenOneOfTheReferencesReferenceTooBig() throws IOException
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
@@ -93,7 +93,7 @@ public class RelationshipGroupRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
@@ -108,7 +108,7 @@ public class RelationshipGroupRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );

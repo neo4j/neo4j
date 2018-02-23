@@ -34,7 +34,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.verify;
 
-public class ClusterBindingHandlerTest
+class ClusterBindingHandlerTest
 {
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
 
@@ -48,7 +48,7 @@ public class ClusterBindingHandlerTest
     private ClusterBindingHandler handler = new ClusterBindingHandler( delegate , NullLogProvider.getInstance() );
 
     @Test
-    public void shouldDropMessagesIfHasNotBeenStarted()
+    void shouldDropMessagesIfHasNotBeenStarted()
     {
         // when
         handler.handle( heartbeat );
@@ -58,7 +58,7 @@ public class ClusterBindingHandlerTest
     }
 
     @Test
-    public void shouldDropMessagesIfHasBeenStopped() throws Throwable
+    void shouldDropMessagesIfHasBeenStopped() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -72,7 +72,7 @@ public class ClusterBindingHandlerTest
     }
 
     @Test
-    public void shouldDropMessagesIfForDifferentClusterId() throws Throwable
+    void shouldDropMessagesIfForDifferentClusterId() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -88,7 +88,7 @@ public class ClusterBindingHandlerTest
     }
 
     @Test
-    public void shouldDelegateMessages() throws Throwable
+    void shouldDelegateMessages() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -101,7 +101,7 @@ public class ClusterBindingHandlerTest
     }
 
     @Test
-    public void shouldDelegateStartCalls() throws Throwable
+    void shouldDelegateStartCalls() throws Throwable
     {
         // when
         handler.start( clusterId );
@@ -111,7 +111,7 @@ public class ClusterBindingHandlerTest
     }
 
     @Test
-    public void shouldDelegateStopCalls() throws Throwable
+    void shouldDelegateStopCalls() throws Throwable
     {
         // when
         handler.stop();

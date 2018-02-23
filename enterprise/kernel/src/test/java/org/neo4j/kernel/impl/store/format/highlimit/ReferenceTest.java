@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
 import javax.annotation.Resource;
 
 import org.neo4j.io.pagecache.StubPageCursor;
@@ -32,7 +31,7 @@ import org.neo4j.test.rule.RandomRule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( RandomExtension.class )
-public class ReferenceTest
+class ReferenceTest
 {
     /**
      * The current scheme only allows us to use 58 bits for a reference. Adhere to that limit here.
@@ -41,11 +40,11 @@ public class ReferenceTest
     private static final int PAGE_SIZE = 100;
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
     private final StubPageCursor cursor = new StubPageCursor( 0, PAGE_SIZE );
 
     @Test
-    public void shouldEncodeRandomLongs()
+    void shouldEncodeRandomLongs()
     {
         for ( int i = 0; i < 100_000_000; i++ )
         {
@@ -55,7 +54,7 @@ public class ReferenceTest
     }
 
     @Test
-    public void relativeReferenceConvertion()
+    void relativeReferenceConvertion()
     {
         long basis = 0xBABE;
         long absoluteReference = 0xCAFEBABE;

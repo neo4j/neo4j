@@ -42,16 +42,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class TestPropertyReadOnNewEntityBeforeLockRelease
+class TestPropertyReadOnNewEntityBeforeLockRelease
 {
     private static final String INDEX_NAME = "nodes";
     private static final int MAX_READER_DELAY_MS = 10;
 
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     @BeforeEach
-    public void initializeIndex()
+    void initializeIndex()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -62,7 +62,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease
     }
 
     @RepeatedTest( 100 )
-    public void shouldBeAbleToReadPropertiesFromNewNodeReturnedFromIndex() throws Exception
+    void shouldBeAbleToReadPropertiesFromNewNodeReturnedFromIndex() throws Exception
     {
         String propertyKey = UUID.randomUUID().toString();
         String propertyValue = UUID.randomUUID().toString();

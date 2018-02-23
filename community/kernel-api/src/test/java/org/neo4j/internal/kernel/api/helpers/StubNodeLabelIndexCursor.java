@@ -25,13 +25,13 @@ import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 
-public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
+class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
 {
     private int offset = -1;
     private final Map<Integer,long[]> lookup;
     private int label;
 
-    public StubNodeLabelIndexCursor( Map<Integer,long[]> lookup )
+    StubNodeLabelIndexCursor( Map<Integer,long[]> lookup )
     {
         this.lookup = lookup;
     }

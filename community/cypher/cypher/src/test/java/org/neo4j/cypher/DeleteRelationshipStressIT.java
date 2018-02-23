@@ -24,8 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -44,16 +42,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class DeleteRelationshipStressIT
+class DeleteRelationshipStressIT
 {
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         for ( int i = 0; i < 100; i++ )
         {
@@ -78,13 +76,13 @@ public class DeleteRelationshipStressIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         executorService.shutdown();
     }
 
     @Test
-    public void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException
+    void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r" );
@@ -98,7 +96,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException
+    void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r.prop" );
@@ -110,7 +108,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException
+    void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
@@ -123,7 +121,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException
+    void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
@@ -136,7 +134,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException
+    void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +

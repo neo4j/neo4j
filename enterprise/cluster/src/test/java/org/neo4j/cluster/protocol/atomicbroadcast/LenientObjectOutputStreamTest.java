@@ -36,10 +36,10 @@ import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LenientObjectOutputStreamTest
+class LenientObjectOutputStreamTest
 {
     @Test
-    public void shouldUseStoredSerialVersionUIDWhenSerialisingAnObject() throws IOException, ClassNotFoundException
+    void shouldUseStoredSerialVersionUIDWhenSerialisingAnObject() throws IOException, ClassNotFoundException
     {
         // given
         MemberIsAvailable memberIsAvailable = memberIsAvailable();
@@ -55,7 +55,7 @@ public class LenientObjectOutputStreamTest
     }
 
     @Test
-    public void shouldUseDefaultSerialVersionUIDWhenSerialisingAnObjectifNoMappingExists()
+    void shouldUseDefaultSerialVersionUIDWhenSerialisingAnObjectifNoMappingExists()
             throws IOException, ClassNotFoundException
     {
         // given

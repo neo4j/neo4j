@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 
 import static org.mockito.Mockito.verify;
 
-public class LeaderAvailabilityHandlerTest
+class LeaderAvailabilityHandlerTest
 {
     @SuppressWarnings( "unchecked" )
     private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegate = Mockito.mock( LifecycleMessageHandler.class );
@@ -54,7 +54,7 @@ public class LeaderAvailabilityHandlerTest
             RaftMessages.ReceivedInstantClusterIdAwareMessage.of( Instant.now(), clusterId, new RaftMessages.Vote.Response( leader, term.getAsLong(), false ) );
 
     @Test
-    public void shouldRenewElectionForHeartbeats() throws Throwable
+    void shouldRenewElectionForHeartbeats() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -67,7 +67,7 @@ public class LeaderAvailabilityHandlerTest
     }
 
     @Test
-    public void shouldRenewElectionForAppendEntriesRequests() throws Throwable
+    void shouldRenewElectionForAppendEntriesRequests() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -80,7 +80,7 @@ public class LeaderAvailabilityHandlerTest
     }
 
     @Test
-    public void shouldNotRenewElectionForOtherMessages() throws Throwable
+    void shouldNotRenewElectionForOtherMessages() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -93,7 +93,7 @@ public class LeaderAvailabilityHandlerTest
     }
 
     @Test
-    public void shouldNotRenewElectionTimeoutsForHeartbeatsFromEarlierTerm() throws Throwable
+    void shouldNotRenewElectionTimeoutsForHeartbeatsFromEarlierTerm() throws Throwable
     {
         // given
         RaftMessages.ReceivedInstantClusterIdAwareMessage<?> heartbeat =  RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
@@ -109,7 +109,7 @@ public class LeaderAvailabilityHandlerTest
     }
 
     @Test
-    public void shouldNotRenewElectionTimeoutsForAppendEntriesRequestsFromEarlierTerms() throws Throwable
+    void shouldNotRenewElectionTimeoutsForAppendEntriesRequestsFromEarlierTerms() throws Throwable
     {
         RaftMessages.ReceivedInstantClusterIdAwareMessage<?> appendEntries = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
                 Instant.now(), clusterId,
@@ -127,7 +127,7 @@ public class LeaderAvailabilityHandlerTest
     }
 
     @Test
-    public void shouldDelegateStart() throws Throwable
+    void shouldDelegateStart() throws Throwable
     {
         // when
         handler.start( clusterId );
@@ -137,7 +137,7 @@ public class LeaderAvailabilityHandlerTest
     }
 
     @Test
-    public void shouldDelegateStop() throws Throwable
+    void shouldDelegateStop() throws Throwable
     {
         // when
         handler.stop();

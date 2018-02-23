@@ -67,7 +67,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class CommandApplicationProcessTest
+class CommandApplicationProcessTest
 {
     private final InMemoryRaftLog raftLog = spy( new InMemoryRaftLog() );
 
@@ -114,7 +114,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void shouldApplyCommittedCommand() throws Throwable
+    void shouldApplyCommittedCommand() throws Throwable
     {
         // given
         RaftLogCommitIndexMonitor listener = mock( RaftLogCommitIndexMonitor.class );
@@ -141,7 +141,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void shouldNotApplyUncommittedCommands() throws Throwable
+    void shouldNotApplyUncommittedCommands() throws Throwable
     {
         // given
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -156,7 +156,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Throwable
+    void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Throwable
     {
         // given
         raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
@@ -174,7 +174,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void duplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
+    void duplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
     {
         // given
         raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
@@ -198,7 +198,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void outOfOrderDuplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
+    void outOfOrderDuplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
     {
         // given
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 100 ), globalSession, new LocalOperationId( 0, 0 ) ) ) );
@@ -232,7 +232,7 @@ public class CommandApplicationProcessTest
     // TODO: Test recovery, see CoreState#start().
 
     @Test
-    public void shouldPeriodicallyFlushState() throws Throwable
+    void shouldPeriodicallyFlushState() throws Throwable
     {
         // given
         int interactions = flushEvery * 5;
@@ -252,7 +252,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void shouldPanicIfUnableToApply() throws Throwable
+    void shouldPanicIfUnableToApply() throws Throwable
     {
         // given
         doThrow( RuntimeException.class ).when( commandDispatcher )
@@ -267,7 +267,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void shouldApplyToLogFromCache() throws Throwable
+    void shouldApplyToLogFromCache() throws Throwable
     {
         // given
         inFlightCache.put( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
@@ -282,7 +282,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void cacheEntryShouldBePurgedAfterBeingApplied() throws Throwable
+    void cacheEntryShouldBePurgedAfterBeingApplied() throws Throwable
     {
         // given
         inFlightCache.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -300,7 +300,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void shouldFailWhenCacheAndLogMiss() throws Throwable
+    void shouldFailWhenCacheAndLogMiss() throws Throwable
     {
         // given
         inFlightCache.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -321,7 +321,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void shouldIncreaseLastAppliedForStateMachineCommands() throws Exception
+    void shouldIncreaseLastAppliedForStateMachineCommands() throws Exception
     {
         // given
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -337,7 +337,7 @@ public class CommandApplicationProcessTest
     }
 
     @Test
-    public void shouldIncreaseLastAppliedForOtherCommands() throws Exception
+    void shouldIncreaseLastAppliedForOtherCommands() throws Exception
     {
         // given
         raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );

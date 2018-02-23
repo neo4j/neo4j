@@ -44,16 +44,16 @@ import static org.neo4j.metrics.source.db.EntityCountMetrics.COUNTS_NODE;
 import static org.neo4j.metrics.source.db.EntityCountMetrics.COUNTS_RELATIONSHIP_TYPE;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class PrometheusOutputIT
+class PrometheusOutputIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseService database;
     private String serverAddress;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         serverAddress = "localhost:" + PortAuthority.allocatePort();
         database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -63,13 +63,13 @@ public class PrometheusOutputIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         database.shutdown();
     }
 
     @Test
-    public void httpEndpointShouldBeAvailableAndResponsive() throws IOException
+    void httpEndpointShouldBeAvailableAndResponsive() throws IOException
     {
         String url = "http://" + serverAddress + "/metrics";
         URLConnection connection = new URL( url ).openConnection();

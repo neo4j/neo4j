@@ -33,25 +33,25 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DefaultClientTest
+class DefaultClientTest
 {
 
     private static ExecutorService executor;
 
     @BeforeAll
-    public static void setUp()
+    static void setUp()
     {
         executor = Executors.newSingleThreadExecutor();
     }
 
     @AfterAll
-    public static void tearDown()
+    static void tearDown()
     {
         executor.shutdown();
     }
 
     @Test
-    public void checkClientsIdBounds() throws ExecutionException, InterruptedException
+    void checkClientsIdBounds() throws ExecutionException, InterruptedException
     {
         int threads = 2;
         DefaultCounts counts = new DefaultCounts( threads );

@@ -42,7 +42,7 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase
     private Processor processor = new UserAggregationFunctionProcessor();
 
     @Test
-    public void fails_if_aggregation_function_directly_exposes_parameters()
+    void fails_if_aggregation_function_directly_exposes_parameters()
     {
         JavaFileObject function =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/aggregation/FunctionWithParameters.java" );
@@ -54,7 +54,7 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_aggregation_function_exposes_non_aggregation_return_type()
+    void fails_if_aggregation_function_exposes_non_aggregation_return_type()
     {
         JavaFileObject function =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/aggregation/FunctionWithWrongReturnType.java" );
@@ -67,7 +67,7 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase
 
     @Test
     @Ignore( "javac fails to publish the deferred diagnostic of the second error to com.google.testing.compile.Compiler" )
-    public void fails_if_aggregation_function_exposes_return_type_without_aggregation_methods()
+    void fails_if_aggregation_function_exposes_return_type_without_aggregation_methods()
     {
         JavaFileObject function =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/aggregation/FunctionWithoutAggregationMethods.java" );

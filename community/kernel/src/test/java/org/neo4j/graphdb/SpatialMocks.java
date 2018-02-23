@@ -113,7 +113,7 @@ public class SpatialMocks
     {
         final String geometryType;
         final List<Coordinate> coordinates;
-        protected final CRS crs;
+        final CRS crs;
 
         private MockGeometry( String geometryType, final List<Coordinate> coordinates, final CRS crs )
         {

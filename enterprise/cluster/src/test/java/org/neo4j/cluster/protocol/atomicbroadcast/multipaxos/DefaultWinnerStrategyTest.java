@@ -38,10 +38,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultWinnerStrategyTest
+class DefaultWinnerStrategyTest
 {
     @Test
-    public void shouldLogElectionProcess()
+    void shouldLogElectionProcess()
     {
         // given
         ClusterContext clusterContext = mock( ClusterContext.class );
@@ -75,7 +75,7 @@ public class DefaultWinnerStrategyTest
     }
 
     @Test
-    public void shouldNotPickAWinnerIfAllVotesAreForIneligibleCandidates()
+    void shouldNotPickAWinnerIfAllVotesAreForIneligibleCandidates()
     {
         // given
         InstanceId instanceOne = new InstanceId( 1 );
@@ -114,7 +114,7 @@ public class DefaultWinnerStrategyTest
     }
 
     @Test
-    public void theWinnerShouldHaveTheBestVoteCredentials()
+    void theWinnerShouldHaveTheBestVoteCredentials()
     {
         // given
         InstanceId instanceOne = new InstanceId( 1 );

@@ -51,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
-public class DynamicIndexStoreViewTest
+class DynamicIndexStoreViewTest
 {
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final NeoStores neoStores = mock( NeoStores.class );
@@ -63,7 +63,7 @@ public class DynamicIndexStoreViewTest
     private final AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         NodeRecord nodeRecord = getNodeRecord();
         when( labelScanStore.allNodeLabelRanges()).thenReturn( nodeLabelRanges );
@@ -74,7 +74,7 @@ public class DynamicIndexStoreViewTest
     }
 
     @Test
-    public void visitOnlyLabeledNodes() throws Exception
+    void visitOnlyLabeledNodes() throws Exception
     {
         LabelScanReader labelScanReader = mock( LabelScanReader.class );
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
@@ -100,7 +100,7 @@ public class DynamicIndexStoreViewTest
     }
 
     @Test
-    public void shouldBeAbleToForceStoreScan() throws Exception
+    void shouldBeAbleToForceStoreScan() throws Exception
     {
         when( labelScanStore.newReader() ).thenThrow( new RuntimeException( "Should not be used" ) );
 

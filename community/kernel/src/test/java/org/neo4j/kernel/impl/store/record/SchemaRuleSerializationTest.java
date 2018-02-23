@@ -54,46 +54,46 @@ import static org.neo4j.kernel.impl.store.record.SchemaRuleSerialization.deseria
 import static org.neo4j.kernel.impl.store.record.SchemaRuleSerialization.lengthOf;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class SchemaRuleSerializationTest extends SchemaRuleTestBase
+class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
-    IndexRule indexRegular = indexRule( RULE_ID,
+    private IndexRule indexRegular = indexRule( RULE_ID,
             forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
 
-    IndexRule indexUnique = constraintIndexRule( RULE_ID_2,
+    private IndexRule indexUnique = constraintIndexRule( RULE_ID_2,
             uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID );
 
-    IndexRule indexCompositeRegular = indexRule( RULE_ID,
+    private IndexRule indexCompositeRegular = indexRule( RULE_ID,
             forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR );
 
-    IndexRule indexCompositeUnique = constraintIndexRule( RULE_ID_2,
+    private IndexRule indexCompositeUnique = constraintIndexRule( RULE_ID_2,
             uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
             PROVIDER_DESCRIPTOR, RULE_ID );
 
-    IndexRule indexBigComposite = indexRule( RULE_ID,
+    private IndexRule indexBigComposite = indexRule( RULE_ID,
             forLabel( LABEL_ID, range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
 
-    ConstraintRule constraintExistsLabel = constraintRule( RULE_ID,
+    private ConstraintRule constraintExistsLabel = constraintRule( RULE_ID,
             existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
 
-    ConstraintRule constraintUniqueLabel = constraintRule( RULE_ID_2,
+    private ConstraintRule constraintUniqueLabel = constraintRule( RULE_ID_2,
             ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
 
-    ConstraintRule constraintNodeKeyLabel = constraintRule( RULE_ID_2,
+    private ConstraintRule constraintNodeKeyLabel = constraintRule( RULE_ID_2,
             nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
 
-    ConstraintRule constraintExistsRelType = constraintRule( RULE_ID_2,
+    private ConstraintRule constraintExistsRelType = constraintRule( RULE_ID_2,
             existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
 
-    ConstraintRule constraintCompositeLabel = constraintRule( RULE_ID,
+    private ConstraintRule constraintCompositeLabel = constraintRule( RULE_ID,
             existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
 
-    ConstraintRule constraintCompositeRelType = constraintRule( RULE_ID_2,
+    private ConstraintRule constraintCompositeRelType = constraintRule( RULE_ID_2,
             existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
 
     // INDEX RULES
 
     @Test
-    public void rulesCreatedWithoutNameMustHaveComputedName()
+    void rulesCreatedWithoutNameMustHaveComputedName()
     {
         assertThat( indexRegular.getName(), is( "index_1" ) );
         assertThat( indexUnique.getName(), is( "index_2" ) );
@@ -126,7 +126,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void rulesCreatedWithoutNameMustRetainComputedNameAfterDeserialisation() throws Exception
+    void rulesCreatedWithoutNameMustRetainComputedNameAfterDeserialisation() throws Exception
     {
         assertThat( serialiseAndDeserialise( indexRegular ).getName(), is( "index_1" ) );
         assertThat( serialiseAndDeserialise( indexUnique ).getName(), is( "index_2" ) );
@@ -142,7 +142,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void rulesCreatedWithNameMustRetainGivenNameAfterDeserialisation() throws Exception
+    void rulesCreatedWithNameMustRetainGivenNameAfterDeserialisation() throws Exception
     {
         String name = "custom_rule";
 
@@ -174,7 +174,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void rulesCreatedWithNullNameMustRetainComputedNameAfterDeserialisation() throws Exception
+    void rulesCreatedWithNullNameMustRetainComputedNameAfterDeserialisation() throws Exception
     {
         String name = null;
 
@@ -212,7 +212,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void indexRuleNameMustNotContainNullCharacter()
+    void indexRuleNameMustNotContainNullCharacter()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             String name = "a\0b";
@@ -221,7 +221,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void indexRuleNameMustNotBeTheEmptyString()
+    void indexRuleNameMustNotBeTheEmptyString()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             //noinspection RedundantStringConstructorCall
@@ -231,7 +231,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void constraintIndexRuleNameMustNotContainNullCharacter()
+    void constraintIndexRuleNameMustNotContainNullCharacter()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             String name = "a\0b";
@@ -240,7 +240,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void constraintIndexRuleNameMustNotBeTheEmptyString()
+    void constraintIndexRuleNameMustNotBeTheEmptyString()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             //noinspection RedundantStringConstructorCall
@@ -250,7 +250,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void constraintRuleNameMustNotContainNullCharacter()
+    void constraintRuleNameMustNotContainNullCharacter()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             String name = "a\0b";
@@ -259,7 +259,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void constraintRuleNameMustNotBeTheEmptyString()
+    void constraintRuleNameMustNotBeTheEmptyString()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             //noinspection RedundantStringConstructorCall
@@ -269,7 +269,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void uniquenessConstraintRuleNameMustNotContainNullCharacter()
+    void uniquenessConstraintRuleNameMustNotContainNullCharacter()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             String name = "a\0b";
@@ -279,7 +279,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void uniquenessConstraintRuleNameMustNotBeTheEmptyString()
+    void uniquenessConstraintRuleNameMustNotBeTheEmptyString()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             //noinspection RedundantStringConstructorCall
@@ -290,7 +290,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void nodeKeyConstraintRuleNameMustNotContainNullCharacter()
+    void nodeKeyConstraintRuleNameMustNotContainNullCharacter()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             String name = "a\0b";
@@ -299,7 +299,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void nodeKeyConstraintRuleNameMustNotBeTheEmptyString()
+    void nodeKeyConstraintRuleNameMustNotBeTheEmptyString()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             //noinspection RedundantStringConstructorCall
@@ -309,21 +309,21 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldSerializeAndDeserializeIndexRules() throws MalformedSchemaRuleException
+    void shouldSerializeAndDeserializeIndexRules() throws MalformedSchemaRuleException
     {
         assertSerializeAndDeserializeIndexRule( indexRegular );
         assertSerializeAndDeserializeIndexRule( indexUnique );
     }
 
     @Test
-    public void shouldSerializeAndDeserializeCompositeIndexRules() throws MalformedSchemaRuleException
+    void shouldSerializeAndDeserializeCompositeIndexRules() throws MalformedSchemaRuleException
     {
         assertSerializeAndDeserializeIndexRule( indexCompositeRegular );
         assertSerializeAndDeserializeIndexRule( indexCompositeUnique );
     }
 
     @Test
-    public void shouldSerializeAndDeserialize_Big_CompositeIndexRules() throws MalformedSchemaRuleException
+    void shouldSerializeAndDeserialize_Big_CompositeIndexRules() throws MalformedSchemaRuleException
     {
         assertSerializeAndDeserializeIndexRule( indexBigComposite );
     }
@@ -331,7 +331,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     // CONSTRAINT RULES
 
     @Test
-    public void shouldSerializeAndDeserializeConstraintRules() throws MalformedSchemaRuleException
+    void shouldSerializeAndDeserializeConstraintRules() throws MalformedSchemaRuleException
     {
         assertSerializeAndDeserializeConstraintRule( constraintExistsLabel );
         assertSerializeAndDeserializeConstraintRule( constraintUniqueLabel );
@@ -340,14 +340,14 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldSerializeAndDeserializeCompositeConstraintRules() throws MalformedSchemaRuleException
+    void shouldSerializeAndDeserializeCompositeConstraintRules() throws MalformedSchemaRuleException
     {
         assertSerializeAndDeserializeConstraintRule( constraintCompositeLabel );
         assertSerializeAndDeserializeConstraintRule( constraintCompositeRelType );
     }
 
     @Test
-    public void shouldReturnCorrectLengthForIndexRules()
+    void shouldReturnCorrectLengthForIndexRules()
     {
         assertCorrectLength( indexRegular );
         assertCorrectLength( indexUnique );
@@ -357,7 +357,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldReturnCorrectLengthForConstraintRules()
+    void shouldReturnCorrectLengthForConstraintRules()
     {
         assertCorrectLength( constraintExistsLabel );
     }
@@ -365,7 +365,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     // BACKWARDS COMPATIBILITY
 
     @Test
-    public void shouldParseIndexRule() throws Exception
+    void shouldParseIndexRule() throws Exception
     {
         assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==", "index_24" );
         assertParseIndexRule( "AAACAAEAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAAAQ=", "index_24" ); // LEGACY
@@ -384,7 +384,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldParseUniqueIndexRule() throws Exception
+    void shouldParseUniqueIndexRule() throws Exception
     {
         assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc",
                 "index_33" );
@@ -411,7 +411,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldParseUniqueConstraintRule() throws Exception
+    void shouldParseUniqueConstraintRule() throws Exception
     {
         assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
         assertParseUniqueConstraintRule( "AAAANwMBAAAAAAAAAAMAAAAAAAAAAg==", "constraint_1" ); // LEGACY
@@ -430,7 +430,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldParseNodeKeyConstraintRule() throws Exception
+    void shouldParseNodeKeyConstraintRule() throws Exception
     {
         assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
         assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==",
@@ -448,7 +448,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldParseNodePropertyExistsRule() throws Exception
+    void shouldParseNodePropertyExistsRule() throws Exception
     {
         assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADM=", "constraint_87" );
         assertParseNodePropertyExistsRule( "AAAALQQAAAAz", "constraint_87" ); // LEGACY
@@ -466,7 +466,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldParseRelationshipPropertyExistsRule() throws Exception
+    void shouldParseRelationshipPropertyExistsRule() throws Exception
     {
         assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+c=", "constraint_51" );
         assertParseRelationshipPropertyExistsRule( "AAAhQAUAABfn", "constraint_51" ); // LEGACY6

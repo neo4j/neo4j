@@ -75,7 +75,7 @@ public abstract class AbstractRecordFormatTest
     public static final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( random );
     private static PageCache pageCache;
 
-    public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
+    private RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
     private final RecordFormats formats;
     private final int entityBits;

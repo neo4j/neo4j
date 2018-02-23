@@ -33,10 +33,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class StoreStatementTest
+class StoreStatementTest
 {
     @Test
-    public void shouldCloseOpenedLabelScanReader()
+    void shouldCloseOpenedLabelScanReader()
     {
         // given
         Supplier<LabelScanReader> scanStore = mock( Supplier.class );

@@ -27,10 +27,10 @@ import org.neo4j.causalclustering.identity.StoreId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
-public class TxPullRequestEncodeDecodeTest
+class TxPullRequestEncodeDecodeTest
 {
     @Test
-    public void shouldEncodeAndDecodePullRequestMessage()
+    void shouldEncodeAndDecodePullRequestMessage()
     {
         // given
         EmbeddedChannel channel = new EmbeddedChannel( new TxPullRequestEncoder(), new TxPullRequestDecoder() );

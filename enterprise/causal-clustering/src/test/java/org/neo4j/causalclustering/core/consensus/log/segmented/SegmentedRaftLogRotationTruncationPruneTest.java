@@ -38,19 +38,19 @@ import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueO
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class SegmentedRaftLogRotationTruncationPruneTest
+class SegmentedRaftLogRotationTruncationPruneTest
 {
 
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         fileSystem.close();
     }
 
     @Test
-    public void shouldPruneAwaySingleEntriesIfRotationHappenedEveryEntry() throws Exception
+    void shouldPruneAwaySingleEntriesIfRotationHappenedEveryEntry() throws Exception
     {
         /**
          * If you have a raft log which rotates after every append, therefore having a single entry in every segment,
@@ -77,7 +77,7 @@ public class SegmentedRaftLogRotationTruncationPruneTest
     }
 
     @Test
-    public void shouldPruneAwaySingleEntriesAfterTruncationIfRotationHappenedEveryEntry() throws Exception
+    void shouldPruneAwaySingleEntriesAfterTruncationIfRotationHappenedEveryEntry() throws Exception
     {
         /**
          * Given a log with many single-entry segments, a series of truncations at decending values followed by

@@ -78,7 +78,7 @@ import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.api.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
 
-public class LockingStatementOperationsTest
+class LockingStatementOperationsTest
 {
     private final LockingStatementOperations lockingOps;
     private final EntityReadOperations entityReadOps;
@@ -96,7 +96,7 @@ public class LockingStatementOperationsTest
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
 
-    public LockingStatementOperationsTest()
+    LockingStatementOperationsTest()
     {
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
         entityReadOps = mock( EntityReadOperations.class );
@@ -113,7 +113,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
+    void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
     {
         // when
         lockingOps.nodeAddLabel( state, 123, 456 );
@@ -124,7 +124,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeAddingLabelToJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeAddingLabelToJustCreatedNode() throws Exception
     {
         // when
         txState.nodeDoCreate( 123 );
@@ -136,7 +136,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
+    void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
     {
         // when
         int labelId = 456;
@@ -148,7 +148,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
+    void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
     {
         // given
         int propertyKeyId = 8;
@@ -163,7 +163,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
     {
         // given
         txState.nodeDoCreate( 123 );
@@ -179,7 +179,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
+    void shouldAcquireEntityWriteLockBeforeDeletingNode()
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         // WHEN
@@ -191,7 +191,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
     {
         // WHEN
         txState.nodeDoCreate( 123 );
@@ -203,7 +203,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaWriteLockBeforeAddingIndexRule() throws Exception
+    void shouldAcquireSchemaWriteLockBeforeAddingIndexRule() throws Exception
     {
         // given
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
@@ -220,7 +220,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
+    void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
@@ -234,7 +234,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void acquireReadLockBeforeGettingIndexRules()
+    void acquireReadLockBeforeGettingIndexRules()
     {
         // given
         int labelId = 1;
@@ -253,7 +253,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
+    void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
@@ -269,7 +269,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
+    void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
@@ -283,7 +283,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
+    void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
     {
         // given
         when( schemaReadOps.constraintsGetForSchema( state, descriptor ) ).thenReturn( emptyIterator() );
@@ -298,7 +298,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
+    void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
     {
         // given
         int labelId = 123;
@@ -314,7 +314,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints()
+    void shouldAcquireSchemaReadLockBeforeGettingAllConstraints()
     {
         // given
         int labelId = 1;
@@ -337,7 +337,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
+    void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
         lockingOps.relationshipCreate( state, 1, 2, 3 );
@@ -349,7 +349,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
+    void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
     {
         // GIVEN
         long lowId = 3;
@@ -381,7 +381,7 @@ public class LockingStatementOperationsTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
+    void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
     {
         // GIVEN
         final long relationshipId = 10;
@@ -433,7 +433,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
+    void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
     {
         // given
         int propertyKeyId = 8;
@@ -448,7 +448,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
     {
         // given
         txState.relationshipDoCreate( 123, 1, 2, 3 );
@@ -464,7 +464,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
+    void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
     {
         long nodeId = 1L;
         returnRelationships( entityReadOps, state, nodeId, false );
@@ -477,7 +477,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void detachDeleteNodeExclusivelyLockNodes() throws KernelException
+    void detachDeleteNodeExclusivelyLockNodes() throws KernelException
     {
         long nodeId = 1L;
         RelationshipData relationship = new RelationshipData( 1, nodeId, 2L );

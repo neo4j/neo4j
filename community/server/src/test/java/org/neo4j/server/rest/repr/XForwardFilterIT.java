@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -39,8 +38,8 @@ import static org.junit.Assert.assertTrue;
 public class XForwardFilterIT extends AbstractRestFunctionalTestBase
 {
 
-    public static final String X_FORWARDED_HOST = "X-Forwarded-Host";
-    public static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
+    private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
+    private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
     private Client client = Client.create();
 
     private static GraphDbHelper helper;

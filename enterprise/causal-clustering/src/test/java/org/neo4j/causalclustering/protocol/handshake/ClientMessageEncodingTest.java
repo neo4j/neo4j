@@ -33,7 +33,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
-public class ClientMessageEncodingTest
+class ClientMessageEncodingTest
 {
     private final ServerMessageEncoder encoder = new ServerMessageEncoder();
     private final ClientMessageDecoder decoder = new ClientMessageDecoder();
@@ -49,7 +49,7 @@ public class ClientMessageEncodingTest
         return output;
     }
 
-    public static Collection<ClientMessage> data()
+    private static Collection<ClientMessage> data()
     {
         return Arrays.asList(
                 new ApplicationProtocolResponse( StatusCode.FAILURE, "protocol", 13 ),
@@ -60,7 +60,7 @@ public class ClientMessageEncodingTest
 
     @ParameterizedTest
     @MethodSource( value = "data" )
-    public void shouldCompleteEncodingRoundTrip( ClientMessage message ) throws ClientHandshakeException
+    void shouldCompleteEncodingRoundTrip( ClientMessage message ) throws ClientHandshakeException
     {
         //when
         List<Object> output = encodeDecode( message );

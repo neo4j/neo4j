@@ -39,10 +39,10 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RecordFormatsGenerationTest
+class RecordFormatsGenerationTest
 {
     @Test
-    public void correctGenerations()
+    void correctGenerations()
     {
         List<RecordFormats> recordFormats = Arrays.asList(
                 StandardV2_3.RECORD_FORMATS,
@@ -64,7 +64,7 @@ public class RecordFormatsGenerationTest
     }
 
     @Test
-    public void uniqueGenerations()
+    void uniqueGenerations()
     {
         Map<FormatFamily,List<Integer>> familyGenerations = allFamilyGenerations();
         for ( Map.Entry<FormatFamily,List<Integer>> familyEntry : familyGenerations.entrySet() )

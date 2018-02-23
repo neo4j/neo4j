@@ -58,7 +58,7 @@ public class ResponsePackerIT
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
-    public void shouldPackTheHighestTxCommittedAsObligation() throws Exception
+    void shouldPackTheHighestTxCommittedAsObligation() throws Exception
     {
         // GIVEN
         LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );

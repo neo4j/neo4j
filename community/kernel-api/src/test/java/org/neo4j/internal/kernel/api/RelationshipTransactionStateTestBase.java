@@ -56,7 +56,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         extends KernelAPIWriteTestBase<G>
 {
     @Test
-    public void shouldSeeSingleRelationshipInTransaction() throws Exception
+    void shouldSeeSingleRelationshipInTransaction() throws Exception
     {
         int label;
         long n1, n2;
@@ -92,7 +92,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldNotSeeSingleRelationshipWhichWasDeletedInTransaction() throws Exception
+    void shouldNotSeeSingleRelationshipWhichWasDeletedInTransaction() throws Exception
     {
         int label;
         long n1, n2, r;
@@ -122,7 +122,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldScanRelationshipInTransaction() throws Exception
+    void shouldScanRelationshipInTransaction() throws Exception
     {
         final int nRelationshipsInStore = 10;
 
@@ -153,7 +153,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldNotScanRelationshipWhichWasDeletedInTransaction() throws Exception
+    void shouldNotScanRelationshipWhichWasDeletedInTransaction() throws Exception
     {
         final int nRelationshipsInStore = 5 + 1 + 5;
 
@@ -185,7 +185,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldSeeRelationshipInTransaction() throws Exception
+    void shouldSeeRelationshipInTransaction() throws Exception
     {
         long n1, n2;
         try ( Transaction tx = session.beginTransaction() )
@@ -216,7 +216,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldNotSeeRelationshipDeletedInTransaction() throws Exception
+    void shouldNotSeeRelationshipDeletedInTransaction() throws Exception
     {
         long n1, n2, r;
         try ( Transaction tx = session.beginTransaction() )
@@ -247,7 +247,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldSeeRelationshipInTransactionBeforeCursorInitialization() throws Exception
+    void shouldSeeRelationshipInTransactionBeforeCursorInitialization() throws Exception
     {
         long n1, n2;
         try ( Transaction tx = session.beginTransaction() )
@@ -279,49 +279,49 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroups() throws Exception
+    void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
         traverseWithoutGroups( sparse( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroups() throws Exception
+    void shouldTraverseDenseNodeWithoutGroups() throws Exception
     {
         traverseWithoutGroups( RelationshipTestSupport.dense( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         traverseWithoutGroups( sparse( graphDb ), true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         traverseWithoutGroups( RelationshipTestSupport.dense( graphDb ), true );
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroups() throws Exception
+    void shouldTraverseSparseNodeViaGroups() throws Exception
     {
         traverseViaGroups( sparse( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroups() throws Exception
+    void shouldTraverseDenseNodeViaGroups() throws Exception
     {
         traverseViaGroups( RelationshipTestSupport.dense( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( sparse( graphDb ), true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( RelationshipTestSupport.dense( graphDb ), true );
     }

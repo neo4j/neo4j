@@ -37,27 +37,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class StartupConstraintSemanticsTest
+class StartupConstraintSemanticsTest
 {
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
 
     @Test
-    public void shouldNotAllowOpeningADatabaseWithPECInCommunityEdition()
+    void shouldNotAllowOpeningADatabaseWithPECInCommunityEdition()
     {
         assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT exists(n.required)",
                 StandardConstraintSemantics.ERROR_MESSAGE_EXISTS );
     }
 
     @Test
-    public void shouldNotAllowOpeningADatabaseWithNodeKeyInCommunityEdition()
+    void shouldNotAllowOpeningADatabaseWithNodeKeyInCommunityEdition()
     {
         assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT (n.required) IS NODE KEY",
                 StandardConstraintSemantics.ERROR_MESSAGE_NODE_KEY );
     }
 
     @Test
-    public void shouldAllowOpeningADatabaseWithUniqueConstraintInCommunityEdition()
+    void shouldAllowOpeningADatabaseWithUniqueConstraintInCommunityEdition()
     {
         assertThatCommunityCanStartOnNormalConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT (n.required) IS UNIQUE" );
     }

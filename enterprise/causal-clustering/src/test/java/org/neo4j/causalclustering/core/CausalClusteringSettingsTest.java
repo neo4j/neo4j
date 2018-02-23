@@ -29,10 +29,10 @@ import org.neo4j.kernel.configuration.Settings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CausalClusteringSettingsTest
+class CausalClusteringSettingsTest
 {
     @Test
-    public void shouldValidatePrefixBasedKeys()
+    void shouldValidatePrefixBasedKeys()
     {
         // given
         BaseSetting<String> setting = CausalClusteringSettings.prefixSetting( "foo", Settings.STRING, "" );
@@ -51,7 +51,7 @@ public class CausalClusteringSettingsTest
     }
 
     @Test
-    public void shouldValidateMultiplePrefixBasedKeys()
+    void shouldValidateMultiplePrefixBasedKeys()
     {
         // given
         BaseSetting<String> setting = CausalClusteringSettings.prefixSetting( "foo", Settings.STRING, "" );
@@ -71,7 +71,7 @@ public class CausalClusteringSettingsTest
     }
 
     @Test
-    public void shouldValidateLoadBalancingServerPolicies()
+    void shouldValidateLoadBalancingServerPolicies()
     {
         // given
         Map<String, String> rawConfig = new HashMap<>();
@@ -88,7 +88,7 @@ public class CausalClusteringSettingsTest
     }
 
     @Test
-    public void shouldBeInvalidIfPrefixDoesNotMatch()
+    void shouldBeInvalidIfPrefixDoesNotMatch()
     {
         // given
         BaseSetting<String> setting = CausalClusteringSettings.prefixSetting( "bar", Settings.STRING, "" );

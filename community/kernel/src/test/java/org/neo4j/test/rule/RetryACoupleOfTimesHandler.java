@@ -37,13 +37,13 @@ public class RetryACoupleOfTimesHandler implements RetryHandler
     private final TimeUnit unit;
     private int retries;
 
-    public RetryACoupleOfTimesHandler( Predicate<Throwable> retriable )
+    private RetryACoupleOfTimesHandler( Predicate<Throwable> retriable )
     {
         this( retriable, 5, 1, TimeUnit.SECONDS );
     }
 
-    public RetryACoupleOfTimesHandler( Predicate<Throwable> retriable,
-            int maxRetryCount, long timeBetweenTries, TimeUnit unit )
+    private RetryACoupleOfTimesHandler( Predicate<Throwable> retriable, int maxRetryCount, long timeBetweenTries,
+            TimeUnit unit )
     {
         this.retriable = retriable;
         this.maxRetryCount = maxRetryCount;

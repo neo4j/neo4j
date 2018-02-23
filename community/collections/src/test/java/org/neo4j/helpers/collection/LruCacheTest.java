@@ -30,44 +30,44 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LruCacheTest
+class LruCacheTest
 {
     @Test
-    public void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
+    void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
     {
         assertThrows( IllegalArgumentException.class, () -> new LruCache<>( "TestCache", 0 ) );
     }
 
     @Test
-    public void shouldThrowWhenPuttingEntryWithNullKey()
+    void shouldThrowWhenPuttingEntryWithNullKey()
     {
         assertThrows( IllegalArgumentException.class, () ->
         new LruCache<>( "TestCache", 70 ).put( null, new Object() ) );
     }
 
     @Test
-    public void shouldThrowWhenPuttingEntryWithNullValue()
+    void shouldThrowWhenPuttingEntryWithNullValue()
     {
         assertThrows( IllegalArgumentException.class, () ->
         new LruCache<>( "TestCache", 70 ).put( new Object(), null ) );
     }
 
     @Test
-    public void shouldThrowWhenGettingWithANullKey()
+    void shouldThrowWhenGettingWithANullKey()
     {
         assertThrows( IllegalArgumentException.class, () ->
         new LruCache<>( "TestCache", 70 ).get( null ) );
     }
 
     @Test
-    public void shouldThrowWhenRemovingWithANullKey()
+    void shouldThrowWhenRemovingWithANullKey()
     {
         assertThrows( IllegalArgumentException.class, () ->
         new LruCache<>( "TestCache", 70 ).remove( null ) );
     }
 
     @Test
-    public void shouldWork()
+    void shouldWork()
     {
         LruCache<Integer, String> cache = new LruCache<>( "TestCache", 3 );
 
@@ -112,7 +112,7 @@ public class LruCacheTest
     }
 
     @Test
-    public void shouldResizeTheCache()
+    void shouldResizeTheCache()
     {
         final Set<String> cleaned = new HashSet<>();
         LruCache<Integer, String> cache = new LruCache<Integer, String>( "TestCache", 3 )
@@ -175,7 +175,7 @@ public class LruCacheTest
     }
 
     @Test
-    public void shouldClear()
+    void shouldClear()
     {
         final Set<String> cleaned = new HashSet<>();
         LruCache<Integer, String> cache = new LruCache<Integer, String>( "TestCache", 3 )
@@ -226,7 +226,7 @@ public class LruCacheTest
         assertEquals( set( s1, s2, s3, s4, s5 ), cleaned );
     }
 
-    public static <E> Set<E> set( E... elems )
+    private static <E> Set<E> set( E... elems )
     {
         return new HashSet<>( Arrays.asList( elems ) );
     }

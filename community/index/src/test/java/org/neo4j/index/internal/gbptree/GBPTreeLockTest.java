@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Pair.of;
 
 @ExtendWith( OtherThreadExtension.class )
-public class GBPTreeLockTest
+class GBPTreeLockTest
 {
     // Lock can be in following states and this test verify transitions back and forth between states
     // and also verify expected behaviour after each transition.
@@ -56,10 +56,10 @@ public class GBPTreeLockTest
     private GBPTreeLock copy;
 
     @Resource
-    public OtherThreadRule<Void> executor;
+    private OtherThreadRule<Void> executor;
 
     @Test
-    public void test_UU_UL_UU() throws Exception
+    void test_UU_UL_UU() throws Exception
     {
         // given
         assertUU();
@@ -73,7 +73,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_UL_LL_UL() throws Exception
+    void test_UL_LL_UL() throws Exception
     {
         // given
         lock.cleanerLock();
@@ -88,7 +88,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_LL_LU_LL() throws Exception
+    void test_LL_LU_LL() throws Exception
     {
         // given
         lock.writerLock();
@@ -104,7 +104,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_LU_UU_LU() throws Exception
+    void test_LU_UU_LU() throws Exception
     {
         // given
         lock.writerLock();
@@ -119,7 +119,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_UU_LL_UU() throws Exception
+    void test_UU_LL_UU() throws Exception
     {
         // given
         assertUU();
@@ -133,37 +133,37 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_race_ULvsUL()
+    void test_race_ULvsUL()
     {
         assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock ) );
     }
 
     @Test
-    public void test_race_ULvsLU() throws Throwable
+    void test_race_ULvsLU() throws Throwable
     {
         assertBothSucceeds( lock::cleanerLock, lock::writerLock );
     }
 
     @Test
-    public void test_race_ULvsLL()
+    void test_race_ULvsLL()
     {
         assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock ) );
     }
 
     @Test
-    public void test_race_LUvsLU()
+    void test_race_LUvsLU()
     {
         assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerLock ) );
     }
 
     @Test
-    public void test_race_LUvsLL()
+    void test_race_LUvsLL()
     {
         assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock ) );
     }
 
     @Test
-    public void test_race_LLvsLL()
+    void test_race_LLvsLL()
     {
         assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock ) );
     }

@@ -27,7 +27,6 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -39,14 +38,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Iterables.asCollection;
 
-public class TestTransactionApps
+class TestTransactionApps
 {
-    protected GraphDatabaseAPI db;
+    private GraphDatabaseAPI db;
     private FakeShellServer shellServer;
     private ShellClient shellClient;
 
     @BeforeEach
-    public void doBefore() throws Exception
+    void doBefore() throws Exception
     {
         db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         shellServer = new FakeShellServer( db );
@@ -54,7 +53,7 @@ public class TestTransactionApps
    }
 
     @AfterEach
-    public void doAfter() throws Exception
+    void doAfter() throws Exception
     {
         shellClient.shutdown();
         shellServer.shutdown();
@@ -62,14 +61,14 @@ public class TestTransactionApps
     }
 
     @Test
-    public void begin_transaction_opens_a_transaction() throws Exception
+    void begin_transaction_opens_a_transaction() throws Exception
     {
         executeCommand( "begin transaction" );
         assertWeAreInATransaction();
     }
 
     @Test
-    public void two_begin_tran_works_as_expected() throws Exception
+    void two_begin_tran_works_as_expected() throws Exception
     {
         executeCommand( "begin tran" );
         executeCommand( "begin transaction" );
@@ -77,7 +76,7 @@ public class TestTransactionApps
     }
 
     @Test
-    public void multiple_begins_and_commits_work() throws Exception
+    void multiple_begins_and_commits_work() throws Exception
     {
         executeCommand( "begin transaction" );
         executeCommand( "begin" );
@@ -89,7 +88,7 @@ public class TestTransactionApps
     }
 
     @Test
-    public void commit_tran_closes_open_transaction() throws Exception
+    void commit_tran_closes_open_transaction() throws Exception
     {
         executeCommand( "begin transaction" );
         executeCommand( "commit" );
@@ -97,7 +96,7 @@ public class TestTransactionApps
     }
 
     @Test
-    public void already_in_transaction() throws Exception
+    void already_in_transaction() throws Exception
     {
         db.beginTx();
         executeCommand( "begin transaction" );
@@ -106,7 +105,7 @@ public class TestTransactionApps
     }
 
     @Test
-    public void rollback_rolls_everything_back() throws Exception
+    void rollback_rolls_everything_back() throws Exception
     {
         db.beginTx();
         executeCommand( "begin transaction" );
@@ -116,7 +115,7 @@ public class TestTransactionApps
         assertWeAreNotInATransaction();
     }
     @Test
-    public void rollback_outside_of_transaction_fails() throws Exception
+    void rollback_outside_of_transaction_fails() throws Exception
     {
         executeCommandExpectingException( "rollback", "Not in a transaction" );
     }
@@ -132,13 +131,12 @@ public class TestTransactionApps
         assertTrue( shellServer.getActiveTransactionCount() > 0, "Expected to be in a transaction" );
     }
 
-    public void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
+    private void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
     {
         executeCommand(shellClient, command, theseLinesMustExistRegEx );
     }
 
-    public void executeCommand( ShellClient client, String command,
-                                String... theseLinesMustExistRegEx ) throws Exception
+    private void executeCommand( ShellClient client, String command, String... theseLinesMustExistRegEx ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
         client.evaluate( command, output );
@@ -163,7 +161,7 @@ public class TestTransactionApps
         }
     }
 
-    public void executeCommandExpectingException( String command, String errorMessageShouldContain ) throws Exception
+    private void executeCommandExpectingException( String command, String errorMessageShouldContain ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
         try

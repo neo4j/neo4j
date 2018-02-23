@@ -40,7 +40,7 @@ public class UserFunctionSignatureTest
             functionSignature( "asd" ).in( "in", Neo4jTypes.NTAny ).out( Neo4jTypes.NTAny ).build();
 
     @Test
-    public void inputSignatureShouldNotBeModifiable()
+    void inputSignatureShouldNotBeModifiable()
     {
         // Expect
         exception.expect( UnsupportedOperationException.class );
@@ -50,7 +50,7 @@ public class UserFunctionSignatureTest
     }
 
     @Test
-    public void toStringShouldMatchCypherSyntax()
+    void toStringShouldMatchCypherSyntax()
     {
         // When
         String toStr = functionSignature( "org", "myProcedure" )

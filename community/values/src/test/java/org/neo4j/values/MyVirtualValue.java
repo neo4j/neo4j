@@ -23,7 +23,7 @@ import java.util.Comparator;
 
 import org.neo4j.values.virtual.VirtualValueGroup;
 
-public class MyVirtualValue extends VirtualValue
+class MyVirtualValue extends VirtualValue
 {
     private final int hashCode;
 

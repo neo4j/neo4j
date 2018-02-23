@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.emptyIterable;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings( "unchecked" )
-public class NodeUpdatesTest
+class NodeUpdatesTest
 {
     private static final long nodeId = 0;
     private static final int labelId = 0;
@@ -67,7 +67,7 @@ public class NodeUpdatesTest
     private static final Value[] values123 = new Value[]{property1.value(), property2.value(), property3.value()};
 
     @Test
-    public void shouldNotGenerateUpdatesForEmptyNodeUpdates()
+    void shouldNotGenerateUpdatesForEmptyNodeUpdates()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId ).build();
@@ -77,7 +77,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotGenerateUpdateForMultipleExistingPropertiesAndLabels()
+    void shouldNotGenerateUpdateForMultipleExistingPropertiesAndLabels()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
@@ -91,7 +91,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotGenerateUpdatesForLabelAdditionWithNoProperties()
+    void shouldNotGenerateUpdatesForLabelAdditionWithNoProperties()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels ).build();
@@ -101,7 +101,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldGenerateUpdateForLabelAdditionWithExistingProperty()
+    void shouldGenerateUpdateForLabelAdditionWithExistingProperty()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels ).build();
@@ -115,7 +115,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldGenerateUpdatesForLabelAdditionWithExistingProperties()
+    void shouldGenerateUpdatesForLabelAdditionWithExistingProperties()
     {
         // When
         NodeUpdates updates =
@@ -137,7 +137,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotGenerateUpdatesForLabelRemovalWithNoProperties()
+    void shouldNotGenerateUpdatesForLabelRemovalWithNoProperties()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels, empty ).build();
@@ -147,7 +147,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldGenerateUpdateForLabelRemovalWithExistingProperty()
+    void shouldGenerateUpdateForLabelRemovalWithExistingProperty()
     {
         // When
         NodeUpdates updates =
@@ -162,7 +162,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldGenerateUpdatesForLabelRemovalWithExistingProperties()
+    void shouldGenerateUpdatesForLabelRemovalWithExistingProperties()
     {
         // When
         NodeUpdates updates =
@@ -180,7 +180,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotGenerateUpdatesForPropertyAdditionWithNoLabels()
+    void shouldNotGenerateUpdatesForPropertyAdditionWithNoLabels()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId )
@@ -192,7 +192,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldGenerateUpdatesForSinglePropertyAdditionWithLabels()
+    void shouldGenerateUpdatesForSinglePropertyAdditionWithLabels()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
@@ -208,7 +208,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldGenerateUpdatesForMultiplePropertyAdditionWithLabels()
+    void shouldGenerateUpdatesForMultiplePropertyAdditionWithLabels()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
@@ -229,7 +229,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotGenerateUpdatesForLabelAddAndPropertyRemove()
+    void shouldNotGenerateUpdatesForLabelAddAndPropertyRemove()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels )
@@ -243,7 +243,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotGenerateUpdatesForLabelRemoveAndPropertyAdd()
+    void shouldNotGenerateUpdatesForLabelRemoveAndPropertyAdd()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels, empty )
@@ -257,7 +257,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotLoadPropertyForLabelsAndNoPropertyChanges()
+    void shouldNotLoadPropertyForLabelsAndNoPropertyChanges()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels ).build();
@@ -269,7 +269,7 @@ public class NodeUpdatesTest
     }
 
     @Test
-    public void shouldNotLoadPropertyForNoLabelsAndButPropertyAddition()
+    void shouldNotLoadPropertyForNoLabelsAndButPropertyAddition()
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty )

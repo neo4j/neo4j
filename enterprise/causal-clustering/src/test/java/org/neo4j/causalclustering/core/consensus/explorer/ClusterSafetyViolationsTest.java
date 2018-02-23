@@ -36,10 +36,10 @@ import static org.neo4j.causalclustering.core.consensus.explorer.ClusterSafetyVi
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class ClusterSafetyViolationsTest
+class ClusterSafetyViolationsTest
 {
     @Test
-    public void shouldRecogniseInconsistentCommittedContent() throws Exception
+    void shouldRecogniseInconsistentCommittedContent() throws Exception
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ), member( 1 ) ) );
@@ -65,7 +65,7 @@ public class ClusterSafetyViolationsTest
     }
 
     @Test
-    public void shouldRecogniseInconsistentTerm() throws Exception
+    void shouldRecogniseInconsistentTerm() throws Exception
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ), member( 1 ) ) );
@@ -91,7 +91,7 @@ public class ClusterSafetyViolationsTest
     }
 
     @Test
-    public void shouldRecogniseSomeMembersBeingInconsistent() throws Exception
+    void shouldRecogniseSomeMembersBeingInconsistent() throws Exception
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ), member( 1 ), member(2) ) );
@@ -126,7 +126,7 @@ public class ClusterSafetyViolationsTest
     }
 
     @Test
-    public void shouldRecogniseTwoLeadersInTheSameTerm() throws Exception
+    void shouldRecogniseTwoLeadersInTheSameTerm() throws Exception
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ), member( 1 ), member(2) ) );
@@ -145,7 +145,7 @@ public class ClusterSafetyViolationsTest
     }
 
     @Test
-    public void shouldRecogniseTwoLeadersInDifferentTerms() throws Exception
+    void shouldRecogniseTwoLeadersInDifferentTerms() throws Exception
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ), member( 1 ), member(2) ) );

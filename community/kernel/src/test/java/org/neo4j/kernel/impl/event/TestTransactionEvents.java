@@ -75,12 +75,12 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class TestTransactionEvents
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    ImpermanentDatabaseRule dbRule;
     private static final TimeUnit AWAIT_INDEX_UNIT = TimeUnit.SECONDS;
     private static final int AWAIT_INDEX_DURATION = 60;
 
     @Test
-    public void testRegisterUnregisterHandlers()
+    void testRegisterUnregisterHandlers()
     {
         Object value1 = 10;
         Object value2 = 3.5D;
@@ -131,7 +131,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void makeSureHandlersCantBeRegisteredTwice()
+    void makeSureHandlersCantBeRegisteredTwice()
     {
         DummyTransactionEventHandler<Object> handler = new DummyTransactionEventHandler<>( null );
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -150,7 +150,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldGetCorrectTransactionDataUponCommit()
+    void shouldGetCorrectTransactionDataUponCommit()
     {
         // Create new data, nothing modified, just added/created
         ExpectedTransactionData expectedData = new ExpectedTransactionData();
@@ -280,7 +280,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void makeSureBeforeAfterAreCalledCorrectly()
+    void makeSureBeforeAfterAreCalledCorrectly()
     {
         List<TransactionEventHandler<Object>> handlers = new ArrayList<>();
         handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
@@ -330,7 +330,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldBeAbleToAccessExceptionThrownInEventHook()
+    void shouldBeAbleToAccessExceptionThrownInEventHook()
     {
         class MyFancyException extends Exception
         {
@@ -373,7 +373,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void deleteNodeRelTriggerPropertyRemoveEvents()
+    void deleteNodeRelTriggerPropertyRemoveEvents()
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node1;
@@ -618,7 +618,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void makeSureHandlerIsntCalledWhenTxRolledBack()
+    void makeSureHandlerIsntCalledWhenTxRolledBack()
     {
         DummyTransactionEventHandler<Integer> handler =
             new DummyTransactionEventHandler<>( 10 );
@@ -641,7 +641,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void modifiedPropertyCanByFurtherModifiedInBeforeCommit()
+    void modifiedPropertyCanByFurtherModifiedInBeforeCommit()
     {
         // Given
         // -- create node and set property on it in one transaction
@@ -682,7 +682,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty()
+    void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty()
     {
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -727,7 +727,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel()
+    void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel()
     {
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -773,7 +773,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAccessAssignedLabels()
+    void shouldAccessAssignedLabels()
     {
         // given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -806,7 +806,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAccessRemovedLabels()
+    void shouldAccessRemovedLabels()
     {
         // given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -853,7 +853,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAccessRelationshipDataInAfterCommit()
+    void shouldAccessRelationshipDataInAfterCommit()
     {
         // GIVEN
         final GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -936,7 +936,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldProvideTheCorrectRelationshipData()
+    void shouldProvideTheCorrectRelationshipData()
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
@@ -990,7 +990,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldNotFireEventForReadOnlyTransaction()
+    void shouldNotFireEventForReadOnlyTransaction()
     {
         // GIVEN
         Node root = createTree( 3, 3 );
@@ -1006,7 +1006,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldNotFireEventForNonDataTransactions()
+    void shouldNotFireEventForNonDataTransactions()
     {
         // GIVEN
         final AtomicInteger counter = new AtomicInteger();
@@ -1070,7 +1070,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldBeAbleToTouchDataOutsideTxDataInAfterCommit()
+    void shouldBeAbleToTouchDataOutsideTxDataInAfterCommit()
     {
         // GIVEN
         final Node node = createNode( "one", "Two", "three", "Four" );
@@ -1100,7 +1100,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAllowToStringOnCreatedRelationshipInAfterCommit()
+    void shouldAllowToStringOnCreatedRelationshipInAfterCommit()
     {
         // GIVEN
         Relationship relationship;
@@ -1142,7 +1142,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed()
+    void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed()
     {
         // given
         CapturingEventHandler<Integer> firstWorkingHandler = new CapturingEventHandler<>( () -> 5 );
@@ -1256,18 +1256,18 @@ public class TestTransactionEvents
             assertTrue( expected.isEmpty(), format( "Expected more labels %s nodes: %s", change, expected ) );
         }
 
-        public boolean isEmpty()
+        boolean isEmpty()
         {
             return added.isEmpty() && removed.isEmpty();
         }
 
-        public void add( Node node, String label )
+        void add( Node node, String label )
         {
             node.addLabel( label( label ) );
             put( added, node, label );
         }
 
-        public void remove( Node node, String label )
+        void remove( Node node, String label )
         {
             node.removeLabel( label( label ) );
             put( removed, node, label );
@@ -1279,13 +1279,13 @@ public class TestTransactionEvents
             labels.add( label );
         }
 
-        public void activate()
+        void activate()
         {
             assertFalse( isEmpty() );
             active = true;
         }
 
-        public void clear()
+        void clear()
         {
             added.clear();
             removed.clear();

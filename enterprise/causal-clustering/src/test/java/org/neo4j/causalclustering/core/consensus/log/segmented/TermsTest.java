@@ -27,12 +27,12 @@ import java.util.function.LongFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TermsTest
+class TermsTest
 {
     private Terms terms;
 
     @Test
-    public void shouldHaveCorrectInitialValues()
+    void shouldHaveCorrectInitialValues()
     {
         // given
         long prevIndex = 5;
@@ -46,7 +46,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldReturnAppendedTerms()
+    void shouldReturnAppendedTerms()
     {
         // given
         terms = new Terms( -1, -1 );
@@ -62,7 +62,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldReturnAppendedTermsLongerRanges()
+    void shouldReturnAppendedTermsLongerRanges()
     {
         terms = new Terms( -1, -1 );
         int count = 10;
@@ -81,7 +81,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldOnlyAcceptInOrderIndexes()
+    void shouldOnlyAcceptInOrderIndexes()
     {
         // given
         long prevIndex = 3;
@@ -120,7 +120,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldOnlyAcceptMonotonicTerms()
+    void shouldOnlyAcceptMonotonicTerms()
     {
         // given
         long term = 5;
@@ -147,7 +147,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldNotTruncateNegativeIndexes()
+    void shouldNotTruncateNegativeIndexes()
     {
         // given
         terms = new Terms( -1, -1 );
@@ -166,7 +166,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldNotTruncateLessThanLowestIndex()
+    void shouldNotTruncateLessThanLowestIndex()
     {
         // given
         terms = new Terms( 5, 1 );
@@ -184,7 +184,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateInCurrentRange()
+    void shouldTruncateInCurrentRange()
     {
         // given
         long term = 5;
@@ -204,7 +204,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateAtExactBoundary()
+    void shouldTruncateAtExactBoundary()
     {
         // given
         long term = 5;
@@ -224,7 +224,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateCompleteCurrentRange()
+    void shouldTruncateCompleteCurrentRange()
     {
         // given
         long term = 5;
@@ -246,7 +246,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateSeveralCompleteRanges()
+    void shouldTruncateSeveralCompleteRanges()
     {
         // given
         long term = 5;
@@ -267,7 +267,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldAppendAfterTruncate()
+    void shouldAppendAfterTruncate()
     {
         // given
         long term = 5;
@@ -288,7 +288,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldAppendAfterSkip()
+    void shouldAppendAfterSkip()
     {
         // given
         long term = 5;
@@ -315,7 +315,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldNotPruneAnythingIfBeforeMin() throws Exception
+    void shouldNotPruneAnythingIfBeforeMin() throws Exception
     {
         // given
         long term = 5;
@@ -341,7 +341,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldPruneInMiddleOfFirstRange() throws Exception
+    void shouldPruneInMiddleOfFirstRange() throws Exception
     {
         // given
         long term = 5;
@@ -368,7 +368,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldPruneAtBoundaryOfRange() throws Exception
+    void shouldPruneAtBoundaryOfRange() throws Exception
     {
         // given
         long term = 5;
@@ -394,7 +394,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldPruneJustBeyondBoundaryOfRange() throws Exception
+    void shouldPruneJustBeyondBoundaryOfRange() throws Exception
     {
         // given
         long term = 5;
@@ -420,7 +420,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldPruneSeveralCompleteRanges() throws Exception
+    void shouldPruneSeveralCompleteRanges() throws Exception
     {
         // given
         long term = 5;
@@ -451,7 +451,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldAppendNewItemsIfThereAreNoEntries() throws Exception
+    void shouldAppendNewItemsIfThereAreNoEntries() throws Exception
     {
         // given
         long term = 5;

@@ -53,7 +53,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         super( descriptor );
     }
 
-    public Map<List<Object>,Set<Long>> data()
+    private Map<List<Object>,Set<Long>> data()
     {
         if ( data == null )
         {

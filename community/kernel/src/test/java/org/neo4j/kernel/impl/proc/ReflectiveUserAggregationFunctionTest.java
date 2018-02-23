@@ -71,7 +71,7 @@ public class ReflectiveUserAggregationFunctionTest
     private ComponentRegistry components;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
@@ -79,7 +79,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldCompileAggregationFunction() throws Throwable
+    void shouldCompileAggregationFunction() throws Throwable
     {
         // When
         List<CallableUserAggregationFunction> function = compile( SingleAggregationFunction.class );
@@ -94,7 +94,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldRunAggregationFunction() throws Throwable
+    void shouldRunAggregationFunction() throws Throwable
     {
         // Given
         CallableUserAggregationFunction func = compile( SingleAggregationFunction.class ).get( 0 );
@@ -112,7 +112,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldInjectLogging() throws KernelException
+    void shouldInjectLogging() throws KernelException
     {
         // Given
         Log log = spy( Log.class );
@@ -133,7 +133,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldIgnoreClassesWithNoFunctions() throws Throwable
+    void shouldIgnoreClassesWithNoFunctions() throws Throwable
     {
         // When
         List<CallableUserAggregationFunction> functions = compile( PrivateConstructorButNoFunctions.class );
@@ -143,7 +143,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
+    void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
     {
         // Given
         List<CallableUserAggregationFunction> compiled = compile( MultiFunction.class );
@@ -164,7 +164,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument() throws Throwable
+    void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -177,7 +177,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnNoPublicConstructor() throws Throwable
+    void shouldGiveHelpfulErrorOnNoPublicConstructor() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -190,7 +190,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowVoidOutput() throws Throwable
+    void shouldNotAllowVoidOutput() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -201,7 +201,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowNonVoidUpdate() throws Throwable
+    void shouldNotAllowNonVoidUpdate() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -212,7 +212,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowMissingAnnotations() throws Throwable
+    void shouldNotAllowMissingAnnotations() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -224,7 +224,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowMultipleUpdateAnnotations() throws Throwable
+    void shouldNotAllowMultipleUpdateAnnotations() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -236,7 +236,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowMultipleResultAnnotations() throws Throwable
+    void shouldNotAllowMultipleResultAnnotations() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -248,7 +248,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowNonPublicMethod() throws Throwable
+    void shouldNotAllowNonPublicMethod() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -259,7 +259,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowNonPublicUpdateMethod() throws Throwable
+    void shouldNotAllowNonPublicUpdateMethod() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -270,7 +270,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowNonPublicResultMethod() throws Throwable
+    void shouldNotAllowNonPublicResultMethod() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -281,7 +281,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnFunctionReturningInvalidType() throws Throwable
+    void shouldGiveHelpfulErrorOnFunctionReturningInvalidType() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -298,7 +298,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() throws Throwable
+    void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -312,7 +312,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldAllowOverridingProcedureName() throws Throwable
+    void shouldAllowOverridingProcedureName() throws Throwable
     {
         // When
         CallableUserAggregationFunction method = compile( FunctionWithOverriddenName.class ).get( 0 );
@@ -322,7 +322,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotAllowOverridingFunctionNameWithoutNamespace() throws Throwable
+    void shouldNotAllowOverridingFunctionNameWithoutNamespace() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -334,7 +334,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
+    void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
     {
         // Given
         CallableUserAggregationFunction method = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
@@ -349,7 +349,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldLoadWhiteListedFunction() throws Throwable
+    void shouldLoadWhiteListedFunction() throws Throwable
     {
         // Given
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
@@ -365,7 +365,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotLoadNoneWhiteListedFunction() throws Throwable
+    void shouldNotLoadNoneWhiteListedFunction() throws Throwable
     {
         // Given
         Log log = spy(Log.class);
@@ -378,7 +378,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
+    void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
     {
         // Given
         Log log = spy(Log.class);
@@ -391,7 +391,7 @@ public class ReflectiveUserAggregationFunctionTest
     }
 
     @Test
-    public void shouldSupportFunctionDeprecation() throws Throwable
+    void shouldSupportFunctionDeprecation() throws Throwable
     {
         // Given
         Log log = mock(Log.class);
@@ -424,7 +424,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class SingleAggregationFunction
+    private static class SingleAggregationFunction
     {
         @UserAggregationFunction
         public CoolPeopleAggregator collectCool()
@@ -580,7 +580,7 @@ public class ReflectiveUserAggregationFunctionTest
     public static class LoggingFunction
     {
         @Context
-        public Log log;
+        Log log;
 
         @UserAggregationFunction
         public LoggingAggregator log()
@@ -628,7 +628,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class MultiFunction
+    private static class MultiFunction
     {
         @UserAggregationFunction
         public CoolPeopleAggregator collectCool()
@@ -643,9 +643,9 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class WierdConstructorFunction
+    static class WierdConstructorFunction
     {
-        public WierdConstructorFunction( WierdConstructorFunction wat )
+        WierdConstructorFunction( WierdConstructorFunction wat )
         {
 
         }
@@ -734,7 +734,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class PrivateConstructorFunction
+    static class PrivateConstructorFunction
     {
         private PrivateConstructorFunction()
         {
@@ -748,7 +748,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class PrivateConstructorButNoFunctions
+    static class PrivateConstructorButNoFunctions
     {
         private PrivateConstructorButNoFunctions()
         {
@@ -761,7 +761,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class FunctionWithOverriddenName
+    private static class FunctionWithOverriddenName
     {
         @UserAggregationFunction( "org.mystuff.thisisActuallyTheName" )
         public CoolPeopleAggregator collectCool()
@@ -770,7 +770,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class FunctionWithSingleName
+    private static class FunctionWithSingleName
     {
         @UserAggregationFunction( "singleName" )
         public CoolPeopleAggregator collectCool()
@@ -801,7 +801,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    public static class NonPublicTestMethod
+    static class NonPublicTestMethod
     {
         @UserAggregationFunction
         InnerAggregator test()
@@ -809,7 +809,7 @@ public class ReflectiveUserAggregationFunctionTest
             return new InnerAggregator();
         }
 
-        public static class InnerAggregator
+        static class InnerAggregator
         {
             @UserAggregationUpdate
             public void update()

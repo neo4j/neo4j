@@ -33,22 +33,22 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class MandatoryTransactionsForIndexHitsFacadeTest
+class MandatoryTransactionsForIndexHitsFacadeTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     private IndexHits<Node> indexHits;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         Index<Node> index = createIndex();
         indexHits = queryIndex( index );
     }
 
     @Test
-    public void shouldMandateTransactionsForUsingIterator()
+    void shouldMandateTransactionsForUsingIterator()
     {
         try ( ResourceIterator<Node> iterator = indexHits.iterator() )
         {
@@ -75,7 +75,7 @@ public class MandatoryTransactionsForIndexHitsFacadeTest
     }
 
     @Test
-    public void shouldMandateTransactionsForGetSingle()
+    void shouldMandateTransactionsForGetSingle()
     {
         try
         {

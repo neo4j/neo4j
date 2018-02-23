@@ -19,11 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.jupiter.api.Test;
+
 import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,10 +32,10 @@ import static org.neo4j.values.storable.LocalTimeValue.parse;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class LocalTimeValueTest
+class LocalTimeValueTest
 {
     @Test
-    public void shouldParseTimeWithOnlyHour()
+    void shouldParseTimeWithOnlyHour()
     {
         assertEquals( localTime( 14, 0, 0, 0 ), parse( "14" ) );
         assertEquals( localTime( 4, 0, 0, 0 ), parse( "4" ) );
@@ -43,7 +43,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourAndMinute()
+    void shouldParseTimeWithHourAndMinute()
     {
         assertEquals( localTime( 14, 5, 0, 0 ), parse( "1405" ) );
         assertEquals( localTime( 14, 5, 0, 0 ), parse( "14:5" ) );
@@ -53,7 +53,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteAndSecond()
+    void shouldParseTimeWithHourMinuteAndSecond()
     {
         assertEquals( localTime( 14, 5, 17, 0 ), parse( "140517" ) );
         assertEquals( localTime( 14, 5, 17, 0 ), parse( "14:5:17" ) );
@@ -63,7 +63,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteSecondAndFractions()
+    void shouldParseTimeWithHourMinuteSecondAndFractions()
     {
         assertEquals( localTime( 14, 5, 17, 123000000 ), parse( "140517.123" ) );
         assertEquals( localTime( 14, 5, 17, 1 ), parse( "14:5:17.000000001" ) );
@@ -74,7 +74,7 @@ public class LocalTimeValueTest
 
     @Test
     @SuppressWarnings( "ThrowableNotThrown" )
-    public void shouldFailToParseTimeOutOfRange()
+    void shouldFailToParseTimeOutOfRange()
     {
         assertCannotParse( "24" );
         assertCannotParse( "1760" );
@@ -83,7 +83,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldWriteLocalTime()
+    void shouldWriteLocalTime()
     {
         // given
         for ( LocalTimeValue value : new LocalTimeValue[] {
@@ -112,13 +112,13 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldEqualItself()
+    void shouldEqualItself()
     {
         assertEqual( localTime( 10, 52, 5, 6 ), localTime( 10, 52, 5, 6 ) );
     }
 
     @Test
-    public void shouldNotEqualOther()
+    void shouldNotEqualOther()
     {
         assertNotEqual( localTime( 10, 52, 5, 6 ), localTime( 10, 52, 5, 7 ) );
     }

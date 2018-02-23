@@ -47,21 +47,17 @@ import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_upgrade;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.Values.pointValue;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class PointPropertiesRecordFormatIT
+class PointPropertiesRecordFormatIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void failToCreatePointOnOldDatabase()
+    void failToCreatePointOnOldDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
@@ -89,7 +85,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void failToCreatePointArrayOnOldDatabase()
+    void failToCreatePointArrayOnOldDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
@@ -118,7 +114,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void createPointPropertyOnLatestDatabase()
+    void createPointPropertyOnLatestDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         Label pointNode = Label.label( "PointNode" );
@@ -143,7 +139,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void createPointArrayPropertyOnLatestDatabase()
+    void createPointArrayPropertyOnLatestDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         Label pointNode = Label.label( "PointNode" );
@@ -173,7 +169,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void failToOpenStoreWithPointPropertyUsingOldFormat()
+    void failToOpenStoreWithPointPropertyUsingOldFormat()
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_4.NAME );

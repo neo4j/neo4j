@@ -28,10 +28,10 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class OutputFormatTest
+class OutputFormatTest
 {
     @Test
-    public void shouldReturnAbsoluteURIForSeeOther() throws Exception
+    void shouldReturnAbsoluteURIForSeeOther() throws Exception
     {
         URI relativeURI = new URI( "/test/path" );
 

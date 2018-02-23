@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LifecycleManagingDatabaseTest
+class LifecycleManagingDatabaseTest
 {
     @Test
-    public void mustIgnoreExceptionsFromPreLoadingCypherQuery()
+    void mustIgnoreExceptionsFromPreLoadingCypherQuery()
     {
         // Given a lifecycled database that'll try to warm up Cypher when it starts
         final GraphDatabaseFacade mockDb = mock( GraphDatabaseFacade.class );

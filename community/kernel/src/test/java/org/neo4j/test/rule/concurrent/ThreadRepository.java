@@ -79,7 +79,7 @@ public class ThreadRepository implements TestRule
         return await( 1 );
     }
 
-    public Await await( int events )
+    private Await await( int events )
     {
         return new Await( new CountDownLatch( events ) );
     }

@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * @see HEvents
  * @see LinearHistoryPageCacheTracer
  */
-public class LinearHistoryPageCursorTracer implements PageCursorTracer
+class LinearHistoryPageCursorTracer implements PageCursorTracer
 {
     private LinearHistoryTracer tracer;
 

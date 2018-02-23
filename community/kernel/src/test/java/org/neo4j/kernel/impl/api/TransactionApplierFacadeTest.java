@@ -33,7 +33,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TransactionApplierFacadeTest
+class TransactionApplierFacadeTest
 {
     private TransactionApplierFacade facade;
     private TransactionApplier txApplier1;
@@ -41,7 +41,7 @@ public class TransactionApplierFacadeTest
     private TransactionApplier txApplier3;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         txApplier1 = mock( TransactionApplier.class );
         txApplier2 = mock( TransactionApplier.class );
@@ -52,7 +52,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testClose() throws Exception
+    void testClose() throws Exception
     {
         // WHEN
         facade.close();
@@ -67,7 +67,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisit() throws Exception
+    void testVisit() throws Exception
     {
         Command cmd = mock( Command.class );
 
@@ -87,7 +87,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitNodeCommand() throws Exception
+    void testVisitNodeCommand() throws Exception
     {
         Command.NodeCommand cmd = mock( Command.NodeCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -108,7 +108,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitRelationshipCommand() throws Exception
+    void testVisitRelationshipCommand() throws Exception
     {
         Command.RelationshipCommand cmd = mock( Command.RelationshipCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -129,7 +129,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitPropertyCommand() throws Exception
+    void testVisitPropertyCommand() throws Exception
     {
         Command.PropertyCommand cmd = mock( Command.PropertyCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -150,7 +150,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitRelationshipGroupCommand() throws Exception
+    void testVisitRelationshipGroupCommand() throws Exception
     {
         Command.RelationshipGroupCommand cmd = mock( Command.RelationshipGroupCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -171,7 +171,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitRelationshipTypeTokenCommand() throws Exception
+    void testVisitRelationshipTypeTokenCommand() throws Exception
     {
         Command.RelationshipTypeTokenCommand cmd = mock( Command.RelationshipTypeTokenCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -192,7 +192,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitLabelTokenCommand() throws Exception
+    void testVisitLabelTokenCommand() throws Exception
     {
         Command.LabelTokenCommand cmd = mock( Command.LabelTokenCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -213,7 +213,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitPropertyKeyTokenCommand() throws Exception
+    void testVisitPropertyKeyTokenCommand() throws Exception
     {
         // Make sure it just calls through to visit
         Command.PropertyKeyTokenCommand cmd = mock( Command.PropertyKeyTokenCommand.class );
@@ -235,7 +235,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitSchemaRuleCommand() throws Exception
+    void testVisitSchemaRuleCommand() throws Exception
     {
 // Make sure it just calls through to visit
         Command.SchemaRuleCommand cmd = mock( Command.SchemaRuleCommand.class );
@@ -257,7 +257,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitNeoStoreCommand() throws Exception
+    void testVisitNeoStoreCommand() throws Exception
     {
 // Make sure it just calls through to visit
         Command.NeoStoreCommand cmd = mock( Command.NeoStoreCommand.class );
@@ -279,7 +279,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitIndexAddNodeCommand() throws Exception
+    void testVisitIndexAddNodeCommand() throws Exception
     {
         IndexCommand.AddNodeCommand cmd = mock( IndexCommand.AddNodeCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -300,7 +300,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitIndexAddRelationshipCommand() throws Exception
+    void testVisitIndexAddRelationshipCommand() throws Exception
     {
         IndexCommand.AddRelationshipCommand cmd = mock( IndexCommand.AddRelationshipCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -321,7 +321,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitIndexRemoveCommand() throws Exception
+    void testVisitIndexRemoveCommand() throws Exception
     {
         IndexCommand.RemoveCommand cmd = mock( IndexCommand.RemoveCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -342,7 +342,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitIndexDeleteCommand() throws Exception
+    void testVisitIndexDeleteCommand() throws Exception
     {
         IndexCommand.DeleteCommand cmd = mock( IndexCommand.DeleteCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -363,7 +363,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitIndexCreateCommand() throws Exception
+    void testVisitIndexCreateCommand() throws Exception
     {
         IndexCommand.CreateCommand cmd = mock( IndexCommand.CreateCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -384,7 +384,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitIndexDefineCommand() throws Exception
+    void testVisitIndexDefineCommand() throws Exception
     {
         IndexDefineCommand cmd = mock( IndexDefineCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -405,7 +405,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitNodeCountsCommand() throws Exception
+    void testVisitNodeCountsCommand() throws Exception
     {
         Command.NodeCountsCommand cmd = mock( Command.NodeCountsCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
@@ -426,7 +426,7 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
-    public void testVisitRelationshipCountsCommand() throws Exception
+    void testVisitRelationshipCountsCommand() throws Exception
     {
         Command.RelationshipCountsCommand cmd = mock( Command.RelationshipCountsCommand.class );
         when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();

@@ -43,7 +43,7 @@ import static org.neo4j.io.fs.FileUtils.deleteFile;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.io.fs.FileUtils.moveFile;
 
-public class Utils
+class Utils
 {
     private Utils()
     {
@@ -102,7 +102,7 @@ public class Utils
         return unpacked;
     }
 
-    public static List<File> unzip( File zipFile, File targetDir ) throws IOException
+    private static List<File> unzip( File zipFile, File targetDir ) throws IOException
     {
         List<File> files = new ArrayList<>();
         ZipFile zip = new ZipFile( zipFile );
@@ -135,7 +135,7 @@ public class Utils
         }
     }
 
-    public static void copyInputStreamToFile( InputStream stream, File target ) throws IOException
+    private static void copyInputStreamToFile( InputStream stream, File target ) throws IOException
     {
         OutputStream out = null;
         try

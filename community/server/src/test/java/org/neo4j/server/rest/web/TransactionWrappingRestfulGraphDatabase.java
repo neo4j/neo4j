@@ -30,13 +30,12 @@ import org.neo4j.server.rest.domain.TraverserReturnType;
  * A convenient class for testing RestfulGraphDatabase: just wraps every "web call" in a transaction like the
  * TransactionFilter would have if deployed in a jax-rs container
  */
-public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabase
+class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabase
 {
     private final GraphDatabaseService graph;
     private final RestfulGraphDatabase restfulGraphDatabase;
 
-    public TransactionWrappingRestfulGraphDatabase( GraphDatabaseService graph,
-                                                    RestfulGraphDatabase restfulGraphDatabase )
+    TransactionWrappingRestfulGraphDatabase( GraphDatabaseService graph, RestfulGraphDatabase restfulGraphDatabase )
     {
         super( null, null, null, null );
 

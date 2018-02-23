@@ -27,13 +27,13 @@ import org.neo4j.logging.AssertableLogProvider;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class DatabaseSchemaStateTest
+class DatabaseSchemaStateTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private DatabaseSchemaState stateStore;
 
     @Test
-    public void should_apply_updates_correctly()
+    void should_apply_updates_correctly()
     {
         // GIVEN
         stateStore.put( "key", "created_value" );
@@ -46,7 +46,7 @@ public class DatabaseSchemaStateTest
     }
 
     @Test
-    public void should_flush()
+    void should_flush()
     {
         // GIVEN
         stateStore.put( "key", "created_value" );
@@ -63,7 +63,7 @@ public class DatabaseSchemaStateTest
     }
 
     @BeforeEach
-    public void before()
+    void before()
     {
         this.stateStore = new DatabaseSchemaState( logProvider );
     }

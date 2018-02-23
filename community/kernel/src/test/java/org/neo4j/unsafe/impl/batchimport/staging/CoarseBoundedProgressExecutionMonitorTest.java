@@ -125,7 +125,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
             this.progress += progress;
         }
 
-        public long getProgress()
+        long getProgress()
         {
             return progress;
         }

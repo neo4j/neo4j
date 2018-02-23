@@ -32,10 +32,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 
-public class PropertyChangesTest
+class PropertyChangesTest
 {
     @Test
-    public void shouldListChanges()
+    void shouldListChanges()
     {
         // Given
         PropertyChanges changes = new PropertyChanges( OnHeapCollectionsFactory.INSTANCE );

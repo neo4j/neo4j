@@ -22,9 +22,8 @@ package org.neo4j.server.plugins;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.Assert;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -50,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
+class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
 {
     private static final RelationshipType KNOWS = RelationshipType.withName( "knows" );
     private static final RelationshipType WORKED_FOR = RelationshipType.withName( "worked_for" );
@@ -59,14 +58,14 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeAll
-    public static void setupServer() throws IOException
+    static void setupServer() throws IOException
     {
         server = ServerHelper.createNonPersistentServer();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
 
     @AfterAll
-    public static void shutdownServer()
+    static void shutdownServer()
     {
         try
         {
@@ -82,7 +81,7 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
     }
 
     @BeforeEach
-    public void setupTheDatabase()
+    void setupTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
         createASocialNetwork( server.getDatabase().getGraph() );
@@ -153,7 +152,7 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldAdvertiseExtenstionThatPluginCreates() throws JsonParseException, ClientHandlerException,
+    void shouldAdvertiseExtenstionThatPluginCreates() throws JsonParseException, ClientHandlerException,
             UniformInterfaceException
     {
         int originalCount = nodeCount();

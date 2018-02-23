@@ -37,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @author Patrik Larsson
  * @see CostEvaluator
  */
-public class DijkstraDirectionTest extends Neo4jAlgoTestCase
+class DijkstraDirectionTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void testDijkstraDirection1()
+    void testDijkstraDirection1()
     {
         graph.makeEdge( "s", "e" );
         Dijkstra<Double> dijkstra =
@@ -60,7 +60,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDijkstraDirection2()
+    void testDijkstraDirection2()
     {
         graph.makeEdge( "a", "b" );
         graph.makeEdge( "b", "c" );
@@ -109,7 +109,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDijkstraDirection3()
+    void testDijkstraDirection3()
     {
         Relationship r1 = graph.makeEdge( "start", "b" );
         Relationship r2 = graph.makeEdge( "c", "b" );

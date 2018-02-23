@@ -39,11 +39,11 @@ public class SimpleGraphBuilder
 {
     public static final String KEY_ID = "name";
 
-    GraphDatabaseService graphDb;
-    HashMap<String,Node> nodes;
-    HashMap<Node,String> nodeNames;
-    Set<Relationship> edges;
-    RelationshipType currentRelType;
+    private GraphDatabaseService graphDb;
+    private HashMap<String,Node> nodes;
+    private HashMap<Node,String> nodeNames;
+    private Set<Relationship> edges;
+    private RelationshipType currentRelType;
 
     public SimpleGraphBuilder( GraphDatabaseService graphDb,
         RelationshipType relationshipType )
@@ -106,7 +106,7 @@ public class SimpleGraphBuilder
         return map;
     }
 
-    public Node makeNode( String id, Map<String, Object> properties )
+    private Node makeNode( String id, Map<String,Object> properties )
     {
         Node node = graphDb.createNode();
         nodes.put( id, node );
@@ -128,7 +128,7 @@ public class SimpleGraphBuilder
         return getNode( id, false );
     }
 
-    public Node getNode( String id, boolean force )
+    private Node getNode( String id, boolean force )
     {
         Node node = nodes.get( id );
         if ( node == null && force )

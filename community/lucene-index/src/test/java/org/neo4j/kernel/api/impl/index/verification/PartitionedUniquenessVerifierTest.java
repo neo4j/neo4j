@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.test.extension.MockitoExtension;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 
 @ExtendWith( MockitoExtension.class )
-public class PartitionedUniquenessVerifierTest
+class PartitionedUniquenessVerifierTest
 {
     @Mock( answer = Answers.RETURNS_DEEP_STUBS )
     private PartitionSearcher searcher1;
@@ -54,7 +53,7 @@ public class PartitionedUniquenessVerifierTest
     private PartitionSearcher searcher3;
 
     @Test
-    public void partitionSearchersAreClosed() throws IOException
+    void partitionSearchersAreClosed() throws IOException
     {
         PartitionedUniquenessVerifier verifier = createPartitionedVerifier();
 
@@ -66,7 +65,7 @@ public class PartitionedUniquenessVerifierTest
     }
 
     @Test
-    public void verifyPropertyUpdates() throws Exception
+    void verifyPropertyUpdates() throws Exception
     {
         PartitionedUniquenessVerifier verifier = createPartitionedVerifier();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );

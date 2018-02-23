@@ -23,8 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,15 +39,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class DeleteNodeStressIT
+class DeleteNodeStressIT
 {
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
 
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         for ( int i = 0; i < 100; i++ )
         {
@@ -69,7 +67,7 @@ public class DeleteNodeStressIT
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
     @Test
-    public void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException
+    void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) return n" );
@@ -83,7 +81,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException
+    void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) RETURN exists(n.prop)" );
@@ -95,7 +93,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException
+    void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) REMOVE n.prop" );
@@ -107,7 +105,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException
+    void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) SET n.foo = 'bar'" );
@@ -119,7 +117,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException
+    void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n RETURN labels(n)" );

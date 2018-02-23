@@ -64,15 +64,15 @@ import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.FUL
 public class ExplicitIndexesUpgradeIT
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
     @Resource
-    public SuppressOutput suppressOutput;
+    private SuppressOutput suppressOutput;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void successfulMigrationWithoutExplicitIndexes() throws Exception
+    void successfulMigrationWithoutExplicitIndexes() throws Exception
     {
         prepareStore( "empty-explicit-index-db.zip" );
         GraphDatabaseService db = startDatabase( true );
@@ -87,7 +87,7 @@ public class ExplicitIndexesUpgradeIT
     }
 
     @Test
-    public void successfulMigrationExplicitIndexes() throws Exception
+    void successfulMigrationExplicitIndexes() throws Exception
     {
         prepareStore( "explicit-index-db.zip" );
 
@@ -106,7 +106,7 @@ public class ExplicitIndexesUpgradeIT
     }
 
     @Test
-    public void migrationShouldFailIfUpgradeNotAllowed() throws IOException
+    void migrationShouldFailIfUpgradeNotAllowed() throws IOException
     {
         prepareStore( "explicit-index-db.zip" );
         expectedException.expect( new NestedThrowableMatcher( UpgradeNotAllowedByConfigurationException.class ) );

@@ -39,11 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class DelegateFileSystemAbstractionTest
+class DelegateFileSystemAbstractionTest
 {
 
     @Test
-    public void closeAllResourcesOnClose() throws Exception
+    void closeAllResourcesOnClose() throws Exception
     {
         TrackableFileSystem fileSystem = new TrackableFileSystem();
         CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
@@ -59,7 +59,7 @@ public class DelegateFileSystemAbstractionTest
     }
 
     @Test
-    public void delegatedFileSystemWatcher() throws IOException
+    void delegatedFileSystemWatcher() throws IOException
     {
         FileSystem fileSystem = mock(FileSystem.class);
         try ( DelegateFileSystemAbstraction abstraction = new DelegateFileSystemAbstraction( fileSystem ) )

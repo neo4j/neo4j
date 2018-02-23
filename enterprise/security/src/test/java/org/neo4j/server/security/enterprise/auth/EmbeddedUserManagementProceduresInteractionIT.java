@@ -72,7 +72,7 @@ public class EmbeddedUserManagementProceduresInteractionIT extends AuthProcedure
         } );
     }
 
-    String ADD_MOVIE_DATASET_QUERY =
+    private String ADD_MOVIE_DATASET_QUERY =
         "CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'}) " +
         "CREATE (Keanu:Person {name:'Keanu Reeves', born:1964}) " +
         "CREATE (Carrie:Person {name:'Carrie-Anne Moss', born:1967}) " +

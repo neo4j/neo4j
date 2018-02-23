@@ -28,14 +28,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 import org.neo4j.time.Clocks;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.getThresholdByType;
 
-public class LogPruneStrategyFactoryTest
+class LogPruneStrategyFactoryTest
 {
     @Test
-    public void testLogPruneThresholdsByType()
+    void testLogPruneThresholdsByType()
     {
         FileSystemAbstraction fsa = Mockito.mock( FileSystemAbstraction.class );
         Clock clock = Clocks.systemClock();

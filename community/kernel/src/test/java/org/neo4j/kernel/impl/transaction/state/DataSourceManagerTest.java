@@ -28,10 +28,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class DataSourceManagerTest
+class DataSourceManagerTest
 {
     @Test
-    public void shouldCallListenersOnStart()
+    void shouldCallListenersOnStart()
     {
         // given
         DataSourceManager manager = new DataSourceManager();
@@ -47,7 +47,7 @@ public class DataSourceManagerTest
     }
 
     @Test
-    public void shouldCallListenersWhenAddedIfManagerAlreadyStarted()
+    void shouldCallListenersWhenAddedIfManagerAlreadyStarted()
     {
         // given
         DataSourceManager manager = new DataSourceManager();
@@ -63,7 +63,7 @@ public class DataSourceManagerTest
     }
 
     @Test
-    public void shouldCallListenersOnDataSourceRegistrationIfManagerAlreadyStarted()
+    void shouldCallListenersOnDataSourceRegistrationIfManagerAlreadyStarted()
     {
         // given
         DataSourceManager manager = new DataSourceManager();
@@ -79,7 +79,7 @@ public class DataSourceManagerTest
     }
 
     @Test
-    public void shouldSupportMultipleStartStopCycles() throws Throwable
+    void shouldSupportMultipleStartStopCycles() throws Throwable
     {
         // given
         DataSourceManager manager = new DataSourceManager();

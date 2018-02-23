@@ -61,7 +61,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
 {
     // Constants for the contents of the existing record
-    protected static final int ID = 1;
+    private static final int ID = 1;
 
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
@@ -97,7 +97,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         return neoStores;
     }
 
-    protected S initialiseStore( NeoStores neoStores )
+    S initialiseStore( NeoStores neoStores )
     {
         S store = getStore( neoStores );
         store.updateRecord( createExistingRecord( false ) );
@@ -114,14 +114,14 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
 
     protected abstract void assertRecordsEqual( R actualRecord, R expectedRecord );
 
-    protected R getHeavy( S store, int id )
+    R getHeavy( S store, int id )
     {
         R record = store.getRecord( id, store.newRecord(), NORMAL );
         store.ensureHeavy( record );
         return record;
     }
 
-    protected R getForce( S store, int id )
+    private R getForce( S store, int id )
     {
         return store.getRecord( id, store.newRecord(), RecordLoad.FORCE );
     }

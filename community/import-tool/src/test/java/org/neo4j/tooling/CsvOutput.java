@@ -42,7 +42,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.StringDeserialization;
 
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
-public class CsvOutput implements BatchImporter
+class CsvOutput implements BatchImporter
 {
     private interface Deserializer
     {
@@ -55,7 +55,7 @@ public class CsvOutput implements BatchImporter
     private Configuration config;
     private final Deserialization<String> deserialization;
 
-    public CsvOutput( File targetDirectory, Header nodeHeader, Header relationshipHeader, Configuration config )
+    CsvOutput( File targetDirectory, Header nodeHeader, Header relationshipHeader, Configuration config )
     {
         this.targetDirectory = targetDirectory;
         assert targetDirectory.isDirectory();

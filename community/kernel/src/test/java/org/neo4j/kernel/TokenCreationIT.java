@@ -49,15 +49,15 @@ import static org.neo4j.helpers.collection.Iterables.asSet;
  * Otherwise attempt to retrieve labels from newly created node can fail.
  */
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class TokenCreationIT
+class TokenCreationIT
 {
     @Resource
-    public EmbeddedDatabaseRule databaseRule;
+    private EmbeddedDatabaseRule databaseRule;
 
     private volatile boolean stop;
 
     @RepeatedTest( 5 )
-    public void concurrentLabelTokenCreation() throws InterruptedException
+    void concurrentLabelTokenCreation() throws InterruptedException
     {
         int concurrentWorkers = 10;
         CountDownLatch latch = new CountDownLatch( concurrentWorkers );
@@ -70,7 +70,7 @@ public class TokenCreationIT
         latch.await();
     }
 
-    public Label[] getLabels()
+    private Label[] getLabels()
     {
         int randomLabelValue = ThreadLocalRandom.current().nextInt( 2 ) + 1;
         Label[] labels = new Label[randomLabelValue];

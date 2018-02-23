@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
-public class RecoveryStartInformationProviderTest
+class RecoveryStartInformationProviderTest
 {
     private final long currentLogVersion = 2L;
     private final long logVersion = 2L;
@@ -45,7 +45,7 @@ public class RecoveryStartInformationProviderTest
     private final Monitor monitor = mock( Monitor.class );
 
     @Test
-    public void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery()
+    void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery()
     {
         // given
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( false,
@@ -62,7 +62,7 @@ public class RecoveryStartInformationProviderTest
     }
 
     @Test
-    public void shouldReturnLogPositionToRecoverFromIfNeeded()
+    void shouldReturnLogPositionToRecoverFromIfNeeded()
     {
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
@@ -81,7 +81,7 @@ public class RecoveryStartInformationProviderTest
     }
 
     @Test
-    public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero()
+    void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero()
     {
         // given
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( true, 10L, INITIAL_LOG_VERSION,
@@ -98,7 +98,7 @@ public class RecoveryStartInformationProviderTest
     }
 
     @Test
-    public void shouldFailIfThereAreNoCheckPointsAndOldestLogVersionInNotZero()
+    void shouldFailIfThereAreNoCheckPointsAndOldestLogVersionInNotZero()
     {
         // given
         long oldestLogVersionFound = 1L;

@@ -29,10 +29,10 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public class DumpStoreTest
+class DumpStoreTest
 {
     @Test
-    public void dumpStoreShouldPrintBufferWithContent()
+    void dumpStoreShouldPrintBufferWithContent()
     {
         // Given
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -56,7 +56,7 @@ public class DumpStoreTest
     }
 
     @Test
-    public void dumpStoreShouldPrintShorterMessageForAllZeroBuffer()
+    void dumpStoreShouldPrintShorterMessageForAllZeroBuffer()
     {
         // Given
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();

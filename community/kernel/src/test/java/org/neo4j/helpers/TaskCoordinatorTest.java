@@ -33,10 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TaskCoordinatorTest
+class TaskCoordinatorTest
 {
     @Test
-    public void shouldCancelAllTasksWithOneCall()
+    void shouldCancelAllTasksWithOneCall()
     {
         // given
         TaskCoordinator coordinator = new TaskCoordinator( 1, TimeUnit.MILLISECONDS );
@@ -60,7 +60,7 @@ public class TaskCoordinatorTest
     }
 
     @Test
-    public void shouldAwaitCompletionOfAllTasks() throws Exception
+    void shouldAwaitCompletionOfAllTasks() throws Exception
     {
         // given
         final TaskCoordinator coordinator = new TaskCoordinator( 1, TimeUnit.MILLISECONDS );

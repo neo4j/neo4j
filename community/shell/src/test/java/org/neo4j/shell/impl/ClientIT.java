@@ -34,13 +34,13 @@ import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 
-public class ClientIT
+class ClientIT
 {
     @Test
-    public void shouldHandleNormalInput() throws ShellException, RemoteException
+    void shouldHandleNormalInput() throws ShellException, RemoteException
     {
         final CollectingOutput output = new CollectingOutput();
         final String message = "Test method called";
@@ -93,7 +93,7 @@ public class ClientIT
     }
 
     @Test
-    public void shouldExitMultilineModeAfterGettingWarningOrError() throws ShellException, RemoteException
+    void shouldExitMultilineModeAfterGettingWarningOrError() throws ShellException, RemoteException
     {
         final CollectingOutput output = new CollectingOutput();
         final String message = "Test method called";

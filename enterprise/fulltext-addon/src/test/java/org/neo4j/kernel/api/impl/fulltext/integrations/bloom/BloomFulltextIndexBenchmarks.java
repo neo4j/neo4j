@@ -42,7 +42,7 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltex
 @Disabled( "These are rudimentary benchmarks, but implemented via the jUnit framework to make them easy to run " +
          "from an IDE." )
 @ExtendWith( TestDirectoryExtension.class )
-public class BloomFulltextIndexBenchmarks
+class BloomFulltextIndexBenchmarks
 {
     private static final String[] WORDS =
             ("dui nunc mattis enim ut tellus elementum sagittis vitae et leo duis ut diam quam nulla porttitor " +
@@ -51,7 +51,7 @@ public class BloomFulltextIndexBenchmarks
              "montes nascetur ridiculus mus mauris").split( " " );
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseFactory factory;
     private GraphDatabaseService db;
@@ -87,7 +87,7 @@ public class BloomFulltextIndexBenchmarks
     }
 
     @Test
-    public void fiveHundredThousandOnlineUpdates() throws Exception
+    void fiveHundredThousandOnlineUpdates() throws Exception
     {
         setupDb();
         db.execute( "call db.fulltext.bloomFulltextSetPropertyKeys([\"prop\"])" );
@@ -138,7 +138,7 @@ public class BloomFulltextIndexBenchmarks
     }
 
     @Test
-    public void fiveHundredThousandNodesForPopulation() throws Exception
+    void fiveHundredThousandNodesForPopulation() throws Exception
     {
         // First create the data
         createTestGraphDatabaseFactory();
@@ -178,7 +178,7 @@ public class BloomFulltextIndexBenchmarks
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         if ( db != null )
         {

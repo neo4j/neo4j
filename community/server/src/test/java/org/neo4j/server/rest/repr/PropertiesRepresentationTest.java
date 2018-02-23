@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.PropertyContainer;
 
@@ -36,10 +36,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
-public class PropertiesRepresentationTest
+class PropertiesRepresentationTest
 {
     @Test
-    public void shouldContainAddedPropertiesWhenCreatedFromPropertyContainer()
+    void shouldContainAddedPropertiesWhenCreatedFromPropertyContainer()
     {
         Map<String, Object> values = new HashMap<>();
         values.put( "foo", "bar" );
@@ -48,7 +48,7 @@ public class PropertiesRepresentationTest
     }
 
     @Test
-    public void shouldSerializeToMapWithSamePropertiesWhenCreatedFromPropertyContainer()
+    void shouldSerializeToMapWithSamePropertiesWhenCreatedFromPropertyContainer()
     {
         Map<String, Object> values = new HashMap<>();
         values.put( "foo", "bar" );
@@ -58,7 +58,7 @@ public class PropertiesRepresentationTest
     }
 
     @Test
-    public void shouldSerializeToMap()
+    void shouldSerializeToMap()
     {
         Map<String, Object> values = new HashMap<>();
         values.put( "string", "value" );
@@ -84,7 +84,7 @@ public class PropertiesRepresentationTest
     }
 
     @Test
-    public void shouldBeAbleToSignalEmptiness()
+    void shouldBeAbleToSignalEmptiness()
     {
         PropertiesRepresentation properties = new PropertiesRepresentation( container( new HashMap<>() ) );
         Map<String, Object> values = new HashMap<>();
@@ -103,7 +103,7 @@ public class PropertiesRepresentationTest
         }
     }
 
-    static PropertyContainer container( Map<String, Object> values )
+    private static PropertyContainer container( Map<String,Object> values )
     {
         PropertyContainer container = mock( PropertyContainer.class );
         when( container.getPropertyKeys() ).thenReturn( values.keySet() );

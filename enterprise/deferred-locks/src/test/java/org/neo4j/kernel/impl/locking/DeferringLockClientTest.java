@@ -48,10 +48,10 @@ import static org.mockito.Mockito.verify;
 public class DeferringLockClientTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void releaseOfNotHeldSharedLockThrows()
+    void releaseOfNotHeldSharedLockThrows()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -72,7 +72,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void releaseOfNotHeldExclusiveLockThrows()
+    void releaseOfNotHeldExclusiveLockThrows()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -93,7 +93,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldDeferAllLocks()
+    void shouldDeferAllLocks()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -126,7 +126,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldStopUnderlyingClient()
+    void shouldStopUnderlyingClient()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -140,7 +140,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldPrepareUnderlyingClient()
+    void shouldPrepareUnderlyingClient()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -154,7 +154,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldCloseUnderlyingClient()
+    void shouldCloseUnderlyingClient()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -168,7 +168,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowOnAcquireWhenStopped()
+    void shouldThrowOnAcquireWhenStopped()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -189,7 +189,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowOnAcquireWhenClosed()
+    void shouldThrowOnAcquireWhenClosed()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -210,7 +210,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleaseNotYetAcquiredExclusive()
+    void shouldThrowWhenReleaseNotYetAcquiredExclusive()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -229,7 +229,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleaseNotYetAcquiredShared()
+    void shouldThrowWhenReleaseNotYetAcquiredShared()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -248,7 +248,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleaseNotMatchingAcquired()
+    void shouldThrowWhenReleaseNotMatchingAcquired()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -269,7 +269,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleasingLockMultipleTimes()
+    void shouldThrowWhenReleasingLockMultipleTimes()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -291,7 +291,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void exclusiveLockAcquiredMultipleTimesCanNotBeReleasedAtOnce()
+    void exclusiveLockAcquiredMultipleTimesCanNotBeReleasedAtOnce()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -310,7 +310,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void sharedLockAcquiredMultipleTimesCanNotBeReleasedAtOnce()
+    void sharedLockAcquiredMultipleTimesCanNotBeReleasedAtOnce()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -329,7 +329,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void acquireBothSharedAndExclusiveLockThenReleaseShared()
+    void acquireBothSharedAndExclusiveLockThenReleaseShared()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -348,7 +348,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void exclusiveLocksAcquiredFirst()
+    void exclusiveLocksAcquiredFirst()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -381,7 +381,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void acquireBothSharedAndExclusiveLockThenReleaseExclusive()
+    void acquireBothSharedAndExclusiveLockThenReleaseExclusive()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();

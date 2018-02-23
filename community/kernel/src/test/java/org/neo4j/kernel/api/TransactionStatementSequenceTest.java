@@ -24,15 +24,15 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
-public class TransactionStatementSequenceTest
+class TransactionStatementSequenceTest
 {
     @Test
-    public void shouldAllowReadStatementAfterReadStatement()
+    void shouldAllowReadStatementAfterReadStatement()
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.read() );
@@ -43,7 +43,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldAllowDataStatementAfterReadStatement() throws Exception
+    void shouldAllowDataStatementAfterReadStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
@@ -54,7 +54,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldAllowSchemaStatementAfterReadStatement() throws Exception
+    void shouldAllowSchemaStatementAfterReadStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
@@ -65,7 +65,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldRejectSchemaStatementAfterDataStatement() throws Exception
+    void shouldRejectSchemaStatementAfterDataStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
@@ -87,7 +87,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldRejectDataStatementAfterSchemaStatement() throws Exception
+    void shouldRejectDataStatementAfterSchemaStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
@@ -109,7 +109,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldAllowDataStatementAfterDataStatement() throws Exception
+    void shouldAllowDataStatementAfterDataStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
@@ -120,7 +120,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldAllowSchemaStatementAfterSchemaStatement() throws Exception
+    void shouldAllowSchemaStatementAfterSchemaStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
@@ -131,7 +131,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldAllowReadStatementAfterDataStatement() throws Exception
+    void shouldAllowReadStatementAfterDataStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
@@ -142,7 +142,7 @@ public class TransactionStatementSequenceTest
     }
 
     @Test
-    public void shouldAllowReadStatementAfterSchemaStatement() throws Exception
+    void shouldAllowReadStatementAfterSchemaStatement() throws Exception
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );

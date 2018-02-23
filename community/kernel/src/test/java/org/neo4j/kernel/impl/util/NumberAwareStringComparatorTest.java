@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class NumberAwareStringComparatorTest
+class NumberAwareStringComparatorTest
 {
     @Test
-    public void shouldHandleSingleNumber()
+    void shouldHandleSingleNumber()
     {
         // LESSER
         assertLesser( "123", "456" );
@@ -43,14 +43,14 @@ public class NumberAwareStringComparatorTest
     }
 
     @Test
-    public void shouldHandleMixedAlthoughSimilarNumbersAndStrings()
+    void shouldHandleMixedAlthoughSimilarNumbersAndStrings()
     {
         assertLesser( "same-1-thing-45", "same-12-thing-45" );
         assertGreater( "same-2-thing-46", "same-2-thing-45" );
     }
 
     @Test
-    public void shouldHandleMixedAndDifferentNumbersAndStrings()
+    void shouldHandleMixedAndDifferentNumbersAndStrings()
     {
         assertLesser( "same123thing456", "same123thing456andmore" );
         assertGreater( "same12", "same1thing456andmore" );

@@ -48,7 +48,7 @@ import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class ServerTest
+class ServerTest
 {
     private final Protocol protocol = new Protocol214( 1024, (byte) 0, Server.INTERNAL_PROTOCOL_VERSION );
     private final TxChecksumVerifier checksumVerifier = mock( TxChecksumVerifier.class );
@@ -56,7 +56,7 @@ public class ServerTest
     private final RecordingChannel channel = new RecordingChannel();
 
     @Test
-    public void shouldSendExceptionBackToClientOnInvalidChecksum() throws Throwable
+    void shouldSendExceptionBackToClientOnInvalidChecksum() throws Throwable
     {
         // Given
         Server<Object,Object> server = newServer( checksumVerifier );
@@ -89,7 +89,7 @@ public class ServerTest
     }
 
     @Test
-    public void shouldNotSendExceptionBackToClientOnInvalidChecksumIfThereAreNoTransactions() throws Throwable
+    void shouldNotSendExceptionBackToClientOnInvalidChecksumIfThereAreNoTransactions() throws Throwable
     {
         // Given
         Server<Object,Object> server = newServer( checksumVerifier );

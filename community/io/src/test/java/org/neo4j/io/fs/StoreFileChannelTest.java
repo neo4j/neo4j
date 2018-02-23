@@ -33,10 +33,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 
-public class StoreFileChannelTest
+class StoreFileChannelTest
 {
     @Test
-    public void shouldHandlePartialWrites() throws Exception
+    void shouldHandlePartialWrites() throws Exception
     {
         // Given
         FileChannel mockChannel = mock(FileChannel.class);

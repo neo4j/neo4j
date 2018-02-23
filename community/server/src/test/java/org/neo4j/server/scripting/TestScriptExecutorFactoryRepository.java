@@ -31,11 +31,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.server.scripting.ScriptExecutor.Factory;
 
-public class TestScriptExecutorFactoryRepository
+class TestScriptExecutorFactoryRepository
 {
 
     @Test
-    public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages()
+    void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages()
     {
         assertThrows( NoSuchScriptLanguageException.class, () -> {
             // Given
@@ -47,7 +47,7 @@ public class TestScriptExecutorFactoryRepository
     }
 
     @Test
-    public void shouldReturnRegisteredFactory()
+    void shouldReturnRegisteredFactory()
     {
         // Given
         Map<String, ScriptExecutor.Factory> languages = new HashMap<>();

@@ -28,10 +28,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FormatTest
+class FormatTest
 {
     @Test
-    public void shouldDisplayBytes()
+    void shouldDisplayBytes()
     {
         // when
         String format = Format.bytes( 123 );
@@ -42,7 +42,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayKiloBytes()
+    void shouldDisplayKiloBytes()
     {
         // when
         String format = Format.bytes( 1_234 );
@@ -53,7 +53,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayMegaBytes()
+    void shouldDisplayMegaBytes()
     {
         // when
         String format = Format.bytes( 1_234_567 );
@@ -64,7 +64,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayGigaBytes()
+    void shouldDisplayGigaBytes()
     {
         // when
         String format = Format.bytes( 1_234_567_890 );
@@ -75,7 +75,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayPlainCount()
+    void shouldDisplayPlainCount()
     {
         // when
         String format = Format.count( 10 );
@@ -85,7 +85,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayThousandCount()
+    void shouldDisplayThousandCount()
     {
         // when
         String format = Format.count( 2_000 );
@@ -96,7 +96,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayMillionCount()
+    void shouldDisplayMillionCount()
     {
         // when
         String format = Format.count( 2_000_000 );
@@ -107,7 +107,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayBillionCount()
+    void shouldDisplayBillionCount()
     {
         // when
         String format = Format.count( 2_000_000_000 );
@@ -118,7 +118,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayTrillionCount()
+    void shouldDisplayTrillionCount()
     {
         // when
         String format = Format.count( 4_000_000_000_000L );

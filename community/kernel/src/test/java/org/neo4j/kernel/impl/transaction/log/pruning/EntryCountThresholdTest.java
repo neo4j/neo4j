@@ -30,13 +30,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class EntryCountThresholdTest
+class EntryCountThresholdTest
 {
     private LogFileInformation info = mock( LogFileInformation.class );
     private File file = mock( File.class );
 
     @Test
-    public void shouldReportThresholdReachedWhenThresholdIsReached() throws Exception
+    void shouldReportThresholdReachedWhenThresholdIsReached() throws Exception
     {
         long version = 10L;
 
@@ -50,7 +50,7 @@ public class EntryCountThresholdTest
     }
 
     @Test
-    public void shouldReportThresholdNotReachedWhenThresholdIsNotReached() throws Exception
+    void shouldReportThresholdNotReachedWhenThresholdIsNotReached() throws Exception
     {
         long version = 10L;
 
@@ -65,7 +65,7 @@ public class EntryCountThresholdTest
     }
 
     @Test
-    public void shouldProperlyHandleCaseWithOneEntryPerLogFile() throws Exception
+    void shouldProperlyHandleCaseWithOneEntryPerLogFile() throws Exception
     {
         // Given 2 files with one entry each
         when( info.getFirstEntryId( 1L ) ).thenReturn( 1L );
@@ -83,7 +83,7 @@ public class EntryCountThresholdTest
     }
 
     @Test
-    public void shouldWorkWhenCalledMultipleTimesKeeping2Files() throws Exception
+    void shouldWorkWhenCalledMultipleTimesKeeping2Files() throws Exception
     {
         when( info.getFirstEntryId( 1L ) ).thenReturn( 1L );
         when( info.getFirstEntryId( 2L ) ).thenReturn( 5L );
@@ -101,7 +101,7 @@ public class EntryCountThresholdTest
     }
 
     @Test
-    public void shouldWorkWhenCalledMultipleTimesKeeping3Files() throws Exception
+    void shouldWorkWhenCalledMultipleTimesKeeping3Files() throws Exception
     {
         when( info.getFirstEntryId( 1L ) ).thenReturn( 1L );
         when( info.getFirstEntryId( 2L ) ).thenReturn( 5L );
@@ -119,7 +119,7 @@ public class EntryCountThresholdTest
     }
 
     @Test
-    public void shouldWorkWhenCalledMultipleTimesKeeping1FileOnBoundary() throws Exception
+    void shouldWorkWhenCalledMultipleTimesKeeping1FileOnBoundary() throws Exception
     {
         when( info.getFirstEntryId( 1L ) ).thenReturn( 1L );
         when( info.getFirstEntryId( 2L ) ).thenReturn( 5L );
@@ -135,7 +135,7 @@ public class EntryCountThresholdTest
     }
 
     @Test
-    public void shouldSkipEmptyLogsBetweenLogsThatWillBeKept() throws Exception
+    void shouldSkipEmptyLogsBetweenLogsThatWillBeKept() throws Exception
     {
         // Given
         // 1, 3 and 4 are empty. 2 has 5 transactions, 5 has 8, 6 is the current version
@@ -158,7 +158,7 @@ public class EntryCountThresholdTest
     }
 
     @Test
-    public void shouldDeleteNonEmptyLogThatIsAfterASeriesOfEmptyLogs() throws Exception
+    void shouldDeleteNonEmptyLogThatIsAfterASeriesOfEmptyLogs() throws Exception
     {
         // Given
         // 1, 3 and 4 are empty. 2 has 5 transactions, 5 has 8, 6 is the current version

@@ -33,10 +33,10 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -45,10 +45,10 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class LocalDatabaseTest
+class LocalDatabaseTest
 {
     @Test
-    public void availabilityGuardRaisedOnCreation()
+    void availabilityGuardRaisedOnCreation()
     {
         AvailabilityGuard guard = newAvailabilityGuard();
         assertTrue( guard.isAvailable() );
@@ -59,7 +59,7 @@ public class LocalDatabaseTest
     }
 
     @Test
-    public void availabilityGuardDroppedOnStart() throws Throwable
+    void availabilityGuardDroppedOnStart() throws Throwable
     {
         AvailabilityGuard guard = newAvailabilityGuard();
         assertTrue( guard.isAvailable() );
@@ -72,7 +72,7 @@ public class LocalDatabaseTest
     }
 
     @Test
-    public void availabilityGuardRaisedOnStop() throws Throwable
+    void availabilityGuardRaisedOnStop() throws Throwable
     {
         AvailabilityGuard guard = newAvailabilityGuard();
         assertTrue( guard.isAvailable() );
@@ -88,7 +88,7 @@ public class LocalDatabaseTest
     }
 
     @Test
-    public void availabilityGuardRaisedOnStopForStoreCopy() throws Throwable
+    void availabilityGuardRaisedOnStopForStoreCopy() throws Throwable
     {
         AvailabilityGuard guard = newAvailabilityGuard();
         assertTrue( guard.isAvailable() );
@@ -104,7 +104,7 @@ public class LocalDatabaseTest
     }
 
     @Test
-    public void availabilityGuardRaisedBeforeDataSourceManagerIsStopped() throws Throwable
+    void availabilityGuardRaisedBeforeDataSourceManagerIsStopped() throws Throwable
     {
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
@@ -119,7 +119,7 @@ public class LocalDatabaseTest
     }
 
     @Test
-    public void availabilityGuardRaisedBeforeDataSourceManagerIsStoppedForStoreCopy() throws Throwable
+    void availabilityGuardRaisedBeforeDataSourceManagerIsStoppedForStoreCopy() throws Throwable
     {
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
@@ -134,7 +134,7 @@ public class LocalDatabaseTest
     }
 
     @Test
-    public void doNotRestartServicesIfAlreadyStarted() throws Throwable
+    void doNotRestartServicesIfAlreadyStarted() throws Throwable
     {
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         FileSystemWatcherService watcherService = mock( FileSystemWatcherService.class );

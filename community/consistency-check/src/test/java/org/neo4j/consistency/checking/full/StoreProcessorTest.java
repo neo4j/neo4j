@@ -44,7 +44,7 @@ public class StoreProcessorTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldProcessAllTheRecordsInAStore() throws Exception
+    void shouldProcessAllTheRecordsInAStore() throws Exception
     {
         // given
         RecordStore<NodeRecord> nodeStore = stores.builder().build().getNodeStore();
@@ -70,7 +70,7 @@ public class StoreProcessorTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldStopProcessingRecordsWhenSignalledToStop() throws Exception
+    void shouldStopProcessingRecordsWhenSignalledToStop() throws Exception
     {
         // given
         ConsistencyReport.Reporter reporter = mock( ConsistencyReport.Reporter.class );

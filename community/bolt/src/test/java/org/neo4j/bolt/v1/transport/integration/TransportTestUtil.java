@@ -65,7 +65,7 @@ public class TransportTestUtil
         return chunk( 32, messages );
     }
 
-    public byte[] chunk( int chunkSize, RequestMessage... messages ) throws IOException
+    private byte[] chunk( int chunkSize, RequestMessage... messages ) throws IOException
     {
         byte[][] serializedMessages = new byte[messages.length][];
         for ( int i = 0; i < messages.length; i++ )
@@ -75,7 +75,7 @@ public class TransportTestUtil
         return chunk( chunkSize, serializedMessages );
     }
 
-    public byte[] chunk( int chunkSize, ResponseMessage... messages ) throws IOException
+    private byte[] chunk( int chunkSize, ResponseMessage... messages ) throws IOException
     {
         byte[][] serializedMessages = new byte[messages.length][];
         for ( int i = 0; i < messages.length; i++ )
@@ -179,7 +179,7 @@ public class TransportTestUtil
         }
     }
 
-    public int receiveChunkHeader( TransportConnection conn ) throws IOException, InterruptedException
+    private int receiveChunkHeader( TransportConnection conn ) throws IOException, InterruptedException
     {
         byte[] raw = conn.recv( 2 );
         return ((raw[0] & 0xff) << 8 | (raw[1] & 0xff)) & 0xffff;

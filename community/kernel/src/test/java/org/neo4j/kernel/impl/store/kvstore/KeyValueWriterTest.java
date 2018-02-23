@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class KeyValueWriterTest
+class KeyValueWriterTest
 {
     private static final int ENTRIES_PER_PAGE = 4 * 1024 / 16;
     @SuppressWarnings( "unchecked" )
@@ -42,13 +42,13 @@ public class KeyValueWriterTest
     private final BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[8] );
 
     @AfterEach
-    public void closeWriter() throws IOException
+    void closeWriter() throws IOException
     {
         writer.close();
     }
 
     @Test
-    public void shouldAcceptNoHeadersAndNoData() throws Exception
+    void shouldAcceptNoHeadersAndNoData() throws Exception
     {
         // given
         value.putByte( 0, (byte) 0x7F );
@@ -71,13 +71,13 @@ public class KeyValueWriterTest
     }
 
     @Test
-    public void shouldRequireNonZeroFormatSpecifier() throws Exception
+    void shouldRequireNonZeroFormatSpecifier() throws Exception
     {
         assertFalse( writer.writeHeader( key, value ), "format-specifier" );
     }
 
     @Test
-    public void shouldRejectInvalidHeaderKeyWhenAssertionsAreEnabled() throws Exception
+    void shouldRejectInvalidHeaderKeyWhenAssertionsAreEnabled() throws Exception
     {
         // given
         key.putByte( 3, (byte) 1 );
@@ -100,7 +100,7 @@ public class KeyValueWriterTest
     }
 
     @Test
-    public void shouldRejectInvalidDataKey() throws Exception
+    void shouldRejectInvalidDataKey() throws Exception
     {
         // given
         value.putByte( 0, (byte) 0x7F );
@@ -123,7 +123,7 @@ public class KeyValueWriterTest
     }
 
     @Test
-    public void shouldRejectDataBeforeHeaders() throws Exception
+    void shouldRejectDataBeforeHeaders() throws Exception
     {
         // given
         key.putByte( 2, (byte) 0x77 );
@@ -143,7 +143,7 @@ public class KeyValueWriterTest
     }
 
     @Test
-    public void shouldRejectDataAfterInsufficientHeaders() throws Exception
+    void shouldRejectDataAfterInsufficientHeaders() throws Exception
     {
         // given
         value.fill( (byte) 0xFF );
@@ -165,7 +165,7 @@ public class KeyValueWriterTest
     }
 
     @Test
-    public void shouldNotOpenStoreFileIfWritingHasNotCompleted() throws Exception
+    void shouldNotOpenStoreFileIfWritingHasNotCompleted() throws Exception
     {
         for ( int i = 0; i <= 10; i++ )
         {
@@ -262,7 +262,7 @@ public class KeyValueWriterTest
             io();
         }
 
-        public void assertData( byte... expected )
+        void assertData( byte... expected )
         {
             assertArrayEquals( expected, this.data.toByteArray() );
         }

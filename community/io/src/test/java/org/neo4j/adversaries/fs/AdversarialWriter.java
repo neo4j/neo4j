@@ -25,12 +25,12 @@ import java.io.Writer;
 import org.neo4j.adversaries.Adversary;
 
 @SuppressWarnings( "unchecked" )
-public class AdversarialWriter extends Writer
+class AdversarialWriter extends Writer
 {
     private final Writer writer;
     private final Adversary adversary;
 
-    public AdversarialWriter( Writer writer, Adversary adversary )
+    AdversarialWriter( Writer writer, Adversary adversary )
     {
         this.writer = writer;
         this.adversary = adversary;

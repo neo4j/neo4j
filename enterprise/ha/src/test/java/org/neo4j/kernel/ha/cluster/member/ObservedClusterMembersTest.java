@@ -45,10 +45,10 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -56,7 +56,7 @@ import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMember
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 
-public class ObservedClusterMembersTest
+class ObservedClusterMembersTest
 {
     private static final LogProvider logProvider = NullLogProvider.getInstance();
     private static final InstanceId clusterId1 = new InstanceId( 1 );
@@ -68,7 +68,7 @@ public class ObservedClusterMembersTest
     private static final URI haUri1 = create( "ha://server1?serverId=" + clusterId1.toIntegerIndex() );
 
     @Test
-    public void shouldRegisterItselfOnListeners()
+    void shouldRegisterItselfOnListeners()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -85,7 +85,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void shouldContainMemberListAfterEnteringCluster()
+    void shouldContainMemberListAfterEnteringCluster()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -107,7 +107,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void joinedMemberShowsInList()
+    void joinedMemberShowsInList()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -132,7 +132,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void iCanGetToMyself()
+    void iCanGetToMyself()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -156,7 +156,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void leftMemberDisappearsFromList()
+    void leftMemberDisappearsFromList()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -180,7 +180,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void availableMasterShowsProperInformation()
+    void availableMasterShowsProperInformation()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -207,7 +207,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void availableSlaveShowsProperInformation()
+    void availableSlaveShowsProperInformation()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -234,7 +234,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void membersShowsAsUnavailableWhenNewMasterElectedBeforeTheyBecomeAvailable()
+    void membersShowsAsUnavailableWhenNewMasterElectedBeforeTheyBecomeAvailable()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -261,7 +261,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void failedMemberShowsAsSuch()
+    void failedMemberShowsAsSuch()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -288,7 +288,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void failedThenAliveMemberShowsAsAlive()
+    void failedThenAliveMemberShowsAsAlive()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -315,7 +315,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void missingMasterUnavailabilityEventDoesNotClobberState()
+    void missingMasterUnavailabilityEventDoesNotClobberState()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -343,7 +343,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void missingSlaveUnavailabilityEventDoesNotClobberState()
+    void missingSlaveUnavailabilityEventDoesNotClobberState()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -371,7 +371,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void missingMasterUnavailabilityEventForOtherInstanceStillRemovesBackupRole()
+    void missingMasterUnavailabilityEventForOtherInstanceStillRemovesBackupRole()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -409,7 +409,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void receivingInstanceFailureEventRemovesAllRolesForIt()
+    void receivingInstanceFailureEventRemovesAllRolesForIt()
     {
         // given
         Cluster cluster = mock( Cluster.class );

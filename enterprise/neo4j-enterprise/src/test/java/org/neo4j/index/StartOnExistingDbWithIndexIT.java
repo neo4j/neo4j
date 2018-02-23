@@ -37,13 +37,13 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class StartOnExistingDbWithIndexIT
+class StartOnExistingDbWithIndexIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void startStopDatabaseWithIndex()
+    void startStopDatabaseWithIndex()
     {
         Label label = Label.label( "string" );
         String property = "property";

@@ -19,14 +19,14 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.jupiter.api.Test;
+
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
-import org.junit.jupiter.api.Test;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
@@ -40,7 +40,7 @@ import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class TimeValueTest
+class TimeValueTest
 {
     static final Supplier<ZoneId> inUTC = () -> UTC;
     static final Supplier<ZoneId> orFail = () ->
@@ -49,7 +49,7 @@ public class TimeValueTest
     };
 
     @Test
-    public void shouldParseTimeWithOnlyHour()
+    void shouldParseTimeWithOnlyHour()
     {
         assertEquals( time( 14, 0, 0, 0, UTC ), parse( "14", inUTC ) );
         assertEquals( time( 4, 0, 0, 0, UTC ), parse( "4", inUTC ) );
@@ -57,7 +57,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourAndMinute()
+    void shouldParseTimeWithHourAndMinute()
     {
         assertEquals( time( 14, 5, 0, 0, UTC ), parse( "1405", inUTC ) );
         assertEquals( time( 14, 5, 0, 0, UTC ), parse( "14:5", inUTC ) );
@@ -67,7 +67,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteAndSecond()
+    void shouldParseTimeWithHourMinuteAndSecond()
     {
         assertEquals( time( 14, 5, 17, 0, UTC ), parse( "140517", inUTC ) );
         assertEquals( time( 14, 5, 17, 0, UTC ), parse( "14:5:17", inUTC ) );
@@ -77,7 +77,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteSecondAndFractions()
+    void shouldParseTimeWithHourMinuteSecondAndFractions()
     {
         assertEquals( time( 14, 5, 17, 123000000, UTC ), parse( "140517.123", inUTC ) );
         assertEquals( time( 14, 5, 17, 1, UTC ), parse( "14:5:17.000000001", inUTC ) );
@@ -88,7 +88,7 @@ public class TimeValueTest
 
     @Test
     @SuppressWarnings( "ThrowableNotThrown" )
-    public void shouldFailToParseTimeOutOfRange()
+    void shouldFailToParseTimeOutOfRange()
     {
         assertCannotParse( "24" );
         assertCannotParse( "1760" );
@@ -97,7 +97,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldWriteTime()
+    void shouldWriteTime()
     {
         // given
         for ( TimeValue time : new TimeValue[] {
@@ -130,7 +130,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldAddDurationToTimes()
+    void shouldAddDurationToTimes()
     {
         assertEquals( time(12, 15, 0, 0, UTC),
                 time(12, 0, 0, 0, UTC).add( DurationValue.duration( 1, 1, 900, 0 ) ) );
@@ -141,7 +141,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldReuseInstanceInArithmetics()
+    void shouldReuseInstanceInArithmetics()
     {
         final TimeValue noon = time( 12, 0, 0, 0, UTC );
         assertSame( noon,
@@ -153,7 +153,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldSubtractDurationFromTimes()
+    void shouldSubtractDurationFromTimes()
     {
         assertEquals( time(12, 0, 0, 0, UTC),
                 time(12, 15, 0, 0, UTC).sub( DurationValue.duration( 1, 1, 900, 0 ) ) );
@@ -164,19 +164,19 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldEqualItself()
+    void shouldEqualItself()
     {
         assertEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 6, UTC ) );
     }
 
     @Test
-    public void shouldNotEqualSameTimeButDifferentTimezone()
+    void shouldNotEqualSameTimeButDifferentTimezone()
     {
         assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 6, "+01:00" ) );
     }
 
     @Test
-    public void shouldEqualSamePointInTimeInDifferentTimezone()
+    void shouldEqualSamePointInTimeInDifferentTimezone()
     {
         assertEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
     }

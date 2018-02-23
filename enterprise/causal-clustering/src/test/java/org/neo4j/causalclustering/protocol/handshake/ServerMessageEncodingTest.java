@@ -38,7 +38,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 
-public class ServerMessageEncodingTest
+class ServerMessageEncodingTest
 {
     private final ClientMessageEncoder encoder = new ClientMessageEncoder();
     private final ServerMessageDecoder decoder = new ServerMessageDecoder();
@@ -54,7 +54,7 @@ public class ServerMessageEncodingTest
         return output;
     }
 
-    public static Collection<ServerMessage> data()
+    private static Collection<ServerMessage> data()
     {
         return asList(
                 new ApplicationProtocolRequest( "protocol", asSet( 3,7,13 ) ),
@@ -68,7 +68,7 @@ public class ServerMessageEncodingTest
 
     @ParameterizedTest
     @MethodSource( value = "data" )
-    public void shouldCompleteEncodingRoundTrip( ServerMessage message ) throws Throwable
+    void shouldCompleteEncodingRoundTrip( ServerMessage message ) throws Throwable
     {
         //when
         List<Object> output = encodeDecode( message );

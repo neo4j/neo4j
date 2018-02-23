@@ -308,7 +308,7 @@ public class TxPushStrategyConfigIT
             this.missed = missed;
         }
 
-        public void format( StringBuilder failures, long txId )
+        void format( StringBuilder failures, long txId )
         {
             if ( txId < this.txId - this.missed || txId > this.txId )
             {

@@ -39,10 +39,10 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class DataAndSchemaTransactionSeparationIT
+class DataAndSchemaTransactionSeparationIT
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     private static Function<GraphDatabaseService, Void> expectFailureAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )
@@ -84,13 +84,13 @@ public class DataAndSchemaTransactionSeparationIT
     }
 
     @Test
-    public void shouldNotAllowNodeCreationInSchemaTransaction()
+    void shouldNotAllowNodeCreationInSchemaTransaction()
     {
         db.executeAndRollback( expectFailureAfterSchemaOperation( createNode() ) );
     }
 
     @Test
-    public void shouldNotAllowRelationshipCreationInSchemaTransaction()
+    void shouldNotAllowRelationshipCreationInSchemaTransaction()
     {
         // given
         final Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
@@ -100,7 +100,7 @@ public class DataAndSchemaTransactionSeparationIT
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldNotAllowPropertyWritesInSchemaTransaction()
+    void shouldNotAllowPropertyWritesInSchemaTransaction()
     {
         // given
         Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
@@ -118,7 +118,7 @@ public class DataAndSchemaTransactionSeparationIT
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldAllowPropertyReadsInSchemaTransaction()
+    void shouldAllowPropertyReadsInSchemaTransaction()
     {
         // given
         Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );

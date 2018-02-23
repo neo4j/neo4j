@@ -35,28 +35,28 @@ import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 public class TestPreflightTasks
 {
     @Test
-    public void shouldPassWithNoRules()
+    void shouldPassWithNoRules()
     {
         PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance() );
         assertTrue( check.run() );
     }
 
     @Test
-    public void shouldRunAllHealthChecksToCompletionIfNonFail()
+    void shouldRunAllHealthChecksToCompletionIfNonFail()
     {
         PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance(), getPassingRules() );
         assertTrue( check.run() );
     }
 
     @Test
-    public void shouldFailIfOneOrMoreHealthChecksFail()
+    void shouldFailIfOneOrMoreHealthChecksFail()
     {
         PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance(), getWithOneFailingRule() );
         assertFalse( check.run() );
     }
 
     @Test
-    public void shouldLogFailedRule()
+    void shouldLogFailedRule()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         PreFlightTasks check = new PreFlightTasks( logProvider, getWithOneFailingRule() );
@@ -68,7 +68,7 @@ public class TestPreflightTasks
     }
 
     @Test
-    public void shouldAdvertiseFailedRule()
+    void shouldAdvertiseFailedRule()
     {
         PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance(), getWithOneFailingRule() );
         check.run();

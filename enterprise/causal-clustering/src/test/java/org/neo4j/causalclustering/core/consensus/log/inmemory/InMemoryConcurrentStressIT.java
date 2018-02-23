@@ -34,7 +34,7 @@ public class InMemoryConcurrentStressIT extends ConcurrentStressIT<InMemoryConcu
         return new LifecycledInMemoryRaftLog();
     }
 
-    public static class LifecycledInMemoryRaftLog extends InMemoryRaftLog implements Lifecycle
+    static class LifecycledInMemoryRaftLog extends InMemoryRaftLog implements Lifecycle
     {
 
         @Override

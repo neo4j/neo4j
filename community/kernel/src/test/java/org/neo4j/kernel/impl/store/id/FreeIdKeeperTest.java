@@ -54,7 +54,7 @@ public class FreeIdKeeperTest
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void newlyConstructedInstanceShouldReportProperDefaultValues() throws Exception
+    void newlyConstructedInstanceShouldReportProperDefaultValues() throws Exception
     {
         // Given
         FreeIdKeeper keeper = getFreeIdKeeperAggressive();
@@ -65,7 +65,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void freeingAnIdShouldReturnThatIdAndUpdateTheCountWhenAggressiveModeIsSet() throws Exception
+    void freeingAnIdShouldReturnThatIdAndUpdateTheCountWhenAggressiveModeIsSet() throws Exception
     {
         // Given
         FreeIdKeeper keeper = getFreeIdKeeperAggressive();
@@ -85,7 +85,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReturnMinusOneWhenRunningOutOfIds() throws Exception
+    void shouldReturnMinusOneWhenRunningOutOfIds() throws Exception
     {
         // Given
         FreeIdKeeper keeper = getFreeIdKeeperAggressive();
@@ -100,7 +100,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldOnlyOverflowWhenThresholdIsReached() throws Exception
+    void shouldOnlyOverflowWhenThresholdIsReached() throws Exception
     {
         // Given
         StoreChannel channel = spy( fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE ) );
@@ -127,7 +127,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReadBackPersistedIdsWhenAggressiveModeIsSet() throws Exception
+    void shouldReadBackPersistedIdsWhenAggressiveModeIsSet() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -151,7 +151,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReadBackManyPersistedIdBatchesWhenAggressiveModeIsSet() throws Exception
+    void shouldReadBackManyPersistedIdBatchesWhenAggressiveModeIsSet() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -178,7 +178,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldFirstReturnNonPersistedIdsAndThenPersistedOnesWhenAggressiveMode() throws Exception
+    void shouldFirstReturnNonPersistedIdsAndThenPersistedOnesWhenAggressiveMode() throws Exception
     {
         // this is testing the stack property, but from the viewpoint of avoiding unnecessary disk reads
         // given
@@ -214,7 +214,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void persistedIdsShouldStillBeCounted() throws Exception
+    void persistedIdsShouldStillBeCounted() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -241,7 +241,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldStoreAndRestoreIds() throws Exception
+    void shouldStoreAndRestoreIds() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -284,7 +284,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldNotReturnNewlyReleasedIdsIfAggressiveIsFalse() throws Exception
+    void shouldNotReturnNewlyReleasedIdsIfAggressiveIsFalse() throws Exception
     {
         // given
         FreeIdKeeper keeper = getFreeIdKeeper();
@@ -298,7 +298,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldNotReturnIdsPersistedDuringThisRunIfAggressiveIsFalse() throws Exception
+    void shouldNotReturnIdsPersistedDuringThisRunIfAggressiveIsFalse() throws Exception
     {
         // given
         StoreChannel channel = spy( fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE ) );
@@ -321,7 +321,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReturnIdsRestoredAndIgnoreNewlyReleasedIfAggressiveModeIsFalse() throws Exception
+    void shouldReturnIdsRestoredAndIgnoreNewlyReleasedIfAggressiveModeIsFalse() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -360,7 +360,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReturnNoResultIfIdsAreRestoredAndExhaustedAndThereAreFreeIdsFromThisRunWithAggressiveFalse() throws Exception
+    void shouldReturnNoResultIfIdsAreRestoredAndExhaustedAndThereAreFreeIdsFromThisRunWithAggressiveFalse() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -399,7 +399,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldNotReturnReusedIdsAfterRestart() throws Exception
+    void shouldNotReturnReusedIdsAfterRestart() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -445,7 +445,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldTruncateFileInAggressiveMode() throws Exception
+    void shouldTruncateFileInAggressiveMode() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -470,7 +470,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldCompactFileOnCloseInRegularMode() throws Exception
+    void shouldCompactFileOnCloseInRegularMode() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -510,7 +510,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateEmptyBatchWhenNoIdsAreAvailable() throws IOException
+    void allocateEmptyBatchWhenNoIdsAreAvailable() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
         long[] ids = freeIdKeeper.getIds( 1024 );
@@ -519,7 +519,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateBatchWhenHaveMoreIdsInMemory() throws IOException
+    void allocateBatchWhenHaveMoreIdsInMemory() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
         for ( long id = 1L; id < 7L; id++ )
@@ -532,7 +532,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateBatchWhenHaveLessIdsInMemory() throws IOException
+    void allocateBatchWhenHaveLessIdsInMemory() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
         for ( long id = 1L; id < 4L; id++ )
@@ -545,7 +545,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateBatchWhenHaveLessIdsInMemoryButHaveOnDiskMore() throws IOException
+    void allocateBatchWhenHaveLessIdsInMemoryButHaveOnDiskMore() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive( 4 );
         for ( long id = 1L; id < 11L; id++ )
@@ -558,7 +558,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateBatchWhenHaveLessIdsInMemoryAndOnDisk() throws IOException
+    void allocateBatchWhenHaveLessIdsInMemoryAndOnDisk() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive( 4 );
         for ( long id = 1L; id < 10L; id++ )

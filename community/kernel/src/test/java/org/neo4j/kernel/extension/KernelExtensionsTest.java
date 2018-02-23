@@ -35,10 +35,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
-public class KernelExtensionsTest
+class KernelExtensionsTest
 {
     @Test
-    public void shouldConsultUnsatisfiedDependencyHandler()
+    void shouldConsultUnsatisfiedDependencyHandler()
     {
         // GIVEN
         KernelContext context = mock( KernelContext.class );

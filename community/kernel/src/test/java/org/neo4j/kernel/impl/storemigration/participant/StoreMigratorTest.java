@@ -266,7 +266,7 @@ public class StoreMigratorTest
 
     private static class MyProgressReporter implements ProgressReporter
     {
-        public boolean started;
+        boolean started;
 
         @Override
         public void start( long max )

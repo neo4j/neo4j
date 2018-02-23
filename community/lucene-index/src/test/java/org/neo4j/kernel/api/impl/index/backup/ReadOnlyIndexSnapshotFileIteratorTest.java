@@ -47,29 +47,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ReadOnlyIndexSnapshotFileIteratorTest
+class ReadOnlyIndexSnapshotFileIteratorTest
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
-    protected File indexDir;
-    protected Directory dir;
+    File indexDir;
+    Directory dir;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         indexDir = testDir.directory();
         dir = DirectoryFactory.PERSISTENT.open( indexDir );
     }
 
     @AfterEach
-    public void tearDown() throws IOException
+    void tearDown() throws IOException
     {
         IOUtils.closeAll( dir );
     }
 
     @Test
-    public void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException
+    void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException
     {
         prepareIndex();
 
@@ -84,7 +84,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
+    void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
     {
         try ( ResourceIterator<File> snapshot = makeSnapshot() )
         {
@@ -100,7 +100,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
         }
     }
 
-    protected ResourceIterator<File> makeSnapshot() throws IOException
+    ResourceIterator<File> makeSnapshot() throws IOException
     {
         return LuceneIndexSnapshots.forIndex( indexDir, dir );
     }

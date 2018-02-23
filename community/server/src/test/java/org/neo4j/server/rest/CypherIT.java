@@ -21,7 +21,6 @@ package org.neo4j.server.rest;
 
 import org.junit.Test;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
@@ -326,7 +325,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
                 anyOf( containsString( "[ \"a\", \"b\", \"c\" ]" ), containsString( "[\"a\",\"b\",\"c\"]" ) ) );
     }
 
-    void setProperty( String nodeName, String propertyName, Object propertyValue )
+    private void setProperty( String nodeName, String propertyName, Object propertyValue )
     {
         Node i = this.getNode( nodeName );
         GraphDatabaseService db = i.getGraphDatabase();

@@ -33,7 +33,7 @@ public class ThrowingValueWriterTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldBeAbleToThrowFromValueWriter() throws TestException
+    void shouldBeAbleToThrowFromValueWriter() throws TestException
     {
         // Given
         Value value = Values.of( "This is a value" );

@@ -30,7 +30,7 @@ import org.neo4j.cluster.com.message.MessageType;
 public class RandomDropNetworkFailureLatencyStrategy
     implements NetworkLatencyStrategy
 {
-    Random random;
+    private Random random;
     private double rate;
 
     /**
@@ -44,7 +44,7 @@ public class RandomDropNetworkFailureLatencyStrategy
         this.random = new Random( seed );
     }
 
-    public void setRate( double rate )
+    private void setRate( double rate )
     {
         this.rate = rate;
     }

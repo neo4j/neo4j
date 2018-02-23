@@ -35,13 +35,13 @@ import org.neo4j.com.BlockLogReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestBlockLogBuffer
+class TestBlockLogBuffer
 {
     @Test
-    public void onlyOneNonFullBlock()
+    void onlyOneNonFullBlock()
     {
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -75,7 +75,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void readSmallPortions() throws IOException
+    void readSmallPortions() throws IOException
     {
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -106,7 +106,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void readOnlyOneNonFullBlock() throws IOException
+    void readOnlyOneNonFullBlock() throws IOException
     {
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -142,7 +142,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void onlyOneFullBlock()
+    void onlyOneFullBlock()
     {
         byte[] bytes = new byte[256];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -163,7 +163,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void readOnlyOneFullBlock() throws Exception
+    void readOnlyOneFullBlock() throws Exception
     {
         byte[] bytes = new byte[256];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -186,7 +186,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void canWriteLargestAtomAfterFillingBuffer()
+    void canWriteLargestAtomAfterFillingBuffer()
     {
         byte[] bytes = new byte[300];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -211,7 +211,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void canWriteReallyLargeByteArray()
+    void canWriteReallyLargeByteArray()
     {
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -246,7 +246,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void canReaderReallyLargeByteArray()
+    void canReaderReallyLargeByteArray()
     {
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );

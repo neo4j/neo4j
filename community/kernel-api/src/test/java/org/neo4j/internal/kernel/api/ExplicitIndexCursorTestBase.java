@@ -49,7 +49,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     }
 
     @Test
-    public void shouldFindNodeByLookup() throws Exception
+    void shouldFindNodeByLookup() throws Exception
     {
         // given
         try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
@@ -70,7 +70,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     }
 
     @Test
-    public void shouldFindNodeByQuery() throws Exception
+    void shouldFindNodeByQuery() throws Exception
     {
         // given
         try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
@@ -104,7 +104,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     }
 
     @Test
-    public void shouldFindRelationshipByLookup() throws Exception
+    void shouldFindRelationshipByLookup() throws Exception
     {
         // given
         try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();
@@ -131,7 +131,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     }
 
     @Test
-    public void shouldFindRelationshipByQuery() throws Exception
+    void shouldFindRelationshipByQuery() throws Exception
     {
         // given
         try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();

@@ -35,13 +35,13 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
  * This test ensures that lazy properties
  */
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class TestReferenceDangling
+class TestReferenceDangling
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     @Test
-    public void testPropertyStoreReferencesOnRead() throws Throwable
+    void testPropertyStoreReferencesOnRead() throws Throwable
     {
         // Given
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
@@ -61,7 +61,7 @@ public class TestReferenceDangling
     }
 
     @Test
-    public void testPropertyStoreReferencesOnWrite() throws Throwable
+    void testPropertyStoreReferencesOnWrite() throws Throwable
     {
         // Given
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();

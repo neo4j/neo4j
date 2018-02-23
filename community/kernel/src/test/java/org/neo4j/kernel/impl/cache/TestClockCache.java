@@ -27,15 +27,15 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TestClockCache
+class TestClockCache
 {
     @Test
-    public void testCreate()
+    void testCreate()
     {
         try
         {
@@ -104,7 +104,7 @@ public class TestClockCache
     }
 
     @Test
-    public void testSimple()
+    void testSimple()
     {
         ClockCacheTest<Integer, String> cache = new ClockCacheTest<>( "TestCache", 3 );
         Map<String, Integer> valueToKey = new HashMap<>();
@@ -180,7 +180,7 @@ public class TestClockCache
     }
 
     @Test
-    public void shouldUpdateSizeWhenRemoving()
+    void shouldUpdateSizeWhenRemoving()
     {
         ClockCache<String, Integer> cache = new ClockCache<>( "foo", 3 );
         cache.put( "bar", 42 );

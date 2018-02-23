@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -51,10 +51,8 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import static java.util.Arrays.asList;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -72,13 +70,13 @@ public class IndexStatisticsIT
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         setupDb( fsRule.get() );
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         try
         {
@@ -91,7 +89,7 @@ public class IndexStatisticsIT
     }
 
     @Test
-    public void shouldRecoverIndexCountsBySamplingThemOnStartup()
+    void shouldRecoverIndexCountsBySamplingThemOnStartup()
     {
         // given some aliens in a database
         createAliens();
@@ -221,7 +219,7 @@ public class IndexStatisticsIT
                                            .newGraphDatabase();
     }
 
-    public void restart()
+    private void restart()
     {
         db.shutdown();
         setupDb( fsRule.get().snapshot() );

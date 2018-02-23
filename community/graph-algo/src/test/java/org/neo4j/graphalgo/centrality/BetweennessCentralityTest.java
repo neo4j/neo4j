@@ -38,24 +38,22 @@ import org.neo4j.graphdb.Relationship;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BetweennessCentralityTest extends Neo4jAlgoTestCase
+class BetweennessCentralityTest extends Neo4jAlgoTestCase
 {
-    protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
+    private SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
                 new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1, MyRelTypes.R2, MyRelTypes.R3 );
     }
 
-    protected void assertCentrality(
-        BetweennessCentrality<Double> betweennessCentrality, String nodeId,
-        Double value )
+    private void assertCentrality( BetweennessCentrality<Double> betweennessCentrality, String nodeId, Double value )
     {
         assertTrue( betweennessCentrality
             .getCentrality( graph.getNode( nodeId ) ).equals( value ) );
     }
 
     @Test
-    public void testBox()
+    void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
         BetweennessCentrality<Double> betweennessCentrality =
@@ -68,7 +66,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testPlusShape()
+    void testPlusShape()
     {
         graph.makeEdgeChain( "a,b,c" );
         graph.setCurrentRelType( MyRelTypes.R3 );
@@ -84,7 +82,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testChain()
+    void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
         BetweennessCentrality<Double> betweennessCentrality =
@@ -98,7 +96,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testXlike()
+    void testXlike()
     {
         graph.makeEdgeChain( "a,c,a");
         graph.makeEdgeChain( "b,c,b");
@@ -118,7 +116,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDependencyUpdating()
+    void testDependencyUpdating()
     {
         graph.makeEdgeChain( "a,b,d,e,f,h" );
         graph.makeEdgeChain( "a,c,d" );
@@ -134,7 +132,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
             super( singleSourceShortestPath, nodeSet );
         }
 
-        public void test()
+        void test()
         {
             // avoid starting the real calculation by mistake
             this.doneCalculation = true;

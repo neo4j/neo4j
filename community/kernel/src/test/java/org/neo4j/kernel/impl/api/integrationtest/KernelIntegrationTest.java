@@ -28,8 +28,8 @@ import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -55,7 +55,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 public abstract class KernelIntegrationTest
 {
     @Resource
-    public TestDirectory testDir;
+    TestDirectory testDir;
     @Rule
     protected final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
@@ -163,7 +163,7 @@ public abstract class KernelIntegrationTest
         stopDb();
     }
 
-    protected void startDb()
+    private void startDb()
     {
         db = (GraphDatabaseAPI) createGraphDatabase();
         kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
@@ -172,7 +172,7 @@ public abstract class KernelIntegrationTest
         dbmsOperations = db.getDependencyResolver().resolveDependency( DbmsOperations.class );
     }
 
-    protected GraphDatabaseService createGraphDatabase()
+    GraphDatabaseService createGraphDatabase()
     {
         GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
                 .newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
@@ -199,7 +199,7 @@ public abstract class KernelIntegrationTest
         db.shutdown();
     }
 
-    protected void restartDb() throws TransactionFailureException
+    void restartDb() throws TransactionFailureException
     {
         stopDb();
         startDb();

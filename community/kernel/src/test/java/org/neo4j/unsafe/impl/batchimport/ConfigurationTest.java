@@ -25,13 +25,12 @@ import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.valueOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -40,10 +39,10 @@ import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
 
-public class ConfigurationTest
+class ConfigurationTest
 {
     @Test
-    public void shouldOverrideBigPageCacheMemorySettingContainingUnit()
+    void shouldOverrideBigPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         Config dbConfig = Config.defaults( pagecache_memory, "2g" );
@@ -57,7 +56,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
+    void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         long overridden = parseLongWithUnit( "10m" );
@@ -72,7 +71,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldParseDefaultPageCacheMemorySetting()
+    void shouldParseDefaultPageCacheMemorySetting()
     {
         // GIVEN
         Configuration config = Configuration.DEFAULT;
@@ -86,7 +85,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldCalculateCorrectMaxMemorySetting() throws Exception
+    void shouldCalculateCorrectMaxMemorySetting() throws Exception
     {
         long totalMachineMemory = OsBeanUtil.getTotalPhysicalMemory();
         assumeTrue( totalMachineMemory != VALUE_UNAVAILABLE );

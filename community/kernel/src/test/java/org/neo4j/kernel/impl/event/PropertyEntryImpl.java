@@ -91,7 +91,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         assertNull( value() );
     }
 
-    void basicCompareTo( PropertyEntry<T> entry )
+    private void basicCompareTo( PropertyEntry<T> entry )
     {
         assertEquals( entry.entity(), entity() );
         assertEquals( entry.key(), key() );
@@ -106,7 +106,8 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
                 + valueBeforeTx + "]";
     }
 
-    public static <T extends PropertyContainer> void assertEqualsMaybeNull( Object o1, Object o2, T entity, String key )
+    private static <T extends PropertyContainer> void assertEqualsMaybeNull( Object o1, Object o2, T entity,
+            String key )
     {
         String entityDescription = "For " + entity + " and " + key;
         if ( o1 == null || o2 == null )

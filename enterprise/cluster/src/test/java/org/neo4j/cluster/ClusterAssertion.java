@@ -47,7 +47,7 @@ public class ClusterAssertion
         return result;
     }
 
-    protected void copy( ClusterAssertion assertion )
+    private void copy( ClusterAssertion assertion )
     {
         this.in = assertion.in;
         this.out = assertion.out;
@@ -152,7 +152,7 @@ public class ClusterAssertion
             this.uri = uri;
         }
 
-        protected void copy( InstanceAssertion instance )
+        void copy( InstanceAssertion instance )
         {
             this.serverId = instance.serverId;
             this.uri = instance.uri;

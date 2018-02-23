@@ -35,13 +35,13 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( SuppressOutputExtension.class )
-public class LonelyProcessingStepTest
+class LonelyProcessingStepTest
 {
     @Resource
     public SuppressOutput mute;
 
     @Test
-    public void issuePanicBeforeCompletionOnError()
+    void issuePanicBeforeCompletionOnError()
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
         BinaryLatch endOfUpstreamLatch = new BinaryLatch();
@@ -86,7 +86,7 @@ public class LonelyProcessingStepTest
             endOfUpstreamLatch.release();
         }
 
-        public boolean isPanicOnEndUpstream()
+        boolean isPanicOnEndUpstream()
         {
             return panicOnEndUpstream;
         }

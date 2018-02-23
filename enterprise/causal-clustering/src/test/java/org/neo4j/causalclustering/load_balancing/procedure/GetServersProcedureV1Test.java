@@ -458,7 +458,7 @@ public class GetServersProcedureV1Test
                 advertisedSocketAddresses.add( address );
             }
 
-            public ClusterView build()
+            ClusterView build()
             {
                 return new ClusterView( view );
             }

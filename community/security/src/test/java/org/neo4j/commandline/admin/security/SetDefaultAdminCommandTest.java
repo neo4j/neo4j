@@ -71,10 +71,10 @@ public class SetDefaultAdminCommandTest
     @Rule
     public ExpectedException expect = ExpectedException.none();
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @BeforeEach
-    public void setup() throws IOException, InvalidArgumentsException
+    void setup() throws IOException, InvalidArgumentsException
     {
         OutsideWorld mock = mock( OutsideWorld.class );
         when( mock.fileSystem() ).thenReturn( fileSystem );
@@ -92,21 +92,21 @@ public class SetDefaultAdminCommandTest
     }
 
     @Test
-    public void shouldFailForNoArguments()
+    void shouldFailForNoArguments()
     {
         assertException( () -> setDefaultAdmin.execute( new String[0] ), IncorrectUsage.class,
                 "not enough arguments" );
     }
 
     @Test
-    public void shouldFailForTooManyArguments()
+    void shouldFailForTooManyArguments()
     {
         String[] arguments = {"", "123", "321"};
         assertException( () -> setDefaultAdmin.execute( arguments ), IncorrectUsage.class, "unrecognized arguments: '123 321'" );
     }
 
     @Test
-    public void shouldSetDefaultAdmin() throws Throwable
+    void shouldSetDefaultAdmin() throws Throwable
     {
         // Given
         assertFalse( fileSystem.fileExists( adminIniFile ) );
@@ -120,7 +120,7 @@ public class SetDefaultAdminCommandTest
     }
 
     @Test
-    public void shouldNotSetDefaultAdminForNonExistentUser() throws Throwable
+    void shouldNotSetDefaultAdminForNonExistentUser() throws Throwable
     {
         // Then
         expect.expect( CommandFailed.class );
@@ -132,7 +132,7 @@ public class SetDefaultAdminCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

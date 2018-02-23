@@ -38,10 +38,10 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-public class AuthTokenValuesWriterTest
+class AuthTokenValuesWriterTest
 {
     @Test
-    public void shouldFailToWriteNode()
+    void shouldFailToWriteNode()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
 
@@ -58,7 +58,7 @@ public class AuthTokenValuesWriterTest
     }
 
     @Test
-    public void shouldFailToWriteRelationship()
+    void shouldFailToWriteRelationship()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
 
@@ -77,7 +77,7 @@ public class AuthTokenValuesWriterTest
     }
 
     @Test
-    public void shouldFailToWritePoint()
+    void shouldFailToWritePoint()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
         PointValue value = pointValue( CoordinateReferenceSystem.WGS84, new double[42] );
@@ -93,7 +93,7 @@ public class AuthTokenValuesWriterTest
     }
 
     @Test
-    public void shouldConvertStringValueToString()
+    void shouldConvertStringValueToString()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
         TextValue value = stringValue( "Hello" );
@@ -102,7 +102,7 @@ public class AuthTokenValuesWriterTest
     }
 
     @Test
-    public void shouldConvertLongValueToLong()
+    void shouldConvertLongValueToLong()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
         LongValue value = longValue( 42 );
@@ -111,7 +111,7 @@ public class AuthTokenValuesWriterTest
     }
 
     @Test
-    public void shouldConvertMultipleValues()
+    void shouldConvertMultipleValues()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
 

@@ -63,10 +63,10 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class RecoveryCleanupIT
+class RecoveryCleanupIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseService db;
     private File storeDir;
@@ -77,21 +77,21 @@ public class RecoveryCleanupIT
     private Map<Setting,String> testSpecificConfig = new HashMap<>();
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         storeDir = testDirectory.graphDbDir();
         testSpecificConfig.clear();
     }
 
     @AfterEach
-    public void tearDown() throws InterruptedException
+    void tearDown() throws InterruptedException
     {
         executor.shutdown();
         executor.awaitTermination( 10, TimeUnit.SECONDS );
     }
 
     @Test
-    public void recoveryCleanupShouldBlockCheckpoint() throws Throwable
+    void recoveryCleanupShouldBlockCheckpoint() throws Throwable
     {
         // GIVEN
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -125,7 +125,7 @@ public class RecoveryCleanupIT
     }
 
     @Test
-    public void scanStoreMustLogCrashPointerCleanupDuringRecovery() throws Exception
+    void scanStoreMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         // given
         dirtyDatabase();
@@ -141,7 +141,7 @@ public class RecoveryCleanupIT
     }
 
     @Test
-    public void nativeIndexMustLogCrashPointerCleanupDuringRecovery() throws Exception
+    void nativeIndexMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         // given
         setTestConfig( GraphDatabaseSettings.enable_native_schema_index, "true" );

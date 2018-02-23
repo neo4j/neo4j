@@ -35,18 +35,18 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RedirectToBrowserTestIT extends ExclusiveServerTestBase
+class RedirectToBrowserTestIT extends ExclusiveServerTestBase
 {
     private static NeoServer server;
 
     @BeforeAll
-    public static void startServer() throws IOException
+    static void startServer() throws IOException
     {
         server = ServerHelper.createNonPersistentServer();
     }
 
     @AfterAll
-    public static void stopServer()
+    static void stopServer()
     {
         if ( server != null )
         {
@@ -55,7 +55,7 @@ public class RedirectToBrowserTestIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldRedirectToBrowser() throws Exception
+    void shouldRedirectToBrowser() throws Exception
     {
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
@@ -68,7 +68,7 @@ public class RedirectToBrowserTestIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception
+    void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception
     {
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );

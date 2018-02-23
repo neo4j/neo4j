@@ -33,13 +33,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class FirstStartupIT
+class FirstStartupIT
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Test
-    public void shouldBeEmptyWhenFirstStarted()
+    void shouldBeEmptyWhenFirstStarted()
     {
         // When
         File storeDir = testDir.absolutePath();

@@ -48,14 +48,14 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ReadReplica implements ClusterMember
 {
-    protected final Map<String,String> config = stringMap();
-    protected final DiscoveryServiceFactory discoveryServiceFactory;
+    private final Map<String,String> config = stringMap();
+    private final DiscoveryServiceFactory discoveryServiceFactory;
     private final File neo4jHome;
-    protected final File storeDir;
+    private final File storeDir;
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
-    protected ReadReplicaGraphDatabase database;
-    protected Monitors monitors;
+    private ReadReplicaGraphDatabase database;
+    private Monitors monitors;
     private final ThreadGroup threadGroup;
 
     public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,

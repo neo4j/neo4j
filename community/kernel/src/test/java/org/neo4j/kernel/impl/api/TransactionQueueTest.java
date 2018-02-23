@@ -32,10 +32,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class TransactionQueueTest
+class TransactionQueueTest
 {
     @Test
-    public void shouldEmptyIfTooMany() throws Exception
+    void shouldEmptyIfTooMany() throws Exception
     {
         // GIVEN
         Applier applier = mock( Applier.class );
@@ -66,7 +66,7 @@ public class TransactionQueueTest
     }
 
     @Test
-    public void shouldLinkTogetherTransactions() throws Exception
+    void shouldLinkTogetherTransactions() throws Exception
     {
         // GIVEN
         Applier applier = mock( Applier.class );

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -39,7 +38,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFo
 public class BaseHighLimitRecordFormatTest
 {
     @Test
-    public void mustNotCheckForOutOfBoundsWhenReadingSingleRecord() throws Exception
+    void mustNotCheckForOutOfBoundsWhenReadingSingleRecord() throws Exception
     {
         MyRecordFormat format = new MyRecordFormat();
         StubPageCursor cursor = new StubPageCursor( 0, 3 );
@@ -48,7 +47,7 @@ public class BaseHighLimitRecordFormatTest
     }
 
     @Test
-    public void mustCheckForOutOfBoundsWhenReadingDoubleRecord() throws Exception
+    void mustCheckForOutOfBoundsWhenReadingDoubleRecord() throws Exception
     {
         MyRecordFormat format = new MyRecordFormat();
         StubPageCursor cursor = new StubPageCursor( 0, 4 );
@@ -67,7 +66,7 @@ public class BaseHighLimitRecordFormatTest
     }
 
     @Test
-    public void mustNotCheckForOutOfBoundsWhenWritingSingleRecord() throws Exception
+    void mustNotCheckForOutOfBoundsWhenWritingSingleRecord() throws Exception
     {
         MyRecordFormat format = new MyRecordFormat();
         StubPageCursor cursor = new StubPageCursor( 0, 3 );
@@ -78,7 +77,7 @@ public class BaseHighLimitRecordFormatTest
     }
 
     @Test
-    public void mustCheckForOutOfBoundsWhenWritingDoubleRecord() throws Exception
+    void mustCheckForOutOfBoundsWhenWritingDoubleRecord() throws Exception
     {
         MyRecordFormat format = new MyRecordFormat();
         StubPageCursor cursor = new StubPageCursor( 0, 5 );
@@ -95,7 +94,7 @@ public class BaseHighLimitRecordFormatTest
     {
         private Queue<Integer> shortsPerRecord = new ConcurrentLinkedQueue<>();
 
-        protected MyRecordFormat()
+        MyRecordFormat()
         {
             super( header -> 4, 4, HighLimitFormatSettings.DEFAULT_MAXIMUM_BITS_PER_ID );
         }
@@ -160,9 +159,9 @@ public class BaseHighLimitRecordFormatTest
 
     private class MyRecord extends AbstractBaseRecord
     {
-        public short value;
+        short value;
 
-        protected MyRecord( long id )
+        MyRecord( long id )
         {
             super( id );
         }

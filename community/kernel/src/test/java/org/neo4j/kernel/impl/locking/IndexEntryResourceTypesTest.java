@@ -35,22 +35,22 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
-public class IndexEntryResourceTypesTest
+class IndexEntryResourceTypesTest
 {
 
-    public static final int labelId = 1;
-    public static final int propertyId = 2;
-    public static final Value value = Values.of( "value" );
+    private static final int labelId = 1;
+    private static final int propertyId = 2;
+    private static final Value value = Values.of( "value" );
 
     @Test
-    public void shouldProduceBackwardsCompatibleId()
+    void shouldProduceBackwardsCompatibleId()
     {
         long id = ResourceTypes.indexEntryResourceId( labelId, exact( propertyId, value ) );
         assertThat( id, equalTo( 155667838465249649L ) );
     }
 
     @Test
-    public void shouldDifferentiateBetweenIndexes()
+    void shouldDifferentiateBetweenIndexes()
     {
         ExactPredicate pred1 = exact( 1, "value" );
         ExactPredicate pred2 = exact( 1, "value2" );
@@ -72,13 +72,13 @@ public class IndexEntryResourceTypesTest
     }
 
     @Test
-    public void mustBeAbleToHashAllTypesWith220HashFunction()
+    void mustBeAbleToHashAllTypesWith220HashFunction()
     {
         verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_2_2_0 );
     }
 
     @Test
-    public void mustBeAbleToHashAllTypesWith4xHashFunction()
+    void mustBeAbleToHashAllTypesWith4xHashFunction()
     {
         verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_4_x );
     }

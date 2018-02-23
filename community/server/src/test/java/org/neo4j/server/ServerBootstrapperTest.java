@@ -47,16 +47,16 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 @ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
-public class ServerBootstrapperTest
+class ServerBootstrapperTest
 {
     @Resource
-    public SuppressOutput suppress;
+    private SuppressOutput suppress;
 
     @Resource
-    public TestDirectory homeDir;
+    private TestDirectory homeDir;
 
     @Test
-    public void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception
+    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception
     {
         // given
         ServerBootstrapper serverBootstrapper = new ServerBootstrapper()

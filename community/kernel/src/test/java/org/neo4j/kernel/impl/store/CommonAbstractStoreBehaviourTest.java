@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -83,7 +83,7 @@ public class CommonAbstractStoreBehaviourTest
     private Config config = CONFIG;
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( store != null )
         {
@@ -151,7 +151,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() throws Exception
+    void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() throws Exception
     {
         // 16-byte header will overflow an 8-byte page size
         PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config();
@@ -161,7 +161,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow() throws Exception
+    void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow() throws Exception
     {
         MyStore first = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ), 8 );
         first.initialise( true );
@@ -174,72 +174,72 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void getRawRecordDataMustNotThrowOnPageOverflow() throws Exception
+    void getRawRecordDataMustNotThrowOnPageOverflow() throws Exception
     {
         prepareStoreForOutOfBoundsAccess();
         store.getRawRecordData( 5 );
     }
 
     @Test
-    public void isInUseMustThrowOnPageOverflow() throws Exception
+    void isInUseMustThrowOnPageOverflow() throws Exception
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.isInUse( 5 ) );
     }
 
     @Test
-    public void isInUseMustThrowOnCursorError() throws Exception
+    void isInUseMustThrowOnCursorError() throws Exception
     {
         verifyExceptionOnCursorError( () -> store.isInUse( 5 ) );
     }
 
     @Test
-    public void getRecordMustThrowOnPageOverflow() throws Exception
+    void getRecordMustThrowOnPageOverflow() throws Exception
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
 
     @Test
-    public void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode()
+    void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
         store.getRecord( 5, new IntRecord( 5 ), CHECK );
     }
 
     @Test
-    public void getRecordMustNotThrowOnPageOverflowWithForceLoadMode()
+    void getRecordMustNotThrowOnPageOverflowWithForceLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
     }
 
     @Test
-    public void updateRecordMustThrowOnPageOverflow() throws Exception
+    void updateRecordMustThrowOnPageOverflow() throws Exception
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.updateRecord( new IntRecord( 5 ) ) );
     }
 
     @Test
-    public void getRecordMustThrowOnCursorError() throws Exception
+    void getRecordMustThrowOnCursorError() throws Exception
     {
         verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
 
     @Test
-    public void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode()
+    void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode()
     {
         prepareStoreForCursorError();
         store.getRecord( 5, new IntRecord( 5 ), CHECK );
     }
 
     @Test
-    public void getRecordMustNotThrowOnCursorErrorWithForceLoadMode()
+    void getRecordMustNotThrowOnCursorErrorWithForceLoadMode()
     {
         prepareStoreForCursorError();
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
     }
 
     @Test
-    public void recordCursorNextMustThrowOnPageOverflow() throws Exception
+    void recordCursorNextMustThrowOnPageOverflow() throws Exception
     {
         verifyExceptionOnOutOfBoundsAccess( () ->
         {
@@ -251,7 +251,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void pageCursorErrorsMustNotLingerInRecordCursor()
+    void pageCursorErrorsMustNotLingerInRecordCursor()
     {
         createStore();
         RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 1 ) ).acquire( 1, FORCE );
@@ -263,7 +263,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void shouldReadTheCorrectRecordWhenGivenAnExplicitIdAndNotUseTheCurrentIdPointer()
+    void shouldReadTheCorrectRecordWhenGivenAnExplicitIdAndNotUseTheCurrentIdPointer()
     {
         createStore();
         IntRecord record42 = new IntRecord( 42 );
@@ -289,7 +289,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void shouldJumpAroundPageIds()
+    void shouldJumpAroundPageIds()
     {
         createStore();
         IntRecord record42 = new IntRecord( 42 );
@@ -317,7 +317,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void rebuildIdGeneratorSlowMustThrowOnPageOverflow() throws Exception
+    void rebuildIdGeneratorSlowMustThrowOnPageOverflow() throws Exception
     {
         config.augment( CommonAbstractStore.Configuration.rebuild_idgenerators_fast, "false" );
         createStore();
@@ -330,7 +330,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void scanForHighIdMustThrowOnPageOverflow() throws Exception
+    void scanForHighIdMustThrowOnPageOverflow() throws Exception
     {
         createStore();
         store.setStoreNotOk( new RuntimeException() );
@@ -342,7 +342,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void mustFinishInitialisationOfIncompleteStoreHeader() throws IOException
+    void mustFinishInitialisationOfIncompleteStoreHeader() throws IOException
     {
         createStore();
         int headerSizeInRecords = store.getNumberOfReservedLowIds();
@@ -363,7 +363,7 @@ public class CommonAbstractStoreBehaviourTest
 
     private static class IntRecord extends AbstractBaseRecord
     {
-        public int value;
+        int value;
 
         IntRecord( long id )
         {

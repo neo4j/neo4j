@@ -27,13 +27,13 @@ import java.io.IOException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 
-public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshotFileIteratorTest
+class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshotFileIteratorTest
 {
 
     private IndexWriter indexWriter;
 
     @Override
-    public void tearDown() throws IOException
+    void tearDown() throws IOException
     {
         if ( indexWriter != null )
         {
@@ -43,7 +43,7 @@ public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshot
     }
 
     @Override
-    protected ResourceIterator<File> makeSnapshot() throws IOException
+    ResourceIterator<File> makeSnapshot() throws IOException
     {
         indexWriter = new IndexWriter( dir, IndexWriterConfigs.standard() );
         return LuceneIndexSnapshots.forIndex( indexDir, indexWriter );

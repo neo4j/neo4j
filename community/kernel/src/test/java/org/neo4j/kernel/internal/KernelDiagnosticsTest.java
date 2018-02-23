@@ -27,10 +27,10 @@ import java.io.File;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.AssertableLogProvider;
 
-public class KernelDiagnosticsTest
+class KernelDiagnosticsTest
 {
     @Test
-    public void shouldPrintDiskUsage()
+    void shouldPrintDiskUsage()
     {
         File storeDir = Mockito.mock( File.class );
         Mockito.when( storeDir.getTotalSpace() ).thenReturn( 100L );
@@ -44,7 +44,7 @@ public class KernelDiagnosticsTest
     }
 
     @Test
-    public void shouldCountFileSizeRecursively()
+    void shouldCountFileSizeRecursively()
     {
         // Mock a file structure:
         //   storeDir/indexDir/indexFile (1 kB)

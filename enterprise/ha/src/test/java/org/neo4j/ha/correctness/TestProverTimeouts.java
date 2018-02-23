@@ -28,11 +28,11 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestProverTimeouts
+class TestProverTimeouts
 {
 
     @Test
-    public void equalsShouldBeLogicalAndNotExact() throws Exception
+    void equalsShouldBeLogicalAndNotExact() throws Exception
     {
         // Given
         ProverTimeouts timeouts1 = new ProverTimeouts( new URI( "http://asd" ) );

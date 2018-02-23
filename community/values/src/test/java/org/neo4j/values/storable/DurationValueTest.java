@@ -19,14 +19,13 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.LocalDate;
+import org.junit.jupiter.api.Test;
+
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.collection.Pair;
 
@@ -59,10 +58,10 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class DurationValueTest
+class DurationValueTest
 {
     @Test
-    public void shouldNormalizeNanoseconds()
+    void shouldNormalizeNanoseconds()
     {
         // given
         DurationValue evenPos = duration( 0, 0, 0, 1_000_000_000 );
@@ -83,7 +82,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldNormalizeSecondsAndNanos()
+    void shouldNormalizeSecondsAndNanos()
     {
         // given
         DurationValue pos = duration( 0, 0, 5, -1_400_000_000 );
@@ -100,7 +99,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldFormatAsPrettyString()
+    void shouldFormatAsPrettyString()
     {
         assertEquals( "P1Y", prettyPrint( 12, 0, 0, 0 ) );
         assertEquals( "P5M", prettyPrint( 5, 0, 0, 0 ) );
@@ -120,7 +119,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldParseDuration()
+    void shouldParseDuration()
     {
         assertEquals(
                 duration( 14, 25, 18367, 800_000_000 ),
@@ -179,14 +178,14 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldParseDateBasedDuration()
+    void shouldParseDateBasedDuration()
     {
         assertEquals( duration( 14, 17, 45252, 123400000 ), parse( "P0001-02-17T12:34:12.1234" ) );
         assertEquals( duration( 14, 17, 45252, 123400000 ), parse( "P00010217T123412.1234" ) );
     }
 
     @Test
-    public void shouldNotParseInvalidDurationStrings()
+    void shouldNotParseInvalidDurationStrings()
     {
         assertNotParsable( "" );
         assertNotParsable( "P" );
@@ -225,7 +224,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldWriteDuration()
+    void shouldWriteDuration()
     {
         // given
         for ( DurationValue duration : new DurationValue[] {
@@ -255,7 +254,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldAddToLocalDate()
+    void shouldAddToLocalDate()
     {
         assertEquals( of( 2017, 12, 5 ), of( 2017, 12, 4 ).plus( parse( "PT24H" ) ), "seconds" );
         assertEquals( of( 2017, 12, 3 ), of( 2017, 12, 4 ).minus( parse( "PT24H" ) ), "seconds" );
@@ -266,7 +265,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldHaveSensibleHashCode()
+    void shouldHaveSensibleHashCode()
     {
         assertEquals( 0, duration( 0, 0, 0, 0 ).computeHash() );
 
@@ -324,7 +323,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldMultiplyDurationByInteger()
+    void shouldMultiplyDurationByInteger()
     {
         assertEquals( duration( 2, 0, 0, 0 ), duration( 1, 0, 0, 0 ).mul( longValue( 2 ) ) );
         assertEquals( duration( 0, 2, 0, 0 ), duration( 0, 1, 0, 0 ).mul( longValue( 2 ) ) );
@@ -341,7 +340,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldMultiplyDurationByFloat()
+    void shouldMultiplyDurationByFloat()
     {
         assertEquals(
                 duration( 0, 0, 0, 500_000_000 ),
@@ -351,7 +350,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldDivideDuration()
+    void shouldDivideDuration()
     {
         assertEquals(
                 duration( 0, 0, 0, 500_000_000 ),
@@ -361,7 +360,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDates()
+    void shouldComputeDurationBetweenDates()
     {
         assertEquals( duration( 22, 23, 0, 0 ), durationBetween( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 0, 693, 0, 0 ), between(DAYS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
@@ -371,7 +370,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenLocalTimes()
+    void shouldComputeDurationBetweenLocalTimes()
     {
         assertEquals( duration( 0, 0, 10623, 0 ), durationBetween(
                 localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
@@ -384,7 +383,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenTimes()
+    void shouldComputeDurationBetweenTimes()
     {
         assertEquals( duration( 0, 0, 140223, 0 ), durationBetween(
                 time( 11, 30, 52, 0, ofHours( 18 ) ), time( 14, 27, 55, 0, ofHours( -18 ) ) ) );
@@ -406,7 +405,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDateAndTime()
+    void shouldComputeDurationBetweenDateAndTime()
     {
         assertEquals( parse( "PT14H32M11S" ), durationBetween( date( 2017, 12, 21 ), localTime( 14, 32, 11, 0 ) ) );
         assertEquals( parse( "-PT14H32M11S" ), durationBetween( localTime( 14, 32, 11, 0 ), date( 2017, 12, 21 ) ) );
@@ -419,7 +418,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDateTimeAndTime()
+    void shouldComputeDurationBetweenDateTimeAndTime()
     {
         assertEquals( parse( "PT8H-20M" ), durationBetween(
                 datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ), localTime( 14, 32, 11, 0 ) ) );
@@ -436,7 +435,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDateTimeAndDateTime()
+    void shouldComputeDurationBetweenDateTimeAndDateTime()
     {
         assertEquals( parse( "PT1H" ), durationBetween(
                 datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ),
@@ -450,7 +449,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldGetSameInstantWhenAddingDurationBetweenToInstant()
+    void shouldGetSameInstantWhenAddingDurationBetweenToInstant()
     {
         // given
         @SuppressWarnings( "unchecked" )
@@ -487,14 +486,14 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldEqualItself()
+    void shouldEqualItself()
     {
         assertEqual( duration( 40, 3, 13, 37 ), duration( 40, 3, 13, 37 ) );
         assertEqual( duration( 40, 3, 14, 37 ), duration( 40, 3, 13, 1_000_000_037 ) );
     }
 
     @Test
-    public void shouldNotEqualOther()
+    void shouldNotEqualOther()
     {
         assertNotEqual( duration( 40, 3, 13, 37 ), duration( 40, 3, 14, 37 ) );
 

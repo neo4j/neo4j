@@ -70,15 +70,15 @@ import static org.neo4j.test.assertion.Assert.assertException;
 @EnableRuleMigrationSupport
 public class LdapRealmTest
 {
-    Config config = mock( Config.class );
-    SecurityLog securityLog = mock( SecurityLog.class );
-    SecureHasher secureHasher = new SecureHasher();
+    private Config config = mock( Config.class );
+    private SecurityLog securityLog = mock( SecurityLog.class );
+    private SecureHasher secureHasher = new SecureHasher();
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         // Some dummy settings to pass validation
         when( config.get( SecuritySettings.ldap_authorization_user_search_base ) )
@@ -96,7 +96,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToBeNull()
+    void groupToRoleMappingShouldBeAbleToBeNull()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( null );
 
@@ -104,7 +104,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToBeEmpty()
+    void groupToRoleMappingShouldBeAbleToBeEmpty()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "" );
 
@@ -112,7 +112,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToHaveMultipleRoles()
+    void groupToRoleMappingShouldBeAbleToHaveMultipleRoles()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "group=role1,role2,role3" );
@@ -125,7 +125,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToHaveMultipleGroups()
+    void groupToRoleMappingShouldBeAbleToHaveMultipleGroups()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "group1=role1;group2=role2,role3;group3=role4" );
@@ -141,7 +141,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToHaveQuotedKeysAndWhitespaces()
+    void groupToRoleMappingShouldBeAbleToHaveQuotedKeysAndWhitespaces()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "'group1' = role1;\t \"group2\"\n=\t role2,role3 ;  gr oup3= role4\n ;'group4 '= ; g =r" );
@@ -159,7 +159,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToHaveTrailingSemicolons()
+    void groupToRoleMappingShouldBeAbleToHaveTrailingSemicolons()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "group=role;;" );
 
@@ -170,7 +170,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToHaveTrailingCommas()
+    void groupToRoleMappingShouldBeAbleToHaveTrailingCommas()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "group=role1,role2,role3,,," );
@@ -185,7 +185,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldBeAbleToHaveNoRoles()
+    void groupToRoleMappingShouldBeAbleToHaveNoRoles()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "group=," );
 
@@ -196,7 +196,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldNotBeAbleToHaveInvalidFormat()
+    void groupToRoleMappingShouldNotBeAbleToHaveInvalidFormat()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "group" );
 
@@ -207,7 +207,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupToRoleMappingShouldNotBeAbleToHaveEmptyGroupName()
+    void groupToRoleMappingShouldNotBeAbleToHaveEmptyGroupName()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "=role" );
 
@@ -218,7 +218,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void groupComparisonShouldBeCaseInsensitive()
+    void groupComparisonShouldBeCaseInsensitive()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "GrouP=role1,role2,role3" );
@@ -231,7 +231,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldWarnAboutUserSearchFilterWithoutArgument() throws Exception
+    void shouldWarnAboutUserSearchFilterWithoutArgument() throws Exception
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "" );
 
@@ -246,7 +246,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldWarnAboutUserSearchBaseBeingEmpty() throws Exception
+    void shouldWarnAboutUserSearchBaseBeingEmpty() throws Exception
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_base ) ).thenReturn( "" );
 
@@ -262,7 +262,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldWarnAboutGroupMembershipsBeingEmpty() throws Exception
+    void shouldWarnAboutGroupMembershipsBeingEmpty() throws Exception
     {
         when( config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names ) )
                 .thenReturn( Collections.emptyList() );
@@ -280,7 +280,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldWarnAboutAmbiguousUserSearch() throws NamingException
+    void shouldWarnAboutAmbiguousUserSearch() throws NamingException
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "{0}" );
 
@@ -299,7 +299,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldAllowMultipleGroupMembershipAttributes() throws NamingException
+    void shouldAllowMultipleGroupMembershipAttributes() throws NamingException
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "{0}" );
         when( config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names ) )
@@ -353,7 +353,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogSuccessfulAuthenticationQueries() throws NamingException
+    void shouldLogSuccessfulAuthenticationQueries() throws NamingException
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( false );
@@ -373,7 +373,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogSuccessfulAuthenticationQueriesUsingStartTLS() throws NamingException
+    void shouldLogSuccessfulAuthenticationQueriesUsingStartTLS() throws NamingException
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
@@ -392,7 +392,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogFailedAuthenticationQueries()
+    void shouldLogFailedAuthenticationQueries()
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
@@ -414,7 +414,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogSuccessfulAuthorizationQueries()
+    void shouldLogSuccessfulAuthorizationQueries()
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
@@ -431,7 +431,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogFailedAuthorizationQueries()
+    void shouldLogFailedAuthorizationQueries()
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );

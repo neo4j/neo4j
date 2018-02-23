@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -65,13 +65,13 @@ public class LuceneIndexRecoveryIT
     private DirectoryFactory directoryFactory;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         if ( db != null )
         {
@@ -81,7 +81,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void addShouldBeIdempotentWhenDoingRecovery() throws Exception
+    void addShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
         startDb( createLuceneIndexFactory() );
@@ -111,7 +111,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void changeShouldBeIdempotentWhenDoingRecovery() throws Exception
+    void changeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
         startDb( createLuceneIndexFactory() );
@@ -136,7 +136,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
+    void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
         startDb( createLuceneIndexFactory() );
@@ -160,7 +160,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation() throws Exception
+    void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation() throws Exception
     {
         // Given
         startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
@@ -189,7 +189,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void shouldNotUpdateTwiceDuringRecovery() throws Exception
+    void shouldNotUpdateTwiceDuringRecovery() throws Exception
     {
         // Given
         startDb( createLuceneIndexFactory() );

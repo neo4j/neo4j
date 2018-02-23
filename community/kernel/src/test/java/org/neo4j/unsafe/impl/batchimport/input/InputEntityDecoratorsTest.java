@@ -41,12 +41,12 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.addi
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.decorators;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 
-public class InputEntityDecoratorsTest
+class InputEntityDecoratorsTest
 {
     private final InputEntity entity = new InputEntity();
 
     @Test
-    public void shouldProvideDefaultRelationshipType() throws Exception
+    void shouldProvideDefaultRelationshipType() throws Exception
     {
         // GIVEN
         String defaultType = "TYPE";
@@ -60,7 +60,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldNotOverrideAlreadySetRelationshipType() throws Exception
+    void shouldNotOverrideAlreadySetRelationshipType() throws Exception
     {
         // GIVEN
         String defaultType = "TYPE";
@@ -76,7 +76,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldNotOverrideAlreadySetRelationshipTypeId() throws Exception
+    void shouldNotOverrideAlreadySetRelationshipTypeId() throws Exception
     {
         // GIVEN
         String defaultType = "TYPE";
@@ -94,7 +94,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldAddLabelsToNodeWithoutLabels() throws Exception
+    void shouldAddLabelsToNodeWithoutLabels() throws Exception
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
@@ -108,7 +108,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldAddMissingLabels() throws Exception
+    void shouldAddMissingLabels() throws Exception
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
@@ -123,7 +123,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldNotTouchLabelsIfNodeHasLabelFieldSet() throws Exception
+    void shouldNotTouchLabelsIfNodeHasLabelFieldSet() throws Exception
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
@@ -139,7 +139,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldCramMultipleDecoratorsIntoOne()
+    void shouldCramMultipleDecoratorsIntoOne()
     {
         // GIVEN
         Decorator decorator1 = spy( new IdentityDecorator() );

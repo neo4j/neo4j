@@ -47,7 +47,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ExplicitIndexMigratorTest
+class ExplicitIndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
@@ -58,7 +58,7 @@ public class ExplicitIndexMigratorTest
     private final File migratedIndexStore = new File( "." );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( originalIndexStore.getParentFile() ).thenReturn( storeDir );
         when( fs.isDirectory( originalIndexStore ) ).thenReturn( true );
@@ -66,7 +66,7 @@ public class ExplicitIndexMigratorTest
     }
 
     @Test
-    public void skipEmptyIndexStorageMigration() throws IOException
+    void skipEmptyIndexStorageMigration() throws IOException
     {
         when( fs.listFiles( originalIndexStore ) ).thenReturn( null );
 
@@ -81,7 +81,7 @@ public class ExplicitIndexMigratorTest
     }
 
     @Test
-    public void transferOriginalDataToMigrationDirectory() throws IOException
+    void transferOriginalDataToMigrationDirectory() throws IOException
     {
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
@@ -93,7 +93,7 @@ public class ExplicitIndexMigratorTest
     }
 
     @Test
-    public void transferMigratedIndexesToStoreDirectory() throws IOException
+    void transferMigratedIndexesToStoreDirectory() throws IOException
     {
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
@@ -109,7 +109,7 @@ public class ExplicitIndexMigratorTest
     }
 
     @Test
-    public void logErrorWithIndexNameOnIndexMigrationException()
+    void logErrorWithIndexNameOnIndexMigrationException()
     {
         Log log = mock( Log.class );
         when( logProvider.getLog( TestExplicitIndexMigrator.class ) ).thenReturn( log );
@@ -133,7 +133,7 @@ public class ExplicitIndexMigratorTest
     }
 
     @Test
-    public void cleanupMigrationDirectory() throws IOException
+    void cleanupMigrationDirectory() throws IOException
     {
         when( fs.fileExists( migratedIndexStore ) ).thenReturn( true );
 

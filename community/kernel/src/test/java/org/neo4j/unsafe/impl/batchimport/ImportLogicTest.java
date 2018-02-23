@@ -38,13 +38,13 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( RandomExtension.class )
-public class ImportLogicTest
+class ImportLogicTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldSplitUpRelationshipTypesInBatches()
+    void shouldSplitUpRelationshipTypesInBatches()
     {
         // GIVEN
         int denseNodeThreshold = 5;

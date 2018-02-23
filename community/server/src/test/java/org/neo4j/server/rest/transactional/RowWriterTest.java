@@ -37,10 +37,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 
-public class RowWriterTest
+class RowWriterTest
 {
     @Test
-    public void shouldWriteNestedMaps() throws Exception
+    void shouldWriteNestedMaps() throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createJsonGenerator( out );

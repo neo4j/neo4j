@@ -34,19 +34,19 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
-public class ReadReplicaStatusTest
+class ReadReplicaStatusTest
 {
     private CausalClusteringStatus status;
 
     @BeforeEach
-    public void setup() throws Exception
+    void setup() throws Exception
     {
         OutputFormat output = new OutputFormat( new JsonFormat(), new URI( "http://base.local:1234/" ), null );
         status = CausalClusteringStatusFactory.build( output, mock( ReadReplicaGraphDatabase.class ) );
     }
 
     @Test
-    public void testAnswers()
+    void testAnswers()
     {
         // when
         Response available = status.available();

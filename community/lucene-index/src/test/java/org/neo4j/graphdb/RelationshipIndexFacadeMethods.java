@@ -24,7 +24,7 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-public class RelationshipIndexFacadeMethods
+class RelationshipIndexFacadeMethods
 {
     private static final FacadeMethod<RelationshipIndex> GET_WITH_FILTER = new FacadeMethod<RelationshipIndex>(
             "IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull, Node endNodeOrNull )" )

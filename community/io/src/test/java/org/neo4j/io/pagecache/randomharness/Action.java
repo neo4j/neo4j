@@ -26,12 +26,12 @@ abstract class Action
     private final Object[] parameters;
     private final Action innerAction;
 
-    protected Action( Command command, String format, Object... parameters )
+    Action( Command command, String format, Object... parameters )
     {
         this( command, null, format, parameters );
     }
 
-    protected Action( Command command, Action innerAction, String format, Object... parameters )
+    Action( Command command, Action innerAction, String format, Object... parameters )
     {
         this.command = command;
         this.format = format;
@@ -41,7 +41,7 @@ abstract class Action
 
     abstract void perform() throws Exception;
 
-    protected void performInnerAction() throws Exception
+    void performInnerAction() throws Exception
     {
         if ( innerAction != null )
         {

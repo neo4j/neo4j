@@ -32,7 +32,7 @@ public class LinearHistoryPageCacheTracerTest
              "This is pretty subjective and requires manual inspection. Therefore there's no point in running it " +
              "automatically in all our builds. Instead, run it as needed when you make changes to the printout code." )
     @Test
-    public void makeSomeTestOutput() throws Exception
+    void makeSomeTestOutput() throws Exception
     {
         LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )

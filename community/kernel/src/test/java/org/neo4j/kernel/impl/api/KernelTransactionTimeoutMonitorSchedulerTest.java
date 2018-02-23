@@ -34,14 +34,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.scheduler.JobScheduler.Groups.transactionTimeoutMonitor;
 
-public class KernelTransactionTimeoutMonitorSchedulerTest
+class KernelTransactionTimeoutMonitorSchedulerTest
 {
 
     private final KernelTransactionTimeoutMonitor transactionMonitor = mock( KernelTransactionTimeoutMonitor.class );
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
 
     @Test
-    public void startJobTransactionMonitor()
+    void startJobTransactionMonitor()
     {
         JobScheduler.JobHandle jobHandle = Mockito.mock( JobScheduler.JobHandle.class );
         when( jobScheduler.scheduleRecurring( eq(transactionTimeoutMonitor), eq( transactionMonitor), anyLong(),

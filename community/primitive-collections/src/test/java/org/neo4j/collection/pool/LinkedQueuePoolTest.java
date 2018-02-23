@@ -31,10 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LinkedQueuePoolTest
+class LinkedQueuePoolTest
 {
     @Test
-    public void shouldTimeoutGracefully()
+    void shouldTimeoutGracefully()
     {
         FakeClock clock = new FakeClock();
 
@@ -53,7 +53,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyUntilReachedMinPoolSize()
+    void shouldBuildUpGracefullyUntilReachedMinPoolSize()
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -76,7 +76,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings()
+    void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings()
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -101,7 +101,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldUpdateTargetSizeWhenSpikesOccur()
+    void shouldUpdateTargetSizeWhenSpikesOccur()
     {
         // given
         final int MIN_SIZE = 5;
@@ -122,7 +122,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously()
+    void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously()
     {
         // given
         final int MIN_SIZE = 1;
@@ -147,7 +147,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldSlowlyReduceTheNumberOfFlyweightsInThePoolWhenFlyweightsAreReleased()
+    void shouldSlowlyReduceTheNumberOfFlyweightsInThePoolWhenFlyweightsAreReleased()
     {
         // given
         final int MIN_SIZE = 50;
@@ -179,7 +179,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize()
+    void shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize()
     {
         // given
         final int MIN_SIZE = 50;
@@ -230,7 +230,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldReclaimAndRecreateWhenLullBetweenSpikesOccurs()
+    void shouldReclaimAndRecreateWhenLullBetweenSpikesOccurs()
     {
         // given
         final int MIN_SIZE = 50;
@@ -331,7 +331,7 @@ public class LinkedQueuePoolTest
             resource = pool.acquire();
         }
 
-        public void release()
+        void release()
         {
             pool.release( resource );
         }
@@ -339,11 +339,11 @@ public class LinkedQueuePoolTest
 
     private static class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
     {
-        public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
-        public AtomicInteger targetSize = new AtomicInteger( -1 );
-        public AtomicInteger created = new AtomicInteger( 0 );
-        public AtomicInteger acquired = new AtomicInteger( 0 );
-        public AtomicInteger disposed = new AtomicInteger( 0 );
+        AtomicInteger currentPeakSize = new AtomicInteger( -1 );
+        AtomicInteger targetSize = new AtomicInteger( -1 );
+        AtomicInteger created = new AtomicInteger( 0 );
+        AtomicInteger acquired = new AtomicInteger( 0 );
+        AtomicInteger disposed = new AtomicInteger( 0 );
 
         @Override
         public void updatedCurrentPeakSize( int currentPeakSize )
@@ -386,7 +386,7 @@ public class LinkedQueuePoolTest
             return time;
         }
 
-        public void forward( long amount, TimeUnit timeUnit )
+        void forward( long amount, TimeUnit timeUnit )
         {
             time = time + timeUnit.toMillis( amount );
         }

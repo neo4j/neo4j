@@ -21,9 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,12 +35,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class NumberArrayFactoryTest
+class NumberArrayFactoryTest
 {
     private static final long KILO = 1024;
 
     @Test
-    public void shouldPickFirstAvailableCandidateLongArray()
+    void shouldPickFirstAvailableCandidateLongArray()
     {
         // GIVEN
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
@@ -55,7 +55,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldPickFirstAvailableCandidateLongArrayWhenSomeDontHaveEnoughMemory()
+    void shouldPickFirstAvailableCandidateLongArrayWhenSomeDontHaveEnoughMemory()
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
@@ -73,7 +73,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldThrowOomOnNotEnoughMemory()
+    void shouldThrowOomOnNotEnoughMemory()
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
@@ -93,7 +93,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldPickFirstAvailableCandidateIntArray()
+    void shouldPickFirstAvailableCandidateIntArray()
     {
         // GIVEN
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
@@ -108,7 +108,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldPickFirstAvailableCandidateIntArrayWhenSomeDontHaveEnoughMemory()
+    void shouldPickFirstAvailableCandidateIntArrayWhenSomeDontHaveEnoughMemory()
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
@@ -126,7 +126,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldEvenCatchOtherExceptionsAndTryNext()
+    void shouldEvenCatchOtherExceptionsAndTryNext()
     {
         // GIVEN
         NumberArrayFactory throwingMemoryFactory = mock( NumberArrayFactory.class );
@@ -145,14 +145,14 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void heapArrayShouldAllowVeryLargeBases()
+    void heapArrayShouldAllowVeryLargeBases()
     {
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
         verifyVeryLargeBaseSupport( factory );
     }
 
     @Test
-    public void offHeapArrayShouldAllowVeryLargeBases()
+    void offHeapArrayShouldAllowVeryLargeBases()
     {
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.OFF_HEAP );
         verifyVeryLargeBaseSupport( factory );

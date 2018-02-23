@@ -44,16 +44,16 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class CompositeConstraintIT
+class CompositeConstraintIT
 {
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Resource
     public SuppressOutput suppressOutput;
 
     @Test
-    public void compositeNodeKeyConstraintUpdate() throws Exception
+    void compositeNodeKeyConstraintUpdate() throws Exception
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService database = new EnterpriseGraphDatabaseFactory()

@@ -28,24 +28,24 @@ import java.io.IOException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DefaultPageCacheTracerTest
+class DefaultPageCacheTracerTest
 {
     private PageCacheTracer tracer;
     private PageSwapper swapper;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         tracer = new DefaultPageCacheTracer();
         swapper = new DummyPageSwapper( "filename", (int) ByteUnit.kibiBytes( 8 ) );
     }
 
     @Test
-    public void mustCountEvictions()
+    void mustCountEvictions()
     {
         try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( 2 ) )
         {
@@ -79,7 +79,7 @@ public class DefaultPageCacheTracerTest
     }
 
     @Test
-    public void mustCountFileMappingAndUnmapping()
+    void mustCountFileMappingAndUnmapping()
     {
         tracer.mappedFile( new File( "a" ) );
 
@@ -91,7 +91,7 @@ public class DefaultPageCacheTracerTest
     }
 
     @Test
-    public void mustCountFlushes()
+    void mustCountFlushes()
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
@@ -113,7 +113,7 @@ public class DefaultPageCacheTracerTest
     }
 
     @Test
-    public void shouldCalculateHitRatio()
+    void shouldCalculateHitRatio()
     {
         assertThat( "hitRation", tracer.hitRatio(), closeTo( 0d, 0.0001 ) );
         tracer.hits( 3 );
@@ -122,7 +122,7 @@ public class DefaultPageCacheTracerTest
     }
 
     @Test
-    public void usageRatio()
+    void usageRatio()
     {
         assertThat( tracer.usageRatio(), is( Double.NaN ) );
         tracer.maxPages( 10 );

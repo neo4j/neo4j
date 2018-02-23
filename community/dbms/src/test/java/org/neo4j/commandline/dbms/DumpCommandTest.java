@@ -33,7 +33,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -80,7 +79,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_locat
 public class DumpCommandTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
@@ -91,7 +90,7 @@ public class DumpCommandTest
     private Path databaseDirectory;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
@@ -102,7 +101,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldDumpTheDatabaseToTheArchive() throws Exception
+    void shouldDumpTheDatabaseToTheArchive() throws Exception
     {
         execute( "foo.db" );
         verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ),
@@ -110,7 +109,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
+    void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
@@ -123,7 +122,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
+    void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
@@ -139,7 +138,7 @@ public class DumpCommandTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // Can't reliably create symlinks on windows
-    public void shouldHandleDatabaseSymlink() throws Exception
+    void shouldHandleDatabaseSymlink() throws Exception
     {
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
@@ -159,7 +158,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory()
+    void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory()
             throws Exception
     {
         File to = testDirectory.directory( "some-dir" );
@@ -168,7 +167,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldConvertToCanonicalPath() throws Exception
+    void shouldConvertToCanonicalPath() throws Exception
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + "foo.db", "--to=foo.dump"} );
@@ -177,7 +176,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile()
+    void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile()
             throws Exception
     {
         Files.createFile( archive );
@@ -186,7 +185,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldRespectTheStoreLock() throws Exception
+    void shouldRespectTheStoreLock() throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
 
@@ -205,14 +204,14 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldReleaseTheStoreLockAfterDumping() throws Exception
+    void shouldReleaseTheStoreLockAfterDumping() throws Exception
     {
         execute( "foo.db" );
         assertCanLockStore( databaseDirectory );
     }
 
     @Test
-    public void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
+    void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
     {
         doThrow( IOException.class ).when( dumper ).dump( any(), any(), any(), any() );
 
@@ -228,7 +227,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
+    void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
             throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/accident.db" );
@@ -244,7 +243,7 @@ public class DumpCommandTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
-    public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
+    void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
@@ -266,7 +265,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
+    void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
             throws Exception
     {
         doAnswer( invocation ->
@@ -282,7 +281,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldDefaultToGraphDB() throws Exception
+    void shouldDefaultToGraphDB() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/graph.db" );
@@ -295,7 +294,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldObjectIfTheArchiveArgumentIsMissing() throws Exception
+    void shouldObjectIfTheArchiveArgumentIsMissing() throws Exception
     {
         try
         {
@@ -309,7 +308,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
+    void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
     {
         doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any(), any() );
         try
@@ -324,7 +323,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws Exception
+    void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws Exception
     {
         try
         {
@@ -338,7 +337,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
+    void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
     {
         doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump(any(), any(), any(), any() );
         try
@@ -354,7 +353,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws Exception
     {
         doThrow( new IOException( "the-message" ) ).when( dumper ).dump(any(), any(), any(), any() );
@@ -370,7 +369,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Exception
+    void shouldPrintNiceHelp() throws Exception
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

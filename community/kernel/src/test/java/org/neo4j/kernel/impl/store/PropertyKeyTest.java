@@ -44,7 +44,7 @@ public class PropertyKeyTest
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void lazyLoadWithinWriteTransaction() throws Exception
+    void lazyLoadWithinWriteTransaction() throws Exception
     {
         // Given
         FileSystemAbstraction fileSystem = fs.get();

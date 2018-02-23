@@ -31,7 +31,6 @@ import javax.annotation.Resource;
 
 import org.neo4j.com.storecopy.FileMoveAction;
 import org.neo4j.com.storecopy.FileMoveProvider;
-import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -43,17 +42,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class BackupCopyServiceTest
+class BackupCopyServiceTest
 {
     private FileMoveProvider fileMoveProvider;
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
-    BackupCopyService subject;
+    private BackupCopyService subject;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         PageCache pageCache = mock( PageCache.class );
         fileMoveProvider = mock( FileMoveProvider.class );
@@ -62,7 +61,7 @@ public class BackupCopyServiceTest
     }
 
     @Test
-    public void logicForMovingBackupsIsDelegatedToFileMovePropagator() throws IOException
+    void logicForMovingBackupsIsDelegatedToFileMovePropagator() throws IOException
     {
         // given
         Path parentDirectory = testDirectory.directory( "parent" ).toPath();

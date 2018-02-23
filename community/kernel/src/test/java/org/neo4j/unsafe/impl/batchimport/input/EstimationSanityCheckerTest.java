@@ -30,10 +30,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class EstimationSanityCheckerTest
+class EstimationSanityCheckerTest
 {
     @Test
-    public void shouldWarnAboutCountGettingCloseToCapacity()
+    void shouldWarnAboutCountGettingCloseToCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -50,7 +50,7 @@ public class EstimationSanityCheckerTest
     }
 
     @Test
-    public void shouldWarnAboutCounthigherThanCapacity()
+    void shouldWarnAboutCounthigherThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -67,7 +67,7 @@ public class EstimationSanityCheckerTest
     }
 
     @Test
-    public void shouldNotWantIfCountWayLowerThanCapacity()
+    void shouldNotWantIfCountWayLowerThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;

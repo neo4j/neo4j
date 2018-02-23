@@ -25,7 +25,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
-public class MissingNameSproc
+class MissingNameSproc
 {
 
     @Context
@@ -37,7 +37,7 @@ public class MissingNameSproc
         return Stream.empty();
     }
 
-    public static class GoodRecord
+    private static class GoodRecord
     {
         public long age;
     }

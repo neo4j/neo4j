@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
-public class ResourceIterableTest
+class ResourceIterableTest
 {
     @Test
-    public void streamShouldCloseSingleOnCompleted()
+    void streamShouldCloseSingleOnCompleted()
     {
         // Given
         AtomicBoolean closed = new AtomicBoolean( false );
@@ -52,7 +52,7 @@ public class ResourceIterableTest
     }
 
     @Test
-    public void streamShouldCloseMultipleOnCompleted()
+    void streamShouldCloseMultipleOnCompleted()
     {
         // Given
         AtomicInteger closed = new AtomicInteger();

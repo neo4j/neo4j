@@ -29,13 +29,13 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 
-public class MyCoreAPI
+class MyCoreAPI
 {
     private final GraphDatabaseAPI graph;
     private final ThreadToStatementContextBridge txBridge;
     private final Log log;
 
-    public MyCoreAPI( GraphDatabaseAPI graph, ThreadToStatementContextBridge txBridge, Log log )
+    MyCoreAPI( GraphDatabaseAPI graph, ThreadToStatementContextBridge txBridge, Log log )
     {
         this.graph = graph;
         this.txBridge = txBridge;

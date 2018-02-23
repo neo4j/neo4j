@@ -107,7 +107,7 @@ public final class SuppressOutput implements TestRule
         abstract PrintStream replace( PrintStream replacement );
     }
 
-    public static Suppressible java_util_logging( final ByteArrayOutputStream redirectTo, Level level )
+    private static Suppressible java_util_logging( final ByteArrayOutputStream redirectTo, Level level )
     {
         final Handler replacement = redirectTo == null ? null : new StreamHandler( redirectTo, new SimpleFormatter() );
         if ( replacement != null && level != null )
@@ -190,7 +190,7 @@ public final class SuppressOutput implements TestRule
         return getVoice( System.err );
     }
 
-    public Voice getVoice( Suppressible suppressible )
+    private Voice getVoice( Suppressible suppressible )
     {
         for ( Voice voice : voices )
         {
@@ -235,13 +235,13 @@ public final class SuppressOutput implements TestRule
         private Suppressible suppressible;
         private ByteArrayOutputStream voiceStream;
 
-        public Voice( Suppressible suppressible, ByteArrayOutputStream originalStream )
+        Voice( Suppressible suppressible, ByteArrayOutputStream originalStream )
         {
             this.suppressible = suppressible;
             this.voiceStream = originalStream;
         }
 
-        public Suppressible getSuppressible()
+        Suppressible getSuppressible()
         {
             return suppressible;
         }
@@ -300,7 +300,7 @@ public final class SuppressOutput implements TestRule
         releaseVoices( voices, failure );
     }
 
-    public void releaseVoices( Voice[] voices, boolean failure )
+    private void releaseVoices( Voice[] voices, boolean failure )
     {
         List<Throwable> failures = null;
         try

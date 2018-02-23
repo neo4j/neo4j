@@ -22,8 +22,6 @@ package org.neo4j.server.rest.web;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -37,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 
 public class CollectUserAgentFilterIT extends AbstractRestFunctionalTestBase
 {
-    public static final String USER_AGENT = "test/1.0";
+    private static final String USER_AGENT = "test/1.0";
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass

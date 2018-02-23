@@ -38,16 +38,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class TestLockManagerBean
+class TestLockManagerBean
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
 
     private LockManager lockManager;
     private GraphDatabaseAPI graphDb;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         graphDb = dbRule.getGraphDatabaseAPI();
         lockManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
@@ -55,13 +55,13 @@ public class TestLockManagerBean
     }
 
     @Test
-    public void restingGraphHoldsNoLocks()
+    void restingGraphHoldsNoLocks()
     {
         assertEquals( 0, lockManager.getLocks().size(), "unexpected lock count" );
     }
 
     @Test
-    public void modifiedNodeImpliesLock()
+    void modifiedNodeImpliesLock()
     {
         Node node = createNode();
 

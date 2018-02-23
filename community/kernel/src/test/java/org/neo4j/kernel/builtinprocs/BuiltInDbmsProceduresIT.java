@@ -28,26 +28,26 @@ import java.util.stream.Collectors;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
-public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
+class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 {
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void listConfig() throws Exception
+    void listConfig() throws Exception
     {
         // When
         RawIterator<Object[],ProcedureException> stream =
@@ -74,7 +74,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listConfigWithASpecificConfigName() throws Exception
+    void listConfigWithASpecificConfigName() throws Exception
     {
         // When
         RawIterator<Object[],ProcedureException> stream =
@@ -94,7 +94,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void durationAlwaysListedWithUnit() throws Exception
+    void durationAlwaysListedWithUnit() throws Exception
     {
         // When
         RawIterator<Object[],ProcedureException> stream =

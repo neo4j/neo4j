@@ -34,19 +34,19 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class StatementLocksFactorySelectorTest
+class StatementLocksFactorySelectorTest
 {
     @Test
-    public void loadSimpleStatementLocksFactoryWhenNoServices()
+    void loadSimpleStatementLocksFactoryWhenNoServices()
     {
         Locks locks = mock( Locks.class );
         Locks.Client locksClient = mock( Client.class );
@@ -65,7 +65,7 @@ public class StatementLocksFactorySelectorTest
     }
 
     @Test
-    public void loadSingleAvailableFactory()
+    void loadSingleAvailableFactory()
     {
         Locks locks = mock( Locks.class );
         StatementLocksFactory factory = mock( StatementLocksFactory.class );
@@ -79,7 +79,7 @@ public class StatementLocksFactorySelectorTest
     }
 
     @Test
-    public void throwWhenMultipleFactoriesLoaded()
+    void throwWhenMultipleFactoriesLoaded()
     {
         TestStatementLocksFactorySelector loader = newLoader( mock( Locks.class ),
                 mock( StatementLocksFactory.class ),

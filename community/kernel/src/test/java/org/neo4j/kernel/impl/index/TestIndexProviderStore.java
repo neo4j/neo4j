@@ -54,15 +54,15 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class TestIndexProviderStore
+class TestIndexProviderStore
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private File file;
     private FileSystemAbstraction fileSystem;
 
     @BeforeEach
-    public void createStore()
+    void createStore()
     {
         file = testDirectory.file( "index-provider-store" );
         fileSystem = new DefaultFileSystemAbstraction();
@@ -71,13 +71,13 @@ public class TestIndexProviderStore
     }
 
     @AfterEach
-    public void tearDown() throws IOException
+    void tearDown() throws IOException
     {
         fileSystem.close();
     }
 
     @Test
-    public void lastCommitedTxGetsStoredBetweenSessions()
+    void lastCommitedTxGetsStoredBetweenSessions()
     {
         IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
         store.setVersion( 5 );
@@ -90,7 +90,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void shouldFailUpgradeIfNotAllowed()
+    void shouldFailUpgradeIfNotAllowed()
     {
         IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.1" ), true );
         store.close();
@@ -110,7 +110,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void shouldFailToGoBackToOlderVersion()
+    void shouldFailToGoBackToOlderVersion()
     {
         assertThrows( NotCurrentStoreVersionException.class, () -> {
             String newerVersion = "3.5";
@@ -132,7 +132,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade()
+    void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade()
     {
         assertThrows( NotCurrentStoreVersionException.class, () -> {
             String newerVersion = "3.5";
@@ -154,7 +154,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void upgradeForMissingVersionRecord() throws Exception
+    void upgradeForMissingVersionRecord() throws Exception
     {
         // This was before 1.6.M02
         IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
@@ -174,7 +174,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void shouldForceChannelAfterWritingMetadata() throws IOException
+    void shouldForceChannelAfterWritingMetadata() throws IOException
     {
         // Given
         final StoreChannel[] channelUsedToCreateFile = {null};
@@ -211,7 +211,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void shouldThrowWhenTryingToCreateFileThatAlreadyExists()
+    void shouldThrowWhenTryingToCreateFileThatAlreadyExists()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // Given
@@ -228,7 +228,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void shouldWriteNewFileWhenExistingFileHasZeroLength() throws IOException
+    void shouldWriteNewFileWhenExistingFileHasZeroLength() throws IOException
     {
         // Given
         file.createNewFile();

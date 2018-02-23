@@ -98,7 +98,7 @@ public class SchemaIndexHaIT
     public ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
+    void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();
@@ -114,7 +114,7 @@ public class SchemaIndexHaIT
     }
 
     @Test
-    public void creatingIndexOnSlaveIsNotAllowed()
+    void creatingIndexOnSlaveIsNotAllowed()
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();
@@ -133,7 +133,7 @@ public class SchemaIndexHaIT
     }
 
     @Test
-    public void indexPopulationJobsShouldContinueThroughRoleSwitch() throws Throwable
+    void indexPopulationJobsShouldContinueThroughRoleSwitch() throws Throwable
     {
         // GIVEN a cluster of 3
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
@@ -177,7 +177,7 @@ public class SchemaIndexHaIT
     }
 
     @Test
-    public void populatingSchemaIndicesOnMasterShouldBeBroughtOnlineOnSlavesAfterStoreCopy() throws Throwable
+    void populatingSchemaIndicesOnMasterShouldBeBroughtOnlineOnSlavesAfterStoreCopy() throws Throwable
     {
         /*
         The master has an index that is currently populating.
@@ -240,7 +240,7 @@ public class SchemaIndexHaIT
     }
 
     @Test
-    public void onlineSchemaIndicesOnMasterShouldBeBroughtOnlineOnSlavesAfterStoreCopy() throws Throwable
+    void onlineSchemaIndicesOnMasterShouldBeBroughtOnlineOnSlavesAfterStoreCopy() throws Throwable
     {
         /*
         The master has an index that is online.

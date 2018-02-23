@@ -39,15 +39,15 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class KernelTest
 {
     @Test
-    public void shouldNotAllowCreationOfConstraintsWhenInHA() throws Exception
+    void shouldNotAllowCreationOfConstraintsWhenInHA() throws Exception
     {
         //noinspection deprecation
         GraphDatabaseAPI db = new FakeHaDatabase();

@@ -26,14 +26,13 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
-public class IdRangeIteratorTest
+class IdRangeIteratorTest
 {
     @Test
-    public void shouldReturnValueRepresentingNullIfWeExhaustIdRange()
+    void shouldReturnValueRepresentingNullIfWeExhaustIdRange()
     {
         // given
         int rangeLength = 1024;
@@ -50,7 +49,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldNotHaveAnyGaps()
+    void shouldNotHaveAnyGaps()
     {
         // given
         int rangeLength = 1024;
@@ -70,7 +69,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldUseDefragIdsFirst()
+    void shouldUseDefragIdsFirst()
     {
         // given
         int rangeLength = 1024;
@@ -84,7 +83,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromOnlyDefragIds()
+    void shouldGetNextIdBatchFromOnlyDefragIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
@@ -102,7 +101,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromOnlyDefragIdsWhenSomeDefragIdsHaveAlreadyBeenReturned()
+    void shouldGetNextIdBatchFromOnlyDefragIdsWhenSomeDefragIdsHaveAlreadyBeenReturned()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
@@ -122,7 +121,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromSomeDefragAndSomeRangeIds()
+    void shouldGetNextIdBatchFromSomeDefragAndSomeRangeIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3}, 10, 5 ).iterator();
@@ -142,7 +141,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromSomeRangeIds()
+    void shouldGetNextIdBatchFromSomeRangeIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( EMPTY_LONG_ARRAY, 0, 20 ).iterator();
@@ -171,7 +170,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromSomeRangeIdsWhenThereAreUsedDefragIds()
+    void shouldGetNextIdBatchFromSomeRangeIdsWhenThereAreUsedDefragIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {0, 1, 2}, 3, 10 ).iterator();

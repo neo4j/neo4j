@@ -30,10 +30,10 @@ import java.util.TreeSet;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class NotificationDetailTest
+class NotificationDetailTest
 {
     @Test
-    public void shouldConstructIndexDetails()
+    void shouldConstructIndexDetails()
     {
         NotificationDetail detail = NotificationDetail.Factory.index( "Person", "name" );
 
@@ -43,7 +43,7 @@ public class NotificationDetailTest
     }
 
     @Test
-    public void shouldConstructCartesianProductDetailsSingular()
+    void shouldConstructCartesianProductDetailsSingular()
     {
         Set<String> idents = new HashSet<>();
         idents.add( "n" );
@@ -55,7 +55,7 @@ public class NotificationDetailTest
     }
 
     @Test
-    public void shouldConstructCartesianProductDetails()
+    void shouldConstructCartesianProductDetails()
     {
         Set<String> idents = new TreeSet<>();
         idents.add( "n" );
@@ -68,7 +68,7 @@ public class NotificationDetailTest
     }
 
     @Test
-    public void shouldConstructJoinHintDetailsSingular()
+    void shouldConstructJoinHintDetailsSingular()
     {
         List<String> idents = new ArrayList<>();
         idents.add( "n" );
@@ -80,7 +80,7 @@ public class NotificationDetailTest
     }
 
     @Test
-    public void shouldConstructJoinHintDetails()
+    void shouldConstructJoinHintDetails()
     {
         List<String> idents = new ArrayList<>();
         idents.add( "n" );

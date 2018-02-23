@@ -32,10 +32,10 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-public class CountsRecordStateTest
+class CountsRecordStateTest
 {
     @Test
-    public void shouldReportDifferencesBetweenDifferentStates()
+    void shouldReportDifferencesBetweenDifferentStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();
@@ -60,7 +60,7 @@ public class CountsRecordStateTest
     }
 
     @Test
-    public void shouldNotReportAnythingForEqualStates()
+    void shouldNotReportAnythingForEqualStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();

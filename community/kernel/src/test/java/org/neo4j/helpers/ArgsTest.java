@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ArgsTest
+class ArgsTest
 {
     @Test
-    public void shoulInterpretSingleDashAsValue()
+    void shoulInterpretSingleDashAsValue()
     {
         // GIVEN
         Args args = Args.parse( "-test", "-" );

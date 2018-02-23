@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -32,11 +32,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.MAX_VALUE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
@@ -85,7 +85,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
 
     private static String chinese = "造Unicode之";
 
-    protected boolean supportsBigProperties()
+    private boolean supportsBigProperties()
     {
         return true;
     }
@@ -162,7 +162,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldNotAccessNonExistentProperties()
+    void shouldNotAccessNonExistentProperties()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -184,7 +184,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldAccessSingleProperty()
+    void shouldAccessSingleProperty()
     {
         assertAccessSingleProperty( byteProp, Values.of( (byte) 13 ) );
         assertAccessSingleProperty( shortProp, Values.of( (short) 13 ) );
@@ -211,7 +211,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldAccessAllNodeProperties()
+    void shouldAccessAllNodeProperties()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();

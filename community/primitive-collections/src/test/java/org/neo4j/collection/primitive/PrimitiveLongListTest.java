@@ -26,25 +26,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveLongListTest
+class PrimitiveLongListTest
 {
 
     @Test
-    public void newListIsEmpty()
+    void newListIsEmpty()
     {
         assertTrue( new PrimitiveLongList().isEmpty() );
         assertTrue( new PrimitiveLongList( 12 ).isEmpty() );
     }
 
     @Test
-    public void newListHasZeroSize()
+    void newListHasZeroSize()
     {
         assertEquals( 0, new PrimitiveLongList().size() );
         assertEquals( 0, new PrimitiveLongList( 12 ).size() );
     }
 
     @Test
-    public void addingElementsChangeSize()
+    void addingElementsChangeSize()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         longList.add( 1L );
@@ -63,7 +63,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void accessAddedElements()
+    void accessAddedElements()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         for ( long i = 1; i < 6L; i++ )
@@ -76,7 +76,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void throwExceptionOnAccessingNonExistentElement()
+    void throwExceptionOnAccessingNonExistentElement()
     {
         assertThrows( IndexOutOfBoundsException.class, () ->
         {
@@ -86,7 +86,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void iterateOverListElements()
+    void iterateOverListElements()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         for ( long i = 0; i < 10L; i++ )
@@ -107,7 +107,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void clearResetListSize()
+    void clearResetListSize()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         long size = 10;
@@ -124,7 +124,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void transformListToArray()
+    void transformListToArray()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         long size = 24L;
@@ -142,7 +142,7 @@ public class PrimitiveLongListTest
     }
 
     @Test
-    public void holdLotsOfElements()
+    void holdLotsOfElements()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
         long size = 13077L;

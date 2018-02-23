@@ -35,10 +35,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FileURLAccessRuleTest
+class FileURLAccessRuleTest
 {
     @Test
-    public void shouldThrowWhenFileURLContainsAuthority() throws Exception
+    void shouldThrowWhenFileURLContainsAuthority() throws Exception
     {
         try
         {
@@ -53,7 +53,7 @@ public class FileURLAccessRuleTest
     }
 
     @Test
-    public void shouldThrowWhenFileURLContainsQuery() throws Exception
+    void shouldThrowWhenFileURLContainsQuery() throws Exception
     {
         try
         {
@@ -67,7 +67,7 @@ public class FileURLAccessRuleTest
     }
 
     @Test
-    public void shouldThrowWhenFileAccessIsDisabled() throws Exception
+    void shouldThrowWhenFileAccessIsDisabled() throws Exception
     {
         final URL url = new URL( "file:///bar/baz.csv" );
         final Config config = Config.defaults( GraphDatabaseSettings.allow_file_urls, "false" );
@@ -84,7 +84,7 @@ public class FileURLAccessRuleTest
 
     @Test
     @EnabledOnJre( JRE.JAVA_8 )
-    public void shouldThrowWhenRelativePathIsOutsideImportDirectory() throws Exception
+    void shouldThrowWhenRelativePathIsOutsideImportDirectory() throws Exception
     {
         File importDir = new File( "/tmp/neo4jtest" ).getAbsoluteFile();
         final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, importDir.toString() );
@@ -100,7 +100,7 @@ public class FileURLAccessRuleTest
     }
 
     @Test
-    public void shouldAdjustURLToWithinImportDirectory() throws Exception
+    void shouldAdjustURLToWithinImportDirectory() throws Exception
     {
         final URL url = new File( "/bar/baz.csv" ).toURI().toURL();
         final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, "/var/lib/neo4j/import" );

@@ -45,7 +45,7 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 @ExtendWith( MockitoExtension.class )
-public class RaftGroupMembershipTest
+class RaftGroupMembershipTest
 {
     @Mock
     private Outbound<MemberId, Message> outbound;
@@ -54,7 +54,7 @@ public class RaftGroupMembershipTest
     private Inbound inbound;
 
     @Test
-    public void shouldNotFormGroupWithoutAnyBootstrapping()
+    void shouldNotFormGroupWithoutAnyBootstrapping()
     {
         // given
         DirectNetworking net = new DirectNetworking();
@@ -76,7 +76,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldAddSingleInstanceToExistingRaftGroup() throws Exception
+    void shouldAddSingleInstanceToExistingRaftGroup() throws Exception
     {
         // given
         DirectNetworking net = new DirectNetworking();
@@ -110,7 +110,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldAddMultipleInstancesToExistingRaftGroup() throws Exception
+    void shouldAddMultipleInstancesToExistingRaftGroup() throws Exception
     {
         // given
         DirectNetworking net = new DirectNetworking();
@@ -151,7 +151,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldRemoveSingleInstanceFromExistingRaftGroup() throws Exception
+    void shouldRemoveSingleInstanceFromExistingRaftGroup() throws Exception
     {
         DirectNetworking net = new DirectNetworking();
 
@@ -179,7 +179,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldRemoveMultipleInstancesFromExistingRaftGroup() throws Exception
+    void shouldRemoveMultipleInstancesFromExistingRaftGroup() throws Exception
     {
         DirectNetworking net = new DirectNetworking();
 
@@ -210,7 +210,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldHandleMixedChangeToExistingRaftGroup() throws Exception
+    void shouldHandleMixedChangeToExistingRaftGroup() throws Exception
     {
         DirectNetworking net = new DirectNetworking();
 
@@ -252,7 +252,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldRemoveLeaderFromExistingRaftGroupAndActivelyTransferLeadership() throws Exception
+    void shouldRemoveLeaderFromExistingRaftGroupAndActivelyTransferLeadership() throws Exception
     {
         DirectNetworking net = new DirectNetworking();
 
@@ -283,7 +283,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldRemoveLeaderAndAddItBackIn() throws Exception
+    void shouldRemoveLeaderAndAddItBackIn() throws Exception
     {
         DirectNetworking net = new DirectNetworking();
 
@@ -323,7 +323,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldRemoveFollowerAndAddItBackIn() throws Exception
+    void shouldRemoveFollowerAndAddItBackIn() throws Exception
     {
         DirectNetworking net = new DirectNetworking();
 
@@ -361,7 +361,7 @@ public class RaftGroupMembershipTest
     }
 
     @Test
-    public void shouldElectNewLeaderWhenOldOneAbruptlyLeaves() throws Exception
+    void shouldElectNewLeaderWhenOldOneAbruptlyLeaves() throws Exception
     {
         DirectNetworking net = new DirectNetworking();
 

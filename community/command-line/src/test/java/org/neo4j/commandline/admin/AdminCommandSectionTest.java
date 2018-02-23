@@ -38,19 +38,19 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AdminCommandSectionTest
+class AdminCommandSectionTest
 {
     @Mock
     private Consumer<String> out;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         MockitoAnnotations.initMocks( this );
     }
 
     @Test
-    public void shouldPrintUsageForAllCommandsAlphabetically()
+    void shouldPrintUsageForAllCommandsAlphabetically()
     {
         AdminCommandSection generalSection = AdminCommandSection.general();
 
@@ -72,14 +72,14 @@ public class AdminCommandSectionTest
     }
 
     @Test
-    public void equalsUsingReflection()
+    void equalsUsingReflection()
     {
         assertTrue( AdminCommandSection.general().equals( new TestGeneralSection() ) );
         assertFalse( AdminCommandSection.general().equals( new TestAnotherGeneralSection() ) );
     }
 
     @Test
-    public void hashCodeUsingReflection()
+    void hashCodeUsingReflection()
     {
         TestGeneralSection testGeneralSection = new TestGeneralSection();
         TestAnotherGeneralSection testAnotherGeneralSection = new TestAnotherGeneralSection();

@@ -43,10 +43,10 @@ import static org.neo4j.graphdb.Label.label;
 public class SchemaRecoveryIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void schemaTransactionsShouldSurviveRecovery() throws Exception
+    void schemaTransactionsShouldSurviveRecovery() throws Exception
     {
         // given
         File storeDir = testDirectory.absolutePath();
@@ -80,7 +80,7 @@ public class SchemaRecoveryIT
         }
     }
 
-    public interface Process
+    interface Process
     {
         void waitForSchemaTransactionCommitted() throws InterruptedException;
     }

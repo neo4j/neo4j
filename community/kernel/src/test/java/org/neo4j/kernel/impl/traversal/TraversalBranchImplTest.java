@@ -38,11 +38,11 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 
-public class TraversalBranchImplTest
+class TraversalBranchImplTest
 {
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldExpandOnFirstAccess()
+    void shouldExpandOnFirstAccess()
     {
         // GIVEN
         TraversalBranch parent = mock( TraversalBranch.class );

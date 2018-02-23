@@ -32,10 +32,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.mockito.Mockito.mock;
 
-public class DatabaseRepresentationTest
+class DatabaseRepresentationTest
 {
     @Test
-    public void shouldIncludeExpectedResourcePaths()
+    void shouldIncludeExpectedResourcePaths()
     {
         // Given
         DatabaseRepresentation repr = new DatabaseRepresentation();

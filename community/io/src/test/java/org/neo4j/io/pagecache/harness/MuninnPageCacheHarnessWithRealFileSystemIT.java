@@ -32,7 +32,7 @@ import org.neo4j.test.rule.TestDirectory;
 public class MuninnPageCacheHarnessWithRealFileSystemIT extends MuninnPageCacheHarnessTest
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Override
     protected Fixture<MuninnPageCache> createFixture()

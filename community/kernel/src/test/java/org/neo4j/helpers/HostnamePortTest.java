@@ -33,11 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class HostnamePortTest
+class HostnamePortTest
 {
 
     @Test
-    public void testHostnameOnly()
+    void testHostnameOnly()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost" );
         assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
@@ -46,7 +46,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testHostnamePort()
+    void testHostnamePort()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1234" );
         assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
@@ -55,7 +55,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testHostnamePortRange()
+    void testHostnamePortRange()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1234-1243" );
         assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
@@ -64,7 +64,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testHostnamePortRangeInversed()
+    void testHostnamePortRangeInversed()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1243-1234" );
         assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
@@ -73,7 +73,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testSinglePortOnly()
+    void testSinglePortOnly()
     {
         HostnamePort hostnamePort = new HostnamePort( ":1234" );
         assertNull( hostnamePort.getHost() );
@@ -82,7 +82,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testPortRangeOnly()
+    void testPortRangeOnly()
     {
         HostnamePort hostnamePort = new HostnamePort( ":1230-1240" );
         assertNull( hostnamePort.getHost() );
@@ -91,14 +91,14 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testDefaultHost()
+    void testDefaultHost()
     {
         HostnamePort hostnamePort = new HostnamePort( ":1234" );
         assertThat( hostnamePort.getHost( "1.2.3.4" ), equalTo( "1.2.3.4" ) );
     }
 
     @Test
-    public void testGetHostAddress() throws Exception
+    void testGetHostAddress() throws Exception
     {
         // Given
         String hostName = InetAddress.getLocalHost().getHostName();
@@ -114,7 +114,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testGetHostAddressUnknown()
+    void testGetHostAddressUnknown()
     {
         // Given
         String unknownHost = "unknownHost";
@@ -138,7 +138,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesUnknownHosts() throws Exception
+    void testMatchesUnknownHosts() throws Exception
     {
         // Given
         String knownHost = InetAddress.getLocalHost().getHostName();
@@ -205,7 +205,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesKnownHostWithIP() throws Exception
+    void testMatchesKnownHostWithIP() throws Exception
     {
         // Given
 
@@ -252,7 +252,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesIPWithHost() throws Exception
+    void testMatchesIPWithHost() throws Exception
     {
         // Given
 
@@ -304,7 +304,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesIPWithHostUnknown() throws Exception
+    void testMatchesIPWithHostUnknown() throws Exception
     {
         // Given
            String unknownHost = "unknownHost";
@@ -334,7 +334,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesKnownHostWithHost() throws Exception
+    void testMatchesKnownHostWithHost() throws Exception
     {
         // Given
 
@@ -386,7 +386,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesKnownHostWithHostUnknown() throws Exception
+    void testMatchesKnownHostWithHostUnknown() throws Exception
     {
         // Given
         String host1 = InetAddress.getLocalHost().getHostName();
@@ -416,7 +416,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesIP()
+    void testMatchesIP()
     {
         // Given
 
@@ -451,7 +451,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesNullHostWithUnknownHost()
+    void testMatchesNullHostWithUnknownHost()
     {
         // Given
 
@@ -474,7 +474,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesNullHostWithIP() throws Exception
+    void testMatchesNullHostWithIP() throws Exception
     {
         HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
         String host1IP = InetAddress.getLocalHost().getHostAddress();
@@ -483,7 +483,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesNullHostWithKnownHost() throws Exception
+    void testMatchesNullHostWithKnownHost() throws Exception
     {
         HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
         String host1 = InetAddress.getLocalHost().getHostName();
@@ -492,7 +492,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testIPv6Address()
+    void testIPv6Address()
     {
         HostnamePort hostnamePort = new HostnamePort( "[2001:cdba:0:0:0:0:3257:9652]" );
 
@@ -502,7 +502,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testIPv6AddressWithSchemeAndPort()
+    void testIPv6AddressWithSchemeAndPort()
     {
         HostnamePort hostnamePort = new HostnamePort( "foo://[ff02::1:1]:9191" );
 
@@ -512,7 +512,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testIPv6Localhost()
+    void testIPv6Localhost()
     {
         HostnamePort hostnamePort = new HostnamePort( "[::1]" );
 
@@ -522,7 +522,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testIPv6LocalhostWithSchemeAndPort()
+    void testIPv6LocalhostWithSchemeAndPort()
     {
         HostnamePort hostnamePort = new HostnamePort( "foo://[::1]:6362" );
 

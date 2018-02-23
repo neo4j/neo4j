@@ -30,15 +30,15 @@ import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-public class GroupConfigTest
+class GroupConfigTest
 {
     @Test
-    public void shouldProvideNiceSetMechanism()
+    void shouldProvideNiceSetMechanism()
     {
         assertThat( connector(0).enabled.name(), equalTo( "dbms.connector.0.enabled" ) );
     }
 
-    static ConnectorExample connector( int key )
+    private static ConnectorExample connector( int key )
     {
         return new ConnectorExample( Integer.toString(key) );
     }
@@ -46,8 +46,8 @@ public class GroupConfigTest
     @Group( "dbms.connector" )
     static class ConnectorExample
     {
-        public final Setting<Boolean> enabled;
-        public final Setting<String> name;
+        final Setting<Boolean> enabled;
+        final Setting<String> name;
 
         private final GroupSettingSupport group;
 

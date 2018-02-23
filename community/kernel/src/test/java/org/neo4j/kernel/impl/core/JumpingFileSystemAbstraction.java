@@ -108,7 +108,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         return open( fileName, OpenMode.READ_WRITE );
     }
 
-    public static int getRecordSize( int dataSize )
+    private static int getRecordSize( int dataSize )
     {
         return dataSize + DynamicRecordFormat.RECORD_HEADER_SIZE;
     }

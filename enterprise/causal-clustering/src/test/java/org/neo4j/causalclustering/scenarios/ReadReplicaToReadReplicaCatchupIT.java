@@ -31,7 +31,6 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -199,12 +198,12 @@ public class ReadReplicaToReadReplicaCatchupIT
     {
         private ReadReplica current;
 
-        public void setCurrent( ReadReplica readReplica )
+        void setCurrent( ReadReplica readReplica )
         {
             this.current = readReplica;
         }
 
-        public ReadReplica current()
+        ReadReplica current()
         {
             return current;
         }

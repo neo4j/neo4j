@@ -64,20 +64,20 @@ public class GraphDatabaseFacadeFactoryTest
     @Rule
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =
             mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( deps.monitors() ).thenReturn( new Monitors() );
     }
 
     @Test
-    public void shouldThrowAppropriateExceptionIfStartFails()
+    void shouldThrowAppropriateExceptionIfStartFails()
     {
         // Given
         RuntimeException startupError = new RuntimeException();
@@ -97,7 +97,7 @@ public class GraphDatabaseFacadeFactoryTest
     }
 
     @Test
-    public void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail()
+    void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail()
     {
         // Given
         RuntimeException startupError = new RuntimeException();

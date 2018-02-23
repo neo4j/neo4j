@@ -871,12 +871,12 @@ public class NeoStoresTest
         private static Map<String,Token> stringToIndex = new HashMap<>();
         private static Map<Integer,Token> intToIndex = new HashMap<>();
 
-        protected MyPropertyKeyToken( String key, int keyId )
+        MyPropertyKeyToken( String key, int keyId )
         {
             super( key, keyId );
         }
 
-        public static Iterable<Token> index( String key )
+        static Iterable<Token> index( String key )
         {
             if ( stringToIndex.containsKey( key ) )
             {
@@ -885,12 +885,12 @@ public class NeoStoresTest
             return Collections.emptyList();
         }
 
-        public static Token getIndexFor( int index )
+        static Token getIndexFor( int index )
         {
             return intToIndex.get( index );
         }
 
-        public static void add( MyPropertyKeyToken index )
+        static void add( MyPropertyKeyToken index )
         {
             stringToIndex.put( index.name(), index );
             intToIndex.put( index.id(), index );

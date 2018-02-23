@@ -53,7 +53,7 @@ import static org.neo4j.kernel.impl.util.Converters.toInt;
 public class TestArgs
 {
     @Test
-    public void testInterleavedParametersWithValuesAndNot()
+    void testInterleavedParametersWithValuesAndNot()
     {
         String[] line = { "-host", "machine.foo.com", "-port", "1234", "-v", "-name", "othershell" };
         Args args = parse( line );
@@ -66,7 +66,7 @@ public class TestArgs
     }
 
     @Test
-    public void testInterleavedEqualsArgsAndSplitKeyValue()
+    void testInterleavedEqualsArgsAndSplitKeyValue()
     {
         String[] line = { "-host=localhost", "-v", "--port", "1234", "param1", "-name=Something", "param2" };
         Args args = parse( line );
@@ -81,7 +81,7 @@ public class TestArgs
     }
 
     @Test
-    public void testParameterWithDashValue()
+    void testParameterWithDashValue()
     {
         String [] line = { "-file", "-" };
         Args args = parse( line );
@@ -91,7 +91,7 @@ public class TestArgs
     }
 
     @Test
-    public void testEnum()
+    void testEnum()
     {
         String[] line = { "--enum=" + MyEnum.second.name() };
         Args args = parse( line );
@@ -100,7 +100,7 @@ public class TestArgs
     }
 
     @Test
-    public void testEnumWithDefault()
+    void testEnumWithDefault()
     {
         String[] line = {};
         Args args = parse( line );
@@ -109,7 +109,7 @@ public class TestArgs
     }
 
     @Test
-    public void testEnumWithInvalidValue()
+    void testEnumWithInvalidValue()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             String[] line = {"--myenum=something"};
@@ -119,7 +119,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretOption()
+    void shouldInterpretOption()
     {
         // GIVEN
         int expectedValue = 42;
@@ -136,7 +136,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretOrphan()
+    void shouldInterpretOrphan()
     {
         // GIVEN
         int expectedValue = 42;
@@ -153,7 +153,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretMultipleOptionValues()
+    void shouldInterpretMultipleOptionValues()
     {
         // GIVEN
         Collection<Integer> expectedValues = asList( 12, 34, 56 );
@@ -184,7 +184,7 @@ public class TestArgs
     }
 
     @Test
-    public void testBooleanWithDefault()
+    void testBooleanWithDefault()
     {
         // Given
         Args args = parse( "--no_value" );
@@ -202,7 +202,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldGetAsMap()
+    void shouldGetAsMap()
     {
         // GIVEN
         Args args = parse( "--with-value", "value", "--without-value" );
@@ -215,7 +215,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretOptionMetadata()
+    void shouldInterpretOptionMetadata()
     {
         // GIVEN
         Args args = parse( "--my-option:Meta", "my value", "--my-option:Other", "other value" );
@@ -236,7 +236,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldHandleLastOrphanParam()
+    void shouldHandleLastOrphanParam()
     {
         // Given
         Args args = withFlags("recovery").parse( "--recovery", "/tmp/graph.db" );
@@ -249,7 +249,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldHandleOnlyFlagsAndNoArgs()
+    void shouldHandleOnlyFlagsAndNoArgs()
     {
         // Given
         Args args = withFlags( "foo", "bar" ).parse("-foo", "--bar");
@@ -264,7 +264,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldStillAllowExplicitValuesForFlags()
+    void shouldStillAllowExplicitValuesForFlags()
     {
         // Given
         Args args = withFlags( "foo", "bar" ).parse("-foo=false", "--bar");
@@ -279,7 +279,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldHandleMixtureOfFlagsAndOrphanParams()
+    void shouldHandleMixtureOfFlagsAndOrphanParams()
     {
         // Given
         Args args = withFlags( "big", "soft", "saysMeow" ).parse(
@@ -300,7 +300,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldHandleFlagSpecifiedAsLastArgument()
+    void shouldHandleFlagSpecifiedAsLastArgument()
     {
         // Given
         Args args = withFlags( "flag1", "flag2" ).parse(
@@ -318,7 +318,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldRecognizeFlagsOfAnyForm()
+    void shouldRecognizeFlagsOfAnyForm()
     {
         // Given
         Args args = withFlags( "flag1", "flag2", "flag3" ).parse(
@@ -335,7 +335,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldReturnEmptyCollectionForOptionalMissingOption()
+    void shouldReturnEmptyCollectionForOptionalMissingOption()
     {
         // Given
         Args args = withFlags().parse();

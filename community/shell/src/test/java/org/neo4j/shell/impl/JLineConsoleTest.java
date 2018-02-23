@@ -33,14 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( SuppressOutputExtension.class )
-public class JLineConsoleTest
+class JLineConsoleTest
 {
 
     @Resource
-    public SuppressOutput suppressOutput;
+    private SuppressOutput suppressOutput;
 
     @Test
-    public void createAndUseJLineConsole()
+    void createAndUseJLineConsole()
     {
         ShellClient shellClient = Mockito.mock( ShellClient.class );
         JLineConsole jLineConsole = JLineConsole.newConsoleOrNullIfNotFound( shellClient );

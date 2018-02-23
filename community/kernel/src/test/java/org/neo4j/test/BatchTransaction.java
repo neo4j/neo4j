@@ -74,7 +74,7 @@ public class BatchTransaction implements AutoCloseable
         return false;
     }
 
-    public void intermediaryCommit()
+    private void intermediaryCommit()
     {
         closeTx();
         beginTx();

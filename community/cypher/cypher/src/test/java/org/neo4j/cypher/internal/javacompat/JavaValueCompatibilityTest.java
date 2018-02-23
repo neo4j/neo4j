@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -34,24 +33,24 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isA;
 
-public class JavaValueCompatibilityTest
+class JavaValueCompatibilityTest
 {
     private GraphDatabaseService  db;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         db.shutdown();
     }
 
     @Test
-    public void collections_in_collections_look_aiight()
+    void collections_in_collections_look_aiight()
     {
         Result result = db.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
         Map<String, Object> next = result.next();

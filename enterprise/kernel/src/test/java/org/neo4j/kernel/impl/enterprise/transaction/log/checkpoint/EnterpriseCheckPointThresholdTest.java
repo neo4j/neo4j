@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholdTestSupport;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -58,7 +58,7 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
     }
 
     @Test
-    public void checkPointIsNeededIfWeMightHaveLogsToPrune()
+    void checkPointIsNeededIfWeMightHaveLogsToPrune()
     {
         withPolicy( "volumetric" );
         haveLogsToPrune = true;
@@ -70,7 +70,7 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
     }
 
     @Test
-    public void checkPointIsInitiallyNotNeededIfWeHaveNoLogsToPrune()
+    void checkPointIsInitiallyNotNeededIfWeHaveNoLogsToPrune()
     {
         withPolicy( "volumetric" );
         haveLogsToPrune = false;
@@ -82,7 +82,7 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void continuousPolicyMustAlwaysTriggerCheckPoints()
+    void continuousPolicyMustAlwaysTriggerCheckPoints()
     {
         withPolicy( "continuous" );
         CheckPointThreshold threshold = createThreshold();

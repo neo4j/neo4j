@@ -39,12 +39,12 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class TestConfiguration
+class TestConfiguration
 {
     @Resource
     public SuppressOutput suppressOutput;
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
 
     private static final String HOST_ADDRESS = "127.0.0.1";
 
@@ -52,14 +52,14 @@ public class TestConfiguration
     private String backupDir;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         sourceDir = dir.makeGraphDbDir();
         backupDir = dir.cleanDirectory( "full-backup" ).getAbsolutePath();
     }
 
     @Test
-    public void testOnByDefault()
+    void testOnByDefault()
     {
         int port = PortAuthority.allocatePort();
 
@@ -70,7 +70,7 @@ public class TestConfiguration
     }
 
     @Test
-    public void testOffByConfig()
+    void testOffByConfig()
     {
         int port = PortAuthority.allocatePort();
 
@@ -90,7 +90,7 @@ public class TestConfiguration
     }
 
     @Test
-    public void testEnableDefaultsInConfig()
+    void testEnableDefaultsInConfig()
     {
         int port = PortAuthority.allocatePort();
 
@@ -104,7 +104,7 @@ public class TestConfiguration
     }
 
     @Test
-    public void testEnableCustomPortInConfig()
+    void testEnableCustomPortInConfig()
     {
         int customPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourceDir )

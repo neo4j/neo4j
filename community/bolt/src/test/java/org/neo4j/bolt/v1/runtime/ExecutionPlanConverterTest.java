@@ -38,11 +38,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class ExecutionPlanConverterTest
+class ExecutionPlanConverterTest
 {
 
     @Test
-    public void profileStatisticConversion()
+    void profileStatisticConversion()
     {
         MapValue convertedMap = ExecutionPlanConverter.convert(
                 new TestExecutionPlanDescription( "description", getProfilerStatistics(), getIdentifiers(),

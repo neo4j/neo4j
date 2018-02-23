@@ -28,10 +28,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SlaveStatementLocksTest
+class SlaveStatementLocksTest
 {
     @Test
-    public void acquireDeferredSharedLocksOnPrepareForCommit()
+    void acquireDeferredSharedLocksOnPrepareForCommit()
     {
         StatementLocks statementLocks = mock( StatementLocks.class );
         SlaveLocksClient slaveLocksClient = mock( SlaveLocksClient.class );

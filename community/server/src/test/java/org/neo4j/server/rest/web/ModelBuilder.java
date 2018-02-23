@@ -72,7 +72,7 @@ public class ModelBuilder
 
     public static class DomainEntity
     {
-        public URI location;
+        URI location;
         public Map<String, String> properties = new HashMap<>();
     }
 
@@ -83,7 +83,7 @@ public class ModelBuilder
         public Map<String, String> indexedNodeKeyValues = new HashMap<>();
         public Map<URI, DomainEntity> indexedNodeUriToEntityMap = new HashMap<>();
 
-        public void add( DomainEntity de )
+        void add( DomainEntity de )
         {
             nodeUriToEntityMap.put( de.location, de );
         }

@@ -29,10 +29,10 @@ import static java.util.Arrays.copyOfRange;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ThreadAheadReadableTest
+class ThreadAheadReadableTest
 {
     @Test
-    public void shouldReadAhead() throws Exception
+    void shouldReadAhead() throws Exception
     {
         // GIVEN
         TrackingReader actual = new TrackingReader( 23 );
@@ -74,7 +74,7 @@ public class ThreadAheadReadableTest
     }
 
     @Test
-    public void shouldHandleReadAheadEmptyData() throws Exception
+    void shouldHandleReadAheadEmptyData() throws Exception
     {
         // GIVEN
         TrackingReader actual = new TrackingReader( 0 );

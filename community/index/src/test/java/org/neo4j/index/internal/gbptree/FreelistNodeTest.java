@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FreelistNodeTest
+class FreelistNodeTest
 {
     private static final int PAGE_SIZE = 128;
 
@@ -36,7 +36,7 @@ public class FreelistNodeTest
     private final int maxEntries = freelist.maxEntries();
 
     @Test
-    public void shouldInitializeTreeNode()
+    void shouldInitializeTreeNode()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -49,7 +49,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldNodeOverwriteNodeType()
+    void shouldNodeOverwriteNodeType()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -66,7 +66,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldSetAndGetNext()
+    void shouldSetAndGetNext()
     {
         // GIVEN
         long nextId = 12345;
@@ -80,7 +80,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldReadAndWriteFreeListEntries()
+    void shouldReadAndWriteFreeListEntries()
     {
         // GIVEN
         long generationA = 34;
@@ -100,7 +100,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingBeyondMaxEntries()
+    void shouldFailOnWritingBeyondMaxEntries()
     {
         // WHEN
         try
@@ -115,7 +115,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingTooBigPointer()
+    void shouldFailOnWritingTooBigPointer()
     {
         // WHEN
         try
@@ -130,7 +130,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingTooBigGeneration()
+    void shouldFailOnWritingTooBigGeneration()
     {
         // WHEN
         try
@@ -145,7 +145,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldReturnNoPageOnUnstableEntry()
+    void shouldReturnNoPageOnUnstableEntry()
     {
         // GIVEN
         long stableGeneration = 10;

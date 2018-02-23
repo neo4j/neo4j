@@ -50,10 +50,10 @@ public class PhysicalFlushableChannelTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldBeAbleToWriteSmallNumberOfBytes() throws IOException
+    void shouldBeAbleToWriteSmallNumberOfBytes() throws IOException
     {
         final File firstFile = new File( directory.directory(), "file1" );
         StoreChannel storeChannel = fileSystemRule.get().open( firstFile, OpenMode.READ_WRITE );
@@ -77,7 +77,7 @@ public class PhysicalFlushableChannelTest
     }
 
     @Test
-    public void shouldBeAbleToWriteValuesGreaterThanHalfTheBufferSize() throws IOException
+    void shouldBeAbleToWriteValuesGreaterThanHalfTheBufferSize() throws IOException
     {
         final File firstFile = new File( directory.directory(), "file1" );
         StoreChannel storeChannel = fileSystemRule.get().open( firstFile, OpenMode.READ_WRITE );
@@ -101,7 +101,7 @@ public class PhysicalFlushableChannelTest
     }
 
     @Test
-    public void shouldBeAbleToWriteValuesGreaterThanTheBufferSize() throws IOException
+    void shouldBeAbleToWriteValuesGreaterThanTheBufferSize() throws IOException
     {
         final File firstFile = new File( directory.directory(), "file1" );
         StoreChannel storeChannel = fileSystemRule.get().open( firstFile, OpenMode.READ_WRITE );
@@ -137,7 +137,7 @@ public class PhysicalFlushableChannelTest
     }
 
     @Test
-    public void shouldWriteThroughRotation() throws Exception
+    void shouldWriteThroughRotation() throws Exception
     {
         // GIVEN
         final File firstFile = new File( directory.directory(), "file1" );
@@ -187,7 +187,7 @@ public class PhysicalFlushableChannelTest
     }
 
     @Test
-    public void shouldSeeCorrectPositionEvenBeforeEmptyingDataIntoChannel() throws Exception
+    void shouldSeeCorrectPositionEvenBeforeEmptyingDataIntoChannel() throws Exception
     {
         // GIVEN
         final File file = new File( directory.directory(), "file" );
@@ -209,7 +209,7 @@ public class PhysicalFlushableChannelTest
     }
 
     @Test
-    public void shouldThrowIllegalStateExceptionAfterClosed() throws Exception
+    void shouldThrowIllegalStateExceptionAfterClosed() throws Exception
     {
         // GIVEN
         final File file = new File( directory.directory(), "file" );
@@ -237,7 +237,7 @@ public class PhysicalFlushableChannelTest
     }
 
     @Test
-    public void shouldThrowClosedChannelExceptionWhenChannelUnexpectedlyClosed() throws Exception
+    void shouldThrowClosedChannelExceptionWhenChannelUnexpectedlyClosed() throws Exception
     {
         // GIVEN
         final File file = new File( directory.directory(), "file" );

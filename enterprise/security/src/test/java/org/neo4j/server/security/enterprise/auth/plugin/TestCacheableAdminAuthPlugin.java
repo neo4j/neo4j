@@ -54,5 +54,5 @@ public class TestCacheableAdminAuthPlugin extends AuthPlugin.CachingEnabledAdapt
     }
 
     // For testing purposes
-    public static AtomicInteger getAuthInfoCallCount = new AtomicInteger( 0 );
+    private static AtomicInteger getAuthInfoCallCount = new AtomicInteger( 0 );
 }

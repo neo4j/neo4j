@@ -43,14 +43,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class RotatableCsvReporterTest
+class RotatableCsvReporterTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private RotatingFileOutputStreamSupplier fileOutputStreamSupplier = mock( RotatingFileOutputStreamSupplier.class );
 
     @Test
-    public void stopAllWritersOnStop() throws IOException
+    void stopAllWritersOnStop() throws IOException
     {
         when( fileOutputStreamSupplier.get() ).thenReturn( mock( OutputStream.class ) );
         RotatableCsvReporter reporter =

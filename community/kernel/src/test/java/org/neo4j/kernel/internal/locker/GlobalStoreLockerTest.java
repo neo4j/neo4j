@@ -42,12 +42,12 @@ public class GlobalStoreLockerTest
 {
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void failToLockSameFolderAcrossIndependentLockers() throws Exception
+    void failToLockSameFolderAcrossIndependentLockers() throws Exception
     {
         File directory = testDirectory.directory( "store-dir" );
         try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
@@ -77,7 +77,7 @@ public class GlobalStoreLockerTest
     }
 
     @Test
-    public void allowToLockSameDirectoryIfItWasUnlocked() throws IOException
+    void allowToLockSameDirectoryIfItWasUnlocked() throws IOException
     {
         File directory = testDirectory.directory( "doubleLock" );
         try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )
@@ -91,7 +91,7 @@ public class GlobalStoreLockerTest
     }
 
     @Test
-    public void allowMultipleCallstoActuallStoreLocker() throws IOException
+    void allowMultipleCallstoActuallStoreLocker() throws IOException
     {
         File directory = testDirectory.directory( "multipleCalls" );
         try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )

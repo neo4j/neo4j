@@ -38,12 +38,12 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 public class GitHub1304Test
 {
     @Resource
-    public TestDirectory folder;
+    private TestDirectory folder;
     @Rule
     public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws Exception
+    void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws Exception
     {
         BatchInserter batchInserter = BatchInserters.inserter( folder.directory().getAbsoluteFile(), fileSystemRule.get() );
 

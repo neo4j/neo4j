@@ -37,11 +37,9 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
@@ -312,14 +310,14 @@ public class ClusterNetworkIT
         abstract static class ClusterAction
                 implements Runnable
         {
-            public long time;
+            long time;
         }
 
         private Queue<ClusterAction> actions = new LinkedList<>();
 
         private long now;
 
-        public ClusterTestScriptDSL join( long time, final int joinServer, final int... joinServers )
+        ClusterTestScriptDSL join( long time, final int joinServer, final int... joinServers )
         {
             ClusterAction joinAction = new ClusterAction()
             {
@@ -422,7 +420,7 @@ public class ClusterNetworkIT
             return this;
         }
 
-        public ClusterTestScriptDSL leave( long time, final int leaveServer )
+        ClusterTestScriptDSL leave( long time, final int leaveServer )
         {
             ClusterAction leaveAction = new ClusterAction()
             {
@@ -471,7 +469,7 @@ public class ClusterNetworkIT
         private final long seed;
         private final Random random;
 
-        public ClusterTestScriptRandom( long seed )
+        ClusterTestScriptRandom( long seed )
         {
             if ( seed == -1 )
             {

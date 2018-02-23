@@ -58,14 +58,14 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 public class BatchInserterImplTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public final ExpectedException expected = ExpectedException.none();
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void testHonorsPassedInParams() throws Exception
+    void testHonorsPassedInParams() throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystemRule.get(),
                 stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
@@ -78,7 +78,7 @@ public class BatchInserterImplTest
     }
 
     @Test
-    public void testCreatesStoreLockFile() throws Exception
+    void testCreatesStoreLockFile() throws Exception
     {
         // Given
         File file = testDirectory.graphDbDir();
@@ -92,7 +92,7 @@ public class BatchInserterImplTest
     }
 
     @Test
-    public void testFailsOnExistingStoreLockFile() throws IOException
+    void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
         File parent = testDirectory.graphDbDir();

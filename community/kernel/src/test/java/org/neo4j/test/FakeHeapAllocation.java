@@ -45,7 +45,7 @@ public class FakeHeapAllocation extends HeapAllocation implements TestRule
         return add( currentThread().getId(), bytes );
     }
 
-    public FakeHeapAllocation add( long threadId, long bytes )
+    private FakeHeapAllocation add( long threadId, long bytes )
     {
         allocation.put( threadId, allocatedBytes( threadId ) + bytes );
         return this;

@@ -76,12 +76,12 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.StreamConsumer.IGNORE_FAILURES;
 
 @ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
-public class ArbiterBootstrapperIT
+class ArbiterBootstrapperIT
 {
     @Resource
     public SuppressOutput suppressOutput;
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private static Integer SHOULD_NOT_JOIN;
     private File directory;
@@ -89,7 +89,7 @@ public class ArbiterBootstrapperIT
     private ClusterClient[] clients;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         directory = testDirectory.directory( "temp" );
         life = new LifeSupport();
@@ -125,13 +125,13 @@ public class ArbiterBootstrapperIT
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         life.shutdown();
     }
 
     @Test
-    public void canJoinWithExplicitInitialHosts() throws Exception
+    void canJoinWithExplicitInitialHosts() throws Exception
     {
         startAndAssertJoined( 5003,
                 stringMap(
@@ -142,7 +142,7 @@ public class ArbiterBootstrapperIT
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
-    public void willFailJoinIfIncorrectInitialHostsSet() throws Exception
+    void willFailJoinIfIncorrectInitialHostsSet() throws Exception
     {
         startAndAssertJoined( SHOULD_NOT_JOIN,
                 stringMap(
@@ -152,7 +152,7 @@ public class ArbiterBootstrapperIT
     }
 
     @Test
-    public void canSetSpecificPort() throws Exception
+    void canSetSpecificPort() throws Exception
     {
         startAndAssertJoined( 5010,
                 stringMap(
@@ -163,7 +163,7 @@ public class ArbiterBootstrapperIT
     }
 
     @Test
-    public void usesPortRange() throws Exception
+    void usesPortRange() throws Exception
     {
         startAndAssertJoined( 5012,
                 stringMap(

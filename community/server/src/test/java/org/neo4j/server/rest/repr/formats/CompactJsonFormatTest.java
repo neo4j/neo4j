@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -34,25 +33,27 @@ import org.neo4j.server.rest.repr.MappingSerializer;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
-public class CompactJsonFormatTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class CompactJsonFormatTest
 {
     private OutputFormat json;
 
     @BeforeEach
-    public void createOutputFormat() throws Exception
+    void createOutputFormat() throws Exception
     {
         json = new OutputFormat( new CompactJsonFormat(), new URI( "http://localhost/" ), null );
     }
 
     @Test
-    public void canFormatString()
+    void canFormatString()
     {
         String entity = json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( entity, "\"expected value\"" );
     }
 
     @Test
-    public void canFormatListOfStrings()
+    void canFormatListOfStrings()
     {
         String entity = json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
@@ -60,14 +61,14 @@ public class CompactJsonFormatTest
     }
 
     @Test
-    public void canFormatInteger()
+    void canFormatInteger()
     {
         String entity = json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", entity );
     }
 
     @Test
-    public void canFormatObjectWithStringField()
+    void canFormatObjectWithStringField()
     {
         String entity = json.assemble( new MappingRepresentation( "string" )
         {

@@ -38,7 +38,6 @@ import com.sun.jersey.spi.monitoring.RequestListener;
 import com.sun.jersey.spi.monitoring.ResponseListener;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import javax.ws.rs.ext.Providers;
@@ -49,13 +48,13 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class XForwardFilterTest
+class XForwardFilterTest
 {
     private static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
     private static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
 
     @Test
-    public void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader()
+    void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader()
     {
         // given
         final String xForwardHostAndPort = "jimwebber.org:1234";
@@ -77,7 +76,7 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader()
+    void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader()
     {
         // given
         final String xForwardHostAndPort = "jimwebber.org:1234";
@@ -99,7 +98,7 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader()
+    void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader()
     {
         // given
         final String theProtocol = "https";
@@ -121,7 +120,7 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader()
+    void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader()
     {
         // given
         final String theProtocol = "https";

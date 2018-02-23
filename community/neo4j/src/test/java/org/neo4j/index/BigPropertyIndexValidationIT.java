@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class BigPropertyIndexValidationIT
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -57,7 +57,7 @@ public class BigPropertyIndexValidationIT
     private String propertyKey;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         LABEL = Label.label( "LABEL" );
         char[] chars = new char[1 << 15];
@@ -67,7 +67,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
+    void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -98,7 +98,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
+    void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -130,7 +130,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
+    void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();

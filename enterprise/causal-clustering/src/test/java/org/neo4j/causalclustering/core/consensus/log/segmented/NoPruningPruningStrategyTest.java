@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NoPruningPruningStrategyTest
+class NoPruningPruningStrategyTest
 {
     @Test
-    public void shouldNotExcludeAnySegmentPages()
+    void shouldNotExcludeAnySegmentPages()
     {
          NoPruningPruningStrategy strategy = new NoPruningPruningStrategy();
 

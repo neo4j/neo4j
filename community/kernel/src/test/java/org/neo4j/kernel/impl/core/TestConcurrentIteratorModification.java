@@ -38,13 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class TestConcurrentIteratorModification
+class TestConcurrentIteratorModification
 {
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
 
     @Test
-    public void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
+    void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
     {
         // given
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();

@@ -104,7 +104,7 @@ public class ProcedureIT
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         exceptionsInProcedure.clear();
         File myProcedures = plugins.file( "myProcedures.jar" );
@@ -123,7 +123,7 @@ public class ProcedureIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( this.db != null )
         {
@@ -134,7 +134,7 @@ public class ProcedureIT
     public static boolean[] onCloseCalled;
 
     @Test
-    public void shouldCallProcedureWithParameterMap()
+    void shouldCallProcedureWithParameterMap()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -149,7 +149,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithDefaultArgument()
+    void shouldCallProcedureWithDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.simpleArgumentWithDefault" );
@@ -160,7 +160,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallYieldProcedureWithDefaultArgument()
+    void shouldCallYieldProcedureWithDefaultArgument()
     {
         // Given/When
         Result res = db.execute(
@@ -172,7 +172,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithAllDefaultArgument()
+    void shouldCallProcedureWithAllDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues" );
@@ -183,7 +183,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithOneProvidedRestDefaultArgument()
+    void shouldCallProcedureWithOneProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string')");
@@ -194,7 +194,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithTwoProvidedRestDefaultArgument()
+    void shouldCallProcedureWithTwoProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337)");
@@ -205,7 +205,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithThreeProvidedRestDefaultArgument()
+    void shouldCallProcedureWithThreeProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828)");
@@ -216,7 +216,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithFourProvidedRestDefaultArgument()
+    void shouldCallProcedureWithFourProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828, false)");
@@ -227,7 +227,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveNiceErrorMessageOnWrongStaticType()
+    void shouldGiveNiceErrorMessageOnWrongStaticType()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -242,7 +242,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveNiceErrorMessageWhenNoArguments()
+    void shouldGiveNiceErrorMessageWhenNoArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -259,7 +259,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveNiceErrorWhenMissingArgumentsToVoidFunction()
+    void shouldGiveNiceErrorWhenMissingArgumentsToVoidFunction()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -276,7 +276,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenMissingArguments()
+    void shouldShowDescriptionWhenMissingArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -294,7 +294,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallDelegatingProcedure()
+    void shouldCallDelegatingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -309,7 +309,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallRecursiveProcedure()
+    void shouldCallRecursiveProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -324,7 +324,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithGenericArgument()
+    void shouldCallProcedureWithGenericArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -341,7 +341,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithMapArgument()
+    void shouldCallProcedureWithMapArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -357,7 +357,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithMapArgumentDefaultingToNull()
+    void shouldCallProcedureWithMapArgumentDefaultingToNull()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -373,7 +373,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithMapArgumentDefaultingToMap()
+    void shouldCallProcedureWithMapArgumentDefaultingToMap()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -389,7 +389,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithListWithDefault()
+    void shouldCallProcedureWithListWithDefault()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -405,7 +405,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithGenericListWithDefault()
+    void shouldCallProcedureWithGenericListWithDefault()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -421,7 +421,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureListWithNull()
+    void shouldCallProcedureListWithNull()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -437,7 +437,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureListWithNullInList()
+    void shouldCallProcedureListWithNullInList()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -453,7 +453,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithNodeReturn()
+    void shouldCallProcedureWithNodeReturn()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -471,7 +471,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureReturningNull()
+    void shouldCallProcedureReturningNull()
     {
         Result res = db.execute( "CALL org.neo4j.procedure.node(-1)");
 
@@ -480,7 +480,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallYieldProcedureReturningNull()
+    void shouldCallYieldProcedureReturningNull()
     {
         Result res = db.execute( "CALL org.neo4j.procedure.node(-1) YIELD node as node RETURN node");
 
@@ -489,7 +489,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMissingProcedure()
+    void shouldGiveHelpfulErrorOnMissingProcedure()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -502,7 +502,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnExceptionMidStream()
+    void shouldGiveHelpfulErrorOnExceptionMidStream()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -522,7 +522,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowCauseOfError()
+    void shouldShowCauseOfError()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -539,7 +539,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithAccessToDB()
+    void shouldCallProcedureWithAccessToDB()
     {
         // When
         try ( Transaction ignore = db.beginTx() )
@@ -558,7 +558,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldLogLikeThereIsNoTomorrow()
+    void shouldLogLikeThereIsNoTomorrow()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -592,7 +592,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenyReadOnlyProcedureToPerformWrites()
+    void shouldDenyReadOnlyProcedureToPerformWrites()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -606,7 +606,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldAllowWriteProcedureToPerformWrites()
+    void shouldAllowWriteProcedureToPerformWrites()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -624,7 +624,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void readProceduresShouldPresentThemSelvesAsReadQueries()
+    void readProceduresShouldPresentThemSelvesAsReadQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -636,7 +636,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void readProceduresWithYieldShouldPresentThemSelvesAsReadQueries()
+    void readProceduresWithYieldShouldPresentThemSelvesAsReadQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -648,7 +648,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void writeProceduresShouldPresentThemSelvesAsWriteQueries()
+    void writeProceduresShouldPresentThemSelvesAsWriteQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -660,7 +660,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void writeProceduresWithYieldShouldPresentThemSelvesAsWriteQueries()
+    void writeProceduresWithYieldShouldPresentThemSelvesAsWriteQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -672,7 +672,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallWriteProcedureThroughReadProcedure()
+    void shouldNotBeAbleToCallWriteProcedureThroughReadProcedure()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -686,7 +686,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallReadProcedureThroughWriteProcedureInWriteOnlyTransaction()
+    void shouldNotBeAbleToCallReadProcedureThroughWriteProcedureInWriteOnlyTransaction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -702,7 +702,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallWriteProcedureThroughWriteProcedure()
+    void shouldBeAbleToCallWriteProcedureThroughWriteProcedure()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -720,7 +720,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallSchemaProcedureThroughWriteProcedureInWriteTransaction()
+    void shouldNotBeAbleToCallSchemaProcedureThroughWriteProcedureInWriteTransaction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -736,7 +736,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenyReadOnlyProcedureToPerformSchema()
+    void shouldDenyReadOnlyProcedureToPerformSchema()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -751,7 +751,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenyReadWriteProcedureToPerformSchema()
+    void shouldDenyReadWriteProcedureToPerformSchema()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -767,7 +767,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldAllowSchemaProcedureToPerformSchema()
+    void shouldAllowSchemaProcedureToPerformSchema()
     {
         // Give
         try ( Transaction tx = db.beginTx() )
@@ -786,7 +786,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldAllowSchemaCallReadOnly()
+    void shouldAllowSchemaCallReadOnly()
     {
         // Given
         long nodeId;
@@ -809,7 +809,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenySchemaProcedureToPerformWrite()
+    void shouldDenySchemaProcedureToPerformWrite()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -824,7 +824,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure()
+    void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -839,7 +839,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingProcedure()
+    void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -855,7 +855,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceListOfMixedNumbers()
+    void shouldCoerceListOfMixedNumbers()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -871,7 +871,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceDoubleToLongAtRuntimeWhenCallingProcedure()
+    void shouldCoerceDoubleToLongAtRuntimeWhenCallingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -886,7 +886,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallVoidProcedure()
+    void shouldBeAbleToCallVoidProcedure()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -897,7 +897,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallVoidProcedureWithDefaultValue()
+    void shouldBeAbleToCallVoidProcedureWithDefaultValue()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -909,7 +909,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallDelegatingVoidProcedure()
+    void shouldBeAbleToCallDelegatingVoidProcedure()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -920,7 +920,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyProcedure()
+    void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyProcedure()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -934,7 +934,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldFailToShutdown()
+    void shouldFailToShutdown()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -949,7 +949,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToWriteAfterCallingReadOnlyProcedure()
+    void shouldBeAbleToWriteAfterCallingReadOnlyProcedure()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -961,7 +961,7 @@ public class ProcedureIT
     private static List<Exception> exceptionsInProcedure = Collections.synchronizedList( new ArrayList<>() );
 
     @Test
-    public void shouldBeAbleToSpawnThreadsCreatingTransactionInProcedures() throws Throwable
+    void shouldBeAbleToSpawnThreadsCreatingTransactionInProcedures() throws Throwable
     {
         // given
         Runnable doIt = () ->
@@ -1003,7 +1003,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToUseCallYieldWithPeriodicCommit() throws IOException
+    void shouldBeAbleToUseCallYieldWithPeriodicCommit() throws IOException
     {
         // GIVEN
         String[] lines = IntStream.rangeClosed( 1, 100 )
@@ -1031,7 +1031,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldFailIfUsingPeriodicCommitWithReadOnlyQuery() throws IOException
+    void shouldFailIfUsingPeriodicCommitWithReadOnlyQuery() throws IOException
     {
         // GIVEN
         String url = createCsvFile( "13" );
@@ -1048,7 +1048,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToUseCallYieldWithLoadCsvAndSet() throws IOException
+    void shouldBeAbleToUseCallYieldWithLoadCsvAndSet() throws IOException
     {
         // GIVEN
         String url = createCsvFile( "foo" );
@@ -1064,7 +1064,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureReturningPaths()
+    void shouldCallProcedureReturningPaths()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -1089,7 +1089,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallStreamCloseWhenResultExhausted()
+    void shouldCallStreamCloseWhenResultExhausted()
     {
         String query = "CALL org.neo4j.procedure.onCloseProcedure(0)";
 
@@ -1107,7 +1107,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallStreamCloseWhenResultFiltered()
+    void shouldCallStreamCloseWhenResultFiltered()
     {
         // This query should return zero rows
         String query = "CALL org.neo4j.procedure.onCloseProcedure(1) YIELD someVal WITH someVal WHERE someVal = 1337 RETURN someVal";
@@ -1138,7 +1138,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldReturnNodeListTypedAsNodeList()
+    void shouldReturnNodeListTypedAsNodeList()
     {
         // When
         Result res = db.execute( "CALL org.neo4j.procedure.nodeList() YIELD nodes RETURN extract( x IN nodes | id(x) ) as ids" );
@@ -1150,7 +1150,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveNiceErrorMessageWhenAggregationFunctionInProcedureCall()
+    void shouldGiveNiceErrorMessageWhenAggregationFunctionInProcedureCall()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -1167,7 +1167,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldWorkWhenUsingWithToProjectList()
+    void shouldWorkWhenUsingWithToProjectList()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -1185,7 +1185,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotAllowReadProcedureInNoneTransaction()
+    void shouldNotAllowReadProcedureInNoneTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -1202,7 +1202,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotAllowWriteProcedureInReadOnlyTransaction()
+    void shouldNotAllowWriteProcedureInReadOnlyTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -1219,7 +1219,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotAllowSchemaWriteProcedureInWriteTransaction()
+    void shouldNotAllowSchemaWriteProcedureInWriteTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -1236,7 +1236,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithDefaultNodeArgument()
+    void shouldCallProcedureWithDefaultNodeArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.nodeWithDefault" );
@@ -1247,7 +1247,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldIndicateDefaultValueWhenListingProcedures()
+    void shouldIndicateDefaultValueWhenListingProcedures()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
@@ -1259,7 +1259,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenListingProcedures()
+    void shouldShowDescriptionWhenListingProcedures()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
@@ -1271,7 +1271,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowModeWhenListingProcedures()
+    void shouldShowModeWhenListingProcedures()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
@@ -1283,7 +1283,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldIndicateDefaultValueWhenListingFunctions()
+    void shouldIndicateDefaultValueWhenListingFunctions()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.functions()" ).stream().filter( record ->
@@ -1295,7 +1295,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenListingFunctions()
+    void shouldShowDescriptionWhenListingFunctions()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.functions()" ).stream().filter( record ->
@@ -1307,7 +1307,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldUseGuardToDetectTransactionTermination()
+    void shouldUseGuardToDetectTransactionTermination()
     {
         exception.expect( QueryExecutionException.class );
         exception.expectMessage( "The transaction has been terminated. Retry your operation in a new " +
@@ -1318,7 +1318,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldMakeTransactionToFail()
+    void shouldMakeTransactionToFail()
     {
         //When
         try ( Transaction ignore = db.beginTx() )

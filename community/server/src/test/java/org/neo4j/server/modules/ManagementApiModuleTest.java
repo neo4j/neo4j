@@ -37,10 +37,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ManagementApiModuleTest
+class ManagementApiModuleTest
 {
     @Test
-    public void shouldRegisterASingleUri() throws Exception
+    void shouldRegisterASingleUri() throws Exception
     {
         WebServer webServer = mock( WebServer.class );
 

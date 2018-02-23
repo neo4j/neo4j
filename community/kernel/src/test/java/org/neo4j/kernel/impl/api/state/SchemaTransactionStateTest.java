@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class SchemaTransactionStateTest
+class SchemaTransactionStateTest
 {
     private static IndexDescriptor indexCreate( StateHandlingStatementOperations txContext, KernelStatement state,
             int labelId, int propertyKey )
@@ -77,7 +77,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedRuleShouldBeVisibleInTx()
+    void addedRuleShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -96,7 +96,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedRulesShouldBeVisibleInTx()
+    void addedRulesShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -119,7 +119,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedAdditionalRuleShouldBeVisibleInTx()
+    void addedAdditionalRuleShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -133,7 +133,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void creatingAnIndexShouldBePopulatingStateWithinTX() throws Exception
+    void creatingAnIndexShouldBePopulatingStateWithinTX() throws Exception
     {
         // GIVEN
         commitLabels( labelId1 );
@@ -144,7 +144,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldReturnNonExistentRuleAddedInTransaction()
+    void shouldReturnNonExistentRuleAddedInTransaction()
     {
         // GIVEN
         // -- non-existent rule added in the transaction
@@ -161,7 +161,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldReturnNonExistentRuleAddedInTransactionFromLookup()
+    void shouldReturnNonExistentRuleAddedInTransactionFromLookup()
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
@@ -181,7 +181,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup()
+    void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup()
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
@@ -203,7 +203,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldNotReturnExistentRuleDroppedInTransaction()
+    void shouldNotReturnExistentRuleDroppedInTransaction()
     {
         // GIVEN
         // -- a rule that exists in the store
@@ -235,7 +235,7 @@ public class SchemaTransactionStateTest
     private StoreStatement storeStatement;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );

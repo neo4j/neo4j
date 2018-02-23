@@ -28,10 +28,10 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BaseRecordFormatTest
+class BaseRecordFormatTest
 {
     @Test
-    public void shouldRecognizeDesignatedInUseBit()
+    void shouldRecognizeDesignatedInUseBit()
     {
         // GIVEN
         RecordFormat<DynamicRecord> format = new DynamicRecordFormat();

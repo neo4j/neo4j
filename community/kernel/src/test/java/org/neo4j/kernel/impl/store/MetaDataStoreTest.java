@@ -39,7 +39,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.logging.LogProvider;
@@ -62,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.FIELD_NOT_INITIALIZED;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -77,7 +75,6 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSAC
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.store.MetaDataStore.setRecord;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
-import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -101,7 +98,7 @@ public class MetaDataStoreTest
     private PageCache pageCacheWithFakeOverflow;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
@@ -131,7 +128,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getCreationTimeShouldFailWhenStoreIsClosed()
+    void getCreationTimeShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -147,7 +144,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getCurrentLogVersionShouldFailWhenStoreIsClosed()
+    void getCurrentLogVersionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -163,7 +160,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getGraphNextPropShouldFailWhenStoreIsClosed()
+    void getGraphNextPropShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -179,7 +176,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getLastClosedTransactionIdShouldFailWhenStoreIsClosed()
+    void getLastClosedTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -195,7 +192,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getLastClosedTransactionShouldFailWhenStoreIsClosed()
+    void getLastClosedTransactionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -211,7 +208,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getLastCommittedTransactionShouldFailWhenStoreIsClosed()
+    void getLastCommittedTransactionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -227,7 +224,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getLastCommittedTransactionIdShouldFailWhenStoreIsClosed()
+    void getLastCommittedTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -243,7 +240,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getLatestConstraintIntroducingTxShouldFailWhenStoreIsClosed()
+    void getLatestConstraintIntroducingTxShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -259,7 +256,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getRandomNumberShouldFailWhenStoreIsClosed()
+    void getRandomNumberShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -275,7 +272,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getStoreVersionShouldFailWhenStoreIsClosed()
+    void getStoreVersionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -291,7 +288,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getUpgradeTimeShouldFailWhenStoreIsClosed()
+    void getUpgradeTimeShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -307,7 +304,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getUpgradeTransactionShouldFailWhenStoreIsClosed()
+    void getUpgradeTransactionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -323,7 +320,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void nextCommittingTransactionIdShouldFailWhenStoreIsClosed()
+    void nextCommittingTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -339,7 +336,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void currentCommittingTransactionId()
+    void currentCommittingTransactionId()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.nextCommittingTransactionId();
@@ -355,7 +352,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void setLastCommittedAndClosedTransactionIdShouldFailWhenStoreIsClosed()
+    void setLastCommittedAndClosedTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -371,7 +368,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void transactionCommittedShouldFailWhenStoreIsClosed()
+    void transactionCommittedShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -387,7 +384,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void testRecordTransactionClosed()
+    void testRecordTransactionClosed()
     {
         // GIVEN
         MetaDataStore metaDataStore = newMetaDataStore();
@@ -418,7 +415,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void setUpgradeTransactionMustBeAtomic() throws Throwable
+    void setUpgradeTransactionMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -479,7 +476,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void incrementAndGetVersionMustBeAtomic() throws Throwable
+    void incrementAndGetVersionMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -499,7 +496,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void transactionCommittedMustBeAtomic() throws Throwable
+    void transactionCommittedMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -550,7 +547,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void transactionClosedMustBeAtomic() throws Throwable
+    void transactionClosedMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -613,7 +610,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void mustSupportScanningAllRecords() throws Exception
+    void mustSupportScanningAllRecords() throws Exception
     {
         File file = createMetaDataFile();
         Position[] positions = Position.values();
@@ -652,7 +649,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
+    void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
     {
         File file = createMetaDataFile();
         Position[] positions = Position.values();
@@ -708,7 +705,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void staticSetRecordMustThrowOnPageOverflow()
+    void staticSetRecordMustThrowOnPageOverflow()
 {
     assertThrows( UnderlyingStorageException.class, () ->
     {
@@ -718,7 +715,7 @@ public class MetaDataStoreTest
 }
 
     @Test
-    public void staticGetRecordMustThrowOnPageOverflow()
+    void staticGetRecordMustThrowOnPageOverflow()
 {
     assertThrows( UnderlyingStorageException.class, () ->
     {
@@ -730,7 +727,7 @@ public class MetaDataStoreTest
 }
 
     @Test
-    public void incrementVersionMustThrowOnPageOverflow()
+    void incrementVersionMustThrowOnPageOverflow()
     {
         assertThrows( UnderlyingStorageException.class, () -> {
             try ( MetaDataStore store = newMetaDataStore() )
@@ -742,7 +739,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void lastTxCommitTimestampShouldBeBaseInNewStore()
+    void lastTxCommitTimestampShouldBeBaseInNewStore()
     {
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
@@ -752,7 +749,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void readAllFieldsMustThrowOnPageOverflow()
+    void readAllFieldsMustThrowOnPageOverflow()
     {
         assertThrows( UnderlyingStorageException.class, () -> {
             try ( MetaDataStore store = newMetaDataStore() )
@@ -768,7 +765,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void setRecordMustThrowOnPageOverflow()
+    void setRecordMustThrowOnPageOverflow()
     {
         assertThrows( UnderlyingStorageException.class, () -> {
             try ( MetaDataStore store = newMetaDataStore() )
@@ -780,7 +777,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void logRecordsMustIgnorePageOverflow()
+    void logRecordsMustIgnorePageOverflow()
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {

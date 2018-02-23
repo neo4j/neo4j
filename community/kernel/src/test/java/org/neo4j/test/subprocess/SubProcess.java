@@ -78,7 +78,7 @@ public abstract class SubProcess<T, P> implements Serializable
     private final transient Predicate<String> classPathFilter;
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    public SubProcess( Predicate<String> classPathFilter, boolean inheritOutput )
+    private SubProcess( Predicate<String> classPathFilter, boolean inheritOutput )
     {
         this.inheritOutput = inheritOutput;
         if ( getClass().getSuperclass() != SubProcess.class )
@@ -124,7 +124,7 @@ public abstract class SubProcess<T, P> implements Serializable
         this.classPathFilter = classPathFilter;
     }
 
-    public SubProcess()
+    protected SubProcess()
     {
         this( null, INHERIT_OUTPUT_DEFAULT_VALUE );
     }
@@ -177,12 +177,12 @@ public abstract class SubProcess<T, P> implements Serializable
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[]{t}, live( handler ) ) );
     }
 
-    protected PrintStream errorStreamTarget()
+    private PrintStream errorStreamTarget()
     {
         return System.err;
     }
 
-    protected PrintStream inputStreamTarget()
+    private PrintStream inputStreamTarget()
     {
         return System.out;
     }
@@ -730,7 +730,7 @@ public abstract class SubProcess<T, P> implements Serializable
     {
         private final transient SubProcess<?, ?> subprocess;
 
-        protected DispatcherImpl( SubProcess<?, ?> subprocess ) throws RemoteException
+        DispatcherImpl( SubProcess<?,?> subprocess ) throws RemoteException
         {
             super();
             this.subprocess = subprocess;

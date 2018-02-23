@@ -19,6 +19,8 @@
  */
 package org.neo4j.ports.allocation;
 
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -26,12 +28,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.Test;
-
-public class CoordinatingPortProviderTest
+class CoordinatingPortProviderTest
 {
     @Test
-    public void shouldProvideUniquePorts()
+    void shouldProvideUniquePorts()
     {
         PortRepository portRepository = mock( PortRepository.class );
         PortProvider portProvider = new CoordinatingPortProvider( portRepository, port -> false );
@@ -44,7 +44,7 @@ public class CoordinatingPortProviderTest
     }
 
     @Test
-    public void shouldSkipReservedPorts()
+    void shouldSkipReservedPorts()
     {
         PortRepository portRepository = mock( PortRepository.class );
         PortProvider portProvider = new CoordinatingPortProvider( portRepository, port -> false );
@@ -56,7 +56,7 @@ public class CoordinatingPortProviderTest
     }
 
     @Test
-    public void shouldSkipOccupiedPorts()
+    void shouldSkipOccupiedPorts()
     {
         PortRepository portRepository = mock( PortRepository.class );
         PortProbe portProbe = mock( PortProbe.class );

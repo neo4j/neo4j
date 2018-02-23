@@ -42,7 +42,7 @@ public class HighIdTransactionApplierTest
     public final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
 
     @Test
-    public void shouldUpdateHighIdsOnExternalTransaction() throws Exception
+    void shouldUpdateHighIdsOnExternalTransaction() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();
@@ -105,7 +105,7 @@ public class HighIdTransactionApplierTest
     }
 
     @Test
-    public void shouldTrackSecondaryUnitIdsAsWell() throws Exception
+    void shouldTrackSecondaryUnitIdsAsWell() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.builder().build();

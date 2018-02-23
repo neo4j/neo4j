@@ -22,13 +22,13 @@ package org.neo4j.kernel.api.query;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptyList;
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
-public class PlannerInfoTest
+class PlannerInfoTest
 {
     @Test
-    public void plannerInfoShouldBeInSmallCase()
+    void plannerInfoShouldBeInSmallCase()
     {
         // given
         PlannerInfo plannerInfo = new PlannerInfo( "PLANNER", "RUNTIME", emptyList() );

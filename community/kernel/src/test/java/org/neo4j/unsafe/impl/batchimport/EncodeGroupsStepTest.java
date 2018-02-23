@@ -41,11 +41,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
-public class EncodeGroupsStepTest
+class EncodeGroupsStepTest
 {
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldEncodeGroupChains() throws Throwable
+    void shouldEncodeGroupChains() throws Throwable
     {
         // GIVEN
         StageControl control = mock( StageControl.class );

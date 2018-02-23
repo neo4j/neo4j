@@ -71,27 +71,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Mattias Persson
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class IndexCreationTest
+class IndexCreationTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseAPI db;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }
 
     @Test
-    public void indexCreationConfigRaceCondition() throws Exception
+    void indexCreationConfigRaceCondition() throws Exception
     {
         // Since this is a probability test and not a precise test run do the run
         // a couple of times to be sure.

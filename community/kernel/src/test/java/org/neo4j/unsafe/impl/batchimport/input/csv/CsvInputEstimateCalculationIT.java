@@ -94,19 +94,19 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
 @ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
-public class CsvInputEstimateCalculationIT
+class CsvInputEstimateCalculationIT
 {
     private static final long NODE_COUNT = 600_000;
     private static final long RELATIONSHIP_COUNT = 600_000;
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldCalculateCorrectEstimates() throws Exception
+    void shouldCalculateCorrectEstimates() throws Exception
     {
         // given a couple of input files of various layouts
         Input input = generateData();
@@ -141,7 +141,7 @@ public class CsvInputEstimateCalculationIT
     }
 
     @Test
-    public void shouldCalculateCorrectEstimatesOnEmptyData() throws Exception
+    void shouldCalculateCorrectEstimatesOnEmptyData() throws Exception
     {
         // given
         Groups groups = new Groups();

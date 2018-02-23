@@ -61,13 +61,13 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
 @ExtendWith( MockitoExtension.class )
-public class MultipleIndexPopulatorUpdatesTest
+class MultipleIndexPopulatorUpdatesTest
 {
     @Mock( answer = Answers.RETURNS_MOCKS )
     private LogProvider logProvider;
 
     @Test
-    public void updateForHigherNodeIgnoredWhenUsingFullNodeStoreScan()
+    void updateForHigherNodeIgnoredWhenUsingFullNodeStoreScan()
             throws IndexPopulationFailedKernelException, IOException, IndexEntryConflictException
     {
         NeoStores neoStores = Mockito.mock( NeoStores.class );

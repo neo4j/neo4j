@@ -81,12 +81,12 @@ public class Randoms
 
     public static final Configuration DEFAULT = new Default();
 
-    public static final int CS_LOWERCASE_LETTERS = 0x1;
-    public static final int CS_UPPERCASE_LETTERS = 0x2;
-    public static final int CS_DIGITS = 0x3;
-    public static final int CS_SYMBOLS = 0x4;
+    private static final int CS_LOWERCASE_LETTERS = 0x1;
+    private static final int CS_UPPERCASE_LETTERS = 0x2;
+    private static final int CS_DIGITS = 0x3;
+    private static final int CS_SYMBOLS = 0x4;
 
-    public static final int CSA_LETTERS = CS_LOWERCASE_LETTERS | CS_UPPERCASE_LETTERS;
+    private static final int CSA_LETTERS = CS_LOWERCASE_LETTERS | CS_UPPERCASE_LETTERS;
     public static final int CSA_LETTERS_AND_DIGITS = CSA_LETTERS | CS_DIGITS;
 
     private final Random random;

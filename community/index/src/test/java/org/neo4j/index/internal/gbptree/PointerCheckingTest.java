@@ -25,13 +25,12 @@ import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.jupiter.api.Assertions.fail;
-
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_LOGICAL_POS;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.write;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
 
-public class PointerCheckingTest
+class PointerCheckingTest
 {
     private final PageCursor cursor = ByteArrayPageCursor.wrap( GenerationSafePointerPair.SIZE );
     private final long firstGeneration = 1;
@@ -39,7 +38,7 @@ public class PointerCheckingTest
     private final long thirdGeneration = 3;
 
     @Test
-    public void checkChildShouldThrowOnNoNode()
+    void checkChildShouldThrowOnNoNode()
     {
         // WHEN
         try
@@ -54,7 +53,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldThrowOnReadFailure()
+    void checkChildShouldThrowOnReadFailure()
     {
         // GIVEN
         long result = GenerationSafePointerPair.read( cursor, 0, 1, 123 );
@@ -72,7 +71,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldThrowOnWriteFailure()
+    void checkChildShouldThrowOnWriteFailure()
     {
         // GIVEN
         write( cursor, 123, 0, firstGeneration );
@@ -95,7 +94,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldPassOnReadSuccess()
+    void checkChildShouldPassOnReadSuccess()
     {
         // GIVEN
         PointerChecking.checkPointer( write( cursor, 123, 0, firstGeneration ), false );
@@ -109,7 +108,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldPassOnWriteSuccess()
+    void checkChildShouldPassOnWriteSuccess()
     {
         // WHEN
         long result = write( cursor, 123, 0, firstGeneration );
@@ -119,7 +118,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldPassOnReadSuccessForNoNodePointer()
+    void checkSiblingShouldPassOnReadSuccessForNoNodePointer()
     {
         // GIVEN
         write( cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration );
@@ -133,7 +132,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldPassOnReadSuccessForNodePointer()
+    void checkSiblingShouldPassOnReadSuccessForNodePointer()
     {
         // GIVEN
         long pointer = 101;
@@ -148,7 +147,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldThrowOnReadFailure()
+    void checkSiblingShouldThrowOnReadFailure()
     {
         // WHEN
         long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
@@ -166,7 +165,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldThrowOnReadIllegalPointer()
+    void checkSiblingShouldThrowOnReadIllegalPointer()
     {
         // GIVEN
         long generation = IdSpace.STATE_PAGE_A;

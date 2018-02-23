@@ -50,14 +50,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class ExecutionResultTest
+class ExecutionResultTest
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
-    public void shouldCloseTransactionsWhenIteratingResults()
+    void shouldCloseTransactionsWhenIteratingResults()
     {
         // Given an execution result that has been started but not exhausted
         createNode();
@@ -75,7 +75,7 @@ public class ExecutionResultTest
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
-    public void shouldCloseTransactionsWhenIteratingOverSingleColumn()
+    void shouldCloseTransactionsWhenIteratingOverSingleColumn()
     {
         // Given an execution result that has been started but not exhausted
         createNode();
@@ -93,7 +93,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldThrowAppropriateException()
+    void shouldThrowAppropriateException()
     {
         try
         {
@@ -107,7 +107,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldThrowAppropriateExceptionAlsoWhenVisiting()
+    void shouldThrowAppropriateExceptionAlsoWhenVisiting()
     {
         assertThrows( org.neo4j.cypher.ArithmeticException.class, () -> db.execute( "RETURN rand()/0" ).accept( row -> true ) );
     }
@@ -122,7 +122,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldHandleListsOfPointsAsInput()
+    void shouldHandleListsOfPointsAsInput()
     {
         // Given
         Point point1 =
@@ -138,7 +138,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldHandleMapWithPointsAsInput()
+    void shouldHandleMapWithPointsAsInput()
     {
         // Given
         Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );

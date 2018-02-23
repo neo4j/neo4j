@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class SecondaryUnitPrepareIdSequenceTest
+class SecondaryUnitPrepareIdSequenceTest
 {
     @Test
-    public void shouldReturnIdImmediatelyAfterRecordId()
+    void shouldReturnIdImmediatelyAfterRecordId()
     {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();
@@ -48,7 +48,7 @@ public class SecondaryUnitPrepareIdSequenceTest
     }
 
     @Test
-    public void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce()
+    void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce()
     {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();

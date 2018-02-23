@@ -41,10 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class MultiPaxosContextTest
+class MultiPaxosContextTest
 {
     @Test
-    public void shouldNotConsiderInstanceJoiningWithSameIdAndIpAProblem() throws Exception
+    void shouldNotConsiderInstanceJoiningWithSameIdAndIpAProblem() throws Exception
     {
         // Given
 
@@ -73,7 +73,7 @@ public class MultiPaxosContextTest
     }
 
     @Test
-    public void shouldDeepClone()
+    void shouldDeepClone()
     {
         // Given
         ObjectStreamFactory objStream = new ObjectStreamFactory();

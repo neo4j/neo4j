@@ -46,15 +46,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
-public class ConfigLoaderTest
+class ConfigLoaderTest
 {
     @Resource
     public SuppressOutput suppressOutput;
     @Resource
-    public TestDirectory folder;
+    private TestDirectory folder;
 
     @Test
-    public void shouldProvideAConfiguration()
+    void shouldProvideAConfiguration()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.directory() ).build();
@@ -67,7 +67,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldUseSpecifiedConfigFile()
+    void shouldUseSpecifiedConfigFile()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.directory() )
@@ -83,7 +83,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldUseSpecifiedHomeDir()
+    void shouldUseSpecifiedHomeDir()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.directory() ).build();
@@ -96,7 +96,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldUseWorkingDirForHomeDirIfUnspecified()
+    void shouldUseWorkingDirForHomeDirIfUnspecified()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.directory() ).build();
@@ -110,7 +110,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldAcceptDuplicateKeysWithSameValue()
+    void shouldAcceptDuplicateKeysWithSameValue()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.directory() )
@@ -128,7 +128,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void loadOfflineConfigShouldDisableBolt()
+    void loadOfflineConfigShouldDisableBolt()
     {
         // given
         BoltConnector defaultBoltConf = new BoltConnector( "bolt" );
@@ -146,7 +146,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void loadOfflineConfigAddDisabledBoltConnector()
+    void loadOfflineConfigAddDisabledBoltConnector()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.directory() ).build();
@@ -160,7 +160,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldFindThirdPartyJaxRsPackages() throws IOException
+    void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
         // given
         File file = ServerTestUtils.createTempConfigFile( folder.directory() );
@@ -185,7 +185,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages()
+    void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.directory() )
@@ -208,7 +208,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
+    void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
     {
         // Given
         File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
@@ -221,7 +221,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldDefaultToCorrectValueForAuthStoreLocation()
+    void shouldDefaultToCorrectValueForAuthStoreLocation()
     {
         File configFile = ConfigFileBuilder
                 .builder( folder.directory() )
@@ -234,7 +234,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldSetAValueForAuthStoreLocation()
+    void shouldSetAValueForAuthStoreLocation()
     {
         File configFile = ConfigFileBuilder.builder( folder.directory() )
                 .withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" )
@@ -246,7 +246,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldNotOverwriteAuthStoreLocationIfProvided()
+    void shouldNotOverwriteAuthStoreLocationIfProvided()
     {
         File configFile = ConfigFileBuilder.builder( folder.directory() )
                 .withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" )

@@ -32,25 +32,25 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PathImplTest
+class PathImplTest
 {
     private final EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
 
     @Test
-    public void singularNodeWorksForwardsAndBackwards()
+    void singularNodeWorksForwardsAndBackwards()
     {
         Node node = createNode( 1337L );
         Path path = PathImpl.singular( node );
@@ -72,7 +72,7 @@ public class PathImplTest
     }
 
     @Test
-    public void pathsWithTheSameContentsShouldBeEqual()
+    void pathsWithTheSameContentsShouldBeEqual()
     {
 
         Node node = createNode( 1337L );
@@ -88,7 +88,7 @@ public class PathImplTest
     }
 
     @Test
-    public void pathsWithDifferentLengthAreNotEqual()
+    void pathsWithDifferentLengthAreNotEqual()
     {
         Node node = createNode( 1337L );
         Relationship relationship = createRelationship( 1337L, 7331L );
@@ -103,7 +103,7 @@ public class PathImplTest
     }
 
     @Test
-    public void testPathReverseNodes()
+    void testPathReverseNodes()
     {
         when( spi.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 
@@ -122,7 +122,7 @@ public class PathImplTest
     }
 
     @Test
-    public void testPathNodes()
+    void testPathNodes()
     {
         when( spi.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 

@@ -30,11 +30,11 @@ import org.neo4j.test.Race;
 import static java.lang.Math.max;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HighestIdTest
+class HighestIdTest
 {
 
     @RepeatedTest( 100 )
-    public void shouldKeepHighest() throws Throwable
+    void shouldKeepHighest() throws Throwable
     {
         // GIVEN
         Race race = new Race();

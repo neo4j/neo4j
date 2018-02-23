@@ -31,7 +31,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -51,16 +50,16 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class GraphDbStructureGuideTest
+class GraphDbStructureGuideTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
     private GraphDatabaseService graph;
     private ThreadToStatementContextBridge bridge;
     private Transaction tx;
 
     @Test
-    public void visitsLabelIds()
+    void visitsLabelIds()
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -88,7 +87,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Test
-    public void visitsPropertyKeyIds() throws Exception
+    void visitsPropertyKeyIds() throws Exception
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -106,7 +105,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Test
-    public void visitsRelationshipTypeIds()
+    void visitsRelationshipTypeIds()
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -136,7 +135,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Test
-    public void visitsIndexes() throws Exception
+    void visitsIndexes() throws Exception
     {
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
         int labelId = createLabel( "Person" );
@@ -154,7 +153,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Test
-    public void visitsUniqueConstraintsAndIndices() throws Exception
+    void visitsUniqueConstraintsAndIndices() throws Exception
     {
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
         int labelId = createLabel( "Person" );
@@ -175,7 +174,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Test
-    public void visitsNodeCounts() throws Exception
+    void visitsNodeCounts() throws Exception
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -194,7 +193,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Test
-    public void visitsRelCounts() throws Exception
+    void visitsRelCounts() throws Exception
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -308,7 +307,7 @@ public class GraphDbStructureGuideTest
     }
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         GraphDatabaseAPI api = dbRule.getGraphDatabaseAPI();
         graph = api;
@@ -319,7 +318,7 @@ public class GraphDbStructureGuideTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( bridge.hasTransaction() )
         {
@@ -334,14 +333,14 @@ public class GraphDbStructureGuideTest
         return bridge.get();
     }
 
-    public void commitAndReOpen()
+    private void commitAndReOpen()
     {
         commit();
 
         tx = graph.beginTx();
     }
 
-    public void accept( DbStructureVisitor visitor )
+    private void accept( DbStructureVisitor visitor )
     {
         commitAndReOpen();
 

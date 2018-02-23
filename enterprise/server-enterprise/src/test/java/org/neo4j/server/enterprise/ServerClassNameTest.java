@@ -39,17 +39,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * it lives in neo4j-enterprise because otherwise the CommunityNeoServer
  * and EnterpriseNeoServer would not be visible.
  */
-public class ServerClassNameTest
+class ServerClassNameTest
 {
     @Test
-    public void shouldMaintainNamingOfCommunityNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
+    void shouldMaintainNamingOfCommunityNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
     {
         assertEquals( "communityneoserver", CommunityNeoServer.class.getSimpleName().toLowerCase(),
                 getErrorMessage( CommunityNeoServer.class ) );
     }
 
     @Test
-    public void shouldMaintainNamingOfEnterpriseNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
+    void shouldMaintainNamingOfEnterpriseNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
     {
         assertEquals( "openenterpriseneoserver", OpenEnterpriseNeoServer.class.getSimpleName().toLowerCase(),
                 getErrorMessage( OpenEnterpriseNeoServer.class ) );

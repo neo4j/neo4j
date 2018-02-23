@@ -30,12 +30,12 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public abstract class AbstractMandatoryTransactionsTest<T>
+abstract class AbstractMandatoryTransactionsTest<T>
 {
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
 
-    public T obtainEntity()
+    T obtainEntity()
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
 
@@ -48,7 +48,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         }
     }
 
-    public void obtainEntityInTerminatedTransaction( Consumer<T> f )
+    private void obtainEntityInTerminatedTransaction( Consumer<T> f )
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
 
@@ -63,7 +63,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
 
     protected abstract T obtainEntityInTransaction( GraphDatabaseService graphDatabaseService );
 
-    public static <T> void assertFacadeMethodsThrowNotInTransaction( T entity, Iterable<FacadeMethod<T>> methods )
+    static <T> void assertFacadeMethodsThrowNotInTransaction( T entity, Iterable<FacadeMethod<T>> methods )
     {
         for ( FacadeMethod<T> method : methods )
         {
@@ -80,7 +80,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         }
     }
 
-    public void assertFacadeMethodsThrowAfterTerminate( Iterable<FacadeMethod<T>> methods )
+    void assertFacadeMethodsThrowAfterTerminate( Iterable<FacadeMethod<T>> methods )
     {
         for ( final FacadeMethod<T> method : methods )
         {

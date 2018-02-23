@@ -38,13 +38,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class SlaveUpgradeTest
+class SlaveUpgradeTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void haShouldFailToStartWithOldStore()
+    void haShouldFailToStartWithOldStore()
     {
         try
         {

@@ -24,7 +24,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-public class IndexDefinitionFacadeMethods
+class IndexDefinitionFacadeMethods
 {
     private static final FacadeMethod<IndexDefinition> GET_LABEL =
         new FacadeMethod<IndexDefinition>( "Label getLabel()" )

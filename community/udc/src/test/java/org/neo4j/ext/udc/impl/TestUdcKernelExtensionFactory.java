@@ -21,9 +21,9 @@ package org.neo4j.ext.udc.impl;
 
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 
-public class TestUdcKernelExtensionFactory extends KernelExtensionFactoryContractTest
+class TestUdcKernelExtensionFactory extends KernelExtensionFactoryContractTest
 {
-    public TestUdcKernelExtensionFactory()
+    TestUdcKernelExtensionFactory()
     {
         super( UdcKernelExtensionFactory.KEY, UdcKernelExtensionFactory.class );
     }

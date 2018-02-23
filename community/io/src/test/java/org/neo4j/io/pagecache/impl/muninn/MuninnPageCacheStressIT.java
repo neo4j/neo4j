@@ -40,13 +40,13 @@ import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
  * Configured to run until it sees a million evictions, which should take few minutes.
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class MuninnPageCacheStressIT
+class MuninnPageCacheStressIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldHandleTheStressOfManyManyEvictions() throws Exception
+    void shouldHandleTheStressOfManyManyEvictions() throws Exception
     {
         DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
         Condition condition = numberOfEvictions( monitor, 100_000 );

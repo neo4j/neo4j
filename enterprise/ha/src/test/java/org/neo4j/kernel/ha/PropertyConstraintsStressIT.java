@@ -86,7 +86,7 @@ public class PropertyConstraintsStressIT
     @Rule
     public RepeatRule repeater = new RepeatRule();
 
-    protected ClusterManager.ManagedCluster cluster;
+    private ClusterManager.ManagedCluster cluster;
 
     private final int REPETITIONS = 1;
     /** Configure how long to run the test. */
@@ -254,7 +254,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    public void shouldNotAllowConstraintsViolationsUnderStress( Operation ops ) throws Exception
+    private void shouldNotAllowConstraintsViolationsUnderStress( Operation ops ) throws Exception
     {
         // Given
         HighlyAvailableGraphDatabase master = cluster.getMaster();

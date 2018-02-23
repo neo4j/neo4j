@@ -40,10 +40,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.iterator;
 
-public class CompositeLabelScanValueIteratorTest
+class CompositeLabelScanValueIteratorTest
 {
     @Test
-    public void mustHandleEmptyListOfIterators()
+    void mustHandleEmptyListOfIterators()
     {
         // given
         List<PrimitiveLongResourceIterator> iterators = emptyList();
@@ -65,7 +65,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustHandleEmptyIterator()
+    void mustHandleEmptyIterator()
     {
         // given
         List<PrimitiveLongResourceIterator> iterators = singletonList( emptyIterator() );
@@ -78,7 +78,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustHandleMultipleEmptyIterators()
+    void mustHandleMultipleEmptyIterators()
     {
         // given
         List<PrimitiveLongResourceIterator> iterators =
@@ -93,7 +93,7 @@ public class CompositeLabelScanValueIteratorTest
 
     /* ALL = FALSE */
     @Test
-    public void mustReportAllFromSingleIterator()
+    void mustReportAllFromSingleIterator()
     {
         // given
         long[] expected = {0L, 1L, Long.MAX_VALUE};
@@ -107,7 +107,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustReportAllFromNonOverlappingMultipleIterators()
+    void mustReportAllFromNonOverlappingMultipleIterators()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -132,7 +132,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustReportUniqueValuesFromOverlappingIterators()
+    void mustReportUniqueValuesFromOverlappingIterators()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -159,7 +159,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustReportUniqueValuesFromOverlappingIteratorsWithOneEmpty()
+    void mustReportUniqueValuesFromOverlappingIteratorsWithOneEmpty()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -189,7 +189,7 @@ public class CompositeLabelScanValueIteratorTest
 
     /* ALL = TRUE */
     @Test
-    public void mustOnlyReportValuesReportedByAll()
+    void mustOnlyReportValuesReportedByAll()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -216,7 +216,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustOnlyReportValuesReportedByAllWithOneEmpty()
+    void mustOnlyReportValuesReportedByAllWithOneEmpty()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();

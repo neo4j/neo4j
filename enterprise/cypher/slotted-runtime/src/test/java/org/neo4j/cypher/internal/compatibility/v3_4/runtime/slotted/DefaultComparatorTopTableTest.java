@@ -44,7 +44,7 @@ public class DefaultComparatorTopTableTest
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldHandleAddingMoreValuesThanCapacity()
+    void shouldHandleAddingMoreValuesThanCapacity()
     {
         DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 7 );
         for ( Long i : testValues )
@@ -66,7 +66,7 @@ public class DefaultComparatorTopTableTest
     }
 
     @Test
-    public void shouldHandleWhenNotCompletelyFilledToCapacity()
+    void shouldHandleWhenNotCompletelyFilledToCapacity()
     {
         DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 20 );
         for ( Long i : testValues )
@@ -88,7 +88,7 @@ public class DefaultComparatorTopTableTest
     }
 
     @Test
-    public void shouldHandleWhenEmpty()
+    void shouldHandleWhenEmpty()
     {
         DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 10 );
 
@@ -100,21 +100,21 @@ public class DefaultComparatorTopTableTest
     }
 
     @Test
-    public void shouldThrowOnInitializeToZeroCapacity()
+    void shouldThrowOnInitializeToZeroCapacity()
     {
         exception.expect( IllegalArgumentException.class );
         new DefaultComparatorTopTable( comparator, 0 );
     }
 
     @Test
-    public void shouldThrowOnInitializeToNegativeCapacity()
+    void shouldThrowOnInitializeToNegativeCapacity()
     {
         exception.expect( IllegalArgumentException.class );
         new DefaultComparatorTopTable( comparator, -1 );
     }
 
     @Test
-    public void shouldThrowOnSortNotCalledBeforeIterator()
+    void shouldThrowOnSortNotCalledBeforeIterator()
     {
         DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 5 );
         for ( Long i : testValues )

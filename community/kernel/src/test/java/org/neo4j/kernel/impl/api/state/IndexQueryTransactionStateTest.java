@@ -53,8 +53,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -67,7 +67,7 @@ import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsPrimitiveLongIteratorFrom;
 
-public class IndexQueryTransactionStateTest
+class IndexQueryTransactionStateTest
 {
     private int labelId = 2;
     private int propertyKeyId = 3;
@@ -83,7 +83,7 @@ public class IndexQueryTransactionStateTest
     private IndexReader indexReader;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         TransactionState txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
@@ -112,7 +112,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
+    void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
     {
         // Given
         long nodeId = 2L;
@@ -130,7 +130,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeRemovedNodeFromUniqueIndexQuery() throws Exception
+    void shouldExcludeRemovedNodeFromUniqueIndexQuery() throws Exception
     {
         // Given
         long nodeId = 1L;
@@ -148,7 +148,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeChangedNodesWithMissingLabelFromIndexQuery() throws Exception
+    void shouldExcludeChangedNodesWithMissingLabelFromIndexQuery() throws Exception
     {
         // Given
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
@@ -163,7 +163,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeChangedNodeWithMissingLabelFromUniqueIndexQuery() throws Exception
+    void shouldExcludeChangedNodeWithMissingLabelFromUniqueIndexQuery() throws Exception
     {
         // Given
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
@@ -177,7 +177,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldIncludeCreatedNodesWithCorrectLabelAndProperty() throws Exception
+    void shouldIncludeCreatedNodesWithCorrectLabelAndProperty() throws Exception
     {
         // Given
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
@@ -198,7 +198,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldIncludeUniqueCreatedNodeWithCorrectLabelAndProperty() throws Exception
+    void shouldIncludeUniqueCreatedNodeWithCorrectLabelAndProperty() throws Exception
     {
         // Given
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
@@ -220,7 +220,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldIncludeExistingNodesWithCorrectPropertyAfterAddingLabel() throws Exception
+    void shouldIncludeExistingNodesWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
@@ -241,7 +241,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldIncludeExistingUniqueNodeWithCorrectPropertyAfterAddingLabel() throws Exception
+    void shouldIncludeExistingUniqueNodeWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
@@ -262,7 +262,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeExistingNodesWithCorrectPropertyAfterRemovingLabel() throws Exception
+    void shouldExcludeExistingNodesWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
         long nodeId = 1L;
@@ -282,7 +282,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeExistingUniqueNodeWithCorrectPropertyAfterRemovingLabel() throws Exception
+    void shouldExcludeExistingUniqueNodeWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
         long nodeId = 1L;
@@ -302,7 +302,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeNodesWithRemovedProperty() throws Exception
+    void shouldExcludeNodesWithRemovedProperty() throws Exception
     {
         // Given
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
@@ -323,7 +323,7 @@ public class IndexQueryTransactionStateTest
     }
 
     @Test
-    public void shouldExcludeUniqueNodeWithRemovedProperty() throws Exception
+    void shouldExcludeUniqueNodeWithRemovedProperty() throws Exception
     {
         // Given
         long nodeId = 1L;

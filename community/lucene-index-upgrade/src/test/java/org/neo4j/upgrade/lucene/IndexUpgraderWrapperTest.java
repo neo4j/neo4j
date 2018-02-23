@@ -32,11 +32,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class IndexUpgraderWrapperTest
+class IndexUpgraderWrapperTest
 {
 
     @Test
-    public void indexUpgraderInvokesLuceneMigrator() throws Throwable
+    void indexUpgraderInvokesLuceneMigrator() throws Throwable
     {
         IndexUpgraderWrapper upgrader = getIndexUpgrader( createJarLoader() );
 
@@ -46,7 +46,7 @@ public class IndexUpgraderWrapperTest
     }
 
     @Test
-    public void indexUpgraderReleaseResourcesOnClose() throws Throwable
+    void indexUpgraderReleaseResourcesOnClose() throws Throwable
     {
         EmbeddedJarLoader jarLoader = createJarLoader();
         IndexUpgraderWrapper upgrader = getIndexUpgrader( jarLoader );

@@ -55,13 +55,13 @@ public class WorkSyncTest
     private static ExecutorService executor;
 
     @BeforeAll
-    public static void startExecutor()
+    static void startExecutor()
     {
         executor = Executors.newCachedThreadPool();
     }
 
     @AfterAll
-    public static void stopExecutor()
+    static void stopExecutor()
     {
         executor.shutdownNow();
     }
@@ -103,7 +103,7 @@ public class WorkSyncTest
 
     private class Adder
     {
-        public void add( int delta )
+        void add( int delta )
         {
             semaphore.acquireUninterruptibly();
             sum.add( delta );
@@ -133,7 +133,7 @@ public class WorkSyncTest
         // The volatile modifier prevents hoisting and reordering optimisations that could *hide* races
         private volatile long value;
 
-        public void add( long delta )
+        void add( long delta )
         {
             long v = value;
             // Make sure other threads have a chance to run and race with our update
@@ -143,12 +143,12 @@ public class WorkSyncTest
             value = v + delta;
         }
 
-        public void increment()
+        void increment()
         {
             add( 1 );
         }
 
-        public long sum()
+        long sum()
         {
             return value;
         }
@@ -161,7 +161,7 @@ public class WorkSyncTest
     private Semaphore semaphore = new Semaphore( Integer.MAX_VALUE );
 
     @AfterEach
-    public void refillSemaphore()
+    void refillSemaphore()
     {
         // This ensures that no threads end up stuck
         semaphore.drainPermits();
@@ -189,7 +189,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustApplyWork() throws Exception
+    void mustApplyWork() throws Exception
     {
         sync.apply( new AddWork( 10 ) );
         assertThat( sum.sum(), is( 10L ) );
@@ -199,7 +199,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustCombineWork() throws Exception
+    void mustCombineWork() throws Exception
     {
         assertTimeout( ofSeconds( 10 ), () ->
         {
@@ -242,7 +242,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustApplyWorkEvenWhenInterrupted() throws Exception
+    void mustApplyWorkEvenWhenInterrupted() throws Exception
     {
         Thread.currentThread().interrupt();
 
@@ -253,7 +253,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustRecoverFromExceptions() throws Exception
+    void mustRecoverFromExceptions() throws Exception
     {
         assertTimeout( ofSeconds( 1 ), () ->
         {
@@ -297,7 +297,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustNotApplyWorkInParallelUnderStress() throws Exception
+    void mustNotApplyWorkInParallelUnderStress() throws Exception
     {
         int workers = Runtime.getRuntime().availableProcessors() * 5;
         int iterations = 1_000;
@@ -343,7 +343,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustNotApplyAsyncWorkInParallelUnderStress() throws Exception
+    void mustNotApplyAsyncWorkInParallelUnderStress() throws Exception
     {
         int workers = Runtime.getRuntime().availableProcessors() * 5;
         int iterations = 1_000;
@@ -403,7 +403,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustApplyWorkAsync() throws Exception
+    void mustApplyWorkAsync() throws Exception
     {
         AsyncApply a = sync.applyAsync( new AddWork( 10 ) );
         a.await();
@@ -417,7 +417,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustCombineWorkAsync() throws Exception
+    void mustCombineWorkAsync() throws Exception
     {
         makeWorkStuckAtSemaphore( 1 );
 
@@ -433,7 +433,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void mustApplyWorkAsyncEvenWhenInterrupted() throws Exception
+    void mustApplyWorkAsyncEvenWhenInterrupted() throws Exception
     {
         Thread.currentThread().interrupt();
 
@@ -444,7 +444,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void asyncWorkThatThrowsMustRememberException()
+    void asyncWorkThatThrowsMustRememberException()
     {
         RuntimeException boo = new RuntimeException( "boo" );
         AsyncApply asyncApply = sync.applyAsync( new AddWork( 10 )
@@ -485,7 +485,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void asyncWorkThatThrowsInAwaitMustRememberException() throws Exception
+    void asyncWorkThatThrowsInAwaitMustRememberException() throws Exception
     {
         Future<Void> stuckAtSemaphore = makeWorkStuckAtSemaphore( 1 );
 

@@ -50,7 +50,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
         return new LifecycleAdapter();
     }
 
-    public interface Dependencies
+    interface Dependencies
     {
         LogService logService();
 

@@ -24,11 +24,11 @@ import java.util.List;
 
 class LockWorkerState
 {
-    final Locks grabber;
+    private final Locks grabber;
     final Locks.Client client;
     volatile boolean deadlockOnLastWait;
-    final List<String> completedOperations = new ArrayList<>();
-    String doing;
+    private final List<String> completedOperations = new ArrayList<>();
+    private String doing;
 
     LockWorkerState( Locks locks )
     {

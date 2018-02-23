@@ -51,12 +51,12 @@ public class BatchInsertersTest
 {
 
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Test
-    public void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
+    void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
     {
         verifyInserterFileSystemClose( inserter( getStoreDir() ) );
         verifyInserterFileSystemClose( inserter( getStoreDir(), getConfig() ) );
@@ -64,7 +64,7 @@ public class BatchInsertersTest
     }
 
     @Test
-    public void providedFileSystemNotClosedAfterShutdown() throws IOException
+    void providedFileSystemNotClosedAfterShutdown() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         vefiryProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs ), fs );

@@ -42,22 +42,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class LabelCountsTest
+class LabelCountsTest
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     private Supplier<KernelTransaction> transactionSupplier;
 
     @BeforeEach
-    public void exposeGuts()
+    void exposeGuts()
     {
         transactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     @Test
-    public void shouldGetNumberOfNodesWithLabel()
+    void shouldGetNumberOfNodesWithLabel()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -80,7 +80,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodes()
+    void shouldAccountForDeletedNodes()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -107,7 +107,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodesWithMultipleLabels()
+    void shouldAccountForDeletedNodesWithMultipleLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -137,7 +137,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForAddedLabels()
+    void shouldAccountForAddedLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -171,7 +171,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForRemovedLabels()
+    void shouldAccountForRemovedLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();

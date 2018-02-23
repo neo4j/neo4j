@@ -19,17 +19,18 @@
  */
 package org.neo4j.causalclustering.core.consensus.log;
 
+import org.junit.jupiter.api.Test;
+
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-
-public class RaftLogMetadataCacheTest
+class RaftLogMetadataCacheTest
 {
     @Test
-    public void shouldReturnNullWhenMissingAnEntryInTheCache()
+    void shouldReturnNullWhenMissingAnEntryInTheCache()
     {
         // given
         final RaftLogMetadataCache cache = new RaftLogMetadataCache( 2 );
@@ -42,7 +43,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldReturnTheTxValueTIfInTheCached()
+    void shouldReturnTheTxValueTIfInTheCached()
     {
         // given
         final RaftLogMetadataCache cache = new RaftLogMetadataCache( 2 );
@@ -59,7 +60,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldClearTheCache()
+    void shouldClearTheCache()
     {
         // given
         final RaftLogMetadataCache cache = new RaftLogMetadataCache( 2 );
@@ -77,7 +78,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldRemoveUpTo()
+    void shouldRemoveUpTo()
     {
         // given
         int cacheSize = 100;
@@ -107,7 +108,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldRemoveUpwardsFrom()
+    void shouldRemoveUpwardsFrom()
     {
         // given
         int cacheSize = 100;
@@ -137,7 +138,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldAcceptAndReturnIndexesInRangeJustDeleted()
+    void shouldAcceptAndReturnIndexesInRangeJustDeleted()
     {
         // given
         int cacheSize = 100;

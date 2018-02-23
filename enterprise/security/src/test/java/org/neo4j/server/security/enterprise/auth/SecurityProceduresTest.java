@@ -37,13 +37,13 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SecurityProceduresTest
+class SecurityProceduresTest
 {
 
     private SecurityProcedures procedures;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         AuthSubject subject = mock( AuthSubject.class );
         when( subject.username() ).thenReturn( "pearl" );
@@ -58,7 +58,7 @@ public class SecurityProceduresTest
     }
 
     @Test
-    public void shouldReturnSecurityContextRoles()
+    void shouldReturnSecurityContextRoles()
     {
         List<UserResult> infoList = procedures.showCurrentUser().collect( Collectors.toList() );
         assertThat( infoList.size(), equalTo(1) );

@@ -36,10 +36,10 @@ import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStr
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.fakeTopologyService;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
 
-public class TypicallyConnectToRandomReadReplicaStrategyTest
+class TypicallyConnectToRandomReadReplicaStrategyTest
 {
     @Test
-    public void shouldConnectToCoreOneInTenTimesByDefault()
+    void shouldConnectToCoreOneInTenTimesByDefault()
     {
         // given
         MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );

@@ -36,10 +36,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IntegrityValidatorTest
+class IntegrityValidatorTest
 {
     @Test
-    public void shouldValidateUniquenessIndexes() throws Exception
+    void shouldValidateUniquenessIndexes() throws Exception
     {
         // Given
         NeoStores store = mock( NeoStores.class );
@@ -66,7 +66,7 @@ public class IntegrityValidatorTest
     }
 
     @Test
-    public void deletingNodeWithRelationshipsIsNotAllowed()
+    void deletingNodeWithRelationshipsIsNotAllowed()
     {
         // Given
         NeoStores store = mock( NeoStores.class );
@@ -89,7 +89,7 @@ public class IntegrityValidatorTest
     }
 
     @Test
-    public void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed()
+    void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed()
     {
         // Given
         NeoStores store = mock( NeoStores.class );

@@ -53,7 +53,7 @@ import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     @RepeatedTest( 10 )
-    public void readsAndWritesMustBeMutuallyConsistent() throws Exception
+    void readsAndWritesMustBeMutuallyConsistent() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             int filePageCount = 100;
@@ -72,7 +72,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void concurrentPageFaultingMustNotPutInterleavedDataIntoPages()
+    void concurrentPageFaultingMustNotPutInterleavedDataIntoPages()
     {
         assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () -> {
             final int filePageCount = 11;
@@ -107,7 +107,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
+    void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
     {
         assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () -> {
             final RecordFormat recordFormat = new StandardRecordFormat();
@@ -130,7 +130,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile() throws Exception
+    void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile() throws Exception
     {
         assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () -> {
             final RecordFormat recordFormat = new StandardRecordFormat();
@@ -156,7 +156,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile() throws Exception
+    void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile() throws Exception
     {
         assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () -> {
             final RecordFormat recordFormat = new StandardRecordFormat();

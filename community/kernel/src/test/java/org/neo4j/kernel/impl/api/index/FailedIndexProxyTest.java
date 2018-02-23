@@ -36,7 +36,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class FailedIndexProxyTest
+class FailedIndexProxyTest
 {
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
     private final IndexCapability indexCapability = mock( IndexCapability.class );
@@ -45,7 +45,7 @@ public class FailedIndexProxyTest
     private final IndexCountsRemover indexCountsRemover = mock( IndexCountsRemover.class );
 
     @Test
-    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
+    void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
         String userDescription = "description";
@@ -62,7 +62,7 @@ public class FailedIndexProxyTest
     }
 
     @Test
-    public void shouldLogReasonForDroppingIndex() throws IOException
+    void shouldLogReasonForDroppingIndex() throws IOException
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();

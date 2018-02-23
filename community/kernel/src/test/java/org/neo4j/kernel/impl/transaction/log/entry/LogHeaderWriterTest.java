@@ -56,10 +56,10 @@ public class LogHeaderWriterTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldWriteALogHeaderInTheGivenChannel() throws IOException
+    void shouldWriteALogHeaderInTheGivenChannel() throws IOException
     {
         // given
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -82,7 +82,7 @@ public class LogHeaderWriterTest
     }
 
     @Test
-    public void shouldWriteALogHeaderInTheGivenBuffer()
+    void shouldWriteALogHeaderInTheGivenBuffer()
     {
         // given
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
@@ -107,7 +107,7 @@ public class LogHeaderWriterTest
     }
 
     @Test
-    public void shouldWriteALogHeaderInAFile() throws IOException
+    void shouldWriteALogHeaderInAFile() throws IOException
     {
         // given
         final File file = testDirectory.file( "WriteLogHeader" );
@@ -138,7 +138,7 @@ public class LogHeaderWriterTest
     }
 
     @Test
-    public void shouldWriteALogHeaderInAStoreChannel() throws IOException
+    void shouldWriteALogHeaderInAStoreChannel() throws IOException
     {
         // given
         final File file = testDirectory.file( "WriteLogHeader" );

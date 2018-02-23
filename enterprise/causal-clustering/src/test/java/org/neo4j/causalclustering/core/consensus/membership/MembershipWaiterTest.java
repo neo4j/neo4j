@@ -43,18 +43,18 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-public class MembershipWaiterTest
+class MembershipWaiterTest
 {
     private DatabaseHealth dbHealth = mock( DatabaseHealth.class );
 
     @BeforeEach
-    public void mocking()
+    void mocking()
     {
         when( dbHealth.isHealthy() ).thenReturn( true );
     }
 
     @Test
-    public void shouldReturnImmediatelyIfMemberAndCaughtUp() throws Exception
+    void shouldReturnImmediatelyIfMemberAndCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500, NullLogProvider.getInstance() );
@@ -79,7 +79,7 @@ public class MembershipWaiterTest
     }
 
     @Test
-    public void shouldWaitUntilLeaderCommitIsAvailable() throws Exception
+    void shouldWaitUntilLeaderCommitIsAvailable() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500, NullLogProvider.getInstance() );
@@ -103,7 +103,7 @@ public class MembershipWaiterTest
     }
 
     @Test
-    public void shouldTimeoutIfCaughtUpButNotMember() throws Exception
+    void shouldTimeoutIfCaughtUpButNotMember() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, NullLogProvider.getInstance() );
@@ -132,7 +132,7 @@ public class MembershipWaiterTest
     }
 
     @Test
-    public void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
+    void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, NullLogProvider.getInstance() );
@@ -161,7 +161,7 @@ public class MembershipWaiterTest
     }
 
     @Test
-    public void shouldTimeoutIfLeaderCommitIsNeverKnown() throws Exception
+    void shouldTimeoutIfLeaderCommitIsNeverKnown() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth,  1, NullLogProvider.getInstance() );

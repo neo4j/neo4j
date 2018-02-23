@@ -48,10 +48,10 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class IncrementalBackupIT
+class IncrementalBackupIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Resource
     public SuppressOutput suppressOutput;
 
@@ -61,7 +61,7 @@ public class IncrementalBackupIT
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         File base = testDirectory.directory();
         serverPath = new File( base, "server" );
@@ -71,7 +71,7 @@ public class IncrementalBackupIT
     }
 
     @AfterEach
-    public void shutItDown() throws Exception
+    void shutItDown() throws Exception
     {
         if ( server != null )
         {
@@ -86,7 +86,7 @@ public class IncrementalBackupIT
     }
 
     @Test
-    public void shouldDoIncrementalBackup() throws Exception
+    void shouldDoIncrementalBackup() throws Exception
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         int port = PortAuthority.allocatePort();
@@ -107,7 +107,7 @@ public class IncrementalBackupIT
     }
 
     @Test
-    public void shouldNotServeTransactionsWithInvalidHighIds() throws Exception
+    void shouldNotServeTransactionsWithInvalidHighIds() throws Exception
     {
         /*
          * This is in effect a high level test for an edge case that happens when a relationship group is

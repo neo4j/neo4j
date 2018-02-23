@@ -28,11 +28,11 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-public class FileSystemClosingBatchInserterTest
+class FileSystemClosingBatchInserterTest
 {
 
     @Test
-    public void closeFileSystemOnShutdown() throws Exception
+    void closeFileSystemOnShutdown() throws Exception
     {
         BatchInserter batchInserter = mock( BatchInserter.class );
         IndexConfigStoreProvider configStoreProvider = mock( IndexConfigStoreProvider.class );

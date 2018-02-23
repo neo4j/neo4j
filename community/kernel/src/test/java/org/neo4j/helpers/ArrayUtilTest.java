@@ -27,10 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class ArrayUtilTest
+class ArrayUtilTest
 {
     @Test
-    public void shouldProduceUnionOfTwoArrays()
+    void shouldProduceUnionOfTwoArrays()
     {
         // GIVEN
         String[] first = {"one", "three"};
@@ -45,7 +45,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldProduceUnionWhereFirstIsNull()
+    void shouldProduceUnionWhereFirstIsNull()
     {
         // GIVEN
         String[] first = null;
@@ -59,7 +59,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldProduceUnionWhereOtherIsNull()
+    void shouldProduceUnionWhereOtherIsNull()
     {
         // GIVEN
         String[] first = {"one", "two"};
@@ -73,7 +73,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldCheckNullSafeEqual()
+    void shouldCheckNullSafeEqual()
     {
         // WHEN/THEN
         assertTrue( ArrayUtil.nullSafeEquals( null, null ) );
@@ -83,7 +83,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void emptyArray()
+    void emptyArray()
     {
         assertTrue( ArrayUtil.isEmpty( null ) );
         assertTrue( ArrayUtil.isEmpty( new String[] {} ) );
@@ -91,7 +91,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldConcatOneAndMany()
+    void shouldConcatOneAndMany()
     {
         // WHEN
         Integer[] result = ArrayUtil.concat( 0, 1, 2, 3, 4 );
@@ -104,7 +104,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldFindIndexOf()
+    void shouldFindIndexOf()
     {
         // GIVEN
         Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
@@ -117,7 +117,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldRemoveItems()
+    void shouldRemoveItems()
     {
         // GIVEN
         Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
@@ -138,7 +138,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldConcatArrays()
+    void shouldConcatArrays()
     {
         // GIVEN
         Integer[] initial = new Integer[] {0, 1, 2};
@@ -151,7 +151,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldReverseEvenCount()
+    void shouldReverseEvenCount()
     {
         // given
         Integer[] array = new Integer[] {0, 1, 2, 3, 4, 5};
@@ -164,7 +164,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldReverseUnevenCount()
+    void shouldReverseUnevenCount()
     {
         // given
         Integer[] array = new Integer[] {0, 1, 2, 3, 4};
@@ -177,7 +177,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldReverseEmptyArray()
+    void shouldReverseEmptyArray()
     {
         // given
         Integer[] array = new Integer[] {};

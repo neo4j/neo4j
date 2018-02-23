@@ -30,7 +30,6 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,10 +41,10 @@ import static org.neo4j.values.storable.Values.of;
 /**
  * Test read access to committed properties.
  */
-public class StorageLayerPropertyTest extends StorageLayerTest
+class StorageLayerPropertyTest extends StorageLayerTest
 {
     @Test
-    public void should_get_all_node_properties()
+    void should_get_all_node_properties()
     {
         // GIVEN
         String longString =
@@ -125,7 +124,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_create_property_key_if_not_exists()
+    void should_create_property_key_if_not_exists()
     {
         // WHEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -135,7 +134,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_get_previously_created_property_key()
+    void should_get_previously_created_property_key()
     {
         // GIVEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -148,7 +147,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_be_able_to_get_or_create_previously_created_property_key()
+    void should_be_able_to_get_or_create_previously_created_property_key()
     {
         // GIVEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -161,7 +160,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_fail_if_get_non_existent_property_key()
+    void should_fail_if_get_non_existent_property_key()
     {
         // WHEN
         int propertyKey = disk.propertyKeyGetForName( "non-existent-property-key" );

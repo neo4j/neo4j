@@ -43,7 +43,7 @@ import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResp
 import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse.Status.SUCCESS;
 import static org.neo4j.kernel.impl.util.Cursors.rawCursorOf;
 
-public class StoreStreamingProcessTest
+class StoreStreamingProcessTest
 {
     // mocks
     private final StoreFileStreamingProtocol protocol = mock( StoreFileStreamingProtocol.class );
@@ -56,7 +56,7 @@ public class StoreStreamingProcessTest
     private StoreCopyCheckPointMutex mutex = new StoreCopyCheckPointMutex( lock );
 
     @Test
-    public void shouldPerformSuccessfulStoreCopyProcess() throws Exception
+    void shouldPerformSuccessfulStoreCopyProcess() throws Exception
     {
         // given
         StoreStreamingProcess process = new StoreStreamingProcess( protocol, checkPointerSupplier, mutex, resourceStream );
@@ -91,7 +91,7 @@ public class StoreStreamingProcessTest
     }
 
     @Test
-    public void shouldSignalFailure()
+    void shouldSignalFailure()
     {
         // given
         StoreStreamingProcess process = new StoreStreamingProcess( protocol, checkPointerSupplier, mutex, resourceStream );

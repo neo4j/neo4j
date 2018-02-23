@@ -65,7 +65,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
-public class IndexIT extends KernelIntegrationTest
+class IndexIT extends KernelIntegrationTest
 {
     private static final String LABEL = "Label";
     private static final String PROPERTY_KEY = "prop";
@@ -78,7 +78,7 @@ public class IndexIT extends KernelIntegrationTest
     private ExecutorService executorService;
 
     @BeforeEach
-    public void createLabelAndProperty() throws Exception
+    void createLabelAndProperty() throws Exception
     {
         TokenWriteOperations tokenWrites = tokenWriteOperationsInNewTransaction();
         labelId = tokenWrites.labelGetOrCreateForName( LABEL );
@@ -91,13 +91,13 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         executorService.shutdown();
     }
 
     @Test
-    public void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException
+    void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException
     {
         TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
         int label2 = tokenWriteOperations.labelGetOrCreateForName( "Label2" );
@@ -111,7 +111,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void createIndexesForDifferentLabelsConcurrently() throws Throwable
+    void createIndexesForDifferentLabelsConcurrently() throws Throwable
     {
         assertTimeout( ofMillis( 10_000 ), () -> {
             TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
@@ -127,7 +127,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addIndexRuleInATransaction() throws Exception
+    void addIndexRuleInATransaction() throws Exception
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
@@ -144,7 +144,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
+    void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
@@ -163,7 +163,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
+    void rollBackIndexRuleShouldNotBeCommitted() throws Exception
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
@@ -180,7 +180,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
+    void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
     {
         // given
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
@@ -205,7 +205,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
+    void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
         IndexDescriptor index;
@@ -237,7 +237,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldFailToCreateIndexWhereAConstraintAlreadyExists() throws Exception
+    void shouldFailToCreateIndexWhereAConstraintAlreadyExists() throws Exception
     {
         // given
         {
@@ -265,7 +265,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldListConstraintIndexesInTheBeansAPI() throws Exception
+    void shouldListConstraintIndexesInTheBeansAPI() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AUTH_DISABLED );
@@ -307,7 +307,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldListAll() throws Exception
+    void shouldListAll() throws Exception
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();

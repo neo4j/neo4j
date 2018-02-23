@@ -38,12 +38,12 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 
-public class ContractCheckingIndexProxyTest
+class ContractCheckingIndexProxyTest
 {
     private static final long TEST_TIMEOUT = 20_000;
 
     @Test
-    public void shouldNotCreateIndexTwice()
+    void shouldNotCreateIndexTwice()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -57,7 +57,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotCloseIndexTwice()
+    void shouldNotCloseIndexTwice()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -71,7 +71,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotDropIndexTwice()
+    void shouldNotDropIndexTwice()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -85,7 +85,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotDropAfterClose()
+    void shouldNotDropAfterClose()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -99,7 +99,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldDropAfterCreate() throws IOException
+    void shouldDropAfterCreate() throws IOException
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
@@ -113,7 +113,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldCloseAfterCreate() throws IOException
+    void shouldCloseAfterCreate() throws IOException
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
@@ -127,7 +127,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotUpdateBeforeCreate()
+    void shouldNotUpdateBeforeCreate()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -143,7 +143,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotUpdateAfterClose()
+    void shouldNotUpdateAfterClose()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -161,7 +161,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotForceBeforeCreate()
+    void shouldNotForceBeforeCreate()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -174,7 +174,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotForceAfterClose()
+    void shouldNotForceAfterClose()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -189,7 +189,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotCloseWhileCreating()
+    void shouldNotCloseWhileCreating()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -220,7 +220,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void shouldNotDropWhileCreating()
+    void shouldNotDropWhileCreating()
     {
         assertThrows( IllegalStateException.class, () -> {
             // GIVEN
@@ -251,7 +251,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void closeWaitForUpdateToFinish()
+    void closeWaitForUpdateToFinish()
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             //  GIVEN
@@ -298,7 +298,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test
-    public void closeWaitForForceToComplete()
+    void closeWaitForForceToComplete()
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             //  GIVEN

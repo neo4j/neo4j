@@ -54,7 +54,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void testEmptyGraph() throws Throwable
+    void testEmptyGraph() throws Throwable
     {
         // Given the database is empty
 
@@ -68,7 +68,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testLabelIndex() throws Throwable
+    void testLabelIndex() throws Throwable
     {
         // Given there is label with index and a constraint
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -107,7 +107,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testRelationShip() throws Throwable
+    void testRelationShip() throws Throwable
     {
         // Given there ar
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );

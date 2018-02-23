@@ -561,12 +561,12 @@ public class TestRelationshipCount
         }
     }
 
-    static RelationshipCreationSpec create( RelType type, Direction dir, int count )
+    private static RelationshipCreationSpec create( RelType type, Direction dir, int count )
     {
         return new RelationshipCreationSpec( type, dir, count );
     }
 
-    static RelationshipDeletionSpec delete( RelType type, Direction dir, int which )
+    private static RelationshipDeletionSpec delete( RelType type, Direction dir, int which )
     {
         return new RelationshipDeletionSpec( type, dir, which );
     }

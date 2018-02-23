@@ -40,13 +40,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Pair.pair;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ArchiveTest
+class ArchiveTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldRoundTripAnEmptyDirectory() throws IOException, IncorrectFormat
+    void shouldRoundTripAnEmptyDirectory() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Files.createDirectories( directory );
@@ -55,7 +55,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldRoundTripASingleFile() throws IOException, IncorrectFormat
+    void shouldRoundTripASingleFile() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Files.createDirectories( directory );
@@ -65,7 +65,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldRoundTripAnEmptyFile() throws IOException, IncorrectFormat
+    void shouldRoundTripAnEmptyFile() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Files.createDirectories( directory );
@@ -75,7 +75,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldRoundTripFilesWithDifferentContent() throws IOException, IncorrectFormat
+    void shouldRoundTripFilesWithDifferentContent() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Files.createDirectories( directory );
@@ -86,7 +86,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldRoundTripEmptyDirectories() throws IOException, IncorrectFormat
+    void shouldRoundTripEmptyDirectories() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path subdir = directory.resolve( "a-subdirectory" );
@@ -95,7 +95,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldRoundTripFilesInDirectories() throws IOException, IncorrectFormat
+    void shouldRoundTripFilesInDirectories() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path subdir = directory.resolve( "a-subdirectory" );
@@ -105,7 +105,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldCopeWithLongPaths() throws IOException, IncorrectFormat
+    void shouldCopeWithLongPaths() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path subdir = directory.resolve( "a/very/long/path/which/is/not/realistic/for/a/database/today/but/which" +
@@ -117,7 +117,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldExcludeFilesMatchedByTheExclusionPredicate() throws IOException, IncorrectFormat
+    void shouldExcludeFilesMatchedByTheExclusionPredicate() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Files.createDirectories( directory );
@@ -137,7 +137,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldExcludeWholeDirectoriesMatchedByTheExclusionPredicate() throws IOException, IncorrectFormat
+    void shouldExcludeWholeDirectoriesMatchedByTheExclusionPredicate() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path subdir = directory.resolve( "subdir" );
@@ -156,7 +156,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void dumpAndLoadTransactionLogsFromCustomLocations() throws IOException, IncorrectFormat
+    void dumpAndLoadTransactionLogsFromCustomLocations() throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "dbDirectory" ).toPath();
         Path txLogsDirectory = testDirectory.directory( "txLogsDirectory" ).toPath();

@@ -52,10 +52,10 @@ public class ReadAheadLogChannelTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldReadFromSingleChannel() throws Exception
+    void shouldReadFromSingleChannel() throws Exception
     {
         // GIVEN
         File file = file( 0 );
@@ -98,7 +98,7 @@ public class ReadAheadLogChannelTest
     }
 
     @Test
-    public void shouldReadFromMultipleChannels() throws Exception
+    void shouldReadFromMultipleChannels() throws Exception
     {
         // GIVEN
         writeSomeData( file( 0 ), element ->

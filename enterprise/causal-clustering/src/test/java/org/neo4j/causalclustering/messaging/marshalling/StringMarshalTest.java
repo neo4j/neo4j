@@ -27,10 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class StringMarshalTest
+class StringMarshalTest
 {
     @Test
-    public void shouldSerializeAndDeserializeString()
+    void shouldSerializeAndDeserializeString()
     {
         // given
         final String TEST_STRING = "ABC123_?";
@@ -46,7 +46,7 @@ public class StringMarshalTest
     }
 
     @Test
-    public void shouldSerializeAndDeserializeEmptyString()
+    void shouldSerializeAndDeserializeEmptyString()
     {
         // given
         final String TEST_STRING = "";
@@ -62,7 +62,7 @@ public class StringMarshalTest
     }
 
     @Test
-    public void shouldSerializeAndDeserializeNull()
+    void shouldSerializeAndDeserializeNull()
     {
         // given
         final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();

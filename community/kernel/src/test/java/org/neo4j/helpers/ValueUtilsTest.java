@@ -39,10 +39,10 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class ValueUtilsTest
+class ValueUtilsTest
 {
     @Test
-    public void shouldHandleCollection()
+    void shouldHandleCollection()
     {
         // Given
         Collection<Integer> collection = Arrays.asList( 1, 2, 3 );
@@ -61,7 +61,7 @@ public class ValueUtilsTest
     }
 
     @Test
-    public void shouldHandleIterator()
+    void shouldHandleIterator()
     {
         // Given
         Iterator<Integer> iterator = Arrays.asList( 1, 2, 3 ).iterator();
@@ -79,7 +79,7 @@ public class ValueUtilsTest
     }
 
     @Test
-    public void shouldHandleMaps()
+    void shouldHandleMaps()
     {
         // Given
         Map<String,Object> map = MapUtil.map( "a", Arrays.asList( "foo", 42 ) );
@@ -95,7 +95,7 @@ public class ValueUtilsTest
     }
 
     @Test
-    public void shouldHandleIterable()
+    void shouldHandleIterable()
     {
         // Given
         Iterable<Integer> collection = Arrays.asList( 1, 2, 3 );

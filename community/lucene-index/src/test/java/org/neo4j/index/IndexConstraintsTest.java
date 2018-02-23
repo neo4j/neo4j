@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -44,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.Iterables.single;
 
-public class IndexConstraintsTest
+class IndexConstraintsTest
 {
     private static final Label LABEL = Label.label( "Label" );
     private static final String PROPERTY_KEY = "x";
@@ -52,19 +51,19 @@ public class IndexConstraintsTest
     private GraphDatabaseService graphDb;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterEach
-    public void shutdown()
+    void shutdown()
     {
         graphDb.shutdown();
     }
 
     @Test
-    public void testMultipleCreate() throws InterruptedException
+    void testMultipleCreate() throws InterruptedException
     {
         final int numThreads = 25;
         final String uuid = UUID.randomUUID().toString();
@@ -118,7 +117,7 @@ public class IndexConstraintsTest
     // The following tests verify that multiple interacting schema commands can be applied in the same transaction.
 
     @Test
-    public void convertIndexToConstraint()
+    void convertIndexToConstraint()
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -138,7 +137,7 @@ public class IndexConstraintsTest
     }
 
     @Test
-    public void convertIndexToConstraintWithExistingData()
+    void convertIndexToConstraintWithExistingData()
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -168,7 +167,7 @@ public class IndexConstraintsTest
     }
 
     @Test
-    public void convertConstraintToIndex()
+    void convertConstraintToIndex()
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -188,7 +187,7 @@ public class IndexConstraintsTest
     }
 
     @Test
-    public void creatingAndDroppingAndCreatingIndexInSameTransaction()
+    void creatingAndDroppingAndCreatingIndexInSameTransaction()
     {
         // go increasingly meaner
         for ( int times = 1; times <= 4; times++ )
@@ -262,7 +261,7 @@ public class IndexConstraintsTest
     }
 
     @Test
-    public void shouldRemoveIndexForConstraintEvenIfDroppedInCreatingTransaction()
+    void shouldRemoveIndexForConstraintEvenIfDroppedInCreatingTransaction()
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -279,7 +278,7 @@ public class IndexConstraintsTest
     }
 
     @Test
-    public void creatingAndDroppingAndCreatingConstraintInSameTransaction()
+    void creatingAndDroppingAndCreatingConstraintInSameTransaction()
     {
         // go increasingly meaner
         for ( int times = 1; times <= 4; times++ )

@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,7 +43,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class ConstraintRecoveryIT
@@ -58,7 +56,7 @@ public class ConstraintRecoveryIT
     private GraphDatabaseAPI db;
 
     @Test
-    public void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails()
+    void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails()
     {
         // given
         final EphemeralFileSystemAbstraction fs = fileSystemRule.get();

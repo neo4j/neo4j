@@ -28,7 +28,7 @@ import org.neo4j.graphdb.RelationshipType;
 
 import static org.neo4j.graphdb.Label.label;
 
-public class SampleData
+class SampleData
 {
     private static final Label LABEL = label( "ExampleNode" );
     private static final String PROPERTY_KEY = "prop";

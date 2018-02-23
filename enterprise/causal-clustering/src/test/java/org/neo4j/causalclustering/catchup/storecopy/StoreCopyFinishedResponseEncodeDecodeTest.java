@@ -27,10 +27,10 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse.St
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
-public class StoreCopyFinishedResponseEncodeDecodeTest
+class StoreCopyFinishedResponseEncodeDecodeTest
 {
     @Test
-    public void shouldEncodeAndDecodePullRequestMessage()
+    void shouldEncodeAndDecodePullRequestMessage()
     {
         // given
         EmbeddedChannel channel =

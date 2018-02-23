@@ -37,10 +37,10 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IndexDefineCommandTest
+class IndexDefineCommandTest
 {
     @Test
-    public void testIndexCommandCreationEnforcesLimit()
+    void testIndexCommandCreationEnforcesLimit()
     {
         // Given
         IndexDefineCommand idc = new IndexDefineCommand();
@@ -77,7 +77,7 @@ public class IndexDefineCommandTest
     }
 
     @Test
-    public void shouldWriteIndexDefineCommandIfMapWithinShortRange() throws IOException
+    void shouldWriteIndexDefineCommandIfMapWithinShortRange() throws IOException
     {
         // GIVEN
         InMemoryClosableChannel channel =  new InMemoryClosableChannel( 10_000 );
@@ -95,7 +95,7 @@ public class IndexDefineCommandTest
     }
 
     @Test
-    public void shouldFailToWriteIndexDefineCommandIfMapIsLargerThanShort() throws IOException
+    void shouldFailToWriteIndexDefineCommandIfMapIsLargerThanShort() throws IOException
     {
         // GIVEN
         InMemoryClosableChannel channel =  new InMemoryClosableChannel( 1000 );

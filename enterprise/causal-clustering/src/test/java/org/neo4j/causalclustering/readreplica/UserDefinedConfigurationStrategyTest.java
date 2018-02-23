@@ -47,17 +47,17 @@ import org.neo4j.logging.NullLogProvider;
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static co.unruly.matchers.OptionalMatchers.empty;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class UserDefinedConfigurationStrategyTest
+class UserDefinedConfigurationStrategyTest
 {
     @Test
-    public void shouldPickTheFirstMatchingServerIfCore()
+    void shouldPickTheFirstMatchingServerIfCore()
     {
         // given
         MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );
@@ -78,7 +78,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldPickTheFirstMatchingServerIfReadReplica()
+    void shouldPickTheFirstMatchingServerIfReadReplica()
     {
         // given
         MemberId[] readReplicaIds = memberIDs( 100 );
@@ -101,7 +101,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldReturnEmptyIfNoMatchingServers()
+    void shouldReturnEmptyIfNoMatchingServers()
     {
         // given
         MemberId[] readReplicaIds = memberIDs( 100 );
@@ -123,7 +123,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldReturnEmptyIfInvalidFilterSpecification()
+    void shouldReturnEmptyIfInvalidFilterSpecification()
     {
         // given
         TopologyService topologyService = fakeTopologyService( fakeCoreTopology( new MemberId( UUID.randomUUID() ) ),
@@ -143,7 +143,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldNotReturnSelf()
+    void shouldNotReturnSelf()
     {
         // given
         String wantedGroup = eastGroup;
@@ -174,7 +174,8 @@ public class UserDefinedConfigurationStrategyTest
         return fakeReadReplicaTopology( readReplicaIds, ignored -> Collections.emptySet() );
     }
 
-    static ReadReplicaTopology fakeReadReplicaTopology( MemberId[] readReplicaIds, Function<MemberId,Set<String>> groupGenerator )
+    private static ReadReplicaTopology fakeReadReplicaTopology( MemberId[] readReplicaIds,
+            Function<MemberId,Set<String>> groupGenerator )
     {
         assert readReplicaIds.length > 0;
 

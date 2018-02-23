@@ -19,8 +19,8 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -35,30 +35,30 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 
-public class TestIndexNames
+class TestIndexNames
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
     @BeforeAll
-    public static void setUpStuff()
+    static void setUpStuff()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterAll
-    public static void tearDownStuff()
+    static void tearDownStuff()
     {
         graphDb.shutdown();
     }
 
     @AfterEach
-    public void commitTx()
+    void commitTx()
     {
         finishTx( true );
     }
 
-    public void finishTx( boolean success )
+    private void finishTx( boolean success )
     {
         if ( tx != null )
         {
@@ -71,7 +71,7 @@ public class TestIndexNames
         }
     }
 
-    public void beginTx()
+    private void beginTx()
     {
         if ( tx == null )
         {
@@ -79,14 +79,14 @@ public class TestIndexNames
         }
     }
 
-    void restartTx()
+    private void restartTx()
     {
         finishTx( true );
         beginTx();
     }
 
     @Test
-    public void makeSureIndexNamesCanBeRead()
+    void makeSureIndexNamesCanBeRead()
     {
         beginTx();
         assertEquals( 0, graphDb.index().nodeIndexNames().length );

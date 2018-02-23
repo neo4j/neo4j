@@ -49,7 +49,7 @@ public class BoltHAIT
     public final ClusterRule clusterRule = new ClusterRule().withBoltEnabled().withCluster( clusterOfSize( 3 ) );
 
     @Test
-    public void shouldContinueServingBoltRequestsBetweenInternalRestarts() throws Throwable
+    void shouldContinueServingBoltRequestsBetweenInternalRestarts() throws Throwable
     {
         // given
         /*

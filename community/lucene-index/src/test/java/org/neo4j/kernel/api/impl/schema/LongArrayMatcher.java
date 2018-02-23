@@ -40,7 +40,7 @@ class LongArrayMatcher extends TypeSafeDiagnosingMatcher<long[]>
 
     private long[] expectedArray;
 
-    LongArrayMatcher( long[] expectedArray )
+    private LongArrayMatcher( long[] expectedArray )
     {
         this.expectedArray = expectedArray;
     }

@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 @RunWith( Parameterized.class )
 public class SlaveTokenCreatorTest
 {
-    public interface SlaveTokenCreatorFixture
+    interface SlaveTokenCreatorFixture
     {
         AbstractTokenCreator build( Master master, RequestContextFactory requestContextFactory );
         Response<Integer> callMasterMethod( Master master, RequestContext ctx, String name );

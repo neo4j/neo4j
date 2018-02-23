@@ -38,7 +38,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 
 /**
@@ -200,7 +199,8 @@ public class DataGeneratorInput implements Input
         return bareboneNodeHeader( null, idType, extractors );
     }
 
-    public static Header bareboneNodeHeader( String idKey, IdType idType, Extractors extractors, Entry... additionalEntries )
+    private static Header bareboneNodeHeader( String idKey, IdType idType, Extractors extractors,
+            Entry... additionalEntries )
     {
         List<Entry> entries = new ArrayList<>();
         entries.add( new Entry( idKey, Type.ID, null, idType.extractor( extractors ) ) );

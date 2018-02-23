@@ -19,11 +19,11 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -32,19 +32,18 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
-public class PrimitiveLongSetTest
+class PrimitiveLongSetTest
 {
     private PrimitiveLongHashSet newSet( int h )
     {
@@ -58,7 +57,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainAddedValues_generated_1()
+    void shouldContainAddedValues_generated_1()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 15 );
@@ -109,7 +108,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainAddedValues_generated_6()
+    void shouldContainAddedValues_generated_6()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 11 );
@@ -142,7 +141,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainAddedValues_generated_4()
+    void shouldContainAddedValues_generated_4()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 9 );
@@ -160,7 +159,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_generated_8()
+    void shouldOnlyContainAddedValues_generated_8()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 7 );
@@ -205,7 +204,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainReallyBigLongValue()
+    void shouldContainReallyBigLongValue()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 10 );
@@ -221,7 +220,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues()
+    void shouldOnlyContainAddedValues()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 13 );
@@ -354,7 +353,7 @@ public class PrimitiveLongSetTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void longVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void longVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveLongSet set = Primitive.longSet();
@@ -374,7 +373,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void longVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void longVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntSet map = Primitive.intSet();
@@ -393,7 +392,7 @@ public class PrimitiveLongSetTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void intVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    void intVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
         PrimitiveIntSet set = Primitive.intSet();
@@ -413,7 +412,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void intVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    void intVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         PrimitiveIntSet map = Primitive.intSet();
@@ -431,7 +430,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldHandleEmptySet()
+    void shouldHandleEmptySet()
     {
         // GIVEN
         PrimitiveLongSet set = Primitive.longSet( 0 );

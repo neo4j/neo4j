@@ -291,7 +291,7 @@ public class StorePropertyCursorTest
 
         private static PageCache pageCache;
         private static NeoStores neoStores;
-        protected static PropertyStore propertyStore;
+        static PropertyStore propertyStore;
 
         @BeforeClass
         public static void setUp()

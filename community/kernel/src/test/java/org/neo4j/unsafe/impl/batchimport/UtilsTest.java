@@ -30,11 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UtilsTest
+class UtilsTest
 {
 
     @Test
-    public void shouldDetectCollisions()
+    void shouldDetectCollisions()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -48,7 +48,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldNotReportDisjointArraysAsCollision()
+    void shouldNotReportDisjointArraysAsCollision()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -62,7 +62,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldBeCorrectForSomeRandomBatches()
+    void shouldBeCorrectForSomeRandomBatches()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
@@ -85,7 +85,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldMergeIdsInto()
+    void shouldMergeIdsInto()
     {
         // GIVEN
         long[] values = new long[]{2, 4, 10, 11, 14};
@@ -101,7 +101,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldMergeSomeRandomIdsInto()
+    void shouldMergeSomeRandomIdsInto()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();

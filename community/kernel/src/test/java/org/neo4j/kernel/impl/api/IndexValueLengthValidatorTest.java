@@ -34,7 +34,7 @@ public class IndexValueLengthValidatorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void tooLongByteArrayIsNotAllowed()
+    void tooLongByteArrayIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Property value bytes length: 35000 is longer than 32766, " +
@@ -43,7 +43,7 @@ public class IndexValueLengthValidatorTest
     }
 
     @Test
-    public void stringOverExceedLimitNotAllowed()
+    void stringOverExceedLimitNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage(
@@ -53,7 +53,7 @@ public class IndexValueLengthValidatorTest
     }
 
     @Test
-    public void shortByteArrayIsValid()
+    void shortByteArrayIsValid()
     {
         INSTANCE.validate( RandomUtils.nextBytes( 3 ) );
         INSTANCE.validate( RandomUtils.nextBytes( 30 ) );

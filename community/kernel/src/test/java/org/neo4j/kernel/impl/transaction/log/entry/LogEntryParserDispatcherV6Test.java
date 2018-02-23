@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_C
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
-public class LogEntryParserDispatcherV6Test
+class LogEntryParserDispatcherV6Test
 {
     private final LogEntryVersion version = CURRENT;
     private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
@@ -49,7 +49,7 @@ public class LogEntryParserDispatcherV6Test
     private final LogPosition position = new LogPosition( 0, 29 );
 
     @Test
-    public void shouldParserStartEntry() throws IOException
+    void shouldParserStartEntry() throws IOException
     {
         // given
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, position );
@@ -74,7 +74,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldParserOnePhaseCommitEntry() throws IOException
+    void shouldParserOnePhaseCommitEntry() throws IOException
     {
         // given
         final LogEntryCommit commit = new LogEntryCommit( version, 42, 21 );
@@ -95,7 +95,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldParserCommandsUsingAGivenFactory() throws IOException
+    void shouldParserCommandsUsingAGivenFactory() throws IOException
     {
         // given
         // The record, it will be used as before and after
@@ -127,7 +127,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldParseCheckPointEntry() throws IOException
+    void shouldParseCheckPointEntry() throws IOException
     {
         // given
         final CheckPoint checkPoint = new CheckPoint( new LogPosition( 43, 44 ) );
@@ -148,7 +148,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldThrowWhenParsingUnknownEntry()
+    void shouldThrowWhenParsingUnknownEntry()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // when

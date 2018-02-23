@@ -44,7 +44,7 @@ import static org.neo4j.bolt.transport.HandshakeOutcome.NO_APPLICABLE_PROTOCOL;
 import static org.neo4j.bolt.transport.HandshakeOutcome.PARTIAL_HANDSHAKE;
 import static org.neo4j.bolt.transport.HandshakeOutcome.PROTOCOL_CHOSEN;
 
-public class BoltHandshakeProtocolHandlerTest
+class BoltHandshakeProtocolHandlerTest
 {
     private final String connector = "default";
     private final BoltMessagingProtocolHandler protocol = mock( BoltMessagingProtocolHandler.class );
@@ -52,7 +52,7 @@ public class BoltHandshakeProtocolHandlerTest
     private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
 
     @Test
-    public void shouldChooseFirstAvailableProtocol()
+    void shouldChooseFirstAvailableProtocol()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
@@ -76,7 +76,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldHandleFragmentedMessage()
+    void shouldHandleFragmentedMessage()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
@@ -108,7 +108,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldHandleHandshakeFollowedByMessageInSameBuffer()
+    void shouldHandleHandshakeFollowedByMessageInSameBuffer()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
@@ -135,7 +135,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldHandleVersionBoundary()
+    void shouldHandleVersionBoundary()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
@@ -159,7 +159,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldFallBackToNoneProtocolIfNoMatch()
+    void shouldFallBackToNoneProtocolIfNoMatch()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
@@ -182,7 +182,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldRejectIfInvalidHandshake()
+    void shouldRejectIfInvalidHandshake()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
@@ -205,7 +205,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldRejectIfInsecureHandshake()
+    void shouldRejectIfInsecureHandshake()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {

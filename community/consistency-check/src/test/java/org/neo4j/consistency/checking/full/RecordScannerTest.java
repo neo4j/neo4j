@@ -35,10 +35,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RecordScannerTest
+class RecordScannerTest
 {
     @Test
-    public void shouldProcessRecordsSequentiallyAndUpdateProgress() throws Exception
+    void shouldProcessRecordsSequentiallyAndUpdateProgress() throws Exception
     {
         // given
         ProgressMonitorFactory.MultiPartBuilder progressBuilder = mock( ProgressMonitorFactory.MultiPartBuilder.class );
@@ -64,7 +64,7 @@ public class RecordScannerTest
     }
 
     @Test
-    public void shouldProcessRecordsParallelAndUpdateProgress() throws Exception
+    void shouldProcessRecordsParallelAndUpdateProgress() throws Exception
     {
         // given
         ProgressMonitorFactory.MultiPartBuilder progressBuilder = mock( ProgressMonitorFactory.MultiPartBuilder.class );

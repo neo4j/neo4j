@@ -36,7 +36,7 @@ public class InMemoryTokenCacheTest
     public ExpectedException expectedEcxeption = ExpectedException.none();
 
     @Test
-    public void addTokenWithDuplicatedNotAllowed()
+    void addTokenWithDuplicatedNotAllowed()
     {
         InMemoryTokenCache<RelationshipTypeToken> tokenCache = createTokenCache();
         tokenCache.put( new RelationshipTypeToken( INBOUND1_TYPE, 1 ) );
@@ -49,7 +49,7 @@ public class InMemoryTokenCacheTest
     }
 
     @Test
-    public void keepOriginalTokenWhenAddDuplicate()
+    void keepOriginalTokenWhenAddDuplicate()
     {
         InMemoryTokenCache<RelationshipTypeToken> tokenCache = createTokenCache();
         tokenCache.put( new RelationshipTypeToken( INBOUND1_TYPE, 1 ) );

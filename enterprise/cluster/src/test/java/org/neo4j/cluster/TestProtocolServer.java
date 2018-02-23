@@ -47,10 +47,10 @@ import static org.mockito.Mockito.when;
 public class TestProtocolServer
         implements MessageProcessor
 {
-    protected final TestMessageSource receiver;
-    protected final TestMessageSender sender;
+    private final TestMessageSource receiver;
+    private final TestMessageSender sender;
 
-    protected ProtocolServer server;
+    private ProtocolServer server;
     private final DelayedDirectExecutor stateMachineExecutor;
     private URI serverUri;
 
@@ -121,7 +121,7 @@ public class TestProtocolServer
         return server.getServerId() + ": " + sender.getMessages().size() + server.toString();
     }
 
-    public class TestMessageSender implements MessageSender
+    class TestMessageSender implements MessageSender
     {
         List<Message> messages = new ArrayList<>();
 
@@ -142,19 +142,19 @@ public class TestProtocolServer
             return true;
         }
 
-        public List<Message> getMessages()
+        List<Message> getMessages()
         {
             return messages;
         }
 
-        public void sendMessages( List<Message> output )
+        void sendMessages( List<Message> output )
         {
             output.addAll( messages );
             messages.clear();
         }
     }
 
-    public class TestMessageSource
+    class TestMessageSource
             implements MessageSource, MessageProcessor
     {
         final Listeners<MessageProcessor> listeners = new Listeners<>();

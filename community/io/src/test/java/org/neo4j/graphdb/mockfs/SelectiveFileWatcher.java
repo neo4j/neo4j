@@ -30,7 +30,7 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
  * File watcher that will perform watching activities using specific file watcher in case if
  * requested resource will match to provided {@link File specificFile}.
  */
-public class SelectiveFileWatcher implements FileWatcher
+class SelectiveFileWatcher implements FileWatcher
 {
     private File specialFile;
     private final FileWatcher defaultFileWatcher;

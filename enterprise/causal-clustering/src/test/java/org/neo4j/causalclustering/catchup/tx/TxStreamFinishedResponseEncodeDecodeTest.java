@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
-public class TxStreamFinishedResponseEncodeDecodeTest
+class TxStreamFinishedResponseEncodeDecodeTest
 {
     @Test
-    public void shouldEncodeAndDecodePullRequestMessage()
+    void shouldEncodeAndDecodePullRequestMessage()
     {
         // given
         EmbeddedChannel channel = new EmbeddedChannel(

@@ -44,10 +44,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
-public class DelayedBufferTest
+class DelayedBufferTest
 {
     @Test
-    public void shouldHandleTheWholeWorkloadShebang() throws Throwable
+    void shouldHandleTheWholeWorkloadShebang() throws Throwable
     {
         // GIVEN
         final int size = 1_000;
@@ -93,7 +93,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldNotReleaseValuesUntilCrossedThreshold()
+    void shouldNotReleaseValuesUntilCrossedThreshold()
     {
         // GIVEN
         VerifyingConsumer consumer = new VerifyingConsumer( 30 );
@@ -169,7 +169,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldClearCurrentChunk()
+    void shouldClearCurrentChunk()
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );
@@ -188,7 +188,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldClearPreviousChunks()
+    void shouldClearPreviousChunks()
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );

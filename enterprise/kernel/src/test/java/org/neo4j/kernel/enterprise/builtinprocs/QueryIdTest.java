@@ -38,47 +38,47 @@ public class QueryIdTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
-    public void printsQueryIds() throws InvalidArgumentsException
+    void printsQueryIds() throws InvalidArgumentsException
     {
         assertThat( ofInternalId( 12L ).toString(), equalTo( "query-12" ) );
     }
 
     @Test
-    public void doesNotConstructNegativeQueryIds() throws InvalidArgumentsException
+    void doesNotConstructNegativeQueryIds() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
         ofInternalId( -15L );
     }
 
     @Test
-    public void parsesQueryIds() throws InvalidArgumentsException
+    void parsesQueryIds() throws InvalidArgumentsException
     {
         assertThat( fromExternalString( "query-14" ), equalTo( ofInternalId( 14L ) ) );
     }
 
     @Test
-    public void doesNotParseNegativeQueryIds() throws InvalidArgumentsException
+    void doesNotParseNegativeQueryIds() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
         fromExternalString( "query--12" );
     }
 
     @Test
-    public void doesNotParseRandomText() throws InvalidArgumentsException
+    void doesNotParseRandomText() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
         fromExternalString( "blarglbarf" );
     }
 
     @Test
-    public void doesNotParseTrailingRandomText() throws InvalidArgumentsException
+    void doesNotParseTrailingRandomText() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
         fromExternalString( "query-12  " );
     }
 
     @Test
-    public void doesNotParseEmptyText() throws InvalidArgumentsException
+    void doesNotParseEmptyText() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
         fromExternalString( "" );

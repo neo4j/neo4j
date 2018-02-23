@@ -46,27 +46,27 @@ import static org.neo4j.kernel.configuration.ConnectorValidator.DEPRECATED_CONNE
 @EnableRuleMigrationSupport
 public class BoltConnectorValidatorTest
 {
-    BoltConnectorValidator cv = new BoltConnectorValidator();
+    private BoltConnectorValidator cv = new BoltConnectorValidator();
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
     private Consumer<String> warningConsumer;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         warningConsumer = mock( Consumer.class );
     }
 
     @Test
-    public void doesNotValidateUnrelatedStuff()
+    void doesNotValidateUnrelatedStuff()
     {
         assertEquals( 0, cv.validate( stringMap( "dbms.connector.http.enabled", "true",
                 "dbms.blabla.boo", "123" ), warningConsumer ).size() );
     }
 
     @Test
-    public void onlyEnabledRequiredWhenNameIsBolt()
+    void onlyEnabledRequiredWhenNameIsBolt()
     {
         String boltEnabled = "dbms.connector.bolt.enabled";
 
@@ -75,7 +75,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void requiresTypeWhenNameIsNotBolt()
+    void requiresTypeWhenNameIsNotBolt()
     {
         String randomEnabled = "dbms.connector.bla.enabled";
         String randomType = "dbms.connector.bla.type";
@@ -90,7 +90,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void requiresCorrectTypeWhenNameIsNotBolt()
+    void requiresCorrectTypeWhenNameIsNotBolt()
     {
         String randomEnabled = "dbms.connector.bla.enabled";
         String randomType = "dbms.connector.bla.type";
@@ -102,7 +102,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void warnsWhenNameIsNotBolt()
+    void warnsWhenNameIsNotBolt()
     {
         String randomEnabled = "dbms.connector.bla.enabled";
         String randomType = "dbms.connector.bla.type";
@@ -115,7 +115,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void errorsOnInvalidConnectorSetting1()
+    void errorsOnInvalidConnectorSetting1()
     {
         String invalidSetting = "dbms.connector.bla.0.enabled";
 
@@ -126,7 +126,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void errorsOnInvalidConnectorSetting2()
+    void errorsOnInvalidConnectorSetting2()
     {
         String invalidSetting = "dbms.connector.bolt.foobar";
 
@@ -137,7 +137,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void validatesTlsLevel()
+    void validatesTlsLevel()
     {
         String key = "dbms.connector.bolt.tls_level";
 
@@ -171,7 +171,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void validatesAddress()
+    void validatesAddress()
     {
         String key = "dbms.connector.bolt.address";
 
@@ -197,7 +197,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void validatesListenAddress()
+    void validatesListenAddress()
     {
         String key = "dbms.connector.bolt.listen_address";
 
@@ -223,7 +223,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void validatesAdvertisedAddress()
+    void validatesAdvertisedAddress()
     {
         String key = "dbms.connector.bolt.advertised_address";
 
@@ -249,7 +249,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void validatesType()
+    void validatesType()
     {
         String type = "dbms.connector.bla.type";
 
@@ -260,7 +260,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnAddress()
+    void setsDeprecationFlagOnAddress()
     {
         Setting setting =
                 cv.getSettingFor( "dbms.connector.bolt.address", Collections.emptyMap() )
@@ -271,7 +271,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnType()
+    void setsDeprecationFlagOnType()
     {
         Setting setting =
                 cv.getSettingFor( "dbms.connector.bolt.type", Collections.emptyMap() )
@@ -282,7 +282,7 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnCustomNamedBoltConnectors()
+    void setsDeprecationFlagOnCustomNamedBoltConnectors()
     {
         List<Setting<Object>> settings = cv.settings( stringMap( "dbms.connector.0.type", "BOLT",
                 "dbms.connector.0.enabled", "false",

@@ -80,7 +80,7 @@ public class CommunityLockAcquisitionTimeoutIT
 {
 
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
     @Rule
     public final ExpectedException expectedException = none();
 
@@ -96,7 +96,7 @@ public class CommunityLockAcquisitionTimeoutIT
     private static GraphDatabaseService database;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         CustomClockFacadeFactory facadeFactory = new CustomClockFacadeFactory();
         database = new CustomClockTestGraphDatabaseFactory( facadeFactory )
@@ -108,7 +108,7 @@ public class CommunityLockAcquisitionTimeoutIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         secondTransactionExecutor.close();
         clockExecutor.close();
@@ -116,7 +116,7 @@ public class CommunityLockAcquisitionTimeoutIT
     }
 
     @Test
-    public void timeoutOnAcquiringExclusiveLock() throws Exception
+    void timeoutOnAcquiringExclusiveLock() throws Exception
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             expectedException.expect( new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
@@ -153,7 +153,7 @@ public class CommunityLockAcquisitionTimeoutIT
     }
 
     @Test
-    public void timeoutOnAcquiringSharedLock() throws Exception
+    void timeoutOnAcquiringSharedLock() throws Exception
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
             expectedException.expect( new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,

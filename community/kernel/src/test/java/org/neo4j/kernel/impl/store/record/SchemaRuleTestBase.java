@@ -20,24 +20,25 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 abstract class SchemaRuleTestBase
 {
-    protected static final long RULE_ID = 1;
-    protected static final long RULE_ID_2 = 2;
-    protected static final int LABEL_ID = 10;
-    protected static final int REL_TYPE_ID = 20;
-    protected static final int PROPERTY_ID_1 = 30;
-    protected static final int PROPERTY_ID_2 = 31;
+    static final long RULE_ID = 1;
+    static final long RULE_ID_2 = 2;
+    static final int LABEL_ID = 10;
+    static final int REL_TYPE_ID = 20;
+    static final int PROPERTY_ID_1 = 30;
+    static final int PROPERTY_ID_2 = 31;
 
-    protected static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+    static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( "index-provider", "1.0" );
-    protected static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR_2 =
+    static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR_2 =
             new SchemaIndexProvider.Descriptor( "index-provider-2", "2.0" );
 
-    protected void assertEquality( Object o1, Object o2 )
+    void assertEquality( Object o1, Object o2 )
     {
         assertThat( o1, equalTo( o2 ) );
         assertThat( o2, equalTo( o1 ) );

@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class PackedMultiFieldCacheTest
+class PackedMultiFieldCacheTest
 {
     @Test
-    public void shouldPutValuesIntoSlots()
+    void shouldPutValuesIntoSlots()
     {
         // GIVEN
         PackedMultiFieldCache cache = new PackedMultiFieldCache( 5, 10, 25, 24 );
@@ -45,7 +45,7 @@ public class PackedMultiFieldCacheTest
     }
 
     @Test
-    public void shouldHaveCorrectDefaultValues()
+    void shouldHaveCorrectDefaultValues()
     {
         // GIVEN
         PackedMultiFieldCache cache = new PackedMultiFieldCache( 1, 34, 35 );
@@ -61,7 +61,7 @@ public class PackedMultiFieldCacheTest
     }
 
     @Test
-    public void shouldBeAbleToChangeSlotSize()
+    void shouldBeAbleToChangeSlotSize()
     {
         // GIVEN
         PackedMultiFieldCache cache = new PackedMultiFieldCache( 1, 5 );

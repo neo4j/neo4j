@@ -33,7 +33,7 @@ import org.neo4j.graphdb.config.Setting;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ConfigOptionsTest
+class ConfigOptionsTest
 {
     private Setting<Integer> setting = new BaseSetting<Integer>()
     {
@@ -76,19 +76,19 @@ public class ConfigOptionsTest
     private ConfigOptions configOptions;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         this.configOptions = new ConfigOptions( setting );
     }
 
     @Test
-    public void setting()
+    void setting()
     {
         assertEquals( setting, configOptions.settingGroup() );
     }
 
     @Test
-    public void asConfigValue()
+    void asConfigValue()
     {
         List<ConfigValue> values = configOptions.asConfigValues( Collections.singletonMap( "myInt", "123" ) );
 

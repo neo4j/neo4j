@@ -24,14 +24,14 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
-public class TestWhiteListClassShutter
+class TestWhiteListClassShutter
 {
 
     @Test
-    public void shouldAllowWhiteListedClasses()
+    void shouldAllowWhiteListedClasses()
     {
         // Given
         Set<String> whiteList = new HashSet<>();
@@ -46,7 +46,7 @@ public class TestWhiteListClassShutter
     }
 
     @Test
-    public void shouldDisallowUnlistedClasses()
+    void shouldDisallowUnlistedClasses()
     {
         WhiteListClassShutter shutter = new WhiteListClassShutter( new HashSet<>() );
 

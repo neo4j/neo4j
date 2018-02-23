@@ -43,9 +43,9 @@ public class MethodSignatureCompilerTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    public static class MyOutputRecord
+    static class MyOutputRecord
     {
-        public String name;
+        String name;
 
         MyOutputRecord( String name )
         {
@@ -58,29 +58,29 @@ public class MethodSignatureCompilerTest
         public UnmappableRecord wat;
     }
 
-    public static class ClassWithProcedureWithSimpleArgs
+    static class ClassWithProcedureWithSimpleArgs
     {
         @Procedure
-        public Stream<MyOutputRecord> echo( @Name( "name" ) String in )
+        Stream<MyOutputRecord> echo( @Name( "name" ) String in )
         {
             return Stream.of( new MyOutputRecord( in ));
         }
 
         @Procedure
-        public Stream<MyOutputRecord> echoWithoutAnnotations( @Name( "name" ) String in1, String in2 )
+        Stream<MyOutputRecord> echoWithoutAnnotations( @Name( "name" ) String in1, String in2 )
         {
             return Stream.of( new MyOutputRecord( in1 + in2 ));
         }
 
         @Procedure
-        public Stream<MyOutputRecord> echoWithInvalidType( @Name( "name" ) UnmappableRecord in )
+        Stream<MyOutputRecord> echoWithInvalidType( @Name( "name" ) UnmappableRecord in )
         {
             return Stream.of( new MyOutputRecord( "echo" ));
         }
     }
 
     @Test
-    public void shouldMapSimpleRecordWithString() throws Throwable
+    void shouldMapSimpleRecordWithString() throws Throwable
     {
         // When
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echo", String.class );
@@ -91,7 +91,7 @@ public class MethodSignatureCompilerTest
     }
 
     @Test
-    public void shouldMapSimpleFunctionWithString() throws Throwable
+    void shouldMapSimpleFunctionWithString() throws Throwable
     {
         // When
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echo", String.class );
@@ -102,7 +102,7 @@ public class MethodSignatureCompilerTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
+    void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
     {
         // Given
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithInvalidType", UnmappableRecord.class );
@@ -121,7 +121,7 @@ public class MethodSignatureCompilerTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMissingAnnotations() throws Throwable
+    void shouldGiveHelpfulErrorOnMissingAnnotations() throws Throwable
     {
         // Given
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithoutAnnotations", String.class, String.class);

@@ -35,13 +35,13 @@ import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
 import static com.google.common.truth.Truth.assert_;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 
-public abstract class ExtensionTestBase
+abstract class ExtensionTestBase
 {
 
     abstract Processor processor();
 
     @Test
-    public void fails_if_context_injected_fields_have_wrong_modifiers()
+    void fails_if_context_injected_fields_have_wrong_modifiers()
     {
         JavaFileObject sproc =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_context_field/BadContextFields.java" );
@@ -70,7 +70,7 @@ public abstract class ExtensionTestBase
     }
 
     @Test
-    public void emits_warnings_if_context_injected_field_types_are_restricted()
+    void emits_warnings_if_context_injected_field_types_are_restricted()
     {
         JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_context_field/BadContextRestrictedTypeField.java" );
@@ -85,7 +85,7 @@ public abstract class ExtensionTestBase
     }
 
     @Test
-    public void does_not_emit_warnings_if_context_injected_field_types_are_restricted_when_context_warnings_disabled()
+    void does_not_emit_warnings_if_context_injected_field_types_are_restricted_when_context_warnings_disabled()
     {
         JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_context_field/BadContextRestrictedTypeField.java" );
@@ -95,7 +95,7 @@ public abstract class ExtensionTestBase
     }
 
     @Test
-    public void fails_if_context_injected_fields_have_unsupported_types()
+    void fails_if_context_injected_fields_have_unsupported_types()
     {
         JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_context_field/BadContextUnsupportedTypeError.java" );

@@ -43,7 +43,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class CappedLoggerTest
 {
 
-    public interface LogMethod
+    interface LogMethod
     {
         void log( @Nonnull CappedLogger logger, @Nonnull String msg );
         void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause );
@@ -156,12 +156,12 @@ public class CappedLoggerTest
         this.logMethod = logMethod;
     }
 
-    public String[] logLines( int lineCount )
+    private String[] logLines( int lineCount )
     {
         return logLines( lineCount, 0 );
     }
 
-    public String[] logLines( int lineCount, int startAt )
+    private String[] logLines( int lineCount, int startAt )
     {
         String[] lines = new String[lineCount];
         for ( int i = 0; i < lineCount; i++ )
@@ -173,12 +173,12 @@ public class CappedLoggerTest
         return lines;
     }
 
-    public void assertLoggedLines( String[] lines, int count )
+    private void assertLoggedLines( String[] lines, int count )
     {
         assertLoggedLines( lines, count, 0 );
     }
 
-    public void assertLoggedLines( String[] lines, int count, int skip )
+    private void assertLoggedLines( String[] lines, int count, int skip )
     {
         Matcher<String>[] matchers = new Matcher[count];
         int i;

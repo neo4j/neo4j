@@ -23,11 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CustomNameExtractorTest
+class CustomNameExtractorTest
 {
 
     @Test
-    public void favours_name_over_value()
+    void favours_name_over_value()
     {
         assertThat(CustomNameExtractor.getName( () -> "name", () -> "value" )).contains( "name" );
         assertThat(CustomNameExtractor.getName( () -> "name", () -> "" )).contains( "name" );
@@ -36,7 +36,7 @@ public class CustomNameExtractorTest
     }
 
     @Test
-    public void returns_value_if_trimmed_name_is_empty()
+    void returns_value_if_trimmed_name_is_empty()
     {
         assertThat(CustomNameExtractor.getName( () -> "", () -> "value" )).contains( "value" );
         assertThat(CustomNameExtractor.getName( () -> "   ", () -> "value" )).contains( "value" );
@@ -44,7 +44,7 @@ public class CustomNameExtractorTest
     }
 
     @Test
-    public void returns_nothing_if_none_defined()
+    void returns_nothing_if_none_defined()
     {
         assertThat(CustomNameExtractor.getName( () -> "", () -> "" )).isEmpty();
         assertThat(CustomNameExtractor.getName( () -> "   ", () -> "" )).isEmpty();

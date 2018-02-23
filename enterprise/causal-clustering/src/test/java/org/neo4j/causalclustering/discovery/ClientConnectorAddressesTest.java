@@ -30,10 +30,10 @@ import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Sche
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.http;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.https;
 
-public class ClientConnectorAddressesTest
+class ClientConnectorAddressesTest
 {
     @Test
-    public void shouldSerializeToString()
+    void shouldSerializeToString()
     {
         // given
         ClientConnectorAddresses connectorAddresses = new ClientConnectorAddresses( asList(
@@ -61,7 +61,7 @@ public class ClientConnectorAddressesTest
     }
 
     @Test
-    public void shouldSerializeWithNoHttpsAddress()
+    void shouldSerializeWithNoHttpsAddress()
     {
         // given
         ClientConnectorAddresses connectorAddresses = new ClientConnectorAddresses( asList(

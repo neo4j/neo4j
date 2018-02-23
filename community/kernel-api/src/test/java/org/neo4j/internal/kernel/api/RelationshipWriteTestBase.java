@@ -46,7 +46,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldCreateRelationship() throws Exception
+    void shouldCreateRelationship() throws Exception
     {
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -73,7 +73,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldCreateRelationshipBetweenInTransactionNodes() throws Exception
+    void shouldCreateRelationshipBetweenInTransactionNodes() throws Exception
     {
         long n1, n2, r;
         try ( Transaction tx = session.beginTransaction() )
@@ -94,7 +94,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldRollbackRelationshipOnFailure() throws Exception
+    void shouldRollbackRelationshipOnFailure() throws Exception
     {
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -118,7 +118,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldDeleteRelationship() throws Exception
+    void shouldDeleteRelationship() throws Exception
     {
         long n1, r;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -145,7 +145,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldNotDeleteRelationshipThatDoesNotExist() throws Exception
+    void shouldNotDeleteRelationshipThatDoesNotExist() throws Exception
     {
         long relationship = 0;
 
@@ -163,7 +163,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldDeleteRelationshipAddedInTransaction() throws Exception
+    void shouldDeleteRelationshipAddedInTransaction() throws Exception
     {
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )

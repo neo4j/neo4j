@@ -28,11 +28,11 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.reverse;
 
-public class ReversedListTest
+class ReversedListTest
 {
 
     @Test
-    public void shouldHandleEmptyList()
+    void shouldHandleEmptyList()
     {
         // Given
         ListValue inner = EMPTY_LIST;
@@ -46,7 +46,7 @@ public class ReversedListTest
     }
 
     @Test
-    public void shouldHandleSingleItemList()
+    void shouldHandleSingleItemList()
     {
         // Given
         ListValue inner = list( longValue( 5L ) );
@@ -61,7 +61,7 @@ public class ReversedListTest
     }
 
     @Test
-    public void shouldReverseList()
+    void shouldReverseList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ) );

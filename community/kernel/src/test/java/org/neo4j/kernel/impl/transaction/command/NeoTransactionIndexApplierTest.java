@@ -50,7 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
-public class NeoTransactionIndexApplierTest
+class NeoTransactionIndexApplierTest
 {
     private static final Descriptor INDEX_DESCRIPTOR = new Descriptor( "in-memory", "1.0" );
 
@@ -64,14 +64,14 @@ public class NeoTransactionIndexApplierTest
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );
         when( indexingService.convertToIndexUpdates( any() ) ).thenAnswer( o -> Iterables.empty() );
     }
 
     @Test
-    public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
+    void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
@@ -102,7 +102,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
+    void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
@@ -130,7 +130,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
+    void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );

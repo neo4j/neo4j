@@ -31,24 +31,24 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PropertyTransactionStateTest
+class PropertyTransactionStateTest
 {
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterEach
-    public void shutDown()
+    void shutDown()
     {
         db.shutdown();
     }
 
     @Test
-    public void testUpdateDoubleArrayProperty()
+    void testUpdateDoubleArrayProperty()
     {
         Node node;
         try ( Transaction tx = db.beginTx() )
@@ -72,7 +72,7 @@ public class PropertyTransactionStateTest
     }
 
     @Test
-    public void testStringPropertyUpdate()
+    void testStringPropertyUpdate()
     {
         String key = "foo";
         Node node;
@@ -92,7 +92,7 @@ public class PropertyTransactionStateTest
     }
 
     @Test
-    public void testSetDoubleArrayProperty()
+    void testSetDoubleArrayProperty()
     {
         try ( Transaction ignore = db.beginTx() )
         {

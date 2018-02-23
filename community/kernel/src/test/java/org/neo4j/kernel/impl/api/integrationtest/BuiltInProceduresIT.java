@@ -47,8 +47,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.mockito.Mockito.mock;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
@@ -63,7 +63,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void listAllLabels() throws Throwable
+    void listAllLabels() throws Throwable
     {
         // Given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -81,7 +81,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listPropertyKeys() throws Throwable
+    void listPropertyKeys() throws Throwable
     {
         // Given
         TokenWriteOperations ops = tokenWriteOperationsInNewTransaction();
@@ -97,7 +97,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listRelationshipTypes() throws Throwable
+    void listRelationshipTypes() throws Throwable
     {
         // Given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -116,7 +116,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listProcedures() throws Throwable
+    void listProcedures() throws Throwable
     {
         // When
         RawIterator<Object[],ProcedureException> stream = procedureCallOpsInNewTx()
@@ -268,7 +268,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void failWhenCallingNonExistingProcedures()
+    void failWhenCallingNonExistingProcedures()
     {
         try
         {
@@ -285,7 +285,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listAllComponents() throws Throwable
+    void listAllComponents() throws Throwable
     {
         // Given a running database
 
@@ -301,7 +301,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listAllIndexes() throws Throwable
+    void listAllIndexes() throws Throwable
     {
         // Given
         Statement statement = statementInNewTransaction( AUTH_DISABLED );

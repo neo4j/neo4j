@@ -29,24 +29,24 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParse
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
-public class ThresholdConfigParserTest
+class ThresholdConfigParserTest
 {
     @Test
-    public void parseTrue()
+    void parseTrue()
     {
         ThresholdConfigValue configValue = parse( "true" );
         assertEquals( NO_PRUNING, configValue );
     }
 
     @Test
-    public void parseFalse()
+    void parseFalse()
     {
         ThresholdConfigValue configValue = parse( "false" );
         assertEquals( KEEP_LAST_FILE, configValue );
     }
 
     @Test
-    public void parseGarbage()
+    void parseGarbage()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             parse( "davide" );

@@ -146,17 +146,17 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         };
     }
 
-    public static Matcher<String> info( String messagePattern )
+    private static Matcher<String> info( String messagePattern )
     {
         return line( "INFO", messagePattern );
     }
 
-    public static Matcher<String> warn( String messagePattern )
+    private static Matcher<String> warn( String messagePattern )
     {
         return line( "WARN", messagePattern );
     }
 
-    public static Matcher<String> line( final String level, final String messagePattern )
+    private static Matcher<String> line( final String level, final String messagePattern )
     {
         return new TypeSafeMatcher<String>()
         {

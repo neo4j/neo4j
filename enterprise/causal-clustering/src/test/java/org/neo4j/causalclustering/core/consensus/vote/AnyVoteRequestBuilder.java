@@ -24,7 +24,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 
 public abstract class AnyVoteRequestBuilder<T extends RaftMessages.AnyVote.Request>
 {
-    protected AnyVoteRequestBuilder( Constructor<T> constructor )
+    AnyVoteRequestBuilder( Constructor<T> constructor )
     {
         this.constructor = constructor;
     }

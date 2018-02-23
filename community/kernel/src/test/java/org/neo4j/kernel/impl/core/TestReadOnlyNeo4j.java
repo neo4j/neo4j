@@ -39,8 +39,8 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -53,7 +53,7 @@ public class TestReadOnlyNeo4j
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void testSimple()
+    void testSimple()
     {
         DbRepresentation someData = createSomeData();
         GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory()
@@ -100,7 +100,7 @@ public class TestReadOnlyNeo4j
     }
 
     @Test
-    public void testReadOnlyOperationsAndNoTransaction()
+    void testReadOnlyOperationsAndNoTransaction()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase(
                 PATH );

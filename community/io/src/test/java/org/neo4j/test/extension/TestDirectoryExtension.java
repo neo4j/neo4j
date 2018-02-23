@@ -29,7 +29,7 @@ import org.neo4j.test.rule.TestDirectory;
 public class TestDirectoryExtension extends StatefullFieldExtension<TestDirectory>
         implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
 {
-    public static final String TEST_DIRECTORY_STORE_KEY = "testDirectory";
+    private static final String TEST_DIRECTORY_STORE_KEY = "testDirectory";
 
     @Override
     public void beforeEach( ExtensionContext context ) throws Exception

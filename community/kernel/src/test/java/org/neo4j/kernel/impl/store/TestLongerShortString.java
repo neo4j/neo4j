@@ -32,11 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
 
-public class TestLongerShortString
+class TestLongerShortString
 {
 
     @Test
-    public void testMasks()
+    void testMasks()
     {
         assertEquals( 0, 1 & LongerShortString.invertedBitMask( LongerShortString.NUMERICAL ) );
         assertEquals( 0, 2 & LongerShortString.invertedBitMask( LongerShortString.DATE ) );
@@ -47,27 +47,27 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeEmptyString()
+    void canEncodeEmptyString()
     {
         assertCanEncodeAndDecodeToSame( "" );
     }
 
     @Test
-    public void canEncodeNumerical()
+    void canEncodeNumerical()
     {
         assertCanEncodeAndDecodeToSame( "12345678901234567890" );
         assertCanEncodeAndDecodeToSame( "12345678901234567890 +-.,' 321,3" );
     }
 
     @Test
-    public void canEncodeDate()
+    void canEncodeDate()
     {
         assertCanEncodeAndDecodeToSame( "2011-10-10 12:45:22+0200" );
         assertCanEncodeAndDecodeToSame( "2011/10/10 12:45:22+0200" );
     }
 
     @Test
-    public void testRandomStrings()
+    void testRandomStrings()
     {
         for ( int i = 0; i < 1000; i++ )
         {
@@ -87,14 +87,14 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeEmailAndUri()
+    void canEncodeEmailAndUri()
     {
         assertCanEncodeAndDecodeToSame( "mattias@neotechnology.com" );
         assertCanEncodeAndDecodeToSame( "http://domain:7474/" );
     }
 
     @Test
-    public void canEncodeLower()
+    void canEncodeLower()
     {
         assertCanEncodeAndDecodeToSame( "folder/generators/templates/controller.ext" );
         assertCanEncodeAndDecodeToSame( "folder/generators/templates/controller.extr" );
@@ -102,7 +102,7 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeLowerHex()
+    void canEncodeLowerHex()
     {
         assertCanEncodeAndDecodeToSame( "da39a3ee5e6b4b0d3255bfef95601890afd80709" ); // sha1hex('') len=40
         assertCanEncodeAndDecodeToSame(
@@ -113,7 +113,7 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeUpperHex()
+    void canEncodeUpperHex()
     {
         assertCanEncodeAndDecodeToSame( "DA39A3EE5E6B4B0D3255BFEF95601890AFD80709" ); // sha1HEX('') len=40
         assertCanEncodeAndDecodeToSame(
@@ -124,14 +124,14 @@ public class TestLongerShortString
     }
 
     @Test
-    public void checkMarginalFit()
+    void checkMarginalFit()
     {
         assertCanEncodeAndDecodeToSame( "^aaaaaaaaaaaaaaaaaaaaaaaaaa" );
         assertCannotEncode( "^aaaaaaaaaaaaaaaaaaaaaaaaaaa" );
     }
 
     @Test
-    public void canEncodeUUIDString()
+    void canEncodeUUIDString()
     {
         assertCanEncodeAndDecodeToSame( "81fe144f-484b-4a34-8e36-17a021540318" );
     }

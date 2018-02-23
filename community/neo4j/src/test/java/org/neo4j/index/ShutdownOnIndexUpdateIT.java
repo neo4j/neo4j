@@ -43,17 +43,17 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class ShutdownOnIndexUpdateIT
+class ShutdownOnIndexUpdateIT
 {
     @Resource
-    public ImpermanentDatabaseRule database;
+    private ImpermanentDatabaseRule database;
 
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();
     private static Label constraintIndexLabel = Label.label( "ConstraintIndexLabel" );
 
     @Test
-    public void shutdownWhileFinishingTransactionWithIndexUpdates()
+    void shutdownWhileFinishingTransactionWithIndexUpdates()
     {
         createConstraint( database );
         waitIndexesOnline( database );

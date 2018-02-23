@@ -19,14 +19,14 @@
  */
 package org.neo4j.com;
 
-public class MadeUpException extends RuntimeException
+class MadeUpException extends RuntimeException
 {
-    public MadeUpException( String message )
+    MadeUpException( String message )
     {
         super( message );
     }
 
-    public MadeUpException( String message, Throwable cause )
+    MadeUpException( String message, Throwable cause )
     {
         super( message, cause );
     }

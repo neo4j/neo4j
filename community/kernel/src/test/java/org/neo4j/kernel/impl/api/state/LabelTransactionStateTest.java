@@ -59,10 +59,10 @@ import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsPrimitiveLongIteratorFrom;
 
-public class LabelTransactionStateTest
+class LabelTransactionStateTest
 {
     @BeforeEach
-    public void before()
+    void before()
     {
         store = mock( StoreReadLayer.class );
         when( store.indexesGetForLabel( anyInt() ) ).then( answerAsIteratorFrom( Collections.emptyList() ) );
@@ -78,7 +78,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void addOnlyLabelShouldBeVisibleInTx() throws Exception
+    void addOnlyLabelShouldBeVisibleInTx() throws Exception
     {
         // GIVEN
         commitNoLabels();
@@ -91,7 +91,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void addAdditionalLabelShouldBeReflectedWithinTx() throws Exception
+    void addAdditionalLabelShouldBeReflectedWithinTx() throws Exception
     {
         // GIVEN
         commitLabels( labelId1 );
@@ -104,7 +104,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void addAlreadyExistingLabelShouldBeReflectedWithinTx() throws Exception
+    void addAlreadyExistingLabelShouldBeReflectedWithinTx() throws Exception
     {
         // GIVEN
         commitLabels( labelId1 );
@@ -117,7 +117,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void removeCommittedLabelShouldBeReflectedWithinTx() throws Exception
+    void removeCommittedLabelShouldBeReflectedWithinTx() throws Exception
     {
         // GIVEN
         commitLabels( labelId1, labelId2 );
@@ -130,7 +130,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void removeAddedLabelInTxShouldBeReflectedWithinTx() throws Exception
+    void removeAddedLabelInTxShouldBeReflectedWithinTx() throws Exception
     {
         // GIVEN
         commitLabels( labelId1 );
@@ -144,7 +144,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void addRemovedLabelInTxShouldBeReflectedWithinTx() throws Exception
+    void addRemovedLabelInTxShouldBeReflectedWithinTx() throws Exception
     {
         // GIVEN
         commitLabels( labelId1 );
@@ -158,7 +158,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void addedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
+    void addedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
     {
         // GIVEN
         commitLabels(
@@ -176,7 +176,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void removedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
+    void removedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
     {
         // GIVEN
         commitLabels(
@@ -192,7 +192,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
+    void addingNewLabelToNodeShouldRespondTrue() throws Exception
     {
         // GIVEN
         commitNoLabels();
@@ -205,7 +205,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
+    void addingExistingLabelToNodeShouldRespondFalse() throws Exception
     {
         // GIVEN
         commitLabels( labelId1 );
@@ -218,7 +218,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
+    void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
     {
         // GIVEN
         commitLabels( labelId1 );
@@ -231,7 +231,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
+    void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
     {
         // GIVEN
         commitNoLabels();
@@ -244,7 +244,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void should_return_true_when_adding_new_label() throws Exception
+    void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
@@ -259,7 +259,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void should_return_false_when_adding_existing_label() throws Exception
+    void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
@@ -275,7 +275,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void should_return_true_when_removing_existing_label() throws Exception
+    void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
@@ -291,7 +291,7 @@ public class LabelTransactionStateTest
     }
 
     @Test
-    public void should_return_true_when_removing_non_existant_label() throws Exception
+    void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );

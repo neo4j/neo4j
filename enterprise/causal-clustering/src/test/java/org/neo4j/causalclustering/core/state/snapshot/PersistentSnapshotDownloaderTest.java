@@ -41,13 +41,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotDownloader.OPERATION_NAME;
 
-public class PersistentSnapshotDownloaderTest
+class PersistentSnapshotDownloaderTest
 {
     private final AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "localhost", 1234 );
     private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( fromAddress );
 
     @Test
-    public void shouldPauseAndResumeApplicationProcessIfDownloadIsSuccessful() throws Exception
+    void shouldPauseAndResumeApplicationProcessIfDownloadIsSuccessful() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -67,7 +67,7 @@ public class PersistentSnapshotDownloaderTest
     }
 
     @Test
-    public void shouldResumeCommandApplicationProcessIfInterrupted() throws Exception
+    void shouldResumeCommandApplicationProcessIfInterrupted() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -93,7 +93,7 @@ public class PersistentSnapshotDownloaderTest
     }
 
     @Test
-    public void shouldResumeCommandApplicationProcessIfDownloaderIsStopped() throws Exception
+    void shouldResumeCommandApplicationProcessIfDownloaderIsStopped() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -120,7 +120,7 @@ public class PersistentSnapshotDownloaderTest
     }
 
     @Test
-    public void shouldEventuallySucceed() throws Exception
+    void shouldEventuallySucceed() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = new EventuallySuccessfulDownloader( 3 );
@@ -142,7 +142,7 @@ public class PersistentSnapshotDownloaderTest
     }
 
     @Test
-    public void shouldNotStartDownloadIfAlreadyCompleted() throws Exception
+    void shouldNotStartDownloadIfAlreadyCompleted() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -163,7 +163,7 @@ public class PersistentSnapshotDownloaderTest
     }
 
     @Test
-    public void shouldNotStartIfCurrentlyRunning() throws Exception
+    void shouldNotStartIfCurrentlyRunning() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );

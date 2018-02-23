@@ -52,7 +52,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     final AtomicInteger populatorCallCount = new AtomicInteger();
     final AtomicInteger writerCallCount = new AtomicInteger();
 
-    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
+    private static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
             "controlled-population", "1.0" );
 
     public ControlledPopulationSchemaIndexProvider()

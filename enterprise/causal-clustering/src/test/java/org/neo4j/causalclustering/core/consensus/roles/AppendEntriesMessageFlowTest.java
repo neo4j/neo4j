@@ -50,7 +50,7 @@ import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appe
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 @ExtendWith( MockitoExtension.class )
-public class AppendEntriesMessageFlowTest
+class AppendEntriesMessageFlowTest
 {
     private MemberId myself = member( 0 );
     private MemberId otherMember = member( 1 );
@@ -60,7 +60,7 @@ public class AppendEntriesMessageFlowTest
     @Mock
     private Outbound<MemberId, RaftMessages.RaftMessage> outbound;
 
-    ReplicatedInteger data( int value )
+    private ReplicatedInteger data( int value )
     {
         return ReplicatedInteger.valueOf( value );
     }
@@ -68,7 +68,7 @@ public class AppendEntriesMessageFlowTest
     private RaftMachine raft;
 
     @BeforeEach
-    public void setup() throws IOException
+    void setup() throws IOException
     {
         // given
         RaftLog raftLog = new InMemoryRaftLog();
@@ -81,7 +81,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnFalseOnAppendRequestFromOlderTerm() throws Exception
+    void shouldReturnFalseOnAppendRequestFromOlderTerm() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( -1 ).prevLogIndex( 0 )
@@ -94,7 +94,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnTrueOnAppendRequestWithFirstLogEntry() throws Exception
+    void shouldReturnTrueOnAppendRequestWithFirstLogEntry() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 1 ).prevLogIndex( 0 )
@@ -106,7 +106,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnFalseOnAppendRequestWhenPrevLogEntryNotMatched() throws Exception
+    void shouldReturnFalseOnAppendRequestWhenPrevLogEntryNotMatched() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
@@ -118,7 +118,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldAcceptSequenceOfAppendEntries() throws Exception
+    void shouldAcceptSequenceOfAppendEntries() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
@@ -153,7 +153,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnFalseIfLogHistoryDoesNotMatch() throws Exception
+    void shouldReturnFalseIfLogHistoryDoesNotMatch() throws Exception
     {
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
                 .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 1 ) ) ).build() );

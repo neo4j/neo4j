@@ -19,23 +19,23 @@
  */
 package org.neo4j.server;
 
-import java.io.IOException;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class NeoServerShutdownLoggingIT extends ExclusiveServerTestBase
+class NeoServerShutdownLoggingIT extends ExclusiveServerTestBase
 {
     private AssertableLogProvider logProvider;
     private NeoServer server;
 
     @BeforeEach
-    public void setupServer() throws IOException
+    void setupServer() throws IOException
     {
         logProvider = new AssertableLogProvider();
         server = ServerHelper.createNonPersistentServer( logProvider );
@@ -43,7 +43,7 @@ public class NeoServerShutdownLoggingIT extends ExclusiveServerTestBase
     }
 
     @AfterEach
-    public void shutdownTheServer()
+    void shutdownTheServer()
     {
         if ( server != null )
         {
@@ -52,7 +52,7 @@ public class NeoServerShutdownLoggingIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldLogShutdown()
+    void shouldLogShutdown()
     {
         server.stop();
         logProvider.assertContainsMessageContaining( "Stopped." );

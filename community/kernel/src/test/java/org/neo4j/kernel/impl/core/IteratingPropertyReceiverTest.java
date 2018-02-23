@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Values;
@@ -29,10 +28,10 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class IteratingPropertyReceiverTest
+class IteratingPropertyReceiverTest
 {
     @Test
-    public void shouldAcceptAndThenIterateOverProperties()
+    void shouldAcceptAndThenIterateOverProperties()
     {
         // GIVEN
         IteratingPropertyReceiver<StorageProperty> receiver = new IteratingPropertyReceiver<>();

@@ -31,18 +31,18 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler.Group;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ContinuousJobTest
+class ContinuousJobTest
 {
     private static final long DEFAULT_TIMEOUT_MS = 15_000;
     private final Group jobGroup = new Group( "test" );
     private final Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
 
     @Test
-    public void shouldRunJobContinuously() throws Throwable
+    void shouldRunJobContinuously() throws Throwable
     {
         // given
         CountDownLatch latch = new CountDownLatch( 10 );
@@ -60,7 +60,7 @@ public class ContinuousJobTest
     }
 
     @Test
-    public void shouldTerminateOnStop() throws Exception
+    void shouldTerminateOnStop() throws Exception
     {
         // given: this task is gonna take >20 ms total
         Semaphore semaphore = new Semaphore( -20 );

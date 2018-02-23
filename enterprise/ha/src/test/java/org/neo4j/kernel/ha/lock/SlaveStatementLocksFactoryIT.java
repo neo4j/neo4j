@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -56,13 +56,13 @@ public class SlaveStatementLocksFactoryIT
     private ClusterManager.ManagedCluster managedCluster;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         managedCluster = clusterRule.startCluster();
     }
 
     @Test
-    public void acquireSharedLocksDuringSlaveWriteTx()
+    void acquireSharedLocksDuringSlaveWriteTx()
     {
         HighlyAvailableGraphDatabase anySlave = managedCluster.getAnySlave();
         HighlyAvailableGraphDatabase master = managedCluster.getMaster();
@@ -79,7 +79,7 @@ public class SlaveStatementLocksFactoryIT
     }
 
     @Test
-    public void doNotAcquireSharedLocksDuringSlaveReadTx()
+    void doNotAcquireSharedLocksDuringSlaveReadTx()
     {
         HighlyAvailableGraphDatabase anySlave = managedCluster.getAnySlave();
         HighlyAvailableGraphDatabase master = managedCluster.getMaster();

@@ -56,10 +56,10 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class IndexSamplingIntegrationTest
+class IndexSamplingIntegrationTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private final Label label = Label.label( "Person" );
     private final String property = "name";
@@ -67,7 +67,7 @@ public class IndexSamplingIntegrationTest
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
 
     @Test
-    public void shouldSampleNotUniqueIndex() throws Throwable
+    void shouldSampleNotUniqueIndex() throws Throwable
     {
         GraphDatabaseService db = null;
         long deletedNodes = 0;
@@ -136,7 +136,7 @@ public class IndexSamplingIntegrationTest
     }
 
     @Test
-    public void shouldSampleUniqueIndex() throws Throwable
+    void shouldSampleUniqueIndex() throws Throwable
     {
         GraphDatabaseService db = null;
         long deletedNodes = 0;

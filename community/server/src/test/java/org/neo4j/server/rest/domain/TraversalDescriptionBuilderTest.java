@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.web.ScriptExecutionMode.SANDBOXED;
 
-public class TraversalDescriptionBuilderTest
+class TraversalDescriptionBuilderTest
 {
     @Test
-    public void throwsIllegalArgumentOnUnknownExpanderType()
+    void throwsIllegalArgumentOnUnknownExpanderType()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // Given
@@ -46,7 +46,7 @@ public class TraversalDescriptionBuilderTest
     }
 
     @Test
-    public void throwsIllegalArgumentOnNonStringExpanderType()
+    void throwsIllegalArgumentOnNonStringExpanderType()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // Given

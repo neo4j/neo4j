@@ -45,13 +45,13 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class CompositeCountsTest
+class CompositeCountsTest
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     @Test
-    public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel()
+    void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -84,7 +84,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipCreate()
+    void shouldMaintainCountsOnRelationshipCreate()
     {
         // given
         Node foo;
@@ -113,7 +113,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipDelete()
+    void shouldMaintainCountsOnRelationshipDelete()
     {
         // given
         Relationship relationship;
@@ -141,7 +141,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAdd()
+    void shouldMaintainCountsOnLabelAdd()
     {
         // given
         Node foo;
@@ -171,7 +171,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemove()
+    void shouldMaintainCountsOnLabelRemove()
     {
         // given
         Node foo;
@@ -201,7 +201,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipCreate()
+    void shouldMaintainCountsOnLabelAddAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -232,7 +232,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete()
+    void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -265,7 +265,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipDelete()
+    void shouldMaintainCountsOnLabelAddAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -298,7 +298,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate()
+    void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -329,7 +329,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction()
+    void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction()
     {
         // given
         Node foo;
@@ -384,7 +384,7 @@ public class CompositeCountsTest
             this.count = count;
         }
 
-        public void shouldBe( long expected )
+        void shouldBe( long expected )
         {
             assertEquals( expected, count, message );
         }
@@ -447,7 +447,7 @@ public class CompositeCountsTest
     private Supplier<KernelTransaction> transactionSupplier;
 
     @BeforeEach
-    public void exposeGuts()
+    void exposeGuts()
     {
         transactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );

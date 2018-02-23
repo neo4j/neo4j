@@ -55,11 +55,11 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Thread.currentThread;
 import static java.nio.ByteBuffer.allocate;
 import static java.time.Duration.ofMillis;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -104,7 +104,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void ableToEvictAllPageInAPageCache() throws IOException
+    void ableToEvictAllPageInAPageCache() throws IOException
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
@@ -126,7 +126,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustEvictCleanPageWithoutFlushing() throws Exception
+    void mustEvictCleanPageWithoutFlushing() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
@@ -152,7 +152,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustFlushDirtyPagesOnEvictingFirstPage() throws Exception
+    void mustFlushDirtyPagesOnEvictingFirstPage() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
@@ -184,7 +184,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustFlushDirtyPagesOnEvictingLastPage() throws Exception
+    void mustFlushDirtyPagesOnEvictingLastPage() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
@@ -215,7 +215,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustFlushDirtyPagesOnEvictingAllPages() throws Exception
+    void mustFlushDirtyPagesOnEvictingAllPages() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
@@ -251,7 +251,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void trackPageModificationTransactionId() throws Exception
+    void trackPageModificationTransactionId() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -276,7 +276,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception
+    void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -310,7 +310,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void pageModificationTracksHighestModifierTransactionId() throws IOException
+    void pageModificationTracksHighestModifierTransactionId() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -347,7 +347,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException
+    void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -370,7 +370,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException
+    void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -396,7 +396,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException
+    void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 23 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -422,7 +422,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException
+    void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 5 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -456,7 +456,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void doNotMarkContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionLowerThenReader() throws IOException
+    void doNotMarkContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionLowerThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 15 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -490,7 +490,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void closingTheCursorMustUnlockModifiedPage() throws Exception
+    void closingTheCursorMustUnlockModifiedPage() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
 
@@ -528,7 +528,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustUnblockPageFaultersWhenEvictionGetsException() throws Exception
+    void mustUnblockPageFaultersWhenEvictionGetsException() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             writeInitialDataTo( file( "a" ) );
@@ -582,7 +582,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustThrowIfMappingFileWouldOverflowReferenceCount() throws Exception
+    void mustThrowIfMappingFileWouldOverflowReferenceCount() throws Exception
     {
         assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () -> {
             File file = file( "a" );

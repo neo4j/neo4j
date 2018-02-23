@@ -30,19 +30,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.helpers.collection.Iterables.asArray;
 
-public class IndexSamplingJobQueueTest
+class IndexSamplingJobQueueTest
 {
-    public static final Predicate<Object> TRUE = Predicates.alwaysTrue();
-    public static final Predicate<Object> FALSE = Predicates.alwaysFalse();
+    private static final Predicate<Object> TRUE = Predicates.alwaysTrue();
+    private static final Predicate<Object> FALSE = Predicates.alwaysFalse();
 
     @Test
-    public void returnsNullWhenEmpty()
+    void returnsNullWhenEmpty()
     {
         assertNull( new IndexSamplingJobQueue<>( Predicates.alwaysTrue() ).poll() );
     }
 
     @Test
-    public void shouldEnqueueJobWhenEmpty()
+    void shouldEnqueueJobWhenEmpty()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( TRUE );
@@ -56,7 +56,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldEnqueueJobOnlyOnce()
+    void shouldEnqueueJobOnlyOnce()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( TRUE );
@@ -71,7 +71,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldNotEnqueueJobOnlyIfForbiddenByThePredicate()
+    void shouldNotEnqueueJobOnlyIfForbiddenByThePredicate()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( FALSE );
@@ -84,7 +84,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldForceEnqueueOfAnJobEvenIfThePredicateForbidsIt()
+    void shouldForceEnqueueOfAnJobEvenIfThePredicateForbidsIt()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( FALSE );
@@ -97,7 +97,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldDequeueAll()
+    void shouldDequeueAll()
     {
         // given
         final Object somethingElse = new Object();

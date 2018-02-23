@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,17 +61,17 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 
-public class AuthProceduresIT
+class AuthProceduresIT
 {
     private static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
 
-    protected GraphDatabaseAPI db;
+    private GraphDatabaseAPI db;
     private EphemeralFileSystemAbstraction fs;
     private BasicAuthManager authManager;
     private LoginContext admin;
 
     @BeforeEach
-    public void setup() throws InvalidAuthTokenException, IOException
+    void setup() throws InvalidAuthTokenException, IOException
     {
         fs = new EphemeralFileSystemAbstraction();
         db = (GraphDatabaseAPI) createGraphDatabase( fs );
@@ -81,7 +81,7 @@ public class AuthProceduresIT
     }
 
     @AfterEach
-    public void cleanup() throws Exception
+    void cleanup() throws Exception
     {
         db.shutdown();
         fs.close();
@@ -90,7 +90,7 @@ public class AuthProceduresIT
     //---------- change password -----------
 
     @Test
-    public void shouldChangePassword() throws Throwable
+    void shouldChangePassword() throws Throwable
     {
 
         // Given
@@ -100,14 +100,14 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotChangeOwnPasswordIfNewPasswordInvalid()
+    void shouldNotChangeOwnPasswordIfNewPasswordInvalid()
     {
         assertFail( admin, "CALL dbms.changePassword( '' )", "A password cannot be empty." );
         assertFail( admin, "CALL dbms.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
     }
 
     @Test
-    public void newUserShouldBeAbleToChangePassword() throws Throwable
+    void newUserShouldBeAbleToChangePassword() throws Throwable
     {
         // Given
         authManager.newUser( "andres", "banana", true );
@@ -117,7 +117,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void newUserShouldNotBeAbleToCallOtherProcedures() throws Throwable
+    void newUserShouldNotBeAbleToCallOtherProcedures() throws Throwable
     {
         // Given
         authManager.newUser( "andres", "banana", true );
@@ -131,7 +131,7 @@ public class AuthProceduresIT
     //---------- create user -----------
 
     @Test
-    public void shouldCreateUser()
+    void shouldCreateUser()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', true)" );
         try
@@ -145,7 +145,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldCreateUserWithNoPasswordChange()
+    void shouldCreateUserWithNoPasswordChange()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', false)" );
         try
@@ -159,7 +159,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldCreateUserWithDefault()
+    void shouldCreateUserWithDefault()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123')" );
         try
@@ -173,7 +173,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotCreateUserIfInvalidUsername()
+    void shouldNotCreateUserIfInvalidUsername()
     {
         assertFail( admin, "CALL dbms.security.createUser('', '1234', true)", "The provided username is empty." );
         assertFail( admin, "CALL dbms.security.createUser(',!', '1234', true)",
@@ -183,13 +183,13 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotCreateUserIfInvalidPassword()
+    void shouldNotCreateUserIfInvalidPassword()
     {
         assertFail( admin, "CALL dbms.security.createUser('andres', '', true)", "A password cannot be empty." );
     }
 
     @Test
-    public void shouldNotCreateExistingUser()
+    void shouldNotCreateExistingUser()
     {
         assertFail( admin, "CALL dbms.security.createUser('neo4j', '1234', true)",
                 "The specified user 'neo4j' already exists" );
@@ -199,7 +199,7 @@ public class AuthProceduresIT
     //---------- delete user -----------
 
     @Test
-    public void shouldDeleteUser() throws Exception
+    void shouldDeleteUser() throws Exception
     {
         authManager.newUser( "andres", "123", false );
         assertEmpty( admin, "CALL dbms.security.deleteUser('andres')" );
@@ -219,7 +219,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotDeleteNonExistentUser()
+    void shouldNotDeleteNonExistentUser()
     {
         assertFail( admin, "CALL dbms.security.deleteUser('nonExistentUser')", "User 'nonExistentUser' does not exist" );
     }
@@ -227,7 +227,7 @@ public class AuthProceduresIT
     //---------- list users -----------
 
     @Test
-    public void shouldListUsers() throws Exception
+    void shouldListUsers() throws Exception
     {
         authManager.newUser( "andres", "123", false );
         assertSuccess( admin, "CALL dbms.security.listUsers() YIELD username",
@@ -235,7 +235,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldReturnUsersWithFlags() throws Exception
+    void shouldReturnUsersWithFlags() throws Exception
     {
         authManager.newUser( "andres", "123", false );
         Map<String,Object> expected = map(
@@ -247,7 +247,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldShowCurrentUser() throws Exception
+    void shouldShowCurrentUser() throws Exception
     {
         assertSuccess( admin, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
@@ -346,7 +346,7 @@ public class AuthProceduresIT
         Assert.assertThat( results, containsInAnyOrder( items ) );
     }
 
-    protected String[] with( String[] strs, String... moreStr )
+    String[] with( String[] strs, String... moreStr )
     {
         return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
@@ -357,7 +357,7 @@ public class AuthProceduresIT
     }
 
     @SuppressWarnings( "unchecked" )
-    public static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+    private static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
             Map<String,Object> expected )
     {
         List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );

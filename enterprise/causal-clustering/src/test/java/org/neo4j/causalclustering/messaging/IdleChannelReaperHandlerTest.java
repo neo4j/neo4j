@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IdleChannelReaperHandlerTest
+class IdleChannelReaperHandlerTest
 {
     @Test
-    public void shouldRemoveChannelViaCallback()
+    void shouldRemoveChannelViaCallback()
     {
         // given
         AdvertisedSocketAddress address = new AdvertisedSocketAddress( "localhost", 1984 );

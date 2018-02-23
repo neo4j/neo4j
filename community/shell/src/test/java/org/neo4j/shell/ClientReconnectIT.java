@@ -31,16 +31,16 @@ import org.neo4j.shell.impl.SimpleAppServer;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ClientReconnectIT extends AbstractShellIT
+class ClientReconnectIT extends AbstractShellIT
 {
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         makeServerRemotelyAvailable();
     }
 
     @Test
-    public void remoteClientAbleToReconnectAndContinue() throws Exception
+    void remoteClientAbleToReconnectAndContinue() throws Exception
     {
         ShellClient client = newRemoteClient();
         executeCommand( client, "help", "Available commands" );
@@ -52,7 +52,7 @@ public class ClientReconnectIT extends AbstractShellIT
     }
 
     @Test
-    public void initialSessionValuesSurvivesReconnect() throws Exception
+    void initialSessionValuesSurvivesReconnect() throws Exception
     {
         createRelationshipChain( 2 );
         Map<String,Serializable> initialSession = MapUtil.genericMap( "TITLE_KEYS", "test" );

@@ -25,8 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
-
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -62,7 +60,7 @@ import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler.NO_OP_TX_HANDLE
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.ports.allocation.PortAuthority.allocatePort;
 
-public class CommunicationIT
+class CommunicationIT
 {
     private static final byte INTERNAL_PROTOCOL_VERSION = 0;
     private static final byte APPLICATION_PROTOCOL_VERSION = 0;
@@ -72,20 +70,20 @@ public class CommunicationIT
     private Builder builder;
 
     @BeforeEach
-    public void doBefore()
+    void doBefore()
     {
         storeIdToUse = newStoreIdForCurrentVersion();
         builder = new Builder();
     }
 
     @AfterEach
-    public void shutdownLife()
+    void shutdownLife()
     {
         life.shutdown();
     }
 
     @Test
-    public void clientGetResponseFromServerViaComLayer() throws Throwable
+    void clientGetResponseFromServerViaComLayer() throws Throwable
     {
         MadeUpServerImplementation serverImplementation = new MadeUpServerImplementation( storeIdToUse );
         MadeUpServer server = builder.server( serverImplementation );
@@ -111,7 +109,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void makeSureClientStoreIdsMustMatch()
+    void makeSureClientStoreIdsMustMatch()
     {
         assertThrows( MismatchingStoreIdException.class, () -> {
             MadeUpServer server = builder.server();
@@ -123,7 +121,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void makeSureServerStoreIdsMustMatch()
+    void makeSureServerStoreIdsMustMatch()
     {
         assertThrows( MismatchingStoreIdException.class, () -> {
             MadeUpServer server = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).server();
@@ -135,7 +133,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void makeSureClientCanStreamBigData()
+    void makeSureClientCanStreamBigData()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
@@ -145,7 +143,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void clientThrowsServerSideErrorMidwayThroughStreaming()
+    void clientThrowsServerSideErrorMidwayThroughStreaming()
     {
         final String failureMessage = "Just failing";
         MadeUpServerImplementation serverImplementation = new MadeUpServerImplementation( storeIdToUse )
@@ -174,7 +172,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void communicateBetweenJvms()
+    void communicateBetweenJvms()
     {
         ServerInterface server = builder.serverInOtherJvm();
         server.awaitStarted();
@@ -189,7 +187,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void throwingServerSideExceptionBackToClient()
+    void throwingServerSideExceptionBackToClient()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
@@ -208,7 +206,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatch()
+    void applicationProtocolVersionsMustMatch()
     {
         MadeUpServer server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) ).server();
         MadeUpClient client = builder.client();
@@ -224,7 +222,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatchMultiJvm()
+    void applicationProtocolVersionsMustMatchMultiJvm()
     {
         ServerInterface server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) )
                                         .serverInOtherJvm();
@@ -245,7 +243,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void internalProtocolVersionsMustMatch()
+    void internalProtocolVersionsMustMatch()
     {
         MadeUpServer server = builder.internalProtocolVersion( (byte) 1 ).server();
         MadeUpClient client = builder.internalProtocolVersion( (byte) 2 ).client();
@@ -261,7 +259,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void internalProtocolVersionsMustMatchMultiJvm()
+    void internalProtocolVersionsMustMatchMultiJvm()
     {
         ServerInterface server = builder.internalProtocolVersion( (byte) 1 ).serverInOtherJvm();
         server.awaitStarted();
@@ -281,7 +279,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void serverStopsStreamingToDeadClient() throws Throwable
+    void serverStopsStreamingToDeadClient() throws Throwable
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
@@ -310,7 +308,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void serverContextVerificationCanThrowException()
+    void serverContextVerificationCanThrowException()
     {
         final String failureMessage = "I'm failing";
         TxChecksumVerifier failingVerifier = ( txId, checksum ) ->
@@ -335,7 +333,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void clientCanReadChunkSizeBiggerThanItsOwn()
+    void clientCanReadChunkSizeBiggerThanItsOwn()
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 20000;
         int clientChunkSize = serverChunkSize / 10;
@@ -350,7 +348,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void serverCanReadChunkSizeBiggerThanItsOwn()
+    void serverCanReadChunkSizeBiggerThanItsOwn()
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 1000;
         int clientChunkSize = serverChunkSize * 10;
@@ -365,7 +363,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Throwable
+    void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Throwable
     {
         Builder myBuilder = builder.chunkSize( FRAME_LENGTH + 10 );
         try
@@ -390,7 +388,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void clientShouldUseHandlersToHandleComExceptions()
+    void clientShouldUseHandlersToHandleComExceptions()
     {
         // Given
         final String comExceptionMessage = "The ComException";
@@ -432,7 +430,7 @@ public class CommunicationIT
 
     @Test
     @SuppressWarnings( "rawtypes" )
-    public void masterResponseShouldBeUnpackedIfRequestTypeRequires() throws Exception
+    void masterResponseShouldBeUnpackedIfRequestTypeRequires() throws Exception
     {
         // Given
         ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
@@ -450,7 +448,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void masterResponseShouldNotBeUnpackedIfRequestTypeDoesNotRequire()
+    void masterResponseShouldNotBeUnpackedIfRequestTypeDoesNotRequire()
     {
         // Given
         ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
@@ -465,7 +463,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void shouldStreamBackTransactions() throws Exception
+    void shouldStreamBackTransactions() throws Exception
     {
         // GIVEN
         int value = 11;
@@ -486,7 +484,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void shouldAdhereToTransactionObligations() throws Exception
+    void shouldAdhereToTransactionObligations() throws Exception
     {
         // GIVEN
         int value = 15;
@@ -540,60 +538,60 @@ public class CommunicationIT
             this.storeId = storeId;
         }
 
-        public Builder port( int port )
+        Builder port( int port )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder chunkSize( int chunkSize )
+        Builder chunkSize( int chunkSize )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder internalProtocolVersion( byte internalProtocolVersion )
+        Builder internalProtocolVersion( byte internalProtocolVersion )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder applicationProtocolVersion( byte applicationProtocolVersion )
+        Builder applicationProtocolVersion( byte applicationProtocolVersion )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder verifier( TxChecksumVerifier verifier )
+        Builder verifier( TxChecksumVerifier verifier )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder storeId( StoreId storeId )
+        Builder storeId( StoreId storeId )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public MadeUpServer server()
+        MadeUpServer server()
         {
             return new MadeUpServer( new MadeUpServerImplementation( storeId ), port,
                     internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
         }
 
-        public MadeUpServer server( MadeUpCommunicationInterface target )
+        MadeUpServer server( MadeUpCommunicationInterface target )
         {
             return new MadeUpServer(
                     target, port, internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
         }
 
-        public MadeUpClient client()
+        MadeUpClient client()
         {
             return clientWith( NO_OP_RESPONSE_UNPACKER );
         }
 
-        public MadeUpClient clientWith( ResponseUnpacker responseUnpacker )
+        MadeUpClient clientWith( ResponseUnpacker responseUnpacker )
         {
             return new MadeUpClient( port, storeId, chunkSize, responseUnpacker )
             {
@@ -605,7 +603,7 @@ public class CommunicationIT
             };
         }
 
-        public ServerInterface serverInOtherJvm()
+        ServerInterface serverInOtherJvm()
         {
             ServerInterface server = new MadeUpServerProcess().start( new StartupData(
                     storeId.getCreationTime(), storeId.getRandomId(), internalProtocolVersion,
@@ -615,13 +613,13 @@ public class CommunicationIT
         }
     }
 
-    public class TransactionStreamVerifyingResponseHandler
+    class TransactionStreamVerifyingResponseHandler
             implements Handler, Visitor<CommittedTransactionRepresentation,Exception>
     {
         private final long txCount;
         private long expectedTxId = 1;
 
-        public TransactionStreamVerifyingResponseHandler( int txCount )
+        TransactionStreamVerifyingResponseHandler( int txCount )
         {
             this.txCount = txCount;
         }
@@ -648,7 +646,7 @@ public class CommunicationIT
         }
     }
 
-    public class TransactionObligationVerifyingResponseHandler implements Handler
+    class TransactionObligationVerifyingResponseHandler implements Handler
     {
         volatile long obligationTxId;
 

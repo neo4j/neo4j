@@ -37,10 +37,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class FileNamesTest
+class FileNamesTest
 {
     @Test
-    public void shouldProperlyFormatFilenameForVersion()
+    void shouldProperlyFormatFilenameForVersion()
     {
         // Given
         File base = new File( "base" );
@@ -57,7 +57,7 @@ public class FileNamesTest
     }
 
     @Test
-    public void shouldWorkCorrectlyOnReasonableDirectoryContents()
+    void shouldWorkCorrectlyOnReasonableDirectoryContents()
     {
         // Given
         // a raft log directory with just the expected files, without gaps
@@ -92,7 +92,7 @@ public class FileNamesTest
     }
 
     @Test
-    public void shouldIgnoreUnexpectedLogDirectoryContents()
+    void shouldIgnoreUnexpectedLogDirectoryContents()
     {
         // Given
         // a raft log directory with just the expected files, without gaps

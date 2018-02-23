@@ -25,10 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.values.storable.Values;
 
-public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
+class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
 {
     @Test
-    public void tooLongArrayIsNotAllowed()
+    void tooLongArrayIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "is longer than 32766, " +
@@ -37,7 +37,7 @@ public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
     }
 
     @Test
-    public void shortArrayIsAllowed()
+    void shortArrayIsAllowed()
     {
         getValidator().validate( RandomUtils.nextBytes( 3 ) );
         getValidator().validate( RandomUtils.nextBytes( 30 ) );
@@ -46,7 +46,7 @@ public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
     }
 
     @Override
-    protected Validator<Object> getValidator()
+    Validator<Object> getValidator()
     {
         return object -> IndexValueValidator.INSTANCE.validate( Values.of( object ) );
     }

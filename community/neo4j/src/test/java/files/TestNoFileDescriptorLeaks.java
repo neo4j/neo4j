@@ -41,21 +41,21 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
 @DisabledOnOs( OS.WINDOWS )
-public class TestNoFileDescriptorLeaks
+class TestNoFileDescriptorLeaks
 {
     private static final AtomicInteger counter = new AtomicInteger();
 
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
 
     @BeforeAll
-    public static void beforeClass()
+    static void beforeClass()
     {
         assumeThat( OsBeanUtil.getOpenFileDescriptors(), not( OsBeanUtil.VALUE_UNAVAILABLE ) );
     }
 
     @Test
-    public void mustNotLeakFileDescriptorsFromMerge()
+    void mustNotLeakFileDescriptorsFromMerge()
     {
         // GIVEN
         try ( Transaction tx = db.beginTx() )

@@ -41,22 +41,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.impl.BackupStageOutcome.SUCCESS;
 
-public class BackupProtocolServiceStrategyTest
+class BackupProtocolServiceStrategyTest
 {
     private BackupProtocolService backupProtocolService = mock( BackupProtocolService.class );
 
-    HaBackupStrategy subject;
+    private HaBackupStrategy subject;
 
-    Config config = mock( Config.class );
-    OnlineBackupRequiredArguments requiredArgs = mock( OnlineBackupRequiredArguments.class );
-    OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
-    AddressResolver addressResolver = mock( AddressResolver.class );
-    HostnamePort hostnamePort = new HostnamePort( "hostname:1234" );
-    Path backupDirectory = mock( Path.class );
-    OptionalHostnamePort userSpecifiedHostname = new OptionalHostnamePort( (String) null, null, null );
+    private Config config = mock( Config.class );
+    private OnlineBackupRequiredArguments requiredArgs = mock( OnlineBackupRequiredArguments.class );
+    private OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
+    private AddressResolver addressResolver = mock( AddressResolver.class );
+    private HostnamePort hostnamePort = new HostnamePort( "hostname:1234" );
+    private Path backupDirectory = mock( Path.class );
+    private OptionalHostnamePort userSpecifiedHostname = new OptionalHostnamePort( (String) null, null, null );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArgs );
         when( addressResolver.resolveCorrectHAAddress( any(), any() ) ).thenReturn( hostnamePort );
@@ -64,7 +64,7 @@ public class BackupProtocolServiceStrategyTest
     }
 
     @Test
-    public void incrementalBackupsAreDoneAgainstResolvedAddress()
+    void incrementalBackupsAreDoneAgainstResolvedAddress()
     {
         // when
         Fallible<BackupStageOutcome> state = subject.performIncrementalBackup(
@@ -77,7 +77,7 @@ public class BackupProtocolServiceStrategyTest
     }
 
     @Test
-    public void exceptionsDuringIncrementalBackupAreMarkedAsFailedBackups()
+    void exceptionsDuringIncrementalBackupAreMarkedAsFailedBackups()
     {
         // given incremental backup will fail
         IncrementalBackupNotPossibleException expectedException = new IncrementalBackupNotPossibleException(
@@ -94,7 +94,7 @@ public class BackupProtocolServiceStrategyTest
     }
 
     @Test
-    public void fullBackupUsesResolvedAddress()
+    void fullBackupUsesResolvedAddress()
     {
         // when
         Fallible state = subject.performFullBackup( backupDirectory, config, userSpecifiedHostname );
@@ -105,7 +105,7 @@ public class BackupProtocolServiceStrategyTest
     }
 
     @Test
-    public void fullBackupFailsWithCauseOnException()
+    void fullBackupFailsWithCauseOnException()
     {
         // given full backup fails with a protocol/network exception
         when( backupProtocolService.doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() ) )

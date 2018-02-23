@@ -49,7 +49,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     protected abstract ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
@@ -63,7 +63,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     }
 
     @Test
-    public void shouldFindConstraintsBySchema() throws Exception
+    void shouldFindConstraintsBySchema() throws Exception
     {
         // GIVEN
         addConstraints( "FOO", "prop" );
@@ -85,7 +85,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     }
 
     @Test
-    public void shouldFindConstraintsByLabel() throws Exception
+    void shouldFindConstraintsByLabel() throws Exception
     {
         // GIVEN
         addConstraints( "FOO", "prop1", "FOO", "prop2" );
@@ -104,7 +104,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     }
 
     @Test
-    public void shouldBeAbleCheckExistenceOfConstraints() throws Exception
+    void shouldBeAbleCheckExistenceOfConstraints() throws Exception
     {
         // GIVEN
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -130,7 +130,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     }
 
     @Test
-    public void shouldFindAllConstraints() throws Exception
+    void shouldFindAllConstraints() throws Exception
     {
         // GIVEN
         addConstraints( "FOO", "prop1", "BAR", "prop2", "BAZ", "prop3" );
@@ -146,7 +146,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     }
 
     @Test
-    public void shouldCheckUniquenessWhenAddingLabel() throws Exception
+    void shouldCheckUniquenessWhenAddingLabel() throws Exception
     {
         // GIVEN
         long nodeConflicting, nodeNotConflicting;
@@ -204,7 +204,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     }
 
     @Test
-    public void shouldCheckUniquenessWhenAddingProperties() throws Exception
+    void shouldCheckUniquenessWhenAddingProperties() throws Exception
     {
         // GIVEN
         long nodeConflicting, nodeNotConflicting;

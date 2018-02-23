@@ -44,13 +44,13 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 
-public class TestLogPruning
+class TestLogPruning
 {
     private interface Extractor
     {
@@ -64,7 +64,7 @@ public class TestLogPruning
     private int performedTransactions;
 
     @AfterEach
-    public void after() throws Exception
+    void after() throws Exception
     {
         if ( db != null )
         {
@@ -74,7 +74,7 @@ public class TestLogPruning
     }
 
     @Test
-    public void noPruning() throws Exception
+    void noPruning() throws Exception
     {
         newDb( "true", 2 );
 
@@ -92,7 +92,7 @@ public class TestLogPruning
     }
 
     @Test
-    public void pruneByFileSize() throws Exception
+    void pruneByFileSize() throws Exception
     {
         // Given
         int transactionByteSize = figureOutSampleTransactionSizeBytes();
@@ -112,7 +112,7 @@ public class TestLogPruning
     }
 
     @Test
-    public void pruneByFileCount() throws Exception
+    void pruneByFileCount() throws Exception
     {
         int logsToKeep = 5;
         newDb( logsToKeep + " files", 3 );
@@ -127,7 +127,7 @@ public class TestLogPruning
     }
 
     @Test
-    public void pruneByTransactionCount() throws Exception
+    void pruneByTransactionCount() throws Exception
     {
         int transactionsToKeep = 100;
         int transactionsPerLog = 3;
@@ -146,7 +146,7 @@ public class TestLogPruning
     }
 
     @Test
-    public void shouldKeepAtLeastOneTransactionAfterRotate() throws Exception
+    void shouldKeepAtLeastOneTransactionAfterRotate() throws Exception
     {
         // Given
         // a database configured to keep 1 byte worth of logs, which means prune everything on rotate

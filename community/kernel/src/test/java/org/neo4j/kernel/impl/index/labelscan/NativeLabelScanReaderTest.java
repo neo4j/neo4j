@@ -36,13 +36,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 
-public class NativeLabelScanReaderTest
+class NativeLabelScanReaderTest
 {
     private static final int LABEL_ID = 1;
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldFindMultipleNodesInEachRange() throws Exception
+    void shouldFindMultipleNodesInEachRange() throws Exception
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
@@ -75,7 +75,7 @@ public class NativeLabelScanReaderTest
     }
 
     @Test
-    public void shouldSupportMultipleOpenCursorsConcurrently() throws Exception
+    void shouldSupportMultipleOpenCursorsConcurrently() throws Exception
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
@@ -111,7 +111,7 @@ public class NativeLabelScanReaderTest
     }
 
     @Test
-    public void shouldCloseUnexhaustedCursorsOnReaderClose() throws Exception
+    void shouldCloseUnexhaustedCursorsOnReaderClose() throws Exception
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );

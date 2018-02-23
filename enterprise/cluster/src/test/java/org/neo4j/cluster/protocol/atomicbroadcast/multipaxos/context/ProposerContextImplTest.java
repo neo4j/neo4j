@@ -33,10 +33,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ProposerContextImplTest
+class ProposerContextImplTest
 {
     @Test
-    public void shouldOnlyReturnMembersAsAcceptorsIfTheyAreAlive()
+    void shouldOnlyReturnMembersAsAcceptorsIfTheyAreAlive()
     {
         assertEquals( 5, limitedAcceptors( 5, instanceIds( 5 ) ) );
         assertEquals( 3, limitedAcceptors( 3, instanceIds( 5 ) ) );
@@ -47,7 +47,7 @@ public class ProposerContextImplTest
     }
 
     @Test
-    public void shouldCalculateMajorityOfAcceptors()
+    void shouldCalculateMajorityOfAcceptors()
     {
         ProposerContextImpl proposerContext = new ProposerContextImpl( new InstanceId( 1 ),
                 null, null, null, null, null );

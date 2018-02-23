@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -39,13 +39,13 @@ public class HttpHeaderUtilsTest
     private HttpServletRequest request;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         request = Mockito.mock( HttpServletRequest.class );
     }
 
     @Test
-    public void retrieveCustomTransactionTimeout()
+    void retrieveCustomTransactionTimeout()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "100" );
         Log log = logProvider.getLog( HttpServletRequest.class );
@@ -55,7 +55,7 @@ public class HttpHeaderUtilsTest
     }
 
     @Test
-    public void defaultValueWhenCustomTransactionTimeoutNotSpecified()
+    void defaultValueWhenCustomTransactionTimeoutNotSpecified()
     {
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
@@ -64,7 +64,7 @@ public class HttpHeaderUtilsTest
     }
 
     @Test
-    public void defaultValueWhenCustomTransactionTimeoutNotANumber()
+    void defaultValueWhenCustomTransactionTimeoutNotANumber()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "aa" );
         Log log = logProvider.getLog( HttpServletRequest.class );

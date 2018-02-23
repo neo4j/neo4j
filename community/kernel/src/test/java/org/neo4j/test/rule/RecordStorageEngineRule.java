@@ -143,7 +143,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private SchemaIndexProvider schemaIndexProvider = SchemaIndexProvider.NO_INDEX_PROVIDER;
         private Monitors monitors = new Monitors();
 
-        public Builder( FileSystemAbstraction fs, PageCache pageCache )
+        Builder( FileSystemAbstraction fs, PageCache pageCache )
         {
             this.fs = fs;
             this.pageCache = pageCache;

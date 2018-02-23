@@ -49,21 +49,21 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
-public class IndexSamplingJobTrackerTest
+class IndexSamplingJobTrackerTest
 {
     private final IndexSamplingConfig config = mock( IndexSamplingConfig.class );
-    LabelSchemaDescriptor descriptor11 = forLabel( 1, 1 );
-    LabelSchemaDescriptor descriptor12 = forLabel( 1, 2 );
-    LabelSchemaDescriptor descriptor22 = forLabel( 2, 2 );
+    private LabelSchemaDescriptor descriptor11 = forLabel( 1, 1 );
+    private LabelSchemaDescriptor descriptor12 = forLabel( 1, 2 );
+    private LabelSchemaDescriptor descriptor22 = forLabel( 2, 2 );
     IndexDescriptor index11 = forSchema( descriptor11 );
     IndexDescriptor index12 = forSchema( descriptor12 );
     IndexDescriptor index22 = forSchema( descriptor22 );
-    long indexId11;
-    long indexId12 = 1;
-    long indexId22 = 2;
+    private long indexId11;
+    private long indexId12 = 1;
+    private long indexId22 = 2;
 
     @Test
-    public void shouldNotRunASampleJobWhichIsAlreadyRunning() throws Throwable
+    void shouldNotRunASampleJobWhichIsAlreadyRunning() throws Throwable
     {
         // given
         when( config.jobLimit() ).thenReturn( 2 );
@@ -104,7 +104,7 @@ public class IndexSamplingJobTrackerTest
     }
 
     @Test
-    public void shouldNotAcceptMoreJobsThanAllowed() throws Throwable
+    void shouldNotAcceptMoreJobsThanAllowed() throws Throwable
     {
         // given
         when( config.jobLimit() ).thenReturn( 1 );
@@ -166,7 +166,7 @@ public class IndexSamplingJobTrackerTest
     }
 
     @Test
-    public void shouldAcceptNewJobWhenRunningJobFinishes()
+    void shouldAcceptNewJobWhenRunningJobFinishes()
     {
         assertTimeout( ofMillis( 5_000 ), () -> {
             //  Given
@@ -226,7 +226,7 @@ public class IndexSamplingJobTrackerTest
     }
 
     @Test
-    public void shouldDoNothingWhenUsedAfterBeingStopped()
+    void shouldDoNothingWhenUsedAfterBeingStopped()
     {
         assertTimeout( Duration.ofMillis( 5_000 ), () -> {
             // Given
@@ -243,7 +243,7 @@ public class IndexSamplingJobTrackerTest
     }
 
     @Test
-    public void shouldNotAllowNewJobsAfterBeingStopped()
+    void shouldNotAllowNewJobsAfterBeingStopped()
     {
         assertTimeout( Duration.ofMillis( 5_000 ), () -> {
             // Given
@@ -258,7 +258,7 @@ public class IndexSamplingJobTrackerTest
     }
 
     @Test
-    public void shouldStopAndWaitForAllJobsToFinish()
+    void shouldStopAndWaitForAllJobsToFinish()
     {
         assertTimeout( ofMillis( 5_000 ), () -> {
             //  Given
@@ -298,7 +298,7 @@ public class IndexSamplingJobTrackerTest
     }
 
     @Test
-    public void shouldWaitForAllJobsToFinish()
+    void shouldWaitForAllJobsToFinish()
     {
         assertTimeout( ofMillis( 5_000 ), () -> {
             //  Given

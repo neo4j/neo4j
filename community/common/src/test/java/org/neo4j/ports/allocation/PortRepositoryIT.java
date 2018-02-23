@@ -42,7 +42,7 @@ public class PortRepositoryIT
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
-    public void shouldReservePorts() throws Exception
+    void shouldReservePorts() throws Exception
     {
         PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
 
@@ -54,7 +54,7 @@ public class PortRepositoryIT
     }
 
     @Test
-    public void shouldCoordinateUsingFileSystem() throws Exception
+    void shouldCoordinateUsingFileSystem() throws Exception
     {
         Path temporaryDirectory = temporaryDirectory();
         PortRepository portRepository1 = new PortRepository( temporaryDirectory, EphemeralPortMinimum );
@@ -72,7 +72,7 @@ public class PortRepositoryIT
 
     @Test
     @Disabled
-    public void shouldNotInterfereWithOtherRepositories() throws Exception
+    void shouldNotInterfereWithOtherRepositories() throws Exception
     {
         PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
         PortRepository portRepository2 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
@@ -88,7 +88,7 @@ public class PortRepositoryIT
     }
 
     @Test
-    public void shouldNotOverrun() throws Exception
+    void shouldNotOverrun() throws Exception
     {
         PortRepository portRepository1 = new PortRepository( temporaryDirectory(), 65534 );
 

@@ -30,16 +30,16 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdType;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.idTypesToReuse;
 
-public class EnterpriseEditionSettingsTest
+class EnterpriseEditionSettingsTest
 {
     @Test
-    public void idTypesToReuseAllowedValues()
+    void idTypesToReuseAllowedValues()
     {
         for ( IdType type : IdType.values() )
         {
@@ -61,7 +61,7 @@ public class EnterpriseEditionSettingsTest
     }
 
     @Test
-    public void idTypesToReuseCaseInsensitive()
+    void idTypesToReuseCaseInsensitive()
     {
         Config config1 = Config.defaults( idTypesToReuse, "node, relationship" );
         assertEquals( asList( IdType.NODE, IdType.RELATIONSHIP ), config1.get( idTypesToReuse ) );

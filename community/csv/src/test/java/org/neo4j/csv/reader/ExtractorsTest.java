@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ExtractorsTest
+class ExtractorsTest
 {
     @Test
-    public void shouldExtractStringArray()
+    void shouldExtractStringArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -47,7 +47,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractLongArray()
+    void shouldExtractLongArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -64,7 +64,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractBooleanArray()
+    void shouldExtractBooleanArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -80,7 +80,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractDoubleArray()
+    void shouldExtractDoubleArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -96,7 +96,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldFailExtractingLongArrayWhereAnyValueIsEmpty()
+    void shouldFailExtractingLongArrayWhereAnyValueIsEmpty()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
@@ -115,7 +115,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber()
+    void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
@@ -133,7 +133,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractNegativeInt()
+    void shouldExtractNegativeInt()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -149,7 +149,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyStringForEmptyArrayString()
+    void shouldExtractEmptyStringForEmptyArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -164,7 +164,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyLongArrayForEmptyArrayString()
+    void shouldExtractEmptyLongArrayForEmptyArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -179,7 +179,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractTwoEmptyStringsForSingleDelimiterInArrayString()
+    void shouldExtractTwoEmptyStringsForSingleDelimiterInArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -194,7 +194,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyStringForEmptyQuotedString()
+    void shouldExtractEmptyStringForEmptyQuotedString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -209,7 +209,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractNullForEmptyQuotedStringIfConfiguredTo()
+    void shouldExtractNullForEmptyQuotedStringIfConfiguredTo()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';', true );
@@ -224,7 +224,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldTrimStringArrayIfConfiguredTo()
+    void shouldTrimStringArrayIfConfiguredTo()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';', true, true );
@@ -240,7 +240,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldNotTrimStringIfNotConfiguredTo()
+    void shouldNotTrimStringIfNotConfiguredTo()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';', true, false );
@@ -256,7 +256,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldCloneExtractor()
+    void shouldCloneExtractor()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );

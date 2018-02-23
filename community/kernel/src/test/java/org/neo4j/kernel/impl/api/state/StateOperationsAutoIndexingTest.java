@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 
-public class StateOperationsAutoIndexingTest
+class StateOperationsAutoIndexingTest
 {
     // TODO: This level of mocking is a massive smell, we're violating law of demeter like nobody's business
     private final InternalAutoIndexOperations nodeOps = mock( InternalAutoIndexOperations.class );
@@ -63,7 +63,7 @@ public class StateOperationsAutoIndexingTest
             storeLayer, idx, mock(ConstraintIndexCreator.class), mock(ExplicitIndexStore.class) );
 
     @BeforeEach
-    public void setup() throws InvalidTransactionTypeKernelException
+    void setup() throws InvalidTransactionTypeKernelException
     {
         when( idx.nodes() ).thenReturn( nodeOps );
         when( idx.relationships() ).thenReturn( relOps );
@@ -72,7 +72,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalNodeRemovedToAutoIndex() throws Exception
+    void shouldSignalNodeRemovedToAutoIndex() throws Exception
     {
         // Given
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( mock( NodeItem.class )) );
@@ -85,7 +85,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalRelationshipRemovedToAutoIndex() throws Exception
+    void shouldSignalRelationshipRemovedToAutoIndex() throws Exception
     {
         // Given
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( mock( RelationshipItem.class )) );
@@ -98,7 +98,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalNodePropertyAddedToAutoIndex() throws Exception
+    void shouldSignalNodePropertyAddedToAutoIndex() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -119,7 +119,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalRelationshipPropertyAddedToAutoIndex() throws Exception
+    void shouldSignalRelationshipPropertyAddedToAutoIndex() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -138,7 +138,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalNodePropertyChangedToAutoIndex() throws Exception
+    void shouldSignalNodePropertyChangedToAutoIndex() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -164,7 +164,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalRelationshipPropertyChangedToAutoIndex() throws Exception
+    void shouldSignalRelationshipPropertyChangedToAutoIndex() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -188,7 +188,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalNodePropertyRemovedToAutoIndex() throws Exception
+    void shouldSignalNodePropertyRemovedToAutoIndex() throws Exception
     {
         // Given
         PropertyItem existingProperty = mock( PropertyItem.class );
@@ -211,7 +211,7 @@ public class StateOperationsAutoIndexingTest
     }
 
     @Test
-    public void shouldSignalRelationshipPropertyRemovedToAutoIndex() throws Exception
+    void shouldSignalRelationshipPropertyRemovedToAutoIndex() throws Exception
     {
         // Given
         PropertyItem existingProperty = mock( PropertyItem.class );

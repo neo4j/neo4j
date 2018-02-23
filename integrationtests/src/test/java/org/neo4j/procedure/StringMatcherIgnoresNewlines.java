@@ -24,7 +24,7 @@ import org.hamcrest.core.StringContains;
 
 import java.util.regex.Pattern;
 
-public class StringMatcherIgnoresNewlines
+class StringMatcherIgnoresNewlines
 {
     private StringMatcherIgnoresNewlines()
     {

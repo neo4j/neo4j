@@ -57,15 +57,15 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public class UniquenessConstraintCreationIT
+class UniquenessConstraintCreationIT
         extends AbstractConstraintCreationIT<UniquenessConstraintDescriptor,LabelSchemaDescriptor>
 {
     private static final String DUPLICATED_VALUE = "apa";
@@ -129,7 +129,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Test
-    public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
+    void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -173,7 +173,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Test
-    public void shouldCreateAnIndexToGoAlongWithAUniquePropertyConstraint() throws Exception
+    void shouldCreateAnIndexToGoAlongWithAUniquePropertyConstraint() throws Exception
     {
         // when
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
@@ -187,7 +187,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Test
-    public void shouldDropCreatedConstraintIndexWhenRollingBackConstraintCreation() throws Exception
+    void shouldDropCreatedConstraintIndexWhenRollingBackConstraintCreation() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );
@@ -204,7 +204,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Test
-    public void shouldNotDropUniquePropertyConstraintThatDoesNotExistWhenThereIsAPropertyExistenceConstraint()
+    void shouldNotDropUniquePropertyConstraintThatDoesNotExistWhenThereIsAPropertyExistenceConstraint()
             throws Exception
     {
         // given
@@ -242,7 +242,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Test
-    public void committedConstraintRuleShouldCrossReferenceTheCorrespondingIndexRule() throws Exception
+    void committedConstraintRuleShouldCrossReferenceTheCorrespondingIndexRule() throws Exception
     {
         // when
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
@@ -264,7 +264,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Test
-    public void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
+    void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );

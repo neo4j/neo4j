@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.Thread.State;
 
-public class DumpVmInformation
+class DumpVmInformation
 {
     private DumpVmInformation()
     {
@@ -73,7 +73,7 @@ public class DumpVmInformation
         dumpThreadGroupInfo( topThreadGroup, out );
     }
 
-    public static void dumpThreadGroupInfo( ThreadGroup tg, PrintStream out )
+    private static void dumpThreadGroupInfo( ThreadGroup tg, PrintStream out )
     {
         String parentName = tg.getParent() == null ? null : tg.getParent().getName();
         // Dump thread group info.

@@ -25,12 +25,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
-public class PrimitiveLongIntKeyValueArrayTest
+class PrimitiveLongIntKeyValueArrayTest
 {
     private static final int DEFAULT_VALUE = -1;
 
     @Test
-    public void testEnsureCapacity()
+    void testEnsureCapacity()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         assertThat( map.capacity(), equalTo( PrimitiveLongIntKeyValueArray.DEFAULT_INITIAL_CAPACITY
@@ -48,7 +48,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testSize()
+    void testSize()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         assertThat( map.size(), equalTo( 0 ) );
@@ -61,7 +61,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testGetOrDefault()
+    void testGetOrDefault()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         map.putIfAbsent( 1, 100 );
@@ -76,7 +76,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testPutIfAbsent()
+    void testPutIfAbsent()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
 
@@ -98,7 +98,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testReset()
+    void testReset()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         map.putIfAbsent( 1, 100 );
@@ -112,7 +112,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testKeys()
+    void testKeys()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         map.putIfAbsent( 1, 100 );

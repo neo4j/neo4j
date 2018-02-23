@@ -38,13 +38,13 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.test.Barrier.Control;
 
 @ExtendWith( OtherThreadExtension.class )
-public class PageCacheFlusherTest
+class PageCacheFlusherTest
 {
     @Resource
-    public OtherThreadRule<Void> t2;
+    private OtherThreadRule<Void> t2;
 
     @Test
-    public void shouldWaitForCompletionInHalt()
+    void shouldWaitForCompletionInHalt()
     {
         assertTimeout( ofMillis( 10_000 ), () -> {
             //  GIVEN
@@ -73,7 +73,7 @@ public class PageCacheFlusherTest
     }
 
     @Test
-    public void shouldExitOnErrorInHalt() throws Exception
+    void shouldExitOnErrorInHalt() throws Exception
     {
         // GIVEN
         PageCache pageCache = mock( PageCache.class );

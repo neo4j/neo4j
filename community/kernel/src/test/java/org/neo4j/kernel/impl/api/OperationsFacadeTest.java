@@ -46,10 +46,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class OperationsFacadeTest
+class OperationsFacadeTest
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     private final Label LABEL1 = Label.label( "Label1" );
     private final String PROP1 = "Prop1";
@@ -57,7 +57,7 @@ public class OperationsFacadeTest
     private int propertyId;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -76,7 +76,7 @@ public class OperationsFacadeTest
     }
 
     @Test
-    public void testThrowExceptionWhenIndexNotFound()
+    void testThrowExceptionWhenIndexNotFound()
     {
         try ( Transaction ignored = db.beginTx();
               Statement statement = db.statement() )
@@ -96,7 +96,7 @@ public class OperationsFacadeTest
     }
 
     @Test
-    public void indexGetProviderDescriptorMustReturnUndecidedIfIndexCreatedInTransaction() throws Exception
+    void indexGetProviderDescriptorMustReturnUndecidedIfIndexCreatedInTransaction() throws Exception
     {
         try ( Transaction tx = db.beginTx();
               Statement statement = db.statement() )
@@ -111,7 +111,7 @@ public class OperationsFacadeTest
     }
 
     @Test
-    public void indexGetProviderDescriptorMustThrowIfIndexDoesNotExist()
+    void indexGetProviderDescriptorMustThrowIfIndexDoesNotExist()
     {
         try ( Transaction tx = db.beginTx();
               Statement statement = db.statement() )

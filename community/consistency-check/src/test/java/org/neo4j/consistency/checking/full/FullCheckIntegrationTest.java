@@ -2128,8 +2128,8 @@ public class FullCheckIntegrationTest
         return Config.defaults( params );
     }
 
-    protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
-            long in, long loop )
+    private static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out, long in,
+            long loop )
     {
         group.setFirstOut( out );
         group.setFirstIn( in );
@@ -2137,7 +2137,7 @@ public class FullCheckIntegrationTest
         return group;
     }
 
-    protected static RelationshipGroupRecord withRelationship( RelationshipGroupRecord group, Direction direction,
+    private static RelationshipGroupRecord withRelationship( RelationshipGroupRecord group, Direction direction,
             long rel )
     {
         switch ( direction )
@@ -2157,7 +2157,7 @@ public class FullCheckIntegrationTest
         return group;
     }
 
-    protected static RelationshipRecord firstInChains( RelationshipRecord relationship, int count )
+    private static RelationshipRecord firstInChains( RelationshipRecord relationship, int count )
     {
         relationship.setFirstInFirstChain( true );
         relationship.setFirstPrevRel( count );
@@ -2166,13 +2166,13 @@ public class FullCheckIntegrationTest
         return relationship;
     }
 
-    protected static RelationshipGroupRecord withNext( RelationshipGroupRecord group, long next )
+    private static RelationshipGroupRecord withNext( RelationshipGroupRecord group, long next )
     {
         group.setNext( next );
         return group;
     }
 
-    protected static RelationshipGroupRecord withOwner( RelationshipGroupRecord record, long owner )
+    private static RelationshipGroupRecord withOwner( RelationshipGroupRecord record, long owner )
     {
         record.setOwningNode( owner );
         return record;
@@ -2349,13 +2349,13 @@ public class FullCheckIntegrationTest
         }
     }
 
-    public static final class ConsistencySummaryVerifier
+    static final class ConsistencySummaryVerifier
     {
         private final ConsistencySummaryStatistics stats;
         private final Set<RecordType> types = new HashSet<>();
         private long total;
 
-        public static ConsistencySummaryVerifier on( ConsistencySummaryStatistics stats )
+        static ConsistencySummaryVerifier on( ConsistencySummaryStatistics stats )
         {
             return new ConsistencySummaryVerifier( stats );
         }
@@ -2365,7 +2365,7 @@ public class FullCheckIntegrationTest
             this.stats = stats;
         }
 
-        public ConsistencySummaryVerifier verify( RecordType type, int inconsistencies )
+        ConsistencySummaryVerifier verify( RecordType type, int inconsistencies )
         {
             if ( !types.add( type ) )
             {
@@ -2377,7 +2377,7 @@ public class FullCheckIntegrationTest
             return this;
         }
 
-        public void andThatsAllFolks()
+        void andThatsAllFolks()
         {
             assertEquals( "Total number of inconsistencies: " + stats, total, stats.getTotalInconsistencyCount() );
         }

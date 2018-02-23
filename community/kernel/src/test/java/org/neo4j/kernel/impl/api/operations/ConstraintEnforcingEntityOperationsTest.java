@@ -52,7 +52,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
-public class ConstraintEnforcingEntityOperationsTest
+class ConstraintEnforcingEntityOperationsTest
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
@@ -68,7 +68,7 @@ public class ConstraintEnforcingEntityOperationsTest
     private EntityWriteOperations entityWriteOperations;
 
     @BeforeEach
-    public void given_ConstraintEnforcingEntityOperations_with_OnlineIndex() throws Exception
+    void given_ConstraintEnforcingEntityOperations_with_OnlineIndex() throws Exception
     {
         this.readOps = mock( EntityReadOperations.class );
         schemaReadOps = mock( SchemaReadOperations.class );
@@ -85,7 +85,7 @@ public class ConstraintEnforcingEntityOperationsTest
     }
 
     @Test
-    public void shouldHoldIndexReadLockIfNodeIsExists() throws Exception
+    void shouldHoldIndexReadLockIfNodeIsExists() throws Exception
     {
         // given
         long expectedNodeId = 15;
@@ -103,7 +103,7 @@ public class ConstraintEnforcingEntityOperationsTest
     }
 
     @Test
-    public void acquireAllLabelsSharedLocksBeforeSettingPropertyOnNode() throws Exception
+    void acquireAllLabelsSharedLocksBeforeSettingPropertyOnNode() throws Exception
     {
         Cursor<NodeItem> nodeCursor =
                 StubCursors.asNodeCursor( 123, PrimitiveIntCollections.asSet( new int[]{1, 5, 7} ) );
@@ -120,7 +120,7 @@ public class ConstraintEnforcingEntityOperationsTest
     }
 
     @Test
-    public void shouldHoldIndexWriteLockIfNodeDoesNotExist() throws Exception
+    void shouldHoldIndexWriteLockIfNodeDoesNotExist() throws Exception
     {
         // given
         when( readOps.nodeGetFromUniqueIndexSeek( state, index, withValue ) ).thenReturn( NO_SUCH_NODE );
@@ -141,7 +141,7 @@ public class ConstraintEnforcingEntityOperationsTest
     }
 
     @Test
-    public void shouldHoldIndexReadLockIfNodeIsConcurrentlyCreated() throws Exception
+    void shouldHoldIndexReadLockIfNodeIsConcurrentlyCreated() throws Exception
     {
         // given
         long expectedNodeId = 15;

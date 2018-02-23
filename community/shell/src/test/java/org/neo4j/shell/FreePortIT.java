@@ -41,14 +41,14 @@ import static org.neo4j.function.Predicates.await;
  * Tests that the shell port is freed on database shutdown
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class FreePortIT
+class FreePortIT
 {
     private static final String HOST = "localhost";
     private static final int PORT = 13463;
     @Resource
-    public TestDirectory temporaryFolder;
+    private TestDirectory temporaryFolder;
 
-    public GraphDatabaseService initialize() throws IOException
+    private GraphDatabaseService initialize() throws IOException
     {
         GraphDatabaseService db;
         db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( temporaryFolder.directory() )
@@ -93,7 +93,7 @@ public class FreePortIT
     }
 
     @Test
-    public void testPort() throws Exception
+    void testPort() throws Exception
     {
         // Given
         assertTrue( portAvailable() );

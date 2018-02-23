@@ -26,18 +26,18 @@ import static java.util.regex.Pattern.compile;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.shell.Variables.PROMPT_KEY;
 
-public class ServerClientInteractionIT extends AbstractShellIT
+class ServerClientInteractionIT extends AbstractShellIT
 {
     private SilentLocalOutput out = new SilentLocalOutput();
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         makeServerRemotelyAvailable();
     }
 
     @Test
-    public void shouldConsiderAndInterpretCustomClientPrompt() throws Exception
+    void shouldConsiderAndInterpretCustomClientPrompt() throws Exception
     {
         // GIVEN
         shellClient.setSessionVariable( PROMPT_KEY, "MyPrompt \\d \\t$ " );

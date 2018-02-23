@@ -30,10 +30,10 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class AbstractTraverserIteratorTest
+class AbstractTraverserIteratorTest
 {
     @Test
-    public void shouldCloseResourceOnce()
+    void shouldCloseResourceOnce()
     {
         AbstractTraverserIterator iter = new AbstractTraverserIterator( new AssertOneClose() )
         {

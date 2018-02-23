@@ -44,7 +44,7 @@ public class SocketConnectionTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void shouldOnlyReadOnceIfAllBytesAreRead() throws Exception
+    void shouldOnlyReadOnceIfAllBytesAreRead() throws Exception
     {
         // GIVEN
         Socket socket = mock( Socket.class );
@@ -62,7 +62,7 @@ public class SocketConnectionTest
     }
 
     @Test
-    public void shouldOnlyReadUntilAllBytesAreRead() throws Exception
+    void shouldOnlyReadUntilAllBytesAreRead() throws Exception
     {
         // GIVEN
         Socket socket = mock( Socket.class );
@@ -84,7 +84,7 @@ public class SocketConnectionTest
     }
 
     @Test
-    public void shouldThrowIfNotEnoughBytesAreRead() throws Exception
+    void shouldThrowIfNotEnoughBytesAreRead() throws Exception
     {
         // GIVEN
         Socket socket = mock( Socket.class );

@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -120,7 +118,7 @@ public class IndexPopulationJobTest
     private int labelId;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newGraphDatabase();
@@ -138,13 +136,13 @@ public class IndexPopulationJobTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }
 
     @Test
-    public void shouldPopulateIndexWithOneNode() throws Exception
+    void shouldPopulateIndexWithOneNode() throws Exception
     {
         // GIVEN
         String value = "Taylor";
@@ -169,7 +167,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldFlushSchemaStateAfterPopulation() throws Exception
+    void shouldFlushSchemaStateAfterPopulation() throws Exception
     {
         // GIVEN
         String value = "Taylor";
@@ -187,7 +185,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldPopulateIndexWithASmallDataset() throws Exception
+    void shouldPopulateIndexWithASmallDataset() throws Exception
     {
         // GIVEN
         String value = "Mattias";
@@ -217,7 +215,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldIndexConcurrentUpdatesWhilePopulating() throws Exception
+    void shouldIndexConcurrentUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
         Object value1 = "Mattias";
@@ -248,7 +246,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldRemoveViaConcurrentIndexUpdatesWhilePopulating() throws Exception
+    void shouldRemoveViaConcurrentIndexUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
         String value1 = "Mattias";
@@ -273,7 +271,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldTransitionToFailedStateIfPopulationJobCrashes() throws Exception
+    void shouldTransitionToFailedStateIfPopulationJobCrashes() throws Exception
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
@@ -292,7 +290,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldBeAbleToCancelPopulationJob() throws Exception
+    void shouldBeAbleToCancelPopulationJob() throws Exception
     {
         // GIVEN
         createNode( map( name, "Mattias" ), FIRST );
@@ -330,7 +328,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldLogJobProgress() throws Exception
+    void shouldLogJobProgress() throws Exception
     {
         // Given
         createNode( map( name, "irrelephant" ), FIRST );
@@ -351,7 +349,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldLogJobFailure() throws Exception
+    void shouldLogJobFailure() throws Exception
     {
         // Given
         createNode( map( name, "irrelephant" ), FIRST );
@@ -374,7 +372,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldFlipToFailedUsingFailedIndexProxyFactory() throws Exception
+    void shouldFlipToFailedUsingFailedIndexProxyFactory() throws Exception
     {
         // Given
         FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
@@ -394,7 +392,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldCloseAndFailOnFailure() throws Exception
+    void shouldCloseAndFailOnFailure() throws Exception
     {
         createNode( map( name, "irrelephant" ), FIRST );
         LogProvider logProvider = NullLogProvider.getInstance();
@@ -504,7 +502,7 @@ public class IndexPopulationJobTest
             };
         }
 
-        public void setJob( IndexPopulationJob job )
+        void setJob( IndexPopulationJob job )
         {
             this.job = job;
         }
@@ -526,7 +524,7 @@ public class IndexPopulationJobTest
             this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
-        public void setJob( IndexPopulationJob job )
+        void setJob( IndexPopulationJob job )
         {
             this.job = job;
         }

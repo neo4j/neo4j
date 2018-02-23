@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  and the name on the filesystem. On case-sensitive file systems, we need a consistent lower-cased name
  for the entity type.
  */
-public class IndexEntityTypeTest
+class IndexEntityTypeTest
 {
     @Test
-    public void shouldLowerCaseEnumName()
+    void shouldLowerCaseEnumName()
     {
         assertEquals( "node", IndexEntityType.Node.nameToLowerCase() );
         assertEquals( "relationship", IndexEntityType.Relationship.nameToLowerCase() );

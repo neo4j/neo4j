@@ -28,13 +28,13 @@ import org.neo4j.causalclustering.identity.MemberId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class LocalSessionPoolTest
+class LocalSessionPoolTest
 {
     private MemberId memberId = new MemberId( UUID.randomUUID() );
     private GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), memberId );
 
     @Test
-    public void poolGivesBackSameSessionAfterRelease()
+    void poolGivesBackSameSessionAfterRelease()
     {
         LocalSessionPool sessionPool = new LocalSessionPool( globalSession );
 
@@ -48,7 +48,7 @@ public class LocalSessionPoolTest
     }
 
     @Test
-    public void sessionAcquirementIncreasesOperationId()
+    void sessionAcquirementIncreasesOperationId()
     {
         LocalSessionPool sessionPool = new LocalSessionPool( globalSession );
         OperationContext context;
@@ -65,7 +65,7 @@ public class LocalSessionPoolTest
     }
 
     @Test
-    public void poolHasIndependentSessions()
+    void poolHasIndependentSessions()
     {
         LocalSessionPool sessionPool = new LocalSessionPool( globalSession );
 

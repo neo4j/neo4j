@@ -27,18 +27,18 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FuturesTest
+class FuturesTest
 {
     private static final Runnable NOOP = () ->
     {
     };
 
     @Test
-    public void combinedFutureShouldGetResultsAfterAllComplete() throws Exception
+    void combinedFutureShouldGetResultsAfterAllComplete() throws Exception
     {
         FutureTask<String> task1 = new FutureTask<>( NOOP, "1" );
         FutureTask<String> task2 = new FutureTask<>( NOOP, "2" );

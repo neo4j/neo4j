@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class InFlightLogEntriesCacheTest
+class InFlightLogEntriesCacheTest
 {
     @Test
-    public void shouldNotCacheUntilEnabled()
+    void shouldNotCacheUntilEnabled()
     {
         InFlightMap<Object> cache = new InFlightMap<>();
         Object entry = new Object();
@@ -46,7 +46,7 @@ public class InFlightLogEntriesCacheTest
     }
 
     @Test
-    public void shouldRegisterAndUnregisterValues()
+    void shouldRegisterAndUnregisterValues()
     {
         InFlightMap<Object> entries = new InFlightMap<>();
         entries.enable();
@@ -77,7 +77,7 @@ public class InFlightLogEntriesCacheTest
     }
 
     @Test
-    public void shouldNotReinsertValues()
+    void shouldNotReinsertValues()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             InFlightMap<Object> entries = new InFlightMap<>();
@@ -89,7 +89,7 @@ public class InFlightLogEntriesCacheTest
     }
 
     @Test
-    public void shouldNotReplaceRegisteredValues()
+    void shouldNotReplaceRegisteredValues()
     {
         InFlightMap<Object> cache = new InFlightMap<>();
         cache.enable();

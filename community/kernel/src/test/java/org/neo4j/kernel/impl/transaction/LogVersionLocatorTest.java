@@ -30,13 +30,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class LogVersionLocatorTest
+class LogVersionLocatorTest
 {
     private final long firstTxIdInLog = 3;
     private final long lastTxIdInLog = 67;
 
     @Test
-    public void shouldFindLogPosition() throws NoSuchTransactionException
+    void shouldFindLogPosition() throws NoSuchTransactionException
     {
         // given
         final long txId = 42L;
@@ -55,7 +55,7 @@ public class LogVersionLocatorTest
     }
 
     @Test
-    public void shouldNotFindLogPosition()
+    void shouldNotFindLogPosition()
     {
         // given
         final long txId = 1L;
@@ -87,7 +87,7 @@ public class LogVersionLocatorTest
     }
 
     @Test
-    public void shouldAlwaysThrowIfVisitIsNotCalled()
+    void shouldAlwaysThrowIfVisitIsNotCalled()
     {
         // given
         final long txId = 1L;

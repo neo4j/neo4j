@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -38,7 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class IndexUpdaterMapTest
+class IndexUpdaterMapTest
 {
     private IndexMap indexMap;
 
@@ -55,7 +53,7 @@ public class IndexUpdaterMapTest
     private IndexUpdaterMap updaterMap;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         indexMap = new IndexMap();
 
@@ -81,7 +79,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldRetrieveUpdaterFromIndexMapForExistingIndex()
+    void shouldRetrieveUpdaterFromIndexMapForExistingIndex()
     {
         // given
         indexMap.putIndexProxy( 0, indexProxy1 );
@@ -95,7 +93,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldRetrieveUpdateUsingLabelAndProperty()
+    void shouldRetrieveUpdateUsingLabelAndProperty()
     {
         // given
         indexMap.putIndexProxy( 0, indexProxy1 );
@@ -108,7 +106,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldRetrieveSameUpdaterFromIndexMapForExistingIndexWhenCalledTwice()
+    void shouldRetrieveSameUpdaterFromIndexMapForExistingIndexWhenCalledTwice()
     {
         // given
         indexMap.putIndexProxy( 0, indexProxy1 );
@@ -123,7 +121,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldRetrieveNoUpdaterForNonExistingIndex()
+    void shouldRetrieveNoUpdaterForNonExistingIndex()
     {
         // when
         IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1.schema() );
@@ -134,7 +132,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldCloseAllUpdaters() throws Exception
+    void shouldCloseAllUpdaters() throws Exception
     {
         // given
         indexMap.putIndexProxy( 0, indexProxy1 );

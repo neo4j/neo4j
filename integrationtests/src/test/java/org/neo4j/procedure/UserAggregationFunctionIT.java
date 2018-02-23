@@ -61,7 +61,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class UserAggregationFunctionIT
 {
     @Resource
-    public TestDirectory plugins;
+    private TestDirectory plugins;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -69,7 +69,7 @@ public class UserAggregationFunctionIT
     private GraphDatabaseService db;
 
     @Test
-    public void shouldHandleSingleStringArgumentAggregationFunction()
+    void shouldHandleSingleStringArgumentAggregationFunction()
     {
         // Given
         try ( Transaction tx = db.beginTx() )
@@ -91,7 +91,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleSingleStringArgumentAggregationFunctionAndGroupingKey()
+    void shouldHandleSingleStringArgumentAggregationFunctionAndGroupingKey()
     {
         // Given
         try ( Transaction tx = db.beginTx() )
@@ -114,7 +114,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldFailNicelyWhenInvalidRuntimeType()
+    void shouldFailNicelyWhenInvalidRuntimeType()
     {
         // Given
         try ( Transaction tx = db.beginTx() )
@@ -136,7 +136,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleNodeArgumentAggregationFunction()
+    void shouldHandleNodeArgumentAggregationFunction()
     {
         // Given
         try ( Transaction tx = db.beginTx() )
@@ -158,7 +158,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleRelationshipArgumentAggregationFunction()
+    void shouldHandleRelationshipArgumentAggregationFunction()
     {
         // Given
         try ( Transaction tx = db.beginTx() )
@@ -180,7 +180,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandlePathArgumentAggregationFunction()
+    void shouldHandlePathArgumentAggregationFunction()
     {
         // Given
         try ( Transaction tx = db.beginTx() )
@@ -202,7 +202,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleNullPath()
+    void shouldHandleNullPath()
     {
         // When
         Result result = db.execute(
@@ -214,7 +214,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleNumberArgumentAggregationFunction()
+    void shouldHandleNumberArgumentAggregationFunction()
     {
         // Given, When
         Result result = db.execute(
@@ -226,7 +226,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleDoubleArgumentAggregationFunction()
+    void shouldHandleDoubleArgumentAggregationFunction()
     {
         // Given, When
         Result result = db.execute(
@@ -238,7 +238,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleLongArgumentAggregationFunction()
+    void shouldHandleLongArgumentAggregationFunction()
     {
         // Given, When
         Result result = db.execute(
@@ -250,7 +250,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldHandleNoArgumentBooleanAggregationFunction()
+    void shouldHandleNoArgumentBooleanAggregationFunction()
     {
         assertThat( db.execute(
                 "UNWIND [1,2] AS num RETURN org.neo4j.procedure.boolAggregator() AS wasCalled" ).next(),
@@ -262,7 +262,7 @@ public class UserAggregationFunctionIT
     }
 
     @Test
-    public void shouldBeAbleToUseAdbInFunction()
+    void shouldBeAbleToUseAdbInFunction()
     {
         List<Node> nodes = new ArrayList<>();
         // Given
@@ -286,7 +286,7 @@ public class UserAggregationFunctionIT
     }
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         File myFunctions = plugins.file( "myFunctions.jar" );
         assertTrue( myFunctions.createNewFile() );
@@ -300,7 +300,7 @@ public class UserAggregationFunctionIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         if ( this.db != null )
         {
@@ -311,7 +311,7 @@ public class UserAggregationFunctionIT
     public static class ClassWithFunctions
     {
         @Context
-        public GraphDatabaseService db;
+        GraphDatabaseService db;
 
         @Context
         public Log log;
@@ -576,7 +576,7 @@ public class UserAggregationFunctionIT
             private final List<Long> ids = new ArrayList<>();
             private final GraphDatabaseService gds;
 
-            public NodeFromIdAggregator( GraphDatabaseService gds )
+            NodeFromIdAggregator( GraphDatabaseService gds )
             {
                 this.gds = gds;
             }

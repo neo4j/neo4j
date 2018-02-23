@@ -50,7 +50,7 @@ public class FlippableIndexProxyTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void shouldBeAbleToSwitchDelegate() throws Exception
+    void shouldBeAbleToSwitchDelegate() throws Exception
     {
         // GIVEN
         IndexProxy actual = mockIndexProxy();
@@ -67,7 +67,7 @@ public class FlippableIndexProxyTest
     }
 
     @Test
-    public void shouldNotBeAbleToFlipAfterClosed() throws Exception
+    void shouldNotBeAbleToFlipAfterClosed() throws Exception
     {
         //GIVEN
         IndexProxy actual = mockIndexProxy();
@@ -87,7 +87,7 @@ public class FlippableIndexProxyTest
     }
 
     @Test
-    public void shouldNotBeAbleToFlipAfterDrop() throws Exception
+    void shouldNotBeAbleToFlipAfterDrop() throws Exception
     {
         //GIVEN
         IndexProxy actual = mockIndexProxy();
@@ -106,7 +106,7 @@ public class FlippableIndexProxyTest
     }
 
     @Test
-    public void shouldBlockAccessDuringFlipAndThenDelegateToCorrectContext() throws Exception
+    void shouldBlockAccessDuringFlipAndThenDelegateToCorrectContext() throws Exception
     {
         // GIVEN
         final IndexProxy contextBeforeFlip = mockIndexProxy();
@@ -149,7 +149,7 @@ public class FlippableIndexProxyTest
     }
 
     @Test
-    public void shouldAbortStoreScanWaitOnDrop() throws Exception
+    void shouldAbortStoreScanWaitOnDrop() throws Exception
     {
         // given the proxy structure
         FakePopulatingIndexProxy delegate = new FakePopulatingIndexProxy();
@@ -200,7 +200,7 @@ public class FlippableIndexProxyTest
         return () -> null;
     }
 
-    public static IndexProxyFactory singleProxy( final IndexProxy proxy )
+    private static IndexProxyFactory singleProxy( final IndexProxy proxy )
     {
         return () -> proxy;
     }

@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
@@ -32,10 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-public class CopiedStoreRecoveryTest
+class CopiedStoreRecoveryTest
 {
     @Test
-    public void shouldThrowIfAlreadyShutdown()
+    void shouldThrowIfAlreadyShutdown()
     {
         // Given
         CopiedStoreRecovery copiedStoreRecovery =

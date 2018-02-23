@@ -34,10 +34,10 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERAT
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-public class ConsistencyCheckerTest
+class ConsistencyCheckerTest
 {
     @Test
-    public void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
+    void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
     {
         // GIVEN
         int pageSize = 256;
@@ -72,7 +72,7 @@ public class ConsistencyCheckerTest
     }
 
     @Test
-    public void shouldDetectUnusedPages() throws Exception
+    void shouldDetectUnusedPages() throws Exception
     {
         // GIVEN
         int pageSize = 256;

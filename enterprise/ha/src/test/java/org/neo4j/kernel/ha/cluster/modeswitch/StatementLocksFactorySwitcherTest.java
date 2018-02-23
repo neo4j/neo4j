@@ -25,18 +25,18 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.lock.SlaveStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class StatementLocksFactorySwitcherTest
+class StatementLocksFactorySwitcherTest
 {
 
     private StatementLocksFactory configuredLockFactory = mock( StatementLocksFactory.class );
 
     @Test
-    public void masterStatementLocks()
+    void masterStatementLocks()
     {
         StatementLocksFactorySwitcher switcher = getLocksSwitcher();
         StatementLocksFactory masterLocks = switcher.getMasterImpl();
@@ -44,7 +44,7 @@ public class StatementLocksFactorySwitcherTest
     }
 
     @Test
-    public void slaveStatementLocks()
+    void slaveStatementLocks()
     {
         StatementLocksFactorySwitcher switcher = getLocksSwitcher();
         StatementLocksFactory slaveLocks = switcher.getSlaveImpl();

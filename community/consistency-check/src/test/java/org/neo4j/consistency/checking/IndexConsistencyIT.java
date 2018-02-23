@@ -129,12 +129,12 @@ public class IndexConsistencyIT
         return Files.readAllLines( result.reportFile().toPath() );
     }
 
-    List<Pair<Long,Label[]>> someData()
+    private List<Pair<Long,Label[]>> someData()
     {
         return someData( 50 );
     }
 
-    List<Pair<Long,Label[]>> someData( int numberOfModifications )
+    private List<Pair<Long,Label[]>> someData( int numberOfModifications )
     {
         List<Pair<Long,Label[]>> existingNodes;
         existingNodes = new ArrayList<>();
@@ -230,7 +230,7 @@ public class IndexConsistencyIT
         return labels.toArray( new Label[labels.size()] );
     }
 
-    ConsistencyCheckService.Result fullConsistencyCheck()
+    private ConsistencyCheckService.Result fullConsistencyCheck()
             throws ConsistencyCheckIncompleteException, IOException
     {
         try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )

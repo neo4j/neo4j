@@ -684,7 +684,7 @@ public class AbstractKeyValueStoreTest
             formatSpecifier.putByte( formatSpecifier.size() - 1, (byte) 0xFF );
         }
 
-        public void put( String key, final String value ) throws IOException
+        void put( String key, final String value ) throws IOException
         {
             try ( EntryUpdater<String> updater = updater() )
             {
@@ -692,7 +692,7 @@ public class AbstractKeyValueStoreTest
             }
         }
 
-        public String get( String key ) throws IOException
+        String get( String key ) throws IOException
         {
             return lookup( key, new Reader<String>()
             {

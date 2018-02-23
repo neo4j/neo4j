@@ -57,7 +57,7 @@ public class TimerServiceTest
     private final Timer timerB = timerService.create( TIMER_B, group, handlerB );
 
     @Test
-    public void shouldNotInvokeHandlerBeforeTimeout() throws Exception
+    void shouldNotInvokeHandlerBeforeTimeout() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1000, MILLISECONDS ) );
@@ -70,7 +70,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldInvokeHandlerOnTimeout() throws Exception
+    void shouldInvokeHandlerOnTimeout() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1000, MILLISECONDS ) );
@@ -83,7 +83,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldInvokeHandlerAfterTimeout() throws Exception
+    void shouldInvokeHandlerAfterTimeout() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1, SECONDS ) );
@@ -96,7 +96,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldInvokeMultipleHandlersOnDifferentTimeouts() throws Exception
+    void shouldInvokeMultipleHandlersOnDifferentTimeouts() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1, SECONDS ) );
@@ -133,7 +133,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldInvokeMultipleHandlersOnSameTimeout() throws Exception
+    void shouldInvokeMultipleHandlersOnSameTimeout() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1, SECONDS ) );
@@ -148,7 +148,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldInvokeTimersOnExplicitInvocation() throws Exception
+    void shouldInvokeTimersOnExplicitInvocation() throws Exception
     {
         // when
         timerService.invoke( TIMER_A );
@@ -170,7 +170,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldTimeoutAfterReset() throws Exception
+    void shouldTimeoutAfterReset() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1, SECONDS ) );
@@ -191,7 +191,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldTimeoutSingleTimeAfterMultipleResets() throws Exception
+    void shouldTimeoutSingleTimeAfterMultipleResets() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1, SECONDS ) );
@@ -217,7 +217,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldNotInvokeCancelledTimer() throws Exception
+    void shouldNotInvokeCancelledTimer() throws Exception
     {
         // given
         timerA.set( fixedTimeout( 1, SECONDS ) );
@@ -232,7 +232,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldAwaitCancellationUnderRealScheduler() throws Throwable
+    void shouldAwaitCancellationUnderRealScheduler() throws Throwable
     {
         // given
         Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
@@ -271,7 +271,7 @@ public class TimerServiceTest
     }
 
     @Test
-    public void shouldBeAbleToCancelBeforeHandlingWithRealScheduler() throws Throwable
+    void shouldBeAbleToCancelBeforeHandlingWithRealScheduler() throws Throwable
     {
         // given
         Neo4jJobScheduler scheduler = new Neo4jJobScheduler();

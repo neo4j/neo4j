@@ -506,7 +506,7 @@ public class MasterImplTest
                 ClusterSettings.server_id.name(), "1" ) );
     }
 
-    public DefaultConversationSPI mockedConversationSpi()
+    private DefaultConversationSPI mockedConversationSpi()
     {
         return mock( DefaultConversationSPI.class );
     }
@@ -526,7 +526,7 @@ public class MasterImplTest
         return mock;
     }
 
-    protected RequestContext createRequestContext( MasterImpl master )
+    private RequestContext createRequestContext( MasterImpl master )
     {
         HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
         return new RequestContext( handshake.epoch(), 1, 2, 0, 0 );

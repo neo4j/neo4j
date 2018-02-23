@@ -33,17 +33,17 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DnsHostnameResolverTest
+class DnsHostnameResolverTest
 {
-    MapDomainNameResolver mockDomainNameResolver = new MapDomainNameResolver( new HashMap<>() );
-    AssertableLogProvider logProvider = new AssertableLogProvider();
-    AssertableLogProvider userLogProvider = new AssertableLogProvider();
+    private MapDomainNameResolver mockDomainNameResolver = new MapDomainNameResolver( new HashMap<>() );
+    private AssertableLogProvider logProvider = new AssertableLogProvider();
+    private AssertableLogProvider userLogProvider = new AssertableLogProvider();
 
     private DnsHostnameResolver resolver =
             new DnsHostnameResolver( logProvider, userLogProvider, mockDomainNameResolver );
 
     @Test
-    public void hostnamesAreResolvedByTheResolver()
+    void hostnamesAreResolvedByTheResolver()
     {
         // given
         mockDomainNameResolver.setHostnameAddresses( "google.com", asList( "1.2.3.4", "5.6.7.8" ) );
@@ -59,7 +59,7 @@ public class DnsHostnameResolverTest
     }
 
     @Test
-    public void resolvedHostnamesUseTheSamePort()
+    void resolvedHostnamesUseTheSamePort()
     {
         // given
         mockDomainNameResolver.setHostnameAddresses( "google.com", asList( "1.2.3.4", "5.6.7.8" ) );
@@ -75,7 +75,7 @@ public class DnsHostnameResolverTest
     }
 
     @Test
-    public void resolutionDetailsAreLoggedToUserLogs()
+    void resolutionDetailsAreLoggedToUserLogs()
     {
         // given
         mockDomainNameResolver.setHostnameAddresses( "google.com", asList( "1.2.3.4", "5.6.7.8" ) );
@@ -88,7 +88,7 @@ public class DnsHostnameResolverTest
     }
 
     @Test
-    public void unknownHostExceptionsAreLoggedAsErrors()
+    void unknownHostExceptionsAreLoggedAsErrors()
     {
         // when
         resolver.resolve( new AdvertisedSocketAddress( "google.com", 1234 ) );

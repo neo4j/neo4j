@@ -47,7 +47,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldNotSeeCreatedNodeInStableState() throws Exception
+    void shouldNotSeeCreatedNodeInStableState() throws Exception
     {
         assumeTrue( modes.twoLayerTransactionState() );
 
@@ -71,7 +71,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldSeeStabilizedCreatedNodeInStableState() throws Exception
+    void shouldSeeStabilizedCreatedNodeInStableState() throws Exception
     {
         assumeTrue( modes.twoLayerTransactionState() );
 
@@ -97,7 +97,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldNotSeeRemovedNodeInActiveState() throws Exception
+    void shouldNotSeeRemovedNodeInActiveState() throws Exception
     {
         assumeTrue( modes.twoLayerTransactionState() );
 
@@ -126,7 +126,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldSeparateRelationshipWritesIntoLayers() throws Exception
+    void shouldSeparateRelationshipWritesIntoLayers() throws Exception
     {
         assumeTrue( modes.twoLayerTransactionState() );
 
@@ -161,7 +161,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldSeparatePropertyWritesIntoLayers() throws Exception
+    void shouldSeparatePropertyWritesIntoLayers() throws Exception
     {
         assumeTrue( modes.twoLayerTransactionState() );
 

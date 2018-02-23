@@ -32,13 +32,13 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 
-public class LabelRecoveryTest
+class LabelRecoveryTest
 {
-    public final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private GraphDatabaseService database;
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         if ( database != null )
         {
@@ -58,7 +58,7 @@ public class LabelRecoveryTest
      * next time that record would be ensured heavy.
      */
     @Test
-    public void shouldRecoverNodeWithDynamicLabelRecords()
+    void shouldRecoverNodeWithDynamicLabelRecords()
     {
         // GIVEN
         database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();

@@ -34,10 +34,10 @@ import org.neo4j.graphdb.Relationship;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UtilTest extends Neo4jAlgoTestCase
+class UtilTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void testPathCounter()
+    void testPathCounter()
     {
         // Nodes
         Node a = graphDb.createNode();

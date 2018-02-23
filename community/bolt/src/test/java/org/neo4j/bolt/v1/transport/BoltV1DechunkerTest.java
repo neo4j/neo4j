@@ -35,10 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 
-public class BoltV1DechunkerTest
+class BoltV1DechunkerTest
 {
     @Test
-    public void shouldReadMessageWhenTheHeaderIsSplitAcrossChunks() throws Exception
+    void shouldReadMessageWhenTheHeaderIsSplitAcrossChunks() throws Exception
     {
         Neo4jPack neo4jPack = new Neo4jPackV1();
         Random random = ThreadLocalRandom.current();

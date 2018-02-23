@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AccumulatingAppender extends AppenderSkeleton
 {
-    Queue<LoggingEvent> eventsList = new ConcurrentLinkedQueue<>();
+    private Queue<LoggingEvent> eventsList = new ConcurrentLinkedQueue<>();
 
     @Override
     protected void append( LoggingEvent event )

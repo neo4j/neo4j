@@ -52,11 +52,11 @@ import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMess
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.propose;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.rejectAccept;
 
-public class ProposerStateTest
+class ProposerStateTest
 {
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Test
-    public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Throwable
+    void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Throwable
     {
         ProposerContext context = Mockito.mock(ProposerContext.class);
         when(context.getLog( any( Class.class ) )).thenReturn( NullLog.getInstance() );
@@ -90,7 +90,7 @@ public class ProposerStateTest
     }
 
     @Test
-    public void something() throws Throwable
+    void something() throws Throwable
     {
         Object acceptorValue = new Object();
         Object bookedValue = new Object();
@@ -120,7 +120,7 @@ public class ProposerStateTest
     }
 
     @Test
-    public void proposer_proposePhase1TimeoutShouldCarryOnPayload() throws Throwable
+    void proposer_proposePhase1TimeoutShouldCarryOnPayload() throws Throwable
     {
         // GIVEN
         PaxosInstance instance = mock( PaxosInstance.class );
@@ -144,7 +144,7 @@ public class ProposerStateTest
     }
 
     @Test
-    public void proposer_phase1TimeoutShouldCarryOnPayload() throws Throwable
+    void proposer_phase1TimeoutShouldCarryOnPayload() throws Throwable
     {
         // GIVEN
         PaxosInstance instance = mock( PaxosInstance.class );
@@ -167,7 +167,7 @@ public class ProposerStateTest
     }
 
     @Test
-    public void proposer_rejectAcceptShouldCarryOnPayload() throws Throwable
+    void proposer_rejectAcceptShouldCarryOnPayload() throws Throwable
     {
         // GIVEN
         String instanceId = "1";
@@ -197,7 +197,7 @@ public class ProposerStateTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void proposer_promiseShouldCarryOnPayloadToPhase2Timeout() throws Throwable
+    void proposer_promiseShouldCarryOnPayloadToPhase2Timeout() throws Throwable
     {
         // GIVEN
         String instanceId = "1";

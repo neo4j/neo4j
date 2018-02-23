@@ -1802,12 +1802,12 @@ public class GBPTreeTest
             count++;
         }
 
-        public void reset()
+        void reset()
         {
             count = 0;
         }
 
-        public int count()
+        int count()
         {
             return count;
         }

@@ -40,13 +40,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class NoChangeWriteTransactionTest
+class NoChangeWriteTransactionTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbr;
+    private ImpermanentDatabaseRule dbr;
 
     @Test
-    public void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
+    void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
@@ -67,7 +67,7 @@ public class NoChangeWriteTransactionTest
     }
 
     @Test
-    public void shouldDetectNoChangesInCommitsAlsoForTheIndexes()
+    void shouldDetectNoChangesInCommitsAlsoForTheIndexes()
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.

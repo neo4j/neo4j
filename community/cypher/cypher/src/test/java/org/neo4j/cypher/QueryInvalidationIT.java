@@ -220,7 +220,7 @@ public class QueryInvalidationIT
                     waitTime + "}";
         }
 
-        public void reset()
+        void reset()
         {
             hits.set( 0 );
             misses.set( 0 );

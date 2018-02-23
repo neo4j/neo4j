@@ -92,9 +92,9 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class LabelsAcceptanceTest
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private enum Labels implements Label
     {
@@ -104,7 +104,7 @@ public class LabelsAcceptanceTest
 
     /** https://github.com/neo4j/neo4j/issues/1279 */
     @Test
-    public void shouldInsertLabelsWithoutDuplicatingThem()
+    void shouldInsertLabelsWithoutDuplicatingThem()
     {
         final Node node = dbRule.executeAndCommit(
                 (Function<GraphDatabaseService,Node>) GraphDatabaseService::createNode );
@@ -142,7 +142,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void addingALabelUsingAValidIdentifierShouldSucceed()
+    void addingALabelUsingAValidIdentifierShouldSucceed()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -163,7 +163,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void addingALabelUsingAnInvalidIdentifierShouldFail()
+    void addingALabelUsingAnInvalidIdentifierShouldFail()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -190,7 +190,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void addingALabelThatAlreadyExistsBehavesAsNoOp()
+    void addingALabelThatAlreadyExistsBehavesAsNoOp()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -212,7 +212,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void oversteppingMaxNumberOfLabelsShouldFailGracefully()
+    void oversteppingMaxNumberOfLabelsShouldFailGracefully()
     {
         // Given
         GraphDatabaseService graphDatabase = beansAPIWithNoMoreLabelIds();
@@ -231,7 +231,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingCommittedLabel()
+    void removingCommittedLabel()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -250,7 +250,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void createNodeWithLabels()
+    void createNodeWithLabels()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -270,7 +270,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingNonExistentLabel()
+    void removingNonExistentLabel()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -290,7 +290,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingExistingLabelFromUnlabeledNode()
+    void removingExistingLabelFromUnlabeledNode()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -310,7 +310,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingUncommittedLabel()
+    void removingUncommittedLabel()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -332,7 +332,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldBeAbleToListLabelsForANode()
+    void shouldBeAbleToListLabelsForANode()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -352,7 +352,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldReturnEmptyListIfNoLabels()
+    void shouldReturnEmptyListIfNoLabels()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -363,7 +363,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void getNodesWithLabelCommitted()
+    void getNodesWithLabelCommitted()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -383,7 +383,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void getNodesWithLabelsWithTxAddsAndRemoves()
+    void getNodesWithLabelsWithTxAddsAndRemoves()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -410,7 +410,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldListAllExistingLabels()
+    void shouldListAllExistingLabels()
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -429,7 +429,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldListAllLabelsInUse()
+    void shouldListAllLabelsInUse()
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -454,7 +454,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void deleteAllNodesAndTheirLabels()
+    void deleteAllNodesAndTheirLabels()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -486,7 +486,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingLabelDoesNotBreakPreviouslyCreatedLabelsIterator()
+    void removingLabelDoesNotBreakPreviouslyCreatedLabelsIterator()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -506,7 +506,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingPropertyDoesNotBreakPreviouslyCreatedNodePropertyKeysIterator()
+    void removingPropertyDoesNotBreakPreviouslyCreatedNodePropertyKeysIterator()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -528,7 +528,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldCreateNodeWithLotsOfLabelsAndThenRemoveMostOfThem()
+    void shouldCreateNodeWithLotsOfLabelsAndThenRemoveMostOfThem()
     {
         // given
         final int TOTAL_NUMBER_OF_LABELS = 200;
@@ -570,7 +570,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldAllowManyLabelsAndPropertyCursor() throws Exception
+    void shouldAllowManyLabelsAndPropertyCursor() throws Exception
     {
         int propertyCount = 10;
         int labelCount = 15;
@@ -620,7 +620,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void nodeWithManyLabels()
+    void nodeWithManyLabels()
     {
         int labels = 500;
         int halveLabels = labels / 2;

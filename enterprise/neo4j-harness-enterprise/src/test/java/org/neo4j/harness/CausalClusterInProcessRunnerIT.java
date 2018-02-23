@@ -34,13 +34,13 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class CausalClusterInProcessRunnerIT
+class CausalClusterInProcessRunnerIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldBootAndShutdownCluster() throws Exception
+    void shouldBootAndShutdownCluster() throws Exception
     {
         Path clusterPath = testDirectory.absolutePath().toPath();
         CausalClusterInProcessRunner.PortPickingStrategy portPickingStrategy = new CausalClusterInProcessRunner.PortPickingStrategy()

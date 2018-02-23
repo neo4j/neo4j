@@ -94,7 +94,7 @@ public class DumpProcessInformationRule extends ExternalResource
         super.after();
     }
 
-    public void dump() throws Exception
+    private void dump() throws Exception
     {
         for ( Dump dump : dumps )
         {

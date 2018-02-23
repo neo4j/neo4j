@@ -44,19 +44,19 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class CommitContentionTest
+class CommitContentionTest
 {
     @Resource
-    public TestDirectory storeLocation;
+    private TestDirectory storeLocation;
 
-    final Semaphore semaphore1 = new Semaphore( 1 );
-    final Semaphore semaphore2 = new Semaphore( 1 );
-    final AtomicReference<Exception> reference = new AtomicReference<>();
+    private final Semaphore semaphore1 = new Semaphore( 1 );
+    private final Semaphore semaphore2 = new Semaphore( 1 );
+    private final AtomicReference<Exception> reference = new AtomicReference<>();
 
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         semaphore1.acquire();
         semaphore2.acquire();
@@ -64,13 +64,13 @@ public class CommitContentionTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }
 
     @Test
-    public void shouldNotContendOnCommitWhenPushingUpdates() throws Exception
+    void shouldNotContendOnCommitWhenPushingUpdates() throws Exception
     {
         Thread thread = startFirstTransactionWhichBlocksDuringPushUntilSecondTransactionFinishes();
 
@@ -136,7 +136,7 @@ public class CommitContentionTest
                     {
                         return new TransactionStats()
                         {
-                            public boolean skip;
+                            boolean skip;
 
                             @Override
                             public void transactionFinished( boolean committed, boolean write )

@@ -39,7 +39,7 @@ public class LuceneTestUtil
                 .collect( Collectors.toList() );
     }
 
-    public static Value[] valueTuple( Object object )
+    private static Value[] valueTuple( Object object )
     {
         return new Value[]{Values.of( object )};
     }

@@ -49,10 +49,10 @@ import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationship;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-public class VirtualValueWriteToTest
+class VirtualValueWriteToTest
 {
 
-    public static Iterable<WriteTest> data()
+    private static Iterable<WriteTest> data()
     {
         return Arrays.asList(
                 shouldWrite(
@@ -151,7 +151,7 @@ public class VirtualValueWriteToTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    public void runTest( WriteTest currentTest )
+    void runTest( WriteTest currentTest )
     {
         currentTest.verifyWriteTo();
     }

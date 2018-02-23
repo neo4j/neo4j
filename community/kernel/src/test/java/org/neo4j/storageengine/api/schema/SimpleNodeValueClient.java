@@ -25,7 +25,7 @@ import org.neo4j.values.storable.Value;
 
 public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
 {
-    public long reference;
+    private long reference;
     public Value[] values;
     private IndexProgressor progressor;
 

@@ -30,7 +30,7 @@ import static java.lang.System.currentTimeMillis;
  * call to {@link #time()} and any number of points in the test and time since start or last call
  * will be displayed along with line number.
  */
-public class TimeRule implements TestRule
+class TimeRule implements TestRule
 {
     private long time;
     private String name;
@@ -56,7 +56,7 @@ public class TimeRule implements TestRule
         };
     }
 
-    public void time( String name )
+    private void time( String name )
     {
         this.name = name;
         if ( time == 0 )

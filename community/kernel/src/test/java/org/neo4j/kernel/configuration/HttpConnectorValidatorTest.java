@@ -52,14 +52,14 @@ public class HttpConnectorValidatorTest
     private final Consumer<String> warningConsumer = mock( Consumer.class );
 
     @Test
-    public void doesNotValidateUnrelatedStuff()
+    void doesNotValidateUnrelatedStuff()
     {
         assertEquals( 0, cv.validate( stringMap( "dbms.connector.bolt.enabled", "true",
                 "dbms.blabla.boo", "123" ), warningConsumer ).size() );
     }
 
     @Test
-    public void onlyEnabledRequiredWhenNameIsHttpOrHttps()
+    void onlyEnabledRequiredWhenNameIsHttpOrHttps()
     {
         String httpEnabled = "dbms.connector.http.enabled";
         String httpsEnabled = "dbms.connector.https.enabled";
@@ -72,7 +72,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void requiresTypeWhenNameIsNotHttpOrHttps()
+    void requiresTypeWhenNameIsNotHttpOrHttps()
     {
         String randomEnabled = "dbms.connector.bla.enabled";
         String randomType = "dbms.connector.bla.type";
@@ -87,7 +87,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void warnsWhenNameIsNotHttpOrHttps()
+    void warnsWhenNameIsNotHttpOrHttps()
     {
         String randomEnabled = "dbms.connector.bla.enabled";
         String randomType = "dbms.connector.bla.type";
@@ -100,7 +100,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void errorsOnInvalidConnectorSetting1()
+    void errorsOnInvalidConnectorSetting1()
     {
         String invalidSetting = "dbms.connector.bla.0.enabled";
 
@@ -111,7 +111,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void errorsOnInvalidConnectorSetting2()
+    void errorsOnInvalidConnectorSetting2()
     {
         String invalidSetting = "dbms.connector.http.foobar";
 
@@ -122,7 +122,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void validatesEncryption()
+    void validatesEncryption()
     {
         String key = "dbms.connector.bla.encryption";
         String type = "dbms.connector.bla.type";
@@ -144,7 +144,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void httpsConnectorCanOnlyHaveTLS()
+    void httpsConnectorCanOnlyHaveTLS()
     {
         String key = "dbms.connector.https.encryption";
 
@@ -158,7 +158,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void httpConnectorCanNotHaveTLS()
+    void httpConnectorCanNotHaveTLS()
     {
         String key = "dbms.connector.http.encryption";
 
@@ -172,7 +172,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void validatesAddress()
+    void validatesAddress()
     {
         String key = "dbms.connector.http.address";
 
@@ -198,7 +198,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void validatesListenAddress()
+    void validatesListenAddress()
     {
         String key = "dbms.connector.http.listen_address";
 
@@ -224,7 +224,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void validatesAdvertisedAddress()
+    void validatesAdvertisedAddress()
     {
         String key = "dbms.connector.http.advertised_address";
 
@@ -250,7 +250,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void validatesType()
+    void validatesType()
     {
         String type = "dbms.connector.bla.type";
 
@@ -261,7 +261,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnAddress()
+    void setsDeprecationFlagOnAddress()
     {
         Setting setting =
                 cv.getSettingFor( "dbms.connector.http.address", Collections.emptyMap() )
@@ -272,7 +272,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnEncryption()
+    void setsDeprecationFlagOnEncryption()
     {
         Setting setting =
                 cv.getSettingFor( "dbms.connector.http.encryption", Collections.emptyMap() )
@@ -283,7 +283,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void sdfa()
+    void sdfa()
     {
         Setting setting =
                 cv.getSettingFor( "dbms.connector.http.type", Collections.emptyMap() )
@@ -294,7 +294,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnType()
+    void setsDeprecationFlagOnType()
     {
         Setting setting =
                 cv.getSettingFor( "dbms.connector.http.type", Collections.emptyMap() )
@@ -305,7 +305,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnCustomNamedHttpConnectors()
+    void setsDeprecationFlagOnCustomNamedHttpConnectors()
     {
         List<Setting<Object>> settings = cv.settings( stringMap( "dbms.connector.0.type", "HTTP",
                 "dbms.connector.0.enabled", "false",
@@ -328,7 +328,7 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
-    public void setsDeprecationFlagOnCustomNamedHttpsConnectors()
+    void setsDeprecationFlagOnCustomNamedHttpsConnectors()
     {
         List<Setting<Object>> settings = cv.settings( stringMap( "dbms.connector.0.type", "HTTP",
                 "dbms.connector.0.enabled", "false",

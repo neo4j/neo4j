@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -62,7 +62,7 @@ public class AbstractDynamicStoreTest
     private FileSystemAbstraction fs;
 
     @BeforeEach
-    public void before() throws IOException
+    void before() throws IOException
     {
         fs = fsr.get();
         pageCache = pageCacheRule.getPageCache( fsr.get() );
@@ -76,7 +76,7 @@ public class AbstractDynamicStoreTest
     }
 
     @Test
-    public void dynamicRecordCursorReadsInUseRecords()
+    void dynamicRecordCursorReadsInUseRecords()
     {
         try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {
@@ -102,7 +102,7 @@ public class AbstractDynamicStoreTest
     }
 
     @Test
-    public void dynamicRecordCursorReadsNotInUseRecords()
+    void dynamicRecordCursorReadsNotInUseRecords()
     {
         try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {

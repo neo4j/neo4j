@@ -47,13 +47,13 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class StoreIteratorRelationshipCursorTest
+class StoreIteratorRelationshipCursorTest
 {
 
     private static final long RELATIONSHIP_ID = 1L;
 
     @Test
-    public void retrieveUsedRelationship()
+    void retrieveUsedRelationship()
     {
         final RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
         RecordCursor recordCursor = mock( RecordCursor.class );
@@ -71,7 +71,7 @@ public class StoreIteratorRelationshipCursorTest
     }
 
     @Test
-    public void retrieveUnusedRelationship()
+    void retrieveUnusedRelationship()
     {
         final RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
         RecordCursor recordCursor = mock( RecordCursor.class );

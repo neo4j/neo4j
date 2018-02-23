@@ -37,15 +37,15 @@ import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.EnterpriseSecurityModule;
 import org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm;
@@ -61,9 +61,9 @@ import static org.neo4j.server.security.enterprise.auth.RoleRepository.validate;
 abstract class FlatFileStressBase
 {
     private final long ONE_SECOND = 1000;
-    protected long TIMEOUT_IN_SECONDS = 10;
-    protected int N = 10;
-    protected int ERROR_LIMIT = 100;
+    private long TIMEOUT_IN_SECONDS = 10;
+    private int N = 10;
+    private int ERROR_LIMIT = 100;
 
     InternalFlatFileRealm flatFileRealm;
     private UserRepository userRepository;
@@ -73,7 +73,7 @@ abstract class FlatFileStressBase
     final Set<Throwable> errors = ConcurrentHashMap.newKeySet();
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         Config config = Config.defaults();
         LogProvider logProvider = NullLogProvider.getInstance();
@@ -99,14 +99,14 @@ abstract class FlatFileStressBase
     abstract FileSystemAbstraction getFileSystem();
 
     @AfterEach
-    public void teardown() throws Throwable
+    void teardown() throws Throwable
     {
         flatFileRealm.stop();
         flatFileRealm.shutdown();
     }
 
     @Test
-    public void shouldMaintainConsistency() throws InterruptedException, IOException
+    void shouldMaintainConsistency() throws InterruptedException, IOException
     {
         ExecutorService service = setupWorkload( N );
 

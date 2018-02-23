@@ -31,16 +31,16 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class PropertyRecordCheckTest
+class PropertyRecordCheckTest
         extends RecordCheckTestBase<PropertyRecord, ConsistencyReport.PropertyConsistencyReport, PropertyRecordCheck>
 {
-    public PropertyRecordCheckTest()
+    PropertyRecordCheckTest()
     {
         super( new PropertyRecordCheck(), ConsistencyReport.PropertyConsistencyReport.class, new int[0] );
     }
 
     @Test
-    public void shouldNotReportAnythingForPropertyRecordNotInUse()
+    void shouldNotReportAnythingForPropertyRecordNotInUse()
     {
         // given
         PropertyRecord property = notInUse( new PropertyRecord( 42 ) );
@@ -53,7 +53,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForPropertyWithoutBlocksThatDoesNotReferenceAnyOtherRecords()
+    void shouldNotReportAnythingForPropertyWithoutBlocksThatDoesNotReferenceAnyOtherRecords()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -66,7 +66,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportPropertyKeyNotInUse()
+    void shouldReportPropertyKeyNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -83,7 +83,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportPreviousPropertyNotInUse()
+    void shouldReportPreviousPropertyNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -99,7 +99,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportNextPropertyNotInUse()
+    void shouldReportNextPropertyNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -115,7 +115,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportPreviousPropertyNotReferringBack()
+    void shouldReportPreviousPropertyNotReferringBack()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -131,7 +131,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportNextPropertyNotReferringBack()
+    void shouldReportNextPropertyNotReferringBack()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -147,7 +147,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportStringRecordNotInUse()
+    void shouldReportStringRecordNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -164,7 +164,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportArrayRecordNotInUse()
+    void shouldReportArrayRecordNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -182,7 +182,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportEmptyStringRecord()
+    void shouldReportEmptyStringRecord()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -200,7 +200,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportEmptyArrayRecord()
+    void shouldReportEmptyArrayRecord()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );

@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.io.IOException;
-
 import org.neo4j.server.security.auth.ListSnapshot;
 
 /** A role repository implementation that just stores roles in memory */
-public class InMemoryRoleRepository extends AbstractRoleRepository
+class InMemoryRoleRepository extends AbstractRoleRepository
 {
     @Override
     protected void persistRoles()

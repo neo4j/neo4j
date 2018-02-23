@@ -236,8 +236,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
-        public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
-                                                         long lastCommittedTx, NeoStores neoStores )
+        TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
+                long lastCommittedTx, NeoStores neoStores )
         {
             TransactionWriter writer = new TransactionWriter( neoStores );
             transactionData( new TransactionDataBuilder( writer, neoStores.getNodeStore() ), idGenerator );
@@ -443,12 +443,12 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    protected void start( @SuppressWarnings( "UnusedParameters" ) File storeDir )
+    private void start( @SuppressWarnings( "UnusedParameters" ) File storeDir )
     {
         // allow for override
     }
 
-    protected void stop() throws Throwable
+    private void stop() throws Throwable
     {
         if ( directStoreAccess != null )
         {

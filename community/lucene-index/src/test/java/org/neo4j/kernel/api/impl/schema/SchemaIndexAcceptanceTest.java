@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -60,19 +60,19 @@ public class SchemaIndexAcceptanceTest
     private final String propertyKey = "key";
 
     @BeforeEach
-    public void before()
+    void before()
     {
         db = newDb();
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }
 
     @Test
-    public void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup()
+    void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup()
     {
         Node node1;
         Node node2;
@@ -95,7 +95,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexArrays()
+    void shouldIndexArrays()
     {
         long[] arrayPropertyValue = {42, 23, 87};
         createIndex( db, label, propertyKey );
@@ -115,7 +115,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexStringArrays()
+    void shouldIndexStringArrays()
     {
         String[] arrayPropertyValue = {"A, B", "C"};
         createIndex( db, label, propertyKey );
@@ -136,7 +136,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexArraysPostPopulation()
+    void shouldIndexArraysPostPopulation()
     {
         long[] arrayPropertyValue = {42, 23, 87};
         Node node1;
@@ -157,7 +157,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void recoveryAfterCreateAndDropIndex() throws Exception
+    void recoveryAfterCreateAndDropIndex() throws Exception
     {
         // GIVEN
         IndexDefinition indexDefinition = createIndex( db, label, propertyKey );

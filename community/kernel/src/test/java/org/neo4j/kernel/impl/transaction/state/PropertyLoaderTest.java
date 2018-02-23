@@ -62,12 +62,12 @@ import static org.mockito.Mockito.when;
 
 @EnableRuleMigrationSupport
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class PropertyLoaderTest
+class PropertyLoaderTest
 {
     private static final int PROP_KEY_ID = 42;
 
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
 
     private final IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
 
@@ -77,7 +77,7 @@ public class PropertyLoaderTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
 
     @BeforeEach
-    public void setUpMocking()
+    void setUpMocking()
     {
         doReturn( nodeStore ).when( neoStores ).getNodeStore();
         when( nodeStore.newRecord() ).thenAnswer( invocation -> new NodeRecord( -1 ) );
@@ -88,7 +88,7 @@ public class PropertyLoaderTest
     }
 
     @Test
-    public void shouldThrowForNotInUseNodeRecord()
+    void shouldThrowForNotInUseNodeRecord()
     {
         // Given
         PropertyLoader loader = new PropertyLoader( neoStores() );
@@ -106,7 +106,7 @@ public class PropertyLoaderTest
     }
 
     @Test
-    public void shouldThrowForNotInUseRelationshipRecord()
+    void shouldThrowForNotInUseRelationshipRecord()
     {
         // Given
         PropertyLoader loader = new PropertyLoader( neoStores() );
@@ -124,7 +124,7 @@ public class PropertyLoaderTest
     }
 
     @Test
-    public void shouldReturnCorrectPropertyChainForNode()
+    void shouldReturnCorrectPropertyChainForNode()
     {
         // Given
         setUpNode( 42, 1, 2, 3 );
@@ -140,7 +140,7 @@ public class PropertyLoaderTest
     }
 
     @Test
-    public void shouldReturnCorrectPropertyChainForRelationship()
+    void shouldReturnCorrectPropertyChainForRelationship()
     {
         // Given
         setUpRelationship( 42, 1111, 2222 );

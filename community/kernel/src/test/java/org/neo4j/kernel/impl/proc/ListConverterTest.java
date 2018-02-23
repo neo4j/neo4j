@@ -54,7 +54,7 @@ public class ListConverterTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldHandleNullString()
+    void shouldHandleNullString()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -68,7 +68,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleEmptyList()
+    void shouldHandleEmptyList()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -82,7 +82,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleEmptyListWithSpaces()
+    void shouldHandleEmptyListWithSpaces()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -96,7 +96,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleSingleQuotedValue()
+    void shouldHandleSingleQuotedValue()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -110,7 +110,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleDoubleQuotedValue()
+    void shouldHandleDoubleQuotedValue()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -124,7 +124,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleIntegerValue()
+    void shouldHandleIntegerValue()
     {
         // Given
         ListConverter converter = new ListConverter( Long.class, NTInteger );
@@ -138,7 +138,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleFloatValue()
+    void shouldHandleFloatValue()
     {
         // Given
         ListConverter converter = new ListConverter( Double.class, NTFloat );
@@ -152,7 +152,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleNullValue()
+    void shouldHandleNullValue()
     {
         // Given
         ListConverter converter = new ListConverter( Double.class, NTFloat );
@@ -166,7 +166,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleBooleanValues()
+    void shouldHandleBooleanValues()
     {
         // Given
         ListConverter converter = new ListConverter( Boolean.class, NTBoolean );
@@ -181,7 +181,7 @@ public class ListConverterTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleNestedLists()
+    void shouldHandleNestedLists()
     {
         // Given
         ParameterizedType type = mock( ParameterizedType.class );
@@ -199,7 +199,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldFailOnInvalidMixedTyoes()
+    void shouldFailOnInvalidMixedTyoes()
     {
         // Given
         ListConverter converter = new ListConverter( Long.class, NTInteger );
@@ -214,7 +214,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldPassOnValidMixedTyoes()
+    void shouldPassOnValidMixedTyoes()
     {
         // Given
         ListConverter converter = new ListConverter( Object.class, NTAny );
@@ -229,7 +229,7 @@ public class ListConverterTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleListsOfMaps()
+    void shouldHandleListsOfMaps()
     {
         // Given
         ListConverter converter = new ListConverter( Map.class, NTMap );

@@ -286,7 +286,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));
     }
 
-    public void startServerWithConfiguredUser() throws IOException
+    void startServerWithConfiguredUser() throws IOException
     {
         startServer( true );
         // Set the password

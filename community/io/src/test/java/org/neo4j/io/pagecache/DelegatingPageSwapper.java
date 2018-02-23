@@ -27,11 +27,11 @@ import java.io.IOException;
  *
  * Useful for overriding specific functionality in a sub-class.
  */
-public class DelegatingPageSwapper implements PageSwapper
+class DelegatingPageSwapper implements PageSwapper
 {
     private final PageSwapper delegate;
 
-    public DelegatingPageSwapper( PageSwapper delegate )
+    DelegatingPageSwapper( PageSwapper delegate )
     {
         this.delegate = delegate;
     }

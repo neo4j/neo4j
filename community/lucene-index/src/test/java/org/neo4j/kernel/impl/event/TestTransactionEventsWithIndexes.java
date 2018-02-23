@@ -31,14 +31,14 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.Index;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.neo4j.helpers.collection.Iterables.single;
 
-public class TestTransactionEventsWithIndexes extends TestTransactionEvents
+class TestTransactionEventsWithIndexes extends TestTransactionEvents
 {
     @Test
-    public void nodeCanBeExplicitIndexedInBeforeCommit()
+    void nodeCanBeExplicitIndexedInBeforeCommit()
     {
         // Given we have an explicit index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();

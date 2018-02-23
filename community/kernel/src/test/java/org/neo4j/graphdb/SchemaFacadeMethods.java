@@ -28,7 +28,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 import static org.mockito.Mockito.mock;
 
-public class SchemaFacadeMethods
+class SchemaFacadeMethods
 {
     private static final Label LABEL = Label.label( "Label" );
 

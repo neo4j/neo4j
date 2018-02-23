@@ -71,14 +71,14 @@ public class CheckPointerIntegrationTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseBuilder builder;
     private FileSystemAbstraction fs;
     private File storeDir;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         fs = fsRule.get();
         storeDir = testDirectory.graphDbDir();
@@ -87,7 +87,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void databaseShutdownDuringConstantCheckPointing() throws
+    void databaseShutdownDuringConstantCheckPointing() throws
             InterruptedException
     {
         GraphDatabaseService db = builder
@@ -105,7 +105,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldCheckPointBasedOnTime() throws Throwable
+    void shouldCheckPointBasedOnTime() throws Throwable
     {
         // given
         long millis = 200;
@@ -161,7 +161,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldCheckPointBasedOnTxCount() throws Throwable
+    void shouldCheckPointBasedOnTxCount() throws Throwable
     {
         // given
         GraphDatabaseService db = builder
@@ -191,7 +191,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldNotCheckPointWhenThereAreNoCommits() throws Throwable
+    void shouldNotCheckPointWhenThereAreNoCommits() throws Throwable
     {
         // given
         GraphDatabaseService db = builder
@@ -216,7 +216,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
+    void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
     {
         // given
         GraphDatabaseBuilder graphDatabaseBuilder = builder.setConfig( GraphDatabaseSettings
@@ -254,7 +254,7 @@ public class CheckPointerIntegrationTest
                     .withLogEntryReader( logEntryReader ).build();
         }
 
-        public List<CheckPoint> find( long version ) throws IOException
+        List<CheckPoint> find( long version ) throws IOException
         {
             List<CheckPoint> checkPoints = new ArrayList<>();
             for (; version >= INITIAL_LOG_VERSION && logFiles.versionExists( version ); version-- )

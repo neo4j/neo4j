@@ -68,7 +68,7 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
 
-public class HighAvailabilityBeanTest
+class HighAvailabilityBeanTest
 {
     private final GraphDatabaseAPI db = mock( HighlyAvailableGraphDatabase.class );
     private final Dependencies dependencies = new Dependencies();
@@ -83,7 +83,7 @@ public class HighAvailabilityBeanTest
     private HighAvailability haBean;
 
     @BeforeEach
-    public void setup() throws NotCompliantMBeanException
+    void setup() throws NotCompliantMBeanException
     {
         fileSystem = new DefaultFileSystemAbstraction();
         kernelData = new TestHighlyAvailableKernelData();
@@ -94,14 +94,14 @@ public class HighAvailabilityBeanTest
     }
 
     @AfterEach
-    public void tearDown() throws IOException
+    void tearDown() throws IOException
     {
         kernelData.shutdown();
         fileSystem.close();
     }
 
     @Test
-    public void shouldPickUpOnLastCommittedTxId() throws Exception
+    void shouldPickUpOnLastCommittedTxId() throws Exception
     {
         // GIVEN
         long txId = 101L;
@@ -122,7 +122,7 @@ public class HighAvailabilityBeanTest
     }
 
     @Test
-    public void shouldPickUpOnLastUpdateTime() throws Exception
+    void shouldPickUpOnLastUpdateTime() throws Exception
     {
         // GIVEN
         long updateTime = 123456789L;
@@ -149,7 +149,7 @@ public class HighAvailabilityBeanTest
     }
 
     @Test
-    public void shouldSeeChangesInClusterMembers() throws Exception
+    void shouldSeeChangesInClusterMembers() throws Exception
     {
         // GIVEN
         when( clusterMembers.getMembers() ).thenReturn( asList(
@@ -189,7 +189,7 @@ public class HighAvailabilityBeanTest
     }
 
     @Test
-    public void shouldSeeLeavingMemberDisappear() throws Exception
+    void shouldSeeLeavingMemberDisappear() throws Exception
     {
         // GIVEN
         when( clusterMembers.getMembers() ).thenReturn( asList(
@@ -208,7 +208,7 @@ public class HighAvailabilityBeanTest
     }
 
     @Test
-    public void shouldSeeFailedMembersInMemberList() throws Exception
+    void shouldSeeFailedMembersInMemberList() throws Exception
     {
         // GIVEN
         when( clusterMembers.getMembers() ).thenReturn( asList(
@@ -226,7 +226,7 @@ public class HighAvailabilityBeanTest
     }
 
     @Test
-    public void shouldPullUpdates() throws Exception
+    void shouldPullUpdates() throws Exception
     {
         // GIVEN
         UpdatePuller updatePuller = mock( UpdatePuller.class );
@@ -241,7 +241,7 @@ public class HighAvailabilityBeanTest
     }
 
     @Test
-    public void shouldReportFailedPullUpdates() throws Exception
+    void shouldReportFailedPullUpdates() throws Exception
     {
         // GIVEN
         UpdatePuller updatePuller = mock( UpdatePuller.class );

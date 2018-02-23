@@ -36,10 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 
-public class HANewSnapshotFunctionTest
+class HANewSnapshotFunctionTest
 {
     @Test
-    public void normalClusterCreationShouldBePassedUnchanged()
+    void normalClusterCreationShouldBePassedUnchanged()
     {
         // GIVEN
         // This is what the end result should look like
@@ -60,7 +60,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void duplicateSlaveEventsShouldBeFilteredOut()
+    void duplicateSlaveEventsShouldBeFilteredOut()
     {
         // GIVEN
         // This is the list of events
@@ -88,7 +88,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingMasterReappearsAsSlaveShouldBeTreatedAsSlave()
+    void instanceBeingMasterReappearsAsSlaveShouldBeTreatedAsSlave()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -114,7 +114,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingSlaveReappearsAsMasterShouldBeTreatedAsMaster()
+    void instanceBeingSlaveReappearsAsMasterShouldBeTreatedAsMaster()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -140,7 +140,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingMasterReplacedByAnotherInstanceShouldNotRemainMaster()
+    void instanceBeingMasterReplacedByAnotherInstanceShouldNotRemainMaster()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -164,7 +164,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingBackupReplacedByAnotherInstanceShouldNotRemainBackup()
+    void instanceBeingBackupReplacedByAnotherInstanceShouldNotRemainBackup()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -190,7 +190,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingBackupRepeatedlyShouldRemainBackupOnceOnly()
+    void instanceBeingBackupRepeatedlyShouldRemainBackupOnceOnly()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();

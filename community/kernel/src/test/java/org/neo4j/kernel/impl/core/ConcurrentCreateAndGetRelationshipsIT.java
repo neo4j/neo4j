@@ -55,14 +55,14 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
  *
  */
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class ConcurrentCreateAndGetRelationshipsIT
+class ConcurrentCreateAndGetRelationshipsIT
 {
     @Resource
-    public ImpermanentDatabaseRule dbRule;
+    private ImpermanentDatabaseRule dbRule;
     private static final RelationshipType RELTYPE = MyRelTypes.TEST;
 
     @Test
-    public void tryToReproduceTheIssue() throws Exception
+    void tryToReproduceTheIssue() throws Exception
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();

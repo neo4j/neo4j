@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TxStateCheckerTestSupport
+class TxStateCheckerTestSupport
 {
-    protected static final TransitionalPeriodTransactionMessContainer TPTPMC =
+    static final TransitionalPeriodTransactionMessContainer TPTPMC =
             mock( TransitionalPeriodTransactionMessContainer.class );
 
     static
@@ -38,16 +38,16 @@ public class TxStateCheckerTestSupport
         when( TPTPMC.getBridge() ).thenReturn( bridge );
     }
 
-    protected TxStateCheckerTestSupport()
+    TxStateCheckerTestSupport()
     {
     }
 
-    protected static class FakeBridge extends ThreadToStatementContextBridge
+    static class FakeBridge extends ThreadToStatementContextBridge
     {
         private final KernelTransaction tx = mock( KernelTransaction.class );
         private final KernelStatement statement = mock( KernelStatement.class );
 
-        public FakeBridge()
+        FakeBridge()
         {
             when( tx.acquireStatement() ).thenReturn( statement );
             when( statement.hasTxStateWithChanges() ).thenReturn( false );

@@ -27,10 +27,10 @@ import org.neo4j.kernel.ha.HaSettings;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class HighlyAvailableGraphDatabaseFactoryTest
+class HighlyAvailableGraphDatabaseFactoryTest
 {
     @Test
-    public void shouldIncludeCorrectSettingsClasses()
+    void shouldIncludeCorrectSettingsClasses()
     {
         // When
         GraphDatabaseFactoryState state = new HighlyAvailableGraphDatabaseFactory().getCurrentState();

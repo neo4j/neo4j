@@ -37,10 +37,10 @@ import static org.neo4j.cluster.com.message.Message.to;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage.failed;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastState.broadcasting;
 
-public class AtomicBroadcastStateTest
+class AtomicBroadcastStateTest
 {
     @Test
-    public void shouldNotBroadcastWhenHavingNoQuorumNoCoordinator() throws Throwable
+    void shouldNotBroadcastWhenHavingNoQuorumNoCoordinator() throws Throwable
     {
         // GIVEN
         AtomicBroadcastContext context = mock( AtomicBroadcastContext.class );
@@ -61,7 +61,7 @@ public class AtomicBroadcastStateTest
     }
 
     @Test
-    public void shouldNotBroadcastWhenHavingNoQuorumButCoordinator() throws Throwable
+    void shouldNotBroadcastWhenHavingNoQuorumButCoordinator() throws Throwable
     {
         // GIVEN
         AtomicBroadcastContext context = mock( AtomicBroadcastContext.class );
@@ -79,7 +79,7 @@ public class AtomicBroadcastStateTest
     }
 
     @Test
-    public void shouldBroadcastWhenHavingQuorumAndCoordinator() throws Throwable
+    void shouldBroadcastWhenHavingQuorumAndCoordinator() throws Throwable
     {
         // GIVEN
         AtomicBroadcastContext context = mock( AtomicBroadcastContext.class );
@@ -100,7 +100,7 @@ public class AtomicBroadcastStateTest
     }
 
     @Test
-    public void shouldBroadcastWhenHavingQuorumNoCoordinator() throws Throwable
+    void shouldBroadcastWhenHavingQuorumNoCoordinator() throws Throwable
     {
         // GIVEN
         AtomicBroadcastContext context = mock( AtomicBroadcastContext.class );

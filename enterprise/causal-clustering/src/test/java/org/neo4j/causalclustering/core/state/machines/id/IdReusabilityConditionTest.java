@@ -35,7 +35,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class IdReusabilityConditionTest
+class IdReusabilityConditionTest
 {
     private RaftMachine raftMachine = mock( RaftMachine.class );
     private ExposedRaftState state = mock( ExposedRaftState.class );
@@ -44,7 +44,7 @@ public class IdReusabilityConditionTest
     private IdReusabilityCondition idReusabilityCondition;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( raftMachine.state() ) .thenReturn( state );
         myself = new MemberId( UUID.randomUUID() );
@@ -52,13 +52,13 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldReturnFalseAsDefault()
+    void shouldReturnFalseAsDefault()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
     }
 
     @Test
-    public void shouldNeverReuseWhenNotLeader()
+    void shouldNeverReuseWhenNotLeader()
     {
         MemberId someoneElse = new MemberId( UUID.randomUUID() );
 
@@ -67,7 +67,7 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldNotReturnTrueWithPendingTransactions()
+    void shouldNotReturnTrueWithPendingTransactions()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
@@ -85,7 +85,7 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldOnlyReturnTrueWhenOldTransactionsBeenApplied()
+    void shouldOnlyReturnTrueWhenOldTransactionsBeenApplied()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
@@ -103,7 +103,7 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldNotReuseIfReelection()
+    void shouldNotReuseIfReelection()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 

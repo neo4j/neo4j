@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 
-public class NodeSchemaMatcherTest
+class NodeSchemaMatcherTest
 {
 
     private static final int labelId1 = 10;
@@ -58,19 +58,19 @@ public class NodeSchemaMatcherTest
     private static final int nonExistentPropId = 23;
     private static final int specialPropId = 24;
 
-    KernelStatement state;
-    NodeItem node;
+    private KernelStatement state;
+    private NodeItem node;
 
-    IndexDescriptor index1 = forLabel( labelId1, propId1 );
-    IndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
-    IndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
-    IndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
-    IndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
+    private IndexDescriptor index1 = forLabel( labelId1, propId1 );
+    private IndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
+    private IndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
+    private IndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
+    private IndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
 
     private NodeSchemaMatcher nodeSchemaMatcher;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         state = mock( KernelStatement.class );
 
@@ -93,7 +93,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchOnSingleProperty()
+    void shouldMatchOnSingleProperty()
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
@@ -105,7 +105,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchOnTwoProperties()
+    void shouldMatchOnTwoProperties()
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
@@ -117,7 +117,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldNotMatchIfNodeIsMissingProperty()
+    void shouldNotMatchIfNodeIsMissingProperty()
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
@@ -129,7 +129,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldNotMatchIfNodeIsMissingLabel()
+    void shouldNotMatchIfNodeIsMissingLabel()
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
@@ -141,7 +141,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchOnSpecialProperty()
+    void shouldMatchOnSpecialProperty()
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
@@ -153,7 +153,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchSeveralTimes()
+    void shouldMatchSeveralTimes()
     {
         // given
         List<IndexDescriptor> indexes = Arrays.asList( index1, index1, index1_2, index1_2 );

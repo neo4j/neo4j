@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -107,7 +106,7 @@ public class DatabaseActionsTest
     public ExpectedException expectedException = none();
 
     @BeforeAll
-    public static void createDb()
+    static void createDb()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( record_id_batch_size, "1" ).newGraphDatabase();
@@ -117,13 +116,13 @@ public class DatabaseActionsTest
     }
 
     @AfterAll
-    public static void shutdownDatabase()
+    static void shutdownDatabase()
     {
         graph.shutdown();
     }
 
     @AfterEach
-    public void clearDb()
+    void clearDb()
     {
         cleanTheDatabase( graph );
     }
@@ -146,7 +145,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void createdNodeShouldBeInDatabase() throws Exception
+    void createdNodeShouldBeInDatabase() throws Exception
     {
         NodeRepresentation noderep = actions.createNode( emptyMap() );
 
@@ -157,14 +156,14 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void nodeInDatabaseShouldBeRetrievable() throws NodeNotFoundException
+    void nodeInDatabaseShouldBeRetrievable() throws NodeNotFoundException
     {
         long nodeId = new GraphDbHelper( database ).createNode();
         assertNotNull( actions.getNode( nodeId ) );
     }
 
     @Test
-    public void shouldBeAbleToStorePropertiesInAnExistingNode() throws PropertyValueException, NodeNotFoundException
+    void shouldBeAbleToStorePropertiesInAnExistingNode() throws PropertyValueException, NodeNotFoundException
     {
         long nodeId = graphdbHelper.createNode();
         Map<String,Object> properties = new HashMap<>();
@@ -180,7 +179,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldFailOnTryingToStoreMixedArraysAsAProperty()
+    void shouldFailOnTryingToStoreMixedArraysAsAProperty()
     {
         assertThrows( PropertyValueException.class, () -> {
             long nodeId = graphdbHelper.createNode();
@@ -196,7 +195,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldOverwriteExistingProperties() throws PropertyValueException, NodeNotFoundException
+    void shouldOverwriteExistingProperties() throws PropertyValueException, NodeNotFoundException
     {
 
         long nodeId;
@@ -221,7 +220,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPropertiesOnNode() throws NodeNotFoundException
+    void shouldBeAbleToGetPropertiesOnNode() throws NodeNotFoundException
     {
 
         long nodeId;
@@ -248,7 +247,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldRemoveNodeWithNoRelationsFromDBOnDelete()
+    void shouldRemoveNodeWithNoRelationsFromDBOnDelete()
             throws NodeNotFoundException, ConstraintViolationException
     {
         long nodeId;
@@ -265,7 +264,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToSetPropertyOnNode() throws Exception
+    void shouldBeAbleToSetPropertyOnNode() throws Exception
     {
         long nodeId = createNode( emptyMap() );
         String key = "foo";
@@ -275,7 +274,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void settingAnEmptyArrayShouldWorkIfOriginalEntityHasAnEmptyArrayAsWell() throws Exception
+    void settingAnEmptyArrayShouldWorkIfOriginalEntityHasAnEmptyArrayAsWell() throws Exception
     {
         // Given
         long nodeId = createNode( map( "emptyArray", new int[]{} ) );
@@ -291,7 +290,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPropertyOnNode() throws Exception
+    void shouldBeAbleToGetPropertyOnNode() throws Exception
     {
         String key = "foo";
         Object value = "bar";
@@ -303,7 +302,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperties() throws Exception
+    void shouldBeAbleToRemoveNodeProperties() throws Exception
     {
         Map<String,Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
@@ -320,7 +319,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldStoreRelationshipsBetweenTwoExistingNodes() throws Exception
+    void shouldStoreRelationshipsBetweenTwoExistingNodes() throws Exception
     {
         int relationshipCount = graphdbHelper.getNumberOfRelationships();
         actions.createRelationship( graphdbHelper.createNode(), graphdbHelper.createNode(), "LOVES", emptyMap() );
@@ -328,7 +327,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldStoreSuppliedPropertiesWhenCreatingRelationship() throws Exception
+    void shouldStoreSuppliedPropertiesWhenCreatingRelationship() throws Exception
     {
         Map<String,Object> properties = new HashMap<>();
         properties.put( "string", "value" );
@@ -351,7 +350,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldNotCreateRelationshipBetweenNonExistentNodes() throws Exception
+    void shouldNotCreateRelationshipBetweenNonExistentNodes() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
         Map<String,Object> properties = emptyMap();
@@ -376,7 +375,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldAllowCreateRelationshipWithSameStartAsEndNode() throws Exception
+    void shouldAllowCreateRelationshipWithSameStartAsEndNode() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
         Map<String,Object> properties = emptyMap();
@@ -386,7 +385,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperty() throws Exception
+    void shouldBeAbleToRemoveNodeProperty() throws Exception
     {
         Map<String,Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
@@ -404,7 +403,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldReturnTrueIfNodePropertyRemoved() throws Exception
+    void shouldReturnTrueIfNodePropertyRemoved() throws Exception
     {
         Map<String,Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
@@ -414,7 +413,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldReturnFalseIfNodePropertyNotRemoved()
+    void shouldReturnFalseIfNodePropertyNotRemoved()
     {
         assertThrows( NoSuchPropertyException.class, () -> {
             Map<String,Object> properties = new HashMap<>();
@@ -426,14 +425,14 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveARelationship() throws Exception
+    void shouldBeAbleToRetrieveARelationship() throws Exception
     {
         long relationship = graphdbHelper.createRelationship( "ENJOYED" );
         assertNotNull( actions.getRelationship( relationship ) );
     }
 
     @Test
-    public void shouldBeAbleToGetPropertiesOnRelationship() throws Exception
+    void shouldBeAbleToGetPropertiesOnRelationship() throws Exception
     {
 
         long relationshipId;
@@ -461,7 +460,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveASinglePropertyFromARelationship() throws Exception
+    void shouldBeAbleToRetrieveASinglePropertyFromARelationship() throws Exception
     {
         Map<String,Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
@@ -480,7 +479,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToDeleteARelationship() throws Exception
+    void shouldBeAbleToDeleteARelationship() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "LOVES" );
 
@@ -496,7 +495,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveRelationshipsFromNode() throws Exception
+    void shouldBeAbleToRetrieveRelationshipsFromNode() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
         graphdbHelper.createRelationship( "LIKES", nodeId, graphdbHelper.createNode() );
@@ -524,7 +523,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldNotGetAnyRelationshipsWhenRetrievingFromNodeWithoutRelationships() throws Exception
+    void shouldNotGetAnyRelationshipsWhenRetrievingFromNodeWithoutRelationships() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
 
@@ -537,7 +536,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToSetRelationshipProperties() throws Exception
+    void shouldBeAbleToSetRelationshipProperties() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "KNOWS" );
         Map<String,Object> properties = new HashMap<>();
@@ -548,7 +547,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToSetRelationshipProperty() throws Exception
+    void shouldBeAbleToSetRelationshipProperty() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "KNOWS" );
         String key = "foo";
@@ -558,7 +557,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldRemoveRelationProperties() throws Exception
+    void shouldRemoveRelationProperties() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
         Map<String,Object> map = new HashMap<>();
@@ -572,7 +571,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldRemoveRelationshipProperty() throws Exception
+    void shouldRemoveRelationshipProperty() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
         Map<String,Object> map = new HashMap<>();
@@ -604,7 +603,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNode()
+    void shouldBeAbleToIndexNode()
     {
         String key = "mykey";
         String value = "myvalue";
@@ -624,7 +623,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToFulltextIndex()
+    void shouldBeAbleToFulltextIndex()
     {
         String key = "key";
         String value = "the value with spaces";
@@ -647,7 +646,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldGetExtendedNodeRepresentationsWhenGettingFromIndex()
+    void shouldGetExtendedNodeRepresentationsWhenGettingFromIndex()
     {
         String key = "mykey3";
         String value = "value";
@@ -675,7 +674,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeFromIndex()
+    void shouldBeAbleToRemoveNodeFromIndex()
     {
         String key = "mykey2";
         String value = "myvalue";
@@ -695,7 +694,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeFromIndexWithoutKeyValue()
+    void shouldBeAbleToRemoveNodeFromIndexWithoutKeyValue()
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
@@ -823,7 +822,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseWithDefaultParameters()
+    void shouldBeAbleToTraverseWithDefaultParameters()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -835,7 +834,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseDepthTwo()
+    void shouldBeAbleToTraverseDepthTwo()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -846,7 +845,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseEverything()
+    void shouldBeAbleToTraverseEverything()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -860,7 +859,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToUseCustomReturnFilter()
+    void shouldBeAbleToUseCustomReturnFilter()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -874,7 +873,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseWithMaxDepthAndPruneEvaluatorCombined()
+    void shouldBeAbleToTraverseWithMaxDepthAndPruneEvaluatorCombined()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -890,7 +889,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetRelationshipsIfSpecified()
+    void shouldBeAbleToGetRelationshipsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -910,7 +909,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsIfSpecified()
+    void shouldBeAbleToGetPathsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -932,7 +931,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetFullPathsIfSpecified()
+    void shouldBeAbleToGetFullPathsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
 
@@ -970,7 +969,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetShortestPaths()
+    void shouldBeAbleToGetShortestPaths()
     {
         long[] nodes = createMoreComplexGraph();
 
@@ -996,7 +995,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsUsingDijkstra()
+    void shouldBeAbleToGetPathsUsingDijkstra()
     {
         long[] nodes = createDijkstraGraph( true );
 
@@ -1017,7 +1016,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsUsingDijkstraWithDefaults()
+    void shouldBeAbleToGetPathsUsingDijkstraWithDefaults()
     {
         long[] nodes = createDijkstraGraph( false );
 
@@ -1039,7 +1038,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldHandleNoFoundPathsCorrectly()
+    void shouldHandleNoFoundPathsCorrectly()
     {
         assertThrows( NotFoundException.class, () -> {
             long[] nodes = createMoreComplexGraph();
@@ -1050,7 +1049,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldAddLabelToNode() throws Exception
+    void shouldAddLabelToNode() throws Exception
     {
         // GIVEN
         long node = actions.createNode( null ).getId();
@@ -1070,7 +1069,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldRemoveLabelFromNode() throws Exception
+    void shouldRemoveLabelFromNode() throws Exception
     {
         // GIVEN
         String labelName = "mylabel";
@@ -1084,7 +1083,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldListExistingLabelsOnNode() throws Exception
+    void shouldListExistingLabelsOnNode() throws Exception
     {
         // GIVEN
         long node = graphdbHelper.createNode();
@@ -1106,7 +1105,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void getNodesWithLabel()
+    void getNodesWithLabel()
     {
         // GIVEN
         String label1 = "first";
@@ -1130,7 +1129,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void getNodesWithLabelAndSeveralPropertiesShouldFail()
+    void getNodesWithLabelAndSeveralPropertiesShouldFail()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // WHEN
@@ -1152,7 +1151,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreateSchemaIndex()
+    void shouldCreateSchemaIndex()
     {
         // GIVEN
         String labelName = "person";
@@ -1171,7 +1170,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldDropSchemaIndex()
+    void shouldDropSchemaIndex()
     {
         // GIVEN
         String labelName = "user";
@@ -1190,7 +1189,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldGetSchemaIndexes()
+    void shouldGetSchemaIndexes()
     {
         // GIVEN
         String labelName = "mylabel";
@@ -1212,7 +1211,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreatePropertyUniquenessConstraint()
+    void shouldCreatePropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "person";
@@ -1231,7 +1230,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldDropPropertyUniquenessConstraint()
+    void shouldDropPropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "user";
@@ -1247,7 +1246,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void dropNonExistentConstraint()
+    void dropNonExistentConstraint()
     {
         // GIVEN
         String labelName = "user";
@@ -1266,7 +1265,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldGetPropertyUniquenessConstraint()
+    void shouldGetPropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "mylabel";
@@ -1289,7 +1288,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldIndexNodeOnlyOnce() throws Exception
+    void shouldIndexNodeOnlyOnce() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
         graphdbHelper.createRelationshipIndex( "myIndex" );
@@ -1320,7 +1319,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldIndexRelationshipOnlyOnce() throws Exception
+    void shouldIndexRelationshipOnlyOnce() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "FOO" );
         graphdbHelper.createRelationshipIndex( "myIndex" );
@@ -1353,7 +1352,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldNotIndexNodeWhenAnotherNodeAlreadyIndexed() throws Exception
+    void shouldNotIndexNodeWhenAnotherNodeAlreadyIndexed() throws Exception
     {
         graphdbHelper.createRelationshipIndex( "myIndex" );
 
@@ -1385,7 +1384,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldNotIndexRelationshipWhenAnotherRelationshipAlreadyIndexed() throws Exception
+    void shouldNotIndexRelationshipWhenAnotherRelationshipAlreadyIndexed() throws Exception
     {
 
         graphdbHelper.createRelationshipIndex( "myIndex" );

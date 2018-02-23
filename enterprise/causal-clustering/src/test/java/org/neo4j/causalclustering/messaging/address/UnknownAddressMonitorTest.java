@@ -33,10 +33,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-public class UnknownAddressMonitorTest
+class UnknownAddressMonitorTest
 {
     @Test
-    public void shouldLogFirstFailure()
+    void shouldLogFirstFailure()
     {
         // given
         Log log = mock( Log.class );
@@ -56,7 +56,7 @@ public class UnknownAddressMonitorTest
     }
 
     @Test
-    public void shouldThrottleLogging()
+    void shouldThrottleLogging()
     {
         // given
         Log log = mock( Log.class );
@@ -75,7 +75,7 @@ public class UnknownAddressMonitorTest
     }
 
     @Test
-    public void shouldResumeLoggingAfterQuietPeriod()
+    void shouldResumeLoggingAfterQuietPeriod()
     {
         // given
         Log log = mock( Log.class );

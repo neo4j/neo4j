@@ -76,7 +76,7 @@ public final class Assert
         assertObjectOrArrayEquals( "", expected, actual );
     }
 
-    public static void assertObjectOrArrayEquals( String message, Object expected, Object actual )
+    private static void assertObjectOrArrayEquals( String message, Object expected, Object actual )
     {
         if ( expected.getClass().isArray() )
         {

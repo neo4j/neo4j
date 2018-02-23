@@ -27,10 +27,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MonitoredTermStateStorageTest
+class MonitoredTermStateStorageTest
 {
     @Test
-    public void shouldMonitorTerm() throws Exception
+    void shouldMonitorTerm() throws Exception
     {
         // given
         Monitors monitors = new Monitors();

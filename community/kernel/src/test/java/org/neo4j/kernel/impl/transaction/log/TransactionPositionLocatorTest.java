@@ -39,7 +39,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TransactionPositionLocatorTest
+class TransactionPositionLocatorTest
 {
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = mock( LogEntryReader.class );
     private final ReadableClosablePositionAwareChannel channel = mock( ReadableClosablePositionAwareChannel.class );
@@ -54,7 +54,7 @@ public class TransactionPositionLocatorTest
     private final LogEntryCommit commit = new LogEntryCommit( txId, System.currentTimeMillis() );
 
     @Test
-    public void shouldFindTransactionLogPosition() throws IOException
+    void shouldFindTransactionLogPosition() throws IOException
     {
         // given
         final PhysicalLogicalTransactionStore.TransactionPositionLocator locator =
@@ -80,7 +80,7 @@ public class TransactionPositionLocatorTest
     }
 
     @Test
-    public void shouldNotFindTransactionLogPosition() throws IOException
+    void shouldNotFindTransactionLogPosition() throws IOException
     {
         // given
         final PhysicalLogicalTransactionStore.TransactionPositionLocator locator =

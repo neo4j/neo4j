@@ -45,7 +45,7 @@ public class DynamicTaskExecutorTest
     private static final Park PARK = new ParkStrategy.Park( 1, MILLISECONDS );
 
     @Test
-    public void shouldExecuteTasksInParallel()
+    void shouldExecuteTasksInParallel()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
@@ -74,7 +74,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldIncrementNumberOfProcessorsWhenRunning()
+    void shouldIncrementNumberOfProcessorsWhenRunning()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 0, 5, PARK,
@@ -104,7 +104,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldDecrementNumberOfProcessorsWhenRunning() throws Exception
+    void shouldDecrementNumberOfProcessorsWhenRunning() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
@@ -138,7 +138,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldExecuteMultipleTasks()
+    void shouldExecuteMultipleTasks()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
@@ -160,7 +160,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldShutDownOnTaskFailure() throws Exception
+    void shouldShutDownOnTaskFailure() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
@@ -178,7 +178,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
+    void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
@@ -210,7 +210,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
+    void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
@@ -242,7 +242,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldLetShutdownCompleteInEventOfPanic() throws Exception
+    void shouldLetShutdownCompleteInEventOfPanic() throws Exception
     {
         // GIVEN
         final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
@@ -278,7 +278,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldRespectMaxProcessors()
+    void shouldRespectMaxProcessors()
     {
         // GIVEN
         int maxProcessors = 4;
@@ -299,7 +299,7 @@ public class DynamicTaskExecutorTest
     }
 
     @RepeatedTest( 10 )
-    public void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
+    void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
@@ -315,7 +315,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldNoticeBadHealthBeforeBeingClosed()
+    void shouldNoticeBadHealthBeforeBeingClosed()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
@@ -371,7 +371,7 @@ public class DynamicTaskExecutorTest
 
     private static class TestTask implements Task<Void>
     {
-        protected volatile int executed;
+        volatile int executed;
 
         @Override
         public void run( Void nothing )

@@ -28,7 +28,7 @@ import javax.ws.rs.core.Response;
 @Path( HelloWorldWebResource.ROOT_PATH )
 public class HelloWorldWebResource
 {
-    public static final String ROOT_PATH = "/greeting";
+    static final String ROOT_PATH = "/greeting";
 
     @Consumes( "text/plain" )
     @Produces( "text/plain" )

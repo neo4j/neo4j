@@ -54,10 +54,10 @@ import static org.neo4j.function.Suppliers.untilTimeExpired;
 public class TransactionAppenderStressTest
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void concurrentTransactionAppendingTest() throws Exception
+    void concurrentTransactionAppendingTest() throws Exception
     {
         int threads = 10;
         File workingDirectory = directory.directory( "work" );

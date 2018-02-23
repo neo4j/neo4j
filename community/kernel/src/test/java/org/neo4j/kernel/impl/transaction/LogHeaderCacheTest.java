@@ -25,10 +25,10 @@ import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LogHeaderCacheTest
+class LogHeaderCacheTest
 {
     @Test
-    public void shouldReturnNullWhenThereIsNoHeaderInTheCache()
+    void shouldReturnNullWhenThereIsNoHeaderInTheCache()
     {
         // given
         final LogHeaderCache cache = new LogHeaderCache( 2 );
@@ -41,7 +41,7 @@ public class LogHeaderCacheTest
     }
 
     @Test
-    public void shouldReturnTheHeaderIfInTheCache()
+    void shouldReturnTheHeaderIfInTheCache()
     {
         // given
         final LogHeaderCache cache = new LogHeaderCache( 2 );
@@ -55,7 +55,7 @@ public class LogHeaderCacheTest
     }
 
     @Test
-    public void shouldClearTheCache()
+    void shouldClearTheCache()
     {
         // given
         final LogHeaderCache cache = new LogHeaderCache( 2 );

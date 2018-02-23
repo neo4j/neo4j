@@ -24,26 +24,27 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
+
+import org.neo4j.logging.Log;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 
-public class Slf4jLogProviderTest
+class Slf4jLogProviderTest
 {
-    Slf4jLogProvider logProvider = new Slf4jLogProvider();
+    private Slf4jLogProvider logProvider = new Slf4jLogProvider();
 
     @BeforeEach
-    public void clearLoggingEventsAccumulator()
+    void clearLoggingEventsAccumulator()
     {
         getAccumulatingAppender().clearEventsList();
     }
 
     @Test
-    public void shouldLogDebug()
+    void shouldLogDebug()
     {
         Log log = logProvider.getLog( getClass() );
 
@@ -53,7 +54,7 @@ public class Slf4jLogProviderTest
     }
 
     @Test
-    public void shouldLogInfo()
+    void shouldLogInfo()
     {
         Log log = logProvider.getLog( getClass() );
 
@@ -63,7 +64,7 @@ public class Slf4jLogProviderTest
     }
 
     @Test
-    public void shouldLogWarning()
+    void shouldLogWarning()
     {
         Log log = logProvider.getLog( getClass() );
 
@@ -73,7 +74,7 @@ public class Slf4jLogProviderTest
     }
 
     @Test
-    public void shouldLogError()
+    void shouldLogError()
     {
         Log log = logProvider.getLog( getClass() );
 

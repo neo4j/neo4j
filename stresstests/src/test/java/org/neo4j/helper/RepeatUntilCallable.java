@@ -26,7 +26,7 @@ public abstract class RepeatUntilCallable implements Runnable
     private BooleanSupplier keepGoing;
     private Runnable onFailure;
 
-    public RepeatUntilCallable( BooleanSupplier keepGoing, Runnable onFailure )
+    protected RepeatUntilCallable( BooleanSupplier keepGoing, Runnable onFailure )
     {
         this.keepGoing = keepGoing;
         this.onFailure = onFailure;

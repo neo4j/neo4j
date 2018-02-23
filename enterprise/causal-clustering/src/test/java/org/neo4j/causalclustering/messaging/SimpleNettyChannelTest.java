@@ -31,12 +31,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.logging.NullLog.getInstance;
 
-public class SimpleNettyChannelTest
+class SimpleNettyChannelTest
 {
     private EmbeddedChannel nettyChannel = new EmbeddedChannel();
 
     @Test
-    public void shouldWriteOnNettyChannel()
+    void shouldWriteOnNettyChannel()
     {
         // given
         SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, getInstance() );
@@ -58,7 +58,7 @@ public class SimpleNettyChannelTest
     }
 
     @Test
-    public void shouldWriteAndFlushOnNettyChannel()
+    void shouldWriteAndFlushOnNettyChannel()
     {
         // given
         SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, getInstance() );
@@ -73,7 +73,7 @@ public class SimpleNettyChannelTest
     }
 
     @Test
-    public void shouldThrowWhenWritingOnDisposedChannel()
+    void shouldThrowWhenWritingOnDisposedChannel()
 {
     assertThrows( IllegalStateException.class, () ->
     {
@@ -90,7 +90,7 @@ public class SimpleNettyChannelTest
 }
 
     @Test
-    public void shouldThrowWhenWriteAndFlushingOnDisposedChannel()
+    void shouldThrowWhenWriteAndFlushingOnDisposedChannel()
     {
         assertThrows( IllegalStateException.class, () -> {
             // given

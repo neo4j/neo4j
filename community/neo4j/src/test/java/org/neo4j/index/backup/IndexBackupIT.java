@@ -55,21 +55,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( {RandomExtension.class, EmbeddedDatabaseExtension.class} )
-public class IndexBackupIT
+class IndexBackupIT
 {
     private static final String PROPERTY_PREFIX = "property";
     private static final int NUMBER_OF_INDEXES = 10;
 
     @Resource
-    public RandomRule randomRule;
+    private RandomRule randomRule;
     @Resource
-    public EmbeddedDatabaseRule database;
+    private EmbeddedDatabaseRule database;
     private CheckPointer checkPointer;
     private IndexingService indexingService;
     private FileSystemAbstraction fileSystem;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         checkPointer = resolveDependency( CheckPointer.class );
         indexingService = resolveDependency( IndexingService.class );
@@ -77,7 +77,7 @@ public class IndexBackupIT
     }
 
     @Test
-    public void concurrentIndexSnapshotUseDifferentSnapshots() throws Exception
+    void concurrentIndexSnapshotUseDifferentSnapshots() throws Exception
     {
         Label label = Label.label( "testLabel" );
         prepareDatabase( label );
@@ -113,7 +113,7 @@ public class IndexBackupIT
     }
 
     @Test
-    public void snapshotFilesDeletedWhenSnapshotReleased() throws IOException
+    void snapshotFilesDeletedWhenSnapshotReleased() throws IOException
     {
         Label label = Label.label( "testLabel" );
         prepareDatabase( label );

@@ -44,10 +44,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
-public class MasterEpochTest
+class MasterEpochTest
 {
     @Test
-    public void shouldFailSubsequentRequestsAfterAllocateIdsAfterMasterSwitch() throws Throwable
+    void shouldFailSubsequentRequestsAfterAllocateIdsAfterMasterSwitch() throws Throwable
     {
         // GIVEN
         SPI spi = MasterImplTest.mockedSpi();

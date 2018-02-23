@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UriPathWildcardMatcherTest
+class UriPathWildcardMatcherTest
 {
     @Test
-    public void shouldFailWithoutAsteriskAtStart()
+    void shouldFailWithoutAsteriskAtStart()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path" );
 
@@ -35,7 +35,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldFailWithoutAsteriskAtEnd()
+    void shouldFailWithoutAsteriskAtEnd()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/and/some/more" );
 
@@ -43,7 +43,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchAsteriskAtStart()
+    void shouldMatchAsteriskAtStart()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "*/some/uri/path" );
 
@@ -52,7 +52,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchAsteriskAtEnd()
+    void shouldMatchAsteriskAtEnd()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/*" );
 
@@ -60,7 +60,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchAsteriskInMiddle()
+    void shouldMatchAsteriskInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/*/and/some/more" );
 
@@ -68,7 +68,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchMultipleAsterisksInMiddle()
+    void shouldMatchMultipleAsterisksInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/*/and/some/more/*/and/a/final/bit" );
 
@@ -77,7 +77,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchMultipleAsterisksAtStartAndInMiddle()
+    void shouldMatchMultipleAsterisksAtStartAndInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher(
                 "*/some/uri/path/*/and/some/more/*/and/a/final/bit" );
@@ -89,7 +89,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchMultipleAsterisksAtEndAndInMiddle()
+    void shouldMatchMultipleAsterisksAtEndAndInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher(
                 "/some/uri/path/*/and/some/more/*/and/a/final/bit/*" );
@@ -101,7 +101,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchMultipleAsterisksAtStartAndEndAndInMiddle()
+    void shouldMatchMultipleAsterisksAtStartAndEndAndInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher(
                 "*/some/uri/path/*/and/some/more/*/and/a/final/bit/*" );
@@ -112,7 +112,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchMultipleSimpleString()
+    void shouldMatchMultipleSimpleString()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "str" );
 
@@ -120,7 +120,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldMatchMultipleSimpleStringWithALeadingWildcard()
+    void shouldMatchMultipleSimpleStringWithALeadingWildcard()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "*str" );
 
@@ -128,7 +128,7 @@ public class UriPathWildcardMatcherTest
     }
 
     @Test
-    public void shouldFailToMatchMultipleSimpleStringWithATrailingWildcard()
+    void shouldFailToMatchMultipleSimpleStringWithATrailingWildcard()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "str*" );
 

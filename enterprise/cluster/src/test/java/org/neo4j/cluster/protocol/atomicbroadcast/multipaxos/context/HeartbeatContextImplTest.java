@@ -42,10 +42,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ClusterProtocolAtomicbroadcastTestUtil.ids;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ClusterProtocolAtomicbroadcastTestUtil.members;
 
-public class HeartbeatContextImplTest
+class HeartbeatContextImplTest
 {
     @Test
-    public void shouldFailAndAliveBothNotifyHeartbeatListenerInDelayedDirectExecutor()
+    void shouldFailAndAliveBothNotifyHeartbeatListenerInDelayedDirectExecutor()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -82,7 +82,7 @@ public class HeartbeatContextImplTest
     }
 
     @Test
-    public void shouldFailAllInstancesIfAllOtherInstancesAreSuspected()
+    void shouldFailAllInstancesIfAllOtherInstancesAreSuspected()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -149,7 +149,7 @@ public class HeartbeatContextImplTest
     }
 
     @Test
-    public void majorityOfNonSuspectedInstancesShouldBeEnoughToMarkAnInstanceAsFailed()
+    void majorityOfNonSuspectedInstancesShouldBeEnoughToMarkAnInstanceAsFailed()
     {
         // Given
         InstanceId me = new InstanceId( 1 );

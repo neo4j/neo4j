@@ -26,10 +26,10 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class UTF8EncoderTest
+class UTF8EncoderTest
 {
     @Test
-    public void shouldEncodeDecode()
+    void shouldEncodeDecode()
     {
         assertEncodes( "" );
         assertEncodes( "a" );

@@ -29,7 +29,7 @@ public class BufferedChannelOutput implements PackOutput
     private final ByteBuffer buffer;
     private WritableByteChannel channel;
 
-    public BufferedChannelOutput( int bufferSize )
+    private BufferedChannelOutput( int bufferSize )
     {
         this.buffer = ByteBuffer.allocate( bufferSize ).order( ByteOrder.BIG_ENDIAN );
     }
@@ -45,7 +45,7 @@ public class BufferedChannelOutput implements PackOutput
         reset( channel );
     }
 
-    public void reset( WritableByteChannel channel )
+    private void reset( WritableByteChannel channel )
     {
         this.channel = channel;
     }

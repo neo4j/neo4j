@@ -30,11 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ScoreEntityIteratorTest
+class ScoreEntityIteratorTest
 {
 
     @Test
-    public void concatShouldReturnOrderedResults()
+    void concatShouldReturnOrderedResults()
     {
         ScoreEntityIterator one = iteratorOf( new ScoreEntry[]{e( 3, 10 ), e( 10, 3 ), e( 12, 1 )} );
         ScoreEntityIterator two = iteratorOf( new ScoreEntry[]{e( 1, 12 ), e( 5, 8 ), e( 7, 6 ), e( 8, 5 ), e( 11, 2 )} );
@@ -58,7 +58,7 @@ public class ScoreEntityIteratorTest
     }
 
     @Test
-    public void concatShouldHandleEmptyIterators()
+    void concatShouldHandleEmptyIterators()
     {
         ScoreEntityIterator one = iteratorOf( new ScoreEntry[]{} );
         ScoreEntityIterator two = iteratorOf( new ScoreEntry[]{e( 1, 5 ), e( 2, 4 ), e( 3, 3 ), e( 4, 2 ), e( 5, 1 )} );
@@ -77,7 +77,7 @@ public class ScoreEntityIteratorTest
     }
 
     @Test
-    public void concatShouldHandleAllEmptyIterators()
+    void concatShouldHandleAllEmptyIterators()
     {
         ScoreEntityIterator one = iteratorOf( new ScoreEntry[]{} );
         ScoreEntityIterator two = iteratorOf( new ScoreEntry[]{} );

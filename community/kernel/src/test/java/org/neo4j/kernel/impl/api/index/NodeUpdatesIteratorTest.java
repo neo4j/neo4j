@@ -34,11 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class NodeUpdatesIteratorTest
+class NodeUpdatesIteratorTest
 {
 
     @Test
-    public void iterateOverEmptyNodeIds()
+    void iterateOverEmptyNodeIds()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         PrimitiveLongIterator emptyIterator = PrimitiveLongCollections.emptyIterator();
@@ -47,7 +47,7 @@ public class NodeUpdatesIteratorTest
     }
 
     @Test
-    public void iterateOverUpdatesWithNext()
+    void iterateOverUpdatesWithNext()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         NodeUpdates nodeUpdates1 = NodeUpdates.forNode( 1 ).build();
@@ -67,7 +67,7 @@ public class NodeUpdatesIteratorTest
     }
 
     @Test
-    public void iterateOverUpdatesWithHasNext()
+    void iterateOverUpdatesWithHasNext()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         NodeUpdates nodeUpdates1 = NodeUpdates.forNode( 1 ).build();

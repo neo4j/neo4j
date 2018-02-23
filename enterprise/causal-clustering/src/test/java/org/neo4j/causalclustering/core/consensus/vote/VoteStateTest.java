@@ -19,19 +19,19 @@
  */
 package org.neo4j.causalclustering.core.consensus.vote;
 
-import java.util.UUID;
-
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class VoteStateTest
+class VoteStateTest
 {
     @Test
-    public void shouldStoreVote()
+    void shouldStoreVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -45,7 +45,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldStartWithNoVote()
+    void shouldStartWithNoVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -55,7 +55,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldUpdateVote()
+    void shouldUpdateVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -71,7 +71,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldClearVote()
+    void shouldClearVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -87,7 +87,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldNotUpdateVoteForSameTerm()
+    void shouldNotUpdateVoteForSameTerm()
     {
         // given
         VoteState voteState = new VoteState();
@@ -109,7 +109,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldNotClearVoteForSameTerm()
+    void shouldNotClearVoteForSameTerm()
     {
         // given
         VoteState voteState = new VoteState();
@@ -130,7 +130,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldReportNoUpdateWhenVoteStateUnchanged()
+    void shouldReportNoUpdateWhenVoteStateUnchanged()
     {
         // given
         VoteState voteState = new VoteState();

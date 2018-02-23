@@ -108,7 +108,8 @@ public class MetricsTestHelper
         return readTimerDoubleValueAndAssert( metricFile, ( a, b ) -> true, field );
     }
 
-    static double readTimerDoubleValueAndAssert( File metricFile, BiPredicate<Double,Double> assumption, TimerField field )
+    private static double readTimerDoubleValueAndAssert( File metricFile, BiPredicate<Double,Double> assumption,
+            TimerField field )
             throws IOException, InterruptedException
     {
         return readValueAndAssert( metricFile, 0d, TimerField.T, field, Double::parseDouble, assumption );

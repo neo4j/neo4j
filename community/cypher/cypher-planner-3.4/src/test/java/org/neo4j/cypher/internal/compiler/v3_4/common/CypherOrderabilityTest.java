@@ -40,7 +40,7 @@ public class CypherOrderabilityTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    public static Object[] values = new Object[]{
+    private static Object[] values = new Object[]{
             // MAP
             new HashMap<Long,Long>(),
 
@@ -134,7 +134,7 @@ public class CypherOrderabilityTest
     };
 
     @Test
-    public void shouldOrderValuesCorrectly()
+    void shouldOrderValuesCorrectly()
     {
         for ( int i = 2; i < values.length; i++ )
         {

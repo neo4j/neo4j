@@ -25,18 +25,18 @@ import java.util.HashMap;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.virtual.RelationshipReference;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipReference;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -47,10 +47,10 @@ import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class PrettyPrinterTest
+class PrettyPrinterTest
 {
     @Test
-    public void shouldHandleNodeReference()
+    void shouldHandleNodeReference()
     {
         // Given
         NodeReference node = VirtualValues.node( 42L );
@@ -64,7 +64,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleNodeValue()
+    void shouldHandleNodeValue()
     {
         // Given
         NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray( "L1", "L2", "L3" ),
@@ -79,7 +79,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleNodeValueWithoutLabels()
+    void shouldHandleNodeValueWithoutLabels()
     {
         // Given
         NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray(),
@@ -94,7 +94,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleNodeValueWithoutProperties()
+    void shouldHandleNodeValueWithoutProperties()
     {
         // Given
         NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray( "L1", "L2", "L3" ), EMPTY_MAP );
@@ -108,7 +108,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleNodeValueWithoutLabelsNorProperties()
+    void shouldHandleNodeValueWithoutLabelsNorProperties()
     {
         // Given
         NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray(), EMPTY_MAP );
@@ -122,7 +122,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleEdgeReference()
+    void shouldHandleEdgeReference()
     {
         // Given
         RelationshipReference rel = VirtualValues.relationship( 42L );
@@ -136,7 +136,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleEdgeValue()
+    void shouldHandleEdgeValue()
     {
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
@@ -153,7 +153,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleEdgeValueWithoutProperties()
+    void shouldHandleEdgeValueWithoutProperties()
     {
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
@@ -168,7 +168,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleEdgeValueWithoutLabelsNorProperties()
+    void shouldHandleEdgeValueWithoutLabelsNorProperties()
     {
         // Given
         NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray(), EMPTY_MAP );
@@ -182,7 +182,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandlePaths()
+    void shouldHandlePaths()
     {
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
@@ -199,7 +199,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleMaps()
+    void shouldHandleMaps()
     {
         // Given
         PrettyPrinter printer = new PrettyPrinter();
@@ -213,7 +213,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleLists()
+    void shouldHandleLists()
     {
         // Given
         PrettyPrinter printer = new PrettyPrinter();
@@ -227,7 +227,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleArrays()
+    void shouldHandleArrays()
     {
         // Given
         PrettyPrinter printer = new PrettyPrinter();
@@ -241,7 +241,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleBooleans()
+    void shouldHandleBooleans()
     {
         // Given
         Value array = Values.booleanArray( new boolean[]{true, false, true} );
@@ -255,7 +255,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleByteArrays()
+    void shouldHandleByteArrays()
     {
         // Given
         Value array = Values.byteArray( new byte[]{2, 3, 42} );
@@ -269,7 +269,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandleNull()
+    void shouldHandleNull()
     {
         // Given
         PrettyPrinter printer = new PrettyPrinter();
@@ -282,7 +282,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldHandlePoints()
+    void shouldHandlePoints()
     {
         // Given
         PointValue pointValue = Values.pointValue( CoordinateReferenceSystem.Cartesian, 11d, 12d );
@@ -299,7 +299,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void shouldBeAbleToUseAnyQuoteMark()
+    void shouldBeAbleToUseAnyQuoteMark()
     {
         // Given
         TextValue hello = stringValue( "(ツ)" );

@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 @ExtendWith( RandomExtension.class )
-public class GapFreeAllEntriesLabelScanReaderTest
+class GapFreeAllEntriesLabelScanReaderTest
 {
     private static final int EMPTY_RANGE = 0;
     private static final int NON_EMPTY_RANGE = 0b10101; // 0, 2, 4
@@ -47,10 +47,10 @@ public class GapFreeAllEntriesLabelScanReaderTest
     private static final long[] LABEL_IDS = new long[] {1};
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldFillGapInBeginning()
+    void shouldFillGapInBeginning()
     {
         // given
         int[] ranges = array( EMPTY_RANGE, EMPTY_RANGE, NON_EMPTY_RANGE );
@@ -64,7 +64,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillGapInEnd()
+    void shouldFillGapInEnd()
     {
         // given
         int[] ranges = array( NON_EMPTY_RANGE, EMPTY_RANGE, EMPTY_RANGE );
@@ -78,7 +78,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillGapInMiddle()
+    void shouldFillGapInMiddle()
     {
         // given
         int[] ranges = array( EMPTY_RANGE, NON_EMPTY_RANGE, EMPTY_RANGE );
@@ -92,7 +92,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillRandomGaps()
+    void shouldFillRandomGaps()
     {
         // given
         int numberOfRanges = random.intBetween( 50, 100 );

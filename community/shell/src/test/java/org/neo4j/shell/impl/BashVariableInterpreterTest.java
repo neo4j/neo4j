@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BashVariableInterpreterTest
+class BashVariableInterpreterTest
 {
     @Test
-    public void shouldInterpretDate() throws Exception
+    void shouldInterpretDate() throws Exception
     {
         // WHEN
         String interpreted = interpreter.interpret( "Date:\\d", server, session );
@@ -46,7 +46,7 @@ public class BashVariableInterpreterTest
     }
 
     @Test
-    public void shouldInterpretTime() throws Exception
+    void shouldInterpretTime() throws Exception
     {
         // WHEN
         String interpreted = interpreter.interpret( "Time:\\t", server, session );
@@ -57,7 +57,7 @@ public class BashVariableInterpreterTest
     }
 
     @Test
-    public void customInterpreter()
+    void customInterpreter()
     {
         // GIVEN
         interpreter.addReplacer( "test", ( server, session ) -> "Hello" );
@@ -74,7 +74,7 @@ public class BashVariableInterpreterTest
     private ShellServer server;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         server = mock( ShellServer.class );
         when( server.getName() ).thenReturn( "Server" );

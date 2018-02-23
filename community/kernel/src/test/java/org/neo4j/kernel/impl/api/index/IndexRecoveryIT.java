@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -42,7 +42,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -66,8 +65,8 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -84,7 +83,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class IndexRecoveryIT
 {
     @Test
-    public void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws Exception
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws Exception
     {
         // Given
         startDb();
@@ -121,7 +120,7 @@ public class IndexRecoveryIT
     }
 
     @Test
-    public void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws Exception
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws Exception
     {
         // Given
         startDb();
@@ -159,7 +158,7 @@ public class IndexRecoveryIT
     }
 
     @Test
-    public void shouldBeAbleToRecoverAndUpdateOnlineIndex() throws Exception
+    void shouldBeAbleToRecoverAndUpdateOnlineIndex() throws Exception
     {
         // Given
         startDb();
@@ -204,7 +203,7 @@ public class IndexRecoveryIT
     }
 
     @Test
-    public void shouldKeepFailedIndexesAsFailedAfterRestart() throws Exception
+    void shouldKeepFailedIndexesAsFailedAfterRestart() throws Exception
     {
         // Given
         when( mockedIndexProvider
@@ -243,7 +242,7 @@ public class IndexRecoveryIT
     private final Label myLabel = label( "MyLabel" );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( mockedIndexProvider.getProviderDescriptor() )
                 .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
@@ -292,7 +291,7 @@ public class IndexRecoveryIT
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         if ( db != null )
         {
@@ -352,7 +351,7 @@ public class IndexRecoveryIT
         }
     }
 
-    public static class GatheringIndexWriter extends IndexAccessor.Adapter
+    static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
         private final Set<IndexEntryUpdate<?>> regularUpdates = new HashSet<>();
         private final Set<IndexEntryUpdate<?>> batchedUpdates = new HashSet<>();

@@ -178,7 +178,7 @@ public class StandardRecordFormat extends RecordFormat
             return format( type, file, recordId, fill1, fill2 );
         }
 
-        public String format( byte type, File file, int recordId, short fill1, long fill2 )
+        String format( byte type, File file, int recordId, short fill1, long fill2 )
         {
             return String.format(
                     "Record%s[file=%s, recordId=%s; %04x %016x]",

@@ -32,26 +32,26 @@ import org.neo4j.kernel.impl.util.watcher.FileWatcherLifecycleAdapter;
 
 import static org.mockito.Mockito.verify;
 
-public class FileWatcherLifecycleAdapterTest
+class FileWatcherLifecycleAdapterTest
 {
 
     private static Neo4jJobScheduler jobScheduler;
     private FileWatcher fileWatcher = Mockito.mock( FileWatcher.class );
 
     @BeforeAll
-    public static void setUp()
+    static void setUp()
     {
         jobScheduler = new Neo4jJobScheduler();
     }
 
     @AfterAll
-    public static void tearDown()
+    static void tearDown()
     {
         jobScheduler.shutdown();
     }
 
     @Test
-    public void startMonitoringWhenLifecycleStarting() throws Throwable
+    void startMonitoringWhenLifecycleStarting() throws Throwable
     {
         CountDownLatch latch = new CountDownLatch( 1 );
         FileWatcher watcher = new TestFileWatcher( latch );
@@ -63,7 +63,7 @@ public class FileWatcherLifecycleAdapterTest
     }
 
     @Test
-    public void stopMonitoringWhenLifecycleStops() throws Throwable
+    void stopMonitoringWhenLifecycleStops() throws Throwable
     {
         FileWatcherLifecycleAdapter watcherAdapter = new FileWatcherLifecycleAdapter( jobScheduler, fileWatcher );
         watcherAdapter.init();
@@ -74,7 +74,7 @@ public class FileWatcherLifecycleAdapterTest
     }
 
     @Test
-    public void closeFileWatcherOnShutdown() throws Throwable
+    void closeFileWatcherOnShutdown() throws Throwable
     {
         FileWatcherLifecycleAdapter watcherAdapter = new FileWatcherLifecycleAdapter( jobScheduler, fileWatcher );
         watcherAdapter.init();

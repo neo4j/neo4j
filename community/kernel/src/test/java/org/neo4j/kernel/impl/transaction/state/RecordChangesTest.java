@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class RecordChangesTest
+class RecordChangesTest
 {
     private final RecordAccess.Loader<Object, Object> loader = new RecordAccess.Loader<Object, Object>()
     {
@@ -56,7 +56,7 @@ public class RecordChangesTest
     };
 
     @Test
-    public void shouldCountChanges()
+    void shouldCountChanges()
     {
         // Given
         RecordChanges<Object, Object> change = new RecordChanges<>( loader, new IntCounter() );

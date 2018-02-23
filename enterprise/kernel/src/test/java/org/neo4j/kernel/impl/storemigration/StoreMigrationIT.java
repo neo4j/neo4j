@@ -81,7 +81,7 @@ public class StoreMigrationIT
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory( fileSystemRule.get() );
 
-    public static final String CREATE_QUERY = readQuery();
+    private static final String CREATE_QUERY = readQuery();
 
     private static String readQuery()
     {
@@ -98,8 +98,8 @@ public class StoreMigrationIT
         return result;
     }
 
-    protected final RecordFormats from;
-    protected final RecordFormats to;
+    private final RecordFormats from;
+    private final RecordFormats to;
 
     @Parameterized.Parameters( name = "Migrate: {0}->{1}" )
     public static Iterable<Object[]> data() throws IOException
@@ -299,13 +299,13 @@ public class StoreMigrationIT
         }
     }
 
-    protected <T> Stream<T> stream( Iterable<T> iterable )
+    private <T> Stream<T> stream( Iterable<T> iterable )
     {
         return StreamSupport.stream( iterable.spliterator(), false );
     }
 
     //This method is overridden by a blockdevice test.
-    protected ConsistencyCheckService.Result runConsistencyChecker( File db, FileSystemAbstraction fs,
+    private ConsistencyCheckService.Result runConsistencyChecker( File db, FileSystemAbstraction fs,
             ConsistencyCheckService consistencyCheckService, String storeVersion )
             throws ConsistencyCheckIncompleteException
     {
@@ -315,7 +315,7 @@ public class StoreMigrationIT
     }
 
     //This method is overridden by a blockdevice test.
-    protected GraphDatabaseService getGraphDatabaseService( File db, String storeVersion )
+    private GraphDatabaseService getGraphDatabaseService( File db, String storeVersion )
     {
         return new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( db )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )

@@ -127,12 +127,12 @@ public class ProcessorAssignmentStrategies
     {
         private final Map<String,Map<String,Integer>> processors = new HashMap<>();
 
-        protected AbstractAssigner( Clock clock, long time, TimeUnit unit )
+        AbstractAssigner( Clock clock, long time, TimeUnit unit )
         {
             super( clock, time, unit );
         }
 
-        protected void registerProcessorCount( StageExecution execution )
+        void registerProcessorCount( StageExecution execution )
         {
             Map<String,Integer> byStage = new HashMap<>();
             processors.put( execution.name(), byStage );

@@ -38,11 +38,11 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Collections.unmodifiableMap;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -121,7 +121,7 @@ public class HTTP
             return withHeaders( stringMap( kvPairs ) );
         }
 
-        public Builder withHeaders( Map<String, String> newHeaders )
+        Builder withHeaders( Map<String,String> newHeaders )
         {
             HashMap<String, String> combined = new HashMap<>();
             combined.putAll( headers );
@@ -129,7 +129,7 @@ public class HTTP
             return new Builder( combined, baseUri );
         }
 
-        public Builder withBaseUri( String baseUri )
+        Builder withBaseUri( String baseUri )
         {
             return new Builder( headers, baseUri );
         }
@@ -139,7 +139,7 @@ public class HTTP
             return request( "POST", uri );
         }
 
-        public Response POST( String uri, Object payload )
+        Response POST( String uri, Object payload )
         {
             return request( "POST", uri, payload );
         }
@@ -227,7 +227,7 @@ public class HTTP
         private final ClientResponse response;
         private final String entity;
 
-        public Response( ClientResponse response )
+        Response( ClientResponse response )
         {
             this.response = sanityCheck( response );
             this.entity = response.getEntity( String.class );

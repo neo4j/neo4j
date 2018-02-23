@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public class PermissionsFixture
+class PermissionsFixture
 {
     public static Permissions noPermissions()
     {

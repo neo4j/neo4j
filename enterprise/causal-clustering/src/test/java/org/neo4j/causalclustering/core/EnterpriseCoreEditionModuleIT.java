@@ -40,9 +40,9 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.causalclustering.ClusterRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EnterpriseCoreEditionModuleIT
@@ -51,7 +51,7 @@ public class EnterpriseCoreEditionModuleIT
     public ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void createBufferedIdComponentsByDefault() throws Exception
+    void createBufferedIdComponentsByDefault() throws Exception
     {
         Cluster cluster = clusterRule.startCluster();
         CoreClusterMember leader = cluster.awaitLeader();
@@ -65,7 +65,7 @@ public class EnterpriseCoreEditionModuleIT
     }
 
     @Test
-    public void fileWatcherFileNameFilter()
+    void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = EnterpriseCoreEditionModule.fileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );

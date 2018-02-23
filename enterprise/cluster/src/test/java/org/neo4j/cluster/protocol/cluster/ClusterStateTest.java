@@ -54,10 +54,10 @@ import static org.neo4j.cluster.protocol.cluster.ClusterMessage.configurationReq
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.configurationTimeout;
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.joinDenied;
 
-public class ClusterStateTest
+class ClusterStateTest
 {
     @Test
-    public void joinDeniedResponseShouldContainRespondersConfiguration() throws Throwable
+    void joinDeniedResponseShouldContainRespondersConfiguration() throws Throwable
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
@@ -81,7 +81,7 @@ public class ClusterStateTest
     }
 
     @Test
-    public void joinDeniedHandlingShouldKeepResponseConfiguration() throws Throwable
+    void joinDeniedHandlingShouldKeepResponseConfiguration() throws Throwable
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
@@ -99,7 +99,7 @@ public class ClusterStateTest
     }
 
     @Test
-    public void joinDeniedTimeoutShouldBeHandledWithExceptionIncludingConfiguration() throws Throwable
+    void joinDeniedTimeoutShouldBeHandledWithExceptionIncludingConfiguration() throws Throwable
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
@@ -122,7 +122,7 @@ public class ClusterStateTest
     }
 
     @Test
-    public void shouldNotDenyJoinToInstanceThatRejoinsBeforeTimingOut() throws Throwable
+    void shouldNotDenyJoinToInstanceThatRejoinsBeforeTimingOut() throws Throwable
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
@@ -145,7 +145,7 @@ public class ClusterStateTest
     }
 
     @Test
-    public void discoveredInstancesShouldBeOnlyOnesWeHaveContactedDirectly() throws Throwable
+    void discoveredInstancesShouldBeOnlyOnesWeHaveContactedDirectly() throws Throwable
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
@@ -179,7 +179,7 @@ public class ClusterStateTest
     }
 
     @Test
-    public void discoveredInstancesShouldNotFilterByDefault() throws Throwable
+    void discoveredInstancesShouldNotFilterByDefault() throws Throwable
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
@@ -217,7 +217,7 @@ public class ClusterStateTest
     }
 
     @Test
-    public void shouldSetDiscoveryHeaderProperly() throws Throwable
+    void shouldSetDiscoveryHeaderProperly() throws Throwable
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
@@ -285,7 +285,7 @@ public class ClusterStateTest
     {
         private Map<InstanceId, URI> members;
 
-        public ConfigurationResponseStateMatcher withMembers( Map<InstanceId, URI> members )
+        ConfigurationResponseStateMatcher withMembers( Map<InstanceId,URI> members )
         {
             this.members = members;
             return this;

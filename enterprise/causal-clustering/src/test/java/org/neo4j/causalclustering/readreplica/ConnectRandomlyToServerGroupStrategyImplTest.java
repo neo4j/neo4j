@@ -46,10 +46,10 @@ import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerSt
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.fakeTopologyService;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
 
-public class ConnectRandomlyToServerGroupStrategyImplTest
+class ConnectRandomlyToServerGroupStrategyImplTest
 {
     @Test
-    public void shouldStayWithinGivenSingleServerGroup()
+    void shouldStayWithinGivenSingleServerGroup()
     {
         // given
         final List<String> myServerGroup = Collections.singletonList( "my_server_group" );
@@ -67,7 +67,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
     }
 
     @Test
-    public void shouldSelectAnyFromMultipleServerGroups()
+    void shouldSelectAnyFromMultipleServerGroups()
     {
         // given
         final List<String> myServerGroups = Arrays.asList( "a", "b", "c" );
@@ -85,7 +85,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
     }
 
     @Test
-    public void shouldReturnEmptyIfNoGroupsInConfig()
+    void shouldReturnEmptyIfNoGroupsInConfig()
     {
         // given
         MemberId[] myGroupMemberIds = memberIDs( 10 );
@@ -101,7 +101,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
     }
 
     @Test
-    public void shouldReturnEmptyIfGroupOnlyContainsSelf()
+    void shouldReturnEmptyIfGroupOnlyContainsSelf()
     {
         // given
         final List<String> myServerGroup = Collections.singletonList( "group" );
@@ -124,7 +124,8 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
                 fakeReadReplicaTopology( myServerGroups, myGroupMemberIds, unwanted, 10 ) );
     }
 
-    static ReadReplicaTopology fakeReadReplicaTopology( List<String> wanted, MemberId[] memberIds, List<String> unwanted, int unwantedNumber )
+    private static ReadReplicaTopology fakeReadReplicaTopology( List<String> wanted, MemberId[] memberIds,
+            List<String> unwanted, int unwantedNumber )
     {
         Map<MemberId,ReadReplicaInfo> readReplicas = new HashMap<>();
 

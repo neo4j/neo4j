@@ -41,10 +41,10 @@ import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 
-public class ValuesTest
+class ValuesTest
 {
     @Test
-    public void shouldBeEqualToItself()
+    void shouldBeEqualToItself()
     {
         assertEqual( booleanValue( false ), booleanValue( false ) );
         assertEqual( byteValue( (byte)0 ), byteValue( (byte)0 ) );

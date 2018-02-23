@@ -803,7 +803,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     // -- Set Up: Transaction handling
 
-    public void transaction( Action... actions )
+    private void transaction( Action... actions )
     {
         int progress = 0;
         try ( Transaction tx = db.beginTx() )
@@ -831,7 +831,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         private final String name;
 
-        protected Action( String name )
+        Action( String name )
         {
             this.name = name;
         }

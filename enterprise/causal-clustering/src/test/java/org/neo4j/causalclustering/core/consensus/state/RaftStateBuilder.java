@@ -25,18 +25,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
-import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
-import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
-import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
+import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.causalclustering.core.consensus.term.TermState;
 import org.neo4j.causalclustering.core.consensus.vote.VoteState;
+import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
+import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
@@ -50,19 +50,19 @@ public class RaftStateBuilder
         return new RaftStateBuilder();
     }
 
-    public MemberId myself;
+    private MemberId myself;
     private Set<MemberId> votingMembers = emptySet();
     private Set<MemberId> replicationMembers = emptySet();
-    public long term;
-    public MemberId leader;
-    public long leaderCommit = -1;
+    private long term;
+    private MemberId leader;
+    private long leaderCommit = -1;
     private MemberId votedFor;
     private RaftLog entryLog = new InMemoryRaftLog();
     private boolean supportPreVoting;
     private Set<MemberId> votesForMe = emptySet();
     private Set<MemberId> preVotesForMe = emptySet();
     private long lastLogIndexBeforeWeBecameLeader = -1;
-    public long commitIndex = -1;
+    private long commitIndex = -1;
     private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     private boolean isPreElection;
     private boolean refusesToBeLeader;

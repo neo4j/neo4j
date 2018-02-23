@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
@@ -86,7 +85,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
 
-public class NeoStoreTransactionApplierTest
+class NeoStoreTransactionApplierTest
 {
     private final NeoStores neoStores = mock( NeoStores.class );
     private final IndexingService indexingService = mock( IndexingService.class );
@@ -116,7 +115,7 @@ public class NeoStoreTransactionApplierTest
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
@@ -138,7 +137,7 @@ public class NeoStoreTransactionApplierTest
     // NODE COMMAND
 
     @Test
-    public void shouldApplyNodeCommandToTheStore() throws Exception
+    void shouldApplyNodeCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -160,7 +159,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyNodeCommandToTheStoreAndInvalidateTheCache() throws Exception
+    void shouldApplyNodeCommandToTheStoreAndInvalidateTheCache() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -182,7 +181,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyNodeCommandToTheStoreInRecoveryMode() throws Exception
+    void shouldApplyNodeCommandToTheStoreInRecoveryMode() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -206,7 +205,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldInvalidateTheCacheWhenTheNodeBecomesDense() throws Exception
+    void shouldInvalidateTheCacheWhenTheNodeBecomesDense() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -233,7 +232,7 @@ public class NeoStoreTransactionApplierTest
     // RELATIONSHIP COMMAND
 
     @Test
-    public void shouldApplyRelationshipCommandToTheStore() throws Exception
+    void shouldApplyRelationshipCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -252,7 +251,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyRelationshipCommandToTheStoreAndInvalidateTheCache() throws Exception
+    void shouldApplyRelationshipCommandToTheStoreAndInvalidateTheCache() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -272,7 +271,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyRelationshipCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyRelationshipCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -294,7 +293,7 @@ public class NeoStoreTransactionApplierTest
     // PROPERTY COMMAND
 
     @Test
-    public void shouldApplyNodePropertyCommandToTheStore() throws Exception
+    void shouldApplyNodePropertyCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -314,7 +313,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyNodePropertyCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyNodePropertyCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -335,7 +334,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyRelPropertyCommandToTheStore() throws Exception
+    void shouldApplyRelPropertyCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -354,7 +353,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyRelPropertyCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyRelPropertyCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -376,7 +375,7 @@ public class NeoStoreTransactionApplierTest
     // RELATIONSHIP GROUP COMMAND
 
     @Test
-    public void shouldApplyRelationshipGroupCommandToTheStore() throws Exception
+    void shouldApplyRelationshipGroupCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -393,7 +392,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyRelationshipGroupCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyRelationshipGroupCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -414,7 +413,7 @@ public class NeoStoreTransactionApplierTest
     // RELATIONSHIP TYPE TOKEN COMMAND
 
     @Test
-    public void shouldApplyRelationshipTypeTokenCommandToTheStore() throws Exception
+    void shouldApplyRelationshipTypeTokenCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -434,7 +433,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyRelationshipTypeTokenCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyRelationshipTypeTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -462,7 +461,7 @@ public class NeoStoreTransactionApplierTest
     // LABEL TOKEN COMMAND
 
     @Test
-    public void shouldApplyLabelTokenCommandToTheStore() throws Exception
+    void shouldApplyLabelTokenCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -482,7 +481,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyLabelTokenCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyLabelTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -509,7 +508,7 @@ public class NeoStoreTransactionApplierTest
     // PROPERTY KEY TOKEN COMMAND
 
     @Test
-    public void shouldApplyPropertyKeyTokenCommandToTheStore() throws Exception
+    void shouldApplyPropertyKeyTokenCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -529,7 +528,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyPropertyKeyTokenCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyPropertyKeyTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -555,7 +554,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStore() throws Exception
+    void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
@@ -578,7 +577,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
@@ -602,7 +601,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStore() throws Exception
+    void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
@@ -625,7 +624,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
@@ -649,7 +648,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem()
+    void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem()
             throws IndexNotFoundKernelException,
             IndexPopulationFailedKernelException, IndexActivationFailedKernelException
     {
@@ -678,7 +677,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStore() throws Exception
+    void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier base = newApplier( false );
@@ -703,7 +702,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
@@ -727,7 +726,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
+    void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -750,7 +749,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -774,7 +773,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
+    void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -796,7 +795,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -819,7 +818,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
+    void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -842,7 +841,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -868,7 +867,7 @@ public class NeoStoreTransactionApplierTest
     // NEO STORE COMMAND
 
     @Test
-    public void shouldApplyNeoStoreCommandToTheStore() throws Exception
+    void shouldApplyNeoStoreCommandToTheStore() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
@@ -887,7 +886,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     @Test
-    public void shouldApplyNeoStoreCommandToTheStoreInRecovery() throws Exception
+    void shouldApplyNeoStoreCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
@@ -930,7 +929,7 @@ public class NeoStoreTransactionApplierTest
 
     // SCHEMA RULE COMMAND
 
-    public static IndexRule indexRule( long id, int label, int propertyKeyId,
+    private static IndexRule indexRule( long id, int label, int propertyKeyId,
             SchemaIndexProvider.Descriptor providerDescriptor )
     {
         //TODO: Consider testing composite indexes

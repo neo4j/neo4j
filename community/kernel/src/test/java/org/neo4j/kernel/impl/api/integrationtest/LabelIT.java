@@ -29,15 +29,15 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.storageengine.api.Token;
 
-import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 
-public class LabelIT extends KernelIntegrationTest
+class LabelIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldListAllLabels() throws Exception
+    void shouldListAllLabels() throws Exception
     {
         // given
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
@@ -64,7 +64,7 @@ public class LabelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addingAndRemovingLabelInSameTxShouldHaveNoEffect() throws Exception
+    void addingAndRemovingLabelInSameTxShouldHaveNoEffect() throws Exception
     {
         // Given a node with a label
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );

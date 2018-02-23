@@ -40,26 +40,26 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class StoreLockerLifecycleAdapterTest
+class StoreLockerLifecycleAdapterTest
 {
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldAllowDatabasesToUseFilesetsSequentially()
+    void shouldAllowDatabasesToUseFilesetsSequentially()
     {
         newDb().shutdown();
         newDb().shutdown();
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrently()
+    void shouldNotAllowDatabasesToUseFilesetsConcurrently()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently( stringMap() );
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
+    void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently(
                 stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );

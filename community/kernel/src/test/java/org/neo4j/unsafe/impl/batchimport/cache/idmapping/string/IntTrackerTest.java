@@ -32,13 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.IntTracker.MAX_ID;
 
 @ExtendWith( RandomExtension.class )
-public class IntTrackerTest
+class IntTrackerTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldKeepIdsAndMarkDuplicates()
+    void shouldKeepIdsAndMarkDuplicates()
     {
         // given
         int length = 10_000;

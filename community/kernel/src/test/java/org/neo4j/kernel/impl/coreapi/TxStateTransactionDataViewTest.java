@@ -53,8 +53,8 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -69,7 +69,7 @@ import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
-public class TxStateTransactionDataViewTest
+class TxStateTransactionDataViewTest
 {
     private final ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
     private final Statement stmt = mock( Statement.class );
@@ -80,14 +80,14 @@ public class TxStateTransactionDataViewTest
     private final TransactionState state = new TxState();
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( bridge.get() ).thenReturn( stmt );
         when( ops.newStatement() ).thenReturn( storeStatement );
     }
 
     @Test
-    public void showsCreatedNodes()
+    void showsCreatedNodes()
     {
         // Given
         state.nodeDoCreate( 1 );
@@ -98,7 +98,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsDeletedNodes() throws Exception
+    void showsDeletedNodes() throws Exception
     {
         // Given
         state.nodeDoDelete( 1L );
@@ -124,7 +124,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsAddedRelationships()
+    void showsAddedRelationships()
     {
         // Given
         state.relationshipDoCreate( 1, 1, 1L, 2L );
@@ -135,7 +135,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsRemovedRelationships() throws Exception
+    void showsRemovedRelationships() throws Exception
     {
         // Given
         state.relationshipDoDelete( 1L, 1, 1L, 2L );
@@ -161,7 +161,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysNodeIsDeleted()
+    void correctlySaysNodeIsDeleted()
     {
         // Given
         state.nodeDoDelete( 1L );
@@ -176,7 +176,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysRelIsDeleted()
+    void correctlySaysRelIsDeleted()
     {
         // Given
         state.relationshipDoDelete( 1L, 1, 1L, 2L );
@@ -194,7 +194,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListAddedNodePropertiesProperties() throws Exception
+    void shouldListAddedNodePropertiesProperties() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -220,7 +220,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListRemovedNodeProperties() throws Exception
+    void shouldListRemovedNodeProperties() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -245,7 +245,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListRemovedRelationshipProperties() throws Exception
+    void shouldListRemovedRelationshipProperties() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -270,7 +270,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListAddedRelationshipProperties() throws Exception
+    void shouldListAddedRelationshipProperties() throws Exception
     {
         // Given
         int propertyKeyId = 1;
@@ -297,7 +297,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListAddedLabels() throws Exception
+    void shouldListAddedLabels() throws Exception
     {
         // Given
         state.nodeDoAddLabel( 2, 1L );
@@ -314,7 +314,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListRemovedLabels() throws Exception
+    void shouldListRemovedLabels() throws Exception
     {
         // Given
         state.nodeDoRemoveLabel( 2, 1L );
@@ -330,7 +330,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void accessTransactionIdAndCommitTime()
+    void accessTransactionIdAndCommitTime()
     {
         long committedTransactionId = 7L;
         long commitTime = 10L;
@@ -343,7 +343,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldGetEmptyUsernameForAnonymousContext()
+    void shouldGetEmptyUsernameForAnonymousContext()
     {
         when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( s -> -1 ) );
 
@@ -352,7 +352,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldAccessUsernameFromAuthSubject()
+    void shouldAccessUsernameFromAuthSubject()
     {
         AuthSubject authSubject = mock( AuthSubject.class );
         when( authSubject.username() ).thenReturn( "Christof" );
@@ -364,14 +364,14 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldAccessEmptyMetaData()
+    void shouldAccessEmptyMetaData()
     {
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( 0, transactionDataSnapshot.metaData().size() );
     }
 
     @Test
-    public void shouldAccessExampleMetaData()
+    void shouldAccessExampleMetaData()
     {
         EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
         final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );

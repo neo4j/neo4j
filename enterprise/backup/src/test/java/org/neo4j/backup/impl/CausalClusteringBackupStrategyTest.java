@@ -19,8 +19,8 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
@@ -48,25 +48,25 @@ public class CausalClusteringBackupStrategyTest
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
-    BackupDelegator backupDelegator = mock( BackupDelegator.class );
-    AddressResolver addressResolver = mock( AddressResolver.class );
-    AdvertisedSocketAddress resolvedFromAddress = new AdvertisedSocketAddress( "resolved-host", 1358 );
+    private BackupDelegator backupDelegator = mock( BackupDelegator.class );
+    private AddressResolver addressResolver = mock( AddressResolver.class );
+    private AdvertisedSocketAddress resolvedFromAddress = new AdvertisedSocketAddress( "resolved-host", 1358 );
 
-    CausalClusteringBackupStrategy subject;
+    private CausalClusteringBackupStrategy subject;
 
-    Path desiredBackupLocation = mock( Path.class );
-    Config config = mock( Config.class );
-    OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
+    private Path desiredBackupLocation = mock( Path.class );
+    private Config config = mock( Config.class );
+    private OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( addressResolver.resolveCorrectCCAddress( any(), any() ) ).thenReturn( resolvedFromAddress );
         subject = new CausalClusteringBackupStrategy( backupDelegator, addressResolver );
     }
 
     @Test
-    public void incrementalBackupsUseCorrectResolvedAddress() throws StoreCopyFailedException
+    void incrementalBackupsUseCorrectResolvedAddress() throws StoreCopyFailedException
     {
         // given
         AdvertisedSocketAddress expectedAddress = new AdvertisedSocketAddress( "expected-host", 1298 );
@@ -80,7 +80,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void fullBackupUsesCorrectResolvedAddress() throws StoreIdDownloadFailedException
+    void fullBackupUsesCorrectResolvedAddress() throws StoreIdDownloadFailedException
     {
         // given
         AdvertisedSocketAddress expectedAddress = new AdvertisedSocketAddress( "expected-host", 1578 );
@@ -94,7 +94,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void incrementalRunsCatchupWithTargetsStoreId() throws StoreIdDownloadFailedException, StoreCopyFailedException
+    void incrementalRunsCatchupWithTargetsStoreId() throws StoreIdDownloadFailedException, StoreCopyFailedException
     {
         // given
         StoreId storeId = anyStoreId();
@@ -110,7 +110,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void fullRunsRetrieveStoreWithTargetsStoreId() throws StoreIdDownloadFailedException, StoreCopyFailedException
+    void fullRunsRetrieveStoreWithTargetsStoreId() throws StoreIdDownloadFailedException, StoreCopyFailedException
     {
         // given
         StoreId storeId = anyStoreId();
@@ -125,7 +125,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void failingToRetrieveStoreIdCausesFailWithStatus_incrementalBackup() throws StoreIdDownloadFailedException
+    void failingToRetrieveStoreIdCausesFailWithStatus_incrementalBackup() throws StoreIdDownloadFailedException
     {
         // given
         StoreIdDownloadFailedException storeIdDownloadFailedException = new StoreIdDownloadFailedException( "Expected description" );
@@ -141,7 +141,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void failingToCopyStoresCausesFailWithStatus_incrementalBackup() throws StoreIdDownloadFailedException, StoreCopyFailedException
+    void failingToCopyStoresCausesFailWithStatus_incrementalBackup() throws StoreIdDownloadFailedException, StoreCopyFailedException
     {
         // given
         StoreId storeId = anyStoreId();
@@ -157,7 +157,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void failingToRetrieveStoreIdCausesFailWithStatus_fullBackup() throws StoreIdDownloadFailedException
+    void failingToRetrieveStoreIdCausesFailWithStatus_fullBackup() throws StoreIdDownloadFailedException
     {
         // given
         StoreIdDownloadFailedException storeIdDownloadFailedException = new StoreIdDownloadFailedException( "Expected description" );
@@ -172,7 +172,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void failingToCopyStoresCausesFailWithStatus_fullBackup() throws StoreCopyFailedException
+    void failingToCopyStoresCausesFailWithStatus_fullBackup() throws StoreCopyFailedException
     {
         // given
         doThrow( StoreCopyFailedException.class ).when( backupDelegator ).copy( any(), any(), any() );
@@ -186,7 +186,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void incrementalBackupsEndingInUnacceptedCatchupStateCauseFailures() throws StoreCopyFailedException
+    void incrementalBackupsEndingInUnacceptedCatchupStateCauseFailures() throws StoreCopyFailedException
     {
         // given
         when( backupDelegator.tryCatchingUp( any(), any(), any() ) ).thenReturn( CatchupResult.E_STORE_UNAVAILABLE );
@@ -202,7 +202,7 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void lifecycleDelegatesToNecessaryServices() throws Throwable
+    void lifecycleDelegatesToNecessaryServices() throws Throwable
     {
         // when
         subject.start();

@@ -33,10 +33,10 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.String.valueOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResourcePoolTest
@@ -45,7 +45,7 @@ public class ResourcePoolTest
     private static final int TIMEOUT_EXCEED_MILLIS = TIMEOUT_MILLIS + 10;
 
     @Test
-    public void shouldNotReuseBrokenInstances() throws Exception
+    void shouldNotReuseBrokenInstances() throws Exception
     {
         ResourcePool<Something> pool = new ResourcePool<Something>( 5 )
         {
@@ -78,7 +78,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldTimeoutGracefully()
+    void shouldTimeoutGracefully()
     {
         FakeClock clock = getFakeClocks();
 
@@ -97,7 +97,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyUntilReachedMinPoolSize() throws InterruptedException
+    void shouldBuildUpGracefullyUntilReachedMinPoolSize() throws InterruptedException
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -114,7 +114,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings() throws InterruptedException
+    void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings() throws InterruptedException
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -132,7 +132,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldUpdateTargetSizeWhenSpikesOccur() throws Exception
+    void shouldUpdateTargetSizeWhenSpikesOccur() throws Exception
     {
         // given
         final int poolMinSize = 5;
@@ -159,7 +159,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously() throws Exception
+    void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously() throws Exception
     {
         // given
         final int poolMinSize = 1;
@@ -187,7 +187,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldSlowlyReduceTheNumberOfResourcesInThePoolWhenResourcesAreReleased() throws Exception
+    void shouldSlowlyReduceTheNumberOfResourcesInThePoolWhenResourcesAreReleased() throws Exception
     {
         // given
         final int poolMinSize = 50;
@@ -219,7 +219,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldMaintainPoolHigherThenMinSizeWhenPeekUsagePasses() throws Exception
+    void shouldMaintainPoolHigherThenMinSizeWhenPeekUsagePasses() throws Exception
     {
         // given
         final int poolMinSize = 50;
@@ -262,7 +262,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldReclaimAndRecreateWhenUsageGoesDownBetweenSpikes() throws Exception
+    void shouldReclaimAndRecreateWhenUsageGoesDownBetweenSpikes() throws Exception
     {
         // given
         final int poolMinSize = 50;
@@ -383,7 +383,7 @@ public class ResourcePoolTest
             return !resource.closed;
         }
 
-        public int unusedSize()
+        int unusedSize()
         {
             return unused.size();
         }
@@ -432,7 +432,7 @@ public class ResourcePoolTest
             }
         }
 
-        public void release()
+        void release()
         {
             this.release.set( true);
             latch.release();
@@ -457,13 +457,13 @@ public class ResourcePoolTest
             }
         }
 
-        public void release( CountDownLatch releaseLatch )
+        void release( CountDownLatch releaseLatch )
         {
             release();
             releaseLatch.countDown();
         }
 
-        public void end()
+        void end()
         {
             this.release.set( false);
             latch.release();
@@ -472,11 +472,11 @@ public class ResourcePoolTest
 
     private class StatefulMonitor implements ResourcePool.Monitor<Something>
     {
-        public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
-        public AtomicInteger targetSize = new AtomicInteger( -1 );
-        public AtomicInteger created = new AtomicInteger( 0 );
-        public AtomicInteger acquired = new AtomicInteger( 0 );
-        public AtomicInteger disposed = new AtomicInteger( 0 );
+        AtomicInteger currentPeakSize = new AtomicInteger( -1 );
+        AtomicInteger targetSize = new AtomicInteger( -1 );
+        AtomicInteger created = new AtomicInteger( 0 );
+        AtomicInteger acquired = new AtomicInteger( 0 );
+        AtomicInteger disposed = new AtomicInteger( 0 );
 
         @Override
         public void updatedCurrentPeakSize( int currentPeakSize )
@@ -513,7 +513,7 @@ public class ResourcePoolTest
     {
         private boolean closed;
 
-        public void doStuff() throws Exception
+        void doStuff() throws Exception
         {
             if ( closed )
             {
@@ -521,7 +521,7 @@ public class ResourcePoolTest
             }
         }
 
-        public void close()
+        void close()
         {
             this.closed = true;
         }

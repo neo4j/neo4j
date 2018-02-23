@@ -46,11 +46,11 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  * rare false positives should not be used as an indication for increasing the
  * limits.
  */
-public class ElectionPerformanceIT
+class ElectionPerformanceIT
 {
     @Disabled( "This belongs better in a benchmarking suite." )
     @Test
-    public void electionPerformance_NormalConditions() throws Throwable
+    void electionPerformance_NormalConditions() throws Throwable
     {
         /* This test runs with with few iterations. Hence it does not have the power to catch
          * regressions efficiently. Its purpose is mainly to run elections using real-world
@@ -97,7 +97,7 @@ public class ElectionPerformanceIT
 
     @Disabled( "This belongs better in a benchmarking suite." )
     @Test
-    public void electionPerformance_RapidConditions() throws Throwable
+    void electionPerformance_RapidConditions() throws Throwable
     {
         // given parameters
         final long networkLatency = 1L;

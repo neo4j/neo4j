@@ -30,15 +30,15 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ServerSettingsTest
+class ServerSettingsTest
 {
     @Test
-    public void webServerThreadCountDefaultShouldBeDocumented()
+    void webServerThreadCountDefaultShouldBeDocumented()
     {
         Config config = Config.builder().withServerDefaults().build();
 
@@ -55,7 +55,7 @@ public class ServerSettingsTest
     }
 
     @Test
-    public void configValuesContainsConnectors()
+    void configValuesContainsConnectors()
     {
         Config config = Config.builder().withServerDefaults().build();
 
@@ -71,7 +71,7 @@ public class ServerSettingsTest
     }
 
     @Test
-    public void connectorSettingHasItsOwnValues()
+    void connectorSettingHasItsOwnValues()
     {
         Config config = Config.builder().withServerDefaults()
                 .withSetting( new HttpConnector( "http" ).address, "localhost:123" ).build();

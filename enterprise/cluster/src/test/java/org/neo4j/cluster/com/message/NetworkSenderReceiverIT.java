@@ -57,7 +57,7 @@ public class NetworkSenderReceiverIT
     }
 
     @Test
-    public void shouldSendAMessageFromAClientWhichIsReceivedByAServer() throws Exception
+    void shouldSendAMessageFromAClientWhichIsReceivedByAServer() throws Exception
     {
 
         // given
@@ -101,7 +101,7 @@ public class NetworkSenderReceiverIT
     }
 
     @Test
-    public void senderThatStartsAfterReceiverShouldEventuallyConnectSuccessfully() throws Throwable
+    void senderThatStartsAfterReceiverShouldEventuallyConnectSuccessfully() throws Throwable
     {
         /*
          * This test verifies that a closed channel from a sender to a receiver is removed from the connections
@@ -394,7 +394,7 @@ public class NetworkSenderReceiverIT
             return networkSender.process( message );
         }
 
-        public boolean processedMessage()
+        boolean processedMessage()
         {
             return this.processedMessage.get();
         }

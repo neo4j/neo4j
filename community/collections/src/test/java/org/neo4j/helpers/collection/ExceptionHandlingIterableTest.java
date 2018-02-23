@@ -26,11 +26,11 @@ import java.util.Iterator;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings( "unchecked" )
-public class ExceptionHandlingIterableTest
+class ExceptionHandlingIterableTest
 {
 
     @Test
-    public void testHandleExceptionOnIteratorCreation()
+    void testHandleExceptionOnIteratorCreation()
     {
         assertThrows( IllegalStateException.class, () -> Iterables.count( new ExceptionHandlingIterable( () ->
         {
@@ -47,7 +47,7 @@ public class ExceptionHandlingIterableTest
     }
 
     @Test
-    public void testHandleExceptionOnNext()
+    void testHandleExceptionOnNext()
     {
         assertThrows( IllegalStateException.class, () ->
         Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()
@@ -80,7 +80,7 @@ public class ExceptionHandlingIterableTest
     }
 
     @Test
-    public void testHandleExceptionOnHasNext()
+    void testHandleExceptionOnHasNext()
     {
         assertThrows( IllegalStateException.class, () ->
             Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()

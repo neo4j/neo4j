@@ -41,7 +41,7 @@ public class StubStatementDeserializer extends StatementDeserializer
         return new StubStatementDeserializer( emptyIterator(), iterator( statements ) );
     }
 
-    public StubStatementDeserializer( Iterator<Neo4jError> errors, Iterator<Statement> statements )
+    private StubStatementDeserializer( Iterator<Neo4jError> errors, Iterator<Statement> statements )
     {
         super( new ByteArrayInputStream( new byte[]{} ) );
         this.statements = statements;

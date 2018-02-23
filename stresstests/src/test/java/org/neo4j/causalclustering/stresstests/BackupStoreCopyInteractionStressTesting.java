@@ -19,6 +19,11 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.rules.RuleChain;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,11 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
-import org.junit.jupiter.api.Test;
-import org.junit.rules.RuleChain;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
@@ -82,14 +82,14 @@ public class BackupStoreCopyInteractionStressTesting
     private PageCache pageCache;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fs = fileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
     }
 
     @Test
-    public void shouldBehaveCorrectlyUnderStress() throws Exception
+    void shouldBehaveCorrectlyUnderStress() throws Exception
     {
         int numberOfCores =
                 parseInt( fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_NUMBER_OF_CORES", DEFAULT_NUMBER_OF_CORES ) );

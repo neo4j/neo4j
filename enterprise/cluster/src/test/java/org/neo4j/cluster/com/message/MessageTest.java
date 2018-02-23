@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class MessageTest
+class MessageTest
 {
     @Test
-    public void respondingToInternalMessageShouldProduceCorrectMessage()
+    void respondingToInternalMessageShouldProduceCorrectMessage()
     {
         // Given
         final Object payload = new Object();
@@ -48,7 +48,7 @@ public class MessageTest
     }
 
     @Test
-    public void respondingToExternalMessageShouldProperlySetToHeaders()
+    void respondingToExternalMessageShouldProperlySetToHeaders()
     {
         // Given
         final Object payload = new Object();

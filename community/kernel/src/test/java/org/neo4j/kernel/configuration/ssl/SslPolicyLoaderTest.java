@@ -44,17 +44,17 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class SslPolicyLoaderTest
+class SslPolicyLoaderTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private File home;
     private File publicCertificateFile;
     private File privateKeyFile;
 
     @BeforeEach
-    public void setup() throws Exception
+    void setup() throws Exception
     {
         home = testDirectory.directory( "home" );
         File baseDir = new File( home, "certificates/default" );
@@ -71,7 +71,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldLoadBaseCryptographicObjects() throws Exception
+    void shouldLoadBaseCryptographicObjects() throws Exception
     {
         // given
         Map<String,String> params = stringMap();
@@ -95,13 +95,13 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldComplainIfMissingPrivateKey()
+    void shouldComplainIfMissingPrivateKey()
     {
         shouldComplainIfMissingFile( privateKeyFile );
     }
 
     @Test
-    public void shouldComplainIfMissingPublicCertificate()
+    void shouldComplainIfMissingPublicCertificate()
     {
         shouldComplainIfMissingFile( publicCertificateFile );
     }
@@ -133,7 +133,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldThrowIfPolicyNameDoesNotExist()
+    void shouldThrowIfPolicyNameDoesNotExist()
     {
         // given
         Map<String,String> params = stringMap();
@@ -159,7 +159,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldReturnNullPolicyIfNullRequested()
+    void shouldReturnNullPolicyIfNullRequested()
     {
         // given
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.defaults(), NullLogProvider.getInstance() );
@@ -172,7 +172,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldNotAllowLegacyPolicyToBeConfigured()
+    void shouldNotAllowLegacyPolicyToBeConfigured()
     {
         // given
         Map<String,String> params = stringMap();

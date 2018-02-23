@@ -19,9 +19,9 @@
  */
 package counts;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -60,7 +60,7 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 public class RebuildCountsTest
 {
     @Test
-    public void shouldRebuildMissingCountsStoreOnStart() throws IOException
+    void shouldRebuildMissingCountsStoreOnStart() throws IOException
     {
         // given
         createAliensAndHumans();
@@ -83,7 +83,7 @@ public class RebuildCountsTest
     }
 
     @Test
-    public void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException
+    void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException
     {
         // given
         createAliensAndHumans();
@@ -227,13 +227,13 @@ public class RebuildCountsTest
     private final File storeDir = new File( "store" ).getAbsoluteFile();
 
     @BeforeEach
-    public void before() throws IOException
+    void before() throws IOException
     {
         restart( fsRule.get() );
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         doCleanShutdown();
     }

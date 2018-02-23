@@ -23,7 +23,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
-public interface LegacyDatabase extends Remote
+interface LegacyDatabase extends Remote
 {
     int stop() throws RemoteException;
 

@@ -24,10 +24,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
@@ -39,14 +39,14 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
 
-public class ComparableRaftState implements ReadableRaftState
+class ComparableRaftState implements ReadableRaftState
 {
-    protected final MemberId myself;
+    private final MemberId myself;
     private final Set<MemberId> votingMembers;
     private final Set<MemberId> replicationMembers;
     private final Log log;
-    protected long term;
-    protected MemberId leader;
+    long term;
+    private MemberId leader;
     private long leaderCommit = -1;
     private MemberId votedFor;
     private Set<MemberId> votesForMe = new HashSet<>();
@@ -54,7 +54,7 @@ public class ComparableRaftState implements ReadableRaftState
     private Set<MemberId> heartbeatResponses = new HashSet<>();
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private FollowerStates<MemberId> followerStates = new FollowerStates<>();
-    protected final RaftLog entryLog;
+    final RaftLog entryLog;
     private final InFlightCache inFlightCache;
     private long commitIndex = -1;
     private boolean isPreElection;

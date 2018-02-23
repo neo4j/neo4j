@@ -72,7 +72,7 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @ExtendWith( MockitoExtension.class )
-public class LeaderTest
+class LeaderTest
 {
     private MemberId myself = member( 0 );
 
@@ -85,7 +85,7 @@ public class LeaderTest
     private static final ReplicatedString CONTENT = ReplicatedString.valueOf( "some-content-to-raft" );
 
     @Test
-    public void leaderShouldNotRespondToSuccessResponseFromFollowerThatWillSoonUpToDateViaInFlightMessages()
+    void leaderShouldNotRespondToSuccessResponseFromFollowerThatWillSoonUpToDateViaInFlightMessages()
             throws Exception
     {
         // given
@@ -128,7 +128,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldNotRespondToSuccessResponseThatIndicatesUpToDateFollower() throws Exception
+    void leaderShouldNotRespondToSuccessResponseThatIndicatesUpToDateFollower() throws Exception
     {
         // given
         /*
@@ -170,7 +170,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldRespondToSuccessResponseThatIndicatesLaggingFollowerWithJustWhatItsMissing()
+    void leaderShouldRespondToSuccessResponseThatIndicatesLaggingFollowerWithJustWhatItsMissing()
             throws Exception
     {
         // given
@@ -222,7 +222,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldIgnoreSuccessResponseThatIndicatesLaggingWhileLocalStateIndicatesFollowerIsCaughtUp()
+    void leaderShouldIgnoreSuccessResponseThatIndicatesLaggingWhileLocalStateIndicatesFollowerIsCaughtUp()
             throws Exception
     {
         // given
@@ -276,7 +276,7 @@ public class LeaderTest
 
     // TODO: rethink this test, it does too much
     @Test
-    public void leaderShouldSpawnMismatchCommandOnFailure() throws Exception
+    void leaderShouldSpawnMismatchCommandOnFailure() throws Exception
     {
         // given
         /*
@@ -331,7 +331,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldSendCompactionInfoIfFailureWithNoEarlierEntries() throws Exception
+    void shouldSendCompactionInfoIfFailureWithNoEarlierEntries() throws Exception
     {
         // given
         Leader leader = new Leader();
@@ -365,7 +365,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldIgnoreAppendResponsesFromOldTerms() throws Exception
+    void shouldIgnoreAppendResponsesFromOldTerms() throws Exception
     {
         // given
         Leader leader = new Leader();
@@ -393,7 +393,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldRejectAppendEntriesResponseWithNewerTermAndBecomeAFollower() throws Exception
+    void leaderShouldRejectAppendEntriesResponseWithNewerTermAndBecomeAFollower() throws Exception
     {
         // given
         RaftState state = raftState().myself( myself ).build();
@@ -417,7 +417,7 @@ public class LeaderTest
     // TODO: test that shows we don't commit for previous terms
 
     @Test
-    public void leaderShouldSendHeartbeatsToAllClusterMembersOnReceiptOfHeartbeatTick() throws Exception
+    void leaderShouldSendHeartbeatsToAllClusterMembersOnReceiptOfHeartbeatTick() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -437,7 +437,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldStepDownWhenLackingHeartbeatResponses() throws Exception
+    void leaderShouldStepDownWhenLackingHeartbeatResponses() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -457,7 +457,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldNotStepDownWhenReceivedQuorumOfHeartbeatResponses() throws Exception
+    void leaderShouldNotStepDownWhenReceivedQuorumOfHeartbeatResponses() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -478,7 +478,7 @@ public class LeaderTest
     }
 
     @Test
-    public void oldHeartbeatResponseShouldNotPreventStepdown() throws Exception
+    void oldHeartbeatResponseShouldNotPreventStepdown() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -503,7 +503,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldDecideToAppendToItsLogAndSendAppendEntriesMessageOnReceiptOfClientProposal()
+    void leaderShouldDecideToAppendToItsLogAndSendAppendEntriesMessageOnReceiptOfClientProposal()
             throws Exception
     {
         // given
@@ -531,7 +531,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldHandleBatch() throws Exception
+    void leaderShouldHandleBatch() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -569,7 +569,7 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldCommitOnMajorityResponse() throws Exception
+    void leaderShouldCommitOnMajorityResponse() throws Exception
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
@@ -599,7 +599,7 @@ public class LeaderTest
 
     // TODO move this someplace else, since log no longer holds the commit
     @Test
-    public void leaderShouldCommitAllPreviouslyAppendedEntriesWhenCommittingLaterEntryInSameTerm() throws Exception
+    void leaderShouldCommitAllPreviouslyAppendedEntriesWhenCommittingLaterEntryInSameTerm() throws Exception
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
@@ -627,7 +627,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldSendNegativeResponseForVoteRequestFromTermNotGreaterThanLeader() throws Exception
+    void shouldSendNegativeResponseForVoteRequestFromTermNotGreaterThanLeader() throws Exception
     {
         // given
         long leaderTerm = 5;
@@ -654,7 +654,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldStepDownIfReceiveVoteRequestFromGreaterTermThanLeader() throws Exception
+    void shouldStepDownIfReceiveVoteRequestFromGreaterTermThanLeader() throws Exception
     {
         // given
         long leaderTerm = 1;
@@ -682,7 +682,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldIgnoreHeartbeatFromOlderTerm() throws Exception
+    void shouldIgnoreHeartbeatFromOlderTerm() throws Exception
     {
         // given
         long leaderTerm = 5;
@@ -704,7 +704,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldStepDownIfHeartbeatReceivedWithGreaterOrEqualTerm() throws Exception
+    void shouldStepDownIfHeartbeatReceivedWithGreaterOrEqualTerm() throws Exception
     {
         // given
         long leaderTerm = 1;
@@ -727,7 +727,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldRespondNegativelyToAppendEntriesRequestFromEarlierTerm() throws Exception
+    void shouldRespondNegativelyToAppendEntriesRequestFromEarlierTerm() throws Exception
     {
         // given
         long leaderTerm = 5;
@@ -758,7 +758,7 @@ public class LeaderTest
     }
 
     @Test
-    public void shouldStepDownIfAppendEntriesRequestFromLaterTerm() throws Exception
+    void shouldStepDownIfAppendEntriesRequestFromLaterTerm() throws Exception
     {
         // given
         long leaderTerm = 1;
@@ -789,7 +789,7 @@ public class LeaderTest
         // Not checking success or failure of append
     }
 
-    private RaftState preElectionActive() throws IOException
+    RaftState preElectionActive() throws IOException
     {
         return raftState()
                 .myself( myself )

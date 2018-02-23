@@ -62,13 +62,13 @@ import static org.mockito.Mockito.when;
 public class CheckConsistencyCommandTest
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Rule
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void runsConsistencyChecker() throws Exception
+    void runsConsistencyChecker() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -95,7 +95,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void enablesVerbosity() throws Exception
+    void enablesVerbosity() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -122,7 +122,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void failsWhenInconsistenciesAreFound() throws Exception
+    void failsWhenInconsistenciesAreFound() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -150,7 +150,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void shouldWriteReportFileToCurrentDirectoryByDefault()
+    void shouldWriteReportFileToCurrentDirectoryByDefault()
             throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
 
     {
@@ -174,7 +174,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void shouldWriteReportFileToSpecifiedDirectory()
+    void shouldWriteReportFileToSpecifiedDirectory()
             throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
 
     {
@@ -199,7 +199,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void shouldCanonicalizeReportDirectory()
+    void shouldCanonicalizeReportDirectory()
             throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
 
     {
@@ -224,7 +224,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void passesOnCheckParameters() throws Exception
+    void passesOnCheckParameters() throws Exception
 
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
@@ -248,7 +248,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void databaseAndBackupAreMutuallyExclusive() throws Exception
+    void databaseAndBackupAreMutuallyExclusive() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -269,7 +269,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void backupNeedsToBePath() throws Exception
+    void backupNeedsToBePath() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -288,7 +288,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void canRunOnBackup() throws Exception
+    void canRunOnBackup() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
@@ -316,7 +316,7 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

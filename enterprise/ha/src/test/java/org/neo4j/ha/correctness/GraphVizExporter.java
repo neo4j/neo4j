@@ -33,11 +33,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
-public class GraphVizExporter
+class GraphVizExporter
 {
     private final File target;
 
-    public GraphVizExporter( File target )
+    GraphVizExporter( File target )
     {
 
         this.target = target;

@@ -43,14 +43,12 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.memoryRequiredForPages;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.configuredCounter;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.countCreatedPageSwapperFactories;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.createdCounter;
-import static org.neo4j.logging.NullLog.getInstance;
 
 public class ConfiguringPageCacheFactoryTest
 {
@@ -58,14 +56,14 @@ public class ConfiguringPageCacheFactoryTest
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         createdCounter.set( 0 );
         configuredCounter.set( 0 );
     }
 
     @Test
-    public void shouldFitAsManyPagesAsItCan()
+    void shouldFitAsManyPagesAsItCan()
     {
         // Given
         long pageCount = 60;
@@ -87,7 +85,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void shouldWarnWhenCreatedWithConfiguredPageCache()
+    void shouldWarnWhenCreatedWithConfiguredPageCache()
     {
         // Given
         Config config = defaults( stringMap(
@@ -110,7 +108,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void mustUseAndLogConfiguredPageSwapper()
+    void mustUseAndLogConfiguredPageSwapper()
     {
         // Given
         Config config = defaults( stringMap(
@@ -131,7 +129,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void mustThrowIfConfiguredPageSwapperCannotBeFound()
+    void mustThrowIfConfiguredPageSwapperCannotBeFound()
     {
         assertThrows( IllegalArgumentException.class, () -> {
             // Given

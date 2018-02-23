@@ -147,9 +147,9 @@ public abstract class SchemaIndexProviderApprovalTest
         db.shutdown();
     }
 
-    public static final String LABEL = "Person";
-    public static final String PROPERTY_KEY = "name";
-    public static final Function<Node, Object> PROPERTY_EXTRACTOR = node ->
+    private static final String LABEL = "Person";
+    private static final String PROPERTY_KEY = "name";
+    private static final Function<Node, Object> PROPERTY_EXTRACTOR = node ->
     {
         Object value = node.getProperty( PROPERTY_KEY );
         if ( value.getClass().isArray() )

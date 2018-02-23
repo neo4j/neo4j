@@ -26,11 +26,11 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PrimitiveIntObjectHashMapTest
+class PrimitiveIntObjectHashMapTest
 {
 
     @Test
-    public void doNotComputeValueIfPresent()
+    void doNotComputeValueIfPresent()
     {
         PrimitiveIntObjectMap<Object> intObjectMap = Primitive.intObjectMap();
         intObjectMap.put( 1, "a" );
@@ -38,7 +38,7 @@ public class PrimitiveIntObjectHashMapTest
     }
 
     @Test
-    public void computeValueIfAbsent()
+    void computeValueIfAbsent()
     {
         PrimitiveIntObjectMap<Object> intObjectMap = Primitive.intObjectMap();
         intObjectMap.put( 1, "a" );

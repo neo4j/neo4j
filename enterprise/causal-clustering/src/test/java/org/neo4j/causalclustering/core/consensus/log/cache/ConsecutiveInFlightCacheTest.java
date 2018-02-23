@@ -26,10 +26,10 @@ import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ConsecutiveInFlightCacheTest
+class ConsecutiveInFlightCacheTest
 {
     @Test
-    public void shouldTrackUsedMemory()
+    void shouldTrackUsedMemory()
     {
         int capacity = 4;
         ConsecutiveInFlightCache cache = new ConsecutiveInFlightCache( capacity, 1000, InFlightCacheMonitor.VOID, true );
@@ -62,7 +62,7 @@ public class ConsecutiveInFlightCacheTest
     }
 
     @Test
-    public void shouldReturnLatestItems()
+    void shouldReturnLatestItems()
     {
         // given
         int capacity = 4;
@@ -89,7 +89,7 @@ public class ConsecutiveInFlightCacheTest
     }
 
     @Test
-    public void shouldRemovePrunedItems()
+    void shouldRemovePrunedItems()
     {
         // given
         int capacity = 20;
@@ -121,7 +121,7 @@ public class ConsecutiveInFlightCacheTest
     }
 
     @Test
-    public void shouldRemoveTruncatedItems()
+    void shouldRemoveTruncatedItems()
     {
         // given
         int capacity = 20;

@@ -20,11 +20,10 @@
 package org.neo4j.server.rest.web;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,7 +54,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
@@ -66,6 +64,7 @@ import org.neo4j.test.server.EntityOutputFormat;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.parseLong;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -76,11 +75,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 
-public class RestfulGraphDatabaseTest
+class RestfulGraphDatabaseTest
 {
     private static final String NODE_AUTO_INDEX = "node_auto_index";
     private static final String RELATIONSHIP_AUTO_INDEX = "relationship_auto_index";
@@ -93,7 +91,7 @@ public class RestfulGraphDatabaseTest
     private static GraphDatabaseFacade graph;
 
     @BeforeAll
-    public static void doBefore()
+    static void doBefore()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
@@ -113,7 +111,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @BeforeEach
-    public void deleteAllIndexes() throws JsonParseException
+    void deleteAllIndexes() throws JsonParseException
     {
         for ( String name : helper.getNodeIndexes() )
         {
@@ -139,7 +137,7 @@ public class RestfulGraphDatabaseTest
         }
     }
 
-    protected void stopAutoIndexAllPropertiesAndDisableAutoIndex( String type )
+    private void stopAutoIndexAllPropertiesAndDisableAutoIndex( String type )
             throws JsonParseException
     {
         Response response = service.getAutoIndexedProperties( type );
@@ -152,7 +150,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @AfterAll
-    public static void shutdownDatabase()
+    static void shutdownDatabase()
     {
         graph.shutdown();
     }
@@ -172,7 +170,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldFailGracefullyWhenViolatingConstraintOnPropertyUpdate() throws Exception
+    void shouldFailGracefullyWhenViolatingConstraintOnPropertyUpdate() throws Exception
     {
         Response response = service.createPropertyUniquenessConstraint( "Person", "{\"property_keys\":[\"name\"]}" );
         assertEquals( 200, response.getStatus() );
@@ -201,7 +199,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenEmptyNodeCreated() throws Exception
+    void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenEmptyNodeCreated() throws Exception
     {
         Response response = service.createNode( null );
 
@@ -221,7 +219,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreated()
+    void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreated()
             throws Exception
     {
         Response response = service.createNode( "{\"foo\" : \"bar\"}" );
@@ -248,7 +246,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreatedWithArrays()
+    void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreatedWithArrays()
             throws Exception
     {
         Response response = service.createNode( "{\"foo\" : [\"bar\", \"baz\"] }" );
@@ -271,7 +269,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenNodeCreatedWithUnsupportedPropertyData() throws Exception
+    void shouldRespondWith400WhenNodeCreatedWithUnsupportedPropertyData() throws Exception
     {
         Response response = service.createNode( "{\"foo\" : {\"bar\" : \"baz\"}}" );
 
@@ -280,7 +278,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenNodeCreatedWithInvalidJSON() throws Exception
+    void shouldRespondWith400WhenNodeCreatedWithInvalidJSON() throws Exception
     {
         Response response = service.createNode( "this:::isNot::JSON}" );
 
@@ -289,7 +287,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200AndNodeRepresentationInJSONWhenNodeRequested() throws Exception
+    void shouldRespondWith200AndNodeRepresentationInJSONWhenNodeRequested() throws Exception
     {
         Response response = service.getNode( helper.createNode() );
         assertEquals( 200, response.getStatus() );
@@ -300,7 +298,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenRequestedNodeDoesNotExist() throws Exception
+    void shouldRespondWith404WhenRequestedNodeDoesNotExist() throws Exception
     {
         Response response = service.getNode( 9000000000000L );
         assertEquals( 404, response.getStatus() );
@@ -308,7 +306,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204AfterSettingPropertiesOnExistingNode()
+    void shouldRespondWith204AfterSettingPropertiesOnExistingNode()
     {
         Response response = service.setAllNodeProperties( helper.createNode(),
                 "{\"foo\" : \"bar\", \"a-boolean\": true, \"boolean-array\": [true, false, false]}" );
@@ -316,7 +314,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenSettingPropertiesOnNodeThatDoesNotExist() throws Exception
+    void shouldRespondWith404WhenSettingPropertiesOnNodeThatDoesNotExist() throws Exception
     {
         Response response = service.setAllNodeProperties( 9000000000000L, "{\"foo\" : \"bar\"}" );
         assertEquals( 404, response.getStatus() );
@@ -324,7 +322,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTransferringCorruptJsonPayload() throws Exception
+    void shouldRespondWith400WhenTransferringCorruptJsonPayload() throws Exception
     {
         Response response = service.setAllNodeProperties( helper.createNode(),
                 "{\"foo\" : bad-json-here \"bar\"}" );
@@ -333,7 +331,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTransferringIncompatibleJsonPayload() throws Exception
+    void shouldRespondWith400WhenTransferringIncompatibleJsonPayload() throws Exception
     {
         Response response = service.setAllNodeProperties( helper.createNode(),
                 "{\"foo\" : {\"bar\" : \"baz\"}}" );
@@ -342,7 +340,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200ForGetNodeProperties()
+    void shouldRespondWith200ForGetNodeProperties()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<>();
@@ -355,7 +353,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGetPropertiesForGetNodeProperties() throws Exception
+    void shouldGetPropertiesForGetNodeProperties() throws Exception
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<>();
@@ -370,7 +368,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204OnSuccessfulDelete()
+    void shouldRespondWith204OnSuccessfulDelete()
     {
         long id = helper.createNode();
 
@@ -380,7 +378,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith409IfNodeCannotBeDeleted() throws Exception
+    void shouldRespondWith409IfNodeCannotBeDeleted() throws Exception
     {
         long id = helper.createNode();
         helper.createRelationship( "LOVES", id, helper.createNode() );
@@ -392,7 +390,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404IfNodeToBeDeletedDoesNotExist() throws Exception
+    void shouldRespondWith404IfNodeToBeDeletedDoesNotExist() throws Exception
     {
         long nonExistentId = 999999;
         Response response = service.deleteNode( nonExistentId );
@@ -402,7 +400,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204ForSetNodeProperty()
+    void shouldRespondWith204ForSetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -412,7 +410,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldSetRightValueForSetNodeProperty()
+    void shouldSetRightValueForSetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -424,7 +422,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForSetNodePropertyOnNonExistingNode() throws Exception
+    void shouldRespondWith404ForSetNodePropertyOnNonExistingNode() throws Exception
     {
         String key = "foo";
         String json = "\"bar\"";
@@ -434,7 +432,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400ForSetNodePropertyWithInvalidJson() throws Exception
+    void shouldRespondWith400ForSetNodePropertyWithInvalidJson() throws Exception
     {
         String key = "foo";
         String json = "{invalid json";
@@ -444,7 +442,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNonExistentNodeProperty() throws Exception
+    void shouldRespondWith404ForGetNonExistentNodeProperty() throws Exception
     {
         long nodeId = helper.createNode();
         Response response = service.getNodeProperty( nodeId, "foo" );
@@ -453,7 +451,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws Exception
+    void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws Exception
     {
         long nodeId = 999999;
         Response response = service.getNodeProperty( nodeId, "foo" );
@@ -462,7 +460,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200ForGetNodeProperty()
+    void shouldRespondWith200ForGetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -475,7 +473,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldReturnCorrectValueForGetNodeProperty()
+    void shouldReturnCorrectValueForGetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -486,7 +484,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithoutProperties()
+    void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithoutProperties()
 
     {
         long startNode = helper.createNode();
@@ -500,7 +498,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithProperties()
+    void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithProperties()
 
     {
         long startNode = helper.createNode();
@@ -515,7 +513,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldReturnRelationshipRepresentationWhenCreatingRelationship() throws Exception
+    void shouldReturnRelationshipRepresentationWhenCreatingRelationship() throws Exception
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -534,7 +532,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws Exception
+    void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws Exception
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( nodeId + 1000, "{\"to\" : \"" + BASE_URI + nodeId
@@ -544,7 +542,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws Exception
+    void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws Exception
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + (nodeId + 1000)
@@ -554,7 +552,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201WhenTryingToCreateRelationshipBackToSelf()
+    void shouldRespondWith201WhenTryingToCreateRelationshipBackToSelf()
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + nodeId
@@ -563,7 +561,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson() throws Exception
+    void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson() throws Exception
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -574,7 +572,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties() throws Exception
+    void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties() throws Exception
 
     {
         long startNode = helper.createNode();
@@ -587,7 +585,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204ForRemoveNodeProperties()
+    void shouldRespondWith204ForRemoveNodeProperties()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<>();
@@ -599,7 +597,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperties()
+    void shouldBeAbleToRemoveNodeProperties()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<>();
@@ -612,7 +610,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForRemoveNodePropertiesForNonExistingNode() throws Exception
+    void shouldRespondWith404ForRemoveNodePropertiesForNonExistingNode() throws Exception
     {
         long nodeId = 999999;
         Response response = service.deleteAllNodeProperties( nodeId );
@@ -621,7 +619,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperty()
+    void shouldBeAbleToRemoveNodeProperty()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<>();
@@ -634,7 +632,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingNonExistingProperty() throws Exception
+    void shouldGet404WhenRemovingNonExistingProperty() throws Exception
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<>();
@@ -647,7 +645,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingPropertyFromNonExistingNode() throws Exception
+    void shouldGet404WhenRemovingPropertyFromNonExistingNode() throws Exception
     {
         long nodeId = 999999;
         Response response = service.deleteNodeProperty( nodeId, "foo" );
@@ -656,7 +654,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200WhenRetrievingARelationshipFromANode()
+    void shouldGet200WhenRetrievingARelationshipFromANode()
     {
         long relationshipId = helper.createRelationship( "BEATS" );
         Response response = service.getRelationship( relationshipId );
@@ -666,7 +664,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRetrievingRelationshipThatDoesNotExist() throws Exception
+    void shouldGet404WhenRetrievingRelationshipThatDoesNotExist() throws Exception
     {
         Response response = service.getRelationship( 999999 );
         assertEquals( 404, response.getStatus() );
@@ -674,7 +672,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200AndDataForGetRelationshipProperties() throws Exception
+    void shouldRespondWith200AndDataForGetRelationshipProperties() throws Exception
     {
         long relationshipId = helper.createRelationship( "knows" );
         Map<String, Object> properties = new HashMap<>();
@@ -690,7 +688,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship()
+    void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship()
             throws Exception
     {
 
@@ -708,7 +706,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws Exception
+    void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws Exception
     {
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.getRelationshipProperty( relationshipId, "some-key" );
@@ -717,7 +715,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet204WhenRemovingARelationship()
+    void shouldGet204WhenRemovingARelationship()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -726,7 +724,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingNonExistentRelationship() throws Exception
+    void shouldGet404WhenRemovingNonExistentRelationship() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -736,7 +734,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode()
+    void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode()
             throws Exception
     {
         long nodeId = helper.createNode();
@@ -774,7 +772,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws Exception
+    void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws Exception
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -795,7 +793,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void
+    void
     shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingRelationshipsForANodeWithoutRelationships()
             throws Exception
     {
@@ -810,7 +808,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() throws Exception
+    void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() throws Exception
 
     {
         Response response = service.getNodeRelationships( 999999, RelationshipDirection.all,
@@ -820,7 +818,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperties()
+    void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperties()
 
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
@@ -834,7 +832,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenSettingRelationshipPropertiesWithBadJson() throws Exception
+    void shouldRespondWith400WhenSettingRelationshipPropertiesWithBadJson() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "{\"name: \"Mattias\", \"age\": 30}";
@@ -844,7 +842,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenSettingRelationshipPropertiesOnNonExistingRelationship() throws Exception
+    void shouldRespondWith404WhenSettingRelationshipPropertiesOnNonExistingRelationship() throws Exception
 
     {
         long relationshipId = 99999999;
@@ -855,7 +853,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperty()
+    void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperty()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String key = "name";
@@ -868,7 +866,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenSettingRelationshipPropertyWithBadJson() throws Exception
+    void shouldRespondWith400WhenSettingRelationshipPropertyWithBadJson() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "}Mattias";
@@ -878,7 +876,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenSettingRelationshipPropertyOnNonExistingRelationship() throws Exception
+    void shouldRespondWith404WhenSettingRelationshipPropertyOnNonExistingRelationship() throws Exception
 
     {
         long relationshipId = 99999999;
@@ -889,7 +887,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipProperties()
+    void shouldRespondWith204WhenSuccessfullyRemovedRelationshipProperties()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", "bar" ) );
@@ -899,7 +897,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipPropertiesWhichAreEmpty()
+    void shouldRespondWith204WhenSuccessfullyRemovedRelationshipPropertiesWhichAreEmpty()
 
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
@@ -909,7 +907,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperties() throws Exception
+    void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperties() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -919,7 +917,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204WhenRemovingRelationshipProperty()
+    void shouldRespondWith204WhenRemovingRelationshipProperty()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", "bar" ) );
@@ -930,7 +928,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenRemovingRelationshipPropertyWhichDoesNotExist() throws Exception
+    void shouldRespondWith404WhenRemovingRelationshipPropertyWhichDoesNotExist() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
@@ -939,7 +937,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperty() throws Exception
+    void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperty() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -949,7 +947,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithNoIndexOrOnlyNodeAutoIndex()
+    void shouldRespondWithNoIndexOrOnlyNodeAutoIndex()
     {
         Response isEnabled = service.isAutoIndexerEnabled( "node" );
         assertEquals( "false", entityAsString( isEnabled ) );
@@ -970,7 +968,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithAvailableIndexNodeRoots()
+    void shouldRespondWithAvailableIndexNodeRoots()
     {
         int numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup = helper.getNodeIndexes().length;
         String indexName = "someNodes";
@@ -987,14 +985,14 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithNoContentWhenNoRelationshipIndexesExist()
+    void shouldRespondWithNoContentWhenNoRelationshipIndexesExist()
     {
         Response response = service.getRelationshipIndexRoot();
         assertEquals( 204, response.getStatus() );
     }
 
     @Test
-    public void shouldRespondWithAvailableIndexRelationshipRoots()
+    void shouldRespondWithAvailableIndexRelationshipRoots()
     {
         String indexName = "someRelationships";
         helper.createRelationshipIndex( indexName );
@@ -1010,7 +1008,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRoot() throws JsonParseException
+    void shouldBeAbleToGetRoot() throws JsonParseException
     {
         Response response = service.getRoot();
         assertEquals( 200, response.getStatus() );
@@ -1029,7 +1027,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRootWhenNoReferenceNodePresent() throws Exception
+    void shouldBeAbleToGetRootWhenNoReferenceNodePresent() throws Exception
     {
         helper.deleteNode( 0L );
 
@@ -1049,7 +1047,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNode()
+    void shouldBeAbleToIndexNode()
     {
         Response response = service.createNode( null );
         URI nodeUri = (URI) response.getMetadata()
@@ -1068,7 +1066,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexANodePropertyThatsTooLarge()
+    void shouldNotBeAbleToIndexANodePropertyThatsTooLarge()
     {
         Response response = service.createNode( null );
         URI nodeUri = (URI) response.getMetadata()
@@ -1095,7 +1093,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNodeUniquely()
+    void shouldBeAbleToIndexNodeUniquely()
     {
         Map<String, String> postBody = new HashMap<>();
         postBody.put( "key", "mykey" );
@@ -1114,7 +1112,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexNodeUniquelyWithBothUriAndPropertiesInPayload() throws Exception
+    void shouldNotBeAbleToIndexNodeUniquelyWithBothUriAndPropertiesInPayload() throws Exception
     {
         URI node = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         Map<String, Object> postBody = new HashMap<>();
@@ -1130,7 +1128,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void uniquelyIndexedNodeGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified()
+    void uniquelyIndexedNodeGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified()
     {
         final String key = "somekey";
         String value = "somevalue";
@@ -1152,7 +1150,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedNodes()
+    void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedNodes()
     {
         final String key = "a_key";
         String value = "a value";
@@ -1177,7 +1175,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToCreateAnIndexWithEmptyName()
+    void shouldNotBeAbleToCreateAnIndexWithEmptyName()
     {
         URI node = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
@@ -1210,7 +1208,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing()
+    void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing()
     {
         service.createNode( null ).getMetadata().getFirst( "Location" );
         Map<String, Object> body = new HashMap<>();
@@ -1228,7 +1226,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexRelationshipUniquely()
+    void shouldBeAbleToIndexRelationshipUniquely()
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
@@ -1252,7 +1250,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void uniquelyIndexedRelationshipGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified()
+    void uniquelyIndexedRelationshipGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified()
     {
         final String key = "somekey";
         String value = "somevalue";
@@ -1279,7 +1277,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedRelationships()
+    void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedRelationships()
     {
         final String key = "a_key";
         String value = "a value";
@@ -1309,7 +1307,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexRelationshipUniquelyWithBothUriAndCreationalDataInPayload()
+    void shouldNotBeAbleToIndexRelationshipUniquelyWithBothUriAndCreationalDataInPayload()
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
@@ -1337,7 +1335,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexRelationshipUniquelyWithRequiredParameterMissing()
+    void shouldNotBeAbleToIndexRelationshipUniquelyWithRequiredParameterMissing()
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
@@ -1359,7 +1357,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeIndex()
+    void shouldBeAbleToRemoveNodeIndex()
     {
         String indexName = "myFancyIndex";
 
@@ -1377,7 +1375,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveRelationshipIndex()
+    void shouldBeAbleToRemoveRelationshipIndex()
     {
         String indexName = "myFancyIndex";
 
@@ -1394,7 +1392,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws Exception
+    void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws Exception
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -1419,7 +1417,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws Exception
+    void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws Exception
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -1442,7 +1440,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws Exception
+    void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws Exception
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
@@ -1468,7 +1466,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws Exception
+    void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws Exception
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
@@ -1505,7 +1503,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey() throws Exception
+    void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey() throws Exception
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
@@ -1539,7 +1537,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws Exception
+    void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws Exception
     {
         String key = "key_get";
         String value = "value";
@@ -1576,7 +1574,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws Exception
+    void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws Exception
     {
         String key = "key_get";
         String value = "value";
@@ -1615,7 +1613,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQueryWithDefaultKey() throws Exception
+    void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQueryWithDefaultKey() throws Exception
     {
         String key = "key_get";
         String value = "value";
@@ -1654,7 +1652,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws Exception
+    void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws Exception
     {
         String indexName = "nothing-in-this-index";
         helper.createNodeIndex( indexName );
@@ -1670,7 +1668,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeFromIndex()
+    void shouldBeAbleToRemoveNodeFromIndex()
     {
         long nodeId = helper.createNode();
         String key = "key_remove";
@@ -1685,7 +1683,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveRelationshipFromIndex()
+    void shouldBeAbleToRemoveRelationshipFromIndex()
     {
         long startNodeId = helper.createNode();
         long endNodeId = helper.createNode();
@@ -1704,7 +1702,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404IfRemovingNonExistentNodeIndexing()
+    void shouldGet404IfRemovingNonExistentNodeIndexing()
     {
         Response response = service.deleteFromNodeIndex( "nodes", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
@@ -1712,21 +1710,21 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404IfRemovingNonExistentRelationshipIndexing()
+    void shouldGet404IfRemovingNonExistentRelationshipIndexing()
     {
         Response response = service.deleteFromRelationshipIndex( "relationships", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
     @Test
-    public void shouldGet404WhenTraversingFromNonExistentNode()
+    void shouldGet404WhenTraversingFromNonExistentNode()
     {
         Response response = service.traverse( 9999999, TraverserReturnType.node, "{}" );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
     @Test
-    public void shouldGet200WhenNoHitsReturnedFromTraverse()
+    void shouldGet200WhenNoHitsReturnedFromTraverse()
     {
         long startNode = helper.createNode();
 
@@ -1739,7 +1737,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGetSomeHitsWhenTraversingWithDefaultDescription()
+    void shouldGetSomeHitsWhenTraversingWithDefaultDescription()
     {
         long startNode = helper.createNode();
         long child1_l1 = helper.createNode();
@@ -1758,7 +1756,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToDescribeTraverser()
+    void shouldBeAbleToDescribeTraverser()
     {
         long startNode = helper.createNode( MapUtil.map( "name", "Mattias" ) );
         long node1 = helper.createNode( MapUtil.map( "name", "Emil" ) );
@@ -1783,7 +1781,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetOtherResultTypesWhenTraversing()
+    void shouldBeAbleToGetOtherResultTypesWhenTraversing()
     {
         long startNode = helper.createNode( MapUtil.map( "name", "Mattias" ) );
         long node1 = helper.createNode( MapUtil.map( "name", "Emil" ) );
@@ -1826,7 +1824,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToFindSinglePathBetweenTwoNodes()
+    void shouldBeAbleToFindSinglePathBetweenTwoNodes()
     {
         long n1 = helper.createNode();
         long n2 = helper.createNode();
@@ -1846,7 +1844,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToFindSinglePathBetweenTwoNodesEvenWhenAskingForAllPaths()
+    void shouldBeAbleToFindSinglePathBetweenTwoNodesEvenWhenAskingForAllPaths()
     {
         long n1 = helper.createNode();
         long n2 = helper.createNode();
@@ -1866,7 +1864,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart()
+    void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart()
     {
         Response response = service.createNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
@@ -1918,7 +1916,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldAdvertiseUriForQueringAllRelationsInTheDatabase()
+    void shouldAdvertiseUriForQueringAllRelationsInTheDatabase()
     {
         Response response = service.getRoot();
         assertThat( new String( (byte[]) response.getEntity() ),
@@ -1926,31 +1924,31 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void nodeAutoIndexerEnabling()
+    void nodeAutoIndexerEnabling()
     {
         testAutoIndexEnableForType( "node" );
     }
 
     @Test
-    public void relationshipAutoIndexerEnabling()
+    void relationshipAutoIndexerEnabling()
     {
         testAutoIndexEnableForType( "relationship" );
     }
 
     @Test
-    public void addRemoveAutoindexPropertiesOnNodes() throws JsonParseException
+    void addRemoveAutoindexPropertiesOnNodes() throws JsonParseException
     {
         addRemoveAutoindexProperties( "node" );
     }
 
     @Test
-    public void addRemoveAutoindexPropertiesOnRelationships() throws JsonParseException
+    void addRemoveAutoindexPropertiesOnRelationships() throws JsonParseException
     {
         addRemoveAutoindexProperties( "relationship" );
     }
 
     @Test
-    public void nodeAutoindexingSupposedToWork()
+    void nodeAutoindexingSupposedToWork()
     {
         String type = "node";
         Response response = service.startAutoIndexingProperty( type, "myAutoIndexedProperty" );
@@ -1970,7 +1968,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldReturnAllLabelsPresentInTheDatabase() throws JsonParseException
+    void shouldReturnAllLabelsPresentInTheDatabase() throws JsonParseException
     {
         // given
         helper.createNode( Label.label( "ALIVE" ) );
@@ -1988,7 +1986,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldReturnAllLabelsInUseInTheDatabase() throws JsonParseException
+    void shouldReturnAllLabelsInUseInTheDatabase() throws JsonParseException
     {
         // given
         helper.createNode( Label.label( "ALIVE" ) );

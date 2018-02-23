@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SlavePrioritiesTest
+class SlavePrioritiesTest
 {
     @Test
-    public void roundRobinWithTwoSlavesAndPushFactorTwo()
+    void roundRobinWithTwoSlavesAndPushFactorTwo()
     {
         // Given
         SlavePriority roundRobin = SlavePriorities.roundRobin();
@@ -47,7 +47,7 @@ public class SlavePrioritiesTest
     }
 
     @Test
-    public void roundRobinWithTwoSlavesAndPushFactorOne()
+    void roundRobinWithTwoSlavesAndPushFactorOne()
     {
         // Given
         SlavePriority roundRobin = SlavePriorities.roundRobin();
@@ -62,7 +62,7 @@ public class SlavePrioritiesTest
     }
 
     @Test
-    public void roundRobinWithTwoSlavesAndPushFactorOneWhenSlaveIsAdded()
+    void roundRobinWithTwoSlavesAndPushFactorOneWhenSlaveIsAdded()
     {
         // Given
         SlavePriority roundRobin = SlavePriorities.roundRobin();
@@ -79,7 +79,7 @@ public class SlavePrioritiesTest
     }
 
     @Test
-    public void roundRobinWithTwoSlavesAndPushFactorOneWhenSlaveIsRemoved()
+    void roundRobinWithTwoSlavesAndPushFactorOneWhenSlaveIsRemoved()
     {
         // Given
         SlavePriority roundRobin = SlavePriorities.roundRobin();
@@ -96,7 +96,7 @@ public class SlavePrioritiesTest
     }
 
     @Test
-    public void roundRobinWithSingleSlave()
+    void roundRobinWithSingleSlave()
     {
         // Given
         SlavePriority roundRobin = SlavePriorities.roundRobin();
@@ -109,7 +109,7 @@ public class SlavePrioritiesTest
     }
 
     @Test
-    public void roundRobinWithNoSlaves()
+    void roundRobinWithNoSlaves()
     {
         // Given
         SlavePriority roundRobin = SlavePriorities.roundRobin();

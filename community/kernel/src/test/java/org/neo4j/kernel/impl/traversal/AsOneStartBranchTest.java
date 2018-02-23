@@ -33,10 +33,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AsOneStartBranchTest
+class AsOneStartBranchTest
 {
     @Test
-    public void donNotExhaustIteratorWhenUsingRelationshipPath()
+    void donNotExhaustIteratorWhenUsingRelationshipPath()
     {
         // Given
         Iterable<Node> nodeIterable = mock( Iterable.class );

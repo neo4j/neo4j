@@ -31,14 +31,14 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DefaultPageCursorTracerTest
+class DefaultPageCursorTracerTest
 {
     private PageSwapper swapper;
     private PageCursorTracer pageCursorTracer;
     private DefaultPageCacheTracer cacheTracer;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         cacheTracer = new DefaultPageCacheTracer();
         pageCursorTracer = createTracer();
@@ -46,7 +46,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void countPinsAndUnpins()
+    void countPinsAndUnpins()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
         pinEvent.done();
@@ -57,7 +57,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void noHitForPinEventWithPageFault()
+    void noHitForPinEventWithPageFault()
     {
         pinFaultAndHit();
 
@@ -67,7 +67,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void hitForPinEventWithoutPageFault()
+    void hitForPinEventWithoutPageFault()
     {
         pinAndHit();
 
@@ -76,7 +76,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void accumulateHitsReporting()
+    void accumulateHitsReporting()
     {
         pinAndHit();
         pinAndHit();
@@ -92,7 +92,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void accumulatedFaultsReporting()
+    void accumulatedFaultsReporting()
     {
         pinFaultAndHit();
         pinFaultAndHit();
@@ -110,7 +110,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void countHitsOnlyForPinEventsWithoutPageFaults()
+    void countHitsOnlyForPinEventsWithoutPageFaults()
     {
         pinAndHit();
         pinAndHit();
@@ -125,7 +125,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void countPageFaultsAndBytesRead()
+    void countPageFaultsAndBytesRead()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
         {
@@ -149,7 +149,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void countPageEvictions()
+    void countPageEvictions()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
         {
@@ -173,7 +173,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void countFlushesAndBytesWritten()
+    void countFlushesAndBytesWritten()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
         {
@@ -206,7 +206,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void reportCountersToPageCursorTracer()
+    void reportCountersToPageCursorTracer()
     {
         generateEventSet();
         pageCursorTracer.reportEvents();
@@ -235,7 +235,7 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void shouldCalculateHitRatio()
+    void shouldCalculateHitRatio()
     {
         assertEquals( 0d, pageCursorTracer.hitRatio(), 0.0001 );
 

@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.plugins;
 
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -33,24 +33,24 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.repr.formats.NullFormat;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PluginManagerTest
+class PluginManagerTest
 {
     private static PluginManager manager;
     private static GraphDatabaseAPI graphDb;
 
     @BeforeAll
-    public static void loadExtensionManager()
+    static void loadExtensionManager()
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         manager = new PluginManager( null, NullLogProvider.getInstance() );
     }
 
     @AfterAll
-    public static void destroyExtensionManager()
+    static void destroyExtensionManager()
     {
         manager = null;
         if ( graphDb != null )
@@ -61,7 +61,7 @@ public class PluginManagerTest
     }
 
     @Test
-    public void canGetUrisForNode()
+    void canGetUrisForNode()
     {
         Map<String, List<String>> extensions = manager.getExensionsFor( GraphDatabaseService.class );
         List<String> methods = extensions.get( FunctionalTestPlugin.class.getSimpleName() );
@@ -70,7 +70,7 @@ public class PluginManagerTest
     }
 
     @Test
-    public void canInvokeExtension() throws Exception
+    void canInvokeExtension() throws Exception
     {
         manager.invoke( graphDb, FunctionalTestPlugin.class.getSimpleName(), GraphDatabaseService.class,
                 FunctionalTestPlugin.CREATE_NODE, graphDb,

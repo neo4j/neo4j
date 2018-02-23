@@ -633,7 +633,7 @@ public class TransactionGuardIT
             return transactionTimeoutMonitor;
         }
 
-        public void clear()
+        void clear()
         {
             setTransactionTimeoutMonitor( null );
         }

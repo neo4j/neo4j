@@ -32,14 +32,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ReaderTest
+class ReaderTest
 {
     private final FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
     private final StoreChannel channel = mock( StoreChannel.class );
     private final File file = mock( File.class );
 
     @Test
-    public void shouldCloseChannelOnClose() throws Exception
+    void shouldCloseChannelOnClose() throws Exception
     {
         // given
         when( fsa.open( file, OpenMode.READ ) ).thenReturn( channel );
@@ -53,7 +53,7 @@ public class ReaderTest
     }
 
     @Test
-    public void shouldUpdateTimeStamp() throws Exception
+    void shouldUpdateTimeStamp() throws Exception
     {
         // given
         Reader reader = new Reader( fsa, file, 0 );

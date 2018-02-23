@@ -29,18 +29,18 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-public class CypherUpdateMapTest
+class CypherUpdateMapTest
 {
     private GraphDatabaseService db;
 
     @Test
-    public void updateNodeByMapParameter()
+    void updateNodeByMapParameter()
     {
         db.execute(
                 "CREATE (n:Reference) SET n = {data} RETURN n" ,
@@ -68,7 +68,7 @@ public class CypherUpdateMapTest
         assertThat( node2, inTxS( hasProperty( "key3" ).withValue(5678) ) );
     }
 
-    public <T> Matcher<? super T> inTxS( final Matcher<T> inner )
+    private <T> Matcher<? super T> inTxS( final Matcher<T> inner )
     {
         return inTx( db, inner, false );
     }
@@ -82,13 +82,13 @@ public class CypherUpdateMapTest
     }
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterEach
-    public void cleanup()
+    void cleanup()
     {
         db.shutdown();
     }

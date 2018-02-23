@@ -35,12 +35,12 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FulltextUpdateApplierTest
+class FulltextUpdateApplierTest
 {
     private LifeSupport life;
     private FulltextUpdateApplier applier;
@@ -49,7 +49,7 @@ public class FulltextUpdateApplierTest
     private Log log;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         life = new LifeSupport();
         log = NullLog.getInstance();
@@ -64,13 +64,13 @@ public class FulltextUpdateApplierTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         life.shutdown();
     }
 
     @Test
-    public void exceptionsDuringIndexUpdateMustPropagateToTheCaller() throws Exception
+    void exceptionsDuringIndexUpdateMustPropagateToTheCaller() throws Exception
     {
         startApplier();
         AsyncFulltextIndexOperation op = applier.updatePropertyData( null, null );
@@ -87,7 +87,7 @@ public class FulltextUpdateApplierTest
     }
 
     @Test
-    public void exceptionsDuringNodePopulationMustBeLoggedAndMarkTheIndexAsFailed() throws Exception
+    void exceptionsDuringNodePopulationMustBeLoggedAndMarkTheIndexAsFailed() throws Exception
     {
         startApplier();
         LuceneFulltext index = new StubLuceneFulltext();
@@ -108,7 +108,7 @@ public class FulltextUpdateApplierTest
     }
 
     @Test
-    public void exceptionsDuringRelationshipPopulationMustBeLoggedAndMarkTheIndexAsFailed() throws Exception
+    void exceptionsDuringRelationshipPopulationMustBeLoggedAndMarkTheIndexAsFailed() throws Exception
     {
         startApplier();
         LuceneFulltext index = new StubLuceneFulltext();

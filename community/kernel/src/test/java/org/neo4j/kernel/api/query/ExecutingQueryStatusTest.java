@@ -37,12 +37,12 @@ import org.neo4j.time.FakeClock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ExecutingQueryStatusTest
+class ExecutingQueryStatusTest
 {
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-16T16:14:12+01:00" ) );
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInRunningState()
+    void shouldProduceSensibleMapRepresentationInRunningState()
     {
         // when
         String status = SimpleState.running().name();
@@ -52,7 +52,7 @@ public class ExecutingQueryStatusTest
     }
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInPlanningState()
+    void shouldProduceSensibleMapRepresentationInPlanningState()
     {
         // when
         String status = SimpleState.planning().name();
@@ -62,7 +62,7 @@ public class ExecutingQueryStatusTest
     }
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInWaitingOnLockState()
+    void shouldProduceSensibleMapRepresentationInWaitingOnLockState()
     {
         // given
         long[] resourceIds = {17};
@@ -88,7 +88,7 @@ public class ExecutingQueryStatusTest
     }
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInWaitingOnQueryState()
+    void shouldProduceSensibleMapRepresentationInWaitingOnQueryState()
     {
         // given
         WaitingOnQuery status =
@@ -120,7 +120,7 @@ public class ExecutingQueryStatusTest
         assertEquals( expected, statusMap );
     }
 
-    static ResourceType resourceType( String name )
+    private static ResourceType resourceType( String name )
     {
         return new ResourceType()
         {

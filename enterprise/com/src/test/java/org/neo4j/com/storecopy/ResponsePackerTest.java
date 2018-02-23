@@ -21,7 +21,6 @@ package org.neo4j.com.storecopy;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.com.RequestContext;
@@ -37,19 +36,19 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
-public class ResponsePackerTest
+class ResponsePackerTest
 {
     @Test
-    public void shouldHaveFixedTargetTransactionIdEvenIfLastTransactionIdIsMoving() throws Exception
+    void shouldHaveFixedTargetTransactionIdEvenIfLastTransactionIdIsMoving() throws Exception
     {
         // GIVEN
         LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );
@@ -98,13 +97,13 @@ public class ResponsePackerTest
         return new RequestContext( 0, 0, 0, txId, 0 );
     }
 
-    public class EndlessCursor implements TransactionCursor
+    class EndlessCursor implements TransactionCursor
     {
         private final LogPosition position = new LogPosition( 0, 0 );
         private long txId;
         private CommittedTransactionRepresentation transaction;
 
-        public EndlessCursor( long txId )
+        EndlessCursor( long txId )
         {
             this.txId = txId;
         }

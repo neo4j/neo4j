@@ -45,7 +45,7 @@ public class BiggerThanLogTxIT
     public ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
 
-    protected ClusterManager.ManagedCluster cluster;
+    private ClusterManager.ManagedCluster cluster;
 
     private final TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
 

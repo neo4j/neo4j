@@ -46,14 +46,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
 import static org.neo4j.causalclustering.discovery.TestTopology.addressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class ClusterOverviewProcedureTest
+class ClusterOverviewProcedureTest
 {
     @Test
-    public void shouldProvideOverviewOfCoreServersAndReadReplicas() throws Exception
+    void shouldProvideOverviewOfCoreServersAndReadReplicas() throws Exception
     {
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );

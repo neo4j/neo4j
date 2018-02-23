@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class FileSizeThresholdTest
+class FileSizeThresholdTest
 {
 
     private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
@@ -40,7 +40,7 @@ public class FileSizeThresholdTest
     private final long version = 1;
 
     @Test
-    public void shouldReturnFalseWhenFileSizeIsLowerThanMaxSize()
+    void shouldReturnFalseWhenFileSizeIsLowerThanMaxSize()
     {
         // given
         final long maxSize = 10;
@@ -57,7 +57,7 @@ public class FileSizeThresholdTest
     }
 
     @Test
-    public void shouldReturnTrueWhenASingleFileSizeIsGreaterOrEqualThanMaxSize()
+    void shouldReturnTrueWhenASingleFileSizeIsGreaterOrEqualThanMaxSize()
     {
         // given
         long sixteenGigabytes = 16L * 1024 * 1024 * 1024;
@@ -75,7 +75,7 @@ public class FileSizeThresholdTest
     }
 
     @Test
-    public void shouldSumSizeWhenCalledMultipleTimes()
+    void shouldSumSizeWhenCalledMultipleTimes()
     {
         // given
         final long maxSize = 10;
@@ -93,7 +93,7 @@ public class FileSizeThresholdTest
     }
 
     @Test
-    public void shouldForgetPreviousValuesAfterAInitCall()
+    void shouldForgetPreviousValuesAfterAInitCall()
     {
         // given
         final long maxSize = 10;

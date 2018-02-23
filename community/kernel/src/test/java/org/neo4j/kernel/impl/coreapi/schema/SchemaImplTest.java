@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -48,19 +48,19 @@ public class SchemaImplTest
     private GraphDatabaseService db;
 
     @BeforeEach
-    public void createDb()
+    void createDb()
     {
         db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( new File( "mydb" ) );
     }
 
     @AfterEach
-    public void shutdownDb()
+    void shutdownDb()
     {
         db.shutdown();
     }
 
     @Test
-    public void testGetIndexPopulationProgress() throws Exception
+    void testGetIndexPopulationProgress() throws Exception
     {
         assertFalse( indexExists( Label.label( "User" ) ) );
 

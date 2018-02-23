@@ -42,7 +42,7 @@ public class AdversarialChannelDefaultFileSystemAbstraction extends DefaultFileS
         this( new RandomAdversary( 0.5, 0.0, 0.0 ) );
     }
 
-    public AdversarialChannelDefaultFileSystemAbstraction( RandomAdversary adversary )
+    private AdversarialChannelDefaultFileSystemAbstraction( RandomAdversary adversary )
     {
         this.adversary = adversary;
     }

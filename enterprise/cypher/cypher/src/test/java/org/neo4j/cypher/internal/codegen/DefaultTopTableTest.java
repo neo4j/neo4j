@@ -41,7 +41,7 @@ public class DefaultTopTableTest
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldHandleAddingMoreValuesThanCapacity()
+    void shouldHandleAddingMoreValuesThanCapacity()
     {
         DefaultTopTable table = new DefaultTopTable( 7 );
         for ( Long i : testValues )
@@ -63,7 +63,7 @@ public class DefaultTopTableTest
     }
 
     @Test
-    public void shouldHandleWhenNotCompletelyFilledToCapacity()
+    void shouldHandleWhenNotCompletelyFilledToCapacity()
     {
         DefaultTopTable table = new DefaultTopTable( 20 );
         for ( Long i : testValues )
@@ -85,7 +85,7 @@ public class DefaultTopTableTest
     }
 
     @Test
-    public void shouldHandleWhenEmpty()
+    void shouldHandleWhenEmpty()
     {
         DefaultTopTable table = new DefaultTopTable( 10 );
 
@@ -97,21 +97,21 @@ public class DefaultTopTableTest
     }
 
     @Test
-    public void shouldThrowOnInitializeToZeroCapacity()
+    void shouldThrowOnInitializeToZeroCapacity()
     {
         exception.expect( IllegalArgumentException.class );
         new DefaultTopTable( 0 );
     }
 
     @Test
-    public void shouldThrowOnInitializeToNegativeCapacity()
+    void shouldThrowOnInitializeToNegativeCapacity()
     {
         exception.expect( IllegalArgumentException.class );
         new DefaultTopTable( -1 );
     }
 
     @Test
-    public void shouldThrowOnSortNotCalledBeforeIterator()
+    void shouldThrowOnSortNotCalledBeforeIterator()
     {
         DefaultTopTable table = new DefaultTopTable( 5 );
         for ( Long i : testValues )

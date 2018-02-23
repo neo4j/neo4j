@@ -39,7 +39,7 @@ public class LargePropertiesIT
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void readArrayAndStringPropertiesWithDifferentBlockSizes()
+    void readArrayAndStringPropertiesWithDifferentBlockSizes()
     {
         String stringValue = RandomStringUtils.randomAlphanumeric( 10000 );
         byte[] arrayValue = RandomStringUtils.randomAlphanumeric( 10000 ).getBytes();

@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class ErrorHandler implements AutoCloseable
+class ErrorHandler implements AutoCloseable
 {
     private final List<Throwable> throwables = new ArrayList<>();
     private final String message;
 
-    public ErrorHandler( String message )
+    ErrorHandler( String message )
     {
         this.message = message;
     }

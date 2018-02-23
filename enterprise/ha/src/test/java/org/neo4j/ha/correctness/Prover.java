@@ -47,7 +47,7 @@ public class Prover
         new Prover().prove();
     }
 
-    public void prove() throws Exception
+    private void prove() throws Exception
     {
         try
         {

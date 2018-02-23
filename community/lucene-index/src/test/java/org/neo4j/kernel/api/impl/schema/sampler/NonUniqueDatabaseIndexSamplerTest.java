@@ -66,7 +66,7 @@ public class NonUniqueDatabaseIndexSamplerTest
     private final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
 
     @Test
-    public void nonUniqueSamplingCancel() throws IndexNotFoundKernelException, IOException
+    void nonUniqueSamplingCancel() throws IndexNotFoundKernelException, IOException
     {
         Terms terms = getTerms( "test", 1 );
         Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "0string", terms, "id", terms, "0string", terms );
@@ -82,7 +82,7 @@ public class NonUniqueDatabaseIndexSamplerTest
     }
 
     @Test
-    public void nonUniqueIndexSampling() throws Exception
+    void nonUniqueIndexSampling() throws Exception
     {
         Terms aTerms = getTerms( "a", 1 );
         Terms idTerms = getTerms( "id", 2 );
@@ -96,7 +96,7 @@ public class NonUniqueDatabaseIndexSamplerTest
     }
 
     @Test
-    public void samplingOfLargeNumericValues() throws Exception
+    void samplingOfLargeNumericValues() throws Exception
     {
         try ( RAMDirectory dir = new RAMDirectory();
               WritableIndexPartition indexPartition = new WritableIndexPartition( new File( "testPartition" ), dir,

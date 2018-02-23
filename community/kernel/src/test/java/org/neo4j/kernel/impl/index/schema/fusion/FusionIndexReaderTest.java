@@ -28,14 +28,15 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -50,57 +51,52 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class FusionIndexReaderTest
+class FusionIndexReaderTest
 {
     private IndexReader nativeReader;
     private IndexReader spatialReader;
     private IndexReader luceneReader;
-    private IndexReader temporalReader;
     private IndexReader[] allReaders;
     private FusionIndexReader fusionIndexReader;
     private static final int PROP_KEY = 1;
     private static final int LABEL_KEY = 11;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         nativeReader = mock( IndexReader.class );
         spatialReader = mock( IndexReader.class );
-        temporalReader = mock( IndexReader.class );
         luceneReader = mock( IndexReader.class );
-        allReaders = new IndexReader[]{nativeReader, spatialReader, temporalReader, luceneReader};
-        fusionIndexReader = new FusionIndexReader( nativeReader, spatialReader, temporalReader, luceneReader, new FusionSelector(),
+        allReaders = new IndexReader[]{nativeReader, spatialReader, luceneReader};
+        fusionIndexReader = new FusionIndexReader( nativeReader, spatialReader, luceneReader, new NativeSelector(),
                 IndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     /* close */
 
     @Test
-    public void closeMustCloseBothNativeAndLucene()
+    void closeMustCloseBothNativeAndLucene()
     {
         // when
         fusionIndexReader.close();
 
         // then
-        for ( IndexReader reader : allReaders )
-        {
-            verify( reader, times( 1 ) ).close();
-        }
+        verify( nativeReader, times( 1 ) ).close();
+        verify( spatialReader, times( 1 ) ).close();
+        verify( luceneReader, times( 1 ) ).close();
     }
 
     // close iterator
 
     @Test
-    public void closeIteratorMustCloseNativeAndLucene() throws Exception
+    void closeIteratorMustCloseNativeAndLucene() throws Exception
     {
         // given
         PrimitiveLongResourceIterator nativeIter = mock( PrimitiveLongResourceIterator.class );
         PrimitiveLongResourceIterator spatialIter = mock( PrimitiveLongResourceIterator.class );
-        PrimitiveLongResourceIterator temporalIter = mock( PrimitiveLongResourceIterator.class );
         PrimitiveLongResourceIterator luceneIter = mock( PrimitiveLongResourceIterator.class );
         when( nativeReader.query( any( IndexQuery.class ) ) ).thenReturn( nativeIter );
         when( spatialReader.query( any( IndexQuery.class ) ) ).thenReturn( spatialIter );
-        when( temporalReader.query( any( IndexQuery.class ) ) ).thenReturn( temporalIter );
         when( luceneReader.query( any( IndexQuery.class ) ) ).thenReturn( luceneIter );
 
         // when
@@ -109,19 +105,17 @@ public class FusionIndexReaderTest
         // then
         verify( nativeIter, times( 1 ) ).close();
         verify( spatialIter, times( 1 ) ).close();
-        verify( temporalIter, times( 1 ) ).close();
         verify( luceneIter, times( 1 ) ).close();
     }
 
     /* countIndexedNodes */
 
     @Test
-    public void countIndexedNodesMustSelectCorrectReader()
+    void countIndexedNodesMustSelectCorrectReader()
     {
         // given
         Value[] nativeValues = FusionIndexTestHelp.valuesSupportedByNative();
         Value[] spatialValues = FusionIndexTestHelp.valuesSupportedBySpatial();
-        Value[] temporalValues = FusionIndexTestHelp.valuesSupportedByTemporal();
         Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
@@ -137,13 +131,7 @@ public class FusionIndexReaderTest
             verifyCountIndexedNodesWithCorrectReader( spatialReader, spatialValue );
         }
 
-        // when passing temporal values
-        for ( Value temporalValue : temporalValues )
-        {
-            verifyCountIndexedNodesWithCorrectReader( temporalReader, temporalValue );
-        }
-
-        // when passing values not handled by others
+        // when passing values not handled by native or spatial
         for ( Value otherValue : otherValues )
         {
             verifyCountIndexedNodesWithCorrectReader( luceneReader, otherValue );
@@ -175,14 +163,14 @@ public class FusionIndexReaderTest
     /* query */
 
     @Test
-    public void mustSelectLuceneForCompositePredicate() throws Exception
+    void mustSelectLuceneForCompositePredicate() throws Exception
     {
         // then
         verifyQueryWithCorrectReader( luceneReader, any( IndexQuery.class ), any( IndexQuery.class ) );
     }
 
     @Test
-    public void mustSelectNativeForExactPredicateWithNumberValue() throws Exception
+    void mustSelectNativeForExactPredicateWithNumberValue() throws Exception
     {
         // given
         for ( Object numberValue : FusionIndexTestHelp.valuesSupportedByNative() )
@@ -195,7 +183,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectSpatialForExactPredicateWithSpatialValue() throws Exception
+    void mustSelectSpatialForExactPredicateWithSpatialValue() throws Exception
     {
         // given
         for ( Object spatialValue : FusionIndexTestHelp.valuesSupportedBySpatial() )
@@ -208,20 +196,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectTemporalForExactPredicateWithTemporalValue() throws Exception
-    {
-        // given
-        for ( Object temporalValue : FusionIndexTestHelp.valuesSupportedByTemporal() )
-        {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, temporalValue );
-
-            // then
-            verifyQueryWithCorrectReader( temporalReader, indexQuery );
-        }
-    }
-
-    @Test
-    public void mustSelectLuceneForExactPredicateWithOtherValue() throws Exception
+    void mustSelectLuceneForExactPredicateWithNonNumberAndNonSpatialValue() throws Exception
     {
         // given
         for ( Object nonNumberOrSpatialValue : FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial() )
@@ -234,7 +209,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectLuceneForRangeStringPredicate() throws Exception
+    void mustSelectLuceneForRangeStringPredicate() throws Exception
     {
         // given
         StringRangePredicate stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
@@ -244,7 +219,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectNativeForRangeNumericPredicate() throws Exception
+    void mustSelectNativeForRangeNumericPredicate() throws Exception
     {
         // given
         NumberRangePredicate numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
@@ -254,7 +229,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectSpatialForRangeGeometricPredicate() throws Exception
+    void mustSelectSpatialForRangeGeometricPredicate() throws Exception
     {
         // given
         PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0);
@@ -266,7 +241,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectLuceneForStringPrefixPredicate() throws Exception
+    void mustSelectLuceneForStringPrefixPredicate() throws Exception
     {
         // given
         StringPrefixPredicate stringPrefix = IndexQuery.stringPrefix( PROP_KEY, "abc" );
@@ -276,7 +251,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectLuceneForStringSuffixPredicate() throws Exception
+    void mustSelectLuceneForStringSuffixPredicate() throws Exception
     {
         // given
         StringSuffixPredicate stringPrefix = IndexQuery.stringSuffix( PROP_KEY, "abc" );
@@ -286,7 +261,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectLuceneForStringContainsPredicate() throws Exception
+    void mustSelectLuceneForStringContainsPredicate() throws Exception
     {
         // given
         StringContainsPredicate stringContains = IndexQuery.stringContains( PROP_KEY, "abc" );
@@ -296,13 +271,12 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustCombineResultFromExistsPredicate() throws Exception
+    void mustCombineResultFromExistsPredicate() throws Exception
     {
         // given
         IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
         when( nativeReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 0L, 1L, 4L, 7L ) );
-        when( spatialReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3L, 9L, 10L ) );
-        when( temporalReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 8L, 11L, 12L ) );
+        when( spatialReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3L, 8L, 9L ) );
         when( luceneReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2L, 5L, 6L ) );
 
         // when

@@ -24,9 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
@@ -51,7 +49,7 @@ public class IOUtilsTest
     private AutoCloseable goodClosable2;
 
     @Test
-    public void closeAllSilently() throws Exception
+    void closeAllSilently() throws Exception
     {
         IOUtils.closeAllSilently( goodClosable1, faultyClosable, goodClosable2 );
 
@@ -61,7 +59,7 @@ public class IOUtilsTest
     }
 
     @Test
-    public void closeAllAndRethrowException() throws Exception
+    void closeAllAndRethrowException() throws Exception
     {
         doThrow( new IOException( "Faulty closable" ) ).when( faultyClosable ).close();
 

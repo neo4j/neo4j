@@ -30,9 +30,9 @@ import org.neo4j.graphdb.RelationshipType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
+class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
-    protected Dijkstra<Double> getDijkstra( String startNode, String endNode, RelationshipType... relTypes )
+    private Dijkstra<Double> getDijkstra( String startNode, String endNode, RelationshipType... relTypes )
     {
         return new Dijkstra<>( 0.0, graph.getNode( startNode ), graph.getNode( endNode ),
                 ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
@@ -40,7 +40,7 @@ public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testRun()
+    void testRun()
     {
         graph.setCurrentRelType( MyRelTypes.R1 );
         graph.makeEdgeChain( "a,b,c,d,e" );

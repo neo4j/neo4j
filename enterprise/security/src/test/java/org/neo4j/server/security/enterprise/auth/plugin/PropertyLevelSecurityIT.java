@@ -54,10 +54,10 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class PropertyLevelSecurityIT
+class PropertyLevelSecurityIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private GraphDatabaseFacade db;
     private EnterpriseAuthAndUserManager authManager;
@@ -66,7 +66,7 @@ public class PropertyLevelSecurityIT
     private LoginContext morpheus;
 
     @BeforeEach
-    public void setUp() throws Throwable
+    void setUp() throws Throwable
     {
         TestGraphDatabaseFactory s = new TestEnterpriseGraphDatabaseFactory();
         db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( testDirectory.directory() )
@@ -90,7 +90,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldNotShowRestrictedTokensForRestrictedUser() throws Throwable
+    void shouldNotShowRestrictedTokensForRestrictedUser() throws Throwable
     {
         Result result = execute( neo, "CREATE (n {name: 'Andersson', alias: 'neo'}) ", Collections.emptyMap() );
         assertThat( result.getQueryStatistics().getNodesCreated(), equalTo( 1 ) );
@@ -104,7 +104,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldShowRestrictedTokensForUnrestrictedUser() throws Throwable
+    void shouldShowRestrictedTokensForUnrestrictedUser() throws Throwable
     {
         Result result = execute( neo, "CREATE (n {name: 'Andersson', alias: 'neo'}) ", Collections.emptyMap() );
         assertThat( result.getQueryStatistics().getNodesCreated(), equalTo( 1 ) );
@@ -118,7 +118,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissing() throws Throwable
+    void shouldBehaveLikeDataIsMissing() throws Throwable
     {
         execute( neo, "CREATE (n {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -140,7 +140,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingWhenFiltering() throws Throwable
+    void shouldBehaveLikeDataIsMissingWhenFiltering() throws Throwable
     {
         execute( neo, "CREATE (n {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -155,7 +155,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForKeys() throws Throwable
+    void shouldBehaveLikeDataIsMissingForKeys() throws Throwable
     {
         execute( neo, "CREATE (n {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -183,7 +183,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForProperties() throws Throwable
+    void shouldBehaveLikeDataIsMissingForProperties() throws Throwable
     {
         execute( neo, "CREATE (n {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -214,7 +214,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForExists() throws Throwable
+    void shouldBehaveLikeDataIsMissingForExists() throws Throwable
     {
         execute( neo, "CREATE (n:Person {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -234,7 +234,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForStringBegins() throws Throwable
+    void shouldBehaveLikeDataIsMissingForStringBegins() throws Throwable
     {
         execute( neo, "CREATE (n:Person {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -254,7 +254,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForNotContains() throws Throwable
+    void shouldBehaveLikeDataIsMissingForNotContains() throws Throwable
     {
         execute( neo, "CREATE (n:Person {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -279,7 +279,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForRange() throws Throwable
+    void shouldBehaveLikeDataIsMissingForRange() throws Throwable
     {
         execute( neo, "CREATE (n:Person {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -299,7 +299,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForCompositeQuery() throws Throwable
+    void shouldBehaveLikeDataIsMissingForCompositeQuery() throws Throwable
     {
         execute( neo, "CREATE (n:Person {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 
@@ -321,7 +321,7 @@ public class PropertyLevelSecurityIT
     // INDEX
 
     @Test
-    public void shouldBehaveLikeDataIsMissingWhenFilteringWithIndex() throws Throwable
+    void shouldBehaveLikeDataIsMissingWhenFilteringWithIndex() throws Throwable
     {
         execute( neo, "CREATE (n:Person {name: 'Andersson'})", Collections.emptyMap() ).close();
         execute( neo, "CREATE INDEX ON :Person(alias)", Collections.emptyMap() ).close();
@@ -343,7 +343,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForExistsWithIndex() throws Throwable
+    void shouldBehaveLikeDataIsMissingForExistsWithIndex() throws Throwable
     {
         execute( neo, "CREATE INDEX ON :Person(alias)", Collections.emptyMap() ).close();
         execute( neo, "CALL db.awaitIndexes", Collections.emptyMap() ).close();
@@ -366,7 +366,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForStringBeginsWithIndex() throws Throwable
+    void shouldBehaveLikeDataIsMissingForStringBeginsWithIndex() throws Throwable
     {
         execute( neo, "CREATE INDEX ON :Person(alias)", Collections.emptyMap() ).close();
         execute( neo, "CALL db.awaitIndexes", Collections.emptyMap() ).close();
@@ -389,7 +389,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForRangeWithIndex() throws Throwable
+    void shouldBehaveLikeDataIsMissingForRangeWithIndex() throws Throwable
     {
         execute( neo, "CREATE INDEX ON :Person(secret)", Collections.emptyMap() ).close();
         execute( neo, "CALL db.awaitIndexes", Collections.emptyMap() ).close();
@@ -412,7 +412,7 @@ public class PropertyLevelSecurityIT
     }
 
     @Test
-    public void shouldBehaveLikeDataIsMissingForCompositeWithIndex() throws Throwable
+    void shouldBehaveLikeDataIsMissingForCompositeWithIndex() throws Throwable
     {
         execute( neo, "CREATE INDEX ON :Person(name , alias)", Collections.emptyMap() ).close();
         execute( neo, "CREATE INDEX ON :Person(name)", Collections.emptyMap() ).close();
@@ -439,7 +439,7 @@ public class PropertyLevelSecurityIT
     // TODO: when the realtionship properties are returned through PropertyCursor as well this should be unignored and expanded upon
 
     @Disabled
-    public void shouldBehaveLikeDataIsMissingForRelationshipProperties() throws Throwable
+    void shouldBehaveLikeDataIsMissingForRelationshipProperties() throws Throwable
     {
         execute( neo, "CREATE (n {name: 'Andersson'}) CREATE (m { name: 'Betasson'}) CREATE (n)-[:Neighbour]->(m)", Collections.emptyMap() ).close();
 
@@ -469,7 +469,7 @@ public class PropertyLevelSecurityIT
     // PROCS
 
     @Test
-    public void shouldBehaveWithProcedures() throws Throwable
+    void shouldBehaveWithProcedures() throws Throwable
     {
         execute( neo, "CREATE (n:Person {name: 'Andersson'}) ", Collections.emptyMap() ).close();
 

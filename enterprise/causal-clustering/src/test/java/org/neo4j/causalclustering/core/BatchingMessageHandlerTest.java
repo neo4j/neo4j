@@ -39,7 +39,6 @@ import org.neo4j.logging.NullLogProvider;
 import static java.lang.Thread.sleep;
 import static java.time.Duration.ofMillis;
 import static java.time.Instant.ofEpochMilli;
-import static java.util.UUID.randomUUID;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +52,7 @@ import static org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedIns
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClusterIdAwareMessage.of;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class BatchingMessageHandlerTest
+class BatchingMessageHandlerTest
 {
     private static final int MAX_BATCH = 16;
     private static final int QUEUE_SIZE = 64;
@@ -65,7 +64,7 @@ public class BatchingMessageHandlerTest
     private Function<Runnable,ContinuousJob> jobSchedulerFactory = ignored -> mockJob;
 
     @Test
-    public void shouldInvokeInnerHandlerWhenRun()
+    void shouldInvokeInnerHandlerWhenRun()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -84,7 +83,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldInvokeHandlerOnQueuedMessage() throws Throwable
+    void shouldInvokeHandlerOnQueuedMessage() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -110,7 +109,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchRequests()
+    void shouldBatchRequests()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -135,7 +134,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchUsingReceivedInstantOfFirstReceivedMessage()
+    void shouldBatchUsingReceivedInstantOfFirstReceivedMessage()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -160,7 +159,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchNewEntriesAndHandleOtherMessagesSingularly()
+    void shouldBatchNewEntriesAndHandleOtherMessagesSingularly()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -198,7 +197,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldDropMessagesAfterBeingStopped() throws Throwable
+    void shouldDropMessagesAfterBeingStopped() throws Throwable
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -220,7 +219,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldGiveUpAddingMessagesInTheQueueIfTheHandlerHasBeenStopped()
+    void shouldGiveUpAddingMessagesInTheQueueIfTheHandlerHasBeenStopped()
     {
         assertTimeout( ofMillis( 5_000 ), () -> {
             //  given
@@ -253,7 +252,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldDelegateStart() throws Throwable
+    void shouldDelegateStart() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -268,7 +267,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldDelegateStop() throws Throwable
+    void shouldDelegateStop() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -282,7 +281,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldStartJob() throws Throwable
+    void shouldStartJob() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -297,7 +296,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldStopJob() throws Throwable
+    void shouldStopJob() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(

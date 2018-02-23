@@ -25,10 +25,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DuplicatingLogProviderTest
+class DuplicatingLogProviderTest
 {
     @Test
-    public void shouldReturnSameLoggerForSameClass()
+    void shouldReturnSameLoggerForSameClass()
     {
         // Given
         DuplicatingLogProvider logProvider = new DuplicatingLogProvider();
@@ -39,7 +39,7 @@ public class DuplicatingLogProviderTest
     }
 
     @Test
-    public void shouldReturnSameLoggerForSameContext()
+    void shouldReturnSameLoggerForSameContext()
     {
         // Given
         DuplicatingLogProvider logProvider = new DuplicatingLogProvider();
@@ -50,7 +50,7 @@ public class DuplicatingLogProviderTest
     }
 
     @Test
-    public void shouldRemoveLogProviderFromDuplication()
+    void shouldRemoveLogProviderFromDuplication()
     {
         // Given
         AssertableLogProvider logProvider1 = new AssertableLogProvider();

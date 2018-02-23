@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
@@ -38,14 +37,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.count;
 
-public class ClusterMembersTest
+class ClusterMembersTest
 {
     private final ObservedClusterMembers observedClusterMembers = mock( ObservedClusterMembers.class );
     private final HighAvailabilityMemberStateMachine stateMachine = mock( HighAvailabilityMemberStateMachine.class );
     private final ClusterMembers clusterMembers = new ClusterMembers( observedClusterMembers, stateMachine );
 
     @Test
-    public void currentInstanceStateUpdated()
+    void currentInstanceStateUpdated()
     {
         ClusterMember currentInstance = createClusterMember( 1, HighAvailabilityModeSwitcher.UNKNOWN );
 
@@ -58,7 +57,7 @@ public class ClusterMembersTest
     }
 
     @Test
-    public void aliveMembersWithValidCurrentInstanceState()
+    void aliveMembersWithValidCurrentInstanceState()
     {
         ClusterMember currentInstance = createClusterMember( 1, HighAvailabilityModeSwitcher.UNKNOWN );
         ClusterMember otherInstance = createClusterMember( 2, HighAvailabilityModeSwitcher.SLAVE );
@@ -76,7 +75,7 @@ public class ClusterMembersTest
     }
 
     @Test
-    public void observedStateDoesNotKnowCurrentInstance()
+    void observedStateDoesNotKnowCurrentInstance()
     {
         ClusterMember currentInstance = createClusterMember( 1, HighAvailabilityModeSwitcher.SLAVE );
         ClusterMember otherInstance = createClusterMember( 2, HighAvailabilityModeSwitcher.MASTER );
@@ -91,7 +90,7 @@ public class ClusterMembersTest
     }
 
     @Test
-    public void incorrectlyObservedCurrentInstanceStateUpdated()
+    void incorrectlyObservedCurrentInstanceStateUpdated()
     {
         ClusterMember currentInstance = createClusterMember( 1, HighAvailabilityModeSwitcher.SLAVE );
         ClusterMember otherInstance = createClusterMember( 2, HighAvailabilityModeSwitcher.MASTER );
@@ -108,7 +107,7 @@ public class ClusterMembersTest
     }
 
     @Test
-    public void currentMemberHasCorrectRoleWhenInPendingState()
+    void currentMemberHasCorrectRoleWhenInPendingState()
     {
         ClusterMember member = createClusterMember( 1, HighAvailabilityModeSwitcher.MASTER );
 
@@ -119,7 +118,7 @@ public class ClusterMembersTest
     }
 
     @Test
-    public void currentMemberHasCorrectRoleWhenInToSlaveState()
+    void currentMemberHasCorrectRoleWhenInToSlaveState()
     {
         ClusterMember member = createClusterMember( 1, HighAvailabilityModeSwitcher.MASTER );
 
@@ -130,7 +129,7 @@ public class ClusterMembersTest
     }
 
     @Test
-    public void currentMemberHasCorrectRoleWhenInToMasterState()
+    void currentMemberHasCorrectRoleWhenInToMasterState()
     {
         ClusterMember member = createClusterMember( 1, HighAvailabilityModeSwitcher.MASTER );
 

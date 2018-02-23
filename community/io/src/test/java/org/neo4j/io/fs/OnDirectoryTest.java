@@ -21,9 +21,7 @@ package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.nio.file.FileVisitor;
@@ -38,16 +36,16 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.io.fs.FileVisitors.onDirectory;
 
 @ExtendWith( MockitoExtension.class )
-public class OnDirectoryTest
+class OnDirectoryTest
 {
     @Mock
-    public ThrowingConsumer<Path, IOException> operation;
+    private ThrowingConsumer<Path, IOException> operation;
 
     @Mock
-    public FileVisitor<Path> wrapped;
+    private FileVisitor<Path> wrapped;
 
     @Test
-    public void shouldOperateOnDirectories() throws IOException
+    void shouldOperateOnDirectories() throws IOException
     {
         Path dir = Paths.get( "/some/path" );
         onDirectory( operation, wrapped ).preVisitDirectory( dir, null );
@@ -55,7 +53,7 @@ public class OnDirectoryTest
     }
 
     @Test
-    public void shouldNotOperateOnFiles() throws IOException
+    void shouldNotOperateOnFiles() throws IOException
     {
         Path file = Paths.get( "/some/path" );
         onDirectory( operation, wrapped ).visitFile( file, null );

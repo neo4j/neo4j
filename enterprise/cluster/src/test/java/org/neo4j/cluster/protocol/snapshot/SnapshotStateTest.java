@@ -37,10 +37,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SnapshotStateTest
+class SnapshotStateTest
 {
     @Test
-    public void testNoSnapshotRequestIfCoordinatorInExistingCluster() throws Throwable
+    void testNoSnapshotRequestIfCoordinatorInExistingCluster() throws Throwable
     {
         Map<InstanceId, URI> extraMember = new HashMap<>();
         URI other = URI.create( "cluster://other");
@@ -49,7 +49,7 @@ public class SnapshotStateTest
     }
 
     @Test
-    public void testNoSnapshotRequestIfOnlyMember() throws Throwable
+    void testNoSnapshotRequestIfOnlyMember() throws Throwable
     {
         Map<InstanceId, URI> extraMember = new HashMap<>();
         baseNoSendTest( extraMember );

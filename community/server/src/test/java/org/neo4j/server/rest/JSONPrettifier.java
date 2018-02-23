@@ -29,7 +29,7 @@ import org.codehaus.jackson.map.ObjectWriter;
 /*
  * Naive implementation of a JSON prettifier.
  */
-public class JSONPrettifier
+class JSONPrettifier
 {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting()
             .create();

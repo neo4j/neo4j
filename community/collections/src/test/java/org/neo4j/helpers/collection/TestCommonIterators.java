@@ -42,10 +42,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class TestCommonIterators
+class TestCommonIterators
 {
     @Test
-    public void testNoDuplicatesFilteringIterator()
+    void testNoDuplicatesFilteringIterator()
     {
         List<Integer> ints = Arrays.asList( 1, 2, 2, 40, 100, 40, 101, 2, 3 );
         Iterator<Integer> iterator = FilteringIterator.noDuplicates( ints.iterator() );
@@ -58,7 +58,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void testCachingIterator()
+    void testCachingIterator()
     {
         Iterator<Integer> source = new RangeIterator( 8 );
         CachingIterator<Integer> caching = new CachingIterator<>( source );
@@ -159,7 +159,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void testPagingIterator()
+    void testPagingIterator()
     {
         Iterator<Integer> source = new RangeIterator( 24 );
         PagingIterator<Integer> pager = new PagingIterator<>( source, 10 );
@@ -196,7 +196,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void testFirstElement()
+    void testFirstElement()
     {
         Object object = new Object();
         Object object2 = new Object();
@@ -235,7 +235,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void testLastElement()
+    void testLastElement()
     {
         Object object = new Object();
         Object object2 = new Object();
@@ -274,7 +274,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void testSingleElement()
+    void testSingleElement()
     {
         Object object = new Object();
         Object object2 = new Object();
@@ -337,7 +337,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void getItemFromEnd()
+    void getItemFromEnd()
     {
         Iterable<Integer> ints = Arrays.asList( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 );
         assertEquals( (Integer) 9, Iterables.fromEnd( ints, 0 ) );
@@ -346,13 +346,13 @@ public class TestCommonIterators
     }
 
     @Test
-    public void iteratorsStreamForNull()
+    void iteratorsStreamForNull()
     {
         assertThrows( NullPointerException.class, () -> Iterators.stream( null ) );
     }
 
     @Test
-    public void iteratorsStream()
+    void iteratorsStream()
     {
         List<Object> list = Arrays.asList( 1, 2, "3", '4', null, "abc", "56789" );
 
@@ -362,7 +362,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void iteratorsStreamClosesResourceIterator()
+    void iteratorsStreamClosesResourceIterator()
     {
         List<Object> list = Arrays.asList( "a", "b", "c", "def" );
 
@@ -377,7 +377,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void iteratorsStreamCharacteristics()
+    void iteratorsStreamCharacteristics()
     {
         Iterator<Integer> iterator = Arrays.asList( 1, 2, 3 ).iterator();
         int characteristics = Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.SORTED;
@@ -388,13 +388,13 @@ public class TestCommonIterators
     }
 
     @Test
-    public void iterablesStreamForNull()
+    void iterablesStreamForNull()
     {
         assertThrows( NullPointerException.class, () -> Iterables.stream( null ) );
     }
 
     @Test
-    public void iterablesStream()
+    void iterablesStream()
     {
         List<Object> list = Arrays.asList( 1, 2, "3", '4', null, "abc", "56789" );
 
@@ -402,7 +402,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void iterablesStreamClosesResourceIterator()
+    void iterablesStreamClosesResourceIterator()
     {
         List<Object> list = Arrays.asList( "a", "b", "c", "def" );
 
@@ -417,7 +417,7 @@ public class TestCommonIterators
     }
 
     @Test
-    public void iterablesStreamCharacteristics()
+    void iterablesStreamCharacteristics()
     {
         Iterable<Integer> iterable = Arrays.asList( 1, 2, 3 );
         int characteristics = Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.NONNULL;

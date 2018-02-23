@@ -33,13 +33,13 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class PageCacheFlushTracingTest
+class PageCacheFlushTracingTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void tracePageCacheFlushProgress()
+    void tracePageCacheFlushProgress()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         GraphDatabaseService database = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )

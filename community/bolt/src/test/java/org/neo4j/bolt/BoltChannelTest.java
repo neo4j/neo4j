@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( MockitoExtension.class )
-public class BoltChannelTest
+class BoltChannelTest
 {
     private final String connector = "default";
     @Mock
@@ -47,7 +47,7 @@ public class BoltChannelTest
     private BoltMessageLogger messageLogger;
 
     @Test
-    public void shouldLogWhenOpened()
+    void shouldLogWhenOpened()
     {
         BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
         assertNotNull( boltChannel );
@@ -56,7 +56,7 @@ public class BoltChannelTest
     }
 
     @Test
-    public void shouldLogWhenClosed()
+    void shouldLogWhenClosed()
     {
         Channel channel = channelMock( true );
         when( channelHandlerContext.channel() ).thenReturn( channel );
@@ -71,7 +71,7 @@ public class BoltChannelTest
     }
 
     @Test
-    public void shouldCloseUnderlyingChannelWhenItIsOpen()
+    void shouldCloseUnderlyingChannelWhenItIsOpen()
     {
         Channel channel = channelMock( true );
         when( channelHandlerContext.channel() ).thenReturn( channel );
@@ -83,7 +83,7 @@ public class BoltChannelTest
     }
 
     @Test
-    public void shouldNotCloseUnderlyingChannelWhenItIsClosed()
+    void shouldNotCloseUnderlyingChannelWhenItIsClosed()
     {
         Channel channel = channelMock( false );
         when( channelHandlerContext.channel() ).thenReturn( channel );

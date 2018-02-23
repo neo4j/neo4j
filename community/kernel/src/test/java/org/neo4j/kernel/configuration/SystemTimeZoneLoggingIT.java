@@ -41,13 +41,13 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class SystemTimeZoneLoggingIT
+class SystemTimeZoneLoggingIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void databaseLogsUseSystemTimeZoneIfConfigure() throws IOException
+    void databaseLogsUseSystemTimeZoneIfConfigure() throws IOException
     {
         TimeZone defaultTimeZone = TimeZone.getDefault();
         try

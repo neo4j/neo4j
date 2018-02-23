@@ -87,7 +87,7 @@ public class MasterImplConversationStopFuzzIT
     private static final int numberOfOperations = 1_000;
     private static final int numberOfResources = 100;
 
-    public static final StoreId StoreId = newStoreIdForCurrentVersion();
+    private static final StoreId StoreId = newStoreIdForCurrentVersion();
 
     private final LifeSupport life = new LifeSupport();
     private final ExecutorService executor = Executors.newFixedThreadPool( numberOfWorkers + 1 );
@@ -270,7 +270,7 @@ public class MasterImplConversationStopFuzzIT
 
             abstract State next( SlaveEmulatorWorker worker ) throws Exception;
 
-            protected State commit( SlaveEmulatorWorker worker, RequestContext requestContext )
+            State commit( SlaveEmulatorWorker worker, RequestContext requestContext )
                     throws TransactionFailureException
             {
                 try
@@ -464,7 +464,7 @@ public class MasterImplConversationStopFuzzIT
             }
         }
 
-        public void stop()
+        void stop()
         {
             running = false;
         }
@@ -496,17 +496,17 @@ public class MasterImplConversationStopFuzzIT
         private final AtomicLong transactionNotPresentErrors = new AtomicLong();
         private final AtomicLong committedOperations = new AtomicLong();
 
-        public void reportAlreadyInUseError()
+        void reportAlreadyInUseError()
         {
             alreadyInUseErrors.incrementAndGet();
         }
 
-        public void reportTransactionNotPresentError()
+        void reportTransactionNotPresentError()
         {
             transactionNotPresentErrors.incrementAndGet();
         }
 
-        public void reportCommittedOperation()
+        void reportCommittedOperation()
         {
             committedOperations.incrementAndGet();
         }
@@ -526,7 +526,7 @@ public class MasterImplConversationStopFuzzIT
             return committedOperations;
         }
 
-        public boolean isSuccessfulExecution()
+        boolean isSuccessfulExecution()
         {
             return committedOperations.get() > ((alreadyInUseErrors.get() + transactionNotPresentErrors.get()) * 10);
         }

@@ -46,7 +46,7 @@ public class UpstreamDatabaseStrategySelectorTest
     private MemberId dummyMemberId = new MemberId( UUID.randomUUID() );
 
     @Test
-    public void shouldReturnTheMemberIdFromFirstSucessfulStrategy() throws Exception
+    void shouldReturnTheMemberIdFromFirstSucessfulStrategy() throws Exception
     {
         // given
         UpstreamDatabaseSelectionStrategy badOne = mock( UpstreamDatabaseSelectionStrategy.class );
@@ -70,7 +70,7 @@ public class UpstreamDatabaseStrategySelectorTest
     }
 
     @Test
-    public void shouldDefaultToRandomCoreServerIfNoOtherStrategySpecified() throws Exception
+    void shouldDefaultToRandomCoreServerIfNoOtherStrategySpecified() throws Exception
     {
         // given
         TopologyService topologyService = mock( TopologyService.class );
@@ -91,7 +91,7 @@ public class UpstreamDatabaseStrategySelectorTest
     }
 
     @Test
-    public void shouldUseSpecifiedStrategyInPreferenceToDefault() throws Exception
+    void shouldUseSpecifiedStrategyInPreferenceToDefault() throws Exception
     {
         // given
         TopologyService topologyService = mock( TopologyService.class );

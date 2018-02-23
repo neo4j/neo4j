@@ -42,10 +42,10 @@ public class ChannelOutputStreamTest
     public FileSystemRule fs = new EphemeralFileSystemRule();
 
     @Resource
-    public TestDirectory tmpDir;
+    private TestDirectory tmpDir;
 
     @Test
-    public void shouldStoreAByteAtBoundary() throws Exception
+    void shouldStoreAByteAtBoundary() throws Exception
     {
         File workFile = tmpDir.file( "test" );
         fs.mkdirs( tmpDir.directory() );

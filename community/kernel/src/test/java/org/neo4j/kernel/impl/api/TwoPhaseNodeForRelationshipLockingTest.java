@@ -51,7 +51,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.set;
 
-public class TwoPhaseNodeForRelationshipLockingTest
+class TwoPhaseNodeForRelationshipLockingTest
 {
     private final EntityReadOperations ops = mock( EntityReadOperations.class );
     private final KernelStatement state = mock( KernelStatement.class );
@@ -64,7 +64,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
     }
 
     @Test
-    public void shouldLockNodesInOrderAndConsumeTheRelationships() throws Throwable
+    void shouldLockNodesInOrderAndConsumeTheRelationships() throws Throwable
     {
         // given
         Collector collector = new Collector();
@@ -90,7 +90,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
     }
 
     @Test
-    public void shouldLockNodesInOrderAndConsumeTheRelationshipsAndRetryIfTheNewRelationshipsAreCreated()
+    void shouldLockNodesInOrderAndConsumeTheRelationshipsAndRetryIfTheNewRelationshipsAreCreated()
             throws Throwable
     {
         // given
@@ -119,7 +119,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
     }
 
     @Test
-    public void lockNodeWithoutRelationships() throws Exception
+    void lockNodeWithoutRelationships() throws Exception
     {
         Collector collector = new Collector();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( ops, collector );
@@ -133,7 +133,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
     public static class RelationshipData
     {
-        public final long relId;
+        final long relId;
         public final long startNodeId;
         public final long endNodeId;
 
@@ -243,7 +243,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
     private static class Collector implements ThrowingConsumer<Long,KernelException>
     {
-        public final Set<Long> set = new HashSet<>();
+        final Set<Long> set = new HashSet<>();
 
         @Override
         public void accept( Long input )

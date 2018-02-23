@@ -39,13 +39,13 @@ import static org.hamcrest.Matchers.is;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class BlockingBootstrapperTest
+class BlockingBootstrapperTest
 {
     @Resource
-    public TestDirectory homeDir;
+    private TestDirectory homeDir;
 
     @Test
-    public void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful() throws Throwable
+    void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful() throws Throwable
     {
         AtomicInteger status = new AtomicInteger();
         AtomicBoolean exited = new AtomicBoolean( false );
@@ -85,7 +85,7 @@ public class BlockingBootstrapperTest
     }
 
     @Test
-    public void shouldNotBlockIfTheWrappedStartIsUnsuccessful() throws Throwable
+    void shouldNotBlockIfTheWrappedStartIsUnsuccessful() throws Throwable
     {
         AtomicInteger status = new AtomicInteger();
         AtomicBoolean exited = new AtomicBoolean( false );

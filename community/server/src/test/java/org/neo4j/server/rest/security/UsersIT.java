@@ -146,7 +146,7 @@ public class UsersIT extends ExclusiveServerTestBase
         }
     }
 
-    public void startServer( boolean authEnabled ) throws IOException
+    private void startServer( boolean authEnabled ) throws IOException
     {
         server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
@@ -154,7 +154,7 @@ public class UsersIT extends ExclusiveServerTestBase
         server.start();
     }
 
-    public void startServerWithConfiguredUser() throws IOException
+    private void startServerWithConfiguredUser() throws IOException
     {
         startServer( true );
         // Set the password

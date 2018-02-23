@@ -19,12 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-public class ControlledEncoder implements Encoder
+class ControlledEncoder implements Encoder
 {
     private final Encoder actual;
     private Object overrideId;
 
-    public ControlledEncoder( Encoder actual )
+    ControlledEncoder( Encoder actual )
     {
         this.actual = actual;
     }
@@ -32,7 +32,7 @@ public class ControlledEncoder implements Encoder
     /**
      * Single use in {@link #encode(Object)}.
      */
-    public void useThisIdToEncodeNoMatterWhatComesIn( Object id )
+    void useThisIdToEncodeNoMatterWhatComesIn( Object id )
     {
         this.overrideId = id;
     }

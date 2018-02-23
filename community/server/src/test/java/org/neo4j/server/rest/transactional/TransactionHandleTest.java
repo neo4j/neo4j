@@ -72,10 +72,10 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
-public class TransactionHandleTest
+class TransactionHandleTest
 {
     @Test
-    public void shouldExecuteStatements() throws Exception
+    void shouldExecuteStatements() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -107,7 +107,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldSuspendTransactionAndReleaseForOtherRequestsAfterExecutingStatements() throws Exception
+    void shouldSuspendTransactionAndReleaseForOtherRequestsAfterExecutingStatements() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -143,7 +143,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldResumeTransactionWhenExecutingStatementsOnSecondRequest() throws Exception
+    void shouldResumeTransactionWhenExecutingStatementsOnSecondRequest() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -185,7 +185,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldCommitSinglePeriodicCommitStatement() throws Exception
+    void shouldCommitSinglePeriodicCommitStatement() throws Exception
     {
         // given
         String queryText = "USING PERIODIC COMMIT CREATE()";
@@ -219,7 +219,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Exception
+    void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -257,7 +257,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldRollbackTransactionAndTellRegistryToForgetItsHandle()
+    void shouldRollbackTransactionAndTellRegistryToForgetItsHandle()
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -285,7 +285,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldCreateTransactionContextOnlyWhenFirstNeeded() throws Exception
+    void shouldCreateTransactionContextOnlyWhenFirstNeeded() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -324,7 +324,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldRollbackTransactionIfExecutionErrorOccurs() throws Exception
+    void shouldRollbackTransactionIfExecutionErrorOccurs() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -356,7 +356,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldLogMessageIfCommitErrorOccurs() throws Exception
+    void shouldLogMessageIfCommitErrorOccurs() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -397,7 +397,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldLogMessageIfCypherSyntaxErrorOccurs() throws Exception
+    void shouldLogMessageIfCypherSyntaxErrorOccurs() throws Exception
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -428,7 +428,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldHandleExecutionEngineThrowingUndeclaredCheckedExceptions() throws Exception
+    void shouldHandleExecutionEngineThrowingUndeclaredCheckedExceptions() throws Exception
     {
         // given
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
@@ -460,7 +460,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldInterruptTransaction()
+    void shouldInterruptTransaction()
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -484,7 +484,7 @@ public class TransactionHandleTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void deadlockExceptionHasCorrectStatus() throws Exception
+    void deadlockExceptionHasCorrectStatus() throws Exception
     {
         // given
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
@@ -507,7 +507,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void startTransactionWithRequestedTimeout()
+    void startTransactionWithRequestedTimeout()
     {
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );

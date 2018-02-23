@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ValueAsObjectCopyTest
+class ValueAsObjectCopyTest
 {
     private Iterable<AsObjectCopyTest> scalars = Arrays.asList(
             shouldGivePublic( Values.byteValue( (byte)1 ), (byte)1 ),
@@ -43,7 +43,7 @@ public class ValueAsObjectCopyTest
         );
 
     @Test
-    public void shouldProvideScalarValueAsPublic()
+    void shouldProvideScalarValueAsPublic()
     {
         for ( AsObjectCopyTest test : scalars )
         {
@@ -54,7 +54,7 @@ public class ValueAsObjectCopyTest
     // DIRECT ARRAYS
 
     @Test
-    public void shouldProvideDirectByteArrayAsPublic()
+    void shouldProvideDirectByteArrayAsPublic()
     {
         byte[] inStore = {1};
         Value value = Values.byteArray( inStore );
@@ -70,7 +70,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectShortArrayAsPublic()
+    void shouldProvideDirectShortArrayAsPublic()
     {
         short[] inStore = {1};
         Value value = Values.shortArray( inStore );
@@ -86,7 +86,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectIntArrayAsPublic()
+    void shouldProvideDirectIntArrayAsPublic()
     {
         int[] inStore = {1};
         Value value = Values.intArray( inStore );
@@ -102,7 +102,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectLongArrayAsPublic()
+    void shouldProvideDirectLongArrayAsPublic()
     {
         long[] inStore = {1};
         Value value = Values.longArray( inStore );
@@ -118,7 +118,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectFloatArrayAsPublic()
+    void shouldProvideDirectFloatArrayAsPublic()
     {
         float[] inStore = {1};
         Value value = Values.floatArray( inStore );
@@ -134,7 +134,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectDoubleArrayAsPublic()
+    void shouldProvideDirectDoubleArrayAsPublic()
     {
         double[] inStore = {1};
         Value value = Values.doubleArray( inStore );
@@ -150,7 +150,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectCharArrayAsPublic()
+    void shouldProvideDirectCharArrayAsPublic()
     {
         char[] inStore = {'a'};
         Value value = Values.charArray( inStore );
@@ -166,7 +166,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectStringArrayAsPublic()
+    void shouldProvideDirectStringArrayAsPublic()
     {
         String[] inStore = {"a"};
         Value value = Values.stringArray( inStore );
@@ -182,7 +182,7 @@ public class ValueAsObjectCopyTest
     }
 
     @Test
-    public void shouldProvideDirectBooleanArrayAsPublic()
+    void shouldProvideDirectBooleanArrayAsPublic()
     {
         boolean[] inStore = {true};
         Value value = Values.booleanArray( inStore );

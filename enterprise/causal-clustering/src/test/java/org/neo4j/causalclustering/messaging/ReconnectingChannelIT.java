@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.messaging;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
@@ -38,8 +37,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.ports.allocation.PortAuthority;
 
 import static io.netty.buffer.ByteBufAllocator.DEFAULT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -50,7 +47,7 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.ports.allocation.PortAuthority.allocatePort;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class ReconnectingChannelIT
+class ReconnectingChannelIT
 {
     private static final int PORT = allocatePort();
     private static final ChannelHandler VOID_HANDLER = new ChannelInitializer<SocketChannel>()
@@ -70,7 +67,7 @@ public class ReconnectingChannelIT
     private ReconnectingChannel channel;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         elg = new NioEventLoopGroup( 0 );
         Bootstrap bootstrap = new Bootstrap().channel( NioSocketChannel.class ).group( elg ).handler( VOID_HANDLER );
@@ -78,14 +75,14 @@ public class ReconnectingChannelIT
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         elg.shutdownGracefully( 0, DEFAULT_TIMEOUT_MS, MILLISECONDS ).awaitUninterruptibly();
         server.stop();
     }
 
     @Test
-    public void shouldBeAbleToSendMessage() throws Exception
+    void shouldBeAbleToSendMessage() throws Exception
     {
         // given
         server.start();
@@ -101,7 +98,7 @@ public class ReconnectingChannelIT
     }
 
     @Test
-    public void shouldAllowDeferredSend() throws Exception
+    void shouldAllowDeferredSend() throws Exception
     {
         // given
         channel.start();
@@ -118,7 +115,7 @@ public class ReconnectingChannelIT
     }
 
     @Test
-    public void shouldFailSendWhenNoServer()
+    void shouldFailSendWhenNoServer()
     {
         assertThrows( ExecutionException.class, () -> {
             // given
@@ -133,7 +130,7 @@ public class ReconnectingChannelIT
     }
 
     @Test
-    public void shouldReconnectAfterServerComesBack() throws Exception
+    void shouldReconnectAfterServerComesBack() throws Exception
     {
         // given
         server.start();
@@ -169,7 +166,7 @@ public class ReconnectingChannelIT
     }
 
     @Test
-    public void shouldNotAllowSendingOnDisposedChannel() throws Exception
+    void shouldNotAllowSendingOnDisposedChannel() throws Exception
     {
         // given
         server.start();

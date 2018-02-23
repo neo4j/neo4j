@@ -20,13 +20,14 @@
 package org.neo4j.com;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class TestSlaveContext
+class TestSlaveContext
 {
     @Test
-    public void assertSimilarity()
+    void assertSimilarity()
     {
         // Different machine ids
         assertFalse( new RequestContext( 1234, 1, 2, 0, 0 ).equals( new RequestContext( 1234, 2, 2, 0, 0 ) ) );

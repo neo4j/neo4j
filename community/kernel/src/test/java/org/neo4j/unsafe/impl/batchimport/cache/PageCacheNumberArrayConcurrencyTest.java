@@ -46,14 +46,14 @@ import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 @ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
 public abstract class PageCacheNumberArrayConcurrencyTest
 {
-    protected static final int COUNT = 100;
-    protected static final int LAPS = 2_000;
-    protected static final int CONTESTANTS = 10;
+    static final int COUNT = 100;
+    static final int LAPS = 2_000;
+    static final int CONTESTANTS = 10;
 
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
     @Resource
-    public RandomRule random;
+    RandomRule random;
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -61,13 +61,13 @@ public abstract class PageCacheNumberArrayConcurrencyTest
     public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( pageCacheRule );
 
     @Test
-    public void shouldHandleConcurrentAccessToSameData() throws Throwable
+    void shouldHandleConcurrentAccessToSameData() throws Throwable
     {
         doRace( this::wholeFileRacer );
     }
 
     @Test
-    public void shouldHandleConcurrentAccessToDifferentData() throws Throwable
+    void shouldHandleConcurrentAccessToDifferentData() throws Throwable
     {
         doRace( this::fileRangeRacer );
     }

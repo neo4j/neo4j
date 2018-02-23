@@ -31,10 +31,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Label.label;
 
-public class SchemaIndexRepresentationTest
+class SchemaIndexRepresentationTest
 {
     @Test
-    public void shouldIncludeLabel()
+    void shouldIncludeLabel()
     {
         // GIVEN
         String labelName = "person";

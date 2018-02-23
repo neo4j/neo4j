@@ -29,11 +29,11 @@ import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
 import org.neo4j.causalclustering.core.state.Result;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ProgressTrackerImplTest
+class ProgressTrackerImplTest
 {
     private final int DEFAULT_TIMEOUT_MS = 15_000;
 
@@ -45,7 +45,7 @@ public class ProgressTrackerImplTest
     private ProgressTrackerImpl tracker = new ProgressTrackerImpl( session );
 
     @Test
-    public void shouldReportThatOperationIsNotReplicatedInitially()
+    void shouldReportThatOperationIsNotReplicatedInitially()
     {
         // when
         Progress progress = tracker.start( operationA );
@@ -55,7 +55,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldWaitForReplication() throws Exception
+    void shouldWaitForReplication() throws Exception
     {
         // given
         Progress progress = tracker.start( operationA );
@@ -70,7 +70,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldStopWaitingWhenReplicated() throws Exception
+    void shouldStopWaitingWhenReplicated() throws Exception
     {
         // given
         Progress progress = tracker.start( operationA );
@@ -92,7 +92,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldBeAbleToAbortTracking()
+    void shouldBeAbleToAbortTracking()
     {
         // when
         tracker.start( operationA );
@@ -106,7 +106,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldCheckThatOneOperationDoesNotAffectProgressOfOther()
+    void shouldCheckThatOneOperationDoesNotAffectProgressOfOther()
     {
         // given
         Progress progressA = tracker.start( operationA );
@@ -121,7 +121,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldTriggerReplicationEvent() throws Exception
+    void shouldTriggerReplicationEvent() throws Exception
     {
         // given
         Progress progress = tracker.start( operationA );
@@ -137,7 +137,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldGetTrackedResult() throws Exception
+    void shouldGetTrackedResult() throws Exception
     {
         // given
         Progress progress = tracker.start( operationA );
@@ -151,7 +151,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldIgnoreOtherSessions()
+    void shouldIgnoreOtherSessions()
     {
         // given
         GlobalSession sessionB = new GlobalSession( UUID.randomUUID(), null );

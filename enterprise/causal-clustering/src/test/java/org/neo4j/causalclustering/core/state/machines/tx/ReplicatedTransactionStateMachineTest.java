@@ -50,14 +50,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ReplicatedTransactionStateMachineTest
+class ReplicatedTransactionStateMachineTest
 {
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
     private final CommandIndexTracker commandIndexTracker = mock( CommandIndexTracker.class );
     private final int batchSize = 16;
 
     @Test
-    public void shouldCommitTransaction() throws Exception
+    void shouldCommitTransaction() throws Exception
     {
         // given
         int lockSessionId = 23;
@@ -84,7 +84,7 @@ public class ReplicatedTransactionStateMachineTest
     }
 
     @Test
-    public void shouldFailFutureForTransactionCommittedUnderWrongLockSession()
+    void shouldFailFutureForTransactionCommittedUnderWrongLockSession()
     {
         // given
         int txLockSessionId = 23;
@@ -127,7 +127,7 @@ public class ReplicatedTransactionStateMachineTest
     }
 
     @Test
-    public void shouldAcceptTransactionCommittedWithNoLockManager() throws Exception
+    void shouldAcceptTransactionCommittedWithNoLockManager() throws Exception
     {
         // given
         int txLockSessionId = Locks.Client.NO_LOCK_SESSION_ID;

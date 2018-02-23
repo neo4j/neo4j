@@ -27,7 +27,7 @@ import org.neo4j.io.fs.StoreChannel;
 
 public class DelegatingStoreChannel implements StoreChannel
 {
-    public final StoreChannel delegate;
+    private final StoreChannel delegate;
 
     public DelegatingStoreChannel( StoreChannel delegate )
     {

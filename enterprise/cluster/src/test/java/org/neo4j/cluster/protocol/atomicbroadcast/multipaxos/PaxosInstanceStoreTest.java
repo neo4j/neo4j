@@ -19,15 +19,15 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import org.junit.jupiter.api.Test;
-
-public class PaxosInstanceStoreTest
+class PaxosInstanceStoreTest
 {
     @Test
-    public void shouldReturnSameObjectWhenAskedById()
+    void shouldReturnSameObjectWhenAskedById()
     {
         // Given
         PaxosInstanceStore theStore = new PaxosInstanceStore();
@@ -41,7 +41,7 @@ public class PaxosInstanceStoreTest
     }
 
     @Test
-    public void shouldKeepAtMostGivenNumberOfInstances()
+    void shouldKeepAtMostGivenNumberOfInstances()
     {
         // Given
         final int instancesToKeep = 10;
@@ -69,7 +69,7 @@ public class PaxosInstanceStoreTest
     }
 
     @Test
-    public void leaveShouldClearStoredInstances()
+    void leaveShouldClearStoredInstances()
     {
         // Given
         PaxosInstanceStore theStore = new PaxosInstanceStore();

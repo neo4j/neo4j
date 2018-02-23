@@ -31,7 +31,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled
-public class MultiRetryStrategyTest
+class MultiRetryStrategyTest
 {
     private static final Predicate<Integer> ALWAYS_VALID = i -> true;
     private static final Predicate<Integer> NEVER_VALID = i -> false;
@@ -51,7 +51,7 @@ public class MultiRetryStrategyTest
     };
 
     @Test
-    public void successOnRetryCausesNoDelay()
+    void successOnRetryCausesNoDelay()
     {
         // given
         CountingSleeper countingSleeper = new CountingSleeper();
@@ -67,7 +67,7 @@ public class MultiRetryStrategyTest
     }
 
     @Test
-    public void numberOfIterationsDoesNotExceedMaximum()
+    void numberOfIterationsDoesNotExceedMaximum()
     {
         // given
         CountingSleeper countingSleeper = new CountingSleeper();
@@ -82,7 +82,7 @@ public class MultiRetryStrategyTest
     }
 
     @Test
-    public void successfulRetriesBreakTheRetryLoop()
+    void successfulRetriesBreakTheRetryLoop()
     {
         CountingSleeper countingSleeper = new CountingSleeper();
         int retries = 5;
@@ -105,7 +105,7 @@ public class MultiRetryStrategyTest
             counter++;
         }
 
-        public int invocationCount()
+        int invocationCount()
         {
             return counter;
         }

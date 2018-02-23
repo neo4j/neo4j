@@ -29,13 +29,13 @@ import static java.util.Collections.singletonList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 
-public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
+class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
     private static final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
     private static final String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
     @Test
-    public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
+    void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
         analyzer = ENGLISH;
         try ( FulltextProvider provider = createProvider() )
@@ -65,7 +65,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
+    void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         analyzer = SWEDISH;
         try ( FulltextProvider provider = createProvider() )
@@ -95,7 +95,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
+    void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
     {
         long firstID;
         long secondID;

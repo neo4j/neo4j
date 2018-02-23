@@ -29,9 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -471,7 +469,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
 
     public static class JmxServiceDocTest
     {
-        public JmxService jmxService;
+        JmxService jmxService;
         private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
         @Test

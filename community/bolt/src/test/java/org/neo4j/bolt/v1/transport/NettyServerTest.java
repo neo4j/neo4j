@@ -47,7 +47,7 @@ public class NettyServerTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldGivePortConflictErrorWithPortNumberInIt() throws Throwable
+    void shouldGivePortConflictErrorWithPortNumberInIt() throws Throwable
     {
         // Given an occupied port
         int port = 16000;

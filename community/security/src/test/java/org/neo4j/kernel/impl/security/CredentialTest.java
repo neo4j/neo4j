@@ -23,13 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import static org.neo4j.kernel.impl.security.Credential.INACCESSIBLE;
 
-public class CredentialTest
+class CredentialTest
 {
     @Test
-    public void testMatchesPassword()
+    void testMatchesPassword()
     {
         Credential credential = Credential.forPassword( "foo" );
         assertTrue( credential.matchesPassword( "foo" ) );
@@ -39,7 +38,7 @@ public class CredentialTest
     }
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         Credential credential = Credential.forPassword( "foo" );
         Credential sameCredential = new Credential( credential.salt(), credential.passwordHash() );
@@ -47,7 +46,7 @@ public class CredentialTest
     }
 
     @Test
-    public void testInaccessibleCredentials()
+    void testInaccessibleCredentials()
     {
         Credential credential = new Credential( INACCESSIBLE.salt(), INACCESSIBLE.passwordHash() );
 

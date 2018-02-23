@@ -21,7 +21,7 @@ package org.neo4j.com;
 
 import java.nio.channels.ReadableByteChannel;
 
-public interface MadeUpCommunicationInterface
+interface MadeUpCommunicationInterface
 {
     Response<Integer> multiply( int value1, int value2 );
 

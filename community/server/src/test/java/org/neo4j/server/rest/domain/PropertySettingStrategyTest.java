@@ -41,39 +41,39 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class PropertySettingStrategyTest
+class PropertySettingStrategyTest
 {
     private static GraphDatabaseAPI db;
     private Transaction tx;
     private static PropertySettingStrategy propSetter;
 
     @BeforeAll
-    public static void createDb()
+    static void createDb()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         propSetter = new PropertySettingStrategy( db );
     }
 
     @AfterAll
-    public static void closeDb()
+    static void closeDb()
     {
         db.shutdown();
     }
 
     @BeforeEach
-    public void beginTx()
+    void beginTx()
     {
         tx = db.beginTx();
     }
 
     @AfterEach
-    public void rollbackTx()
+    void rollbackTx()
     {
         tx.close();
     }
 
     @Test
-    public void shouldSetSingleProperty() throws Exception
+    void shouldSetSingleProperty() throws Exception
     {
         // Given
         Node node = db.createNode();
@@ -86,7 +86,7 @@ public class PropertySettingStrategyTest
     }
 
     @Test
-    public void shouldSetMultipleProperties() throws Exception
+    void shouldSetMultipleProperties() throws Exception
     {
         // Given
         Node node = db.createNode();
@@ -110,7 +110,7 @@ public class PropertySettingStrategyTest
     }
 
     @Test
-    public void shouldSetAllProperties() throws Exception
+    void shouldSetAllProperties() throws Exception
     {
         // Given
         Node node = db.createNode();
@@ -129,7 +129,7 @@ public class PropertySettingStrategyTest
     // Handling empty collections
 
     @Test
-    public void shouldNotFailSettingEmptyArrayIfEntityAlreadyHasAnEmptyArrayAsValue() throws Exception
+    void shouldNotFailSettingEmptyArrayIfEntityAlreadyHasAnEmptyArrayAsValue() throws Exception
     {
         // Given
         Node node = db.createNode();
@@ -143,7 +143,7 @@ public class PropertySettingStrategyTest
     }
 
     @Test
-    public void shouldNotFailSettingEmptyArrayAndOtherValuesIfEntityAlreadyHasAnEmptyArrayAsValue() throws Exception
+    void shouldNotFailSettingEmptyArrayAndOtherValuesIfEntityAlreadyHasAnEmptyArrayAsValue() throws Exception
     {
         // Given
         Node node = db.createNode();
@@ -162,7 +162,7 @@ public class PropertySettingStrategyTest
     }
 
     @Test
-    public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingProperty()
+    void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingProperty()
     {
         assertThrows( PropertyValueException.class, () -> {
             // Given
@@ -174,7 +174,7 @@ public class PropertySettingStrategyTest
     }
 
     @Test
-    public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingEmptyArray()
+    void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingEmptyArray()
     {
         assertThrows( PropertyValueException.class, () -> {
             // Given
@@ -187,7 +187,7 @@ public class PropertySettingStrategyTest
     }
 
     @Test
-    public void shouldUseOriginalTypeWhenSettingEmptyArrayIfEntityAlreadyHasACollection() throws Exception
+    void shouldUseOriginalTypeWhenSettingEmptyArrayIfEntityAlreadyHasACollection() throws Exception
     {
         // Given
         Node node = db.createNode();
@@ -201,7 +201,7 @@ public class PropertySettingStrategyTest
     }
 
     @Test
-    public void shouldUseOriginalTypeOnEmptyCollectionWhenSettingAllProperties() throws Exception
+    void shouldUseOriginalTypeOnEmptyCollectionWhenSettingAllProperties() throws Exception
     {
         // Given
         Node node = db.createNode();

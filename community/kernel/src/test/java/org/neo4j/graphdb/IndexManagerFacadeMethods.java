@@ -24,7 +24,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-public class IndexManagerFacadeMethods
+class IndexManagerFacadeMethods
 {
     private static final FacadeMethod<IndexManager> EXISTS_FOR_NODES = new FacadeMethod<IndexManager>( "boolean " +
             "existsForNodes( String indexName )" )

@@ -37,7 +37,7 @@ import org.neo4j.time.Clocks;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class RaftMessageMonitoringHandlerTest
+class RaftMessageMonitoringHandlerTest
 {
     private Instant now = Instant.now();
     private Monitors monitors = new Monitors();
@@ -55,13 +55,13 @@ public class RaftMessageMonitoringHandlerTest
     private RaftMessageMonitoringHandler handler = new RaftMessageMonitoringHandler( downstream, clock, monitors );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         monitors.addMonitorListener( monitor );
     }
 
     @Test
-    public void shouldSendMessagesToDelegate()
+    void shouldSendMessagesToDelegate()
     {
         // when
         handler.handle( message );
@@ -71,7 +71,7 @@ public class RaftMessageMonitoringHandlerTest
     }
 
     @Test
-    public void shouldUpdateDelayMonitor()
+    void shouldUpdateDelayMonitor()
     {
         // when
         handler.handle( message );
@@ -81,7 +81,7 @@ public class RaftMessageMonitoringHandlerTest
     }
 
     @Test
-    public void shouldTimeDelegate()
+    void shouldTimeDelegate()
     {
         // when
         handler.handle( message );
@@ -91,7 +91,7 @@ public class RaftMessageMonitoringHandlerTest
     }
 
     @Test
-    public void shouldDelegateStart() throws Throwable
+    void shouldDelegateStart() throws Throwable
     {
         // given
         ClusterId clusterId = new ClusterId( UUID.randomUUID() );
@@ -104,7 +104,7 @@ public class RaftMessageMonitoringHandlerTest
     }
 
     @Test
-    public void shouldDelegateStop() throws Throwable
+    void shouldDelegateStop() throws Throwable
     {
         // when
         handler.stop();

@@ -27,9 +27,9 @@ import static org.neo4j.helpers.collection.Iterators.loop;
 /**
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
  */
-public class GraphDatabaseServiceFacadeMethods
+class GraphDatabaseServiceFacadeMethods
 {
-    static final FacadeMethod<GraphDatabaseService> CREATE_NODE =
+    private static final FacadeMethod<GraphDatabaseService> CREATE_NODE =
         new FacadeMethod<GraphDatabaseService>( "Node createNode()" )
     {
         @Override
@@ -39,7 +39,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> CREATE_NODE_WITH_LABELS =
+    private static final FacadeMethod<GraphDatabaseService> CREATE_NODE_WITH_LABELS =
         new FacadeMethod<GraphDatabaseService>( "Node createNode( Label... labels )" )
     {
         @Override
@@ -49,7 +49,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> GET_NODE_BY_ID =
+    private static final FacadeMethod<GraphDatabaseService> GET_NODE_BY_ID =
         new FacadeMethod<GraphDatabaseService>( "Node getNodeById( long id )" )
     {
         @Override
@@ -59,7 +59,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_BY_ID =
+    private static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_BY_ID =
         new FacadeMethod<GraphDatabaseService>( "Relationship getRelationshipById( long id )" )
     {
         @Override
@@ -69,7 +69,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_NODES =
+    private static final FacadeMethod<GraphDatabaseService> GET_ALL_NODES =
             new FacadeMethod<GraphDatabaseService>( "Iterable<Node> getAllNodes()" )
     {
         @Override
@@ -82,7 +82,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED =
+    private static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED =
         new FacadeMethod<GraphDatabaseService>(
                 "ResourceIterator<Node> findNodeByLabelAndProperty( Label label, String key, Object value )" )
     {
@@ -96,7 +96,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL =
+    private static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL =
             new FacadeMethod<GraphDatabaseService>(
                     "ResourceIterator<Node> findNodes( Label label )" )
             {
@@ -110,7 +110,7 @@ public class GraphDatabaseServiceFacadeMethods
                 }
             };
 
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS =
+    private static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS =
             new FacadeMethod<GraphDatabaseService>( "Iterable<Label> getAllLabels()" )
             {
                 @Override
@@ -120,7 +120,7 @@ public class GraphDatabaseServiceFacadeMethods
                 }
             };
 
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS_IN_USE =
+    private static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS_IN_USE =
             new FacadeMethod<GraphDatabaseService>( "Iterable<Label> getAllLabelsInUse()" )
             {
                 @Override
@@ -130,7 +130,7 @@ public class GraphDatabaseServiceFacadeMethods
                 }
             };
 
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES =
+    private static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES =
             new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getAllRelationshipTypes()" )
     {
         @Override
@@ -139,7 +139,7 @@ public class GraphDatabaseServiceFacadeMethods
             graphDatabaseService.getAllRelationshipTypes();
         }
     };
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES_IN_USE =
+    private static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES_IN_USE =
             new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getAllRelationshipTypesInUse()" )
     {
         @Override
@@ -149,7 +149,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_PROPERTY_KEYS =
+    private static final FacadeMethod<GraphDatabaseService> GET_ALL_PROPERTY_KEYS =
             new FacadeMethod<GraphDatabaseService>( "Iterable<String> getAllPropertyKeys()" )
     {
         @Override
@@ -159,7 +159,7 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> SCHEMA =
+    private static final FacadeMethod<GraphDatabaseService> SCHEMA =
             new FacadeMethod<GraphDatabaseService>( "Schema schema()" )
             {
                 @Override

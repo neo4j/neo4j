@@ -30,18 +30,18 @@ import java.util.Enumeration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ServiceTest
+class ServiceTest
 {
 
     @Test
-    public void shouldLoadServiceInDefaultEnvironment()
+    void shouldLoadServiceInDefaultEnvironment()
     {
         FooService fooService = Service.load( FooService.class, "foo" );
         assertTrue( fooService instanceof BarService );
     }
 
     @Test
-    public void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader()
+    void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader()
     {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         try
@@ -57,7 +57,7 @@ public class ServiceTest
     }
 
     @Test
-    public void whenContextClassLoaderOverridesServiceShouldLoadThatClass()
+    void whenContextClassLoaderOverridesServiceShouldLoadThatClass()
     {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         try
@@ -73,7 +73,7 @@ public class ServiceTest
     }
 
     @Test
-    public void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce()
+    void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce()
     {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         try

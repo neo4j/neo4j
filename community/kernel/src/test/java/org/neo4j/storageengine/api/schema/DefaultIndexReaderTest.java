@@ -28,7 +28,6 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.values.storable.Value;
 
 @EnableRuleMigrationSupport
@@ -38,7 +37,7 @@ public class DefaultIndexReaderTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void defaultQueryImplementationMustThrowForUnsupportedIndexOrder() throws Exception
+    void defaultQueryImplementationMustThrowForUnsupportedIndexOrder() throws Exception
     {
         // Given
         IndexReader indexReader = stubIndexReader();

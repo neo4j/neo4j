@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.core.state.machines.id;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
@@ -30,7 +29,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ReplicatedIdAllocationStateMachineTest
+class ReplicatedIdAllocationStateMachineTest
 {
     private MemberId me = new MemberId( UUID.randomUUID() );
 
@@ -38,7 +37,7 @@ public class ReplicatedIdAllocationStateMachineTest
     private IdType someOtherType = IdType.RELATIONSHIP;
 
     @Test
-    public void shouldNotHaveAnyIdsInitially()
+    void shouldNotHaveAnyIdsInitially()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -49,7 +48,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void shouldUpdateStateOnlyForTypeRequested()
+    void shouldUpdateStateOnlyForTypeRequested()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -65,7 +64,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void severalDistinctRequestsShouldIncrementallyUpdate()
+    void severalDistinctRequestsShouldIncrementallyUpdate()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -82,7 +81,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void severalEqualRequestsShouldOnlyUpdateOnce()
+    void severalEqualRequestsShouldOnlyUpdateOnce()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -98,7 +97,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void outOfOrderRequestShouldBeIgnored()
+    void outOfOrderRequestShouldBeIgnored()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -114,7 +113,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void shouldIgnoreNotContiguousRequestAndAlreadySeenIndex()
+    void shouldIgnoreNotContiguousRequestAndAlreadySeenIndex()
     {
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
                 new InMemoryStateStorage<>( new IdAllocationState() ) );

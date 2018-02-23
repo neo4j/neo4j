@@ -49,7 +49,7 @@ public class TestShortStringProperties
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( graphdb );
 
-    public void commit()
+    private void commit()
     {
         tx.success();
     }

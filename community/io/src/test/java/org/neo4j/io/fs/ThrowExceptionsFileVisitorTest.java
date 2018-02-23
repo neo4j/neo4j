@@ -35,13 +35,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
 @ExtendWith( MockitoExtension.class )
-public class ThrowExceptionsFileVisitorTest
+class ThrowExceptionsFileVisitorTest
 {
     @Mock
-    public FileVisitor<Path> wrapped;
+    private FileVisitor<Path> wrapped;
 
     @Test
-    public void shouldThrowExceptionFromVisitFileFailed()
+    void shouldThrowExceptionFromVisitFileFailed()
     {
         IOException exception = new IOException();
         try
@@ -56,7 +56,7 @@ public class ThrowExceptionsFileVisitorTest
     }
 
     @Test
-    public void shouldThrowExceptionFromPostVisitDirectory()
+    void shouldThrowExceptionFromPostVisitDirectory()
     {
         IOException exception = new IOException();
         try

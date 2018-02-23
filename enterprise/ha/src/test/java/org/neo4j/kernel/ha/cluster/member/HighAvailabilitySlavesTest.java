@@ -54,9 +54,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -65,14 +65,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 
-public class HighAvailabilitySlavesTest
+class HighAvailabilitySlavesTest
 {
     private static final InstanceId INSTANCE_ID = new InstanceId( 1 );
     private static final URI HA_URI = create( "ha://server1?serverId=" + INSTANCE_ID.toIntegerIndex() );
     private static final URI CLUSTER_URI = create( "cluster://server2" );
 
     @Test
-    public void shouldRegisterItselfOnMonitors()
+    void shouldRegisterItselfOnMonitors()
     {
         // given
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
@@ -87,7 +87,7 @@ public class HighAvailabilitySlavesTest
     }
 
     @Test
-    public void shouldNotReturnUnavailableSlaves()
+    void shouldNotReturnUnavailableSlaves()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -108,7 +108,7 @@ public class HighAvailabilitySlavesTest
     }
 
     @Test
-    public void shouldReturnAvailableAndAliveSlaves()
+    void shouldReturnAvailableAndAliveSlaves()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -132,7 +132,7 @@ public class HighAvailabilitySlavesTest
     }
 
     @Test
-    public void shouldClearSlavesWhenNewMasterElected()
+    void shouldClearSlavesWhenNewMasterElected()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -163,7 +163,7 @@ public class HighAvailabilitySlavesTest
     }
 
     @Test
-    public void shouldSupportConcurrentConsumptionOfSlaves() throws Exception
+    void shouldSupportConcurrentConsumptionOfSlaves() throws Exception
     {
         // Given
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();

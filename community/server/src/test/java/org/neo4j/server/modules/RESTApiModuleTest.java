@@ -39,10 +39,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class RESTApiModuleTest
+class RESTApiModuleTest
 {
     @Test
-    public void shouldRegisterASingleUri()
+    void shouldRegisterASingleUri()
     {
         // Given
         WebServer webServer = mock( WebServer.class );

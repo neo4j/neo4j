@@ -42,11 +42,11 @@ public class OutputMappersTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    public static class SingleStringFieldRecord
+    static class SingleStringFieldRecord
     {
-        public String name;
+        String name;
 
-        public SingleStringFieldRecord( String name )
+        SingleStringFieldRecord( String name )
         {
             this.name = name;
         }
@@ -57,23 +57,23 @@ public class OutputMappersTest
         public UnmappableRecord wat;
     }
 
-    public static class RecordWithPrivateField
+    private static class RecordWithPrivateField
     {
         private String wat;
     }
 
-    public static class RecordWithNonStringKeyMap
+    private static class RecordWithNonStringKeyMap
     {
         public Map<RecordWithNonStringKeyMap,Object> wat;
     }
 
-    public static class RecordWithStaticFields
+    static class RecordWithStaticFields
     {
         public static String skipMePublic;
-        public String includeMe;
+        String includeMe;
         private static String skipMePrivate;
 
-        public RecordWithStaticFields( String val )
+        RecordWithStaticFields( String val )
         {
             this.includeMe = val;
         }
@@ -89,7 +89,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldMapSimpleRecordWithString() throws Throwable
+    void shouldMapSimpleRecordWithString() throws Throwable
     {
         // When
         OutputMapper mapper = mapper( SingleStringFieldRecord.class );
@@ -106,7 +106,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldSkipStaticFields() throws Throwable
+    void shouldSkipStaticFields() throws Throwable
     {
         // When
         OutputMapper mapper = mapper( RecordWithStaticFields.class );
@@ -123,7 +123,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldNoteDeprecatedFields() throws Exception
+    void shouldNoteDeprecatedFields() throws Exception
     {
         // when
         OutputMapper mapper = mapper( RecordWithDeprecatedFields.class );
@@ -136,7 +136,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
+    void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -149,7 +149,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnPrivateField() throws Throwable
+    void shouldGiveHelpfulErrorOnPrivateField() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -161,7 +161,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMapWithNonStringKeyMap() throws Throwable
+    void shouldGiveHelpfulErrorOnMapWithNonStringKeyMap() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -174,7 +174,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldWarnAgainstStdLibraryClassesSinceTheseIndicateUserError() throws Throwable
+    void shouldWarnAgainstStdLibraryClassesSinceTheseIndicateUserError() throws Throwable
     {
         // Impl note: We may want to change this behavior and actually allow procedures to return `Long` etc,
         //            with a default column name. So Stream<Long> would become records like (out: Long)

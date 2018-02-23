@@ -32,18 +32,18 @@ import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ServerShufflingProcessorTest
+class ServerShufflingProcessorTest
 {
     @Test
-    public void shouldShuffleServers() throws Exception
+    void shouldShuffleServers() throws Exception
     {
         // given
         LoadBalancingProcessor delegate = mock( LoadBalancingPlugin.class );

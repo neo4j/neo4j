@@ -41,13 +41,13 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_log_
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class SegmentedRaftLogCursorIT
+class SegmentedRaftLogCursorIT
 {
     private final LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
 
     @AfterEach
-    public void tearDown() throws Throwable
+    void tearDown() throws Throwable
     {
         life.stop();
         life.shutdown();
@@ -86,7 +86,7 @@ public class SegmentedRaftLogCursorIT
     }
 
     @Test
-    public void shouldReturnFalseOnCursorForEntryThatDoesntExist() throws Exception
+    void shouldReturnFalseOnCursorForEntryThatDoesntExist() throws Exception
     {
         //given
         SegmentedRaftLog segmentedRaftLog = createRaftLog( 1 );
@@ -106,7 +106,7 @@ public class SegmentedRaftLogCursorIT
     }
 
     @Test
-    public void shouldReturnTrueOnEntryThatExists() throws Exception
+    void shouldReturnTrueOnEntryThatExists() throws Exception
     {
         //given
         SegmentedRaftLog segmentedRaftLog = createRaftLog( 1 );
@@ -126,7 +126,7 @@ public class SegmentedRaftLogCursorIT
     }
 
     @Test
-    public void shouldReturnFalseOnCursorForEntryThatWasPruned() throws Exception
+    void shouldReturnFalseOnCursorForEntryThatWasPruned() throws Exception
     {
         //given
         SegmentedRaftLog segmentedRaftLog = createRaftLog( 1, "keep_none" );

@@ -35,10 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-public class LazySingleReferenceTest
+class LazySingleReferenceTest
 {
     @Test
-    public void shouldOnlyAllowSingleThreadToInitialize() throws Exception
+    void shouldOnlyAllowSingleThreadToInitialize() throws Exception
     {
         // GIVEN
         final CountDownLatch latch = new CountDownLatch( 1 );
@@ -68,7 +68,7 @@ public class LazySingleReferenceTest
     }
 
     @Test
-    public void shouldMutexAccessBetweenInvalidateAndinstance() throws Exception
+    void shouldMutexAccessBetweenInvalidateAndinstance() throws Exception
     {
         // GIVEN
         final CountDownLatch latch = new CountDownLatch( 1 );
@@ -97,7 +97,7 @@ public class LazySingleReferenceTest
     }
 
     @Test
-    public void shouldInitializeAgainAfterInvalidated()
+    void shouldInitializeAgainAfterInvalidated()
     {
         // GIVEN
         final AtomicInteger initCalls = new AtomicInteger();
@@ -120,7 +120,7 @@ public class LazySingleReferenceTest
     }
 
     @Test
-    public void shouldRespondToIsInitialized()
+    void shouldRespondToIsInitialized()
     {
         // GIVEN
         LazySingleReference<Integer> ref = new LazySingleReference<Integer>()
@@ -152,14 +152,14 @@ public class LazySingleReferenceTest
     private OtherThreadExecutor<Void> t2;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         t1 = new OtherThreadExecutor<>( "T1", null );
         t2 = new OtherThreadExecutor<>( "T2", null );
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         t2.close();
         t1.close();

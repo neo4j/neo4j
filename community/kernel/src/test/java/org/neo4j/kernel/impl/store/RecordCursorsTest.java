@@ -32,10 +32,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RecordCursorsTest
+class RecordCursorsTest
 {
     @Test
-    public void closesCursors()
+    void closesCursors()
     {
         RecordCursors cursors = newRecordCursorsWithMockedNeoStores();
 
@@ -45,7 +45,7 @@ public class RecordCursorsTest
     }
 
     @Test
-    public void closesCursorsEvenIfSomeCursorFailsToClose()
+    void closesCursorsEvenIfSomeCursorFailsToClose()
     {
         RecordCursors cursors = newRecordCursorsWithMockedNeoStores();
         RecordCursor<RelationshipGroupRecord> relGroupCursor = cursors.relationshipGroup();

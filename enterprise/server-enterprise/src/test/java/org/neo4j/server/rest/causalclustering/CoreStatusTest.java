@@ -36,13 +36,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class CoreStatusTest
+class CoreStatusTest
 {
     private CoreGraphDatabase db;
     private CausalClusteringStatus status;
 
     @BeforeEach
-    public void setup() throws Exception
+    void setup() throws Exception
     {
         OutputFormat output = new OutputFormat( new JsonFormat(), new URI( "http://base.local:1234/" ), null );
         db = mock( CoreGraphDatabase.class );
@@ -50,7 +50,7 @@ public class CoreStatusTest
     }
 
     @Test
-    public void testAnswersWhenLeader()
+    void testAnswersWhenLeader()
     {
         // given
         when( db.getRole() ).thenReturn( Role.LEADER );
@@ -72,7 +72,7 @@ public class CoreStatusTest
     }
 
     @Test
-    public void testAnswersWhenCandidate()
+    void testAnswersWhenCandidate()
     {
         // given
         when( db.getRole() ).thenReturn( Role.CANDIDATE );
@@ -94,7 +94,7 @@ public class CoreStatusTest
     }
 
     @Test
-    public void testAnswersWhenFollower()
+    void testAnswersWhenFollower()
     {
         // given
         when( db.getRole() ).thenReturn( Role.FOLLOWER );

@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -28,8 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -40,25 +39,27 @@ import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ServerListRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
-public class JsonFormatTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class JsonFormatTest
 {
     private OutputFormat json;
 
     @BeforeEach
-    public void createOutputFormat() throws Exception
+    void createOutputFormat() throws Exception
     {
         json = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
     }
 
     @Test
-    public void canFormatString()
+    void canFormatString()
     {
         String entity = json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( entity, "\"expected value\"" );
     }
 
     @Test
-    public void canFormatListOfStrings()
+    void canFormatListOfStrings()
     {
         String entity = json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
@@ -66,14 +67,14 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatInteger()
+    void canFormatInteger()
     {
         String entity = json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", entity );
     }
 
     @Test
-    public void canFormatEmptyObject()
+    void canFormatEmptyObject()
     {
         String entity = json.assemble( new MappingRepresentation( "empty" )
         {
@@ -86,7 +87,7 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithStringField()
+    void canFormatObjectWithStringField()
     {
         String entity = json.assemble( new MappingRepresentation( "string" )
         {
@@ -100,7 +101,7 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithUriField()
+    void canFormatObjectWithUriField()
     {
         String entity = json.assemble( new MappingRepresentation( "uri" )
         {
@@ -116,7 +117,7 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithNestedObject()
+    void canFormatObjectWithNestedObject()
     {
         String entity = json.assemble( new MappingRepresentation( "nesting" )
         {
@@ -139,7 +140,7 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatNestedMapsAndLists() throws Exception
+    void canFormatNestedMapsAndLists() throws Exception
     {
         String entity = json.assemble( new MappingRepresentation( "test" )
         {

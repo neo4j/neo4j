@@ -34,10 +34,10 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.avg_processing_time;
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
-public class DynamicProcessorAssignerTest
+class DynamicProcessorAssignerTest
 {
     @Test
-    public void shouldAssignAdditionalCPUToBottleNeckStep()
+    void shouldAssignAdditionalCPUToBottleNeckStep()
     {
         // GIVEN
         Configuration config = config( 10, 5 );
@@ -58,7 +58,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromWayTooFastStep()
+    void shouldRemoveCPUsFromWayTooFastStep()
     {
         // GIVEN
         Configuration config = config( 10, 3 );
@@ -82,7 +82,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsButNotSoThatTheFastStepBecomesBottleneck()
+    void shouldRemoveCPUsButNotSoThatTheFastStepBecomesBottleneck()
     {
         // GIVEN
         Configuration config = config( 10, 3 );
@@ -104,7 +104,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldHandleZeroAverage()
+    void shouldHandleZeroAverage()
     {
         // GIVEN
         Configuration config = config( 10, 5 );
@@ -125,7 +125,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromTooFastStepEvenIfThereIsAWayFaster()
+    void shouldRemoveCPUsFromTooFastStepEvenIfThereIsAWayFaster()
     {
         // The point is that not only the fastest step is subject to have processors removed,
         // it's the relationship between all pairs of steps. This is important since the DPA has got
@@ -150,7 +150,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromTooFastStepEvenIfNotAllPermitsAreUsed()
+    void shouldRemoveCPUsFromTooFastStepEvenIfNotAllPermitsAreUsed()
     {
         // GIVEN
         Configuration config = config( 10, 20 );

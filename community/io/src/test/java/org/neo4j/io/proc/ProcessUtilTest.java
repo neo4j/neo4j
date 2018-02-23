@@ -26,21 +26,21 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ProcessUtilTest
+class ProcessUtilTest
 {
     private static final String HELLO_WORLD = "Hello World";
 
-    public static void main( String[] args )
+    static void main( String[] args )
     {
         System.out.println( HELLO_WORLD );
     }
 
     @Test
-    public void mustFindWorkingJavaExecutableAndClassPath() throws Exception
+    void mustFindWorkingJavaExecutableAndClassPath() throws Exception
     {
         List<String> command = new ArrayList<>();
         command.add( ProcessUtil.getJavaExecutable().toString() );

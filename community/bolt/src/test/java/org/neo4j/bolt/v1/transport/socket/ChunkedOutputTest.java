@@ -42,35 +42,35 @@ import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ChunkedOutputTest
+class ChunkedOutputTest
 {
     private final Channel ch = mock( Channel.class );
     private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
     private ChunkedOutput out;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
         this.out = new ChunkedOutput( ch, 16 );
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         out.close();
     }
 
     @Test
-    public void shouldNotNPE() throws Throwable
+    void shouldNotNPE() throws Throwable
     {
         ExecutorService runner = Executors.newFixedThreadPool( 4 );
         // When
@@ -116,7 +116,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldChunkSingleMessage() throws Throwable
+    void shouldChunkSingleMessage() throws Throwable
     {
         setupWriteAndFlush();
 
@@ -132,7 +132,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldChunkMessageSpanningMultipleChunks() throws Throwable
+    void shouldChunkMessageSpanningMultipleChunks() throws Throwable
     {
         setupWriteAndFlush();
 
@@ -149,7 +149,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws IOException
+    void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws IOException
     {
         setupWriteAndFlush();
 
@@ -167,7 +167,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
+    void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
     {
         setupWriteAndFlush();
 
@@ -183,7 +183,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldNotThrowIfOutOfSyncFlush() throws Throwable
+    void shouldNotThrowIfOutOfSyncFlush() throws Throwable
     {
         setupWriteAndFlush();
 
@@ -203,7 +203,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldQueueWritesMadeWhileFlushing() throws Throwable
+    void shouldQueueWritesMadeWhileFlushing() throws Throwable
     {
         final CountDownLatch startLatch = new CountDownLatch( 1 );
         final CountDownLatch finishLatch = new CountDownLatch( 1 );
@@ -255,7 +255,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldNotBeAbleToWriteAfterClose() throws Throwable
+    void shouldNotBeAbleToWriteAfterClose() throws Throwable
     {
         // When
         out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
@@ -274,7 +274,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldFlushOnClose() throws Throwable
+    void shouldFlushOnClose() throws Throwable
     {
         setupWriteAndFlush();
 
@@ -291,7 +291,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldThrowErrorWithRemoteAddressWhenClosed() throws Exception
+    void shouldThrowErrorWithRemoteAddressWhenClosed() throws Exception
     {
         SocketAddress remoteAddress = mock( SocketAddress.class );
         String remoteAddressString = "client.server.com:7687";

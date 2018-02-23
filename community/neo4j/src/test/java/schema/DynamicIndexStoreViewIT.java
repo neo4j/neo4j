@@ -50,15 +50,15 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class DynamicIndexStoreViewIT
+class DynamicIndexStoreViewIT
 {
     @Resource
     public SuppressOutput suppressOutput;
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void populateDbWithConcurrentUpdates() throws Exception
+    void populateDbWithConcurrentUpdates() throws Exception
     {
         GraphDatabaseService database =
                 new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );

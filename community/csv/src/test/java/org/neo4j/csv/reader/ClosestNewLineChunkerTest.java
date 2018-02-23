@@ -21,20 +21,18 @@ package org.neo4j.csv.reader;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import org.neo4j.csv.reader.Source.Chunk;
 
+import static java.util.Arrays.copyOfRange;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import static java.util.Arrays.copyOfRange;
-
-public class ClosestNewLineChunkerTest
+class ClosestNewLineChunkerTest
 {
     @Test
-    public void shouldBackUpChunkToClosestNewline() throws Exception
+    void shouldBackUpChunkToClosestNewline() throws Exception
     {
         // GIVEN
         CharReadable reader = Readables.wrap( "1234567\n8901234\n5678901234" );
@@ -57,7 +55,7 @@ public class ClosestNewLineChunkerTest
     }
 
     @Test
-    public void shouldFailIfNoNewlineInChunk() throws Exception
+    void shouldFailIfNoNewlineInChunk() throws Exception
     {
         // GIVEN
         CharReadable reader = Readables.wrap( "1234567\n89012345678901234" );
@@ -81,7 +79,7 @@ public class ClosestNewLineChunkerTest
         }
     }
 
-    private CharReadable dataWithLines( int lineCount )
+    CharReadable dataWithLines( int lineCount )
     {
         return new CharReadable.Adapter()
         {
@@ -122,7 +120,7 @@ public class ClosestNewLineChunkerTest
         };
     }
 
-    static char[] charactersOf( Chunk chunk )
+    private static char[] charactersOf( Chunk chunk )
     {
         return copyOfRange( chunk.data(), chunk.startPosition(), chunk.startPosition() + chunk.length() );
     }

@@ -1306,7 +1306,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             }
         }
 
-        public void clear()
+        void clear()
         {
             buf().clear();
         }
@@ -1353,7 +1353,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
          * @return the next element that will be returned from {@link #next()} without
          * actually advancing the iterator
          */
-        public T peek()
+        T peek()
         {
             if ( hasFetchedNext )
             {
@@ -1425,7 +1425,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return currentIterator != null && currentIterator.hasNext() ? currentIterator.next() : null;
         }
 
-        protected Iterator<T> nextIteratorOrNull()
+        Iterator<T> nextIteratorOrNull()
         {
             if ( iterators.hasNext() )
             {

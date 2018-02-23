@@ -21,9 +21,9 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
-public class PermanentlyForbiddenSecurityRule implements ForbiddingSecurityRule
+class PermanentlyForbiddenSecurityRule implements ForbiddingSecurityRule
 {
-    public static final String REALM = "WallyWorld"; // as per RFC2617 :-)
+    private static final String REALM = "WallyWorld"; // as per RFC2617 :-)
 
     @Override
     public boolean isAuthorized( HttpServletRequest request )

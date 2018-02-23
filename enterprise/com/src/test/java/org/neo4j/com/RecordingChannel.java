@@ -33,7 +33,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-public class RecordingChannel implements Channel
+class RecordingChannel implements Channel
 {
     private Queue<ChannelBuffer> recievedMessages = new LinkedList<>();
 

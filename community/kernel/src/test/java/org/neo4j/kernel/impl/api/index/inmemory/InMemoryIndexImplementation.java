@@ -39,7 +39,7 @@ abstract class InMemoryIndexImplementation extends AbstractIndexReader implement
 
     abstract void drop();
 
-    public final PrimitiveLongResourceIterator seek( Value... values )
+    final PrimitiveLongResourceIterator seek( Value... values )
     {
         return doIndexSeek( encode( values ) );
     }
@@ -141,7 +141,7 @@ abstract class InMemoryIndexImplementation extends AbstractIndexReader implement
 
     abstract InMemoryIndexImplementation snapshot();
 
-    protected interface IndexEntryIterator
+    interface IndexEntryIterator
     {
         void visitEntry( Object key, Set<Long> nodeId ) throws Exception;
     }

@@ -45,10 +45,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class ClusterContextTest
+class ClusterContextTest
 {
     @Test
-    public void testElectionVersionIsUpdatedOnElectionFromSelfAndProperlyIgnoredIfOld()
+    void testElectionVersionIsUpdatedOnElectionFromSelfAndProperlyIgnoredIfOld()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );
@@ -89,7 +89,7 @@ public class ClusterContextTest
     }
 
     @Test
-    public void testElectionVersionIsUpdatedOnElectionFromOtherAndIgnoredIfOld()
+    void testElectionVersionIsUpdatedOnElectionFromOtherAndIgnoredIfOld()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );
@@ -124,7 +124,7 @@ public class ClusterContextTest
     }
 
     @Test
-    public void testElectionVersionIsResetWhenElectorChangesFromMeToOther()
+    void testElectionVersionIsResetWhenElectorChangesFromMeToOther()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );
@@ -165,7 +165,7 @@ public class ClusterContextTest
     }
 
     @Test
-    public void testElectionVersionIsResetWhenElectorChangesFromOtherToMe()
+    void testElectionVersionIsResetWhenElectorChangesFromOtherToMe()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );

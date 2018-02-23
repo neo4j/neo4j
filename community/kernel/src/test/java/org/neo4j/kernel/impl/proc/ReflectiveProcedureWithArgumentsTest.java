@@ -58,7 +58,7 @@ public class ReflectiveProcedureWithArgumentsTest
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void shouldCompileSimpleProcedure() throws Throwable
+    void shouldCompileSimpleProcedure() throws Throwable
     {
         // When
         List<CallableProcedure> procedures = compile( ClassWithProcedureWithSimpleArgs.class );
@@ -74,7 +74,7 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldRunSimpleProcedure() throws Throwable
+    void shouldRunSimpleProcedure() throws Throwable
     {
         // Given
         CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
@@ -88,7 +88,7 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldRunGenericProcedure() throws Throwable
+    void shouldRunGenericProcedure() throws Throwable
     {
         // Given
         CallableProcedure procedure = compile( ClassWithProcedureWithGenericArgs.class ).get( 0 );
@@ -107,7 +107,7 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldFailIfMissingAnnotations() throws Throwable
+    void shouldFailIfMissingAnnotations() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -120,7 +120,7 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldFailIfMisplacedDefaultValue() throws Throwable
+    void shouldFailIfMisplacedDefaultValue() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -133,7 +133,7 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldFailIfWronglyTypedDefaultValue() throws Throwable
+    void shouldFailIfWronglyTypedDefaultValue() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -145,17 +145,17 @@ public class ReflectiveProcedureWithArgumentsTest
         compile( ClassWithProcedureWithBadlyTypedDefault.class );
     }
 
-    public static class MyOutputRecord
+    static class MyOutputRecord
     {
-        public String name;
+        String name;
 
-        public MyOutputRecord( String name )
+        MyOutputRecord( String name )
         {
             this.name = name;
         }
     }
 
-    public static class ClassWithProcedureWithSimpleArgs
+    private static class ClassWithProcedureWithSimpleArgs
     {
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople( @Name( "name" ) String name, @Name( "age" ) long age )
@@ -164,7 +164,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    public static class ClassWithProcedureWithGenericArgs
+    private static class ClassWithProcedureWithGenericArgs
     {
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople( @Name( "names" ) List<String> names,
@@ -182,7 +182,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    public static class ClassWithProcedureWithoutAnnotatedArgs
+    private static class ClassWithProcedureWithoutAnnotatedArgs
     {
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople( String name, int age )
@@ -191,7 +191,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    public static class ClassWithProcedureWithDefaults
+    private static class ClassWithProcedureWithDefaults
     {
         @Procedure
         public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "a" ) String a,
@@ -201,7 +201,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    public static class ClassWithProcedureWithMisplacedDefault
+    private static class ClassWithProcedureWithMisplacedDefault
     {
         @Procedure
         public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a,
@@ -211,7 +211,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    public static class ClassWithProcedureWithBadlyTypedDefault
+    private static class ClassWithProcedureWithBadlyTypedDefault
     {
         @Procedure
         public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two" ) long b )

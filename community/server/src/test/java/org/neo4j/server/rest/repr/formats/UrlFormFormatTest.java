@@ -19,19 +19,19 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class UrlFormFormatTest
+class UrlFormFormatTest
 {
     @Test
-    public void shouldParseEmptyMap() throws Exception
+    void shouldParseEmptyMap() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
         Map<String, Object> map = format.readMap( "" );
@@ -40,7 +40,7 @@ public class UrlFormFormatTest
     }
 
     @Test
-    public void canParseSingleKeyMap() throws Exception
+    void canParseSingleKeyMap() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
         Map<String, Object> map = format.readMap( "var=A" );
@@ -50,7 +50,7 @@ public class UrlFormFormatTest
     }
 
     @Test
-    public void canParseListsInMaps() throws Exception
+    void canParseListsInMaps() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
         Map<String, Object> map = format.readMap( "var=A&var=B" );
@@ -61,7 +61,7 @@ public class UrlFormFormatTest
     }
 
     @Test
-    public void shouldSupportPhpStyleUrlEncodedPostBodiesForAListOnly() throws Exception
+    void shouldSupportPhpStyleUrlEncodedPostBodiesForAListOnly() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
         Map<String, Object> map = format.readMap( "var[]=A&var[]=B" );
@@ -73,7 +73,7 @@ public class UrlFormFormatTest
     }
 
     @Test
-    public void shouldSupportPhpStyleUrlEncodedPostBodiesForAListAndNonListParams() throws Exception
+    void shouldSupportPhpStyleUrlEncodedPostBodiesForAListAndNonListParams() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
         Map<String, Object> map = format.readMap( "var[]=A&var[]=B&foo=bar" );

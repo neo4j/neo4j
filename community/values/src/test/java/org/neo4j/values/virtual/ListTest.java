@@ -45,10 +45,10 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValues.range;
 
-public class ListTest
+class ListTest
 {
     @Test
-    public void shouldBeEqualToItself()
+    void shouldBeEqualToItself()
     {
         assertEqual(
                 list( new String[]{"hi"}, 3.0 ),
@@ -58,7 +58,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldBeEqualToArrayIfValuesAreEqual()
+    void shouldBeEqualToArrayIfValuesAreEqual()
     {
         // the empty list equals any array that is empty
         assertEqualValues( list(), booleanArray( new boolean[]{} ) );
@@ -95,7 +95,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldNotEqual()
+    void shouldNotEqual()
     {
         assertNotEqual( list(), list( 2 ) );
         assertNotEqual( list(), list( 1, 2 ) );
@@ -147,14 +147,14 @@ public class ListTest
     }
 
     @Test
-    public void shouldHandleNullInList()
+    void shouldHandleNullInList()
     {
         assertIncomparable( list( 1, null ), list( 1, 2 ) );
         assertNotEqual( list( 1, null ), list( 2, 3 ) );
     }
 
     @Test
-    public void shouldCoerce()
+    void shouldCoerce()
     {
         assertEqual(
                 list( new String[]{"h"}, 3.0 ),
@@ -164,7 +164,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldRecurse()
+    void shouldRecurse()
     {
         assertEqual(
                 list( 'a', list( 'b', list( 'c' ) ) ),
@@ -172,7 +172,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldNestCorrectly()
+    void shouldNestCorrectly()
     {
         assertEqual(
                 list(
@@ -206,7 +206,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldRecurseAndCoerce()
+    void shouldRecurseAndCoerce()
     {
         assertEqual(
                 list( "a", list( 'b', list( "c" ) ) ),
@@ -252,7 +252,7 @@ public class ListTest
             };
 
     @Test
-    public void shouldTreatDifferentListImplementationSimilar()
+    void shouldTreatDifferentListImplementationSimilar()
     {
         for ( ListValue list1 : equivalentLists )
         {
@@ -267,7 +267,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldNotTreatDifferentListImplementationSimilarOfNonEquivalentListsSimilar()
+    void shouldNotTreatDifferentListImplementationSimilarOfNonEquivalentListsSimilar()
     {
         for ( ListValue list1 : nonEquivalentLists )
         {

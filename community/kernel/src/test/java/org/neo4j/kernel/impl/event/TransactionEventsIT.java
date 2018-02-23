@@ -80,14 +80,14 @@ import static org.neo4j.helpers.collection.MapUtil.genericMap;
 public class TransactionEventsIT
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
     @Resource
-    public RandomRule random;
+    private RandomRule random;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void shouldSeeExpectedTransactionData()
+    void shouldSeeExpectedTransactionData()
     {
         // GIVEN
         final Graph state = new Graph( db, random );
@@ -128,7 +128,7 @@ public class TransactionEventsIT
     }
 
     @Test
-    public void transactionIdAndCommitTimeAccessibleAfterCommit()
+    void transactionIdAndCommitTimeAccessibleAfterCommit()
     {
         TransactionIdCommitTimeTracker commitTimeTracker = new TransactionIdCommitTimeTracker();
         db.registerTransactionEventHandler( commitTimeTracker );
@@ -153,7 +153,7 @@ public class TransactionEventsIT
     }
 
     @Test
-    public void transactionIdNotAccessibleBeforeCommit()
+    void transactionIdNotAccessibleBeforeCommit()
     {
         db.registerTransactionEventHandler( getBeforeCommitHandler( TransactionData::getTransactionId ) );
         String message = "Transaction id is not assigned yet. It will be assigned during transaction commit.";
@@ -162,7 +162,7 @@ public class TransactionEventsIT
     }
 
     @Test
-    public void commitTimeNotAccessibleBeforeCommit()
+    void commitTimeNotAccessibleBeforeCommit()
     {
         db.registerTransactionEventHandler( getBeforeCommitHandler( TransactionData::getCommitTime ) );
         String message = "Transaction commit time is not assigned yet. It will be assigned during transaction commit.";
@@ -171,7 +171,7 @@ public class TransactionEventsIT
     }
 
     @Test
-    public void shouldGetEmptyUsernameOnAuthDisabled()
+    void shouldGetEmptyUsernameOnAuthDisabled()
     {
         db.registerTransactionEventHandler( getBeforeCommitHandler( txData ->
         {
@@ -182,7 +182,7 @@ public class TransactionEventsIT
     }
 
     @Test
-    public void shouldGetSpecifiedUsernameAndMetaDataInTXData()
+    void shouldGetSpecifiedUsernameAndMetaDataInTXData()
     {
         final AtomicReference<String> usernameRef = new AtomicReference<>();
         final AtomicReference<Map<String,Object>> metaDataRef = new AtomicReference<>();
@@ -215,7 +215,7 @@ public class TransactionEventsIT
     }
 
     @Test
-    public void registerUnregisterWithConcurrentTransactions() throws Exception
+    void registerUnregisterWithConcurrentTransactions() throws Exception
     {
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
         AtomicInteger runningCounter = new AtomicInteger();
@@ -620,12 +620,12 @@ public class TransactionEventsIT
             super.afterCommit( data, state );
         }
 
-        public long getTransactionIdAfterCommit()
+        long getTransactionIdAfterCommit()
         {
             return transactionIdAfterCommit;
         }
 
-        public long getCommitTimeAfterCommit()
+        long getCommitTimeAfterCommit()
         {
             return commitTimeAfterCommit;
         }

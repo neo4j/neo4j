@@ -21,47 +21,47 @@ package org.neo4j.kernel.lifecycle;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.NONE;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.SHUTDOWN;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTED;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STOPPED;
 
-public class TestLifecycleException
+class TestLifecycleException
 {
 
     @Test
-    public void shouldMakeNoneToStoppedIntoHumanReadableInitMessage()
+    void shouldMakeNoneToStoppedIntoHumanReadableInitMessage()
     {
         assertThat( exceptionFor( NONE, STOPPED ).getMessage(),
                 is( "Component 'SomeComponent' failed to initialize." ) );
     }
 
     @Test
-    public void shouldMakeStoppedToStartedIntoHumanReadableStartingMessage()
+    void shouldMakeStoppedToStartedIntoHumanReadableStartingMessage()
     {
         assertThat( exceptionFor( STOPPED, STARTED ).getMessage(),
                 is( "Component 'SomeComponent' was successfully initialized, but failed to start." ) );
     }
 
     @Test
-    public void shouldMakeStartedToStoppedIntoHumanReadableStoppingMessage()
+    void shouldMakeStartedToStoppedIntoHumanReadableStoppingMessage()
     {
         assertThat( exceptionFor( STARTED, STOPPED ).getMessage(),
                 is( "Component 'SomeComponent' failed to stop." ) );
     }
 
     @Test
-    public void shouldMakeShutdownIntoHumanReadableShutdownMessage()
+    void shouldMakeShutdownIntoHumanReadableShutdownMessage()
     {
         assertThat( exceptionFor( STOPPED, SHUTDOWN ).getMessage(),
                 is( "Component 'SomeComponent' failed to shut down." ) );
     }
 
     @Test
-    public void shouldIncludeRootCauseMessageInExceptionMessage()
+    void shouldIncludeRootCauseMessageInExceptionMessage()
     {
         Exception root = new Exception( "big bad root cause" );
         Exception intermediate = new Exception( "intermediate exception", root );

@@ -34,12 +34,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 
-public class BasicTableTest
+class BasicTableTest
 {
     private static final long seed = currentTimeMillis();
     private static final Random random = new Random( seed );
 
-    public static Collection<Object[]> data()
+    private static Collection<Object[]> data()
     {
         Collection<Object[]> result = new ArrayList<>();
         result.add( new Object[] { new TableFactory()
@@ -207,7 +207,7 @@ public class BasicTableTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    public void shouldSetAndGetSmallKey( TableFactory factory )
+    void shouldSetAndGetSmallKey( TableFactory factory )
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -231,7 +231,7 @@ public class BasicTableTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    public void shouldSetAndGetBigKey( TableFactory factory )
+    void shouldSetAndGetBigKey( TableFactory factory )
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -252,7 +252,7 @@ public class BasicTableTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    public void shouldRemoveBigKey( TableFactory factory )
+    void shouldRemoveBigKey( TableFactory factory )
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -274,7 +274,7 @@ public class BasicTableTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    public void shouldSetHopBits( TableFactory factory )
+    void shouldSetHopBits( TableFactory factory )
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -294,7 +294,7 @@ public class BasicTableTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    public void shouldMoveHopBit( TableFactory factory )
+    void shouldMoveHopBit( TableFactory factory )
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -313,7 +313,7 @@ public class BasicTableTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    public void shouldClearTable( TableFactory factory )
+    void shouldClearTable( TableFactory factory )
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {

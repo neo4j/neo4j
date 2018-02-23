@@ -203,43 +203,43 @@ public class QueryExecutionTypeTest
             return result.toString();
         }
 
-        public Assumptions isProfiled()
+        Assumptions isProfiled()
         {
             this.isProfiled = true;
             return this;
         }
 
-        public Assumptions isExplained()
+        Assumptions isExplained()
         {
             this.requestedExecutionPlanDescription = true;
             return this;
         }
 
-        public Assumptions isOnlyExplained()
+        Assumptions isOnlyExplained()
         {
             this.isExplained = true;
             return this;
         }
 
-        public Assumptions canContainResults()
+        Assumptions canContainResults()
         {
             this.canContainResults = true;
             return this;
         }
 
-        public Assumptions canUpdateData()
+        Assumptions canUpdateData()
         {
             this.canUpdateData = true;
             return this;
         }
 
-        public Assumptions canUpdateSchema()
+        Assumptions canUpdateSchema()
         {
             this.canUpdateSchema = true;
             return this;
         }
 
-        public QueryExecutionType type()
+        QueryExecutionType type()
         {
             return convertToQuery ? query( type.queryType() ) : type;
         }

@@ -75,10 +75,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * direct, test is present in community.
  */
 @ExtendWith( TestDirectoryExtension.class )
-public class PullUpdatesAppliedIT
+class PullUpdatesAppliedIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     private SortedMap<Integer, Configuration> configurations;
     private Map<Integer, HighlyAvailableGraphDatabase> databases;
@@ -100,7 +100,7 @@ public class PullUpdatesAppliedIT
     }
 
     @BeforeEach
-    public void doBefore() throws Exception
+    void doBefore() throws Exception
     {
         configurations = createConfigurations();
         databases = startDatabases();
@@ -150,7 +150,7 @@ public class PullUpdatesAppliedIT
     }
 
     @AfterEach
-    public void doAfter()
+    void doAfter()
     {
         if ( databases != null )
         {
@@ -161,7 +161,7 @@ public class PullUpdatesAppliedIT
     }
 
     @Test
-    public void testUpdatesAreWrittenToLogBeforeBeingAppliedToStore() throws Exception
+    void testUpdatesAreWrittenToLogBeforeBeingAppliedToStore() throws Exception
     {
         int serverIdOfMaster = getCurrentMaster();
         addNode( serverIdOfMaster );
@@ -297,7 +297,7 @@ public class PullUpdatesAppliedIT
     }
 
     // For executing in a different process than the one running the test case.
-    public static void main( String[] args ) throws Exception
+    static void main( String[] args ) throws Exception
     {
         File storePath = new File( args[0] );
         int serverId = Integer.parseInt( args[1] );

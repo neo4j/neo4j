@@ -69,7 +69,7 @@ public class SegmentedRaftLogDurabilityTest
     };
 
     @Test
-    public void shouldAppendDataAndNotCommitImmediately() throws Exception
+    void shouldAppendDataAndNotCommitImmediately() throws Exception
     {
         RaftLog log = logFactory.createBasedOn( fsRule.get() );
 
@@ -84,7 +84,7 @@ public class SegmentedRaftLogDurabilityTest
     }
 
     @Test
-    public void shouldAppendAndCommit() throws Exception
+    void shouldAppendAndCommit() throws Exception
     {
         RaftLog log = logFactory.createBasedOn( fsRule.get() );
 
@@ -96,7 +96,7 @@ public class SegmentedRaftLogDurabilityTest
     }
 
     @Test
-    public void shouldAppendAfterReloadingFromFileSystem() throws Exception
+    void shouldAppendAfterReloadingFromFileSystem() throws Exception
     {
         RaftLog log = logFactory.createBasedOn( fsRule.get() );
 
@@ -115,7 +115,7 @@ public class SegmentedRaftLogDurabilityTest
     }
 
     @Test
-    public void shouldTruncatePreviouslyAppendedEntries() throws Exception
+    void shouldTruncatePreviouslyAppendedEntries() throws Exception
     {
         RaftLog log = logFactory.createBasedOn( fsRule.get() );
 
@@ -131,7 +131,7 @@ public class SegmentedRaftLogDurabilityTest
     }
 
     @Test
-    public void shouldReplacePreviouslyAppendedEntries() throws Exception
+    void shouldReplacePreviouslyAppendedEntries() throws Exception
     {
         RaftLog log = logFactory.createBasedOn( fsRule.get() );
 
@@ -160,7 +160,7 @@ public class SegmentedRaftLogDurabilityTest
     }
 
     @Test
-    public void shouldLogDifferentContentTypes() throws Exception
+    void shouldLogDifferentContentTypes() throws Exception
     {
         RaftLog log = logFactory.createBasedOn( fsRule.get() );
 
@@ -179,7 +179,7 @@ public class SegmentedRaftLogDurabilityTest
     }
 
     @Test
-    public void shouldRecoverAfterEventuallyPruning() throws Exception
+    void shouldRecoverAfterEventuallyPruning() throws Exception
     {
         RaftLog log = logFactory.createBasedOn( fsRule.get() );
 

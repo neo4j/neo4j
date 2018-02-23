@@ -51,24 +51,24 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.StreamingFormat.STREAM_HEADER;
 import static org.neo4j.server.rest.repr.ValueRepresentation.string;
 
-public class RepresentationFormatRepositoryTest
+class RepresentationFormatRepositoryTest
 {
     private final RepresentationFormatRepository repository = new RepresentationFormatRepository( null );
 
     @Test
-    public void canProvideJsonFormat()
+    void canProvideJsonFormat()
     {
         assertNotNull( repository.inputFormat( valueOf( "application/json" ) ) );
     }
 
     @Test
-    public void canProvideUTF8EncodedJsonFormat()
+    void canProvideUTF8EncodedJsonFormat()
     {
         assertNotNull( repository.inputFormat( valueOf( "application/json;charset=UTF-8" ) ) );
     }
 
     @Test
-    public void canNotGetInputFormatBasedOnWildcardMediaType()
+    void canNotGetInputFormatBasedOnWildcardMediaType()
     {
         assertThrows( MediaTypeNotSupportedException.class, () -> {
             InputFormat format = repository.inputFormat( WILDCARD_TYPE );
@@ -78,7 +78,7 @@ public class RepresentationFormatRepositoryTest
     }
 
     @Test
-    public void canProvideJsonOutputFormat()
+    void canProvideJsonOutputFormat()
     {
         OutputFormat format = repository.outputFormat( asList( APPLICATION_JSON_TYPE ), null, null );
         assertNotNull( format );
@@ -86,7 +86,7 @@ public class RepresentationFormatRepositoryTest
     }
 
     @Test
-    public void cannotProvideStreamingForOtherMediaTypes() throws Exception
+    void cannotProvideStreamingForOtherMediaTypes() throws Exception
     {
         final ResponseBuilder responseBuilder = mock( ResponseBuilder.class );
         // no streaming
@@ -101,7 +101,7 @@ public class RepresentationFormatRepositoryTest
     }
 
     @Test
-    public void canProvideStreamingJsonOutputFormat() throws Exception
+    void canProvideStreamingJsonOutputFormat() throws Exception
     {
         Response response = mock( Response.class );
         final AtomicReference<StreamingOutput> ref = new AtomicReference<>();

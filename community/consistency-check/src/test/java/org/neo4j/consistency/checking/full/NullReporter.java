@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class NullReporter implements ConsistencyReport.Reporter
+class NullReporter implements ConsistencyReport.Reporter
 {
     @Override
     public void forSchema( DynamicRecord schema, RecordCheck<DynamicRecord, ConsistencyReport.SchemaConsistencyReport

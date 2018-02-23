@@ -33,7 +33,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencies;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -200,7 +199,7 @@ public class TransactionCommittingResponseUnpackerTest
         }
     }
 
-    public class TransactionCountingTransactionCommitProcess implements TransactionCommitProcess
+    class TransactionCountingTransactionCommitProcess implements TransactionCommitProcess
     {
         private final Queue<Integer> batchSizes = new LinkedList<>();
 
@@ -212,13 +211,13 @@ public class TransactionCommittingResponseUnpackerTest
             return 42;
         }
 
-        protected void assertBatchSize( int expected )
+        void assertBatchSize( int expected )
         {
             int batchSize = batchSizes.poll();
             assertEquals( expected, batchSize );
         }
 
-        protected void assertNoMoreBatches()
+        void assertNoMoreBatches()
         {
             assertTrue( batchSizes.isEmpty() );
         }

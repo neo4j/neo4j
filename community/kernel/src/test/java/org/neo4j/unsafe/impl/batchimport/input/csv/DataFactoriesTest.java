@@ -33,17 +33,16 @@ import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
-public class DataFactoriesTest
+class DataFactoriesTest
 {
     private static final int BUFFER_SIZE = 10_000;
     private static final Configuration COMMAS = withBufferSize( Configuration.COMMAS, BUFFER_SIZE );
@@ -52,7 +51,7 @@ public class DataFactoriesTest
     private final Groups groups = new Groups();
 
     @Test
-    public void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception
+    void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception
     {
         // GIVEN
         CharSeeker seeker = seeker( "ID:ID,label-one:label,also-labels:LABEL,name,age:long" );
@@ -73,7 +72,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldParseDefaultRelationshipFileHeaderCorrectly() throws Exception
+    void shouldParseDefaultRelationshipFileHeaderCorrectly() throws Exception
     {
         // GIVEN
         CharSeeker seeker = seeker( ":START_ID\t:END_ID\ttype:TYPE\tdate:long\tmore:long[]" );
@@ -94,7 +93,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldHaveEmptyHeadersBeInterpretedAsIgnored() throws Exception
+    void shouldHaveEmptyHeadersBeInterpretedAsIgnored() throws Exception
     {
         // GIVEN
         CharSeeker seeker = seeker( "one:id\ttwo\t\tdate:long" );
@@ -114,7 +113,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailForDuplicatePropertyHeaderEntries() throws Exception
+    void shouldFailForDuplicatePropertyHeaderEntries() throws Exception
     {
         // GIVEN
         CharSeeker seeker = seeker( "one:id\tname\tname:long" );
@@ -136,7 +135,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailForDuplicateIdHeaderEntries() throws Exception
+    void shouldFailForDuplicateIdHeaderEntries() throws Exception
     {
         // GIVEN
         CharSeeker seeker = seeker( "one:id\ttwo:id" );
@@ -158,7 +157,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldAllowMissingIdHeaderEntry() throws Exception
+    void shouldAllowMissingIdHeaderEntry() throws Exception
     {
         // GIVEN
         CharSeeker seeker = seeker( "one\ttwo" );
@@ -175,7 +174,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception
+    void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception
     {
         // GIVEN
         final CharReadable firstSource = wrap( "id:ID\tname:String\tbirth_date:long" );
@@ -198,7 +197,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldParseGroupName() throws Exception
+    void shouldParseGroupName() throws Exception
     {
         // GIVEN
         String groupOneName = "GroupOne";
@@ -223,7 +222,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailOnUnexpectedNodeHeaderType()
+    void shouldFailOnUnexpectedNodeHeaderType()
     {
         // GIVEN
         CharSeeker seeker = seeker( ":ID,:START_ID" );
@@ -243,7 +242,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailOnUnexpectedRelationshipHeaderType()
+    void shouldFailOnUnexpectedRelationshipHeaderType()
     {
         // GIVEN
         CharSeeker seeker = seeker( ":LABEL,:START_ID,:END_ID,:TYPE" );

@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Listener;
 
-public class ElectionUtil
+class ElectionUtil
 {
     private ElectionUtil()
     {

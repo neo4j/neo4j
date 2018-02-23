@@ -42,10 +42,10 @@ import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.given
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
-public class ReversedMultiFileTransactionCursorTest
+class ReversedMultiFileTransactionCursorTest
 {
     @Test
-    public void shouldReadSingleVersionReversed() throws Exception
+    void shouldReadSingleVersionReversed() throws Exception
     {
         // GIVEN
         TransactionCursor cursor = new ReversedMultiFileTransactionCursor( log( 5 ), 0, start( 0 ) );
@@ -58,7 +58,7 @@ public class ReversedMultiFileTransactionCursorTest
     }
 
     @Test
-    public void shouldReadMultipleVersionsReversed() throws Exception
+    void shouldReadMultipleVersionsReversed() throws Exception
     {
         // GIVEN
         TransactionCursor cursor = new ReversedMultiFileTransactionCursor( log( 5, 3, 8 ), 2, start( 0 ) );
@@ -71,7 +71,7 @@ public class ReversedMultiFileTransactionCursorTest
     }
 
     @Test
-    public void shouldRespectStartLogPosition() throws Exception
+    void shouldRespectStartLogPosition() throws Exception
     {
         // GIVEN
         TransactionCursor cursor = new ReversedMultiFileTransactionCursor( log( 5, 6, 8 ), 2, new LogPosition( 1, LOG_HEADER_SIZE + 3 ) );
@@ -84,7 +84,7 @@ public class ReversedMultiFileTransactionCursorTest
     }
 
     @Test
-    public void shouldHandleEmptyLogsMidStream() throws Exception
+    void shouldHandleEmptyLogsMidStream() throws Exception
     {
         // GIVEN
         TransactionCursor cursor = new ReversedMultiFileTransactionCursor( log( 5, 0, 2, 0, 3 ), 4, start( 0 ) );
@@ -97,7 +97,7 @@ public class ReversedMultiFileTransactionCursorTest
     }
 
     @Test
-    public void shouldHandleEmptySingleLogVersion() throws Exception
+    void shouldHandleEmptySingleLogVersion() throws Exception
     {
         // GIVEN
         TransactionCursor cursor = new ReversedMultiFileTransactionCursor( log( 0 ), 0, start( 0 ) );

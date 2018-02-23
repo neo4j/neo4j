@@ -70,17 +70,17 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class LoadCommandTest
+class LoadCommandTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private Path homeDir;
     private Path configDir;
     private Path archive;
     private Loader loader;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
@@ -89,14 +89,14 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
+    void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         execute( "foo.db" );
         verify( loader ).load( archive, homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/databases/foo.db" ) );
     }
 
     @Test
-    public void shouldCalculateTheDatabaseDirectoryFromConfig()
+    void shouldCalculateTheDatabaseDirectoryFromConfig()
             throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
@@ -110,7 +110,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
+    void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
@@ -125,7 +125,7 @@ public class LoadCommandTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // Can't reliably create symlinks on windows
-    public void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
@@ -146,7 +146,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldMakeFromCanonical() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    void shouldMakeFromCanonical() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
@@ -161,7 +161,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldDeleteTheOldDatabaseIfForceArgumentIsProvided()
+    void shouldDeleteTheOldDatabaseIfForceArgumentIsProvided()
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
@@ -177,7 +177,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldNotDeleteTheOldDatabaseIfForceArgumentIsNotProvided()
+    void shouldNotDeleteTheOldDatabaseIfForceArgumentIsNotProvided()
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
@@ -193,7 +193,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage
+    void shouldRespectTheStoreLock() throws IOException, IncorrectUsage
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
@@ -212,7 +212,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldDefaultToGraphDb() throws Exception
+    void shouldDefaultToGraphDb() throws Exception
     {
         Path databaseDir = homeDir.resolve( "data/databases/graph.db" );
         Files.createDirectories( databaseDir );
@@ -222,7 +222,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldObjectIfTheArchiveArgumentIsMissing() throws Exception
+    void shouldObjectIfTheArchiveArgumentIsMissing() throws Exception
     {
         try
         {
@@ -236,7 +236,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat, IncorrectUsage
+    void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat, IncorrectUsage
     {
         doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any(), any() );
         try
@@ -251,7 +251,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
+    void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
     {
         doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any(), any() );
         try
@@ -266,7 +266,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
+    void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
             throws IOException, IncorrectFormat, IncorrectUsage
     {
         doThrow( AccessDeniedException.class ).when( loader ).load( any(), any(), any() );
@@ -283,7 +283,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectUsage, IncorrectFormat
     {
         doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any(), any() );
@@ -299,7 +299,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectUsage, IncorrectFormat
+    void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectUsage, IncorrectFormat
     {
         doThrow( IncorrectFormat.class ).when( loader ).load( any(), any(), any() );
         try
@@ -315,7 +315,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

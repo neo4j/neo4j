@@ -35,10 +35,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PluginAuthenticationInfoTest
+class PluginAuthenticationInfoTest
 {
     @Test
-    public void shouldCreateCorrectAuthenticationInfo()
+    void shouldCreateCorrectAuthenticationInfo()
     {
         PluginAuthenticationInfo internalAuthInfo =
                 PluginAuthenticationInfo.createCacheable( AuthenticationInfo.of( "thePrincipal" ), "theRealm", null );
@@ -47,7 +47,7 @@ public class PluginAuthenticationInfoTest
     }
 
     @Test
-    public void shouldCreateCorrectAuthenticationInfoFromCacheable()
+    void shouldCreateCorrectAuthenticationInfoFromCacheable()
     {
         SecureHasher hasher = mock( SecureHasher.class );
         when( hasher.hash( any() ) ).thenReturn( new SimpleHash( "some-hash" ) );
@@ -63,7 +63,7 @@ public class PluginAuthenticationInfoTest
     }
 
     @Test
-    public void shouldCreateCorrectAuthenticationInfoFromCustomCacheable()
+    void shouldCreateCorrectAuthenticationInfoFromCustomCacheable()
     {
         SecureHasher hasher = mock( SecureHasher.class );
         when( hasher.hash( any() ) ).thenReturn( new SimpleHash( "some-hash" ) );

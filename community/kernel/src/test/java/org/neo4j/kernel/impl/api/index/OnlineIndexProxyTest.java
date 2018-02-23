@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
-public class OnlineIndexProxyTest
+class OnlineIndexProxyTest
 {
     private final long indexId = 1;
     private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 2 );
@@ -42,7 +42,7 @@ public class OnlineIndexProxyTest
     private final IndexStoreView storeView = mock( IndexStoreView.class );
 
     @Test
-    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
+    void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
         OnlineIndexProxy index = new OnlineIndexProxy( indexId, new IndexMeta( descriptor, providerDescriptor, NO_CAPABILITY ),

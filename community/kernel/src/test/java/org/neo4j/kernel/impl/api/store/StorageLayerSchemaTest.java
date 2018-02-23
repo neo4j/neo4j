@@ -31,10 +31,10 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class StorageLayerSchemaTest extends StorageLayerTest
+class StorageLayerSchemaTest extends StorageLayerTest
 {
     @Test
-    public void shouldListAllConstraints()
+    void shouldListAllConstraints()
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -52,7 +52,7 @@ public class StorageLayerSchemaTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldListAllConstraintsForLabel()
+    void shouldListAllConstraintsForLabel()
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -68,7 +68,7 @@ public class StorageLayerSchemaTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldListAllConstraintsForLabelAndProperty()
+    void shouldListAllConstraintsForLabelAndProperty()
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );

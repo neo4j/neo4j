@@ -43,7 +43,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
     private Processor processor = new UserFunctionProcessor();
 
     @Test
-    public void fails_if_parameters_are_not_properly_annotated()
+    void fails_if_parameters_are_not_properly_annotated()
     {
         JavaFileObject function =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/missing_name/MissingNameUserFunction.java" );
@@ -60,7 +60,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_return_type_is_incorrect()
+    void fails_if_return_type_is_incorrect()
     {
         JavaFileObject function = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_return_type/BadReturnTypeUserFunction.java" );
@@ -73,7 +73,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_function_primitive_input_type_is_not_supported()
+    void fails_if_function_primitive_input_type_is_not_supported()
     {
         JavaFileObject function = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_proc_input_type/BadPrimitiveInputUserFunction.java" );
@@ -85,7 +85,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_function_generic_input_type_is_not_supported()
+    void fails_if_function_generic_input_type_is_not_supported()
     {
         JavaFileObject function = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_proc_input_type/BadGenericInputUserFunction.java" );
@@ -108,7 +108,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void fails_if_duplicate_functions_are_declared()
+    void fails_if_duplicate_functions_are_declared()
     {
         JavaFileObject firstDuplicate =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/duplicated/UserFunction1.java" );
@@ -122,7 +122,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
     }
 
     @Test
-    public void succeeds_to_process_valid_stored_procedures()
+    void succeeds_to_process_valid_stored_procedures()
     {
         assert_().about( javaSource() )
                 .that( JavaFileObjectUtils.INSTANCE.procedureSource( "valid/UserFunctions.java" ) )

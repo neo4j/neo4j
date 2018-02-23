@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 
-public class BatchCollector<T> implements BatchSender
+class BatchCollector<T> implements BatchSender
 {
     private final List<T> batches = new ArrayList<>();
 

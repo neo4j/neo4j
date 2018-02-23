@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.set
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SetStaticFieldTest
+class SetStaticFieldTest
 {
     @Test
-    public void shouldAssignFields()
+    void shouldAssignFields()
     {
         // when
         setStaticField.apply( Apa.class, "X", "HELLO WORLD!" );
@@ -37,8 +37,8 @@ public class SetStaticFieldTest
         assertEquals( "HELLO WORLD!", Apa.X );
     }
 
-    public static class Apa
+    static class Apa
     {
-        public static String X;
+        static String X;
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.core.consensus.membership;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
@@ -33,14 +32,14 @@ import org.neo4j.time.FakeClock;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CatchupGoalTrackerTest
+class CatchupGoalTrackerTest
 {
 
     private static final long ROUND_TIMEOUT = 15;
     private static final long CATCHUP_TIMEOUT = 1_000;
 
     @Test
-    public void shouldAchieveGoalIfWithinRoundTimeout()
+    void shouldAchieveGoalIfWithinRoundTimeout()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -56,7 +55,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldNotAchieveGoalIfBeyondRoundTimeout()
+    void shouldNotAchieveGoalIfBeyondRoundTimeout()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -72,7 +71,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldFailToAchieveGoalDueToCatchupTimeoutExpiring()
+    void shouldFailToAchieveGoalDueToCatchupTimeoutExpiring()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -90,7 +89,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldFailToAchieveGoalDueToCatchupTimeoutExpiringEvenThoughWeDoEventuallyAchieveTarget()
+    void shouldFailToAchieveGoalDueToCatchupTimeoutExpiringEvenThoughWeDoEventuallyAchieveTarget()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -108,7 +107,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldFailToAchieveGoalDueToRoundExhaustion()
+    void shouldFailToAchieveGoalDueToRoundExhaustion()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -131,7 +130,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldNotFinishIfRoundsNotExhausted()
+    void shouldNotFinishIfRoundsNotExhausted()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();

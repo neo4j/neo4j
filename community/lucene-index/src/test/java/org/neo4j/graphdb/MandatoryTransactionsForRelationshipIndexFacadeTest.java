@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
+
 import org.neo4j.graphdb.index.RelationshipIndex;
 
 import static org.neo4j.graphdb.RelationshipIndexFacadeMethods.ALL_RELATIONSHIP_INDEX_FACADE_METHODS;
@@ -27,7 +28,7 @@ import static org.neo4j.graphdb.RelationshipIndexFacadeMethods.ALL_RELATIONSHIP_
 public class MandatoryTransactionsForRelationshipIndexFacadeTest extends AbstractMandatoryTransactionsTest<RelationshipIndex>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipIndexFacade()
+    void shouldRequireTransactionsWhenCallingMethodsOnRelationshipIndexFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_INDEX_FACADE_METHODS );
     }

@@ -43,13 +43,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class SslPolicyConfigTest
+class SslPolicyConfigTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldFindPolicyDefaults()
+    void shouldFindPolicyDefaults()
     {
         // given
         Map<String,String> params = stringMap();
@@ -95,7 +95,7 @@ public class SslPolicyConfigTest
     }
 
     @Test
-    public void shouldFindPolicyOverrides()
+    void shouldFindPolicyOverrides()
     {
         // given
         Map<String,String> params = stringMap();
@@ -156,7 +156,7 @@ public class SslPolicyConfigTest
     }
 
     @Test
-    public void shouldFailWithIncompletePathOverrides()
+    void shouldFailWithIncompletePathOverrides()
     {
         // given
         Map<String,String> params = stringMap();

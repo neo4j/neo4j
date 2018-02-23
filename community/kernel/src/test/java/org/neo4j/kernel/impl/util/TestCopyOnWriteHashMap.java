@@ -27,10 +27,10 @@ import java.util.Map.Entry;
 
 import static org.neo4j.kernel.impl.traversal.TraversalTestBase.assertContains;
 
-public class TestCopyOnWriteHashMap
+class TestCopyOnWriteHashMap
 {
     @Test
-    public void keySetUnaffectedByChanges()
+    void keySetUnaffectedByChanges()
     {
         Map<Integer, String> map = new CopyOnWriteHashMap<>();
         map.put( 0, "0" );
@@ -45,7 +45,7 @@ public class TestCopyOnWriteHashMap
     }
 
     @Test
-    public void entrySetUnaffectedByChanges()
+    void entrySetUnaffectedByChanges()
     {
         Map<Integer, String> map = new CopyOnWriteHashMap<>();
         map.put( 0, "0" );

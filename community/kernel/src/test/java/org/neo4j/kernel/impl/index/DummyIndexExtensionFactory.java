@@ -35,7 +35,7 @@ public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyInde
         super( IDENTIFIER );
     }
 
-    public interface Dependencies
+    interface Dependencies
     {
         IndexProviders getIndexProviders();
     }

@@ -28,9 +28,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.test.rule.TestDirectory;
 
-public class NumberArrayPageCacheTestSupport
+class NumberArrayPageCacheTestSupport
 {
-    public static Fixture prepareDirectoryAndPageCache( Class<?> testClass ) throws IOException
+    static Fixture prepareDirectoryAndPageCache( Class<?> testClass ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );
@@ -39,11 +39,11 @@ public class NumberArrayPageCacheTestSupport
         return new Fixture( pageCache, fileSystem, dir );
     }
 
-    public static class Fixture implements AutoCloseable
+    static class Fixture implements AutoCloseable
     {
-        public final PageCache pageCache;
-        public final FileSystemAbstraction fileSystem;
-        public final File directory;
+        final PageCache pageCache;
+        final FileSystemAbstraction fileSystem;
+        final File directory;
 
         private Fixture( PageCache pageCache, FileSystemAbstraction fileSystem, File directory )
         {

@@ -25,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ThresholdConfigValueTest
+class ThresholdConfigValueTest
 {
     @Test
-    public void shouldParseCorrectly()
+    void shouldParseCorrectly()
     {
         ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "25 files" );
         assertEquals( "files", value.type );
@@ -40,7 +40,7 @@ public class ThresholdConfigValueTest
     }
 
     @Test
-    public void shouldThrowExceptionOnUnknownType()
+    void shouldThrowExceptionOnUnknownType()
     {
         try
         {
@@ -54,14 +54,14 @@ public class ThresholdConfigValueTest
     }
 
     @Test
-    public void shouldReturnNoPruningForTrue()
+    void shouldReturnNoPruningForTrue()
     {
         ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "true" );
         assertSame( ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING, value );
     }
 
     @Test
-    public void shouldReturnKeepOneEntryForFalse()
+    void shouldReturnKeepOneEntryForFalse()
     {
         ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "false" );
         assertEquals( "entries", value.type );

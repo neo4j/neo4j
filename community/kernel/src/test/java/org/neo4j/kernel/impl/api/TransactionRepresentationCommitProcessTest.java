@@ -51,12 +51,12 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
-public class TransactionRepresentationCommitProcessTest
+class TransactionRepresentationCommitProcessTest
 {
     private final CommitEvent commitEvent = CommitEvent.NULL;
 
     @Test
-    public void shouldFailWithProperMessageOnAppendException() throws Exception
+    void shouldFailWithProperMessageOnAppendException() throws Exception
     {
         // GIVEN
         TransactionAppender appender = mock( TransactionAppender.class );
@@ -82,7 +82,7 @@ public class TransactionRepresentationCommitProcessTest
     }
 
     @Test
-    public void shouldCloseTransactionRegardlessOfWhetherOrNotItAppliedCorrectly() throws Exception
+    void shouldCloseTransactionRegardlessOfWhetherOrNotItAppliedCorrectly() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
@@ -115,7 +115,7 @@ public class TransactionRepresentationCommitProcessTest
     }
 
     @Test
-    public void shouldSuccessfullyCommitTransactionWithNoCommands() throws Exception
+    void shouldSuccessfullyCommitTransactionWithNoCommands() throws Exception
     {
         // GIVEN
         long txId = 11;

@@ -26,7 +26,6 @@ import org.mockito.internal.stubbing.answers.ThrowsException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,7 +87,7 @@ import static org.neo4j.test.mockito.mock.GraphMock.path;
 import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
+class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 {
 
     private ExecutionResultSerializer getSerializerWith( OutputStream output )
@@ -107,7 +106,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriOnly() throws Exception
+    void shouldSerializeResponseWithCommitUriOnly() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -123,7 +122,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriAndResults() throws Exception
+    void shouldSerializeResponseWithCommitUriAndResults() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -145,7 +144,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithResultsOnly() throws Exception
+    void shouldSerializeResponseWithResultsOnly() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -166,7 +165,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriAndResultsAndErrors() throws Exception
+    void shouldSerializeResponseWithCommitUriAndResultsAndErrors() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -191,7 +190,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithResultsAndErrors() throws Exception
+    void shouldSerializeResponseWithResultsAndErrors() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -215,7 +214,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriAndErrors() throws Exception
+    void shouldSerializeResponseWithCommitUriAndErrors() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -233,7 +232,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithErrorsOnly() throws Exception
+    void shouldSerializeResponseWithErrorsOnly() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -251,7 +250,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithNoCommitUriResultsOrErrors() throws Exception
+    void shouldSerializeResponseWithNoCommitUriResultsOrErrors() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -266,7 +265,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithMultipleResultRows() throws Exception
+    void shouldSerializeResponseWithMultipleResultRows() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -291,7 +290,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithMultipleResults() throws Exception
+    void shouldSerializeResponseWithMultipleResults() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -318,7 +317,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeNodeAsMapOfProperties() throws Exception
+    void shouldSerializeNodeAsMapOfProperties() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -345,7 +344,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeNestedEntities() throws Exception
+    void shouldSerializeNestedEntities() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -377,7 +376,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePathAsListOfMapsOfProperties() throws Exception
+    void shouldSerializePathAsListOfMapsOfProperties() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -400,7 +399,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePointsAsListOfMapsOfProperties() throws Exception
+    void shouldSerializePointsAsListOfMapsOfProperties() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -448,7 +447,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnNext() throws Exception
+    void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnNext() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -486,7 +485,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnHasNext() throws Exception
+    void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnHasNext() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -525,7 +524,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceResultStreamWithGraphEntries() throws Exception
+    void shouldProduceResultStreamWithGraphEntries() throws Exception
     {
         // given
         Node[] node = {
@@ -583,7 +582,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceResultStreamWithLegacyRestFormat() throws Exception
+    void shouldProduceResultStreamWithLegacyRestFormat() throws Exception
     {
         // given
         Node[] node = {
@@ -629,7 +628,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceResultStreamWithLegacyRestFormatAndNestedMaps() throws Exception
+    void shouldProduceResultStreamWithLegacyRestFormatAndNestedMaps() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -659,7 +658,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
+    void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -700,7 +699,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
+    void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -731,7 +730,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePlanWithChildren() throws Exception
+    void shouldSerializePlanWithChildren() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -821,7 +820,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldLogIOErrors()
+    void shouldLogIOErrors()
     {
         // given
         IOException failure = new IOException();
@@ -840,7 +839,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldAbbreviateWellKnownIOErrors()
+    void shouldAbbreviateWellKnownIOErrors()
     {
         // given
         OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException( "Broken pipe" ) ) );
@@ -858,7 +857,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldReturnNotifications() throws IOException
+    void shouldReturnNotifications() throws IOException
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -893,7 +892,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
+    void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -919,7 +918,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldNotReturnPositionWhenEmptyPosition() throws IOException
+    void shouldNotReturnPositionWhenEmptyPosition() throws IOException
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();

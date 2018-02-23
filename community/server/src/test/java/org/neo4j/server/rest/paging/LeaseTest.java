@@ -33,19 +33,19 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.paging.HexMatcher.containsOnlyHex;
 import static org.neo4j.time.Clocks.fakeClock;
 
-public class LeaseTest
+class LeaseTest
 {
     private static final long SIXTY_SECONDS = 60;
 
     @Test
-    public void shouldReturnHexIdentifierString()
+    void shouldReturnHexIdentifierString()
     {
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, fakeClock() );
         assertThat( lease.getId(), containsOnlyHex() );
     }
 
     @Test
-    public void shouldNotAllowLeasesInThePast()
+    void shouldNotAllowLeasesInThePast()
     {
         assertThrows( LeaseAlreadyExpiredException.class, () -> {
             FakeClock clock = fakeClock();
@@ -59,7 +59,7 @@ public class LeaseTest
     }
 
     @Test
-    public void leasesShouldExpire()
+    void leasesShouldExpire()
     {
         FakeClock clock = fakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
@@ -68,7 +68,7 @@ public class LeaseTest
     }
 
     @Test
-    public void shouldRenewLeaseForSamePeriod()
+    void shouldRenewLeaseForSamePeriod()
     {
         FakeClock clock = fakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );

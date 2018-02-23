@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ArrayCollectionTest
+class ArrayCollectionTest
 {
     @Test
-    public void shouldAddItems()
+    void shouldAddItems()
     {
         // GIVEN
         Collection<String> collection = new ArrayCollection<>( 5 );
@@ -54,7 +54,7 @@ public class ArrayCollectionTest
     }
 
     @Test
-    public void shouldGrowWithMoreItms()
+    void shouldGrowWithMoreItms()
     {
         // GIVEN
         int initialCapacity = 3;
@@ -78,7 +78,7 @@ public class ArrayCollectionTest
     }
 
     @Test
-    public void shouldClear()
+    void shouldClear()
     {
         // GIVEN
         Collection<String> collection = new ArrayCollection<>( 10 );
@@ -111,7 +111,7 @@ public class ArrayCollectionTest
     }
 
     @Test
-    public void shouldAddAllBeyondCapacity()
+    void shouldAddAllBeyondCapacity()
     {
         // GIVEN
         Collection<Integer> collection = new ArrayCollection<>( 5 );

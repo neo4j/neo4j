@@ -35,7 +35,7 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
-public class NodeCountInputs implements Input
+class NodeCountInputs implements Input
 {
     private static final Object[] properties = new Object[]{
             "a", 10, "b", 10, "c", 10, "d", 10, "e", 10, "f", 10, "g", 10, "h", 10, "i", 10,
@@ -46,7 +46,7 @@ public class NodeCountInputs implements Input
     private final long nodeCount;
     private final Collector bad = Collectors.silentBadCollector( 0 );
 
-    public NodeCountInputs( long nodeCount )
+    NodeCountInputs( long nodeCount )
     {
         this.nodeCount = nodeCount;
     }

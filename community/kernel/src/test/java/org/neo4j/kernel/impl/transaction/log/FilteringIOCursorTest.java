@@ -33,11 +33,11 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.function.Predicates.not;
 
-public class FilteringIOCursorTest
+class FilteringIOCursorTest
 {
 
     @Test
-    public void shouldNotFilterWhenNothingToFilter() throws IOException
+    void shouldNotFilterWhenNothingToFilter() throws IOException
     {
         String[] strings = { "a", "b", "c" };
 
@@ -48,7 +48,7 @@ public class FilteringIOCursorTest
     }
 
     @Test
-    public void shouldFilterFirstObject() throws IOException
+    void shouldFilterFirstObject() throws IOException
     {
         String[] strings = { "a", "b", "c" };
 
@@ -59,7 +59,7 @@ public class FilteringIOCursorTest
     }
 
     @Test
-    public void shouldFilterMiddleObject() throws IOException
+    void shouldFilterMiddleObject() throws IOException
     {
         String[] strings = { "a", "b", "c" };
 
@@ -70,7 +70,7 @@ public class FilteringIOCursorTest
     }
 
     @Test
-    public void shouldFilterLastObject() throws IOException
+    void shouldFilterLastObject() throws IOException
     {
         String[] strings = { "a", "b", "c" };
 

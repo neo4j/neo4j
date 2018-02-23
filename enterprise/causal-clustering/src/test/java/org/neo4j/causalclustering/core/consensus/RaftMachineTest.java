@@ -23,13 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogCursor;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheMonitor;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
@@ -61,7 +60,7 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.last;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class RaftMachineTest
+class RaftMachineTest
 {
     private final int electionTimeout = 500;
     private MemberId myself = member( 0 );
@@ -78,7 +77,7 @@ public class RaftMachineTest
     private RaftLog raftLog = new InMemoryRaftLog();
 
     @Test
-    public void shouldAlwaysStartAsFollower()
+    void shouldAlwaysStartAsFollower()
     {
         // when
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -89,7 +88,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldRequestVotesOnElectionTimeout() throws Exception
+    void shouldRequestVotesOnElectionTimeout() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -120,7 +119,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldBecomeLeaderInMajorityOf3() throws Exception
+    void shouldBecomeLeaderInMajorityOf3() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -142,7 +141,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldBecomeLeaderInMajorityOf5() throws Exception
+    void shouldBecomeLeaderInMajorityOf5() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -167,7 +166,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldNotBecomeLeaderOnMultipleVotesFromSameMember() throws Exception
+    void shouldNotBecomeLeaderOnMultipleVotesFromSameMember() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -190,7 +189,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldNotBecomeLeaderWhenVotingOnItself() throws Exception
+    void shouldNotBecomeLeaderWhenVotingOnItself() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -211,7 +210,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldNotBecomeLeaderWhenMembersVoteNo() throws Exception
+    void shouldNotBecomeLeaderWhenMembersVoteNo() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -233,7 +232,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldNotBecomeLeaderByVotesFromOldTerm() throws Exception
+    void shouldNotBecomeLeaderByVotesFromOldTerm() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -254,7 +253,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldVoteFalseForCandidateInOldTerm() throws Exception
+    void shouldVoteFalseForCandidateInOldTerm() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -280,7 +279,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldNotBecomeLeaderByVotesFromFutureTerm() throws Exception
+    void shouldNotBecomeLeaderByVotesFromFutureTerm() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -302,7 +301,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldAppendNewLeaderBarrierAfterBecomingLeader() throws Exception
+    void shouldAppendNewLeaderBarrierAfterBecomingLeader() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -329,7 +328,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void leaderShouldSendHeartBeatsOnHeartbeatTimeout() throws Exception
+    void leaderShouldSendHeartBeatsOnHeartbeatTimeout() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -357,7 +356,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldThrowExceptionIfReceivesClientRequestWithNoLeaderElected() throws Exception
+    void shouldThrowExceptionIfReceivesClientRequestWithNoLeaderElected() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -384,7 +383,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldPersistAtSpecifiedLogIndex() throws Exception
+    void shouldPersistAtSpecifiedLogIndex() throws Exception
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -406,7 +405,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void newMembersShouldBeIncludedInHeartbeatMessages() throws Exception
+    void newMembersShouldBeIncludedInHeartbeatMessages() throws Exception
     {
         // Given
         DirectNetworking network = new DirectNetworking();
@@ -443,7 +442,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldMonitorLeaderNotFound() throws Exception
+    void shouldMonitorLeaderNotFound() throws Exception
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
@@ -476,7 +475,7 @@ public class RaftMachineTest
     }
 
     @Test
-    public void shouldNotCacheInFlightEntriesUntilAfterRecovery() throws Exception
+    void shouldNotCacheInFlightEntriesUntilAfterRecovery() throws Exception
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();

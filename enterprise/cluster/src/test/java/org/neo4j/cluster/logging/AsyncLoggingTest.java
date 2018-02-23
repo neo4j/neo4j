@@ -27,10 +27,10 @@ import org.neo4j.logging.async.AsyncLogProvider;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class AsyncLoggingTest
+class AsyncLoggingTest
 {
     @Test
-    public void shouldLogMessages()
+    void shouldLogMessages()
     {
         // given
         AssertableLogProvider logs = new AssertableLogProvider();
@@ -51,7 +51,7 @@ public class AsyncLoggingTest
     }
 
     @Test
-    public void shouldLogWhenLoggingThreadStarts()
+    void shouldLogWhenLoggingThreadStarts()
     {
         // given
         AssertableLogProvider logs = new AssertableLogProvider();

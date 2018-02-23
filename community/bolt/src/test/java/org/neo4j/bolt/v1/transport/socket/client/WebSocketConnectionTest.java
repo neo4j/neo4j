@@ -45,7 +45,7 @@ public class WebSocketConnectionTest
     public SuppressOutput suppressOutput;
 
     @Test
-    public void shouldNotThrowAnyExceptionWhenDataReceivedBeforeClose() throws Throwable
+    void shouldNotThrowAnyExceptionWhenDataReceivedBeforeClose() throws Throwable
     {
         // Given
         WebSocketClient client = mock( WebSocketClient.class );
@@ -63,7 +63,7 @@ public class WebSocketConnectionTest
     }
 
     @Test
-    public void shouldThrowIOExceptionWhenNotEnoughDataReceivedBeforeClose() throws Throwable
+    void shouldThrowIOExceptionWhenNotEnoughDataReceivedBeforeClose() throws Throwable
     {
         // Given
         WebSocketClient client = mock( WebSocketClient.class );

@@ -31,12 +31,12 @@ import java.nio.channels.ReadableByteChannel;
  * Up until {@code size} number of bytes has been returned.
  *
  */
-public class KnownDataByteChannel implements ReadableByteChannel
+class KnownDataByteChannel implements ReadableByteChannel
 {
-    protected int position;
+    int position;
     private final int size;
 
-    public KnownDataByteChannel( int size )
+    KnownDataByteChannel( int size )
     {
         this.size = size;
     }

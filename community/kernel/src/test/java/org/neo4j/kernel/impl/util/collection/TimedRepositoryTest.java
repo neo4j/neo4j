@@ -23,12 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -45,7 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TimedRepositoryTest
+class TimedRepositoryTest
 {
     private final AtomicLong valueGenerator = new AtomicLong();
     private final List<Long> reapedValues = new ArrayList<>();
@@ -58,7 +56,7 @@ public class TimedRepositoryTest
     private final TimedRepository<Long,Long> repo = new TimedRepository<>( provider, consumer, timeout, clock );
 
     @Test
-    public void shouldManageLifecycleWithNoTimeouts() throws Exception
+    void shouldManageLifecycleWithNoTimeouts() throws Exception
     {
         // When
         repo.begin( 1L );
@@ -72,7 +70,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldNotAllowOthersAccessWhenAcquired() throws Exception
+    void shouldNotAllowOthersAccessWhenAcquired() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -98,7 +96,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldNotAllowAccessAfterEnd() throws Exception
+    void shouldNotAllowAccessAfterEnd() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -117,7 +115,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldSilentlyAllowMultipleEndings() throws Exception
+    void shouldSilentlyAllowMultipleEndings() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -130,7 +128,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldNotEndImmediatelyIfEntryIsUsed() throws Exception
+    void shouldNotEndImmediatelyIfEntryIsUsed() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -150,7 +148,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldNotAllowBeginningWithDuplicateKey() throws Exception
+    void shouldNotAllowBeginningWithDuplicateKey() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -169,7 +167,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldTimeOutUnusedEntries() throws Exception
+    void shouldTimeOutUnusedEntries() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -202,7 +200,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void usingDuplicateKeysShouldDisposeOfPreemptiveAllocatedValue() throws Exception
+    void usingDuplicateKeysShouldDisposeOfPreemptiveAllocatedValue() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -224,7 +222,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldAllowBeginWithSameKeyAfterSessionRelease() throws Exception
+    void shouldAllowBeginWithSameKeyAfterSessionRelease() throws Exception
     {
         // Given
         repo.begin( 1L );
@@ -240,7 +238,7 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void unusedEntriesSafelyAcquiredOnCleanup()
+    void unusedEntriesSafelyAcquiredOnCleanup()
             throws ConcurrentAccessException, NoSuchEntryException, InterruptedException
     {
         CountDownReaper countDownReaper = new CountDownReaper();
@@ -294,7 +292,7 @@ public class TimedRepositoryTest
             }
         }
 
-        public void stop()
+        void stop()
         {
             stop = true;
         }
@@ -309,7 +307,7 @@ public class TimedRepositoryTest
             reset();
         }
 
-        public void reset()
+        void reset()
         {
             reaperLatch = new CountDownLatch( 1 );
         }
@@ -320,7 +318,7 @@ public class TimedRepositoryTest
             reaperLatch.countDown();
         }
 
-        public void await( String message, long timeout, TimeUnit timeUnit ) throws InterruptedException
+        void await( String message, long timeout, TimeUnit timeUnit ) throws InterruptedException
         {
             if ( !reaperLatch.await( timeout, timeUnit ) )
             {

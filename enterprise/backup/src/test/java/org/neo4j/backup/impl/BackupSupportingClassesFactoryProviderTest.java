@@ -28,10 +28,10 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.backup.impl.BackupSupportingClassesFactoryProvider.getProvidersByPriority;
 
-public class BackupSupportingClassesFactoryProviderTest
+class BackupSupportingClassesFactoryProviderTest
 {
     @Test
-    public void canLoadDefaultSupportingClassesFactory()
+    void canLoadDefaultSupportingClassesFactory()
     {
         assertEquals( 1, findInstancesOf( BackupSupportingClassesFactoryProvider.class,
                 allAvailableSupportingClassesFactories() ).size() );
@@ -39,18 +39,18 @@ public class BackupSupportingClassesFactoryProviderTest
     }
 
     @Test
-    public void testDefaultModuleIsPrioritisedOverDummyModule()
+    void testDefaultModuleIsPrioritisedOverDummyModule()
     {
         assertEquals( BackupSupportingClassesFactoryProvider.class,
                 getProvidersByPriority().findFirst().get().getClass() );
     }
 
-    public static Collection<BackupSupportingClassesFactoryProvider> allAvailableSupportingClassesFactories()
+    private static Collection<BackupSupportingClassesFactoryProvider> allAvailableSupportingClassesFactories()
     {
         return getProvidersByPriority().collect( toList() );
     }
 
-    public static <DESIRED extends BackupSupportingClassesFactoryProvider> Collection<DESIRED> findInstancesOf(
+    private static <DESIRED extends BackupSupportingClassesFactoryProvider> Collection<DESIRED> findInstancesOf(
             Class<DESIRED> desiredClass, Collection<? extends BackupSupportingClassesFactoryProvider> collection )
     {
         return collection

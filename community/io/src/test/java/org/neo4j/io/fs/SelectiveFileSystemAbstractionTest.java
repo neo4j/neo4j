@@ -34,10 +34,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class SelectiveFileSystemAbstractionTest
+class SelectiveFileSystemAbstractionTest
 {
     @Test
-    public void shouldUseCorrectFileSystemForChosenFile() throws Exception
+    void shouldUseCorrectFileSystemForChosenFile() throws Exception
     {
         // given
         File specialFile = new File( "special" );
@@ -58,7 +58,7 @@ public class SelectiveFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldUseDefaultFileSystemForOtherFiles() throws Exception
+    void shouldUseDefaultFileSystemForOtherFiles() throws Exception
     {
         // given
         File specialFile = new File( "special" );
@@ -82,7 +82,7 @@ public class SelectiveFileSystemAbstractionTest
     }
 
     @Test
-    public void provideSelectiveWatcher() throws IOException
+    void provideSelectiveWatcher() throws IOException
     {
         File specialFile = new File( "special" );
         File otherFile = new File( "other" );

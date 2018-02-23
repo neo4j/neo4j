@@ -24,7 +24,7 @@ import static java.util.Collections.unmodifiableCollection;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 @SuppressWarnings( "UnusedDeclaration" )
-public class RelationshipFacadeMethods
+class RelationshipFacadeMethods
 {
     private static final FacadeMethod<Relationship> HAS_PROPERTY =
         new FacadeMethod<Relationship>( "boolean hasProperty( String key )" )

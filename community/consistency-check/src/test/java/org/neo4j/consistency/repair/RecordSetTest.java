@@ -25,10 +25,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RecordSetTest
+class RecordSetTest
 {
     @Test
-    public void toStringShouldPlaceEachRecordOnItsOwnLine()
+    void toStringShouldPlaceEachRecordOnItsOwnLine()
     {
         // given
         NodeRecord record1 = new NodeRecord( 1, false, 1, 1 );

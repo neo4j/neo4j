@@ -26,11 +26,11 @@ import java.nio.ByteBuffer;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class RecordingByteChannelTest
+class RecordingByteChannelTest
 {
 
     @Test
-    public void shouldBeAbleToWriteToThenReadFromChannel()
+    void shouldBeAbleToWriteToThenReadFromChannel()
     {
         // Given
         RecordingByteChannel channel = new RecordingByteChannel();

@@ -69,7 +69,7 @@ public class ReflectiveUserFunctionTest
     private ComponentRegistry components;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
@@ -77,7 +77,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldInjectLogging() throws KernelException
+    void shouldInjectLogging() throws KernelException
     {
         // Given
         Log log = spy( Log.class );
@@ -95,7 +95,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldCompileFunction() throws Throwable
+    void shouldCompileFunction() throws Throwable
     {
         // When
         List<CallableUserFunction> function = compile( SingleReadOnlyFunction.class );
@@ -109,7 +109,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldRunSimpleReadOnlyFunction() throws Throwable
+    void shouldRunSimpleReadOnlyFunction() throws Throwable
     {
         // Given
         CallableUserFunction func = compile( SingleReadOnlyFunction.class ).get( 0 );
@@ -122,7 +122,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldIgnoreClassesWithNoFunctions() throws Throwable
+    void shouldIgnoreClassesWithNoFunctions() throws Throwable
     {
         // When
         List<CallableUserFunction> functions = compile( PrivateConstructorButNoFunctions.class );
@@ -132,7 +132,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
+    void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
     {
         // Given
         List<CallableUserFunction> compiled = compile( ReflectiveUserFunctionTest.MultiFunction.class );
@@ -150,7 +150,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument() throws Throwable
+    void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -163,7 +163,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnNoPublicConstructor() throws Throwable
+    void shouldGiveHelpfulErrorOnNoPublicConstructor() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -176,7 +176,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldNotAllowVoidOutput() throws Throwable
+    void shouldNotAllowVoidOutput() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -187,7 +187,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnFunctionReturningInvalidType() throws Throwable
+    void shouldGiveHelpfulErrorOnFunctionReturningInvalidType() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -204,7 +204,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() throws Throwable
+    void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -218,7 +218,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldAllowOverridingProcedureName() throws Throwable
+    void shouldAllowOverridingProcedureName() throws Throwable
     {
         // When
         CallableUserFunction proc = compile( FunctionWithOverriddenName.class ).get( 0 );
@@ -228,7 +228,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldNotAllowOverridingFunctionNameWithoutNamespace() throws Throwable
+    void shouldNotAllowOverridingFunctionNameWithoutNamespace() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -240,7 +240,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
+    void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
     {
         // Given
         CallableUserFunction proc = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
@@ -255,7 +255,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldLoadWhiteListedFunction() throws Throwable
+    void shouldLoadWhiteListedFunction() throws Throwable
     {
         // Given
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
@@ -270,7 +270,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldNotLoadNoneWhiteListedFunction() throws Throwable
+    void shouldNotLoadNoneWhiteListedFunction() throws Throwable
     {
         // Given
         Log log = spy(Log.class);
@@ -283,7 +283,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
+    void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
     {
         // Given
         Log log = spy(Log.class);
@@ -296,7 +296,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldSupportFunctionDeprecation() throws Throwable
+    void shouldSupportFunctionDeprecation() throws Throwable
     {
         // Given
         Log log = mock(Log.class);
@@ -329,10 +329,10 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class LoggingFunction
+    static class LoggingFunction
     {
         @Context
-        public Log log;
+        Log log;
 
         @UserFunction
         public long logAround()
@@ -345,7 +345,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class SingleReadOnlyFunction
+    private static class SingleReadOnlyFunction
     {
         @UserFunction
         public List<String> listCoolPeople()
@@ -354,7 +354,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class FunctionWithVoidOutput
+    private static class FunctionWithVoidOutput
     {
         @UserFunction
         public void voidOutput()
@@ -362,7 +362,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class MultiFunction
+    private static class MultiFunction
     {
         @UserFunction
         public List<String> listCoolPeople()
@@ -379,9 +379,9 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class WierdConstructorFunction
+    static class WierdConstructorFunction
     {
-        public WierdConstructorFunction( WierdConstructorFunction wat )
+        WierdConstructorFunction( WierdConstructorFunction wat )
         {
 
         }
@@ -393,7 +393,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class FunctionWithInvalidOutput
+    private static class FunctionWithInvalidOutput
     {
         @UserFunction
         public char[] test( )
@@ -402,7 +402,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class FunctionWithStaticContextAnnotatedField
+    private static class FunctionWithStaticContextAnnotatedField
     {
         @Context
         public static GraphDatabaseService gdb;
@@ -414,7 +414,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class FunctionThatThrowsNullMsgExceptionAtInvocation
+    private static class FunctionThatThrowsNullMsgExceptionAtInvocation
     {
         @UserFunction
         public String throwsAtInvocation( )
@@ -423,7 +423,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class PrivateConstructorFunction
+    static class PrivateConstructorFunction
     {
         private PrivateConstructorFunction()
         {
@@ -437,7 +437,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class PrivateConstructorButNoFunctions
+    static class PrivateConstructorButNoFunctions
     {
         private PrivateConstructorButNoFunctions()
         {
@@ -450,7 +450,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    public static class FunctionWithOverriddenName
+    private static class FunctionWithOverriddenName
     {
         @UserFunction( "org.mystuff.thisisActuallyTheName" )
         public Object somethingThatShouldntMatter()
@@ -460,7 +460,7 @@ public class ReflectiveUserFunctionTest
 
     }
 
-    public static class FunctionWithSingleName
+    private static class FunctionWithSingleName
     {
         @UserFunction( "singleName" )
         public String blahDoesntMatterEither()

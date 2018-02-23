@@ -48,9 +48,9 @@ import org.neo4j.test.assertion.Assert;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValida
 } )
 public class PropertyConstraintValidationIT
 {
-    public static class NodeKeyConstraintValidationIT extends NodePropertyExistenceConstraintValidationIT
+    static class NodeKeyConstraintValidationIT extends NodePropertyExistenceConstraintValidationIT
     {
         @Override
         void createConstraint( String key, String property ) throws KernelException
@@ -82,7 +82,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Test
-        public void requirePropertyFromMultipleNodeKeys()
+        void requirePropertyFromMultipleNodeKeys()
         {
             Label label = Label.label( "multiNodeKeyLabel" );
             SchemaHelper.createNodeKeyConstraint( db, label,  "property1", "property2" );
@@ -116,11 +116,11 @@ public class PropertyConstraintValidationIT
         }
     }
 
-    public static class NodePropertyExistenceConstraintValidationIT
+    static class NodePropertyExistenceConstraintValidationIT
             extends AbstractPropertyExistenceConstraintValidationIT
     {
         @Test
-        public void shouldAllowNoopLabelUpdate() throws Exception
+        void shouldAllowNoopLabelUpdate() throws Exception
         {
             // given
             long entityId = createConstraintAndEntity( "Label1", "key1", "value1" );
@@ -212,7 +212,7 @@ public class PropertyConstraintValidationIT
         }
     }
 
-    public static class RelationshipPropertyExistenceConstraintValidationIT
+    static class RelationshipPropertyExistenceConstraintValidationIT
             extends AbstractPropertyExistenceConstraintValidationIT
     {
         @Override
@@ -299,7 +299,7 @@ public class PropertyConstraintValidationIT
         }
     }
 
-    public abstract static class AbstractPropertyExistenceConstraintValidationIT extends KernelIntegrationTest
+    abstract static class AbstractPropertyExistenceConstraintValidationIT extends KernelIntegrationTest
     {
         abstract void createConstraint( String key, String property ) throws KernelException;
 
@@ -320,7 +320,7 @@ public class PropertyConstraintValidationIT
         abstract int entityCount() throws TransactionFailureException;
 
         @Override
-        protected GraphDatabaseService createGraphDatabase()
+        GraphDatabaseService createGraphDatabase()
         {
             return new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
                     .newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
@@ -328,7 +328,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Test
-        public void shouldEnforcePropertyExistenceConstraintWhenCreatingEntityWithoutProperty() throws Exception
+        void shouldEnforcePropertyExistenceConstraintWhenCreatingEntityWithoutProperty() throws Exception
         {
             // given
             createConstraint( "Type1", "key1" );
@@ -351,7 +351,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Test
-        public void shouldEnforceConstraintWhenRemoving() throws Exception
+        void shouldEnforceConstraintWhenRemoving() throws Exception
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
@@ -374,7 +374,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Test
-        public void shouldAllowTemporaryViolationsWithinTransactions() throws Exception
+        void shouldAllowTemporaryViolationsWithinTransactions() throws Exception
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
@@ -390,7 +390,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Test
-        public void shouldAllowNoopPropertyUpdate() throws Exception
+        void shouldAllowNoopPropertyUpdate() throws Exception
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
@@ -405,7 +405,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Test
-        public void shouldAllowCreationOfNonConflictingData() throws Exception
+        void shouldAllowCreationOfNonConflictingData() throws Exception
         {
             // given
             createConstraintAndEntity( "Type1", "key1", "value1" );

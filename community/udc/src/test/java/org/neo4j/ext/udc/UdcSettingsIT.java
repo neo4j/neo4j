@@ -21,18 +21,18 @@ package org.neo4j.ext.udc;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class UdcSettingsIT
+class UdcSettingsIT
 {
-    public static final String TEST_HOST_AND_PORT = "test.ucd.neo4j.org:8080";
+    private static final String TEST_HOST_AND_PORT = "test.ucd.neo4j.org:8080";
 
     @Test
-    public void testUdcHostSettingIsUnchanged()
+    void testUdcHostSettingIsUnchanged()
     {
         //noinspection deprecation
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()

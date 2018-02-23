@@ -19,15 +19,14 @@
  */
 package org.neo4j.bolt.v1.messaging.util;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-public class ArrayByteChannel implements ReadableByteChannel
+class ArrayByteChannel implements ReadableByteChannel
 {
     private final ByteBuffer data;
 
-    public ArrayByteChannel( byte[] bytes )
+    ArrayByteChannel( byte[] bytes )
     {
         this.data = ByteBuffer.wrap( bytes );
     }

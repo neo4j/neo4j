@@ -61,7 +61,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 public class BackupToolIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public ExpectedException expected = ExpectedException.none();
     @Resource
@@ -73,7 +73,7 @@ public class BackupToolIT
     private BackupTool backupTool;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         backupDir = testDirectory.directory( "backups/graph.db" ).toPath();
         fs = new DefaultFileSystemAbstraction();
@@ -82,14 +82,14 @@ public class BackupToolIT
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         pageCache.close();
         fs.close();
     }
 
     @Test
-    public void oldIncompatibleBackupsThrows() throws Exception
+    void oldIncompatibleBackupsThrows() throws Exception
     {
         // Prepare an "old" backup
         prepareNeoStoreFile( StandardV2_3.STORE_VERSION );

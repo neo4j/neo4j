@@ -50,7 +50,7 @@ public class LogTestUtils
     {
     }
 
-    public interface LogHook<RECORD> extends Predicate<RECORD>
+    interface LogHook<RECORD> extends Predicate<RECORD>
     {
         void file( File file );
 
@@ -99,7 +99,8 @@ public class LogTestUtils
         return files;
     }
 
-    static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
+    private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file,
+            final LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );

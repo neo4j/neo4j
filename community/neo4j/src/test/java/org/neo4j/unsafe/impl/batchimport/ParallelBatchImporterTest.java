@@ -74,7 +74,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static java.lang.reflect.Array.getLength;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -107,7 +106,7 @@ public class ParallelBatchImporterTest
     private static final int RELATIONSHIPS_PER_NODE = 5;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * RELATIONSHIPS_PER_NODE;
     private static final int RELATIONSHIP_TYPES = 3;
-    protected final Configuration config = new Configuration()
+    private final Configuration config = new Configuration()
     {
         @Override
         public int batchSize()
@@ -232,7 +231,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    protected void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException
+    private void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
@@ -260,7 +259,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    public abstract static class InputIdGenerator
+    protected abstract static class InputIdGenerator
     {
         abstract void reset();
 

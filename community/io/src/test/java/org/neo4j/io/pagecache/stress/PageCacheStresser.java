@@ -46,14 +46,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * We will also have many more file pages and cache pages, so we'll have lots of concurrent eviction and page faulting
  * as well.
  */
-public class PageCacheStresser
+class PageCacheStresser
 {
     private final int maxPages;
     private final int numberOfThreads;
 
     private final File workingDirectory;
 
-    public PageCacheStresser( int maxPages, int numberOfThreads, File workingDirectory )
+    PageCacheStresser( int maxPages, int numberOfThreads, File workingDirectory )
     {
         this.maxPages = maxPages;
         this.numberOfThreads = numberOfThreads;

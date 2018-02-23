@@ -29,10 +29,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class StatusTest
+class StatusTest
 {
     @Test
-    public void eachStatusCodeHasAUniqueCode()
+    void eachStatusCodeHasAUniqueCode()
     {
         // given
         Set<Object> codes = new HashSet<>();

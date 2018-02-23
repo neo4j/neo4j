@@ -34,25 +34,25 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestShutdownSequence
+class TestShutdownSequence
 {
     private GraphDatabaseService graphDb;
 
     @BeforeEach
-    public void createGraphDb()
+    void createGraphDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @Test
-    public void canInvokeShutdownMultipleTimes()
+    void canInvokeShutdownMultipleTimes()
     {
         graphDb.shutdown();
         graphDb.shutdown();
     }
 
     @Test
-    public void eventHandlersAreOnlyInvokedOnceDuringShutdown()
+    void eventHandlersAreOnlyInvokedOnceDuringShutdown()
     {
         final AtomicInteger counter = new AtomicInteger();
         graphDb.registerKernelEventHandler( new KernelEventHandler()
@@ -87,7 +87,7 @@ public class TestShutdownSequence
     }
 
     @Test
-    public void canRemoveFilesAndReinvokeShutdown() throws IOException
+    void canRemoveFilesAndReinvokeShutdown() throws IOException
     {
         GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) this.graphDb;
         FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
@@ -97,7 +97,7 @@ public class TestShutdownSequence
     }
 
     @Test
-    public void canInvokeShutdownFromShutdownHandler()
+    void canInvokeShutdownFromShutdownHandler()
     {
         graphDb.registerKernelEventHandler( new KernelEventHandler()
         {

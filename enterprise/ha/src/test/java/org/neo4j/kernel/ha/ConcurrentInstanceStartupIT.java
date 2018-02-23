@@ -44,13 +44,13 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class ConcurrentInstanceStartupIT
+class ConcurrentInstanceStartupIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Test
-    public void concurrentStartupShouldWork() throws Exception
+    void concurrentStartupShouldWork() throws Exception
     {
         // Ensures that the instances don't race to create the test's base directory and only care about their own.
         testDirectory.directory( "nothingToSeeHereMoveAlong" );

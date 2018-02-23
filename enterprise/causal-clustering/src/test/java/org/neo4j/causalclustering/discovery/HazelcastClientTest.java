@@ -91,7 +91,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.RAFT
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.TRANSACTION_SERVER;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class HazelcastClientTest
+class HazelcastClientTest
 {
     private MemberId myself = new MemberId( UUID.randomUUID() );
     private TopologyServiceRetryStrategy topologyServiceRetryStrategy = new TopologyServiceNoRetriesStrategy();
@@ -111,7 +111,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnTopologyUsingHazelcastMembers()
+    void shouldReturnTopologyUsingHazelcastMembers()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -144,7 +144,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldNotReconnectWhileHazelcastRemainsAvailable()
+    void shouldNotReconnectWhileHazelcastRemainsAvailable()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -183,7 +183,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast()
+    void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -216,7 +216,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRegisterReadReplicaInTopology()
+    void shouldRegisterReadReplicaInTopology()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -261,7 +261,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRemoveReadReplicasOnGracefulShutdown()
+    void shouldRemoveReadReplicasOnGracefulShutdown()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -308,7 +308,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldSwallowNPEFromHazelcast()
+    void shouldSwallowNPEFromHazelcast()
     {
         // given
         Endpoint endpoint = mock( Endpoint.class );

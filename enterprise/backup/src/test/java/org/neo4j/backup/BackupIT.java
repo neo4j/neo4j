@@ -576,7 +576,7 @@ public class BackupIT
         }
     }
 
-    public interface StartupChecker
+    interface StartupChecker
     {
         boolean startupOk();
     }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.com;
 
-public class FailingException extends RuntimeException
+class FailingException extends RuntimeException
 {
-    public FailingException( String message )
+    FailingException( String message )
     {
         super( message );
     }

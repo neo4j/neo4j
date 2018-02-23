@@ -25,10 +25,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class NetworkFlushableChannelNetty4Test
+class NetworkFlushableChannelNetty4Test
 {
     @Test
-    public void shouldRespectSizeLimit() throws Exception
+    void shouldRespectSizeLimit() throws Exception
     {
         // Given
         int sizeLimit = 100;
@@ -52,7 +52,7 @@ public class NetworkFlushableChannelNetty4Test
     }
 
     @Test
-    public void sizeLimitShouldWorkWithArrays() throws Exception
+    void sizeLimitShouldWorkWithArrays() throws Exception
     {
         // Given
         int sizeLimit = 100;
@@ -77,7 +77,7 @@ public class NetworkFlushableChannelNetty4Test
     }
 
     @Test
-    public void shouldNotCountBytesAlreadyInBuffer() throws Exception
+    void shouldNotCountBytesAlreadyInBuffer() throws Exception
     {
         // Given
         int sizeLimit = 100;

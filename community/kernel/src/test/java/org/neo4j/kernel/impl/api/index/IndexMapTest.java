@@ -45,7 +45,7 @@ public class IndexMapTest
     private LabelSchemaDescriptor schema5_8 = SchemaDescriptorFactory.forLabel( 5, 8 );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         PrimitiveLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
         map.put( 1L, new TestIndexProxy( schema3_4 ) );
@@ -55,7 +55,7 @@ public class IndexMapTest
     }
 
     @Test
-    public void shouldGetRelatedIndexForLabel()
+    void shouldGetRelatedIndexForLabel()
     {
         assertThat(
                 indexMap.getRelatedIndexes( label( 3 ), noLabel, emptySet() ),
@@ -63,7 +63,7 @@ public class IndexMapTest
     }
 
     @Test
-    public void shouldGetRelatedIndexForProperty()
+    void shouldGetRelatedIndexForProperty()
     {
         assertThat(
                 indexMap.getRelatedIndexes( noLabel, label( 3, 4, 5 ), properties( 4 ) ),
@@ -71,7 +71,7 @@ public class IndexMapTest
     }
 
     @Test
-    public void shouldGetRelatedIndexesForLabel()
+    void shouldGetRelatedIndexesForLabel()
     {
         assertThat(
                 indexMap.getRelatedIndexes( label( 5 ), label( 3, 4 ), emptySet() ),
@@ -79,7 +79,7 @@ public class IndexMapTest
     }
 
     @Test
-    public void shouldGetRelatedIndexes()
+    void shouldGetRelatedIndexes()
     {
         assertThat(
                 indexMap.getRelatedIndexes( label( 3 ), label( 4, 5 ), properties( 7 ) ),
@@ -87,7 +87,7 @@ public class IndexMapTest
     }
 
     @Test
-    public void shouldGetRelatedIndexOnce()
+    void shouldGetRelatedIndexOnce()
     {
         assertThat(
                 indexMap.getRelatedIndexes( label( 3 ), noLabel, properties( 4 ) ),
@@ -99,7 +99,7 @@ public class IndexMapTest
     }
 
     @Test
-    public void shouldHandleUnrelated()
+    void shouldHandleUnrelated()
     {
         assertThat(
                 indexMap.getRelatedIndexes( noLabel, noLabel, emptySet() ),

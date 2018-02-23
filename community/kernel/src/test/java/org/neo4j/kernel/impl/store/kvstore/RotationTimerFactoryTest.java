@@ -27,10 +27,10 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-public class RotationTimerFactoryTest
+class RotationTimerFactoryTest
 {
     @Test
-    public void testTimer()
+    void testTimer()
     {
         // GIVEN
         FakeClock fakeClock = Clocks.fakeClock( 10000 , TimeUnit.MILLISECONDS );

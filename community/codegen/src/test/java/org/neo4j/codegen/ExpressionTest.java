@@ -40,24 +40,24 @@ import static org.neo4j.codegen.Expression.notEqual;
 import static org.neo4j.codegen.Expression.or;
 import static org.neo4j.codegen.MethodReference.methodReference;
 
-public class ExpressionTest
+class ExpressionTest
 {
     @Test
-    public void shouldNegateTrueToFalse()
+    void shouldNegateTrueToFalse()
     {
         assertSame( FALSE, not( TRUE ) );
         assertSame( TRUE, not( FALSE ) );
     }
 
     @Test
-    public void shouldRemoveDoubleNegation()
+    void shouldRemoveDoubleNegation()
     {
         Expression expression = invoke( methodReference( getClass(), boolean.class, "TRUE" ) );
         assertSame( expression, not( not( expression ) ) );
     }
 
     @Test
-    public void shouldOptimizeNullChecks()
+    void shouldOptimizeNullChecks()
     {
         // given
         ExpressionVisitor visitor = mock( ExpressionVisitor.class );
@@ -95,7 +95,7 @@ public class ExpressionTest
     }
 
     @Test
-    public void shouldOptimizeNegatedInequalities()
+    void shouldOptimizeNegatedInequalities()
     {
         // given
         ExpressionVisitor visitor = mock( ExpressionVisitor.class );
@@ -149,7 +149,7 @@ public class ExpressionTest
     }
 
     @Test
-    public void shouldOptimizeBooleanCombinationsWithConstants()
+    void shouldOptimizeBooleanCombinationsWithConstants()
     {
         // given
         Expression expression = invoke( methodReference( getClass(), boolean.class, "TRUE" ) );
@@ -166,12 +166,12 @@ public class ExpressionTest
         assertSame( TRUE, or( TRUE, expression ) );
     }
 
-    public static boolean TRUE()
+    static boolean TRUE()
     {
         return true;
     }
 
-    public static Object value()
+    static Object value()
     {
         return null;
     }

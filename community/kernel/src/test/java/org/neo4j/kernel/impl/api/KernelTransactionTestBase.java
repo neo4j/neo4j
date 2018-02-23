@@ -121,34 +121,35 @@ public class KernelTransactionTestBase
                 anyLong() );
     }
 
-    public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )
+    KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )
     {
         return newTransaction( 0, AUTH_DISABLED, transactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( LoginContext loginContext )
+    KernelTransactionImplementation newTransaction( LoginContext loginContext )
     {
         return newTransaction( 0, loginContext );
     }
 
-    public KernelTransactionImplementation newTransaction( LoginContext loginContext, Locks.Client locks )
+    KernelTransactionImplementation newTransaction( LoginContext loginContext, Locks.Client locks )
     {
         return newTransaction( 0, loginContext, locks, defaultTransactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext )
+    private KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted,
+            LoginContext loginContext )
     {
         return newTransaction( lastTransactionIdWhenStarted, loginContext, defaultTransactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext,
-            long transactionTimeoutMillis )
+    private KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted,
+            LoginContext loginContext, long transactionTimeoutMillis )
     {
         return newTransaction( lastTransactionIdWhenStarted, loginContext, new NoOpClient(), transactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext,
-            Locks.Client locks, long transactionTimeout )
+    private KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted,
+            LoginContext loginContext, Locks.Client locks, long transactionTimeout )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
@@ -158,7 +159,7 @@ public class KernelTransactionTestBase
         return tx;
     }
 
-    public KernelTransactionImplementation newNotInitializedTransaction()
+    protected KernelTransactionImplementation newNotInitializedTransaction()
     {
         return new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory, commitProcess,
                 transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
@@ -167,10 +168,10 @@ public class KernelTransactionTestBase
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory );
     }
 
-    public class CapturingCommitProcess implements TransactionCommitProcess
+    class CapturingCommitProcess implements TransactionCommitProcess
     {
         private long txId = TransactionIdStore.BASE_TX_ID;
-        public TransactionRepresentation transaction;
+        TransactionRepresentation transaction;
 
         @Override
         public long commit( TransactionToApply batch, CommitEvent commitEvent,

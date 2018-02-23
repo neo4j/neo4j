@@ -43,10 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-public final class DocValuesCollectorTest
+final class DocValuesCollectorTest
 {
     @Test
-    public void shouldStartWithEmptyMatchingDocs()
+    void shouldStartWithEmptyMatchingDocs()
     {
         //given
         DocValuesCollector collector = new DocValuesCollector();
@@ -57,7 +57,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldCollectAllHitsPerSegment() throws Exception
+    void shouldCollectAllHitsPerSegment() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector();
@@ -86,7 +86,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldCollectOneMatchingDocsPerSegment() throws Exception
+    void shouldCollectOneMatchingDocsPerSegment() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector();
@@ -123,7 +123,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldNotSaveScoresWhenNotRequired() throws Exception
+    void shouldNotSaveScoresWhenNotRequired() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -139,7 +139,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldSaveScoresWhenRequired() throws Exception
+    void shouldSaveScoresWhenRequired() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( true );
@@ -156,7 +156,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldSaveScoresInADenseArray() throws Exception
+    void shouldSaveScoresInADenseArray() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( true );
@@ -175,7 +175,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldDynamicallyResizeScoresArray() throws Exception
+    void shouldDynamicallyResizeScoresArray() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( true );
@@ -198,7 +198,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnIndexHitsInIndexOrderWhenNoSortIsGiven() throws Exception
+    void shouldReturnIndexHitsInIndexOrderWhenNoSortIsGiven() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector();
@@ -218,7 +218,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnIndexHitsOrderedByRelevance() throws Exception
+    void shouldReturnIndexHitsOrderedByRelevance() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( true );
@@ -242,7 +242,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnIndexHitsInGivenSortOrder() throws Exception
+    void shouldReturnIndexHitsInGivenSortOrder() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -267,7 +267,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldSilentlyMergeAllSegments() throws Exception
+    void shouldSilentlyMergeAllSegments() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -288,7 +288,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoHits() throws Exception
+    void shouldReturnEmptyIteratorWhenNoHits() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -305,7 +305,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReadDocValuesInIndexOrder() throws Exception
+    void shouldReadDocValuesInIndexOrder() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -325,7 +325,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldSilentlyMergeSegmentsWhenReadingDocValues() throws Exception
+    void shouldSilentlyMergeSegmentsWhenReadingDocValues() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -346,7 +346,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoDocValues()
+    void shouldReturnEmptyIteratorWhenNoDocValues()
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -362,7 +362,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnDocValuesInIndexOrderWhenNoSortIsGiven() throws Exception
+    void shouldReturnDocValuesInIndexOrderWhenNoSortIsGiven() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -381,7 +381,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnDocValuesInRelevanceOrder() throws Exception
+    void shouldReturnDocValuesInRelevanceOrder() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( true );
@@ -402,7 +402,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnDocValuesInGivenOrder() throws Exception
+    void shouldReturnDocValuesInGivenOrder() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );
@@ -422,7 +422,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldSilentlyMergeSegmentsWhenReturnDocValuesInOrder() throws Exception
+    void shouldSilentlyMergeSegmentsWhenReturnDocValuesInOrder() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( true );
@@ -444,7 +444,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoDocValuesInOrder() throws Exception
+    void shouldReturnEmptyIteratorWhenNoDocValuesInOrder() throws Exception
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );

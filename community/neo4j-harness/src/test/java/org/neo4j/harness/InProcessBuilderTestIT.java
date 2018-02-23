@@ -76,16 +76,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class InProcessBuilderTestIT
+class InProcessBuilderTestIT
 {
     @Resource
-    public TestDirectory testDir;
+    private TestDirectory testDir;
 
     @Resource
     public SuppressOutput suppressOutput;
 
     @Test
-    public void shouldLaunchAServerInSpecifiedDirectory()
+    void shouldLaunchAServerInSpecifiedDirectory()
     {
         // Given
         File workDir = testDir.directory( "specific" );
@@ -108,7 +108,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldAllowCustomServerAndDbConfig() throws Exception
+    void shouldAllowCustomServerAndDbConfig() throws Exception
     {
         // Given
         trustAllSSLCerts();
@@ -148,7 +148,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldMountUnmanagedExtensionsByClass()
+    void shouldMountUnmanagedExtensionsByClass()
     {
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
@@ -162,7 +162,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldMountUnmanagedExtensionsByPackage()
+    void shouldMountUnmanagedExtensionsByPackage()
     {
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
@@ -176,7 +176,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldFindFreePort()
+    void shouldFindFreePort()
     {
         // Given one server is running
         try ( ServerControls firstServer = getTestServerBuilder( testDir.directory() ).newServer() )
@@ -191,7 +191,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldRunBuilderOnExistingStoreDir() throws Exception
+    void shouldRunBuilderOnExistingStoreDir() throws Exception
     {
         // When
         // create graph db with one node upfront
@@ -248,7 +248,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldOpenBoltPort() throws Throwable
+    void shouldOpenBoltPort() throws Throwable
     {
         // given
         try ( ServerControls controls = getTestServerBuilder( testDir.graphDbDir() ).newServer() )
@@ -263,7 +263,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldFailWhenProvidingANonDirectoryAsSource() throws IOException
+    void shouldFailWhenProvidingANonDirectoryAsSource() throws IOException
     {
 
         File notADirectory = File.createTempFile( "prefix", "suffix" );

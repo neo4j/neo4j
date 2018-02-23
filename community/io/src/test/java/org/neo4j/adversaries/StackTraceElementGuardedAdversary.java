@@ -28,7 +28,7 @@ public class StackTraceElementGuardedAdversary implements Adversary
     private volatile boolean enabled;
 
     @SafeVarargs
-    public StackTraceElementGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... checks )
+    StackTraceElementGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... checks )
     {
         this.delegate = delegate;
         this.checks = checks;
@@ -50,12 +50,12 @@ public class StackTraceElementGuardedAdversary implements Adversary
         return enabled && calledFromVictimStackTraceElement() && delegateFailureOrMischiefInjection( failureTypes );
     }
 
-    protected void delegateFailureInjection( Class<? extends Throwable>[] failureTypes )
+    private void delegateFailureInjection( Class<? extends Throwable>[] failureTypes )
     {
         delegate.injectFailure( failureTypes );
     }
 
-    protected boolean delegateFailureOrMischiefInjection( Class<? extends Throwable>[] failureTypes )
+    private boolean delegateFailureOrMischiefInjection( Class<? extends Throwable>[] failureTypes )
     {
         return delegate.injectFailureOrMischief( failureTypes );
     }

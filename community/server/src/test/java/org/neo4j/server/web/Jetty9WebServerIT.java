@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.ListenSocketAddress;
@@ -42,7 +42,7 @@ public class Jetty9WebServerIT extends ExclusiveServerTestBase
     private Jetty9WebServer webServer;
 
     @Test
-    public void shouldBeAbleToUsePortZero() throws Exception
+    void shouldBeAbleToUsePortZero() throws Exception
     {
         // Given
         webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults() );
@@ -56,7 +56,7 @@ public class Jetty9WebServerIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToRestart() throws Throwable
+    void shouldBeAbleToRestart() throws Throwable
     {
         // given
         webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults() );
@@ -71,13 +71,13 @@ public class Jetty9WebServerIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
+    void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
         new Jetty9WebServer( NullLogProvider.getInstance(), null ).stop();
     }
 
     @AfterEach
-    public void cleanup()
+    void cleanup()
     {
         if ( webServer != null )
         {

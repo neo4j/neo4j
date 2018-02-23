@@ -43,11 +43,11 @@ import org.neo4j.logging.LogProvider;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 
-public class GraphDatabaseFactoryWithCustomBoltKernelExtension extends GraphDatabaseFactory
+class GraphDatabaseFactoryWithCustomBoltKernelExtension extends GraphDatabaseFactory
 {
     private final BoltKernelExtension customExtension;
 
-    public GraphDatabaseFactoryWithCustomBoltKernelExtension( BoltKernelExtension customExtension )
+    GraphDatabaseFactoryWithCustomBoltKernelExtension( BoltKernelExtension customExtension )
     {
         this.customExtension = customExtension;
     }

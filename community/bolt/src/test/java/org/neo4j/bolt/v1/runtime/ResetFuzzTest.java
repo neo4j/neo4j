@@ -19,6 +19,10 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
@@ -30,10 +34,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
@@ -43,7 +43,6 @@ import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
-import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
@@ -77,7 +76,7 @@ import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 
-public class ResetFuzzTest
+class ResetFuzzTest
 {
     private static final String CONNECTOR = "bolt";
     // Because RESET has a "call ahead" mechanism where it will interrupt
@@ -112,7 +111,7 @@ public class ResetFuzzTest
     private final List<RequestMessage> sent = new LinkedList<>();
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         boltChannel = mock( BoltChannel.class );
         when( boltChannel.id() ).thenReturn( UUID.randomUUID().toString() );
@@ -120,7 +119,7 @@ public class ResetFuzzTest
     }
 
     @Test
-    public void shouldAlwaysReturnToReadyAfterReset() throws Throwable
+    void shouldAlwaysReturnToReadyAfterReset() throws Throwable
     {
         // given
         life.start();
@@ -202,7 +201,7 @@ public class ResetFuzzTest
     }
 
     @AfterEach
-    public void cleanup()
+    void cleanup()
     {
         life.shutdown();
     }

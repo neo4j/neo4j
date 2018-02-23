@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 public abstract class MultiPassStoreTest
 {
     @Test
-    public void shouldSkipOtherKindsOfRecords()
+    void shouldSkipOtherKindsOfRecords()
     {
         // given
         RecordAccess recordAccess = mock( RecordAccess.class );
@@ -70,12 +70,12 @@ public abstract class MultiPassStoreTest
 
     protected abstract MultiPassStore multiPassStore();
 
-    protected abstract RecordReference<? extends AbstractBaseRecord> record( RecordAccess filter, long id );
+    abstract RecordReference<? extends AbstractBaseRecord> record( RecordAccess filter, long id );
 
     protected abstract void otherRecords( RecordAccess filter, long id );
 
     @RunWith( JUnit4.class )
-    public static class Nodes extends MultiPassStoreTest
+    protected static class Nodes extends MultiPassStoreTest
     {
         @Override
         protected MultiPassStore multiPassStore()
@@ -84,7 +84,7 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<NodeRecord> record( RecordAccess filter, long id )
+        RecordReference<NodeRecord> record( RecordAccess filter, long id )
         {
             return filter.node( id );
         }
@@ -100,7 +100,7 @@ public abstract class MultiPassStoreTest
     }
 
     @RunWith( JUnit4.class )
-    public static class Relationships extends MultiPassStoreTest
+    protected static class Relationships extends MultiPassStoreTest
     {
         @Override
         protected MultiPassStore multiPassStore()
@@ -109,7 +109,7 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<RelationshipRecord> record( RecordAccess filter, long id )
+        RecordReference<RelationshipRecord> record( RecordAccess filter, long id )
         {
             return filter.relationship( id );
         }
@@ -125,7 +125,7 @@ public abstract class MultiPassStoreTest
     }
 
     @RunWith( JUnit4.class )
-    public static class Properties extends MultiPassStoreTest
+    protected static class Properties extends MultiPassStoreTest
     {
         @Override
         protected MultiPassStore multiPassStore()
@@ -134,7 +134,7 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<PropertyRecord> record( RecordAccess filter, long id )
+        RecordReference<PropertyRecord> record( RecordAccess filter, long id )
         {
             return filter.property( id );
         }
@@ -150,7 +150,7 @@ public abstract class MultiPassStoreTest
     }
 
     @RunWith( JUnit4.class )
-    public static class Strings extends MultiPassStoreTest
+    protected static class Strings extends MultiPassStoreTest
     {
         @Override
         protected MultiPassStore multiPassStore()
@@ -159,7 +159,7 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<DynamicRecord> record( RecordAccess filter, long id )
+        RecordReference<DynamicRecord> record( RecordAccess filter, long id )
         {
             return filter.string( id );
         }
@@ -175,7 +175,7 @@ public abstract class MultiPassStoreTest
     }
 
     @RunWith( JUnit4.class )
-    public static class Arrays extends MultiPassStoreTest
+    protected static class Arrays extends MultiPassStoreTest
     {
         @Override
         protected MultiPassStore multiPassStore()
@@ -184,7 +184,7 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<DynamicRecord> record( RecordAccess filter, long id )
+        RecordReference<DynamicRecord> record( RecordAccess filter, long id )
         {
             return filter.array( id );
         }

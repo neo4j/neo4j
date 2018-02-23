@@ -51,7 +51,7 @@ public class IndexOperationsIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule();
 
-    protected ClusterManager.ManagedCluster cluster;
+    private ClusterManager.ManagedCluster cluster;
 
     @Before
     public void setup()

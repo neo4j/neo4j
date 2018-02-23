@@ -45,7 +45,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.causalclustering.core.consensus.MessageUtils.messageFor;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.AppendEntries;
@@ -56,7 +55,7 @@ import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.r
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class FollowerTest
+class FollowerTest
 {
     private MemberId myself = member( 0 );
 
@@ -67,7 +66,7 @@ public class FollowerTest
     private MemberId member4 = member( 4 );
 
     @Test
-    public void shouldInstigateAnElectionAfterTimeout() throws Exception
+    void shouldInstigateAnElectionAfterTimeout() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -84,7 +83,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldBecomeCandidateOnReceivingElectionTimeoutMessage() throws Exception
+    void shouldBecomeCandidateOnReceivingElectionTimeoutMessage() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -100,7 +99,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotInstigateElectionOnElectionTimeoutIfRefusingToBeLeaderAndPreVoteNotSupported() throws Throwable
+    void shouldNotInstigateElectionOnElectionTimeoutIfRefusingToBeLeaderAndPreVoteNotSupported() throws Throwable
     {
         // given
         RaftState state = raftState()
@@ -116,7 +115,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnoreAnElectionTimeoutIfRefusingToBeLeaderAndPreVoteNotSupported() throws Throwable
+    void shouldIgnoreAnElectionTimeoutIfRefusingToBeLeaderAndPreVoteNotSupported() throws Throwable
     {
         // given
         RaftState state = raftState()
@@ -132,7 +131,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldSetPreElectionOnTimeoutIfSupportedAndIAmVoterAndIRefuseToLead() throws Throwable
+    void shouldSetPreElectionOnTimeoutIfSupportedAndIAmVoterAndIRefuseToLead() throws Throwable
     {
         // given
         RaftState state = raftState()
@@ -150,7 +149,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotSetPreElectionOnTimeoutIfSupportedAndIAmNotVoterAndIRefuseToLead() throws Throwable
+    void shouldNotSetPreElectionOnTimeoutIfSupportedAndIAmNotVoterAndIRefuseToLead() throws Throwable
     {
         // given
         RaftState state = raftState()
@@ -168,7 +167,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotSolicitPreVotesOnTimeoutEvenIfSupportedIfRefuseToLead() throws Throwable
+    void shouldNotSolicitPreVotesOnTimeoutEvenIfSupportedIfRefuseToLead() throws Throwable
     {
         // given
         RaftState state = raftState()
@@ -184,7 +183,7 @@ public class FollowerTest
     }
 
     @Test
-    public void followerReceivingHeartbeatIndicatingClusterIsAheadShouldElicitAppendResponse() throws Exception
+    void followerReceivingHeartbeatIndicatingClusterIsAheadShouldElicitAppendResponse() throws Exception
     {
         // given
         int term = 1;
@@ -215,7 +214,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldTruncateIfTermDoesNotMatch() throws Exception
+    void shouldTruncateIfTermDoesNotMatch() throws Exception
     {
         // given
         RaftLog entryLog = new InMemoryRaftLog();
@@ -250,7 +249,7 @@ public class FollowerTest
 
     // TODO move this to outcome tests
     @Test
-    public void followerLearningAboutHigherCommitCausesValuesTobeAppliedToItsLog() throws Exception
+    void followerLearningAboutHigherCommitCausesValuesTobeAppliedToItsLog() throws Exception
     {
         // given
         RaftLog entryLog = new InMemoryRaftLog();
@@ -275,7 +274,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldUpdateCommitIndexIfNecessary() throws Exception
+    void shouldUpdateCommitIndexIfNecessary() throws Exception
     {
         //  If leaderCommit > commitIndex, set commitIndex = min( leaderCommit, index of last new entry )
 
@@ -319,7 +318,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotRenewElectionTimeoutOnReceiptOfHeartbeatInLowerTerm() throws Exception
+    void shouldNotRenewElectionTimeoutOnReceiptOfHeartbeatInLowerTerm() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -337,7 +336,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldAcknowledgeHeartbeats() throws Exception
+    void shouldAcknowledgeHeartbeats() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -357,7 +356,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldRespondPositivelyToPreVoteRequestsIfWouldVoteForCandidate() throws Exception
+    void shouldRespondPositivelyToPreVoteRequestsIfWouldVoteForCandidate() throws Exception
     {
         // given
         RaftState raftState = preElectionActive();
@@ -372,7 +371,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldRespondPositivelyToPreVoteRequestsEvenIfAlreadyVotedInRealElection() throws Exception
+    void shouldRespondPositivelyToPreVoteRequestsEvenIfAlreadyVotedInRealElection() throws Exception
     {
         // given
         RaftState raftState = preElectionActive();
@@ -388,7 +387,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldRespondNegativelyToPreVoteRequestsIfNotInPreVoteMyself() throws Exception
+    void shouldRespondNegativelyToPreVoteRequestsIfNotInPreVoteMyself() throws Exception
     {
         // given
         RaftState raftState = raftState()
@@ -408,7 +407,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldRespondNegativelyToPreVoteRequestsIfWouldNotVoteForCandidate() throws Exception
+    void shouldRespondNegativelyToPreVoteRequestsIfWouldNotVoteForCandidate() throws Exception
     {
         // given
         RaftState raftState = raftState()
@@ -429,7 +428,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldRespondPositivelyToPreVoteRequestsToMultipleMembersIfWouldVoteForAny() throws Exception
+    void shouldRespondPositivelyToPreVoteRequestsToMultipleMembersIfWouldVoteForAny() throws Exception
     {
         // given
         RaftState raftState = preElectionActive();
@@ -448,7 +447,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldUseTermFromPreVoteRequestIfHigherThanOwn() throws Exception
+    void shouldUseTermFromPreVoteRequestIfHigherThanOwn() throws Exception
     {
         // given
         RaftState raftState = preElectionActive();
@@ -465,7 +464,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldUpdateOutcomeWithTermFromPreVoteRequestOfLaterTermIfInPreVoteState() throws Throwable
+    void shouldUpdateOutcomeWithTermFromPreVoteRequestOfLaterTermIfInPreVoteState() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -479,7 +478,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldUpdateOutcomeWithTermFromPreVoteRequestOfLaterTermIfNotInPreVoteState() throws Throwable
+    void shouldUpdateOutcomeWithTermFromPreVoteRequestOfLaterTermIfNotInPreVoteState() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -498,7 +497,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldInstigatePreElectionIfSupportedAndNotActiveAndReceiveTimeout() throws Throwable
+    void shouldInstigatePreElectionIfSupportedAndNotActiveAndReceiveTimeout() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -517,7 +516,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldSetPreElectionActiveWhenReceiveTimeout() throws Throwable
+    void shouldSetPreElectionActiveWhenReceiveTimeout() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -535,7 +534,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldInstigatePreElectionIfSupportedAndActiveAndReceiveTimeout() throws Throwable
+    void shouldInstigatePreElectionIfSupportedAndActiveAndReceiveTimeout() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -550,7 +549,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldKeepPreElectionActiveWhenReceiveTimeout() throws Throwable
+    void shouldKeepPreElectionActiveWhenReceiveTimeout() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -563,7 +562,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldAbortPreElectionIfReceivePreVoteResponseFromNewerTerm() throws Throwable
+    void shouldAbortPreElectionIfReceivePreVoteResponseFromNewerTerm() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -578,7 +577,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnoreVotesFromEarlierTerms() throws Throwable
+    void shouldIgnoreVotesFromEarlierTerms() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -592,7 +591,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnoreVotesDeclining() throws Throwable
+    void shouldIgnoreVotesDeclining() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -605,7 +604,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldAddVoteFromADifferentMember() throws Throwable
+    void shouldAddVoteFromADifferentMember() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -618,7 +617,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotAddVoteFromMyself() throws Throwable
+    void shouldNotAddVoteFromMyself() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -631,7 +630,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotStartElectionIfHaveNotReachedQuorum() throws Throwable
+    void shouldNotStartElectionIfHaveNotReachedQuorum() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -644,7 +643,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldTransitionToCandidateIfHaveReachedQuorum() throws Throwable
+    void shouldTransitionToCandidateIfHaveReachedQuorum() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -659,7 +658,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldInstigateElectionIfHaveReachedQuorum() throws Throwable
+    void shouldInstigateElectionIfHaveReachedQuorum() throws Throwable
     {
         // given
         RaftState raftState = preElectionActive();
@@ -676,7 +675,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnorePreVoteResponsesIfPreVoteInactive() throws Throwable
+    void shouldIgnorePreVoteResponsesIfPreVoteInactive() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -693,7 +692,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnorePreVoteRequestsIfPreVoteUnsupported() throws Throwable
+    void shouldIgnorePreVoteRequestsIfPreVoteUnsupported() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -710,7 +709,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnorePreVoteResponsesIfPreVoteUnsupported() throws Throwable
+    void shouldIgnorePreVoteResponsesIfPreVoteUnsupported() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -727,7 +726,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnorePreVoteResponseWhenPreElectionFalseRefuseToBeLeader() throws Throwable
+    void shouldIgnorePreVoteResponseWhenPreElectionFalseRefuseToBeLeader() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -746,7 +745,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnorePreVoteResponseWhenPreElectionTrueAndRefuseLeader() throws Throwable
+    void shouldIgnorePreVoteResponseWhenPreElectionTrueAndRefuseLeader() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -765,7 +764,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotInstigateElectionOnPreVoteResponseWhenPreElectionTrueAndRefuseLeader() throws Throwable
+    void shouldNotInstigateElectionOnPreVoteResponseWhenPreElectionTrueAndRefuseLeader() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -784,7 +783,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldDeclinePreVoteRequestsIfPreElectionNotActiveAndRefusesToLead() throws Throwable
+    void shouldDeclinePreVoteRequestsIfPreElectionNotActiveAndRefusesToLead() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -803,7 +802,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldApprovePreVoteRequestIfPreElectionActiveAndRefusesToLead() throws Throwable
+    void shouldApprovePreVoteRequestIfPreElectionActiveAndRefusesToLead() throws Throwable
     {
         // given
         RaftState raftState = raftState()
@@ -822,7 +821,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldSetPreElectionOnElectionTimeout() throws Exception
+    void shouldSetPreElectionOnElectionTimeout() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -837,7 +836,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldSendPreVoteRequestsOnElectionTimeout() throws Exception
+    void shouldSendPreVoteRequestsOnElectionTimeout() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -852,7 +851,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldProceedToRealElectionIfReceiveQuorumOfPositivePreVoteResponses() throws Exception
+    void shouldProceedToRealElectionIfReceiveQuorumOfPositivePreVoteResponses() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -872,7 +871,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnorePreVotePositiveResponsesFromOlderTerm() throws Exception
+    void shouldIgnorePreVotePositiveResponsesFromOlderTerm() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -897,7 +896,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldIgnorePositivePreVoteResponsesIfNotInPreVotingStage() throws Exception
+    void shouldIgnorePositivePreVoteResponsesIfNotInPreVotingStage() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -914,7 +913,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotMoveToRealElectionWithoutPreVoteQuorum() throws Exception
+    void shouldNotMoveToRealElectionWithoutPreVoteQuorum() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -937,7 +936,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldMoveToRealElectionWithPreVoteQuorumOf5() throws Exception
+    void shouldMoveToRealElectionWithPreVoteQuorumOf5() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -961,7 +960,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotCountPreVotesVotesFromSameMemberTwice() throws Exception
+    void shouldNotCountPreVotesVotesFromSameMemberTwice() throws Exception
     {
         // given
         RaftState state = raftState()
@@ -985,7 +984,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldResetPreVotesWhenMovingBackToFollower() throws Exception
+    void shouldResetPreVotesWhenMovingBackToFollower() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -1004,7 +1003,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldSendRealVoteRequestsIfReceivePositivePreVoteResponses() throws Exception
+    void shouldSendRealVoteRequestsIfReceivePositivePreVoteResponses() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -1023,7 +1022,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotProceedToRealElectionIfReceiveNegativePreVoteResponses() throws Exception
+    void shouldNotProceedToRealElectionIfReceiveNegativePreVoteResponses() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -1045,7 +1044,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldNotSendRealVoteRequestsIfReceiveNegativePreVoteResponses() throws Exception
+    void shouldNotSendRealVoteRequestsIfReceiveNegativePreVoteResponses() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -1066,7 +1065,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldResetPreVoteIfReceiveHeartbeatFromLeader() throws Exception
+    void shouldResetPreVoteIfReceiveHeartbeatFromLeader() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -1086,7 +1085,7 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldResetPreVoteIfReceiveAppendEntriesRequestFromLeader() throws Exception
+    void shouldResetPreVoteIfReceiveAppendEntriesRequestFromLeader() throws Exception
     {
         // given
         RaftState state = preElectionSupported();
@@ -1141,7 +1140,7 @@ public class FollowerTest
     {
         private static int count;
 
-        public static ReplicatedString content()
+        static ReplicatedString content()
         {
             return new ReplicatedString( String.format( "content#%d", count++ ) );
         }

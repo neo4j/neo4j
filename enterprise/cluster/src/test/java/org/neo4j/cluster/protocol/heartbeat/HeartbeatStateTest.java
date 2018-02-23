@@ -62,10 +62,10 @@ import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class HeartbeatStateTest
+class HeartbeatStateTest
 {
     @Test
-    public void shouldIgnoreSuspicionsForOurselves() throws Throwable
+    void shouldIgnoreSuspicionsForOurselves() throws Throwable
     {
         // Given
         InstanceId instanceId = new InstanceId( 1 );
@@ -98,7 +98,7 @@ public class HeartbeatStateTest
     }
 
     @Test
-    public void shouldIgnoreSuspicionsForOurselvesButKeepTheRest() throws Throwable
+    void shouldIgnoreSuspicionsForOurselvesButKeepTheRest() throws Throwable
     {
         // Given
         InstanceId myId = new InstanceId( 1 );
@@ -133,7 +133,7 @@ public class HeartbeatStateTest
     }
 
     @Test
-    public void shouldAddInstanceIdHeaderInCatchUpMessages() throws Throwable
+    void shouldAddInstanceIdHeaderInCatchUpMessages() throws Throwable
     {
         // Given
         InstanceId instanceId = new InstanceId( 1 );
@@ -181,7 +181,7 @@ public class HeartbeatStateTest
     }
 
     @Test
-    public void shouldLogFirstHeartbeatAfterTimeout()
+    void shouldLogFirstHeartbeatAfterTimeout()
     {
         // given
         InstanceId instanceId = new InstanceId( 1 );

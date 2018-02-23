@@ -34,11 +34,11 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
 
-public class SimpleIndexReaderTest
+class SimpleIndexReaderTest
 {
     private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class );
@@ -60,13 +60,13 @@ public class SimpleIndexReaderTest
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
     }
 
     @Test
-    public void releaseSearcherOnClose() throws IOException
+    void releaseSearcherOnClose() throws IOException
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -76,7 +76,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void seekQueryReachSearcher() throws Exception
+    void seekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -86,7 +86,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void scanQueryReachSearcher() throws Exception
+    void scanQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -96,7 +96,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void stringRangeSeekQueryReachSearcher() throws Exception
+    void stringRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -106,7 +106,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void prefixRangeSeekQueryReachSearcher() throws Exception
+    void prefixRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -116,7 +116,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void numberRangeSeekQueryReachSearcher() throws Exception
+    void numberRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -126,7 +126,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void countIndexedNodesReachSearcher() throws IOException
+    void countIndexedNodesReachSearcher() throws IOException
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -136,14 +136,14 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void uniqueIndexSamplerForUniqueIndex()
+    void uniqueIndexSamplerForUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getUniqueSimpleReader();
         Assert.assertThat( uniqueSimpleReader.createSampler(), instanceOf( UniqueLuceneIndexSampler.class ) );
     }
 
     @Test
-    public void nonUuniqueIndexSamplerForNonUniqueIndex()
+    void nonUuniqueIndexSamplerForNonUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getNonUniqueSimpleReader();
         Assert.assertThat( uniqueSimpleReader.createSampler(), instanceOf( NonUniqueLuceneIndexSampler.class) );

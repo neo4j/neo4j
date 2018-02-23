@@ -70,7 +70,7 @@ public class NodeLabelsFieldTest
 {
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
@@ -80,7 +80,7 @@ public class NodeLabelsFieldTest
     private NeoStores neoStores;
 
     @BeforeEach
-    public void startUp()
+    void startUp()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
@@ -93,12 +93,12 @@ public class NodeLabelsFieldTest
     }
 
     @AfterEach
-    public void cleanUp()
+    void cleanUp()
     {
         neoStores.close();
     }
     @Test
-    public void shouldInlineOneLabel()
+    void shouldInlineOneLabel()
     {
         // GIVEN
         long labelId = 10;
@@ -113,7 +113,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineOneLabelWithHighId()
+    void shouldInlineOneLabelWithHighId()
     {
         // GIVEN
         long labelId = 10000;
@@ -128,7 +128,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineTwoSmallLabels()
+    void shouldInlineTwoSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -144,7 +144,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineThreeSmallLabels()
+    void shouldInlineThreeSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -161,7 +161,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineFourSmallLabels()
+    void shouldInlineFourSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -179,7 +179,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineFiveSmallLabels()
+    void shouldInlineFiveSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -199,7 +199,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace()
+    void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace()
     {
         // GIVEN -- the upper limit for a label ID for 3 labels would be 36b/3 - 1 = 12b - 1 = 4095
         long labelId1 = 10;
@@ -220,7 +220,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void oneDynamicRecordShouldExtendIntoAnAdditionalIfTooManyLabels()
+    void oneDynamicRecordShouldExtendIntoAnAdditionalIfTooManyLabels()
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
@@ -237,7 +237,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void oneDynamicRecordShouldStoreItsOwner()
+    void oneDynamicRecordShouldStoreItsOwner()
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
@@ -254,7 +254,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void twoDynamicRecordsShouldShrinkToOneWhenRemoving()
+    void twoDynamicRecordsShouldShrinkToOneWhenRemoving()
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
@@ -274,7 +274,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void twoDynamicRecordsShouldShrinkToOneWhenRemovingWithoutChangingItsOwner()
+    void twoDynamicRecordsShouldShrinkToOneWhenRemovingWithoutChangingItsOwner()
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
@@ -295,7 +295,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void oneDynamicRecordShouldShrinkIntoInlinedWhenRemoving()
+    void oneDynamicRecordShouldShrinkIntoInlinedWhenRemoving()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
@@ -312,7 +312,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReadIdOfDynamicRecordFromDynamicLabelsField()
+    void shouldReadIdOfDynamicRecordFromDynamicLabelsField()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
@@ -326,7 +326,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReadNullDynamicRecordFromInlineLabelsField()
+    void shouldReadNullDynamicRecordFromInlineLabelsField()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithInlinedLabels( 23L );
@@ -339,7 +339,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void maximumOfSevenInlinedLabels()
+    void maximumOfSevenInlinedLabels()
     {
         // GIVEN
         long[] labels = new long[] {0, 1, 2, 3, 4, 5, 6};
@@ -355,7 +355,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void addingAnAlreadyAddedLabelWhenLabelsAreInlinedShouldFail()
+    void addingAnAlreadyAddedLabelWhenLabelsAreInlinedShouldFail()
     {
         // GIVEN
         int labelId = 1;
@@ -375,7 +375,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void addingAnAlreadyAddedLabelWhenLabelsAreInDynamicRecordsShouldFail()
+    void addingAnAlreadyAddedLabelWhenLabelsAreInDynamicRecordsShouldFail()
     {
         // GIVEN
         long[] labels = oneByteLongs( 20 );
@@ -395,7 +395,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void removingNonExistentInlinedLabelShouldFail()
+    void removingNonExistentInlinedLabelShouldFail()
     {
         // GIVEN
         int labelId1 = 1;
@@ -416,7 +416,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void removingNonExistentLabelInDynamicRecordsShouldFail()
+    void removingNonExistentLabelInDynamicRecordsShouldFail()
     {
         // GIVEN
         long[] labels = oneByteLongs( 20 );
@@ -436,7 +436,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReallocateSomeOfPreviousDynamicRecords()
+    void shouldReallocateSomeOfPreviousDynamicRecords()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
@@ -453,7 +453,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome()
+    void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, fourByteLongs( 100 ) );
@@ -479,7 +479,7 @@ public class NodeLabelsFieldTest
      * unforeseen issues as well.
      */
     @Test
-    public void shouldHandleRandomAddsAndRemoves()
+    void shouldHandleRandomAddsAndRemoves()
     {
         // GIVEN
         Set<Integer> key = new HashSet<>();

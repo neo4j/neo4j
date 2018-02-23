@@ -53,20 +53,20 @@ import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.builde
 public class TransactionLogFilesTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private File storeDirectory;
     private final String filename = "filename";
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         storeDirectory = testDirectory.directory();
     }
 
     @Test
-    public void shouldGetTheFileNameForAGivenVersion() throws IOException
+    void shouldGetTheFileNameForAGivenVersion() throws IOException
     {
         // given
         final LogFiles files = createLogFiles();
@@ -81,7 +81,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldVisitEachLofFile() throws IOException
+    void shouldVisitEachLofFile() throws IOException
     {
         // given
         LogFiles files = createLogFiles();
@@ -109,7 +109,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveTheHighestLogVersion() throws IOException
+    void shouldBeAbleToRetrieveTheHighestLogVersion() throws IOException
     {
         // given
         LogFiles files = createLogFiles();
@@ -127,7 +127,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldReturnANegativeValueIfThereAreNoLogFiles() throws IOException
+    void shouldReturnANegativeValueIfThereAreNoLogFiles() throws IOException
     {
         // given
         LogFiles files = createLogFiles();
@@ -143,7 +143,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldFindTheVersionBasedOnTheFilename() throws IOException
+    void shouldFindTheVersionBasedOnTheFilename() throws IOException
     {
         // given
         LogFiles logFiles = createLogFiles();
@@ -157,7 +157,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldThrowIfThereIsNoVersionInTheFileName() throws IOException
+    void shouldThrowIfThereIsNoVersionInTheFileName() throws IOException
     {
         LogFiles logFiles = createLogFiles();
         final File file = new File( "wrong" );
@@ -175,7 +175,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldThrowIfVersionIsNotANumber()
+    void shouldThrowIfVersionIsNotANumber()
     {
         assertThrows( NumberFormatException.class, () -> {
             // given
@@ -188,7 +188,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void isLogFile() throws IOException
+    void isLogFile() throws IOException
     {
         LogFiles logFiles = createLogFiles();
         assertFalse( logFiles.isLogFile( new File( "aaa.tx.log" ) ) );

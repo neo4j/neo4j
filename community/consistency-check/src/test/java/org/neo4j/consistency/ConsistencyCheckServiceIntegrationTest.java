@@ -350,7 +350,7 @@ public class ConsistencyCheckServiceIntegrationTest
         }
     }
 
-    protected Map<String,String> settings( String... strings )
+    private Map<String,String> settings( String... strings )
     {
         Map<String, String> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
@@ -385,7 +385,7 @@ public class ConsistencyCheckServiceIntegrationTest
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
     }
 
-    protected String getRecordFormatName()
+    String getRecordFormatName()
     {
         return StringUtils.EMPTY;
     }

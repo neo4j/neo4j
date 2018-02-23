@@ -125,9 +125,9 @@ interface TimeoutTests
 @ApplyLdifFiles( "ldap_test_data.ldif" )
 public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 {
-    public static final String LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS = "LDAP: error code 49 - INVALID_CREDENTIALS";
-    public static final String NON_ROUTABLE_IP = "192.0.2.0"; // Ip in the TEST-NET-1 range, reserved for documentation...
-    public static final String REFUSED_IP = "127.0.0.1"; // "0.6.6.6";
+    private static final String LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS = "LDAP: error code 49 - INVALID_CREDENTIALS";
+    private static final String NON_ROUTABLE_IP = "192.0.2.0"; // Ip in the TEST-NET-1 range, reserved for documentation...
+    private static final String REFUSED_IP = "127.0.0.1"; // "0.6.6.6";
     private final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw==";
     // Hashed 'abc123' (see ldap_test_data.ldif)
 

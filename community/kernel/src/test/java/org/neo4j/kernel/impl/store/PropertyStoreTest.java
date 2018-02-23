@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -58,7 +57,7 @@ public class PropertyStoreTest
     private File path;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         fileSystemAbstraction = fsRule.get();
         path = new File( "/tmp/foobar" );
@@ -67,7 +66,7 @@ public class PropertyStoreTest
     }
 
     @Test
-    public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
+    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
     {
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );

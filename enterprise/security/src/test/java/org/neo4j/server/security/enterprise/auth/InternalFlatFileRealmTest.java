@@ -82,7 +82,7 @@ public class InternalFlatFileRealmTest
     private Function<String, Integer> token = s -> -1;
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         testRealm = new TestRealm(
                         new InMemoryUserRepository(),
@@ -106,7 +106,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldNotCacheAuthenticationInfo() throws InvalidAuthTokenException
+    void shouldNotCacheAuthenticationInfo() throws InvalidAuthTokenException
     {
         // Given
         EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
@@ -122,7 +122,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldNotCacheAuthorizationInfo() throws InvalidAuthTokenException
+    void shouldNotCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
         EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
@@ -139,7 +139,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldOnlyReloadUsersOrRolesIfNeeded() throws Throwable
+    void shouldOnlyReloadUsersOrRolesIfNeeded() throws Throwable
     {
         assertSetUsersAndRolesNTimes( false, false, 0, 0 );
         assertSetUsersAndRolesNTimes( false, true, 0, 1 );
@@ -148,7 +148,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldAssignAdminRoleToDefaultUser() throws Throwable
+    void shouldAssignAdminRoleToDefaultUser() throws Throwable
     {
         // Given
         InternalFlatFileRealm realm = internalTestRealmWithUsers( Collections.emptyList(), Collections.emptyList() );
@@ -163,7 +163,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldAssignAdminRoleToSpecifiedUser() throws Throwable
+    void shouldAssignAdminRoleToSpecifiedUser() throws Throwable
     {
         // Given
         InternalFlatFileRealm realm = internalTestRealmWithUsers( Arrays.asList( "neo4j", "morpheus", "trinity" ),
@@ -179,7 +179,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldAssignAdminRoleToOnlyUser() throws Throwable
+    void shouldAssignAdminRoleToOnlyUser() throws Throwable
     {
         // Given
         InternalFlatFileRealm realm =
@@ -195,7 +195,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldNotAssignAdminToNonExistentUser() throws Throwable
+    void shouldNotAssignAdminToNonExistentUser() throws Throwable
     {
         // Given
         InternalFlatFileRealm realm = internalTestRealmWithUsers( Collections.singletonList( "neo4j" ),
@@ -213,7 +213,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldGiveErrorOnMultipleUsersNoDefault() throws Throwable
+    void shouldGiveErrorOnMultipleUsersNoDefault() throws Throwable
     {
         // Given
         InternalFlatFileRealm realm =
@@ -231,7 +231,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldFailToAssignMultipleDefaultAdmins() throws Throwable
+    void shouldFailToAssignMultipleDefaultAdmins() throws Throwable
     {
         // Given
         InternalFlatFileRealm realm = internalTestRealmWithUsers( Arrays.asList( "morpheus", "trinity", "tank" ),
@@ -249,7 +249,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldAssignAdminRoleAfterBadSetting() throws Throwable
+    void shouldAssignAdminRoleAfterBadSetting() throws Throwable
     {
         UserRepository userRepository = new InMemoryUserRepository();
         UserRepository initialUserRepository = new InMemoryUserRepository();

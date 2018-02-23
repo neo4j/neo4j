@@ -28,12 +28,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestShortArray
+class TestShortArray
 {
     private static final int DEFAULT_PAYLOAD_SIZE = PropertyType.getPayloadSize();
 
     @Test
-    public void canEncodeSomeSampleArraysWithDefaultPayloadSize()
+    void canEncodeSomeSampleArraysWithDefaultPayloadSize()
     {
         assertCanEncodeAndDecodeToSameValue( new boolean[]{true, false, true,
                 true, true, true, true, true, true, true, false, true} );
@@ -51,14 +51,14 @@ public class TestShortArray
     }
 
     @Test
-    public void testCannotEncodeMarginal()
+    void testCannotEncodeMarginal()
     {
         assertCanNotEncode( new long[]{1L << 15, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1} );
     }
 
     @Test
-    public void canEncodeBiggerArraysWithBiggerPayloadSize()
+    void canEncodeBiggerArraysWithBiggerPayloadSize()
     {
         int[] intArray = intArray( 10, 2600 );
         assertCanEncodeAndDecodeToSameValue( intArray, 32 );

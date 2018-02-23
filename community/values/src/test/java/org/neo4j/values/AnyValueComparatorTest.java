@@ -143,7 +143,7 @@ public class AnyValueComparatorTest
     };
 
     @Test
-    public void shouldOrderValuesCorrectly()
+    void shouldOrderValuesCorrectly()
     {
         List<AnyValue> values =
                 Arrays.stream( objs )

@@ -23,7 +23,7 @@ import java.io.File;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 
-public class FileCopyDetector implements FileCopyMonitor
+class FileCopyDetector implements FileCopyMonitor
 {
     private volatile boolean hasCopiedFile;
 

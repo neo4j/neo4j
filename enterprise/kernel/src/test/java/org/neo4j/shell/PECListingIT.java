@@ -29,10 +29,10 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.Label.label;
 
-public class PECListingIT extends AbstractShellIT
+class PECListingIT extends AbstractShellIT
 {
     @Override
-    protected GraphDatabaseAPI newDb()
+    GraphDatabaseAPI newDb()
     {
         return (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
@@ -40,7 +40,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListNodePropertyExistenceConstraints() throws Exception
+    void canListNodePropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -51,7 +51,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListRelationshipPropertyExistenceConstraints() throws Exception
+    void canListRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         RelationshipType relType = RelationshipType.withName( "KNOWS" );
@@ -62,7 +62,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListNodePropertyExistenceConstraintsByLabel() throws Exception
+    void canListNodePropertyExistenceConstraintsByLabel() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -73,7 +73,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListRelationshipPropertyExistenceConstraintsByType() throws Exception
+    void canListRelationshipPropertyExistenceConstraintsByType() throws Exception
     {
         // GIVEN
         RelationshipType relType = RelationshipType.withName( "KNOWS" );
@@ -84,7 +84,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListRelationshipPropertyExistenceConstraintsByTypeAndProperty() throws Exception
+    void canListRelationshipPropertyExistenceConstraintsByTypeAndProperty() throws Exception
     {
         // GIVEN
         RelationshipType relType = RelationshipType.withName( "KNOWS" );
@@ -96,7 +96,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListBothNodeAndRelationshipPropertyExistenceConstraints() throws Exception
+    void canListBothNodeAndRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -113,7 +113,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListBothNodeAndRelationshipPropertyExistenceConstraintsByLabelAndType() throws Exception
+    void canListBothNodeAndRelationshipPropertyExistenceConstraintsByLabelAndType() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -130,7 +130,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldHaveCorrectIndentationsInSchemaListing() throws Exception
+    void shouldHaveCorrectIndentationsInSchemaListing() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -157,7 +157,7 @@ public class PECListingIT extends AbstractShellIT
     }
 
     @Test
-    public void canListNodePropertyExistenceConstraintsByLabelAndProperty() throws Exception
+    void canListNodePropertyExistenceConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );

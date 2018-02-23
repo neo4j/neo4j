@@ -42,7 +42,7 @@ public class ReadAheadChannelTest
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist() throws Exception
+    void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist() throws Exception
     {
         // Given
         FileSystemAbstraction fileSystem = fileSystemRule.get();
@@ -81,7 +81,7 @@ public class ReadAheadChannelTest
     }
 
     @Test
-    public void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered() throws Exception
+    void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered() throws Exception
     {
         // Given
         FileSystemAbstraction fileSystem = fileSystemRule.get();
@@ -120,7 +120,7 @@ public class ReadAheadChannelTest
     }
 
     @Test
-    public void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles() throws Exception
+    void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles() throws Exception
     {
         // Given
         FileSystemAbstraction fileSystem = fileSystemRule.get();
@@ -179,7 +179,7 @@ public class ReadAheadChannelTest
     }
 
     @Test
-    public void shouldReturnPositionWithinBufferedStream() throws Exception
+    void shouldReturnPositionWithinBufferedStream() throws Exception
     {
         // given
         EphemeralFileSystemAbstraction fsa = fileSystemRule.get();

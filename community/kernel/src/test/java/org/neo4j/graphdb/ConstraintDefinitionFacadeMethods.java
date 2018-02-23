@@ -25,7 +25,7 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-public class ConstraintDefinitionFacadeMethods
+class ConstraintDefinitionFacadeMethods
 {
     private static final FacadeMethod<ConstraintDefinition> GET_LABEL =
             new FacadeMethod<ConstraintDefinition>( "Label getLabel()" )

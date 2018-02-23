@@ -28,11 +28,11 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CommunityCypherEngineProviderTest
+class CommunityCypherEngineProviderTest
 {
 
     @Test
-    public void shouldServiceLoaderFindCypherEngineProvider()
+    void shouldServiceLoaderFindCypherEngineProvider()
     {
 
         // WHEN

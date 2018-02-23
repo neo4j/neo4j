@@ -32,8 +32,8 @@ import org.neo4j.util.FeatureToggles;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Matchers.any;
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BoltConnectionReadLimiterTest
+class BoltConnectionReadLimiterTest
 {
     private static final Job job = s -> s.run( "INIT", null, null );
     private BoltConnection connection;
@@ -54,7 +54,7 @@ public class BoltConnectionReadLimiterTest
     private Log log;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         channel = new EmbeddedChannel();
         log = mock( Log.class );
@@ -65,7 +65,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldUseWatermarksFromSystemProperties()
+    void shouldUseWatermarksFromSystemProperties()
     {
         FeatureToggles.set( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.LOW_WATERMARK_NAME, 5 );
         FeatureToggles.set( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.HIGH_WATERMARK_NAME, 10 );
@@ -85,7 +85,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldNotDisableAutoReadBelowHighWatermark()
+    void shouldNotDisableAutoReadBelowHighWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -98,7 +98,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldDisableAutoReadWhenAtHighWatermark()
+    void shouldDisableAutoReadWhenAtHighWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -113,7 +113,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldDisableAutoReadOnlyOnceWhenAboveHighWatermark()
+    void shouldDisableAutoReadOnlyOnceWhenAboveHighWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -130,7 +130,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldEnableAutoReadWhenAtLowWatermark()
+    void shouldEnableAutoReadWhenAtLowWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -147,7 +147,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldEnableAutoReadOnlyOnceWhenBelowLowWatermark()
+    void shouldEnableAutoReadOnlyOnceWhenBelowLowWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -164,7 +164,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldNotAcceptNegativeLowWatermark()
+    void shouldNotAcceptNegativeLowWatermark()
     {
         try
         {
@@ -178,7 +178,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldNotAcceptLowWatermarkEqualToHighWatermark()
+    void shouldNotAcceptLowWatermarkEqualToHighWatermark()
     {
         try
         {
@@ -192,7 +192,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldNotAcceptLowWatermarkLargerThanHighWatermark()
+    void shouldNotAcceptLowWatermarkLargerThanHighWatermark()
     {
         try
         {
@@ -206,7 +206,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldNotAcceptZeroHighWatermark()
+    void shouldNotAcceptZeroHighWatermark()
     {
         try
         {
@@ -220,7 +220,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldNotAcceptNegativeHighWatermark()
+    void shouldNotAcceptNegativeHighWatermark()
     {
         try
         {

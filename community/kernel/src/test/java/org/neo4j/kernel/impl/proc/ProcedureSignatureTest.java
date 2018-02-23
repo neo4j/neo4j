@@ -41,7 +41,7 @@ public class ProcedureSignatureTest
             .in( "a", Neo4jTypes.NTAny ).build();
 
     @Test
-    public void inputSignatureShouldNotBeModifiable()
+    void inputSignatureShouldNotBeModifiable()
     {
         // Expect
         exception.expect( UnsupportedOperationException.class );
@@ -51,7 +51,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void outputSignatureShouldNotBeModifiable()
+    void outputSignatureShouldNotBeModifiable()
     {
         // Expect
         exception.expect( UnsupportedOperationException.class );
@@ -61,7 +61,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void shouldHonorVoidInEquals()
+    void shouldHonorVoidInEquals()
     {
         ProcedureSignature sig1 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).build();
         ProcedureSignature sig2 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
@@ -72,7 +72,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringShouldMatchCypherSyntax()
+    void toStringShouldMatchCypherSyntax()
     {
         // When
         String toStr = procedureSignature( "org", "myProcedure" )
@@ -86,7 +86,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringForVoidProcedureShouldMatchCypherSyntax()
+    void toStringForVoidProcedureShouldMatchCypherSyntax()
     {
         // Given
         ProcedureSignature proc = procedureSignature( "org", "myProcedure" )

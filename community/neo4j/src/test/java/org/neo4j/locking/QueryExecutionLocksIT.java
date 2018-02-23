@@ -112,14 +112,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class QueryExecutionLocksIT
+class QueryExecutionLocksIT
 {
 
     @Resource
-    public EmbeddedDatabaseRule databaseRule;
+    private EmbeddedDatabaseRule databaseRule;
 
     @Test
-    public void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception
+    void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception
     {
         String query = "MATCH (n) return count(n)";
         List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
@@ -128,7 +128,7 @@ public class QueryExecutionLocksIT
     }
 
     @Test
-    public void takeLabelLockForQueryWithIndexUsages() throws Exception
+    void takeLabelLockForQueryWithIndexUsages() throws Exception
     {
         String labelName = "Human";
         Label human = Label.label( labelName );
@@ -155,7 +155,7 @@ public class QueryExecutionLocksIT
     }
 
     @Test
-    public void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception
+    void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception
     {
         String labelName = "Robot";
         Label robot = Label.label( labelName );

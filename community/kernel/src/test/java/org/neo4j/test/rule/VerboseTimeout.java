@@ -125,7 +125,7 @@ public class VerboseTimeout extends Timeout
             return timeUnit;
         }
 
-        public List<FailureParameter> getAdditionalParameters()
+        List<FailureParameter> getAdditionalParameters()
         {
             return additionalParameters;
         }
@@ -245,7 +245,7 @@ public class VerboseTimeout extends Timeout
                 return null;
             }
 
-            public void awaitStarted() throws InterruptedException
+            void awaitStarted() throws InterruptedException
             {
                 startLatch.await();
             }

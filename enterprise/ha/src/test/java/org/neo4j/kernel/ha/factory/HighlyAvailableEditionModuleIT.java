@@ -39,9 +39,9 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.ha.ClusterRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HighlyAvailableEditionModuleIT
@@ -50,7 +50,7 @@ public class HighlyAvailableEditionModuleIT
     public ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void createBufferedIdComponentsByDefault()
+    void createBufferedIdComponentsByDefault()
     {
         ClusterManager.ManagedCluster managedCluster = clusterRule.startCluster();
         DependencyResolver dependencyResolver = managedCluster.getMaster().getDependencyResolver();
@@ -63,7 +63,7 @@ public class HighlyAvailableEditionModuleIT
     }
 
     @Test
-    public void fileWatcherFileNameFilter()
+    void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = HighlyAvailableEditionModule.fileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );

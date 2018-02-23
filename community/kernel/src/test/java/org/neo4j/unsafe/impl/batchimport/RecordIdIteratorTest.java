@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
 
-public class RecordIdIteratorTest
+class RecordIdIteratorTest
 {
     @Test
-    public void shouldGoPageWiseBackwards()
+    void shouldGoPageWiseBackwards()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 33, withBatchSize( DEFAULT, 10 ) );
@@ -47,7 +47,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoPageWiseBackwardsOnCleanBreak()
+    void shouldGoPageWiseBackwardsOnCleanBreak()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 20, withBatchSize( DEFAULT, 10 ) );
@@ -59,7 +59,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoPageWiseBackwardsOnSingleBatch()
+    void shouldGoPageWiseBackwardsOnSingleBatch()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 8, withBatchSize( DEFAULT, 10 ) );
@@ -69,7 +69,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoBackwardsToNonZero()
+    void shouldGoBackwardsToNonZero()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 12, 34, withBatchSize( DEFAULT, 10 ) );
@@ -82,7 +82,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoForwardsWhenStartingFromNonZero()
+    void shouldGoForwardsWhenStartingFromNonZero()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.forwards( 1, 12, withBatchSize( DEFAULT, 10 ) );
@@ -94,7 +94,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoForwardsWhenStartingFromNonZero2()
+    void shouldGoForwardsWhenStartingFromNonZero2()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.forwards( 34, 66, withBatchSize( DEFAULT, 10 ) );

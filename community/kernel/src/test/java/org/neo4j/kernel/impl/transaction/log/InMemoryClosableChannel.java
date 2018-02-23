@@ -42,7 +42,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         this( 1000 );
     }
 
-    public InMemoryClosableChannel( byte[] bytes, boolean append )
+    private InMemoryClosableChannel( byte[] bytes, boolean append )
     {
         this.bytes = bytes;
         ByteBuffer writeBuffer = ByteBuffer.wrap( this.bytes );
@@ -243,7 +243,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
 
     class ByteBufferBase implements PositionAwareChannel, Closeable
     {
-        protected final ByteBuffer buffer;
+        final ByteBuffer buffer;
 
         ByteBufferBase( ByteBuffer buffer )
         {

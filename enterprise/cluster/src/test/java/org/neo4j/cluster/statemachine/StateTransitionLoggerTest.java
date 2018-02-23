@@ -20,6 +20,7 @@
 package org.neo4j.cluster.statemachine;
 
 import org.junit.jupiter.api.Test;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
@@ -30,10 +31,10 @@ import static org.neo4j.cluster.protocol.cluster.ClusterState.entered;
 import static org.neo4j.cluster.protocol.cluster.ClusterState.joining;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class StateTransitionLoggerTest
+class StateTransitionLoggerTest
 {
     @Test
-    public void shouldThrottle()
+    void shouldThrottle()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );

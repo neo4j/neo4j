@@ -28,7 +28,7 @@ import org.neo4j.shell.ShellSettings;
 public class TestShellServerExtension extends
         KernelExtensionFactoryContractTest
 {
-    public TestShellServerExtension()
+    TestShellServerExtension()
     {
         super( ShellServerExtensionFactory.KEY, ShellServerExtensionFactory.class );
     }

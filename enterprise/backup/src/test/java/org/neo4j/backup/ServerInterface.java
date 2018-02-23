@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup;
 
-public interface ServerInterface
+interface ServerInterface
 {
     void shutdown();
 

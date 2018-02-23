@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TxSingleNodeCursorTest
+class TxSingleNodeCursorTest
 {
 
     private final TransactionState state = mock( TransactionState.class );
@@ -38,7 +38,7 @@ public class TxSingleNodeCursorTest
     } );
 
     @Test
-    public void shouldNotLoopForeverWhenNodesAreAddedToTheTxState()
+    void shouldNotLoopForeverWhenNodesAreAddedToTheTxState()
     {
         // given
         int nodeId = 42;

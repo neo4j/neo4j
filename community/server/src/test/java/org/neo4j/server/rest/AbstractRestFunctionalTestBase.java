@@ -62,15 +62,15 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @SafeVarargs
-    public final String doCypherRestCall( String endpoint, String scriptTemplate, Status status,
-            Pair<String, String>... params )
+    final String doCypherRestCall( String endpoint, String scriptTemplate, Status status,
+            Pair<String,String>... params )
     {
         String parameterString = createParameterString( params );
 
         return doCypherRestCall( endpoint, scriptTemplate, status, parameterString );
     }
 
-    public String doCypherRestCall( String endpoint, String scriptTemplate, Status status, String parameterString )
+    String doCypherRestCall( String endpoint, String scriptTemplate, Status status, String parameterString )
     {
         data.get();
 
@@ -100,7 +100,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return paramString;
     }
 
-    protected String createScript( String template )
+    String createScript( String template )
     {
         for ( String key : data.get().keySet() )
         {
@@ -115,7 +115,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return server().getDatabase().getGraph();
     }
 
-    public <T> T resolveDependency( Class<T> cls )
+    protected <T> T resolveDependency( Class<T> cls )
     {
         return ((GraphDatabaseAPI)graphdb()).getDependencyResolver().resolveDependency( cls );
     }
@@ -130,7 +130,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return "http://localhost:" + getLocalHttpPort() + "/db/";
     }
 
-    protected String getNodeUri( Node node )
+    String getNodeUri( Node node )
     {
         return getNodeUri(node.getId());
     }
@@ -140,17 +140,17 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getDataUri() + PATH_NODES + "/" + node;
     }
 
-    protected String getRelationshipUri( Relationship relationship )
+    String getRelationshipUri( Relationship relationship )
     {
         return getDataUri() + PATH_RELATIONSHIPS + "/" + relationship.getId();
     }
 
-    protected String postNodeIndexUri( String indexName )
+    String postNodeIndexUri( String indexName )
     {
         return getDataUri() + PATH_NODE_INDEX + "/" + indexName;
     }
 
-    protected String postRelationshipIndexUri( String indexName )
+    String postRelationshipIndexUri( String indexName )
     {
         return getDataUri() + PATH_RELATIONSHIP_INDEX + "/" + indexName;
     }
@@ -170,7 +170,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getDataUri() + "transaction/" + txId;
     }
 
-    public static long extractTxId( HTTP.Response response )
+    protected static long extractTxId( HTTP.Response response )
     {
         int lastSlash = response.location().lastIndexOf( '/' );
         String txIdString = response.location().substring( lastSlash + 1 );
@@ -182,7 +182,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return data.get().get( name );
     }
 
-    protected Node[] getNodes( String... names )
+    Node[] getNodes( String... names )
     {
         Node[] nodes = {};
         ArrayList<Node> result = new ArrayList<>();
@@ -193,7 +193,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return result.toArray( nodes );
     }
 
-    public void assertSize( int expectedSize, String entity )
+    void assertSize( int expectedSize, String entity )
     {
         Collection<?> hits;
         try
@@ -207,12 +207,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         }
     }
 
-    public String getPropertiesUri( Relationship rel )
+    String getPropertiesUri( Relationship rel )
     {
         return getRelationshipUri( rel ) + "/properties";
     }
 
-    public String getPropertiesUri( Node node )
+    String getPropertiesUri( Node node )
     {
         return getNodeUri( node ) + "/properties";
     }
@@ -222,63 +222,63 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return gen.get();
     }
 
-    public String getLabelsUri()
+    String getLabelsUri()
     {
         return format( "%slabels", getDataUri() );
     }
 
-    public String getPropertyKeysUri()
+    String getPropertyKeysUri()
     {
         return format( "%spropertykeys", getDataUri() );
     }
 
-    public String getNodesWithLabelUri( String label )
+    String getNodesWithLabelUri( String label )
     {
         return format( "%slabel/%s/nodes", getDataUri(), label );
     }
 
-    public String getNodesWithLabelAndPropertyUri( String label, String property, Object value ) throws UnsupportedEncodingException
+    String getNodesWithLabelAndPropertyUri( String label, String property, Object value ) throws UnsupportedEncodingException
     {
         return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property,
                 encode( createJsonFrom( value ), StandardCharsets.UTF_8.name() ) );
     }
 
-    public String getSchemaIndexUri()
+    String getSchemaIndexUri()
     {
         return getDataUri() + PATH_SCHEMA_INDEX;
     }
 
-    public String getSchemaIndexLabelUri( String label )
+    String getSchemaIndexLabelUri( String label )
     {
         return getDataUri() + PATH_SCHEMA_INDEX + "/" + label;
     }
 
-    public String getSchemaIndexLabelPropertyUri( String label, String property )
+    String getSchemaIndexLabelPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_INDEX + "/" + label + "/" + property;
     }
 
-    public String getSchemaConstraintUri()
+    String getSchemaConstraintUri()
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT;
     }
 
-    public String getSchemaConstraintLabelUri( String label )
+    String getSchemaConstraintLabelUri( String label )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label;
     }
 
-    public String getSchemaConstraintLabelUniquenessUri( String label )
+    String getSchemaConstraintLabelUniquenessUri( String label )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/";
     }
 
-    public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
+    String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
     }
 
-    public static int getLocalHttpPort()
+    protected static int getLocalHttpPort()
     {
         ConnectorPortRegister connectorPortRegister = server().getDatabase().getGraph().getDependencyResolver()
                 .resolveDependency( ConnectorPortRegister.class );

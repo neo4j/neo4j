@@ -42,13 +42,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BoltFactoryImplTest
+class BoltFactoryImplTest
 {
     private static final Clock CLOCK = Clock.systemUTC();
     private static final BoltChannel boltChannel = mock( BoltChannel.class );
 
     @Test
-    public void newMachineThrowsWhenNotStarted()
+    void newMachineThrowsWhenNotStarted()
     {
         BoltFactoryImpl boltFactory = newBoltFactory();
 
@@ -64,7 +64,7 @@ public class BoltFactoryImplTest
     }
 
     @Test
-    public void newMachineThrowsWhenStopped()
+    void newMachineThrowsWhenStopped()
     {
         BoltFactoryImpl boltFactory = newBoltFactory();
 
@@ -88,7 +88,7 @@ public class BoltFactoryImplTest
     }
 
     @Test
-    public void txIdStoreRefreshedAfterRestart()
+    void txIdStoreRefreshedAfterRestart()
     {
         GraphDatabaseAPI db = newDbMock();
         DependencyResolver dependencyResolver = db.getDependencyResolver();

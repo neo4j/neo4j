@@ -40,10 +40,10 @@ import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLo
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 @ExtendWith( MockitoExtension.class )
-public class RaftMachineLogTest
+class RaftMachineLogTest
 {
     @Mock
-    RaftMachineBuilder.CommitListener commitListener;
+    private RaftMachineBuilder.CommitListener commitListener;
 
     private MemberId myself = member( 0 );
     private ReplicatedContent content = valueOf( 1 );
@@ -52,7 +52,7 @@ public class RaftMachineLogTest
     private RaftMachine raft;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         // given
         testEntryLog = new InMemoryRaftLog();
@@ -65,7 +65,7 @@ public class RaftMachineLogTest
     }
 
     @Test
-    public void shouldPersistAtSpecifiedLogIndex() throws Exception
+    void shouldPersistAtSpecifiedLogIndex() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().leaderTerm( 0 ).prevLogIndex( 0 ).prevLogTerm( 0 )
@@ -77,7 +77,7 @@ public class RaftMachineLogTest
     }
 
     @Test
-    public void shouldOnlyPersistSameLogEntryOnce() throws Exception
+    void shouldOnlyPersistSameLogEntryOnce() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().leaderTerm( 0 ).prevLogIndex( 0 ).prevLogTerm( 0 )
@@ -91,7 +91,7 @@ public class RaftMachineLogTest
     }
 
     @Test
-    public void shouldRemoveLaterEntryFromLogConflictingWithNewEntry() throws Exception
+    void shouldRemoveLaterEntryFromLogConflictingWithNewEntry() throws Exception
     {
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 1 ) ) );
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 4 ) ) );
@@ -108,7 +108,7 @@ public class RaftMachineLogTest
     }
 
     @Test
-    public void shouldNotTouchTheLogIfWeDoMatchEverywhere() throws Exception
+    void shouldNotTouchTheLogIfWeDoMatchEverywhere() throws Exception
     {
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) ); // 0
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) ); // 1
@@ -140,7 +140,7 @@ public class RaftMachineLogTest
 
     /* Figure 3.6 */
     @Test
-    public void shouldNotTouchTheLogIfWeDoNotMatchAnywhere() throws Exception
+    void shouldNotTouchTheLogIfWeDoNotMatchAnywhere() throws Exception
     {
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
@@ -172,7 +172,7 @@ public class RaftMachineLogTest
     }
 
     @Test
-    public void shouldTruncateOnFirstMismatchAndThenAppendOtherEntries() throws Exception
+    void shouldTruncateOnFirstMismatchAndThenAppendOtherEntries() throws Exception
     {
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
@@ -217,7 +217,7 @@ public class RaftMachineLogTest
     }
 
     @Test
-    public void shouldNotTruncateLogIfHistoryDoesNotMatch() throws Exception
+    void shouldNotTruncateLogIfHistoryDoesNotMatch() throws Exception
     {
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
@@ -247,7 +247,7 @@ public class RaftMachineLogTest
     }
 
     @Test
-    public void shouldTruncateLogIfFirstEntryMatchesAndSecondEntryMismatchesOnTerm() throws Exception
+    void shouldTruncateLogIfFirstEntryMatchesAndSecondEntryMismatchesOnTerm() throws Exception
     {
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
         testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );

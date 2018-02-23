@@ -35,11 +35,11 @@ import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
 
-public class TestProver
+class TestProver
 {
 
     @Test
-    public void aClusterSnapshotShouldEqualItsOrigin() throws Exception
+    void aClusterSnapshotShouldEqualItsOrigin() throws Exception
     {
         // Given
         ClusterConfiguration config = new ClusterConfiguration( "default",
@@ -68,7 +68,7 @@ public class TestProver
     }
 
     @Test
-    public void twoStatesWithSameSetupAndPendingMessagesShouldBeEqual() throws Exception
+    void twoStatesWithSameSetupAndPendingMessagesShouldBeEqual() throws Exception
     {
         // Given
         ClusterConfiguration config = new ClusterConfiguration( "default",

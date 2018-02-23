@@ -33,8 +33,8 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JavaFunctionsTestIT
@@ -45,7 +45,7 @@ public class JavaFunctionsTestIT
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    public static class MyFunctions
+    private static class MyFunctions
     {
 
         @UserFunction
@@ -61,11 +61,11 @@ public class JavaFunctionsTestIT
         }
     }
 
-    public static class MyFunctionsUsingMyService
+    static class MyFunctionsUsingMyService
     {
 
         @Context
-        public SomeService service;
+        SomeService service;
 
         @UserFunction( "my.hello" )
         public String hello()
@@ -74,10 +74,10 @@ public class JavaFunctionsTestIT
         }
     }
 
-    public static class MyFunctionsUsingMyCoreAPI
+    static class MyFunctionsUsingMyCoreAPI
     {
         @Context
-        public MyCoreAPI myCoreAPI;
+        MyCoreAPI myCoreAPI;
 
         @UserFunction( value = "my.willFail" )
         public long willFail() throws ProcedureException
@@ -100,7 +100,7 @@ public class JavaFunctionsTestIT
     }
 
     @Test
-    public void shouldLaunchWithDeclaredFunctions() throws Exception
+    void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
         Class<MyFunctions> functionClass = MyFunctions.class;
@@ -120,7 +120,7 @@ public class JavaFunctionsTestIT
     }
 
     @Test
-    public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
+    void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
         try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
@@ -139,7 +139,7 @@ public class JavaFunctionsTestIT
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
+    void shouldWorkWithInjectableFromKernelExtension() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyFunctionsUsingMyService.class ).newServer() )
@@ -156,7 +156,7 @@ public class JavaFunctionsTestIT
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
+    void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyFunctionsUsingMyCoreAPI.class ).newServer() )

@@ -39,21 +39,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class IndexFreshDataReadIT
+class IndexFreshDataReadIT
 {
     @Resource
-    public EmbeddedDatabaseRule databaseRule;
+    private EmbeddedDatabaseRule databaseRule;
 
     private ExecutorService executor = Executors.newCachedThreadPool();
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         executor.shutdown();
     }
 
     @Test
-    public void readLatestIndexDataAfterUsingExhaustedNodeRelationshipIterator() throws Exception
+    void readLatestIndexDataAfterUsingExhaustedNodeRelationshipIterator() throws Exception
     {
         try ( Transaction transaction = databaseRule.beginTx() )
         {

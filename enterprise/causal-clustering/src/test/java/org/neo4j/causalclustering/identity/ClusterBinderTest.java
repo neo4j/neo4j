@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.identity;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -46,13 +45,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ClusterBinderTest
+class ClusterBinderTest
 {
     private final CoreBootstrapper coreBootstrapper = mock( CoreBootstrapper.class );
     private final FakeClock clock = Clocks.fakeClock();
 
     @Test
-    public void shouldTimeoutWhenNotBootrappableAndNobodyElsePublishesClusterId() throws Throwable
+    void shouldTimeoutWhenNotBootrappableAndNobodyElsePublishesClusterId() throws Throwable
     {
         // given
         CoreTopology unboundTopology = new CoreTopology( null, false, emptyMap() );
@@ -79,7 +78,7 @@ public class ClusterBinderTest
     }
 
     @Test
-    public void shouldBindToClusterIdPublishedByAnotherMember() throws Throwable
+    void shouldBindToClusterIdPublishedByAnotherMember() throws Throwable
     {
         // given
         ClusterId publishedClusterId = new ClusterId( UUID.randomUUID() );
@@ -104,7 +103,7 @@ public class ClusterBinderTest
     }
 
     @Test
-    public void shouldPublishStoredClusterIdIfPreviouslyBound() throws Throwable
+    void shouldPublishStoredClusterIdIfPreviouslyBound() throws Throwable
     {
         // given
         ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
@@ -130,7 +129,7 @@ public class ClusterBinderTest
     }
 
     @Test
-    public void shouldFailToPublishMismatchingStoredClusterId() throws Throwable
+    void shouldFailToPublishMismatchingStoredClusterId() throws Throwable
     {
         // given
         ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
@@ -158,7 +157,7 @@ public class ClusterBinderTest
     }
 
     @Test
-    public void shouldBootstrapWhenBootstrappable() throws Throwable
+    void shouldBootstrapWhenBootstrappable() throws Throwable
     {
         // given
         CoreTopology bootstrappableTopology = new CoreTopology( null, true, emptyMap() );

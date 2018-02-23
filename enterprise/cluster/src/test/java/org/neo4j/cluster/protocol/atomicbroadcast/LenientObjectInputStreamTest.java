@@ -19,14 +19,14 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.net.URI;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
@@ -35,10 +35,10 @@ import org.neo4j.kernel.impl.store.StoreId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LenientObjectInputStreamTest
+class LenientObjectInputStreamTest
 {
     @Test
-    public void shouldStoreTheSerialVersionIdOfAClassTheFirstTimeItsDeserialised() throws IOException,
+    void shouldStoreTheSerialVersionIdOfAClassTheFirstTimeItsDeserialised() throws IOException,
             ClassNotFoundException
     {
         // given

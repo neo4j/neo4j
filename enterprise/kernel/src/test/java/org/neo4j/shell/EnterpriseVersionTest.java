@@ -36,13 +36,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith( TestDirectoryExtension.class )
-public class EnterpriseVersionTest
+class EnterpriseVersionTest
 {
     @Resource
-    public TestDirectory dir;
+    private TestDirectory dir;
 
     @Test
-    public void shouldPrintVersionAndExit()
+    void shouldPrintVersionAndExit()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -60,7 +60,7 @@ public class EnterpriseVersionTest
     }
 
     @Test
-    public void shouldReportEditionThroughDbInfoApp()
+    void shouldReportEditionThroughDbInfoApp()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();

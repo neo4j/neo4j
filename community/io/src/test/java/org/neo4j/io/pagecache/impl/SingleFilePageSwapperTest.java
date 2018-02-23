@@ -69,7 +69,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     private File file;
 
     @BeforeEach
-    public void setUp() throws IOException
+    void setUp() throws IOException
     {
         file = new File( "file" ).getCanonicalFile();
         ephemeralFileSystem = new EphemeralFileSystemAbstraction();
@@ -77,7 +77,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown() throws Exception
     {
         IOUtils.closeAll( ephemeralFileSystem, fileSystem );
     }
@@ -110,27 +110,27 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return true;
     }
 
-    protected File getFile()
+    File getFile()
     {
         return file;
     }
 
-    protected FileSystemAbstraction getFs()
+    FileSystemAbstraction getFs()
     {
         return getEphemeralFileSystem();
     }
 
-    protected FileSystemAbstraction getEphemeralFileSystem()
+    private FileSystemAbstraction getEphemeralFileSystem()
     {
         return ephemeralFileSystem;
     }
 
-    protected FileSystemAbstraction getRealFileSystem()
+    FileSystemAbstraction getRealFileSystem()
     {
         return fileSystem;
     }
 
-    protected void assumeFalse( String message, boolean test )
+    void assumeFalse( String message, boolean test )
     {
         if ( test )
         {
@@ -147,7 +147,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void swappingInMustFillPageWithData() throws Exception
+    void swappingInMustFillPageWithData() throws Exception
     {
         byte[] bytes = new byte[] { 1, 2, 3, 4 };
         StoreChannel channel = getFs().create( getFile() );
@@ -163,7 +163,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustZeroFillPageBeyondEndOfFile() throws Exception
+    void mustZeroFillPageBeyondEndOfFile() throws Exception
     {
         byte[] bytes = new byte[] {
                 // --- page 0:
@@ -184,7 +184,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void swappingOutMustWritePageToFile() throws Exception
+    void swappingOutMustWritePageToFile() throws Exception
     {
         getFs().create( getFile() ).close();
 
@@ -210,7 +210,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void swappingOutMustNotOverwriteDataBeyondPage() throws Exception
+    void swappingOutMustNotOverwriteDataBeyondPage() throws Exception
     {
         byte[] initialData = new byte[] {
                 // --- page 0:
@@ -251,7 +251,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
      */
     @Test
     @DisabledOnOs( OS.WINDOWS ) // no file locking on Windows.
-    public void creatingSwapperForFileMustTakeLockOnFile() throws Exception
+    void creatingSwapperForFileMustTakeLockOnFile() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
@@ -274,7 +274,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // no file locking on Windows.
-    public void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
+    void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
@@ -292,7 +292,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // no file locking on Windows.
-    public void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
+    void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
@@ -325,7 +325,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // no file locking on Windows.
-    public void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
+    void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
@@ -343,7 +343,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // no file locking on Windows.
-    public void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
+    void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
@@ -370,7 +370,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS ) // no file locking on Windows.
-    public void mustCloseFilesIfTakingFileLockThrows() throws Exception
+    void mustCloseFilesIfTakingFileLockThrows() throws Exception
     {
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = createSwapperFactory();
@@ -428,7 +428,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedRead() throws Exception
+    void mustHandleMischiefInPositionedRead() throws Exception
     {
         int bytesTotal = 512;
         byte[] data = new byte[bytesTotal];
@@ -470,7 +470,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedWrite() throws Exception
+    void mustHandleMischiefInPositionedWrite() throws Exception
     {
         int bytesTotal = 512;
         byte[] data = new byte[bytesTotal];
@@ -508,7 +508,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedVectoredRead() throws Exception
+    void mustHandleMischiefInPositionedVectoredRead() throws Exception
     {
         int bytesTotal = 512;
         int bytesPerPage = 32;
@@ -564,7 +564,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedVectoredWrite() throws Exception
+    void mustHandleMischiefInPositionedVectoredWrite() throws Exception
     {
         int bytesTotal = 512;
         int bytesPerPage = 32;

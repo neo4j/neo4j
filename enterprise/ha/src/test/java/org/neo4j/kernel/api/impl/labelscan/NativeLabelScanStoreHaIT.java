@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 public class NativeLabelScanStoreHaIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private final LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
     private final TestMonitor monitor = new TestMonitor();
@@ -63,7 +63,7 @@ public class NativeLabelScanStoreHaIT
     }
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         Monitors monitors = new Monitors();
@@ -101,13 +101,13 @@ public class NativeLabelScanStoreHaIT
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         life.shutdown();
     }
 
     @Test
-    public void shouldCopyLabelScanStoreToNewSlaves()
+    void shouldCopyLabelScanStoreToNewSlaves()
     {
         // This check is here o check so that the extension provided by this test is selected.
         // It can be higher than 3 (number of cluster members) since some members may restart

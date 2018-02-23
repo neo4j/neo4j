@@ -31,8 +31,8 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class MultiExecutionMonitorTest
@@ -41,7 +41,7 @@ public class MultiExecutionMonitorTest
     public final CleanupRule cleanup = new CleanupRule();
 
     @Test
-    public void shouldCheckMultipleMonitors()
+    void shouldCheckMultipleMonitors()
     {
         // GIVEN
         FakeClock clock = Clocks.fakeClock();

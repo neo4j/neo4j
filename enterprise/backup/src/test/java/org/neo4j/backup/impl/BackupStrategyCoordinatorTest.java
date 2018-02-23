@@ -74,7 +74,7 @@ public class BackupStrategyCoordinatorTest
     private final ConsistencyCheckService.Result consistencyCheckResult = mock( ConsistencyCheckService.Result.class );
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystem );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
@@ -85,7 +85,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void backupIsValidIfAnySingleStrategyPasses_secondFails() throws CommandFailed
+    void backupIsValidIfAnySingleStrategyPasses_secondFails() throws CommandFailed
     {
         // given
         when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.SUCCESS, null ) );
@@ -98,7 +98,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void backupIsValidIfAnySingleStrategyPasses_firstFails() throws CommandFailed
+    void backupIsValidIfAnySingleStrategyPasses_firstFails() throws CommandFailed
     {
         // given
         when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
@@ -109,7 +109,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void backupIsInvalidIfTheCorrectMethodFailed_firstFails() throws CommandFailed
+    void backupIsInvalidIfTheCorrectMethodFailed_firstFails() throws CommandFailed
     {
         // given
         when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.CORRECT_STRATEGY_FAILED, null ) );
@@ -124,7 +124,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void backupIsInvalidIfTheCorrectMethodFailed_secondFails() throws CommandFailed
+    void backupIsInvalidIfTheCorrectMethodFailed_secondFails() throws CommandFailed
     {
         // given
         when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
@@ -139,7 +139,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void backupFailsIfAllStrategiesAreIncorrect() throws CommandFailed
+    void backupFailsIfAllStrategiesAreIncorrect() throws CommandFailed
     {
         // given
         when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null ) );
@@ -154,7 +154,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void consistencyCheckIsRunIfSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
+    void consistencyCheckIsRunIfSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
     {
         // given
         anyStrategyPasses();
@@ -171,7 +171,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void consistencyCheckIsNotRunIfNotSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
+    void consistencyCheckIsNotRunIfNotSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
     {
         // given
         anyStrategyPasses();
@@ -186,7 +186,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void allFailureCausesAreCollectedAndAttachedToCommandFailedException() throws CommandFailed
+    void allFailureCausesAreCollectedAndAttachedToCommandFailedException() throws CommandFailed
     {
         // given expected causes for failure
         RuntimeException firstCause = new RuntimeException( "First cause" );
@@ -209,7 +209,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void commandFailedWhenConsistencyCheckFails() throws ConsistencyCheckIncompleteException, CommandFailed
+    void commandFailedWhenConsistencyCheckFails() throws ConsistencyCheckIncompleteException, CommandFailed
     {
         // given
         anyStrategyPasses();
@@ -227,7 +227,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
+    void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
     {
         // given there are no strategies in the solution
         subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, Collections.emptyList() );

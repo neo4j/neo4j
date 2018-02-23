@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,7 +40,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -74,7 +73,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 public class IndexCRUDIT
 {
     @Test
-    public void addingANodeWithPropertyShouldGetIndexed() throws Exception
+    void addingANodeWithPropertyShouldGetIndexed() throws Exception
     {
         // Given
         String indexProperty = "indexProperty";
@@ -105,7 +104,7 @@ public class IndexCRUDIT
     }
 
     @Test
-    public void addingALabelToPreExistingNodeShouldGetIndexed() throws Exception
+    void addingALabelToPreExistingNodeShouldGetIndexed() throws Exception
     {
         // GIVEN
         String indexProperty = "indexProperty";
@@ -166,7 +165,7 @@ public class IndexCRUDIT
     }
 
     @BeforeEach
-    public void before()
+    void before()
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
@@ -194,7 +193,7 @@ public class IndexCRUDIT
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         db.shutdown();
     }

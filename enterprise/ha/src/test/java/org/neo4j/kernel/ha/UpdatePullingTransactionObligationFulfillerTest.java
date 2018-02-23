@@ -39,21 +39,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class UpdatePullingTransactionObligationFulfillerTest
+class UpdatePullingTransactionObligationFulfillerTest
 {
     private final UpdatePuller updatePuller = mock( UpdatePuller.class );
     private final HighAvailabilityMemberStateMachine machine = mock( HighAvailabilityMemberStateMachine.class );
     private final InstanceId serverId = new InstanceId( 42 );
 
     @BeforeEach
-    public void setup() throws Throwable
+    void setup() throws Throwable
     {
         doAnswer( invocation -> ((UpdatePuller.Condition) invocation.getArgument( 0 )).evaluate( 33, 34 )
         ).when( updatePuller ).pullUpdates( any( UpdatePuller.Condition.class ), anyBoolean() );
     }
 
     @Test
-    public void shouldNotThrowNPEWhenAskedToFulFilledButNotYetHavingARoleAssigned() throws Throwable
+    void shouldNotThrowNPEWhenAskedToFulFilledButNotYetHavingARoleAssigned() throws Throwable
     {
         // Given
         UpdatePullingTransactionObligationFulfiller fulfiller =
@@ -68,7 +68,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
     }
 
     @Test
-    public void shouldUpdateTransactionIdStoreCorrectly() throws Throwable
+    void shouldUpdateTransactionIdStoreCorrectly() throws Throwable
     {
         // Given
         TransactionIdStore store1 = mock( TransactionIdStore.class );

@@ -57,10 +57,10 @@ import static org.junit.Assert.assertTrue;
  */
 public class StoreFilesTest
 {
-    protected TestDirectory testDirectory;
-    protected Supplier<FileSystemAbstraction> fileSystemRule;
-    protected EphemeralFileSystemRule hiddenFileSystemRule;
-    protected PageCacheRule pageCacheRule;
+    TestDirectory testDirectory;
+    Supplier<FileSystemAbstraction> fileSystemRule;
+    EphemeralFileSystemRule hiddenFileSystemRule;
+    PageCacheRule pageCacheRule;
 
     @Rule
     public RuleChain rules;
@@ -76,7 +76,7 @@ public class StoreFilesTest
         createRules();
     }
 
-    protected void createRules()
+    void createRules()
     {
         testDirectory = TestDirectory.testDirectory( StoreFilesTest.class );
         EphemeralFileSystemRule ephemeralFileSystemRule = new EphemeralFileSystemRule();
@@ -115,7 +115,7 @@ public class StoreFilesTest
         fs.open( file, OpenMode.READ_WRITE ).close();
     }
 
-    protected File getBaseDir()
+    private File getBaseDir()
     {
         return new File( testDirectory.directory(), "dir" );
     }

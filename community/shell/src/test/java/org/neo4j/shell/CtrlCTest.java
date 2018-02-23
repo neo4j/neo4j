@@ -19,10 +19,10 @@
  */
 package org.neo4j.shell;
 
+import org.junit.jupiter.api.Test;
+
 import java.rmi.RemoteException;
 import java.util.HashMap;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.Cancelable;
 import org.neo4j.shell.impl.AbstractClient;
@@ -31,11 +31,11 @@ import org.neo4j.shell.impl.CollectingOutput;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CtrlCTest
+class CtrlCTest
 {
-    public class StubCtrlCHandler implements CtrlCHandler
+    class StubCtrlCHandler implements CtrlCHandler
     {
-        public volatile boolean installed;
+        volatile boolean installed;
 
         @Override
         public Cancelable install( Runnable action )
@@ -46,7 +46,7 @@ public class CtrlCTest
     }
 
     @Test
-    public void shouldInstallProvidedHandlerAfterReadingUserInput()
+    void shouldInstallProvidedHandlerAfterReadingUserInput()
     {
         final StubCtrlCHandler handler = new StubCtrlCHandler();
         AbstractClient client = new AbstractClient( new HashMap<>(), handler )

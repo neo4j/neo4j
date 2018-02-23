@@ -56,16 +56,16 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
-public class KernelTransactionFactory
+class KernelTransactionFactory
 {
     public static class Instances
     {
         public KernelTransactionImplementation transaction;
-        public StorageEngine storageEngine;
-        public StoreReadLayer storeReadLayer;
+        StorageEngine storageEngine;
+        StoreReadLayer storeReadLayer;
         public StorageStatement storageStatement;
 
-        public Instances( KernelTransactionImplementation transaction, StorageEngine storageEngine,
+        Instances( KernelTransactionImplementation transaction, StorageEngine storageEngine,
                 StoreReadLayer storeReadLayer, StorageStatement storageStatement )
         {
             this.transaction = transaction;

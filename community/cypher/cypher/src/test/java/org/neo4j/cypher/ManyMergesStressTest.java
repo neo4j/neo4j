@@ -53,7 +53,7 @@ public class ManyMergesStressTest
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     @Test
-    public void shouldWorkFine()
+    void shouldWorkFine()
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( db );
@@ -102,7 +102,7 @@ public class ManyMergesStressTest
         }
     }
 
-    public Pair<String, String> getRandomName()
+    private Pair<String, String> getRandomName()
     {
         StringBuilder identBuilder = new StringBuilder();
         StringBuilder nameBuilder = new StringBuilder();

@@ -40,7 +40,7 @@ public abstract class EnterpriseVersionIT extends ExclusiveServerTestBase
 {
     @ClassRule
     public static TemporaryFolder staticFolder = new TemporaryFolder();
-    protected static NeoServer server;
+    static NeoServer server;
     static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass

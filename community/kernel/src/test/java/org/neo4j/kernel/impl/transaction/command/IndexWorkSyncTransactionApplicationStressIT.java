@@ -243,7 +243,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             return false;
         }
 
-        public NodeVisitor clear()
+        NodeVisitor clear()
         {
             nodeId = -1;
             return this;

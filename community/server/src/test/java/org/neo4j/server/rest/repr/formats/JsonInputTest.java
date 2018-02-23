@@ -23,20 +23,20 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JsonInputTest
+class JsonInputTest
 {
     private final JsonFormat input = new JsonFormat();
 
     @Test
-    public void canReadEmptyMap() throws Exception
+    void canReadEmptyMap() throws Exception
     {
         Map<String, Object> map = input.readMap( "{}" );
         assertNotNull( map );
@@ -44,7 +44,7 @@ public class JsonInputTest
     }
 
     @Test
-    public void canReadMapWithTwoValues() throws Exception
+    void canReadMapWithTwoValues() throws Exception
     {
         Map<String, Object> map = input.readMap( "{\"key1\":\"value1\",     \"key2\":\"value11\"}" );
         assertNotNull( map );
@@ -54,7 +54,7 @@ public class JsonInputTest
     }
 
     @Test
-    public void canReadMapWithNestedMap() throws Exception
+    void canReadMapWithNestedMap() throws Exception
     {
         Map<String, Object> map = input.readMap( "{\"nested\": {\"key\": \"valuable\"}}" );
         assertNotNull( map );
@@ -68,7 +68,7 @@ public class JsonInputTest
     }
 
     @Test
-    public void canReadStringWithLineBreaks() throws Exception
+    void canReadStringWithLineBreaks() throws Exception
     {
         Map<String, Object> map = input.readMap( "{\"key\": \"v1\\nv2\"}" );
         assertNotNull( map );

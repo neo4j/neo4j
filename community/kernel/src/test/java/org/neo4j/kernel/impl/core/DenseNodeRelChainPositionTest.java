@@ -37,10 +37,10 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class DenseNodeRelChainPositionTest
+class DenseNodeRelChainPositionTest
 {
     @Resource
-    public ImpermanentDatabaseRule db;
+    private ImpermanentDatabaseRule db;
 
     /*
      * Tests for a particular bug with dense nodes. It used to be that if a dense node had relationships
@@ -48,7 +48,7 @@ public class DenseNodeRelChainPositionTest
      * would be returned, ever.
      */
     @Test
-    public void givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned()
+    void givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned()
     {
         // Given
         final int denseNodeThreshold =

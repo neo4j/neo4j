@@ -81,7 +81,7 @@ public class TransactionThroughMasterSwitchStressIT
                     value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
 
     @Test
-    public void shouldNotHaveTransactionsRunningThroughRoleSwitchProduceInconsistencies() throws Throwable
+    void shouldNotHaveTransactionsRunningThroughRoleSwitchProduceInconsistencies() throws Throwable
     {
         // Duration of this test. If the timeout is hit in the middle of a round, the round will be completed
         // and exit after that.

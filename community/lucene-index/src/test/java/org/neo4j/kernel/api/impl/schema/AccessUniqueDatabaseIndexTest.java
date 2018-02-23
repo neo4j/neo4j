@@ -43,11 +43,9 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AccessUniqueDatabaseIndexTest
 {
@@ -58,7 +56,7 @@ public class AccessUniqueDatabaseIndexTest
     private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
-    public void shouldAddUniqueEntries() throws Exception
+    void shouldAddUniqueEntries() throws Exception
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();
@@ -74,7 +72,7 @@ public class AccessUniqueDatabaseIndexTest
     }
 
     @Test
-    public void shouldUpdateUniqueEntries() throws Exception
+    void shouldUpdateUniqueEntries() throws Exception
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();
@@ -92,7 +90,7 @@ public class AccessUniqueDatabaseIndexTest
     }
 
     @Test
-    public void shouldRemoveAndAddEntries() throws Exception
+    void shouldRemoveAndAddEntries() throws Exception
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();
@@ -120,7 +118,7 @@ public class AccessUniqueDatabaseIndexTest
     }
 
     @Test
-    public void shouldConsiderWholeTransactionForValidatingUniqueness() throws Exception
+    void shouldConsiderWholeTransactionForValidatingUniqueness() throws Exception
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();

@@ -37,7 +37,7 @@ import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
-public class RelationshipChangesForNodeTest
+class RelationshipChangesForNodeTest
 {
     private static final int REL_0 = 0;
     private static final int REL_1 = 1;
@@ -45,7 +45,7 @@ public class RelationshipChangesForNodeTest
     private static final int TYPE_DIR = 1;
 
     @Test
-    public void testOutgoingRelsWithTypeAndLoop()
+    void testOutgoingRelsWithTypeAndLoop()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -59,7 +59,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void testIncomingRelsWithTypeAndLoop()
+    void testIncomingRelsWithTypeAndLoop()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -73,7 +73,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void shouldGetRelationships()
+    void shouldGetRelationships()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -92,7 +92,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void shouldGetRelationshipsByTypeAndDirection()
+    void shouldGetRelationshipsByTypeAndDirection()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );

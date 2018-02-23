@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.FreeListIdProvider.NO_MONITOR;
 
 @ExtendWith( RandomExtension.class )
-public class FreeListIdProviderTest
+class FreeListIdProviderTest
 {
     private static final int PAGE_SIZE = 128;
     private static final long GENERATION_ONE = GenerationSafePointer.MIN_GENERATION;
@@ -62,10 +62,10 @@ public class FreeListIdProviderTest
     private final FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, PAGE_SIZE, BASE_ID, monitor );
 
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @BeforeEach
-    public void setUpPagedFile() throws IOException
+    void setUpPagedFile() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         when( pagedFile.io( anyLong(), anyInt() ) ).thenAnswer(
@@ -74,7 +74,7 @@ public class FreeListIdProviderTest
     }
 
     @Test
-    public void shouldReleaseAndAcquireId() throws Exception
+    void shouldReleaseAndAcquireId() throws Exception
     {
         // GIVEN
         long releasedId = 11;
@@ -91,7 +91,7 @@ public class FreeListIdProviderTest
     }
 
     @Test
-    public void shouldReleaseAndAcquireIdsFromMultiplePages() throws Exception
+    void shouldReleaseAndAcquireIdsFromMultiplePages() throws Exception
     {
         // GIVEN
         int entries = freelist.entriesPerPage() + freelist.entriesPerPage() / 2;
@@ -110,7 +110,7 @@ public class FreeListIdProviderTest
     }
 
     @Test
-    public void shouldPutFreedFreeListPagesIntoFreeListAsWell() throws Exception
+    void shouldPutFreedFreeListPagesIntoFreeListAsWell() throws Exception
     {
         // GIVEN
         long prevId;
@@ -138,7 +138,7 @@ public class FreeListIdProviderTest
     }
 
     @Test
-    public void shouldStayBoundUnderStress() throws Exception
+    void shouldStayBoundUnderStress() throws Exception
     {
         // GIVEN
         PrimitiveLongSet acquired = Primitive.longSet();
@@ -193,7 +193,7 @@ public class FreeListIdProviderTest
     }
 
     @Test
-    public void shouldVisitUnacquiredIds() throws Exception
+    void shouldVisitUnacquiredIds() throws Exception
     {
         // GIVEN a couple of released ids
         PrimitiveLongSet expected = Primitive.longSet();
@@ -219,7 +219,7 @@ public class FreeListIdProviderTest
     }
 
     @Test
-    public void shouldVisitFreelistPageIds() throws Exception
+    void shouldVisitFreelistPageIds() throws Exception
     {
         // GIVEN a couple of released ids
         PrimitiveLongSet expected = Primitive.longSet();

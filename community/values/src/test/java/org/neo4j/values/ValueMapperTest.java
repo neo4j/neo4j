@@ -78,9 +78,9 @@ import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-public class ValueMapperTest
+class ValueMapperTest
 {
-    public static Iterable<Object[]> parameters()
+    private static Iterable<Object[]> parameters()
     {
         NodeValue node1 = nodeValue( 1, stringArray(), emptyMap() );
         NodeValue node2 = nodeValue( 2, stringArray(), emptyMap() );
@@ -131,7 +131,7 @@ public class ValueMapperTest
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    public void shouldMapToJavaObject( AnyValue value )
+    void shouldMapToJavaObject( AnyValue value )
     {
         // given
         ValueMapper<Object> mapper = new Mapper();

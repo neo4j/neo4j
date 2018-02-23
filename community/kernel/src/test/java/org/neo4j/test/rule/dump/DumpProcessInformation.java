@@ -61,7 +61,7 @@ public class DumpProcessInformation
         this.outputDirectory = outputDirectory;
     }
 
-    public void dumpRunningProcesses( boolean includeHeapDump, String... javaPidsContainingClassNames )
+    private void dumpRunningProcesses( boolean includeHeapDump, String... javaPidsContainingClassNames )
             throws Exception
     {
         outputDirectory.mkdirs();
@@ -85,7 +85,7 @@ public class DumpProcessInformation
         return outputFile;
     }
 
-    public void doHeapDump( Pair<Long, String> pid ) throws Exception
+    private void doHeapDump( Pair<Long,String> pid ) throws Exception
     {
         File outputFile = new File( outputDirectory, fileName( "heapdump", pid ) );
         log.info( "Creating heap dump of " + pid + " to " + outputFile.getAbsolutePath() );

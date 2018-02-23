@@ -50,7 +50,7 @@ import org.neo4j.logging.Log;
  */
 public class NetworkMock
 {
-    Map<String, TestProtocolServer> participants = new LinkedHashMap<>();
+    private Map<String, TestProtocolServer> participants = new LinkedHashMap<>();
 
     private List<MessageDelivery> messageDeliveries = new ArrayList<>();
 
@@ -60,7 +60,7 @@ public class NetworkMock
     private final MultipleFailureLatencyStrategy strategy;
     private MessageTimeoutStrategy timeoutStrategy;
     private LogService logService;
-    protected final Log log;
+    private final Log log;
     private final List<Pair<Future<?>, Runnable>> futureWaiter;
 
     public NetworkMock( LogService logService, Monitors monitors, long tickDuration, MultipleFailureLatencyStrategy strategy,
@@ -86,7 +86,7 @@ public class NetworkMock
         return server;
     }
 
-    protected TestProtocolServer newTestProtocolServer( int serverId, URI serverUri )
+    private TestProtocolServer newTestProtocolServer( int serverId, URI serverUri )
     {
         ProtocolServerFactory protocolServerFactory =
                 new MultiPaxosServerFactory( new ClusterConfiguration( "default", logService.getInternalLogProvider() ),
@@ -270,17 +270,17 @@ public class NetworkMock
             this.server = server;
         }
 
-        public long getMessageDeliveryTime()
+        long getMessageDeliveryTime()
         {
             return messageDeliveryTime;
         }
 
-        public Message<? extends MessageType> getMessage()
+        Message<? extends MessageType> getMessage()
         {
             return message;
         }
 
-        public TestProtocolServer getServer()
+        TestProtocolServer getServer()
         {
             return server;
         }

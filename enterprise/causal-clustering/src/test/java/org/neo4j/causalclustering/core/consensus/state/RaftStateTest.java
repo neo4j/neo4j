@@ -28,21 +28,21 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
-import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
 import org.neo4j.causalclustering.core.consensus.outcome.AppendLogEntry;
-import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
+import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerState;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.causalclustering.core.consensus.term.TermState;
 import org.neo4j.causalclustering.core.consensus.vote.VoteState;
+import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
@@ -54,11 +54,11 @@ import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueO
 import static org.neo4j.causalclustering.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-public class RaftStateTest
+class RaftStateTest
 {
 
     @Test
-    public void shouldUpdateCacheState() throws Exception
+    void shouldUpdateCacheState() throws Exception
     {
         //Test that updates applied to the raft state will be reflected in the entry cache.
 
@@ -94,7 +94,7 @@ public class RaftStateTest
     }
 
     @Test
-    public void shouldRemoveFollowerStateAfterBecomingLeader() throws Exception
+    void shouldRemoveFollowerStateAfterBecomingLeader() throws Exception
     {
         // given
         RaftState raftState = new RaftState( member( 0 ),

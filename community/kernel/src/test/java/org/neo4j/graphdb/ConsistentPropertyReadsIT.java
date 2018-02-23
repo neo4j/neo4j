@@ -39,13 +39,13 @@ import static org.neo4j.helpers.ArrayUtil.contains;
  * interpretation of the ACID guarantees.
  */
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class ConsistentPropertyReadsIT
+class ConsistentPropertyReadsIT
 {
     @Resource
-    public EmbeddedDatabaseRule db;
+    private EmbeddedDatabaseRule db;
 
     @Test
-    public void shouldReadConsistentPropertyValues() throws Throwable
+    void shouldReadConsistentPropertyValues() throws Throwable
     {
         // GIVEN
         final Node[] nodes = new Node[10];

@@ -73,7 +73,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     private final GraphDatabaseAPI db;
     private final File storeDir;
 
-    public LegacyDatabaseImpl( File storeDir, GraphDatabaseAPI db ) throws RemoteException
+    private LegacyDatabaseImpl( File storeDir, GraphDatabaseAPI db ) throws RemoteException
     {
         super();
         this.storeDir = storeDir;

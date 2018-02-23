@@ -52,21 +52,21 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class IdContainerTest
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private FileSystemAbstraction fs;
     private File file;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         fs = fileSystemRule.get();
         file = testDirectory.file( "ids" );
     }
 
     @Test
-    public void shouldDeleteIfOpen()
+    void shouldDeleteIfOpen()
     {
         // GIVEN
         createEmptyFile();
@@ -83,7 +83,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void shouldDeleteIfClosed()
+    void shouldDeleteIfClosed()
     {
         // GIVEN
         createEmptyFile();
@@ -99,7 +99,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void shouldForceStickyMark() throws Exception
+    void shouldForceStickyMark() throws Exception
     {
         // GIVEN
         createEmptyFile();
@@ -125,7 +125,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void shouldTruncateTheFileIfOverwriting() throws Exception
+    void shouldTruncateTheFileIfOverwriting() throws Exception
     {
         // GIVEN
         IdContainer.createEmptyIdFile( fs, file, 30, false );
@@ -152,7 +152,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void shouldReturnFalseOnInitIfTheFileWasCreated()
+    void shouldReturnFalseOnInitIfTheFileWasCreated()
     {
         // When
         // An IdContainer is created with no underlying file
@@ -164,7 +164,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void shouldReturnTrueOnInitIfAProperFileWasThere()
+    void shouldReturnTrueOnInitIfAProperFileWasThere()
     {
         // Given
         // A properly created and closed id file
@@ -182,7 +182,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void idContainerReadWriteBySingleByte() throws IOException
+    void idContainerReadWriteBySingleByte() throws IOException
     {
         SingleByteFileSystemAbstraction fileSystem = new SingleByteFileSystemAbstraction();
         IdContainer idContainer = new IdContainer( fileSystem, file, 100, false );

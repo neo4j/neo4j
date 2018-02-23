@@ -34,10 +34,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class SwitchToMasterTest
+class SwitchToMasterTest
 {
     @Test
-    public void switchToMasterShouldUseConfigSettingIfSuitable() throws Exception
+    void switchToMasterShouldUseConfigSettingIfSuitable() throws Exception
     {
         // given
         Config config = Config.defaults(
@@ -56,7 +56,7 @@ public class SwitchToMasterTest
     }
 
     @Test
-    public void switchToMasterShouldUseIPv6ConfigSettingIfSuitable() throws Exception
+    void switchToMasterShouldUseIPv6ConfigSettingIfSuitable() throws Exception
     {
         // given
         Config config = Config.defaults(
@@ -75,7 +75,7 @@ public class SwitchToMasterTest
     }
 
     @Test
-    public void switchToMasterShouldIgnoreWildcardInConfig() throws Exception
+    void switchToMasterShouldIgnoreWildcardInConfig() throws Exception
     {
         // SwitchToMaster is used to advertise to the rest of the cluster and advertising 0.0.0.0 makes no sense
 
@@ -104,7 +104,7 @@ public class SwitchToMasterTest
     }
 
     @Test
-    public void switchToMasterShouldIgnoreIPv6WildcardInConfig() throws Exception
+    void switchToMasterShouldIgnoreIPv6WildcardInConfig() throws Exception
     {
         // SwitchToMaster is used to advertise to the rest of the cluster and advertising 0.0.0.0 makes no sense
 
@@ -133,7 +133,7 @@ public class SwitchToMasterTest
     }
 
     @Test
-    public void switchToMasterShouldHandleNoIpInConfig() throws Exception
+    void switchToMasterShouldHandleNoIpInConfig() throws Exception
     {
         Config config = Config.defaults(
                 stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), ":6001" ) );

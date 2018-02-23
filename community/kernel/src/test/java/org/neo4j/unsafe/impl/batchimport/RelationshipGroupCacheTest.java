@@ -35,13 +35,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 
 @ExtendWith( RandomExtension.class )
-public class RelationshipGroupCacheTest
+class RelationshipGroupCacheTest
 {
     @Resource
-    public RandomRule random;
+    private RandomRule random;
 
     @Test
-    public void shouldPutGroupsOnlyWithinPreparedRange()
+    void shouldPutGroupsOnlyWithinPreparedRange()
     {
         // GIVEN
         int nodeCount = 1000;
@@ -89,7 +89,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldNotFindSpaceToPutMoreGroupsThanSpecifiedForANode()
+    void shouldNotFindSpaceToPutMoreGroupsThanSpecifiedForANode()
     {
         // GIVEN
         int nodeCount = 10;
@@ -113,7 +113,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldSortOutOfOrderTypes()
+    void shouldSortOutOfOrderTypes()
     {
         // GIVEN
         int nodeCount = 100;
@@ -169,7 +169,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldHandleGroupCountBeyondSignedShortRange()
+    void shouldHandleGroupCountBeyondSignedShortRange()
     {
         // GIVEN
         long nodeId = 0;

@@ -33,10 +33,10 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.concat;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class ConcatListTest
+class ConcatListTest
 {
     @Test
-    public void shouldHandleZeroListConcatenation()
+    void shouldHandleZeroListConcatenation()
     {
         // Given
         ListValue inner = EMPTY_LIST;
@@ -49,7 +49,7 @@ public class ConcatListTest
     }
 
     @Test
-    public void shouldHandleSingleListConcatenation()
+    void shouldHandleSingleListConcatenation()
     {
         // Given
         ListValue inner = list( stringValue( "foo" ), longValue( 42 ), booleanValue( true ) );
@@ -64,7 +64,7 @@ public class ConcatListTest
     }
 
     @Test
-    public void shouldHandleMultipleListConcatenation()
+    void shouldHandleMultipleListConcatenation()
     {
         // Given
         ListValue inner1 = list( stringValue( "foo" ), longValue( 42 ), booleanValue( true ) );

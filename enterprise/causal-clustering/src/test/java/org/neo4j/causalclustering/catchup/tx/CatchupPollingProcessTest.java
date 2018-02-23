@@ -65,7 +65,7 @@ import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timers
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class CatchupPollingProcessTest
+class CatchupPollingProcessTest
 {
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final UpstreamDatabaseStrategySelector strategyPipeline = mock( UpstreamDatabaseStrategySelector.class );
@@ -96,14 +96,14 @@ public class CatchupPollingProcessTest
                     txPullIntervalMillis, txApplier, new Monitors(), storeCopyProcess, () -> mock( DatabaseHealth.class ), topologyService );
 
     @BeforeEach
-    public void before() throws Throwable
+    void before() throws Throwable
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( BASE_TX_ID );
         when( strategyPipeline.bestUpstreamDatabase() ).thenReturn( coreMemberId );
     }
 
     @Test
-    public void shouldSendPullRequestOnTick() throws Throwable
+    void shouldSendPullRequestOnTick() throws Throwable
     {
         // given
         txPuller.start();
@@ -118,7 +118,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void shouldKeepMakingPullRequestsUntilEndOfStream() throws Throwable
+    void shouldKeepMakingPullRequestsUntilEndOfStream() throws Throwable
     {
         // given
         txPuller.start();
@@ -138,7 +138,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void shouldRenewTxPullTimeoutOnSuccessfulTxPulling() throws Throwable
+    void shouldRenewTxPullTimeoutOnSuccessfulTxPulling() throws Throwable
     {
         // when
         txPuller.start();
@@ -152,7 +152,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void nextStateShouldBeStoreCopyingIfRequestedTransactionHasBeenPrunedAway() throws Throwable
+    void nextStateShouldBeStoreCopyingIfRequestedTransactionHasBeenPrunedAway() throws Throwable
     {
         // when
         txPuller.start();
@@ -166,7 +166,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void nextStateShouldBeTxPullingAfterASuccessfulStoreCopy() throws Throwable
+    void nextStateShouldBeTxPullingAfterASuccessfulStoreCopy() throws Throwable
     {
         // given
         txPuller.start();
@@ -192,7 +192,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void shouldNotRenewTheTimeoutIfInPanicState()
+    void shouldNotRenewTheTimeoutIfInPanicState()
     {
         // given
         txPuller.start();
@@ -211,7 +211,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void shouldNotSignalOperationalUntilPulling() throws Throwable
+    void shouldNotSignalOperationalUntilPulling() throws Throwable
     {
         // given
         when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),

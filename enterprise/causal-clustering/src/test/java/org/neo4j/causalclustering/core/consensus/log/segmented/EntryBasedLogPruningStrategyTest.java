@@ -26,10 +26,10 @@ import org.neo4j.logging.LogProvider;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
-public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
+class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
 {
     @Test
-    public void indexToKeepTest()
+    void indexToKeepTest()
     {
         // given
         files = createSegmentFiles( 10 );
@@ -43,7 +43,7 @@ public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
     }
 
     @Test
-    public void pruneStrategyExceedsNumberOfEntriesTest()
+    void pruneStrategyExceedsNumberOfEntriesTest()
     {
         //given
         files = createSegmentFiles( 10 ).subList( 5, 10 );
@@ -57,7 +57,7 @@ public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
     }
 
     @Test
-    public void onlyFirstActiveLogFileTest()
+    void onlyFirstActiveLogFileTest()
     {
         //given
         files = createSegmentFiles( 1 );
@@ -71,7 +71,7 @@ public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
     }
 
     @Test
-    public void onlyOneActiveLogFileTest()
+    void onlyOneActiveLogFileTest()
     {
         //given
         files = createSegmentFiles( 6 ).subList( 4, 6 );

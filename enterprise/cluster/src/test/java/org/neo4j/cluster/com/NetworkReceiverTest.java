@@ -37,12 +37,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
-public class NetworkReceiverTest
+class NetworkReceiverTest
 {
-    static final int PORT = 1234;
+    private static final int PORT = 1234;
 
     @Test
-    public void testGetURIWithWildCard()
+    void testGetURIWithWildCard()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );
@@ -56,7 +56,7 @@ public class NetworkReceiverTest
     }
 
     @Test
-    public void testGetURIWithLocalHost()
+    void testGetURIWithLocalHost()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );
@@ -69,7 +69,7 @@ public class NetworkReceiverTest
     }
 
     @Test
-    public void testMessageReceivedOriginFix() throws Exception
+    void testMessageReceivedOriginFix() throws Exception
     {
         LogProvider logProvider = mock( LogProvider.class );
         when( logProvider.getLog( NetworkReceiver.class ) ).thenReturn( mock( Log.class ) );

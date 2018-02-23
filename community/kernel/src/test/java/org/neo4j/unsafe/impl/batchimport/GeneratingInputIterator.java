@@ -128,7 +128,7 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
         }
     }
 
-    public static final InputIterator EMPTY = new GeneratingInputIterator<Void>( 0, 1, batch -> null, null, 0 )
+    private static final InputIterator EMPTY = new GeneratingInputIterator<Void>( 0, 1, batch -> null, null, 0 )
     {   // here's nothing
     };
 

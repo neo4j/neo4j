@@ -32,23 +32,23 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.logging.NullLog.getInstance;
 
-public class SlaveLockManagerTest
+class SlaveLockManagerTest
 {
     private RequestContextFactory requestContextFactory;
     private Master master;
     private AvailabilityGuard availabilityGuard;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         requestContextFactory = new RequestContextFactory( 1, singleton( mock( TransactionIdStore.class ) ) );
         master = mock( Master.class );
@@ -56,7 +56,7 @@ public class SlaveLockManagerTest
     }
 
     @Test
-    public void shutsDownLocalLocks()
+    void shutsDownLocalLocks()
     {
         Locks localLocks = mock( Locks.class );
         SlaveLockManager slaveLockManager = newSlaveLockManager( localLocks );
@@ -67,7 +67,7 @@ public class SlaveLockManagerTest
     }
 
     @Test
-    public void doesNotCreateClientsAfterShutdown()
+    void doesNotCreateClientsAfterShutdown()
     {
         SlaveLockManager slaveLockManager =
                 newSlaveLockManager( new CommunityLockManger( Config.defaults(), Clocks.systemClock() ) );

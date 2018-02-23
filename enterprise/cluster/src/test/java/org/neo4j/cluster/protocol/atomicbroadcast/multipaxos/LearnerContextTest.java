@@ -36,12 +36,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LearnerContextTest
+class LearnerContextTest
 {
     private final LogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldOnlyAllowHigherLastLearnedInstanceId()
+    void shouldOnlyAllowHigherLastLearnedInstanceId()
     {
         // Given
 
@@ -63,7 +63,7 @@ public class LearnerContextTest
     }
 
     @Test
-    public void shouldTrackLastKnownUpToDateAliveInstance()
+    void shouldTrackLastKnownUpToDateAliveInstance()
     {
         // Given
 
@@ -87,7 +87,7 @@ public class LearnerContextTest
     }
 
     @Test
-    public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin()
+    void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin()
     {
         // Given
         Config config = mock( Config.class );

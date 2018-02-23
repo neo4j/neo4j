@@ -19,18 +19,19 @@
  */
 package org.neo4j.shell;
 
-import static java.lang.String.format;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.neo4j.shell.impl.SystemOutput;
 
-public class OutputAsWriterTest
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class OutputAsWriterTest
 {
 
     private PrintStream out;
@@ -39,7 +40,7 @@ public class OutputAsWriterTest
     private OutputAsWriter writer;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         out = System.out;
         buffer = new ByteArrayOutputStream();
@@ -49,20 +50,20 @@ public class OutputAsWriterTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         System.setOut( out );
     }
 
     @Test
-    public void shouldNotFlushWithoutNewline() throws Exception
+    void shouldNotFlushWithoutNewline() throws Exception
     {
         writer.write( "foo".toCharArray() );
         assertEquals( 0, buffer.size() );
     }
 
     @Test
-    public void shouldFlushWithNewline() throws Exception
+    void shouldFlushWithNewline() throws Exception
     {
         String s = format( "foobar%n" );
         writer.write( s.toCharArray() );
@@ -71,7 +72,7 @@ public class OutputAsWriterTest
     }
 
     @Test
-    public void shouldFlushPartiallyWithNewlineInMiddle() throws Exception
+    void shouldFlushPartiallyWithNewlineInMiddle() throws Exception
     {
         String firstPart = format( "foo%n" );
         String secondPart = "bar";

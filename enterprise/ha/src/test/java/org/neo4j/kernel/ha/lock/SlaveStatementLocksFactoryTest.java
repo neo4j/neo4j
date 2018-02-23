@@ -26,16 +26,16 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class SlaveStatementLocksFactoryTest
+class SlaveStatementLocksFactoryTest
 {
 
     @Test
-    public void createSlaveStatementLocks()
+    void createSlaveStatementLocks()
     {
         StatementLocksFactory delegate = mock( StatementLocksFactory.class );
         Locks locks = mock( Locks.class );

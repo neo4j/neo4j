@@ -27,7 +27,6 @@ import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import javax.annotation.Resource;
 
@@ -36,8 +35,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -72,7 +71,7 @@ public class ManyPropertyKeysIT
 {
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
@@ -81,13 +80,13 @@ public class ManyPropertyKeysIT
     private File storeDir;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         storeDir  = testDirectory.graphDbDir();
     }
 
     @Test
-    public void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
+    void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
     {
         // GIVEN
         // The previous limit to load was 2500, so go some above that
@@ -105,7 +104,7 @@ public class ManyPropertyKeysIT
     }
 
     @Test
-    public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id()
+    void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id()
             throws Exception
     {
         // GIVEN
@@ -186,8 +185,8 @@ public class ManyPropertyKeysIT
 
     private static class WorkerState
     {
-        protected final GraphDatabaseService db;
-        protected Transaction tx;
+        final GraphDatabaseService db;
+        Transaction tx;
 
         WorkerState( GraphDatabaseService db )
         {

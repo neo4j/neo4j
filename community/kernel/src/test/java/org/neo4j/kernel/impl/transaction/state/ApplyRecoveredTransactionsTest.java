@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -59,7 +59,7 @@ import static org.mockito.Mockito.when;
 public class ApplyRecoveredTransactionsTest
 {
     @Test
-    public void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
+    void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
     {
         // WHEN recovering a transaction that creates some data
         long nodeId = neoStores.getNodeStore().nextId();
@@ -110,7 +110,7 @@ public class ApplyRecoveredTransactionsTest
     private NeoStores neoStores;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
@@ -120,7 +120,7 @@ public class ApplyRecoveredTransactionsTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         neoStores.close();
     }

@@ -49,12 +49,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TransactionLogsInSeparateLocationIT
 {
     @Resource
-    public TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Rule
     public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void databaseWithTransactionLogsInSeparateRelativeLocation() throws IOException
+    void databaseWithTransactionLogsInSeparateRelativeLocation() throws IOException
     {
         File storeDir = testDirectory.graphDbDir();
         File txDirectory = new File( storeDir, "transaction-logs" );
@@ -63,7 +63,7 @@ public class TransactionLogsInSeparateLocationIT
     }
 
     @Test
-    public void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
+    void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
     {
         File storeDir = testDirectory.graphDbDir();
         File txDirectory = testDirectory.directory( "transaction-logs" );

@@ -47,14 +47,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 @ExtendWith( ImpermanentDatabaseExtension.class )
-public class CypherResultRepresentationTest
+class CypherResultRepresentationTest
 {
     @Resource
-    public ImpermanentDatabaseRule database;
+    private ImpermanentDatabaseRule database;
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldSerializeProfilingResult() throws Exception
+    void shouldSerializeProfilingResult() throws Exception
     {
         // Given
         String name = "Kalle";
@@ -94,7 +94,7 @@ public class CypherResultRepresentationTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldNotIncludePlanUnlessAskedFor() throws Exception
+    void shouldNotIncludePlanUnlessAskedFor() throws Exception
     {
         // Given
         Result result = mock( Result.class );
@@ -110,7 +110,7 @@ public class CypherResultRepresentationTest
     }
 
     @Test
-    public void shouldFormatMapsProperly() throws Exception
+    void shouldFormatMapsProperly() throws Exception
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Result result = graphdb.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
@@ -128,7 +128,7 @@ public class CypherResultRepresentationTest
     }
 
     @Test
-    public void shouldRenderNestedEntities() throws Exception
+    void shouldRenderNestedEntities() throws Exception
     {
         try ( Transaction ignored = database.getGraphDatabaseAPI().beginTx() )
         {

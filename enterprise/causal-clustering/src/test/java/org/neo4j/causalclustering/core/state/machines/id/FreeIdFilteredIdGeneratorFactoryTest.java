@@ -28,20 +28,20 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class FreeIdFilteredIdGeneratorFactoryTest
+class FreeIdFilteredIdGeneratorFactoryTest
 {
     private IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
     private File file = mock( File.class );
 
     @Test
-    public void openFilteredGenerator()
+    void openFilteredGenerator()
     {
         FreeIdFilteredIdGeneratorFactory filteredGenerator = createFilteredFactory();
         IdType idType = IdType.NODE;
@@ -55,7 +55,7 @@ public class FreeIdFilteredIdGeneratorFactoryTest
     }
 
     @Test
-    public void openFilteredGeneratorWithGrabSize()
+    void openFilteredGeneratorWithGrabSize()
     {
         FreeIdFilteredIdGeneratorFactory filteredGenerator = createFilteredFactory();
         IdType idType = IdType.NODE;

@@ -33,10 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class TruncateLogCommandTest
+class TruncateLogCommandTest
 {
     @Test
-    public void applyTo()
+    void applyTo()
     {
         //Test that truncate commands correctly remove entries from the cache.
 
@@ -66,7 +66,7 @@ public class TruncateLogCommandTest
     }
 
     @Test
-    public void shouldTruncateWithGaps()
+    void shouldTruncateWithGaps()
     {
         //given
         long fromIndex = 1L;

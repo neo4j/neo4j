@@ -44,9 +44,9 @@ import org.neo4j.io.fs.watcher.FileWatcher;
 public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends ExternalResource
         implements FileSystemAbstraction, Supplier<FileSystemAbstraction>
 {
-    protected volatile FS fs;
+    volatile FS fs;
 
-    protected FileSystemRule( FS fs )
+    FileSystemRule( FS fs )
     {
         this.fs = fs;
     }

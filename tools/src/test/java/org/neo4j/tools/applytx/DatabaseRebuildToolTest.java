@@ -58,15 +58,15 @@ import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.crea
 import static org.neo4j.tools.console.input.ConsoleUtil.NULL_PRINT_STREAM;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-public class DatabaseRebuildToolTest
+class DatabaseRebuildToolTest
 {
     @Resource
     public SuppressOutput suppressOutput;
     @Resource
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
-    public void shouldRebuildDbFromTransactions() throws Exception
+    void shouldRebuildDbFromTransactions() throws Exception
     {
         // This tests the basic functionality of this tool, there are more things, but it's not as important
         // to test as the functionality of applying transactions.
@@ -85,7 +85,7 @@ public class DatabaseRebuildToolTest
     }
 
     @Test
-    public void shouldApplySomeTransactions() throws Exception
+    void shouldApplySomeTransactions() throws Exception
     {
         // This tests the basic functionality of this tool, there are more things, but it's not as important
         // to test as the functionality of applying transactions.
@@ -105,7 +105,7 @@ public class DatabaseRebuildToolTest
     }
 
     @Test
-    public void shouldDumpNodePropertyChain() throws Exception
+    void shouldDumpNodePropertyChain() throws Exception
     {
         shouldPrint( "dump node properties 0",
                 "Property",
@@ -113,7 +113,7 @@ public class DatabaseRebuildToolTest
     }
 
     @Test
-    public void shouldDumpRelationshipPropertyChain() throws Exception
+    void shouldDumpRelationshipPropertyChain() throws Exception
     {
         shouldPrint( "dump relationship properties 0",
                 "Property",
@@ -121,7 +121,7 @@ public class DatabaseRebuildToolTest
     }
 
     @Test
-    public void shouldDumpRelationships() throws Exception
+    void shouldDumpRelationships() throws Exception
     {
         shouldPrint( "dump node relationships 0",
                 "Relationship[0,",
@@ -129,7 +129,7 @@ public class DatabaseRebuildToolTest
     }
 
     @Test
-    public void shouldDumpRelationshipTypeTokens() throws Exception
+    void shouldDumpRelationshipTypeTokens() throws Exception
     {
         shouldPrint( "dump tokens relationship-type",
                 "TYPE_0",
@@ -137,7 +137,7 @@ public class DatabaseRebuildToolTest
     }
 
     @Test
-    public void shouldDumpLabelTokens() throws Exception
+    void shouldDumpLabelTokens() throws Exception
     {
         shouldPrint( "dump tokens label",
                 "Label_0",
@@ -145,7 +145,7 @@ public class DatabaseRebuildToolTest
     }
 
     @Test
-    public void shouldDumpPropertyKeyTokens() throws Exception
+    void shouldDumpPropertyKeyTokens() throws Exception
     {
         shouldPrint( "dump tokens property-key",
                 "name" );

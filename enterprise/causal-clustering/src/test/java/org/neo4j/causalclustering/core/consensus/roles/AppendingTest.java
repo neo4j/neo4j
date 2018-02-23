@@ -44,12 +44,12 @@ import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-public class AppendingTest
+class AppendingTest
 {
     private MemberId aMember = member( 0 );
 
     @Test
-    public void shouldPerformTruncation() throws Exception
+    void shouldPerformTruncation() throws Exception
     {
         // when
         // we have a log appended up to appendIndex, and committed somewhere before that
@@ -80,7 +80,7 @@ public class AppendingTest
     }
 
     @Test
-    public void shouldNotAllowTruncationAtCommit() throws Exception
+    void shouldNotAllowTruncationAtCommit() throws Exception
     {
         // given
         long commitIndex = 5;
@@ -113,7 +113,7 @@ public class AppendingTest
     }
 
     @Test
-    public void shouldNotAllowTruncationBeforeCommit() throws Exception
+    void shouldNotAllowTruncationBeforeCommit() throws Exception
     {
         // given
         long commitIndex = 5;
@@ -146,7 +146,7 @@ public class AppendingTest
     }
 
     @Test
-    public void shouldNotAttemptToTruncateAtIndexBeforeTheLogPrevIndex() throws Exception
+    void shouldNotAttemptToTruncateAtIndexBeforeTheLogPrevIndex() throws Exception
     {
         // given
         // a log with prevIndex and prevTerm set

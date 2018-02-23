@@ -729,7 +729,7 @@ public class IndexStatisticsTest
             onlineIndexes.add( descriptor );
         }
 
-        public boolean isIndexOnline( IndexDescriptor descriptor )
+        boolean isIndexOnline( IndexDescriptor descriptor )
         {
             return onlineIndexes.contains( descriptor );
         }

@@ -42,16 +42,16 @@ import org.neo4j.time.Clocks;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TransactionDependenciesResolverTest
 {
     @Test
-    public void detectIndependentTransactionsAsNotBlocked()
+    void detectIndependentTransactionsAsNotBlocked()
     {
         HashMap<KernelTransactionHandle,List<QuerySnapshot>> map = new HashMap<>();
         TestKernelTransactionHandle handle1 = new TestKernelTransactionHandleWithLocks( new StubKernelTransaction() );
@@ -66,7 +66,7 @@ public class TransactionDependenciesResolverTest
     }
 
     @Test
-    public void detectBlockedTransactionsByExclusiveLock()
+    void detectBlockedTransactionsByExclusiveLock()
     {
         HashMap<KernelTransactionHandle,List<QuerySnapshot>> map = new HashMap<>();
         TestKernelTransactionHandle handle1 = new TestKernelTransactionHandleWithLocks( new StubKernelTransaction(), 0,
@@ -82,7 +82,7 @@ public class TransactionDependenciesResolverTest
     }
 
     @Test
-    public void detectBlockedTransactionsBySharedLock()
+    void detectBlockedTransactionsBySharedLock()
     {
         HashMap<KernelTransactionHandle,List<QuerySnapshot>> map = new HashMap<>();
         TestKernelTransactionHandle handle1 = new TestKernelTransactionHandleWithLocks( new StubKernelTransaction(), 0,
@@ -98,7 +98,7 @@ public class TransactionDependenciesResolverTest
     }
 
     @Test
-    public void blockingChainDescriptionForIndependentTransactionsIsEmpty()
+    void blockingChainDescriptionForIndependentTransactionsIsEmpty()
     {
         HashMap<KernelTransactionHandle,List<QuerySnapshot>> map = new HashMap<>();
         TestKernelTransactionHandle handle1 = new TestKernelTransactionHandleWithLocks( new StubKernelTransaction() );
@@ -113,7 +113,7 @@ public class TransactionDependenciesResolverTest
     }
 
     @Test
-    public void blockingChainDescriptionForDirectlyBlockedTransaction()
+    void blockingChainDescriptionForDirectlyBlockedTransaction()
     {
         HashMap<KernelTransactionHandle,List<QuerySnapshot>> map = new HashMap<>();
         TestKernelTransactionHandle handle1 = new TestKernelTransactionHandleWithLocks( new StubKernelTransaction(), 3,
@@ -129,7 +129,7 @@ public class TransactionDependenciesResolverTest
     }
 
     @Test
-    public void blockingChainDescriptionForChainedBlockedTransaction()
+    void blockingChainDescriptionForChainedBlockedTransaction()
     {
         HashMap<KernelTransactionHandle,List<QuerySnapshot>> map = new HashMap<>();
         TestKernelTransactionHandle handle1 = new TestKernelTransactionHandleWithLocks( new StubKernelTransaction(), 4,

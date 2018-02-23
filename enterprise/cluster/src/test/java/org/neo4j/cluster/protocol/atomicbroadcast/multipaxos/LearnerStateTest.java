@@ -44,10 +44,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class LearnerStateTest
+class LearnerStateTest
 {
     @Test
-    public void shouldUseLastKnownOnlineClusterMemberAndSetTimeoutForCatchup() throws Throwable
+    void shouldUseLastKnownOnlineClusterMemberAndSetTimeoutForCatchup() throws Throwable
     {
         // Given
         LearnerState state = LearnerState.learner;
@@ -82,7 +82,7 @@ public class LearnerStateTest
     }
 
     @Test
-    public void learnerServingOldInstanceShouldNotLogErrorIfItDoesNotHaveIt() throws Throwable
+    void learnerServingOldInstanceShouldNotLogErrorIfItDoesNotHaveIt() throws Throwable
     {
         // Given
         LearnerState state = LearnerState.learner;
@@ -111,7 +111,7 @@ public class LearnerStateTest
     }
 
     @Test
-    public void learnerReceivingLearnFailedShouldLogIt() throws Throwable
+    void learnerReceivingLearnFailedShouldLogIt() throws Throwable
     {
         // Given
         LearnerState state = LearnerState.learner;
@@ -134,7 +134,7 @@ public class LearnerStateTest
     }
 
     @Test
-    public void learnerShouldAskAllAliveInstancesAndTheseOnlyForMissingValue() throws Throwable
+    void learnerShouldAskAllAliveInstancesAndTheseOnlyForMissingValue() throws Throwable
     {
         // Given
 
@@ -186,7 +186,7 @@ public class LearnerStateTest
     }
 
     @Test
-    public void shouldHandleLocalLearnMessagesWithoutInstanceIdInTheMessageHeaderWhenCatchingUp() throws Throwable
+    void shouldHandleLocalLearnMessagesWithoutInstanceIdInTheMessageHeaderWhenCatchingUp() throws Throwable
     {
         // Given
         LearnerState learner = LearnerState.learner;

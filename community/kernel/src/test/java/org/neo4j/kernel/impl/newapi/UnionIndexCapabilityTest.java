@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
@@ -34,7 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.containsAll;
 
-public class UnionIndexCapabilityTest
+class UnionIndexCapabilityTest
 {
     private static final IndexOrder[] ORDER_CAPABILITIES_ALL = new IndexOrder[]{IndexOrder.ASCENDING, IndexOrder.DESCENDING};
     private static final IndexOrder[] ORDER_CAPABILITIES_ONLY_ASC = new IndexOrder[]{IndexOrder.ASCENDING};
@@ -42,7 +41,7 @@ public class UnionIndexCapabilityTest
     private static final IndexOrder[] ORDER_CAPABILITIES_NONE = new IndexOrder[0];
 
     @Test
-    public void shouldCreateUnionOfOrderCapabilities()
+    void shouldCreateUnionOfOrderCapabilities()
     {
         // given
         UnionIndexCapability union;
@@ -77,7 +76,7 @@ public class UnionIndexCapabilityTest
     }
 
     @Test
-    public void shouldCreateUnionOfValueCapability()
+    void shouldCreateUnionOfValueCapability()
     {
         UnionIndexCapability union;
 

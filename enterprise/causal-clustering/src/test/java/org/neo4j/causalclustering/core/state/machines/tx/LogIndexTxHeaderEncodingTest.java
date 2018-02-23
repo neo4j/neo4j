@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
 import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
-public class LogIndexTxHeaderEncodingTest
+class LogIndexTxHeaderEncodingTest
 {
     @Test
-    public void shouldEncodeIndexAsBytes()
+    void shouldEncodeIndexAsBytes()
     {
         long index = 123_456_789_012_567L;
         byte[] bytes = encodeLogIndexAsTxHeader( index );
@@ -37,7 +37,7 @@ public class LogIndexTxHeaderEncodingTest
     }
 
     @Test
-    public void shouldThrowExceptionForAnEmptyByteArray()
+    void shouldThrowExceptionForAnEmptyByteArray()
     {
         // given
         try

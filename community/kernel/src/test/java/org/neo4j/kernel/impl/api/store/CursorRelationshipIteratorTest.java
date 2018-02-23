@@ -35,10 +35,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class CursorRelationshipIteratorTest
+class CursorRelationshipIteratorTest
 {
     @Test
-    public void shouldLazilyGoToNext()
+    void shouldLazilyGoToNext()
     {
         // GIVEN
         Cursor<RelationshipItem> cursor = spy( new ContinuableArrayCursor<>( new Supplier<RelationshipItem[]>()

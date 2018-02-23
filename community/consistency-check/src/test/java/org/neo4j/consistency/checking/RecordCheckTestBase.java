@@ -51,9 +51,9 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         CHECKER extends RecordCheck<RECORD, REPORT>>
 {
     public static final int NONE = -1;
-    protected final CHECKER checker;
+    private final CHECKER checker;
     private final Class<REPORT> reportClass;
-    protected RecordAccessStub records;
+    RecordAccessStub records;
     private Stage stage;
 
     RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass, int[] cacheFields, MultiPassStore... storesToCheck )
@@ -61,7 +61,8 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         this( checker, reportClass, new Stage.Adapter( false, true, "Test stage", cacheFields ), storesToCheck );
     }
 
-    RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass, Stage stage, MultiPassStore... storesToCheck )
+    private RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass, Stage stage,
+            MultiPassStore... storesToCheck )
     {
         this.checker = checker;
         this.reportClass = reportClass;
@@ -69,7 +70,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         initialize( storesToCheck );
     }
 
-    protected void initialize( MultiPassStore... storesToCheck )
+    void initialize( MultiPassStore... storesToCheck )
     {
         this.records = new RecordAccessStub( stage, storesToCheck );
         if ( stage.getCacheSlotSizes().length > 0 )
@@ -186,9 +187,8 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return report;
     }
 
-    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
-    void check( REPORT report, RecordCheck<RECORD, REPORT> checker, RECORD record,
-                  final RecordAccessStub records )
+    private static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+    void check( REPORT report, RecordCheck<RECORD,REPORT> checker, RECORD record, final RecordAccessStub records )
     {
         checker.check( record, records.engine( record, report ), records );
         records.checkDeferred();
@@ -266,7 +266,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return record;
     }
 
-    protected CHECKER checker()
+    CHECKER checker()
     {
         return checker;
     }

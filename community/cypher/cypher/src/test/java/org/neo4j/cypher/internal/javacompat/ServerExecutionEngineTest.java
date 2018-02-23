@@ -32,13 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class ServerExecutionEngineTest
+class ServerExecutionEngineTest
 {
     @Resource
-    public EmbeddedDatabaseRule rule;
+    private EmbeddedDatabaseRule rule;
 
     @Test
-    public void shouldDetectPeriodicCommitQueries()
+    void shouldDetectPeriodicCommitQueries()
     {
         // GIVEN
         QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
@@ -52,7 +52,7 @@ public class ServerExecutionEngineTest
     }
 
     @Test
-    public void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries()
+    void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries()
     {
         // GIVEN
         QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
@@ -66,7 +66,7 @@ public class ServerExecutionEngineTest
     }
 
     @Test
-    public void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries()
+    void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries()
     {
         // GIVEN
         QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()

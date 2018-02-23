@@ -55,7 +55,7 @@ public class LuceneDocumentStructureTest
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void stringWithMaximumLengthShouldBeAllowed()
+    void stringWithMaximumLengthShouldBeAllowed()
     {
         String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
         Document document = documentRepresentingProperties( (long) 123, longestString );
@@ -63,7 +63,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingStringProperty()
+    void shouldBuildDocumentRepresentingStringProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, "hello" );
@@ -74,7 +74,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingMultipleStringProperties()
+    void shouldBuildDocumentRepresentingMultipleStringProperties()
     {
         // given
         String[] values = new String[]{"hello", "world"};
@@ -87,7 +87,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingMultiplePropertiesOfDifferentTypes()
+    void shouldBuildDocumentRepresentingMultiplePropertiesOfDifferentTypes()
     {
         // given
         Object[] values = new Object[]{"hello", 789};
@@ -100,7 +100,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingBoolProperty()
+    void shouldBuildDocumentRepresentingBoolProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, true );
@@ -111,7 +111,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingNumberProperty()
+    void shouldBuildDocumentRepresentingNumberProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, 12 );
@@ -122,7 +122,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingArrayProperty()
+    void shouldBuildDocumentRepresentingArrayProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, new Object[]{new Integer[]{1, 2, 3}} );
@@ -133,7 +133,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildQueryRepresentingBoolProperty()
+    void shouldBuildQueryRepresentingBoolProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( true );
@@ -145,7 +145,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildQueryRepresentingStringProperty()
+    void shouldBuildQueryRepresentingStringProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( "Characters" );
@@ -157,7 +157,7 @@ public class LuceneDocumentStructureTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldBuildQueryRepresentingNumberProperty()
+    void shouldBuildQueryRepresentingNumberProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( 12 );
@@ -170,7 +170,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildQueryRepresentingArrayProperty()
+    void shouldBuildQueryRepresentingArrayProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( new Object[]{new Integer[]{1, 2, 3}} );
@@ -182,7 +182,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildQueryRepresentingMultipleProperties()
+    void shouldBuildQueryRepresentingMultipleProperties()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( true, "Characters", 12, new Integer[]{1, 2, 3} );
@@ -208,7 +208,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildRangeSeekByNumberQueryForStrings()
+    void shouldBuildRangeSeekByNumberQueryForStrings()
     {
         // given
         NumericRangeQuery<Double> query = LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
@@ -222,7 +222,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildRangeSeekByStringQueryForStrings()
+    void shouldBuildRangeSeekByStringQueryForStrings()
     {
         // given
         TermRangeQuery query = (TermRangeQuery) LuceneDocumentStructure
@@ -237,7 +237,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildWildcardQueries()
+    void shouldBuildWildcardQueries()
     {
         // given
         WildcardQuery query = (WildcardQuery) LuceneDocumentStructure.newWildCardStringQuery( "foo" );
@@ -247,7 +247,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildRangeSeekByPrefixQueryForStrings()
+    void shouldBuildRangeSeekByPrefixQueryForStrings()
     {
         // given
         MultiTermQuery prefixQuery = (MultiTermQuery) LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
@@ -257,7 +257,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void checkFieldUsageForUniquenessVerification()
+    void checkFieldUsageForUniquenessVerification()
     {
         assertFalse( useFieldForUniquenessVerification( "id" ) );
         assertFalse( useFieldForUniquenessVerification( "1number" ) );

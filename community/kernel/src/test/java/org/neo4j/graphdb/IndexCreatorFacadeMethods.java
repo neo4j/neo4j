@@ -24,7 +24,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-public class IndexCreatorFacadeMethods
+class IndexCreatorFacadeMethods
 {
     private static final FacadeMethod<IndexCreator> ON =
         new FacadeMethod<IndexCreator>( "IndexCreator on( String propertyKey )" )

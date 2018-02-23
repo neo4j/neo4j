@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -51,10 +49,10 @@ import static org.neo4j.kernel.impl.api.KernelTransactionImplementation.Statisti
 import static org.neo4j.kernel.impl.locking.LockTracer.NONE;
 import static org.neo4j.resources.CpuClock.NOT_AVAILABLE;
 
-public class KernelStatementTest
+class KernelStatementTest
 {
     @Test
-    public void shouldThrowTerminateExceptionWhenTransactionTerminated()
+    void shouldThrowTerminateExceptionWhenTransactionTerminated()
     {
         assertThrows( TransactionTerminatedException.class, () -> {
             KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -71,7 +69,7 @@ public class KernelStatementTest
     }
 
     @Test
-    public void shouldReleaseStorageStatementWhenForceClosed()
+    void shouldReleaseStorageStatementWhenForceClosed()
     {
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
@@ -95,7 +93,7 @@ public class KernelStatementTest
     }
 
     @Test
-    public void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
+    void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
     {
         assertThrows( NotInTransactionException.class, () -> {
             KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -112,7 +110,7 @@ public class KernelStatementTest
     }
 
     @Test
-    public void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution()
+    void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );

@@ -32,7 +32,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class AnnotationBasedConfigurationMigratorTest
+class AnnotationBasedConfigurationMigratorTest
 {
 
     private static final AtomicBoolean wasCalled = new AtomicBoolean( false );
@@ -49,7 +49,7 @@ public class AnnotationBasedConfigurationMigratorTest
     }
 
     @Test
-    public void migratorShouldGetPickedUp()
+    void migratorShouldGetPickedUp()
     {
 
         // Given

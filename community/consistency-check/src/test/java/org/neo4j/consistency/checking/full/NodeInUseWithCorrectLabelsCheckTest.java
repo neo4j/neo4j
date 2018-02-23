@@ -44,10 +44,10 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 
-public class NodeInUseWithCorrectLabelsCheckTest
+class NodeInUseWithCorrectLabelsCheckTest
 {
     @Test
-    public void shouldReportNodeNotInUse()
+    void shouldReportNodeNotInUse()
     {
         // given
         int nodeId = 42;
@@ -65,7 +65,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineBothDirections()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineBothDirections()
     {
         // given
         int nodeId = 42;
@@ -85,7 +85,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineIndexToStore()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineIndexToStore()
     {
         // given
         int nodeId = 42;
@@ -105,7 +105,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicBothDirections()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicBothDirections()
     {
         // given
         int nodeId = 42;
@@ -129,7 +129,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicIndexToStore()
+    void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicIndexToStore()
     {
         // given
         int nodeId = 42;
@@ -153,7 +153,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void reportNodeWithoutLabelsWhenLabelsAreInlined()
+    void reportNodeWithoutLabelsWhenLabelsAreInlined()
     {
         int nodeId = 42;
         long[] indexLabelIds = {3};
@@ -175,7 +175,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void reportNodeWithoutLabelsWhenLabelsAreDynamic()
+    void reportNodeWithoutLabelsWhenLabelsAreDynamic()
     {
         int nodeId = 42;
         long[] indexLabelIds = {3, 7, 9, 10};
@@ -201,7 +201,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldRemainSilentWhenEverythingIsInOrder()
+    void shouldRemainSilentWhenEverythingIsInOrder()
     {
         // given
         int nodeId = 42;
@@ -257,7 +257,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
         return new NodeInUseWithCorrectLabelsCheck<>( expectedLabels, checkStoreToIndex );
     }
 
-    interface Engine extends CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
+    private interface Engine extends CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
     {
     }
 }

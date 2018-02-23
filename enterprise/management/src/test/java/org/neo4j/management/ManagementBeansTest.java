@@ -37,20 +37,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( EmbeddedDatabaseExtension.class )
-public class ManagementBeansTest
+class ManagementBeansTest
 {
     @Resource
-    public EmbeddedDatabaseRule dbRule;
+    private EmbeddedDatabaseRule dbRule;
     private static GraphDatabaseAPI graphDb;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         graphDb = dbRule.getGraphDatabaseAPI();
     }
 
     @Test
-    public void canAccessKernelBean()
+    void canAccessKernelBean()
     {
         Kernel kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Kernel.class );
@@ -59,7 +59,7 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canAccessPrimitivesBean()
+    void canAccessPrimitivesBean()
     {
         Primitives primitives = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Primitives.class );
@@ -68,14 +68,14 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canListAllBeans()
+    void canListAllBeans()
     {
         Neo4jManager manager = getManager();
         assertTrue( manager.allBeans().size() > 0, "No beans returned" );
     }
 
     @Test
-    public void canGetConfigurationParameters()
+    void canGetConfigurationParameters()
     {
         Neo4jManager manager = getManager();
         Map<String, Object> configuration = manager.getConfiguration();
@@ -89,49 +89,49 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canGetLockManagerBean()
+    void canGetLockManagerBean()
     {
         assertNotNull( getManager().getLockManagerBean() );
     }
 
     @Test
-    public void canIndexSamplingManagerBean()
+    void canIndexSamplingManagerBean()
     {
         assertNotNull( getManager().getIndexSamplingManagerBean() );
     }
 
     @Test
-    public void canGetMemoryMappingBean()
+    void canGetMemoryMappingBean()
     {
         assertNotNull( getManager().getMemoryMappingBean() );
     }
 
     @Test
-    public void canGetPrimitivesBean()
+    void canGetPrimitivesBean()
     {
         assertNotNull( getManager().getPrimitivesBean() );
     }
 
     @Test
-    public void canGetStoreFileBean()
+    void canGetStoreFileBean()
     {
         assertNotNull( getManager().getStoreFileBean() );
     }
 
     @Test
-    public void canGetTransactionManagerBean()
+    void canGetTransactionManagerBean()
     {
         assertNotNull( getManager().getTransactionManagerBean() );
     }
 
     @Test
-    public void canGetPageCacheBean()
+    void canGetPageCacheBean()
     {
         assertNotNull( getManager().getPageCacheBean() );
     }
 
     @Test
-    public void canAccessMemoryMappingCompositData()
+    void canAccessMemoryMappingCompositData()
     {
         assertNotNull( getManager().getMemoryMappingBean().getMemoryPools(), "MemoryPools is null" );
     }

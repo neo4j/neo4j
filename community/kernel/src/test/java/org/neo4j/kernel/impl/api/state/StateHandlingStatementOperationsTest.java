@@ -84,20 +84,20 @@ import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedStat
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 
-public class StateHandlingStatementOperationsTest
+class StateHandlingStatementOperationsTest
 {
     // Note: Most of the behavior of this class is tested in separate classes,
     // based on the category of state being
     // tested. This contains general tests or things that are common to all
     // types of state.
 
-    StoreReadLayer inner = mock( StoreReadLayer.class );
+    private StoreReadLayer inner = mock( StoreReadLayer.class );
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 10, 66 );
     private final IndexDescriptor index = IndexDescriptorFactory.forLabel( 1, 2 );
 
     @Test
-    public void shouldNeverDelegateWrites() throws Exception
+    void shouldNeverDelegateWrites() throws Exception
     {
         KernelStatement state = mockedState();
 
@@ -124,7 +124,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotAddConstraintAlreadyExistsInTheStore() throws Exception
+    void shouldNotAddConstraintAlreadyExistsInTheStore() throws Exception
     {
         // given
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
@@ -143,7 +143,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldGetConstraintsByLabelAndProperty() throws Exception
+    void shouldGetConstraintsByLabelAndProperty() throws Exception
     {
         // given
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
@@ -163,7 +163,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldGetConstraintsByLabel() throws Exception
+    void shouldGetConstraintsByLabel() throws Exception
     {
         // given
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 2, 3 );
@@ -191,7 +191,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldGetAllConstraints() throws Exception
+    void shouldGetAllConstraints() throws Exception
     {
         // given
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 2, 3 );
@@ -217,7 +217,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexScanWithIndexQuery() throws Exception
+    void shouldConsiderTransactionStateDuringIndexScanWithIndexQuery() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -246,7 +246,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexSeekWithIndexQuery() throws Exception
+    void shouldConsiderTransactionStateDuringIndexSeekWithIndexQuery() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -274,7 +274,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexRangeSeekByPrefixWithIndexQuery() throws Exception
+    void shouldConsiderTransactionStateDuringIndexRangeSeekByPrefixWithIndexQuery() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -303,7 +303,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexRangeSeekByContainsWithIndexQuery() throws Exception
+    void shouldConsiderTransactionStateDuringIndexRangeSeekByContainsWithIndexQuery() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -332,7 +332,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexRangeSeekBySuffixWithIndexQuery() throws Exception
+    void shouldConsiderTransactionStateDuringIndexRangeSeekBySuffixWithIndexQuery() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -362,7 +362,7 @@ public class StateHandlingStatementOperationsTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByNumberWithIndexQuery() throws Exception
+    void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByNumberWithIndexQuery() throws Exception
     {
         // Given
         final int propertyKey = 2;
@@ -416,7 +416,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByStringWithIndexQuery() throws Exception
+    void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByStringWithIndexQuery() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -446,7 +446,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void indexQueryClosesIndexReader() throws Exception
+    void indexQueryClosesIndexReader() throws Exception
     {
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
@@ -467,7 +467,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotRecordNodeSetPropertyOnSameValue() throws Exception
+    void shouldNotRecordNodeSetPropertyOnSameValue() throws Exception
     {
         // GIVEN
         int propertyKeyId = 5;
@@ -503,7 +503,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotRecordRelationshipSetPropertyOnSameValue() throws Exception
+    void shouldNotRecordRelationshipSetPropertyOnSameValue() throws Exception
     {
         // GIVEN
         int propertyKeyId = 5;
@@ -539,7 +539,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotRecordGraphSetPropertyOnSameValue()
+    void shouldNotRecordGraphSetPropertyOnSameValue()
     {
         // GIVEN
         int propertyKeyId = 5;
@@ -559,7 +559,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotDecorateNumberQuerResultsWIthLookupFilterIfIndexHasFullNumberPrecision() throws Exception
+    void shouldNotDecorateNumberQuerResultsWIthLookupFilterIfIndexHasFullNumberPrecision() throws Exception
     {
         // given
         int propertyKeyId = 5;
