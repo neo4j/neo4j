@@ -240,14 +240,13 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     @Override
     public int compareTo( DurationValue other )
     {
-        return unsafeCompareTo( other );
+        return COMPARATOR.compare( this, other );
     }
 
     @Override
     int unsafeCompareTo( Value otherValue )
     {
-        DurationValue other = (DurationValue) otherValue;
-        return COMPARATOR.compare( this, other );
+        return compareTo( (DurationValue) otherValue );
     }
 
     private long averageLengthInSeconds()

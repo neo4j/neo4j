@@ -109,13 +109,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     @Override
     public int compareTo( PointValue other )
     {
-        return unsafeCompareTo(other);
-    }
-
-    @Override
-    int unsafeCompareTo( Value otherValue )
-    {
-        PointValue other = (PointValue) otherValue;
         int cmpCRS = this.crs.getCode() - other.crs.getCode();
         if ( cmpCRS != 0 )
         {
@@ -140,6 +133,12 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
         }
         return 0;
+    }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareTo( (PointValue) otherValue );
     }
 
     @Override
