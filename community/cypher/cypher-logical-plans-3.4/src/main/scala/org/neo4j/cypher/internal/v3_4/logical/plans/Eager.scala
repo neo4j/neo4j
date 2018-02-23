@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
-  * Consumes and buffers all source rows, and then produces them.
+  * Consumes and buffers all source rows, marks the transaction as stable, and then produces all rows.
   */
 case class Eager(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 

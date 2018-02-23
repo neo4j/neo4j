@@ -210,7 +210,9 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         {
             long recordId = (pageId * recordsPerFilePage) + i;
             expectedPageContents.position( recordSize * i );
-            generateRecordForId( recordId, expectedPageContents.slice() );
+            ByteBuffer slice = expectedPageContents.slice();
+            slice.limit( recordSize );
+            generateRecordForId( recordId, slice );
             do
             {
                 cursor.setOffset( recordSize * i );
@@ -220,13 +222,43 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             actualPageContents.position( recordSize * i );
             actualPageContents.put( record );
         }
-        assertRecord( pageId, actualPageContents, expectedPageContents );
+        assertRecords( pageId, actualPageContents, expectedPageContents );
     }
 
-    protected void assertRecord( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
+    /**
+     * Verifies the records in the current buffer assuming the given page id.
+     * <p>
+     * This does the do-while-retry loop internally.
+     */
+    protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents ) throws IOException
+    {
+        ByteBuffer expectedPageContents = ByteBuffer.allocate( filePageSize );
+        for ( int i = 0; i < recordsPerFilePage; i++ )
+        {
+            long recordId = (pageId * recordsPerFilePage) + i;
+            expectedPageContents.position( recordSize * i );
+            ByteBuffer slice = expectedPageContents.slice();
+            slice.limit( recordSize );
+            generateRecordForId( recordId, slice );
+        }
+        int len = actualPageContents.limit() - actualPageContents.position();
+        byte[] actual = new byte[len];
+        byte[] expected = new byte[len];
+        actualPageContents.get( actual );
+        expectedPageContents.position( offset );
+        expectedPageContents.get( expected );
+        assertRecords( pageId, actual, expected );
+    }
+
+    protected void assertRecords( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
     {
         byte[] actualBytes = actualPageContents.array();
         byte[] expectedBytes = expectedPageContents.array();
+        assertRecords( pageId, actualBytes, expectedBytes );
+    }
+
+    protected void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
+    {
         int estimatedPageId = estimateId( actualBytes );
         assertThat(
                 "Page id: " + pageId + " " +
@@ -314,7 +346,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             generateRecordForId( i, buf );
             observation.position( 0 );
             channel.read( observation );
-            assertRecord( i, observation, buf );
+            assertRecords( i, observation, buf );
         }
     }
 

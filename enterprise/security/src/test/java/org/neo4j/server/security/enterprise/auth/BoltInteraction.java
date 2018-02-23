@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
@@ -75,6 +76,7 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
 {
+    private final TransportTestUtil util = new TransportTestUtil( new Neo4jPackV1() );
     private final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
@@ -145,7 +147,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         try
         {
-            subject.client.send( TransportTestUtil.chunk( RunMessage.run( call, ValueUtils.asMapValue( params ) ), PullAllMessage.pullAll() ) );
+            subject.client.send( util.chunk( RunMessage.run( call, ValueUtils.asMapValue( params ) ), PullAllMessage.pullAll() ) );
             resultConsumer.accept( collectResults( subject.client ) );
             return "";
         }
@@ -170,12 +172,12 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
             subject.client = connectionFactory.newInstance();
         }
         subject.client.connect( server.lookupDefaultConnector() )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1",
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( InitMessage.init( "TestClient/1.1",
                         map( REALM_KEY, NATIVE_REALM, PRINCIPAL, username, CREDENTIALS, password,
                                 SCHEME_KEY, BASIC_SCHEME ) ) ) );
-        assertThat( subject.client, TransportTestUtil.eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        subject.setLoginResult( TransportTestUtil.receiveOneResponseMessage( subject.client ) );
+        assertThat( subject.client, util.eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        subject.setLoginResult( util.receiveOneResponseMessage( subject.client ) );
         return subject;
     }
 
@@ -231,7 +233,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     @Override
     public void assertSessionKilled( BoltSubject subject )
     {
-        assertThat( subject.client, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( subject.client, util.eventuallyDisconnects() );
     }
 
     @Override
@@ -246,9 +248,9 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         return server.lookupConnector( connectorKey );
     }
 
-    private static BoltResult collectResults( TransportConnection client ) throws Exception
+    private BoltResult collectResults( TransportConnection client ) throws Exception
     {
-        ResponseMessage message = TransportTestUtil.receiveOneResponseMessage( client );
+        ResponseMessage message = util.receiveOneResponseMessage( client );
         List<String> fieldNames = new ArrayList<>();
         List<Map<String,Object>> result = new ArrayList<>();
 
@@ -265,15 +267,15 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         {
             FailureMessage failMessage = (FailureMessage) message;
             // drain ignoredMessage, ack failure, get successMessage
-            TransportTestUtil.receiveOneResponseMessage( client );
-            client.send( TransportTestUtil.chunk( reset() ) );
-            TransportTestUtil.receiveOneResponseMessage( client );
+            util.receiveOneResponseMessage( client );
+            client.send( util.chunk( reset() ) );
+            util.receiveOneResponseMessage( client );
             throw new AuthenticationException( failMessage.status(), failMessage.message() );
         }
 
         do
         {
-            message = TransportTestUtil.receiveOneResponseMessage( client );
+            message = util.receiveOneResponseMessage( client );
             if ( message instanceof RecordMessage )
             {
                 Object[] row = ((RecordMessage) message).record().fields();
@@ -291,8 +293,8 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         {
             FailureMessage failMessage = (FailureMessage) message;
             // ack failure, get successMessage
-            client.send( TransportTestUtil.chunk( reset() ) );
-            TransportTestUtil.receiveOneResponseMessage( client );
+            client.send( util.chunk( reset() ) );
+            util.receiveOneResponseMessage( client );
             throw new AuthenticationException( failMessage.status(), failMessage.message() );
         }
 

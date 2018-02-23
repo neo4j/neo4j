@@ -57,6 +57,10 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   override def dataRead: Read = tc.kernelTransaction().dataRead()
 
+  override def stableDataRead: Read = tc.kernelTransaction().stableDataRead()
+
+  override def markAsStable(): Unit = tc.kernelTransaction().markAsStable()
+
   override def tokenRead: TokenRead = tc.kernelTransaction().tokenRead()
 
   override def schemaRead: SchemaRead = tc.kernelTransaction().schemaRead()

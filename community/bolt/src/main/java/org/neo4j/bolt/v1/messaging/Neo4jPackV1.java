@@ -53,6 +53,8 @@ import static org.neo4j.values.storable.Values.byteArray;
  */
 public class Neo4jPackV1 implements Neo4jPack
 {
+    public static final int VERSION = 1;
+
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
     public static final byte UNBOUND_RELATIONSHIP = 'r';
@@ -61,16 +63,28 @@ public class Neo4jPackV1 implements Neo4jPack
     @Override
     public Neo4jPack.Packer newPacker( PackOutput output )
     {
-        return new Packer( output );
+        return new PackerV1( output );
     }
 
     @Override
     public Neo4jPack.Unpacker newUnpacker( PackInput input )
     {
-        return new Unpacker( input );
+        return new UnpackerV1( input );
     }
 
-    private static class Packer extends PackStream.Packer implements AnyValueWriter<IOException>, Neo4jPack.Packer
+    @Override
+    public int version()
+    {
+        return VERSION;
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
+
+    protected static class PackerV1 extends PackStream.Packer implements AnyValueWriter<IOException>, Neo4jPack.Packer
     {
         private Error error;
         private static final int INITIAL_PATH_CAPACITY = 500;
@@ -80,7 +94,7 @@ public class Neo4jPackV1 implements Neo4jPack
         private final PrimitiveLongIntKeyValueArray relationshipIndexes =
                 new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY );
 
-        Packer( PackOutput output )
+        protected PackerV1( PackOutput output )
         {
             super( output );
         }
@@ -442,11 +456,11 @@ public class Neo4jPackV1 implements Neo4jPack
         }
     }
 
-    private static class Unpacker extends PackStream.Unpacker implements Neo4jPack.Unpacker
+    protected static class UnpackerV1 extends PackStream.Unpacker implements Neo4jPack.Unpacker
     {
-        private List<Neo4jError> errors = new ArrayList<>( 2 );
+        private final List<Neo4jError> errors = new ArrayList<>( 2 );
 
-        Unpacker( PackInput input )
+        protected UnpackerV1( PackInput input )
         {
             super( input );
         }
@@ -483,28 +497,7 @@ public class Neo4jPackV1 implements Neo4jPack
             {
                 unpackStructHeader();
                 char signature = unpackStructSignature();
-                switch ( signature )
-                {
-                case NODE:
-                {
-                    throw new BoltIOException( Status.Request.Invalid, "Nodes cannot be unpacked." );
-                }
-                case RELATIONSHIP:
-                {
-                    throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
-                }
-                case UNBOUND_RELATIONSHIP:
-                {
-                    throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
-                }
-                case PATH:
-                {
-                    throw new BoltIOException( Status.Request.Invalid, "Paths cannot be unpacked." );
-                }
-                default:
-                    throw new BoltIOException( Status.Request.InvalidFormat,
-                            "Unknown struct type: " + Integer.toHexString( signature ) );
-                }
+                return unpackStruct( signature );
             }
             case END_OF_STREAM:
             {
@@ -551,6 +544,32 @@ public class Neo4jPackV1 implements Neo4jPack
                     values[i] = unpack();
                 }
                 return VirtualValues.list( values );
+            }
+        }
+
+        protected AnyValue unpackStruct( char signature ) throws IOException
+        {
+            switch ( signature )
+            {
+            case NODE:
+            {
+                throw new BoltIOException( Status.Request.Invalid, "Nodes cannot be unpacked." );
+            }
+            case RELATIONSHIP:
+            {
+                throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
+            }
+            case UNBOUND_RELATIONSHIP:
+            {
+                throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
+            }
+            case PATH:
+            {
+                throw new BoltIOException( Status.Request.Invalid, "Paths cannot be unpacked." );
+            }
+            default:
+                throw new BoltIOException( Status.Request.InvalidFormat,
+                        "Unknown struct type: " + Integer.toHexString( signature ) );
             }
         }
 

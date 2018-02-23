@@ -41,15 +41,14 @@ import org.neo4j.logging.Log;
  * <p/>
  * Versions of the framing protocol are lock-step with the messaging protocol versioning.
  */
-public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHandler
+public class BoltMessagingProtocolHandlerImpl implements BoltMessagingProtocolHandler
 {
-    public static final int VERSION_NUMBER = 1;
-
     private static final int DEFAULT_OUTPUT_BUFFER_SIZE = 8192;
 
     private final ChunkedOutput chunkedOutput;
     private final BoltResponseMessageWriter packer;
     private final BoltV1Dechunker dechunker;
+    private final Neo4jPack neo4jPack;
 
     private final BoltWorker worker;
 
@@ -57,9 +56,10 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
 
     private final Log internalLog;
 
-    public BoltMessagingProtocolV1Handler( BoltChannel boltChannel, Neo4jPack neo4jPack, BoltWorker worker,
+    public BoltMessagingProtocolHandlerImpl( BoltChannel boltChannel, BoltWorker worker, Neo4jPack neo4jPack,
             TransportThrottleGroup throttleGroup, LogService logging )
     {
+        this.neo4jPack = neo4jPack;
         this.chunkedOutput = new ChunkedOutput( boltChannel.rawChannel(), DEFAULT_OUTPUT_BUFFER_SIZE, throttleGroup );
         this.packer = new BoltResponseMessageWriter(
                 neo4jPack.newPacker( chunkedOutput ), chunkedOutput, boltChannel.log() );
@@ -98,7 +98,7 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
     @Override
     public int version()
     {
-        return VERSION_NUMBER;
+        return neo4jPack.version();
     }
 
     @Override

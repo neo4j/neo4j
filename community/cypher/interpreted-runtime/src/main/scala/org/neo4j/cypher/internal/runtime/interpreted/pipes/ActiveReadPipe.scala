@@ -17,14 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.queryReduction
+package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.queryReduction.ast.ASTNodeHelper._
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
-class StatementGTRInput(initialStatement: Statement) extends GTRInput[Statement](initialStatement) {
-  override def depth: Int = getDepth(currentTree)
-  override def size: Int = getSize(currentTree)
-  override def getDDInput(level: Int) = StatementLevelDDInput(currentTree, level)
-  override def getBTInput(level: Int) = StatementLevelBTInput(currentTree, level)
+case class ActiveReadPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends Pipe {
+
+  override def createResults(state: QueryState): Iterator[ExecutionContext] = {
+    val activeState = state.withQueryContext(state.query.withActiveRead)
+    val sourceResult = source.createResults(activeState)
+
+    state.decorator.decorate(this, state)
+    state.decorator.decorate(this, sourceResult)
+  }
+
+  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+    throw new UnsupportedOperationException("This method should never be called on ActiveReadPipe")
 }

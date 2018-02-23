@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -42,6 +43,12 @@ public class DelegatingPageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
+    {
+        return delegate.copyTo( sourceOffset, targetBuffer );
     }
 
     @Override

@@ -64,7 +64,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class ConfigTest
 {
-
     private static final String ORIGIN = "test";
 
     public static class MyMigratingSettings implements LoadableConfig

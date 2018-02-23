@@ -531,7 +531,7 @@ object CypherComparisonSupport {
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
             && planner.acceptedPlannerNames.contains(reportedPlannerName)
             && version.acceptedRuntimeVersionNames.contains(reportedVersionName)) {
-            fail(s"Unexpectedly succeeded using $name for query $query, with $reportedVersionName and $reportedRuntimeName runtime and $reportedPlannerName planner.")
+            fail(s"Unexpectedly succeeded using $name for query $query, with $reportedVersionName $reportedRuntimeName runtime and $reportedPlannerVersionName $reportedPlannerName planner.")
           }
       }
     }

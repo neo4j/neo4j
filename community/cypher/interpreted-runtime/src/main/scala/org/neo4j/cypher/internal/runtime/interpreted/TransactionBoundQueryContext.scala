@@ -28,11 +28,11 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.CypherOrdering.{BY_NUMBER, BY_STRING, BY_VALUE, BY_POINT}
+import org.neo4j.cypher.internal.runtime.interpreted.CypherOrdering.{BY_NUMBER, BY_POINT, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{CartesianCalculator, HaversinCalculator, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException, NonEmptyList}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, _}
@@ -63,19 +63,20 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
+import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
 import org.neo4j.values.{AnyValue, ValueMapper}
-import org.neo4j.values.storable.{PointValue, TextValue, Value, Values}
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
-final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper)
+sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
+                                          val resources: ResourceManager = new ResourceManager)
                                         (implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with
     IndexDescriptorCompatibility {
-  override val resources: ResourceManager = new ResourceManager
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
   override lazy val entityAccessor: EmbeddedProxySPI =
@@ -102,13 +103,19 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val neo4jTransactionalContext = new Neo4jTransactionalContext(context.graph, statementProvider, guard, statementProvider, locker, newTx, statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
+
   //We cannot assign to value because of periodic commit
+  protected def reads(): Read = transactionalContext.stableDataRead
   private def writes() = transactionalContext.dataWrite
-  private def reads() = transactionalContext.dataRead
   private val nodeCursor = allocateAndTraceNodeCursor()
   private val propertyCursor = allocateAndTracePropertyCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
+
+  lazy val withActiveRead: TransactionBoundQueryContext =
+    new TransactionBoundQueryContext(transactionalContext, resources)(indexSearchMonitor) {
+      override def reads(): Read = transactionalContext.dataRead
+    }
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
     if (transactionalContext.isOpen) {
@@ -235,7 +242,32 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       indexSeekByPrefixRange(index, prefix)
     case range: InequalitySeekRange[Any] =>
       indexSeekByPrefixRange(index, range)
+    case range: PointDistanceRange[_] =>
+      val distance = range.distance match {
+        case n:NumberValue => n.doubleValue()
+        case n:Number => n.doubleValue()
+        case _ =>
+          // We can't compare against something that is not a number, so no rows will match
+          return Iterator.empty
+      }
 
+      val (from, to) = range.point match {
+        case p:PointValue if p.getCoordinateReferenceSystem == Cartesian =>
+          CartesianCalculator.boundingBox(p, distance)
+        case p:PointValue if p.getCoordinateReferenceSystem == WGS84 =>
+          HaversinCalculator.boundingBox(p, distance)
+        case _ =>
+          // when it tries to evaluate the distance on something that is not a point
+          return Iterator.empty
+      }
+
+      val (fromBounds, toBounds) =
+        if (range.inclusive)
+          (NonEmptyList(InclusiveBound(from)), NonEmptyList(InclusiveBound(to)))
+        else
+          (NonEmptyList(ExclusiveBound(from)), NonEmptyList(ExclusiveBound(to)))
+
+      indexSeekByGeometryRange(index, RangeBetween(RangeGreaterThan(fromBounds), RangeLessThan(toBounds)))
     case range =>
       throw new InternalException(s"Unsupported index seek by range: $range")
   }
