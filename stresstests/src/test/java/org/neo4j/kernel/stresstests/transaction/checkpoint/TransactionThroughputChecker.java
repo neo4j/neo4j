@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TransactionThroughputChecker implements Workload.TransactionThroughput
 {
@@ -88,14 +88,16 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
         int inOneStdDeviationRangePercentage =
                 (int) ( (inOneStdDeviationRange  * 100.0) / (double) reports.size() );
         System.out.println( "Percentage inside one std deviation is: " + inOneStdDeviationRangePercentage );
-        assertTrue( "Assumption is that at least 60 percent should be in one std deviation (" + stdDeviation  + ")" +
-                    " range from the average (" + average + ") ", inOneStdDeviationRangePercentage >= 60 );
+        assertTrue( inOneStdDeviationRangePercentage >= 60,
+                "Assumption is that at least 60 percent should be in one std deviation (" + stdDeviation + ")" +
+                        " range from the average (" + average + ") " );
 
         int inTwoStdDeviationRangePercentage =
                 (int) ( (inTwoStdDeviationRange  * 100.0) / (double) reports.size() );
         System.out.println( "Percentage inside two std deviations is: " + inTwoStdDeviationRangePercentage );
-        assertTrue( "Assumption is that at least 90 percent should be in two std deviations (" + twoStdDeviations + ")" +
-                    " range from the average (" + average + ") ", inTwoStdDeviationRangePercentage >= 90 );
+        assertTrue( inTwoStdDeviationRangePercentage >= 90,
+                "Assumption is that at least 90 percent should be in two std deviations (" + twoStdDeviations + ")" +
+                        " range from the average (" + average + ") " );
     }
 
     private void printThroughputReports( PrintStream out )

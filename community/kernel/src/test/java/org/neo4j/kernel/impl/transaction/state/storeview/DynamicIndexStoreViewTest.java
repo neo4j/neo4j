@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.function.IntPredicate;
@@ -62,7 +62,7 @@ public class DynamicIndexStoreViewTest
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         NodeRecord nodeRecord = getNodeRecord();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,16 +28,23 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static java.lang.Runtime.getRuntime;
+import static java.lang.Thread.sleep;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.ThreadLocalRandom.current;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
+import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
 public class ForkedProcessorStepTest
 {
@@ -63,7 +70,7 @@ public class ForkedProcessorStepTest
         step.endOfUpstream();
         while ( !step.isCompleted() )
         {
-            Thread.sleep( 10 );
+            sleep( 10 );
         }
         step.close();
 
@@ -71,33 +78,36 @@ public class ForkedProcessorStepTest
         assertEquals( batches, downstream.received.get() );
     }
 
-    @Test( timeout = 10_000 )
-    public void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception
+    @Test
+    public void shouldProcessAllBatchesOnSingleCoreSystems()
     {
-        // GIVEN
-        StageControl control = mock( StageControl.class );
-        int processors = 1;
+        assertTimeout( ofMillis( 10_000 ), () -> {
+            //  GIVEN
 
-        int batches = 10;
-        BatchProcessor step = new BatchProcessor( control, processors );
-        TrackingStep downstream = new TrackingStep();
-        step.setDownstream( downstream );
+            StageControl control = mock( StageControl.class );
+            int processors = 1;
 
-        // WHEN
-        step.start( 0 );
-        for ( int i = 1; i <= batches; i++ )
-        {
-            step.receive( i, new Batch( processors ) );
-        }
-        step.endOfUpstream();
-        while ( !step.isCompleted() )
-        {
-            Thread.sleep( 10 );
-        }
-        step.close();
+            int batches = 10;
+            BatchProcessor step = new BatchProcessor( control, processors );
+            TrackingStep downstream = new TrackingStep();
+            step.setDownstream( downstream );
 
-        // THEN
-        assertEquals( batches, downstream.received.get() );
+            // WHEN
+            step.start( 0 );
+            for ( int i = 1; i <= batches; i++ )
+            {
+                step.receive( i, new Batch( processors ) );
+            }
+            step.endOfUpstream();
+            while ( !step.isCompleted() )
+            {
+                sleep( 10 );
+            }
+            step.close();
+
+            // THEN
+            assertEquals( batches, downstream.received.get() );
+        } );
     }
 
     @Test
@@ -123,7 +133,7 @@ public class ForkedProcessorStepTest
         step.endOfUpstream();
         while ( !step.isCompleted() )
         {
-            Thread.sleep( 10 );
+            sleep( 10 );
         }
         step.close();
 
@@ -136,7 +146,7 @@ public class ForkedProcessorStepTest
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        int availableProcessors = getRuntime().availableProcessors();
         BatchProcessor step = new BatchProcessor( control, availableProcessors );
         TrackingStep downstream = new TrackingStep();
         step.setDownstream( downstream );
@@ -175,7 +185,7 @@ public class ForkedProcessorStepTest
 
         while ( downstream.received.get() < 200 )
         {
-            Thread.sleep( 10 );
+            sleep( 10 );
         }
         end.set( true );
         for ( Thread submitter : submitters )
@@ -194,21 +204,22 @@ public class ForkedProcessorStepTest
 
         // GIVEN
         StageControl control = mock( StageControl.class );
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-        ForkedProcessorStep<int[]> step = new ForkedProcessorStep<int[]>( control, "Processor",
-                config( availableProcessors ) )
+        int availableProcessors = getRuntime().availableProcessors();
+        ForkedProcessorStep<int[]> step = new ForkedProcessorStep<int[]>( control, "Processor", config( availableProcessors ) )
         {
             @Override
             protected void forkedProcess( int id, int processors, int[] batch ) throws InterruptedException
             {
                 int ticket = batch[0];
-                Thread.sleep( ThreadLocalRandom.current().nextInt( 10 ) );
+                sleep( current().nextInt( 10 ) );
                 for ( int i = 1; i < batch.length; i++ )
                 {
                     if ( batch[i] % processors == id )
                     {
                         boolean compareAndSet = reference.compareAndSet( batch[i], ticket, ticket + 1 );
-                        assertTrue( "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was " + reference.get( batch[i] ), compareAndSet );
+                        assertTrue( compareAndSet,
+                                "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was " +
+                                        reference.get( batch[i] ) );
                     }
                 }
             }
@@ -219,7 +230,7 @@ public class ForkedProcessorStepTest
         // WHEN
         step.start( 0 );
         downstream.start( 0 );
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        ThreadLocalRandom random = current();
         for ( int ticket = 0; ticket < 200; ticket++ )
         {
             // The processor count is changed here in this block simply because otherwise
@@ -241,7 +252,7 @@ public class ForkedProcessorStepTest
         step.endOfUpstream();
         while ( !step.isCompleted() )
         {
-            Thread.sleep( 10 );
+            sleep( 10 );
         }
         step.close();
     }
@@ -251,10 +262,9 @@ public class ForkedProcessorStepTest
     {
         // GIVEN
         SimpleStageControl control = new SimpleStageControl();
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        int availableProcessors = getRuntime().availableProcessors();
         Exception testPanic = new RuntimeException();
-        ForkedProcessorStep<Void> step = new ForkedProcessorStep<Void>( control, "Processor",
-                config( availableProcessors ) )
+        ForkedProcessorStep<Void> step = new ForkedProcessorStep<Void>( control, "Processor", config( availableProcessors ) )
         {
             @Override
             protected void forkedProcess( int id, int processors, Void batch ) throws Throwable
@@ -271,7 +281,7 @@ public class ForkedProcessorStepTest
         // THEN
         while ( !step.isCompleted() )
         {
-            Thread.sleep( 10 );
+            sleep( 10 );
         }
         try
         {
@@ -283,24 +293,24 @@ public class ForkedProcessorStepTest
         }
     }
 
-    @Test( timeout = 60_000 )
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered() throws Exception
+    @Test
+    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered()
     {
-        shouldBeAbleToProgressUnderStressfulProcessorChanges( Step.ORDER_SEND_DOWNSTREAM );
+        assertTimeout( ofMillis( 60_000 ), () -> shouldBeAbleToProgressUnderStressfulProcessorChanges( ORDER_SEND_DOWNSTREAM ) );
     }
 
-    @Test( timeout = 60_000 )
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered() throws Exception
+    @Test
+    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered()
     {
-        shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 );
+        assertTimeout( ofMillis( 60_000 ), () -> shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 ) );
     }
 
     private void shouldBeAbleToProgressUnderStressfulProcessorChanges( int orderingGuarantees ) throws Exception
     {
         // given
         int batches = 100;
-        int processors = Runtime.getRuntime().availableProcessors() * 10;
-        Configuration config = new Configuration.Overridden( Configuration.DEFAULT )
+        int processors = getRuntime().availableProcessors() * 10;
+        Configuration config = new Configuration.Overridden( DEFAULT )
         {
             @Override
             public int maxNumberOfProcessors()
@@ -314,16 +324,16 @@ public class ForkedProcessorStepTest
         steps.get( 1 ).processors( processors / 3 );
 
         // when
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        ThreadLocalRandom random = current();
         while ( execution.stillExecuting() )
         {
             steps.get( 2 ).processors( random.nextInt( -2, 5 ) );
-            Thread.sleep( 1 );
+            sleep( 1 );
         }
         execution.assertHealthy();
 
         // then
-        assertEquals( batches, steps.get( steps.size() - 1 ).stats().stat( Keys.done_batches ).asLong() );
+        assertEquals( batches, steps.get( steps.size() - 1 ).stats().stat( done_batches ).asLong() );
     }
 
     private static class StressStage extends Stage
@@ -351,7 +361,7 @@ public class ForkedProcessorStepTest
                 @Override
                 protected void process( Long batch, BatchSender sender ) throws Throwable
                 {
-                    Thread.sleep( 0, ThreadLocalRandom.current().nextInt( 100_000 ) );
+                    sleep( 0, current().nextInt( 100_000 ) );
                     sender.send( batch );
                 }
             } );
@@ -360,7 +370,7 @@ public class ForkedProcessorStepTest
                 @Override
                 protected void forkedProcess( int id, int processors, Long batch ) throws Throwable
                 {
-                    Thread.sleep( 0, ThreadLocalRandom.current().nextInt( 100_000 ) );
+                    sleep( 0, current().nextInt( 100_000 ) );
                 }
             } );
             add( new DeadEndStep( control() ) );

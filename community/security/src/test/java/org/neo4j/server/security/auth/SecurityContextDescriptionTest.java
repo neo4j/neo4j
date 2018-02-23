@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class SecurityContextDescriptionTest
@@ -41,7 +41,7 @@ public class SecurityContextDescriptionTest
     private BasicAuthManager manager;
     private SecurityContext context;
 
-    @Before
+    @BeforeEach
     public void setup() throws Throwable
     {
         manager =
@@ -57,7 +57,7 @@ public class SecurityContextDescriptionTest
         context = manager.login( authToken( "johan", "bar" ) ).authorize( mock( Token.class ) );
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Throwable
     {
         manager.stop();

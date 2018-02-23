@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,7 +30,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.Race;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.RELATIONSHIPS;
 

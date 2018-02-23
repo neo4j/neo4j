@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -27,11 +27,12 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.ArrayUtil.containsAll;
 
 public class UnionIndexCapabilityTest
 {
@@ -160,8 +161,8 @@ public class UnionIndexCapabilityTest
     private void assertOrderCapability( UnionIndexCapability union, IndexOrder... expected )
     {
         IndexOrder[] actual = union.orderCapability( someValueGroup() );
-        assertTrue( "Actual contains all expected", ArrayUtil.containsAll( expected, actual ) );
-        assertTrue( "Actual contains nothing else than expected", ArrayUtil.containsAll( actual, expected ) );
+        assertTrue( containsAll( expected, actual ), "Actual contains all expected" );
+        assertTrue( containsAll( actual, expected ), "Actual contains nothing else than expected" );
     }
 
     private ValueGroup someValueGroup()

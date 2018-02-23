@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.population;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,8 +50,8 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.apache.commons.lang3.SystemUtils.JAVA_IO_TMPDIR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
 
 public class LucenePartitionedIndexStressTesting
@@ -79,7 +79,7 @@ public class LucenePartitionedIndexStressTesting
     private GraphDatabaseService db;
     private File storeDir;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         storeDir = prepareStoreDir();
@@ -90,7 +90,7 @@ public class LucenePartitionedIndexStressTesting
                                            .newGraphDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         db.shutdown();
@@ -163,17 +163,17 @@ public class LucenePartitionedIndexStressTesting
                     populationResult.maxPropertyId + "" );
             Node nodeByStringProperty = db.findNode( Label.label( LABEL ), getStringProperty(),
                     populationResult.maxPropertyId + "" );
-            assertNotNull( "Should find last inserted node", nodeByStringProperty );
-            assertEquals( "Both nodes should be the same last inserted node", nodeByStringProperty,
-                    nodeByUniqueStringProperty );
+            assertNotNull( nodeByStringProperty, "Should find last inserted node" );
+            assertEquals( nodeByStringProperty, nodeByUniqueStringProperty,
+                    "Both nodes should be the same last inserted node" );
 
             Node nodeByUniqueLongProperty = db.findNode( Label.label( LABEL ), getUniqueLongProperty(),
                     populationResult.maxPropertyId );
             Node nodeByLongProperty = db.findNode( Label.label( LABEL ), getLongProperty(),
                     populationResult.maxPropertyId );
-            assertNotNull( "Should find last inserted node", nodeByLongProperty );
-            assertEquals( "Both nodes should be the same last inserted node", nodeByLongProperty,
-                    nodeByUniqueLongProperty );
+            assertNotNull( nodeByLongProperty, "Should find last inserted node" );
+            assertEquals( nodeByLongProperty, nodeByUniqueLongProperty,
+                    "Both nodes should be the same last inserted node" );
 
         }
     }

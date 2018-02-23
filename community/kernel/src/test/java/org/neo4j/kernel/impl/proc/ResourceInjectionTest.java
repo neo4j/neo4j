@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.hamcrest.Matcher;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
@@ -51,14 +52,15 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 @SuppressWarnings( "WeakerAccess" )
+@EnableRuleMigrationSupport
 public class ResourceInjectionTest
 {
     @Rule
@@ -79,7 +81,7 @@ public class ResourceInjectionTest
         return allOf( containsString( procName ), containsString( "unavailable" ) );
     }
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         ComponentRegistry safeComponents = new ComponentRegistry();
@@ -149,7 +151,7 @@ public class ResourceInjectionTest
         try
         {
             procList.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker );
-            fail();
+            fail("Failure was expected");
         }
         catch ( ProcedureException e )
         {
@@ -196,7 +198,7 @@ public class ResourceInjectionTest
         try
         {
             procList.get( 0 ).apply( new BasicContext(), new AnyValue[0] );
-            fail();
+            fail("Failure was expected");
         }
         catch ( ProcedureException e )
         {
@@ -244,7 +246,7 @@ public class ResourceInjectionTest
         {
             procList.get(0).create( new BasicContext() ).update( new Object[]{} );
             Object out = procList.get(0).create( new BasicContext() ).result();
-            fail();
+            fail("Failure was expected");
         }
         catch ( ProcedureException e )
         {

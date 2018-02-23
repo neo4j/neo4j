@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CloneableInPublic;
@@ -51,47 +53,50 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 
+@ExtendWith( RandomExtension.class )
 public class NodeLabelsFieldTest
 {
+
+    @Resource
+    public RandomRule random;
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public RandomRule random = new RandomRule();
-
-    private NeoStores neoStores;
     private NodeStore nodeStore;
 
-    @Before
+    private NeoStores neoStores;
+
+    @BeforeEach
     public void startUp()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }
 
-    @After
+    @AfterEach
     public void cleanUp()
     {
         neoStores.close();
     }
-
     @Test
     public void shouldInlineOneLabel()
     {
@@ -460,8 +465,8 @@ public class NodeLabelsFieldTest
                 nodeStore.getDynamicLabelStore() ) );
 
         // THEN
-        assertTrue( "initial:" + initialRecords + ", reallocated:" + reallocatedRecords ,
-                initialRecords.containsAll( used( reallocatedRecords ) ) );
+        assertTrue( initialRecords.containsAll( used( reallocatedRecords ) ),
+                "initial:" + initialRecords + ", reallocated:" + reallocatedRecords );
         assertTrue( used( reallocatedRecords ).size() < initialRecords.size() );
     }
 
@@ -508,7 +513,7 @@ public class NodeLabelsFieldTest
         long[] readLabelIds = labels.get( nodeStore );
         for ( long labelId : readLabelIds )
         {
-            assertTrue( "Found an unexpected label " + labelId, key.remove( (int) labelId ) );
+            assertTrue( key.remove( (int) labelId ), "Found an unexpected label " + labelId );
         }
         assertTrue( key.isEmpty() );
     }

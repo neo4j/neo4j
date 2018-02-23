@@ -93,10 +93,10 @@ public class SessionResetIT
     private static final String SHORT_QUERY_2 = "MATCH (n:Node {name: 'foo'}) RETURN count(n)";
     private static final String LONG_QUERY = "UNWIND range(0, 10000000) AS i CREATE (n:Node {idx: i}) DELETE n";
     private static final String LONG_PERIODIC_COMMIT_QUERY = "USING PERIODIC COMMIT 1 " +
-                                                             "LOAD CSV FROM '" + createTmpCsvFile() + "' AS l " +
-                                                             "UNWIND range(0, 10) AS i " +
-                                                             "CREATE (n:Node {name: l[0], occupation: l[1], idx: i}) " +
-                                                             "DELETE n";
+            "LOAD CSV FROM '" + createTmpCsvFile() + "' AS l " +
+            "UNWIND range(0, 10) AS i " +
+            "CREATE (n:Node {name: l[0], occupation: l[1], idx: i}) " +
+            "DELETE n";
 
     private static final int STRESS_IT_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
     private static final long STRESS_IT_DURATION_MS = SECONDS.toMillis( 5 );
@@ -363,15 +363,15 @@ public class SessionResetIT
         Throwable cause = rootCause( error );
 
         return isTransactionTerminatedException( cause ) ||
-               cause instanceof ServiceUnavailableException ||
-               cause instanceof ClientException ||
-               cause instanceof ClosedChannelException;
+                cause instanceof ServiceUnavailableException ||
+                cause instanceof ClientException ||
+                cause instanceof ClosedChannelException;
     }
 
     private static boolean isTransactionTerminatedException( Throwable error )
     {
         return error instanceof TransientException &&
-               error.getMessage().startsWith( "The transaction has been terminated" );
+                error.getMessage().startsWith( "The transaction has been terminated" );
     }
 
     private static URI createTmpCsvFile()

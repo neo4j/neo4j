@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -34,8 +34,8 @@ import org.neo4j.function.Predicates;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.modules;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;

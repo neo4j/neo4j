@@ -23,7 +23,8 @@ import org.hamcrest.Description;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.net.URISyntaxException;
@@ -37,10 +38,11 @@ import java.util.function.Supplier;
 import org.neo4j.upgrade.loader.EmbeddedJarLoader;
 import org.neo4j.upgrade.loader.JarLoaderSupplier;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.upgrade.lucene.LuceneExplicitIndexUpgrader.NO_MONITOR;
 
+@EnableRuleMigrationSupport
 public class LuceneExplicitIndexUpgraderTest
 {
     @Rule

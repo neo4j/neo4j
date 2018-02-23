@@ -19,31 +19,34 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class GraphDatabaseInternalLogIT
 {
     public static final String INTERNAL_LOG_FILE = "debug.log";
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDir;
 
     @Test
     public void shouldWriteToInternalDiagnosticsLog() throws Exception

@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Collections;
@@ -36,10 +36,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
@@ -70,7 +70,7 @@ public class SegmentsTest
 
     private final List<SegmentFile> segmentFiles = asList( fileA, fileB );
 
-    @Before
+    @BeforeEach
     public void before()
     {
         when( fsa.deleteFile( any() ) ).thenReturn( true );

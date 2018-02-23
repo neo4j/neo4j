@@ -141,7 +141,7 @@ public class TestGraphDescription implements GraphHolder
         data.get();
 
         try ( Transaction ignored = graphdb.beginTx();
-              IndexHits<Node> nodes = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
+                IndexHits<Node> nodes = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
         {
             assertTrue( "can't look up node.", nodes.hasNext() );
         }
@@ -153,10 +153,10 @@ public class TestGraphDescription implements GraphHolder
                     @PROP( key = "name", value = "me" ),
                     @PROP( key = "bool", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ),
             @NODE( name = "you", setNameProperty = true ) },
-                   relationships = { @REL( start = "I", end = "you", type = "knows",
-                           properties = {
-                    @PROP( key = "name", value = "relProp" ),
-                    @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) },
+            relationships = { @REL( start = "I", end = "you", type = "knows",
+                    properties = {
+                            @PROP( key = "name", value = "relProp" ),
+                            @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) },
             autoIndexRelationships = true )
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
     {

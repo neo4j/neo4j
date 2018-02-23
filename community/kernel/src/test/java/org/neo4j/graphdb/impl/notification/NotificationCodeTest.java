@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.SeverityLevel;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;

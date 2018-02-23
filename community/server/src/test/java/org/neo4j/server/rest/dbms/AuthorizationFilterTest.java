@@ -20,8 +20,8 @@
 package org.neo4j.server.rest.dbms;
 
 import org.apache.commons.codec.binary.Base64;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,7 +42,7 @@ import org.neo4j.server.security.auth.BasicLoginContext;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
@@ -63,7 +63,7 @@ public class AuthorizationFilterTest
     private final HttpServletResponse servletResponse = mock( HttpServletResponse.class );
     private final FilterChain filterChain = mock( FilterChain.class );
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         when( servletResponse.getOutputStream() ).thenReturn( new ServletOutputStream()

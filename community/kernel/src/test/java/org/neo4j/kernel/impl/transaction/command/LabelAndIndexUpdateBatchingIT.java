@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -116,10 +116,9 @@ public class LabelAndIndexUpdateBatchingIT
             // THEN node N should've ended up in the index too
             try ( Transaction tx = db.beginTx() )
             {
-                assertNotNull( "Verification node not found",
-                        singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, otherNode ) ) ); // just to verify
-                assertNotNull( "Node N not found",
-                        singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, nodeN ) ) );
+                assertNotNull( singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, otherNode ) ),
+                        "Verification node not found" ); // just to verify
+                assertNotNull( singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, nodeN ) ), "Node N not found" );
                 tx.success();
             }
         }

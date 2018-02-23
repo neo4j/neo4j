@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -34,9 +34,9 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.values.storable.Values.intValue;
@@ -48,7 +48,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
     protected abstract ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -179,7 +179,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             try
             {
                 tx.dataWrite().nodeAddLabel( nodeConflicting, label );
-                fail();
+                fail("Failure was expected");
             }
             catch ( ConstraintValidationException e )
             {
@@ -237,7 +237,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             try
             {
                 tx.dataWrite().nodeSetProperty( nodeConflicting, property, intValue( 1337 ) );
-                fail();
+                fail("Failure was expected");
             }
             catch ( ConstraintValidationException e )
             {

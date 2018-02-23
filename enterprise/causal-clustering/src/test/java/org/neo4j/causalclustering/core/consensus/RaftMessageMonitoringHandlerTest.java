@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Clock;
@@ -54,7 +54,7 @@ public class RaftMessageMonitoringHandlerTest
 
     private RaftMessageMonitoringHandler handler = new RaftMessageMonitoringHandler( downstream, clock, monitors );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         monitors.addMonitorListener( monitor );

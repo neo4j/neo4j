@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.management;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -55,9 +55,9 @@ import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,7 +82,7 @@ public class HighAvailabilityBeanTest
     private KernelData kernelData;
     private HighAvailability haBean;
 
-    @Before
+    @BeforeEach
     public void setup() throws NotCompliantMBeanException
     {
         fileSystem = new DefaultFileSystemAbstraction();
@@ -93,7 +93,7 @@ public class HighAvailabilityBeanTest
         haBean = (HighAvailability) new HighAvailabilityBean().createMBean( data );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         kernelData.shutdown();
@@ -169,24 +169,21 @@ public class HighAvailabilityBeanTest
         // THEN
         for ( ClusterMemberInfo info : haBean.getInstancesInCluster() )
         {
-            assertTrue( "every instance should be available", info.isAvailable() );
-            assertTrue( "every instances should have at least one role", info.getRoles().length > 0 );
+            assertTrue( info.isAvailable(), "every instance should be available" );
+            assertTrue( info.getRoles().length > 0, "every instances should have at least one role" );
             if ( HighAvailabilityModeSwitcher.MASTER.equals( info.getRoles()[0] ) )
             {
-                assertEquals( "coordinator should be master",
-                        HighAvailabilityModeSwitcher.MASTER, info.getHaRole() );
+                assertEquals( MASTER, info.getHaRole(), "coordinator should be master" );
             }
             else
             {
-                assertEquals( "Either master or slave, no other way",
-                        HighAvailabilityModeSwitcher.SLAVE, info.getRoles()[0] );
-                assertEquals( "instance " + info.getInstanceId() + " is cluster slave but HA master",
-                        HighAvailabilityModeSwitcher.SLAVE, info.getHaRole() );
+                assertEquals( SLAVE, info.getRoles()[0], "Either master or slave, no other way" );
+                assertEquals( SLAVE, info.getHaRole(),
+                        "instance " + info.getInstanceId() + " is cluster slave but HA master" );
             }
             for ( String uri : info.getUris() )
             {
-                assertTrue( "roles should contain URIs",
-                        uri.startsWith( "ha://" ) || uri.startsWith( "backup://" ) );
+                assertTrue( uri.startsWith( "ha://" ) || uri.startsWith( "backup://" ), "roles should contain URIs" );
             }
         }
     }
@@ -240,7 +237,7 @@ public class HighAvailabilityBeanTest
 
         // THEN
         verify( updatePuller ).pullUpdates();
-        assertTrue( result, result.contains( "Update completed in" ) );
+        assertTrue( result.contains( "Update completed in" ), result );
     }
 
     @Test
@@ -257,7 +254,7 @@ public class HighAvailabilityBeanTest
 
         // THEN
         verify( updatePuller ).pullUpdates();
-        assertTrue( result, result.contains( myException.getMessage() ) );
+        assertTrue( result.contains( myException.getMessage() ), result );
     }
 
     private int count( ClusterMemberInfo[] instances, Predicate<ClusterMemberInfo> filter )
@@ -295,7 +292,7 @@ public class HighAvailabilityBeanTest
         assertEquals( 1138,
                 getUriForScheme( "ha", Iterables.map( URI::create, Arrays.asList( slave.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.SLAVE, slave.getHaRole() );
-        assertTrue( "Slave not available", slave.isAvailable() );
+        assertTrue( slave.isAvailable(), "Slave not available" );
     }
 
     private static URI getUriForScheme( final String scheme, Iterable<URI> uris )

@@ -87,7 +87,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Documented( "To delete a single property\n" +
-                 "from a node, see the example below" )
+            "from a node, see the example below" )
     @Test
     public void delete_a_named_property_from_a_node()
     {
@@ -96,8 +96,8 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
         map.put( "name", "tobias" );
         helper.setNodeProperties( nodeId, map );
         gen.get()
-        .expectedStatus( 204 )
-        .delete( functionalTestHelper.nodePropertyUri( nodeId, "name") );
+                .expectedStatus( 204 )
+                .delete( functionalTestHelper.nodePropertyUri( nodeId, "name") );
     }
 
     @Test

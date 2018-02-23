@@ -20,9 +20,6 @@
 package org.neo4j.tooling.procedure.visitors;
 
 import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
-import org.neo4j.tooling.procedure.visitors.examples.PerformsWriteProcedures;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,6 +28,10 @@ import java.util.stream.Stream;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementVisitor;
 import javax.tools.Diagnostic;
+
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
+import org.neo4j.tooling.procedure.visitors.examples.PerformsWriteProcedures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;

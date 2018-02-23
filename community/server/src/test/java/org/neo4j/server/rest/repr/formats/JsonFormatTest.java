@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -29,6 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -39,13 +40,11 @@ import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ServerListRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
-import static org.junit.Assert.assertEquals;
-
 public class JsonFormatTest
 {
     private OutputFormat json;
 
-    @Before
+    @BeforeEach
     public void createOutputFormat() throws Exception
     {
         json = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );

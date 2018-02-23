@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltConnectionDescriptor;
@@ -178,7 +178,7 @@ public class ResetFuzzTest
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         life.shutdown();

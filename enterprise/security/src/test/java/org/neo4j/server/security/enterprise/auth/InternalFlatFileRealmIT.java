@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.CharArrayReader;
 import java.io.File;
@@ -51,7 +51,7 @@ import org.neo4j.time.Clocks;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class InternalFlatFileRealmIT
 {
@@ -65,7 +65,7 @@ public class InternalFlatFileRealmIT
 
     private static int LARGE_NUMBER = 123;
 
-    @Before
+    @BeforeEach
     public void setup() throws Throwable
     {
         fs = new EvilFileSystem( new EphemeralFileSystemAbstraction() );
@@ -86,7 +86,7 @@ public class InternalFlatFileRealmIT
         realm.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Throwable
     {
         realm.shutdown();

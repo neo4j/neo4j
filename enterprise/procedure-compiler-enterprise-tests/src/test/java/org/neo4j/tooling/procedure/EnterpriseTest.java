@@ -23,7 +23,7 @@ import com.google.testing.compile.CompilationRule;
 import com.google.testing.compile.CompileTester;
 import com.google.testing.compile.JavaFileObjects;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URL;
 import javax.annotation.processing.Processor;

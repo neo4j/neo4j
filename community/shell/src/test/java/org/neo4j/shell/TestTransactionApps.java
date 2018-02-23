@@ -19,9 +19,9 @@
  */
 package org.neo4j.shell;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -35,8 +35,9 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.helpers.collection.Iterables.asCollection;
 
 public class TestTransactionApps
 {
@@ -44,7 +45,7 @@ public class TestTransactionApps
     private FakeShellServer shellServer;
     private ShellClient shellClient;
 
-    @Before
+    @BeforeEach
     public void doBefore() throws Exception
     {
         db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -52,7 +53,7 @@ public class TestTransactionApps
         shellClient = new SameJvmClient( new HashMap<>(), shellServer, new CollectingOutput() );
    }
 
-    @After
+    @AfterEach
     public void doAfter() throws Exception
     {
         shellClient.shutdown();
@@ -122,13 +123,13 @@ public class TestTransactionApps
 
     private void assertWeAreNotInATransaction()
     {
-        assertTrue( "Expected to not be in a transaction", shellServer.getActiveTransactionCount() == 0 );
+        assertTrue( shellServer.getActiveTransactionCount() == 0, "Expected to not be in a transaction" );
     }
 
     private void assertWeAreInATransaction()
     {
 
-        assertTrue( "Expected to be in a transaction", shellServer.getActiveTransactionCount() > 0 );
+        assertTrue( shellServer.getActiveTransactionCount() > 0, "Expected to be in a transaction" );
     }
 
     public void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
@@ -156,8 +157,9 @@ public class TestTransactionApps
                     break;
                 }
             }
-            assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
-                        Iterables.asCollection( output ), found != negative );
+            assertTrue( found != negative,
+                    "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
+                            asCollection( output ) );
         }
     }
 

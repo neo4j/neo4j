@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.index.IndexCommand;
@@ -28,9 +28,9 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PhysicalLogCommandReaderV2_2_4Test
 {

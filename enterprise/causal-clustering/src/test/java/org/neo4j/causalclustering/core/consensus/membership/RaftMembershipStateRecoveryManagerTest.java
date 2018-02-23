@@ -20,7 +20,7 @@
 package org.neo4j.causalclustering.core.consensus.membership;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.test.rule.TestDirectory;
 

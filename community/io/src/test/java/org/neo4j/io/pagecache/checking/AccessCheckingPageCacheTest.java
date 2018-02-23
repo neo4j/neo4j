@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.checking;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +30,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -43,7 +43,7 @@ public class AccessCheckingPageCacheTest
     private PageCache pageCache;
     private PageCursor cursor;
 
-    @Before
+    @BeforeEach
     public void getPageCursor() throws IOException
     {
         PageCache mockedPageCache = mock( PageCache.class );

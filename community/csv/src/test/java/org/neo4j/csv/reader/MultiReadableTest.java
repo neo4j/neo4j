@@ -19,16 +19,16 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
 
 import org.neo4j.collection.RawIterator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Readables.wrap;
 
 public class MultiReadableTest
@@ -93,7 +93,7 @@ public class MultiReadableTest
         reader.read( buffer, buffer.front() );
         assertEquals( 15, reader.position() );
         reader.read( buffer, buffer.front() );
-        assertEquals( "Should not transition to a new reader in the middle of a read", 23, reader.position() );
+        assertEquals( 23, reader.position(), "Should not transition to a new reader in the middle of a read" );
         assertEquals( "Reader1", reader.sourceDescription() );
 
         // we will transition to the new reader in the call below

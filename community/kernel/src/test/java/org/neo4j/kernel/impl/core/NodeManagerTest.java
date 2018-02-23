@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,20 +37,20 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 
 public class NodeManagerTest
 {
     private GraphDatabaseAPI db;
 
-    @Before
+    @BeforeEach
     public void init()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void stop()
     {
         db.shutdown();

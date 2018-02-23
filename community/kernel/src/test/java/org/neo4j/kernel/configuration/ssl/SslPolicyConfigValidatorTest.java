@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.configuration.ssl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -27,9 +27,9 @@ import java.util.function.Consumer;
 import org.neo4j.graphdb.config.InvalidSettingException;
 
 import static java.util.Collections.unmodifiableMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -75,7 +75,7 @@ public class SslPolicyConfigValidatorTest
         try
         {
             validator.validate( originalParams, warnings );
-            fail();
+            fail("Failure was expected");
         }
         catch ( InvalidSettingException e )
         {
@@ -94,7 +94,7 @@ public class SslPolicyConfigValidatorTest
         try
         {
             validator.validate( originalParams, warnings );
-            fail();
+            fail("Failure was expected");
         }
         catch ( InvalidSettingException e )
         {
@@ -134,7 +134,7 @@ public class SslPolicyConfigValidatorTest
         try
         {
             validator.validate( originalParams, warnings );
-            fail();
+            fail("Failure was expected");
         }
         catch ( InvalidSettingException e )
         {

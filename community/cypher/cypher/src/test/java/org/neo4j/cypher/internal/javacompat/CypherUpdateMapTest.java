@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -81,13 +81,13 @@ public class CypherUpdateMapTest
         }
     }
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         db.shutdown();

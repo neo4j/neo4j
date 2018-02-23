@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store.kvstore;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 

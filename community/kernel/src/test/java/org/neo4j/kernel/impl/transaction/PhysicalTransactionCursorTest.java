@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -38,9 +38,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -60,7 +60,7 @@ public class PhysicalTransactionCursorTest
             new Command.NodeCommand( new NodeRecord( 42 ), new NodeRecord( 42 ) ) );
     private PhysicalTransactionCursor<ReadableLogChannel> cursor;
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException
     {
         cursor = new PhysicalTransactionCursor<>( channel, entryReader );

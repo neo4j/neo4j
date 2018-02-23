@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;

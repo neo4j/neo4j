@@ -151,7 +151,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     {
 
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -172,7 +172,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     public void multipleIteratorsNotNestedExact() throws Exception
     {
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -194,7 +194,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     {
         Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -215,7 +215,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     public void multipleIteratorsNestedInnerNewExists() throws Exception
     {
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -238,7 +238,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     public void multipleIteratorsNestedInnerNewExact() throws Exception
     {
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -262,7 +262,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     {
         Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -285,7 +285,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     public void multipleIteratorsNestedInterleavedExists() throws Exception
     {
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -308,7 +308,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     public void multipleIteratorsNestedInterleavedExact() throws Exception
     {
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -332,7 +332,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     {
         Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
         try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+                Statement statement = db.statement() )
         {
             // when
             ReadOperations readOperations = statement.readOperations();
@@ -706,7 +706,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
             }
 
             try ( Transaction tx = db.beginTx();
-                  Statement statement = db.statement() )
+                    Statement statement = db.statement() )
             {
                 ReadOperations readOp = statement.readOperations();
                 indexedLabelId = readOp.labelGetForName( indexLabel.name() );

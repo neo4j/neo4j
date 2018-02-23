@@ -20,8 +20,9 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -44,9 +45,10 @@ import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
@@ -80,9 +82,9 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
         Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
-        assertTrue( "Expected at least one path.", paths.hasNext() );
+        assertTrue( paths.hasNext(), "Expected at least one path." );
         assertPath( paths.next(), s, a, c, d, t );
-        assertTrue( "Expected two paths", paths.hasNext() );
+        assertTrue( paths.hasNext(), "Expected two paths" );
         assertPath( paths.next(), s, b, a, c, d, t );
     }
 
@@ -125,20 +127,20 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
         for ( int i = 1; i <= 3; i++ )
         {
-            assertTrue( "Expected at least " + i + " path(s)", paths.hasNext() );
-            assertTrue( "Expected 3 paths of cost 2", NoneStrictMath.equals( paths.next().weight(), 2 ) );
+            assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
+            assertTrue( NoneStrictMath.equals( paths.next().weight(), 2 ), "Expected 3 paths of cost 2" );
         }
         for ( int i = 1; i <= 3; i++ )
         {
-            assertTrue( "Expected at least " + i + " path(s)", paths.hasNext() );
-            assertTrue( "Expected 3 paths of cost 3", NoneStrictMath.equals( paths.next().weight(), 3 ) );
+            assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
+            assertTrue( NoneStrictMath.equals( paths.next().weight(), 3 ), "Expected 3 paths of cost 3" );
         }
-        assertTrue( "Expected at least 7 paths", paths.hasNext() );
-        assertTrue( "Expected 1 path of cost 4", NoneStrictMath.equals( paths.next().weight(), 4 ) );
-        assertFalse( "Expected exactly 7 paths", paths.hasNext() );
+        assertTrue( paths.hasNext(), "Expected at least 7 paths" );
+        assertTrue( NoneStrictMath.equals( paths.next().weight(), 4 ), "Expected 1 path of cost 4" );
+        assertFalse( paths.hasNext(), "Expected exactly 7 paths" );
     }
 
-    @Test( timeout = 5000 )
+    @Test
     public void testForLoops()
     {
         /*
@@ -153,42 +155,44 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
          *
          */
 
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            Node s = graph.makeNode( "s" );
-            Node t = graph.makeNode( "t" );
+        assertTimeout( Duration.ofMillis( 5_000 ), () -> {
+            try ( Transaction tx = graphDb.beginTx() )
+            {
+                Node s = graph.makeNode( "s" );
+                Node t = graph.makeNode( "t" );
 
-            // Blob loop
-            graph.makeEdge( "s", "a1", "length", 1 );
-            graph.makeEdge( "a1", "b", "length", 0 );
-            graph.makeEdge( "b", "a1", "length", 0 );
+                // Blob loop
+                graph.makeEdge( "s", "a1", "length", 1 );
+                graph.makeEdge( "a1", "b", "length", 0 );
+                graph.makeEdge( "b", "a1", "length", 0 );
 
-            // Self loop
-            graph.makeEdge( "a1", "a2", "length", 1 );
-            graph.makeEdge( "a2", "a2", "length", 0 );
+                // Self loop
+                graph.makeEdge( "a1", "a2", "length", 1 );
+                graph.makeEdge( "a2", "a2", "length", 0 );
 
-            // Diamond loop
-            graph.makeEdge( "a2", "a3", "length", 1 );
-            graph.makeEdge( "a3", "c1", "length", 0 );
-            graph.makeEdge( "a3", "c2", "length", 0 );
-            graph.makeEdge( "c1", "a4", "length", 0 );
-            graph.makeEdge( "c1", "a4", "length", 0 );
-            graph.makeEdge( "a4", "t", "length", 1 );
+                // Diamond loop
+                graph.makeEdge( "a2", "a3", "length", 1 );
+                graph.makeEdge( "a3", "c1", "length", 0 );
+                graph.makeEdge( "a3", "c2", "length", 0 );
+                graph.makeEdge( "c1", "a4", "length", 0 );
+                graph.makeEdge( "c1", "a4", "length", 0 );
+                graph.makeEdge( "a4", "t", "length", 1 );
 
-            PathExpander expander = PathExpanders.allTypesAndDirections();
-            Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ),
-                                                    PathInterestFactory.all( NoneStrictMath.EPSILON ) );
+                PathExpander expander = PathExpanders.allTypesAndDirections();
+                Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ),
+                                                        PathInterestFactory.all( NoneStrictMath.EPSILON ) );
 
-            Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
+                Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
-            assertTrue( "Expected at least one path", paths.hasNext() );
-            assertTrue( "Expected first path of length 6", paths.next().length() == 6 );
-            assertTrue( "Expected at least two paths", paths.hasNext() );
-            assertTrue( "Expected second path of length 6", paths.next().length() == 6 );
-            assertFalse( "Expected exactly two paths", paths.hasNext() );
+                assertTrue( paths.hasNext(), "Expected at least one path" );
+                assertTrue( paths.next().length() == 6, "Expected first path of length 6" );
+                assertTrue( paths.hasNext(), "Expected at least two paths" );
+                assertTrue( paths.next().length() == 6, "Expected second path of length 6" );
+                assertFalse( paths.hasNext(), "Expected exactly two paths" );
 
-            tx.success();
-        }
+                tx.success();
+            }
+        } );
     }
 
     @Test
@@ -242,10 +246,10 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             {
                 expectedWeight = 3.0;
             }
-            assertTrue( "Expected path number " + count + " to have weight of " + expectedWeight,
-                    NoneStrictMath.equals( path.weight(), expectedWeight ) );
+            assertTrue( NoneStrictMath.equals( path.weight(), expectedWeight ),
+                    "Expected path number " + count + " to have weight of " + expectedWeight );
         }
-        assertTrue( "Expected exactly 6 returned paths", count == 6 );
+        assertTrue( count == 6, "Expected exactly 6 returned paths" );
     }
 
     @Test

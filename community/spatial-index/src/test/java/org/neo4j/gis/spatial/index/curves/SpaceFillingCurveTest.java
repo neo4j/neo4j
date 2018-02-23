@@ -19,8 +19,7 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -526,40 +525,6 @@ public class SpaceFillingCurveTest
                         rangeStats.avg(), rangeStats.min, rangeStats.max,
                         maxDepthStats.avg(), maxDepthStats.min, maxDepthStats.max ) );
             }
-        }
-    }
-
-    /**
-     * This test can be uses to reproduce a bug with a single search envelope, if {@link #shouldHaveReasonableCoveredArea()}
-     * fails an assertion. It should be ignored by default.
-     */
-    @Ignore
-    public void debugSingle()
-    {
-        final int xmin = -100;
-        final int xmax = 100;
-        final int ymin = -100;
-        final int ymax = 100;
-
-        final int level = 1;
-        final double xStart = -0x1.9p6;
-        final double xEnd = -0x1.8ffffd60e94eep6;
-        final double yStart = 0x1.8ff5c28f5c28ep6;
-        final double yEnd = 0x1.8ffffffffffffp6;
-
-        Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
-        HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-        Envelope searchEnvelope = new Envelope( xStart, xEnd, yStart, yEnd );
-        HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
-        List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
-
-        log( String.format( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd ) );
-        log( String.format( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() ) );
-        log( "Ranges: " + ranges.size() );
-        int[] counts = monitor.getCounts();
-        for ( int i = 0; i <= curve.getMaxLevel(); i++ )
-        {
-            log( "\t" + i + "\t" + counts[i] );
         }
     }
 

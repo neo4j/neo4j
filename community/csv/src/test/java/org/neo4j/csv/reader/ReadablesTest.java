@@ -44,13 +44,12 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.copyOfRange;
 
 @RunWith( Parameterized.class )
 public class ReadablesTest
@@ -313,7 +312,7 @@ public class ReadablesTest
     {
         File file = new File( directory.directory(), "text-" + charset.name() );
         try ( OutputStream out = new FileOutputStream( file );
-              Writer writer = new OutputStreamWriter( out, charset ) )
+                Writer writer = new OutputStreamWriter( out, charset ) )
         {
             out.write( header );
             writer.append( data );

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class DatabaseSchemaStateTest
@@ -62,7 +62,7 @@ public class DatabaseSchemaStateTest
         logProvider.assertExactly( inLog( DatabaseSchemaState.class ).debug( "Schema state store has been cleared." ) );
     }
 
-    @Before
+    @BeforeEach
     public void before()
     {
         this.stateStore = new DatabaseSchemaState( logProvider );

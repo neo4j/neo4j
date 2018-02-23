@@ -19,15 +19,18 @@
  */
 package org.neo4j.backup;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import javax.annotation.Resource;
 
 import org.neo4j.backup.impl.BackupProtocolService;
 import org.neo4j.backup.impl.ConsistencyCheck;
@@ -45,27 +48,31 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {TestDirectoryExtension.class, EmbeddedDatabaseExtension.class} )
 public class BackupToolIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass());
+    @Resource
+    public TestDirectory testDirectory;
     @Rule
     public ExpectedException expected = ExpectedException.none();
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
 
     private DefaultFileSystemAbstraction fs;
     private PageCache pageCache;
     private Path backupDir;
     private BackupTool backupTool;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         backupDir = testDirectory.directory( "backups/graph.db" ).toPath();
@@ -74,7 +81,7 @@ public class BackupToolIT
         backupTool = new BackupTool( new BackupProtocolService(), mock( PrintStream.class ) );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         pageCache.close();

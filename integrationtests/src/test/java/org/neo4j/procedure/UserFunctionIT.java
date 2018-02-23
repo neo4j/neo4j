@@ -19,12 +19,13 @@
  */
 package org.neo4j.procedure;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +41,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.ws.rs.HEAD;
+import javax.annotation.Resource;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -66,17 +67,18 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
-import org.neo4j.shell.kernel.apps.cypher.Cypher;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -84,10 +86,12 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.procedure.StringMatcherIgnoresNewlines.containsStringIgnoreNewlines;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {TestDirectoryExtension.class } )
 public class UserFunctionIT
 {
-    @Rule
-    public TemporaryFolder plugins = new TemporaryFolder();
+    @Resource
+    public TestDirectory plugins;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -358,7 +362,7 @@ public class UserFunctionIT
                 .setInternalLogProvider( logProvider )
                 .setUserLogProvider( logProvider )
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.directory().getAbsolutePath() )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
@@ -646,7 +650,8 @@ public class UserFunctionIT
 
     private String createCsvFile( String... lines ) throws IOException
     {
-        File file = plugins.newFile();
+        File file = plugins.file( "file" );
+        assertTrue( file.createNewFile() );
 
         try ( PrintWriter writer = FileUtils.newFilePrintWriter( file, StandardCharsets.UTF_8 ) )
         {
@@ -1094,21 +1099,23 @@ public class UserFunctionIT
         assertFalse( res.hasNext() );
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         exceptionsInFunction.clear();
-        new JarBuilder().createJarFor( plugins.newFile( "myFunctions.jar" ), ClassWithFunctions.class );
+        File myFunctions = plugins.file( "myFunctions.jar" );
+        assertTrue( myFunctions.createNewFile() );
+        new JarBuilder().createJarFor( myFunctions, ClassWithFunctions.class );
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.directory().getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if ( this.db != null )

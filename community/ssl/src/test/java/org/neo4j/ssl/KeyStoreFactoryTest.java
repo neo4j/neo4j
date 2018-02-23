@@ -19,29 +19,33 @@
  */
 package org.neo4j.ssl;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.net.URL;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import javax.annotation.Resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@ExtendWith( TestDirectoryExtension.class )
 public class KeyStoreFactoryTest
 {
-    @Rule
-    public TemporaryFolder dir = new TemporaryFolder();
+    @Resource
+    public TestDirectory dir;
 
     @Test
     public void shouldCreateKeyStoreForGivenKeyPair() throws Exception
     {
         // given
-        File certificatePath = new File( dir.getRoot(), "cert" );
-        File privateKeyPath = new File( dir.getRoot(), "key" );
+        File certificatePath = new File( dir.directory(), "cert" );
+        File privateKeyPath = new File( dir.directory(), "key" );
 
         new PkiUtils().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 
@@ -56,8 +60,8 @@ public class KeyStoreFactoryTest
     public void shouldImportSingleCertificateWhenNotInAChain() throws Exception
     {
         // given
-        File certificatePath = new File( dir.getRoot(), "cert" );
-        File privateKeyPath = new File( dir.getRoot(), "key" );
+        File certificatePath = new File( dir.directory(), "cert" );
+        File privateKeyPath = new File( dir.directory(), "key" );
 
         new PkiUtils().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 
@@ -70,7 +74,7 @@ public class KeyStoreFactoryTest
         Certificate[] chain = keyStore.getCertificateChain( "key" );
 
         // then
-        assertEquals( "Single certificate expected not a chain of [" + chain.length + "]", 1, chain.length );
+        assertEquals( 1, chain.length, "Single certificate expected not a chain of [" + chain.length + "]" );
     }
 
     @Test
@@ -88,7 +92,7 @@ public class KeyStoreFactoryTest
         Certificate[] chain = keyStore.getCertificateChain( "key" );
 
         // then
-        assertEquals( "3 certificates expected in chain: root, intermediary, and user's", 3, chain.length );
+        assertEquals( 3, chain.length, "3 certificates expected in chain: root, intermediary, and user's" );
     }
 
     private File fileFromResources( String path )

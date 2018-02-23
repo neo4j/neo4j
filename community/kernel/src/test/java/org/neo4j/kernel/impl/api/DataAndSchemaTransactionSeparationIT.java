@@ -19,28 +19,30 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Function;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class DataAndSchemaTransactionSeparationIT
 {
-    @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
 
     private static Function<GraphDatabaseService, Void> expectFailureAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )

@@ -19,12 +19,13 @@
  */
 package org.neo4j.procedure;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -68,15 +70,17 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.plugin_dir;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
@@ -87,32 +91,38 @@ import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.procedure.StringMatcherIgnoresNewlines.containsStringIgnoreNewlines;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {TestDirectoryExtension.class} )
 public class ProcedureIT
 {
-    @Rule
-    public TemporaryFolder plugins = new TemporaryFolder();
+    @Resource
+    public TestDirectory plugins;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         exceptionsInProcedure.clear();
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-        new JarBuilder().createJarFor( plugins.newFile( "myFunctions.jar" ), ClassWithFunctions.class );
+        File myProcedures = plugins.file( "myProcedures.jar" );
+        File myFunctions = plugins.file( "myFunctions.jar" );
+        assertTrue( myProcedures.createNewFile() );
+        assertTrue( myFunctions.createNewFile() );
+        new JarBuilder().createJarFor( myProcedures, ClassWithProcedures.class );
+        new JarBuilder().createJarFor( myFunctions, ClassWithFunctions.class );
         db = new TestEnterpriseGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
-                .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( plugin_dir, plugins.directory().getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
         onCloseCalled = new boolean[2];
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if ( this.db != null )
@@ -558,7 +568,7 @@ public class ProcedureIT
                 .setInternalLogProvider( logProvider )
                 .setUserLogProvider( logProvider )
                 .newImpermanentDatabaseBuilder()
-                .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( plugin_dir, plugins.directory().getAbsolutePath() )
                 .setConfig( procedure_unrestricted, "org.neo4j.procedure.*" )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
@@ -1113,7 +1123,8 @@ public class ProcedureIT
 
     private String createCsvFile( String... lines ) throws IOException
     {
-        File file = plugins.newFile();
+        File file = plugins.file( "file" );
+        assertTrue( file.createNewFile() );
 
         try ( PrintWriter writer = FileUtils.newFilePrintWriter( file, StandardCharsets.UTF_8 ) )
         {
@@ -1242,7 +1253,7 @@ public class ProcedureIT
         List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
                 record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDefault" ) ).collect( Collectors.toList() );
         // Then
-        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertFalse( results.isEmpty(), "Expected to find test procedure" );
         assertThat( results.get( 0 ).get( "signature" ),
                 equalTo( "org.neo4j.procedure.nodeWithDefault(node = null :: NODE?) :: (node :: NODE?)" ) );
     }
@@ -1255,7 +1266,7 @@ public class ProcedureIT
                 record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDescription" ) )
                 .collect( Collectors.toList() );
         // Then
-        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertFalse( results.isEmpty(), "Expected to find test procedure" );
         assertThat( results.get( 0 ).get( "description" ), equalTo( "This is a description" ) );
     }
 
@@ -1267,7 +1278,7 @@ public class ProcedureIT
                 record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDescription" ) )
                 .collect( Collectors.toList() );
         // Then
-        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertFalse( results.isEmpty(), "Expected to find test procedure" );
         assertThat( results.get( 0 ).get( "mode" ), equalTo( "WRITE" ) );
     }
 
@@ -1278,7 +1289,7 @@ public class ProcedureIT
         List<Map<String,Object>> results = db.execute( "CALL dbms.functions()" ).stream().filter( record ->
                 record.get( "name" ).equals( "org.neo4j.procedure.getNodeName" ) ).collect( Collectors.toList() );
         // Then
-        assertFalse( "Expected to find test function", results.isEmpty() );
+        assertFalse( results.isEmpty(), "Expected to find test function" );
         assertThat( results.get( 0 ).get( "signature" ),
                 equalTo( "org.neo4j.procedure.getNodeName(node = null :: NODE?) :: (STRING?)" ) );
     }
@@ -1291,7 +1302,7 @@ public class ProcedureIT
                 record.get( "name" ).equals( "org.neo4j.procedure.functionWithDescription" ) )
                 .collect( Collectors.toList() );
         // Then
-        assertFalse( "Expected to find test function", results.isEmpty() );
+        assertFalse( results.isEmpty(), "Expected to find test function" );
         assertThat( results.get( 0 ).get( "description" ), equalTo( "This is a description" ) );
     }
 

@@ -264,86 +264,86 @@ public class GenerationSafePointerPairTest
     enum State
     {
         EMPTY( GenerationSafePointerPair.EMPTY )
-        {
-            @Override
-            long materialize( PageCursor cursor, long pointer )
-            {   // Nothing to write
-                return EMPTY_POINTER;
-            }
-        },
+                {
+                    @Override
+                    long materialize( PageCursor cursor, long pointer )
+                    {   // Nothing to write
+                        return EMPTY_POINTER;
+                    }
+                },
         BROKEN( GenerationSafePointerPair.BROKEN )
-        {
-            @Override
-            long materialize( PageCursor cursor, long pointer )
-            {
-                // write an arbitrary GSP
-                int offset = cursor.getOffset();
-                GenerationSafePointer.write( cursor, 10, 20 );
+                {
+                    @Override
+                    long materialize( PageCursor cursor, long pointer )
+                    {
+                        // write an arbitrary GSP
+                        int offset = cursor.getOffset();
+                        GenerationSafePointer.write( cursor, 10, 20 );
 
-                // then break its checksum
-                cursor.setOffset( offset + GenerationSafePointer.SIZE - GenerationSafePointer.CHECKSUM_SIZE );
-                short checksum = GenerationSafePointer.readChecksum( cursor );
-                cursor.setOffset( offset + GenerationSafePointer.SIZE - GenerationSafePointer.CHECKSUM_SIZE );
-                cursor.putShort( (short) ~checksum );
-                return pointer;
-            }
+                        // then break its checksum
+                        cursor.setOffset( offset + GenerationSafePointer.SIZE - GenerationSafePointer.CHECKSUM_SIZE );
+                        short checksum = GenerationSafePointer.readChecksum( cursor );
+                        cursor.setOffset( offset + GenerationSafePointer.SIZE - GenerationSafePointer.CHECKSUM_SIZE );
+                        cursor.putShort( (short) ~checksum );
+                        return pointer;
+                    }
 
-            @Override
-            void verify( PageCursor cursor, long expectedPointer, boolean slotA, int logicalPos )
-            {
-                cursor.setOffset( slotA ? SLOT_A_OFFSET : SLOT_B_OFFSET );
+                    @Override
+                    void verify( PageCursor cursor, long expectedPointer, boolean slotA, int logicalPos )
+                    {
+                        cursor.setOffset( slotA ? SLOT_A_OFFSET : SLOT_B_OFFSET );
 
-                long generation = GenerationSafePointer.readGeneration( cursor );
-                long pointer = GenerationSafePointer.readPointer( cursor );
-                short checksum = GenerationSafePointer.readChecksum( cursor );
-                assertNotEquals( GenerationSafePointer.checksumOf( generation, pointer ), checksum );
-            }
-        },
+                        long generation = GenerationSafePointer.readGeneration( cursor );
+                        long pointer = GenerationSafePointer.readPointer( cursor );
+                        short checksum = GenerationSafePointer.readChecksum( cursor );
+                        assertNotEquals( GenerationSafePointer.checksumOf( generation, pointer ), checksum );
+                    }
+                },
         OLD_CRASH( GenerationSafePointerPair.CRASH )
-        {
-            @Override
-            long materialize( PageCursor cursor, long pointer )
-            {
-                GenerationSafePointer.write( cursor, OLD_CRASH_GENERATION, pointer );
-                return pointer;
-            }
-        },
+                {
+                    @Override
+                    long materialize( PageCursor cursor, long pointer )
+                    {
+                        GenerationSafePointer.write( cursor, OLD_CRASH_GENERATION, pointer );
+                        return pointer;
+                    }
+                },
         CRASH( GenerationSafePointerPair.CRASH )
-        {
-            @Override
-            long materialize( PageCursor cursor, long pointer )
-            {
-                GenerationSafePointer.write( cursor, CRASH_GENERATION, pointer );
-                return pointer;
-            }
-        },
+                {
+                    @Override
+                    long materialize( PageCursor cursor, long pointer )
+                    {
+                        GenerationSafePointer.write( cursor, CRASH_GENERATION, pointer );
+                        return pointer;
+                    }
+                },
         OLD_STABLE( GenerationSafePointerPair.STABLE )
-        {
-            @Override
-            long materialize( PageCursor cursor, long pointer )
-            {
-                GenerationSafePointer.write( cursor, OLD_STABLE_GENERATION, pointer );
-                return pointer;
-            }
-        },
+                {
+                    @Override
+                    long materialize( PageCursor cursor, long pointer )
+                    {
+                        GenerationSafePointer.write( cursor, OLD_STABLE_GENERATION, pointer );
+                        return pointer;
+                    }
+                },
         STABLE( GenerationSafePointerPair.STABLE )
-        {
-            @Override
-            long materialize( PageCursor cursor, long pointer )
-            {
-                GenerationSafePointer.write( cursor, STABLE_GENERATION, pointer );
-                return pointer;
-            }
-        },
+                {
+                    @Override
+                    long materialize( PageCursor cursor, long pointer )
+                    {
+                        GenerationSafePointer.write( cursor, STABLE_GENERATION, pointer );
+                        return pointer;
+                    }
+                },
         UNSTABLE( GenerationSafePointerPair.UNSTABLE )
-        {
-            @Override
-            long materialize( PageCursor cursor, long pointer )
-            {
-                GenerationSafePointer.write( cursor, UNSTABLE_GENERATION, pointer );
-                return pointer;
-            }
-        };
+                {
+                    @Override
+                    long materialize( PageCursor cursor, long pointer )
+                    {
+                        GenerationSafePointer.write( cursor, UNSTABLE_GENERATION, pointer );
+                        return pointer;
+                    }
+                };
 
         /**
          * Actual {@link GenerationSafePointerPair} pointer state value.

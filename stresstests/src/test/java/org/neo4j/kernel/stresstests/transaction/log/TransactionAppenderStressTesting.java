@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.stresstests.transaction.log;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.Callable;
@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.stresstest.TransactionAppenderStres
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
 import static org.neo4j.function.Suppliers.untilTimeExpired;

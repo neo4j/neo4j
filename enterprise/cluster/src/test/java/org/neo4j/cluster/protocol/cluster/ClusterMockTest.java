@@ -379,7 +379,7 @@ public class ClusterMockTest
     }
 
     private void verifyConfigurations( StateMachines stateMachines, List<URI> members, Map<String, InstanceId> roles,
-                                       Set<InstanceId> failed, List<AssertionError> errors )
+            Set<InstanceId> failed, List<AssertionError> errors )
     {
 
         ClusterContext context = (ClusterContext) stateMachines.getStateMachine( ClusterMessage.class )

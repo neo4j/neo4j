@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.management;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.management.CausalClustering;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
@@ -59,7 +59,7 @@ public class CausalClusteringBeanTest
     private final RaftMachine raftMachine = mock( RaftMachine.class );
     private CausalClustering ccBean;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         KernelData kernelData =

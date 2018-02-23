@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index.verification;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -34,6 +33,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.test.extension.MockitoExtension;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class PartitionedUniquenessVerifierTest
 {
     @Mock( answer = Answers.RETURNS_DEEP_STUBS )

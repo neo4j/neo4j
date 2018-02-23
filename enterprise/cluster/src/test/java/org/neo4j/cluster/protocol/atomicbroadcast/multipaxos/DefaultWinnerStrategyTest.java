@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,8 +32,8 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

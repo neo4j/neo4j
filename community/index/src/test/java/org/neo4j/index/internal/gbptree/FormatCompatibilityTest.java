@@ -49,14 +49,12 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -154,11 +152,11 @@ public class FormatCompatibilityTest
     private void tellDeveloperToCommitThisFormatVersion()
     {
         fail( format( "This is merely a notification to developer. Format has changed and its version has also " +
-                "been properly incremented. A tree with this new format has been generated and should be committed. " +
-                "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
+                        "been properly incremented. A tree with this new format has been generated and should be committed. " +
+                        "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
                 directory.file( zipName ),
                 "<index-module>" + pathify( ".src.test.resources." ) +
-                pathify( getClass().getPackage().getName() + "." ) + zipName ) );
+                        pathify( getClass().getPackage().getName() + "." ) + zipName ) );
     }
 
     private static String pathify( String name )

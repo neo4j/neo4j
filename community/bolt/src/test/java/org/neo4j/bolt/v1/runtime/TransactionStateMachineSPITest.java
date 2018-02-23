@@ -19,14 +19,15 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -37,21 +38,23 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+@ExtendWith( OtherThreadExtension.class )
 public class TransactionStateMachineSPITest
 {
-    @Rule
-    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    @Resource
+    public OtherThreadRule<Void> otherThread;
 
     @Test
     public void throwsWhenTxAwaitDurationExpires()

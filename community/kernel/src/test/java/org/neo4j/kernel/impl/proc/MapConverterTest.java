@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.Map;
@@ -28,10 +29,11 @@ import java.util.Map;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntMap;
 
+@EnableRuleMigrationSupport
 public class MapConverterTest
 {
     private final MapConverter converter = new MapConverter();

@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.OnDemandJobScheduler;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -36,7 +36,7 @@ public class UpdatePullerSchedulerTest
 {
     private UpdatePuller updatePuller;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         updatePuller = mock( UpdatePuller.class );
@@ -70,12 +70,12 @@ public class UpdatePullerSchedulerTest
         jobScheduler.runJob();
 
         verify( updatePuller ).pullUpdates();
-        assertNotNull( "Job should be scheduled", jobScheduler.getJob() );
+        assertNotNull( jobScheduler.getJob(), "Job should be scheduled" );
 
         // stop scheduler - job should be canceled
         pullerScheduler.shutdown();
 
-        assertNull( "Job should be canceled", jobScheduler.getJob() );
+        assertNull( jobScheduler.getJob(), "Job should be canceled" );
     }
 
 }

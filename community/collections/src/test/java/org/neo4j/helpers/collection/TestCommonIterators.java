@@ -19,7 +19,7 @@
  */
 package org.neo4j.helpers.collection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -33,11 +33,12 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -344,10 +345,10 @@ public class TestCommonIterators
         assertEquals( (Integer) 7, Iterables.fromEnd( ints, 2 ) );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void iteratorsStreamForNull()
     {
-        Iterators.stream( null );
+        assertThrows( NullPointerException.class, () -> Iterators.stream( null ) );
     }
 
     @Test
@@ -386,10 +387,10 @@ public class TestCommonIterators
         assertEquals( characteristics, stream.spliterator().characteristics() );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void iterablesStreamForNull()
     {
-        Iterables.stream( null );
+        assertThrows( NullPointerException.class, () -> Iterables.stream( null ) );
     }
 
     @Test

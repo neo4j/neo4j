@@ -326,7 +326,7 @@ public class CountsComputerTest
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
         StoreFactory storeFactory = new StoreFactory( dir, CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
         try ( Lifespan life = new Lifespan();
-              NeoStores neoStores = storeFactory.openAllNeoStores() )
+                NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();

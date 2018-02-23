@@ -20,12 +20,15 @@
 package org.neo4j.storeupgrade;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.IntFunction;
+import javax.annotation.Resource;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.function.Factory;
@@ -44,26 +47,29 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.FULLTEXT_CONFIG;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
 public class ExplicitIndexesUpgradeIT
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDir;
+    @Resource
+    public SuppressOutput suppressOutput;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void successfulMigrationWithoutExplicitIndexes() throws Exception

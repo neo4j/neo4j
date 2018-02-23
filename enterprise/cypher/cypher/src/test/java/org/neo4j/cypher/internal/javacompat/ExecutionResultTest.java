@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Assert;
 import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 

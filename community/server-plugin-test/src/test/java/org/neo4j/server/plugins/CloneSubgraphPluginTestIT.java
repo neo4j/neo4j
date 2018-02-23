@@ -21,11 +21,11 @@ package org.neo4j.server.plugins;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -45,10 +45,10 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
 {
@@ -58,14 +58,14 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
     private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
-    @BeforeClass
+    @BeforeAll
     public static void setupServer() throws IOException
     {
         server = ServerHelper.createNonPersistentServer();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
 
-    @AfterClass
+    @AfterAll
     public static void shutdownServer()
     {
         try
@@ -81,7 +81,7 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
         }
     }
 
-    @Before
+    @BeforeEach
     public void setupTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
@@ -183,7 +183,7 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
         response = new RestRequest().post( clonedSubgraphUri,
                 "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
-        Assert.assertEquals( response.getEntity(), 200, response.getStatus() );
+        assertEquals( 200, response.getStatus(), response.getEntity() );
 
         int doubleTheNumberOfNodes = originalCount * 2;
         assertEquals( doubleTheNumberOfNodes, nodeCount() );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.monitoring.tracing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;

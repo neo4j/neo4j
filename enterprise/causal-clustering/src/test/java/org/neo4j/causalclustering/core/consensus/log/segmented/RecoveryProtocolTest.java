@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,9 +37,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class RecoveryProtocolTest
@@ -54,7 +54,7 @@ public class RecoveryProtocolTest
     private SegmentHeader.Marshal headerMarshal = new SegmentHeader.Marshal();
     private ReaderPool readerPool = new ReaderPool( 0, getInstance(), fileNames, fsa, Clocks.fakeClock() );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         fsa.mkdirs( root );

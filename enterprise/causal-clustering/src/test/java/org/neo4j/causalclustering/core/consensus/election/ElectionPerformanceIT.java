@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.election;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
@@ -48,7 +48,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class ElectionPerformanceIT
 {
-    @Ignore( "This belongs better in a benchmarking suite." )
+    @Disabled( "This belongs better in a benchmarking suite." )
     @Test
     public void electionPerformance_NormalConditions() throws Throwable
     {
@@ -95,7 +95,7 @@ public class ElectionPerformanceIT
         assertThat( result.timeoutCount, is( 0L ) );
     }
 
-    @Ignore( "This belongs better in a benchmarking suite." )
+    @Disabled( "This belongs better in a benchmarking suite." )
     @Test
     public void electionPerformance_RapidConditions() throws Throwable
     {

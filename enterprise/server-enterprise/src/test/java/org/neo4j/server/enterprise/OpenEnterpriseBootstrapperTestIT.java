@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;

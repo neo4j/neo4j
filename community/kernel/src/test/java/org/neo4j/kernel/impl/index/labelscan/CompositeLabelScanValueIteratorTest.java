@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,10 +33,10 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.iterator;
 
@@ -128,7 +128,7 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 2, closeCounter.get() );
+        assertEquals( 2, closeCounter.get(), "expected close count" );
     }
 
     @Test
@@ -155,7 +155,7 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 3, closeCounter.get() );
+        assertEquals( 3, closeCounter.get(), "expected close count" );
     }
 
     @Test
@@ -184,7 +184,7 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 4, closeCounter.get() );
+        assertEquals( 4, closeCounter.get(), "expected close count" );
     }
 
     /* ALL = TRUE */
@@ -212,7 +212,7 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 3, closeCounter.get() );
+        assertEquals( 3, closeCounter.get(), "expected close count" );
     }
 
     @Test
@@ -241,7 +241,7 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 4, closeCounter.get() );
+        assertEquals( 4, closeCounter.get(), "expected close count" );
     }
 
     @SafeVarargs

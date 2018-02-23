@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -29,18 +31,19 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class NoChangeWriteTransactionTest
 {
-    @Rule
-    public final DatabaseRule dbr = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbr;
 
     @Test
     public void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
@@ -59,8 +62,8 @@ public class NoChangeWriteTransactionTest
         } // WHEN closing that transaction
 
         // THEN it should not have been committed
-        assertEquals( "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)",
-                startTxId + 2, txIdStore.getLastCommittedTransactionId() );
+        assertEquals( startTxId + 2, txIdStore.getLastCommittedTransactionId(),
+                "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)" );
     }
 
     @Test
@@ -83,9 +86,9 @@ public class NoChangeWriteTransactionTest
         } // WHEN closing that transaction
 
         // THEN it should not have been committed
-        assertEquals( "Expected last txId to be what it started at + 3 " +
-                      "(1 for the empty node, 1 for index, and one for the label)",
-                startTxId + 3, txIdStore.getLastCommittedTransactionId() );
+        assertEquals( startTxId + 3, txIdStore.getLastCommittedTransactionId(),
+                "Expected last txId to be what it started at + 3 " +
+                        "(1 for the empty node, 1 for index, and one for the label)" );
     }
 
     private Index<Node> createNodeIndex( GraphDatabaseAPI db )

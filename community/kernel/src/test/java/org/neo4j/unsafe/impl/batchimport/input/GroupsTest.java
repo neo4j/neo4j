@@ -19,13 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.test.Race;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
+import static java.lang.Runtime.getRuntime;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.Groups.LOWEST_NONGLOBAL_ID;
 
 public class GroupsTest
@@ -37,7 +40,7 @@ public class GroupsTest
         Groups groups = new Groups();
         Race race = new Race();
         String name = "MyGroup";
-        for ( int i = 0; i < Runtime.getRuntime().availableProcessors(); i++ )
+        for ( int i = 0; i < getRuntime().availableProcessors(); i++ )
         {
             race.addContestant( () ->
             {
@@ -59,10 +62,10 @@ public class GroupsTest
     {
         // given
         Groups groups = new Groups();
-        assertEquals( Group.GLOBAL, groups.getOrCreate( null ) );
+        assertEquals( GLOBAL, groups.getOrCreate( null ) );
 
         // when
-        assertNotEquals( Group.GLOBAL, groups.getOrCreate( "Something" ) );
+        assertNotEquals( GLOBAL, groups.getOrCreate( "Something" ) );
     }
 
     @Test
@@ -70,10 +73,10 @@ public class GroupsTest
     {
         // given
         Groups groups = new Groups();
-        assertNotEquals( Group.GLOBAL, groups.getOrCreate( "Something" ) );
+        assertNotEquals( GLOBAL, groups.getOrCreate( "Something" ) );
 
         // when
-        assertEquals( Group.GLOBAL, groups.getOrCreate( null ) );
+        assertEquals( GLOBAL, groups.getOrCreate( null ) );
     }
 
     @Test
@@ -102,7 +105,7 @@ public class GroupsTest
         Group group = groups.get( null );
 
         // then
-        assertSame( Group.GLOBAL, group );
+        assertSame( GLOBAL, group );
     }
 
     @Test
@@ -113,16 +116,18 @@ public class GroupsTest
         groups.getOrCreate( "Something" );
 
         // when
-        assertEquals( Group.GLOBAL, groups.get( null ) );
+        assertEquals( GLOBAL, groups.get( null ) );
     }
 
-    @Test ( expected = HeaderException.class )
+    @Test
     public void shouldFailOnGettingNonExistentGroup()
     {
-        // given
-        Groups groups = new Groups();
+        assertThrows( HeaderException.class, () -> {
+            // given
+            Groups groups = new Groups();
 
-        // when
-        groups.get( "Something" );
+            // when
+            groups.get( "Something" );
+        } );
     }
 }

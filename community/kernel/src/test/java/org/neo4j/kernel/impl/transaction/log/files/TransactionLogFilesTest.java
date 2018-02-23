@@ -19,38 +19,47 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static java.lang.String.valueOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.builder;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class TransactionLogFilesTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     @Rule
     public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private File storeDirectory;
     private final String filename = "filename";
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         storeDirectory = testDirectory.directory();
@@ -165,15 +174,17 @@ public class TransactionLogFilesTest
         }
     }
 
-    @Test( expected = NumberFormatException.class )
-    public void shouldThrowIfVersionIsNotANumber() throws IOException
+    @Test
+    public void shouldThrowIfVersionIsNotANumber()
     {
-        // given
-        LogFiles logFiles = createLogFiles();
-        final File file = new File( getVersionedLogFileName( "aa", "A" ) );
+        assertThrows( NumberFormatException.class, () -> {
+            // given
+            LogFiles logFiles = createLogFiles();
+            final File file = new File( getVersionedLogFileName( "aa", "A" ) );
 
-        // when
-        logFiles.getLogVersion( file );
+            // when
+            logFiles.getLogVersion( file );
+        } );
     }
 
     @Test
@@ -187,8 +198,7 @@ public class TransactionLogFilesTest
 
     private LogFiles createLogFiles() throws IOException
     {
-        return LogFilesBuilder
-                .builder( storeDirectory, fileSystemRule )
+        return builder( storeDirectory, fileSystemRule )
                 .withLogFileName( filename )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
@@ -197,7 +207,7 @@ public class TransactionLogFilesTest
 
     private String getVersionedLogFileName( int version )
     {
-        return getVersionedLogFileName( filename, String.valueOf( version ) );
+        return getVersionedLogFileName( filename, valueOf( version ) );
     }
 
     private String getVersionedLogFileName( String version )

@@ -19,36 +19,38 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
+import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class StoreFactoryTest
 {
@@ -61,7 +63,7 @@ public class StoreFactoryTest
     private IdGeneratorFactory idGeneratorFactory;
     private PageCache pageCache;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         FileSystemAbstraction fs = fsRule.get();
@@ -72,7 +74,7 @@ public class StoreFactoryTest
 
     private StoreFactory storeFactory( Config config, OpenOption... openOptions )
     {
-        LogProvider logProvider = NullLogProvider.getInstance();
+        LogProvider logProvider = getInstance();
         RecordFormats recordFormats = selectForStoreOrConfig( config, storeDir, pageCache, logProvider );
         return new StoreFactory( storeDir, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
                 recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
@@ -85,7 +87,7 @@ public class StoreFactoryTest
         return dir;
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if ( neoStores != null )
@@ -98,7 +100,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
     {
         // When
-        neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
+        neoStores = storeFactory( defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -109,7 +111,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
     {
         // When
-        neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
+        neoStores = storeFactory( defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -120,7 +122,7 @@ public class StoreFactoryTest
     public void shouldHaveSpecificCountsTrackerForReadOnlyDatabase() throws IOException
     {
         // when
-        StoreFactory readOnlyStoreFactory = storeFactory( Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE ) );
+        StoreFactory readOnlyStoreFactory = storeFactory( defaults( read_only, TRUE ) );
         neoStores = readOnlyStoreFactory.openAllNeoStores( true );
         long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
 
@@ -128,20 +130,22 @@ public class StoreFactoryTest
         assertEquals( -1, neoStores.getCounts().rotate( lastClosedTransactionId ) );
     }
 
-    @Test( expected = StoreNotFoundException.class )
+    @Test
     public void shouldThrowWhenOpeningNonExistingNeoStores()
     {
-        try ( NeoStores neoStores = storeFactory( Config.defaults() ).openAllNeoStores() )
-        {
-            neoStores.getMetaDataStore();
-        }
+        assertThrows( StoreNotFoundException.class, () -> {
+            try ( NeoStores neoStores = storeFactory( defaults() ).openAllNeoStores() )
+            {
+                neoStores.getMetaDataStore();
+            }
+        } );
     }
 
     @Test
     public void shouldDelegateDeletionOptionToStores()
     {
         // GIVEN
-        StoreFactory storeFactory = storeFactory( Config.defaults(), DELETE_ON_CLOSE );
+        StoreFactory storeFactory = storeFactory( defaults(), DELETE_ON_CLOSE );
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
@@ -155,7 +159,7 @@ public class StoreFactoryTest
     @Test
     public void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
-        StoreFactory storeFactory = storeFactory( Config.defaults() );
+        StoreFactory storeFactory = storeFactory( defaults() );
         FileSystemAbstraction fs = fsRule.get();
         fs.create( new File( storeDir, "neostore.nodestore.db.labels" ) );
         storeFactory.openAllNeoStores( true ).close();
@@ -164,7 +168,7 @@ public class StoreFactoryTest
     @Test
     public void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
     {
-        StoreFactory storeFactory = storeFactory( Config.defaults() );
+        StoreFactory storeFactory = storeFactory( defaults() );
         storeFactory.openAllNeoStores( true ).close();
         FileSystemAbstraction fs = fsRule.get();
         for ( File f : fs.listFiles( storeDir ) )

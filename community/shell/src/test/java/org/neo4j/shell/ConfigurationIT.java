@@ -19,16 +19,16 @@
  */
 package org.neo4j.shell;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationIT
 {
@@ -36,7 +36,7 @@ public class ConfigurationIT
     private ShellServer server;
     private ShellClient client;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
@@ -46,7 +46,7 @@ public class ConfigurationIT
         client = ShellLobby.newClient( server, InterruptSignalHandler.getHandler() );
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         client.shutdown();

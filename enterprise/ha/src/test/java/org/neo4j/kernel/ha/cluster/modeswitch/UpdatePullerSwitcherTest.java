@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.ha.cluster.modeswitch;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -29,7 +29,7 @@ import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.UpdatePuller;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,7 +41,7 @@ public class UpdatePullerSwitcherTest
     private UpdatePullerSwitcher modeSwitcher;
     private SlaveUpdatePuller slaveUpdatePuller;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         @SuppressWarnings( "unchecked" )

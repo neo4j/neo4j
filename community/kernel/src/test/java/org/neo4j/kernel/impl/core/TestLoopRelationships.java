@@ -275,8 +275,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
                     newTransaction();
                 }
                 verifyRelationships( String.format(
-                                "loop on %s of %s, delete %s", i, size,
-                                Arrays.toString( delete ) ), root,
+                        "loop on %s of %s, delete %s", i, size,
+                        Arrays.toString( delete ) ), root,
                         i, relationships );
             }
         }

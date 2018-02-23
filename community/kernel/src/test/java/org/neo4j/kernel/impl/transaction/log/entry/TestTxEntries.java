@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 

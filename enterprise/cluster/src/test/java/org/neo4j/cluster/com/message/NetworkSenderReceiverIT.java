@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.com.message;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
 import java.net.URI;
@@ -43,7 +43,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -94,8 +94,8 @@ public class NetworkSenderReceiverIT
 
         assertTrue( latch.await( 5, TimeUnit.SECONDS ) );
 
-        assertTrue( "server1 should have processed the message", server1.processedMessage() );
-        assertTrue( "server2 should have processed the message", server2.processedMessage() );
+        assertTrue( server1.processedMessage(), "server1 should have processed the message" );
+        assertTrue( server2.processedMessage(), "server2 should have processed the message" );
 
         life.shutdown();
     }

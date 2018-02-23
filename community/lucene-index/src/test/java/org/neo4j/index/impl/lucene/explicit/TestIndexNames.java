@@ -19,10 +19,10 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 
 public class TestIndexNames
@@ -40,19 +40,19 @@ public class TestIndexNames
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpStuff()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownStuff()
     {
         graphDb.shutdown();
     }
 
-    @After
+    @AfterEach
     public void commitTx()
     {
         finishTx( true );

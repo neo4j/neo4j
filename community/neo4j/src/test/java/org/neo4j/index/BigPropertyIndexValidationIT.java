@@ -19,13 +19,15 @@
  */
 package org.neo4j.index;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
 
 import java.util.Arrays;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -34,18 +36,19 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@EnableRuleMigrationSupport
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class BigPropertyIndexValidationIT
 {
-    @Rule
-    public  ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    @Rule
-    public final TestName testName = new TestName();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -53,7 +56,7 @@ public class BigPropertyIndexValidationIT
     private String longString;
     private String propertyKey;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         LABEL = Label.label( "LABEL" );

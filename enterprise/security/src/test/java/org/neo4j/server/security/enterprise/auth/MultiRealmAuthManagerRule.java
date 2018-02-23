@@ -20,7 +20,7 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.cache.MemoryConstrainedCacheManager;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -43,7 +43,7 @@ import org.neo4j.server.security.enterprise.log.SecurityLog;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 public class MultiRealmAuthManagerRule implements TestRule
@@ -127,7 +127,7 @@ public class MultiRealmAuthManagerRule implements TestRule
         };
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Throwable
     {
         manager.stop();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -28,9 +28,9 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -47,7 +47,7 @@ public class DataStatementArgumentVerificationTest
         Value value = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertTrue( "should return NoProperty", value == NO_VALUE );
+        assertTrue( value == NO_VALUE, "should return NoProperty" );
     }
 
     @Test
@@ -61,7 +61,7 @@ public class DataStatementArgumentVerificationTest
         Value value = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertEquals( "should return NoProperty", value, NO_VALUE );
+        assertEquals( value, NO_VALUE, "should return NoProperty" );
     }
 
     @Test
@@ -74,7 +74,7 @@ public class DataStatementArgumentVerificationTest
         Object value = statement.graphGetProperty( StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertEquals( "should return NoProperty", value, NO_VALUE );
+        assertEquals( value, NO_VALUE, "should return NoProperty" );
     }
 
     @Test
@@ -87,7 +87,7 @@ public class DataStatementArgumentVerificationTest
         PrimitiveLongIterator nodes = statement.nodesGetForLabel( StatementConstants.NO_SUCH_LABEL );
 
         // then
-        assertFalse( "should not contain any ids", nodes.hasNext() );
+        assertFalse( nodes.hasNext(), "should not contain any ids" );
     }
 
     @Test
@@ -100,7 +100,7 @@ public class DataStatementArgumentVerificationTest
         boolean hasLabel = statement.nodeHasLabel( 17, StatementConstants.NO_SUCH_LABEL );
 
         // then
-        assertFalse( "should not contain any ids", hasLabel );
+        assertFalse( hasLabel, "should not contain any ids" );
     }
 
     private OperationsFacade stubStatement()

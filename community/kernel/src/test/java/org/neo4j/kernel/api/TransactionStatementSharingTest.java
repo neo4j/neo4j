@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.security.AnonymousContext;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;

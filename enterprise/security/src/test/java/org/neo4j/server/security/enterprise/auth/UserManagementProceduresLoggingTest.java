@@ -19,8 +19,9 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.shiro.mgt.SecurityManager;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -55,7 +56,7 @@ public class UserManagementProceduresLoggingTest
     private EnterpriseSecurityContext matsContext;
     private EnterpriseUserManager generalUserManager;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Throwable
     {
         log = new AssertableLogProvider();

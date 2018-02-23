@@ -20,20 +20,25 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@ExtendWith( SuppressOutputExtension.class )
 public class LonelyProcessingStepTest
 {
-    @ClassRule
-    public static SuppressOutput mute = SuppressOutput.suppressAll();
+    @Resource
+    public SuppressOutput mute;
 
     @Test
     public void issuePanicBeforeCompletionOnError()
@@ -48,8 +53,8 @@ public class LonelyProcessingStepTest
 
         endOfUpstreamLatch.await();
 
-        Assert.assertTrue( "On upstream end step should be already on panic in case of exception",
-                faultyStep.isPanicOnEndUpstream() );
+        assertTrue( faultyStep.isPanicOnEndUpstream(),
+                "On upstream end step should be already on panic in case of exception" );
         Assert.assertTrue( faultyStep.isPanic() );
         Assert.assertFalse( faultyStep.stillWorking() );
         Assert.assertTrue( faultyStep.isCompleted() );

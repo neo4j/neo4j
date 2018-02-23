@@ -19,29 +19,31 @@
  */
 package org.neo4j.server.rest.domain;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Set;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.traversal.BranchState.NO_STATE;
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+@ExtendWith( {ImpermanentDatabaseExtension.class} )
 public class RelationshipExpanderBuilderTest
 {
-    @ClassRule
-    public static final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
 
     @Test
     public void shouldInterpretNoSpecifiedRelationshipsAsAll()

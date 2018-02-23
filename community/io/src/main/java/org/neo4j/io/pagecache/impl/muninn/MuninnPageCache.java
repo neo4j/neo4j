@@ -86,7 +86,7 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  *                                           cWMUNlkWWWO:cl;.
  *                                            ;kWO,....',,,.
  *                                              cNd
- *                                               :Nk.
+ *                                               :Nk.NettyPipelineBuilderTest
  *                                                cWK,
  *                                             .,ccxXWd.
  *                                                   dWNkxkOdc::;.

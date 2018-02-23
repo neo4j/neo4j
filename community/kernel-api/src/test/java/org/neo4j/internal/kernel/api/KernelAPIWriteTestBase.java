@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
@@ -59,7 +59,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
      */
     public abstract WriteSupport newTestSupport();
 
-    @Before
+    @BeforeEach
     public void setupGraph() throws IOException
     {
         if ( testSupport == null )
@@ -76,13 +76,13 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         cursors = new ManagedTestCursors( kernel.cursors() );
     }
 
-    @After
+    @AfterEach
     public void closeSession()
     {
         session.close();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown()
     {
         if ( testSupport != null )

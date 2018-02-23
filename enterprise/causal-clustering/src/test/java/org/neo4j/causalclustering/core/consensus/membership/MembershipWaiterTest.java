@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.membership;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +37,7 @@ import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
@@ -47,7 +47,7 @@ public class MembershipWaiterTest
 {
     private DatabaseHealth dbHealth = mock( DatabaseHealth.class );
 
-    @Before
+    @BeforeEach
     public void mocking()
     {
         when( dbHealth.isHealthy() ).thenReturn( true );

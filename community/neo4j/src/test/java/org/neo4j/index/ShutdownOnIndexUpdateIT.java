@@ -19,11 +19,12 @@
  */
 package org.neo4j.index;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,15 +37,16 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class ShutdownOnIndexUpdateIT
 {
-    @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule database;
 
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();
@@ -68,8 +70,8 @@ public class ShutdownOnIndexUpdateIT
             dataSourceLife.addLifecycleListener( closeListener );
             dataSource.stop();
 
-            assertTrue( "Transaction should be closed and no exception should be thrown.",
-                    closeListener.isTransactionClosed() );
+            assertTrue( closeListener.isTransactionClosed(),
+                    "Transaction should be closed and no exception should be thrown." );
         }
     }
 

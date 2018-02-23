@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

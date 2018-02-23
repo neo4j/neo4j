@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.time.Duration;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
 public class EnterpriseSecurityModuleTest
 {
     @Rule
@@ -213,7 +215,7 @@ public class EnterpriseSecurityModuleTest
 
     // --------- HELPERS ----------
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         config = mock( Config.class );

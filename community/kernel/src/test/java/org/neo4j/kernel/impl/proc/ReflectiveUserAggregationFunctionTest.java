@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
@@ -49,17 +50,18 @@ import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
 
+@EnableRuleMigrationSupport
 public class ReflectiveUserAggregationFunctionTest
 {
     @Rule
@@ -68,7 +70,7 @@ public class ReflectiveUserAggregationFunctionTest
     private ReflectiveProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         components = new ComponentRegistry();
@@ -409,11 +411,11 @@ public class ReflectiveUserAggregationFunctionTest
             switch ( name )
             {
             case "newFunc":
-                assertFalse( "Should not be deprecated", func.signature().deprecated().isPresent() );
+                assertFalse( func.signature().deprecated().isPresent(), "Should not be deprecated" );
                 break;
             case "oldFunc":
             case "badFunc":
-                assertTrue( "Should be deprecated", func.signature().deprecated().isPresent() );
+                assertTrue( func.signature().deprecated().isPresent(), "Should be deprecated" );
                 assertThat( func.signature().deprecated().get(), equalTo( "newFunc" ) );
                 break;
             default:

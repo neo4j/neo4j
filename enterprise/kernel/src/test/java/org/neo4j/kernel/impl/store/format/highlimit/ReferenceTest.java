@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.io.pagecache.StubPageCursor;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith( RandomExtension.class )
 public class ReferenceTest
 {
     /**
@@ -35,8 +40,8 @@ public class ReferenceTest
     private static final long MASK = numberOfBits( Reference.MAX_BITS );
     private static final int PAGE_SIZE = 100;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
     private final StubPageCursor cursor = new StubPageCursor( 0, PAGE_SIZE );
 
     @Test
@@ -56,10 +61,10 @@ public class ReferenceTest
         long absoluteReference = 0xCAFEBABE;
 
         long relative = Reference.toRelative( absoluteReference, basis );
-        assertEquals( "Should be equal to difference of reference and base reference", 0xCAFE0000, relative );
+        assertEquals( 0xCAFE0000, relative, "Should be equal to difference of reference and base reference" );
 
         long absoluteCandidate = Reference.toAbsolute( relative, basis );
-        assertEquals( "Converted reference should be equal to initial value", absoluteReference, absoluteCandidate );
+        assertEquals( absoluteReference, absoluteCandidate, "Converted reference should be equal to initial value" );
     }
 
     private static long numberOfBits( int count )

@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -72,12 +72,12 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 
 public class RestfulGraphDatabaseTest
@@ -92,7 +92,7 @@ public class RestfulGraphDatabaseTest
     private static EntityOutputFormat output;
     private static GraphDatabaseFacade graph;
 
-    @BeforeClass
+    @BeforeAll
     public static void doBefore()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -110,7 +110,7 @@ public class RestfulGraphDatabaseTest
         );
     }
 
-    @Before
+    @BeforeEach
     public void deleteAllIndexes() throws JsonParseException
     {
         for ( String name : helper.getNodeIndexes() )
@@ -149,7 +149,7 @@ public class RestfulGraphDatabaseTest
         service.setAutoIndexerEnabled( type, "false" );
     }
 
-    @AfterClass
+    @AfterAll
     public static void shutdownDatabase()
     {
         graph.shutdown();
@@ -1191,20 +1191,20 @@ public class RestfulGraphDatabaseTest
 
         indexPostBody.put( "uri", node.toString() );
         Response response = service.addToNodeIndex( "", "", "", JsonHelper.createJsonFrom( indexPostBody ) );
-        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        assertEquals( 400, response.getStatus(), "http bad request when trying to create an index with empty name" );
 
         indexPostBody.put( "uri", rel.toString() );
         response = service.addToRelationshipIndex( "", "", "", JsonHelper.createJsonFrom( indexPostBody ) );
-        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        assertEquals( 400, response.getStatus(), "http bad request when trying to create an index with empty name" );
 
         Map<String, String> basicIndexCreation = new HashMap<>();
         basicIndexCreation.put( "name", "" );
 
         response = service.jsonCreateNodeIndex( JsonHelper.createJsonFrom( basicIndexCreation ) );
-        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        assertEquals( 400, response.getStatus(), "http bad request when trying to create an index with empty name" );
 
         response = service.jsonCreateRelationshipIndex( JsonHelper.createJsonFrom( basicIndexCreation ) );
-        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        assertEquals( 400, response.getStatus(), "http bad request when trying to create an index with empty name" );
     }
 
     @Test
@@ -1221,7 +1221,7 @@ public class RestfulGraphDatabaseTest
             Response response = service.addToNodeIndex( "unique-nodes", "", "",
                     JsonHelper.createJsonFrom( postBody ) );
 
-            assertEquals( "unexpected response code with \"" + key + "\" missing.", 400, response.getStatus() );
+            assertEquals( 400, response.getStatus(), "unexpected response code with \"" + key + "\" missing." );
         }
     }
 
@@ -1330,7 +1330,7 @@ public class RestfulGraphDatabaseTest
 
             Response response = service.addToRelationshipIndex( "unique-relationships", "", "",
                     JsonHelper.createJsonFrom( postBody ) );
-            assertEquals( "unexpected response code with \"" + bad.getKey() + "\".", 400, response.getStatus() );
+            assertEquals( 400, response.getStatus(), "unexpected response code with \"" + bad.getKey() + "\"." );
         }
     }
 
@@ -1352,7 +1352,7 @@ public class RestfulGraphDatabaseTest
             Response response = service.addToRelationshipIndex( "unique-relationships", "", "",
                     JsonHelper.createJsonFrom( postBody ) );
 
-            assertEquals( "unexpected response code with \"" + key + "\" missing.", 400, response.getStatus() );
+            assertEquals( 400, response.getStatus(), "unexpected response code with \"" + key + "\" missing." );
         }
     }
 

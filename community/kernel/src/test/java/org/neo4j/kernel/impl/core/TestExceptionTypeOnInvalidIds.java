@@ -19,57 +19,61 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.UUID;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.fail;
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.Integer.MIN_VALUE;
+import static java.lang.String.format;
+import static java.util.UUID.randomUUID;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class TestExceptionTypeOnInvalidIds
 {
     private static final long SMALL_POSSITIVE_INTEGER = 5;
     private static final long SMALL_NEGATIVE_INTEGER = -5;
-    private static final long BIG_POSSITIVE_INTEGER = Integer.MAX_VALUE;
-    private static final long BIG_NEGATIVE_INTEGER = Integer.MIN_VALUE;
-    private static final long SMALL_POSSITIVE_LONG = ((long) Integer.MAX_VALUE) + 1;
-    private static final long SMALL_NEGATIVE_LONG = -((long) Integer.MIN_VALUE) - 1;
+    private static final long BIG_POSSITIVE_INTEGER = MAX_VALUE;
+    private static final long BIG_NEGATIVE_INTEGER = MIN_VALUE;
+    private static final long SMALL_POSSITIVE_LONG = ((long) MAX_VALUE) + 1;
+    private static final long SMALL_NEGATIVE_LONG = -((long) MIN_VALUE) - 1;
     private static final long BIG_POSSITIVE_LONG = Long.MAX_VALUE;
     private static final long BIG_NEGATIVE_LONG = Long.MIN_VALUE;
     private static GraphDatabaseService graphdb;
     private static GraphDatabaseService graphDbReadOnly;
     private Transaction tx;
 
-    @BeforeClass
+    @BeforeAll
     public static void createDatabase()
     {
         graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( getRandomStoreDir() );
         File storeDir = getRandomStoreDir();
         new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
         graphDbReadOnly = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
-            setConfig( GraphDatabaseSettings.read_only, TRUE ).
-            newGraphDatabase();
+                setConfig( read_only, TRUE ).
+                newGraphDatabase();
     }
 
     private static File getRandomStoreDir()
     {
-        return new File( "target/var/id_test/" + UUID.randomUUID() );
+        return new File( "target/var/id_test/" + randomUUID() );
     }
 
-    @AfterClass
+    @AfterAll
     public static void destroyDatabase()
     {
         graphDbReadOnly.shutdown();
@@ -78,13 +82,13 @@ public class TestExceptionTypeOnInvalidIds
         graphdb = null;
     }
 
-    @Before
+    @BeforeEach
     public void startTransaction()
     {
         tx = graphdb.beginTx();
     }
 
-    @After
+    @AfterEach
     public void endTransaction()
     {
         tx.close();
@@ -92,158 +96,188 @@ public class TestExceptionTypeOnInvalidIds
     }
 
     /* behaves as expected */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeBySmallPossitiveInteger()
     {
-        getNodeById( SMALL_POSSITIVE_INTEGER );
-        getNodeByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( SMALL_POSSITIVE_INTEGER );
+            getNodeByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeBySmallNegativeInteger()
     {
-        getNodeById( SMALL_NEGATIVE_INTEGER );
-        getNodeByIdReadOnly( SMALL_NEGATIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( SMALL_NEGATIVE_INTEGER );
+            getNodeByIdReadOnly( SMALL_NEGATIVE_INTEGER );
+        } );
     }
 
     /* behaves as expected */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeByBigPossitiveInteger()
     {
-        getNodeById( BIG_POSSITIVE_INTEGER );
-        getNodeByIdReadOnly( BIG_POSSITIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( BIG_POSSITIVE_INTEGER );
+            getNodeByIdReadOnly( BIG_POSSITIVE_INTEGER );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeByBigNegativeInteger()
     {
-        getNodeById( BIG_NEGATIVE_INTEGER );
-        getNodeByIdReadOnly( BIG_NEGATIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( BIG_NEGATIVE_INTEGER );
+            getNodeByIdReadOnly( BIG_NEGATIVE_INTEGER );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeBySmallPossitiveLong()
     {
-        getNodeById( SMALL_POSSITIVE_LONG );
-        getNodeByIdReadOnly( SMALL_POSSITIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( SMALL_POSSITIVE_LONG );
+            getNodeByIdReadOnly( SMALL_POSSITIVE_LONG );
+        } );
     }
 
     /* behaves as expected */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeBySmallNegativeLong()
     {
-        getNodeById( SMALL_NEGATIVE_LONG );
-        getNodeByIdReadOnly( SMALL_NEGATIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( SMALL_NEGATIVE_LONG );
+            getNodeByIdReadOnly( SMALL_NEGATIVE_LONG );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeByBigPossitiveLong()
     {
-        getNodeById( BIG_POSSITIVE_LONG );
-        getNodeByIdReadOnly( BIG_POSSITIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( BIG_POSSITIVE_LONG );
+            getNodeByIdReadOnly( BIG_POSSITIVE_LONG );
+        } );
     }
 
     /* finds the node with id=0, since that what the id truncates to */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getNodeByBigNegativeLong()
     {
-        getNodeById( BIG_NEGATIVE_LONG );
-        getNodeByIdReadOnly( BIG_NEGATIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getNodeById( BIG_NEGATIVE_LONG );
+            getNodeByIdReadOnly( BIG_NEGATIVE_LONG );
+        } );
     }
 
     /* behaves as expected */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipBySmallPossitiveInteger()
     {
-        getRelationshipById( SMALL_POSSITIVE_INTEGER );
-        getRelationshipByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( SMALL_POSSITIVE_INTEGER );
+            getRelationshipByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipBySmallNegativeInteger()
     {
-        getRelationshipById( SMALL_NEGATIVE_INTEGER );
-        getRelationshipByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( SMALL_NEGATIVE_INTEGER );
+            getRelationshipByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        } );
     }
 
     /* behaves as expected */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipByBigPossitiveInteger()
     {
-        getRelationshipById( BIG_POSSITIVE_INTEGER );
-        getRelationshipByIdReadOnly( BIG_POSSITIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( BIG_POSSITIVE_INTEGER );
+            getRelationshipByIdReadOnly( BIG_POSSITIVE_INTEGER );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipByBigNegativeInteger()
     {
-        getRelationshipById( BIG_NEGATIVE_INTEGER );
-        getRelationshipByIdReadOnly( BIG_NEGATIVE_INTEGER );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( BIG_NEGATIVE_INTEGER );
+            getRelationshipByIdReadOnly( BIG_NEGATIVE_INTEGER );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipBySmallPossitiveLong()
     {
-        getRelationshipById( SMALL_POSSITIVE_LONG );
-        getRelationshipByIdReadOnly( SMALL_POSSITIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( SMALL_POSSITIVE_LONG );
+            getRelationshipByIdReadOnly( SMALL_POSSITIVE_LONG );
+        } );
     }
 
     /* behaves as expected */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipBySmallNegativeLong()
     {
-        getRelationshipById( SMALL_NEGATIVE_LONG );
-        getRelationshipByIdReadOnly( SMALL_NEGATIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( SMALL_NEGATIVE_LONG );
+            getRelationshipByIdReadOnly( SMALL_NEGATIVE_LONG );
+        } );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipByBigPossitiveLong()
     {
-        getRelationshipById( BIG_POSSITIVE_LONG );
-        getRelationshipByIdReadOnly( BIG_POSSITIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( BIG_POSSITIVE_LONG );
+            getRelationshipByIdReadOnly( BIG_POSSITIVE_LONG );
+        } );
     }
 
     /* behaves as expected */
-    @Test( expected = NotFoundException.class )
+    @Test
     public void getRelationshipByBigNegativeLong()
     {
-        getRelationshipById( BIG_NEGATIVE_LONG );
-        getRelationshipByIdReadOnly( BIG_NEGATIVE_LONG );
+        assertThrows( NotFoundException.class, () -> {
+            getRelationshipById( BIG_NEGATIVE_LONG );
+            getRelationshipByIdReadOnly( BIG_NEGATIVE_LONG );
+        } );
     }
 
     private void getNodeById( long index )
     {
         Node value = graphdb.getNodeById( index );
-        fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
-                value.getId(), index, (int) index ) );
+        fail( format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)", value.getId(), index, (int) index ) );
     }
 
     private void getNodeByIdReadOnly( long index )
     {
         Node value = graphDbReadOnly.getNodeById( index );
-        fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
-                value.getId(), index, (int) index ) );
+        fail( format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)", value.getId(), index, (int) index ) );
     }
 
     private void getRelationshipById( long index )
     {
         Relationship value = graphdb.getRelationshipById( index );
-        fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
-                value.getId(), index, (int) index ) );
+        fail( format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)", value.getId(), index,
+                (int) index ) );
     }
 
     private void getRelationshipByIdReadOnly( long index )
     {
         Relationship value = graphDbReadOnly.getRelationshipById( index );
-        fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
-                value.getId(), index, (int) index ) );
+        fail( format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)", value.getId(), index,
+                (int) index ) );
     }
 }

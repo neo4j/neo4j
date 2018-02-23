@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PropertyTransactionStateTest
 {
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void shutDown()
     {
         db.shutdown();

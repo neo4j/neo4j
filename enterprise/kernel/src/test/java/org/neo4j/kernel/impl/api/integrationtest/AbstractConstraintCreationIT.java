@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,10 +57,10 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
@@ -93,7 +93,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
     abstract DESCRIPTOR makeDescriptor( int typeId, int propertyKeyId );
 
-    @Before
+    @BeforeEach
     public void createKeys() throws Exception
     {
         TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
@@ -175,7 +175,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // then
         Iterator<?> constraints = readOperations.constraintsGetAll();
-        assertFalse( "should not have any constraints", constraints.hasNext() );
+        assertFalse( constraints.hasNext(), "should not have any constraints" );
         commit();
     }
 
@@ -192,7 +192,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
             dropConstraint( statement.schemaWriteOperations(), constraint );
 
             // then
-            assertFalse( "should not have any constraints", statement.readOperations().constraintsGetAll().hasNext() );
+            assertFalse( statement.readOperations().constraintsGetAll().hasNext(), "should not have any constraints" );
         }
 
         // when
@@ -201,7 +201,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         ReadOperations readOperations = readOperationsInNewTransaction();
 
         // then
-        assertFalse( "should not have any constraints", readOperations.constraintsGetAll().hasNext() );
+        assertFalse( readOperations.constraintsGetAll().hasNext(), "should not have any constraints" );
         commit();
     }
 
@@ -228,7 +228,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
             ReadOperations statement = readOperationsInNewTransaction();
 
             // then
-            assertFalse( "should not have any constraints", statement.constraintsGetAll().hasNext() );
+            assertFalse( statement.constraintsGetAll().hasNext(), "should not have any constraints" );
             commit();
         }
     }
@@ -504,14 +504,14 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         {
             int count = invocationCount;
             checkState( readOperations );
-            assertEquals( "schema state should have been cleared.", count + 1, invocationCount );
+            assertEquals( count + 1, invocationCount, "schema state should have been cleared." );
         }
 
         void assertNotCleared( ReadOperations readOperations )
         {
             int count = invocationCount;
             checkState( readOperations );
-            assertEquals( "schema state should not have been cleared.", count, invocationCount );
+            assertEquals( count, invocationCount, "schema state should not have been cleared." );
         }
 
         private SchemaStateCheck checkState( ReadOperations readOperations )

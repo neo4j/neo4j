@@ -28,7 +28,7 @@ import java.util.LinkedList;
 /**
  * Simple means of cleaning up after a test. It has two purposes:
  * o remove try-finally blocks from tests, which looks mostly like clutter
- * o remove @After code needing to clean up after a test
+ * o remove @AfterEach code needing to clean up after a test
  *
  * Usage:
  * <pre><code>

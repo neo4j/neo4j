@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -36,9 +36,9 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Confirms that a nested {@link Transaction} can grab locks with its
@@ -49,13 +49,13 @@ public class NestedTransactionLocksIT
 {
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

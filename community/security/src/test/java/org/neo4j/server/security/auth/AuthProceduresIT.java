@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -50,13 +50,14 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 
@@ -69,7 +70,7 @@ public class AuthProceduresIT
     private BasicAuthManager authManager;
     private LoginContext admin;
 
-    @Before
+    @BeforeEach
     public void setup() throws InvalidAuthTokenException, IOException
     {
         fs = new EphemeralFileSystemAbstraction();
@@ -79,7 +80,7 @@ public class AuthProceduresIT
         admin.subject().setPasswordChangeNoLongerRequired();
     }
 
-    @After
+    @AfterEach
     public void cleanup() throws Exception
     {
         db.shutdown();
@@ -361,32 +362,31 @@ public class AuthProceduresIT
     {
         List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
 
-        assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
-                expected.size(), result.size() );
+        assertEquals( expected.size(), result.size(),
+                "Results for should have size " + expected.size() + " but was " + result.size() );
 
         for ( Map<String, Object> row : result )
         {
             String key = (String) row.get( keyKey );
-            assertTrue( "Unexpected key '" + key + "'", expected.containsKey( key ) );
+            assertTrue( expected.containsKey( key ), "Unexpected key '" + key + "'" );
 
-            assertTrue( "Value key '" + valueKey + "' not found in results", row.containsKey( valueKey ) );
+            assertTrue( row.containsKey( valueKey ), "Value key '" + valueKey + "' not found in results" );
             Object objectValue = row.get( valueKey );
             if ( objectValue instanceof List )
             {
                 List<String> value = (List<String>) objectValue;
                 List<String> expectedValues = (List<String>) expected.get( key );
-                assertEquals( "Results for '" + key + "' should have size " + expectedValues.size() + " but was " +
-                        value.size(), value.size(), expectedValues.size() );
+                assertEquals( value.size(), expectedValues.size(),
+                        "Results for '" + key + "' should have size " + expectedValues.size() + " but was " +
+                                value.size() );
                 assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
             }
             else
             {
                 String value = objectValue.toString();
                 String expectedValue = expected.get( key ).toString();
-                assertTrue(
-                        String.format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value),
-                        value.equals( expectedValue )
-                );
+                assertTrue( value.equals( expectedValue ),
+                        format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value ) );
             }
         }
     }

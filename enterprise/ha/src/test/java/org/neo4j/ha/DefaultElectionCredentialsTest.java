@@ -19,7 +19,7 @@
  */
 package org.neo4j.ha;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,8 +28,8 @@ import java.util.List;
 import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentials;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class DefaultElectionCredentialsTest
 {

@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,27 +39,29 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 /**
  * Asserts that pure read operations does not write records to logical or transaction logs.
  */
+@EnableRuleMigrationSupport
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class ReadTransactionLogWritingTest
 {
-    @Rule
-    public final DatabaseRule dbr = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbr;
 
     private final Label label = label( "Test" );
     private Node node;
     private Relationship relationship;
     private long logEntriesWrittenBeforeReadOperations;
 
-    @Before
+    @BeforeEach
     public void createDataset()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
@@ -85,9 +89,9 @@ public class ReadTransactionLogWritingTest
 
         // THEN
         long actualCount = countLogEntries();
-        assertEquals( "There were " + (actualCount - logEntriesWrittenBeforeReadOperations) +
-                        " log entries written during one or more pure read transactions", logEntriesWrittenBeforeReadOperations,
-                actualCount );
+        assertEquals( logEntriesWrittenBeforeReadOperations, actualCount,
+                "There were " + (actualCount - logEntriesWrittenBeforeReadOperations) +
+                        " log entries written during one or more pure read transactions" );
     }
 
     private long countLogEntries()

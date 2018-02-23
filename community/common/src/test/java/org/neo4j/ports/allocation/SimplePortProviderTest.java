@@ -22,12 +22,12 @@ package org.neo4j.ports.allocation;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SimplePortProviderTest
 {
@@ -69,7 +69,7 @@ public class SimplePortProviderTest
         {
             portProvider.getNextFreePort( "foo" );
 
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {

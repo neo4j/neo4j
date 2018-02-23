@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.ILLEGAL;
@@ -49,7 +49,7 @@ public class HighAvailabilityMemberStateTest
     private InstanceId myId;
     private HighAvailabilityMemberContext context;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         myId = new InstanceId( 1 );

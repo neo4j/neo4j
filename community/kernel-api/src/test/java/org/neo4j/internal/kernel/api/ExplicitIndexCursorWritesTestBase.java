@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
@@ -31,8 +31,8 @@ import org.neo4j.graphdb.index.IndexHits;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWriteTestSupport>
@@ -265,7 +265,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
     }
 
     //TODO unignore when we support relationship creation.
-    @Ignore
+    @Disabled
     public void shouldAddRelationshipToExplicitIndex() throws Exception
     {
         long relId;

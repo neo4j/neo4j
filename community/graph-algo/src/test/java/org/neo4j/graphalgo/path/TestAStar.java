@@ -20,6 +20,10 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,6 +59,30 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 @RunWith( Parameterized.class )
 public class TestAStar extends Neo4jAlgoTestCase
 {
+
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        setUpGraphDb();
+    }
+
+    @Before
+    public void setUp()
+    {
+        setUpTransaction();
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception
+    {
+        tearDownGraphDb();
+    }
+
+    @After
+    public void tearDownTransactionAndGraph()
+    {
+        super.tearDownTransactionAndGraph();
+    }
 
     @Test
     public void pathToSelfReturnsZero()
@@ -255,9 +283,9 @@ public class TestAStar extends Neo4jAlgoTestCase
     static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->
     {
         double dx = (Double) node.getProperty( "x" )
-                    - (Double) goal.getProperty( "x" );
+                - (Double) goal.getProperty( "x" );
         double dy = (Double) node.getProperty( "y" )
-                    - (Double) goal.getProperty( "y" );
+                - (Double) goal.getProperty( "y" );
         return Math.sqrt( Math.pow( dx, 2 ) + Math.pow( dy, 2 ) );
     };
 
@@ -265,14 +293,14 @@ public class TestAStar extends Neo4jAlgoTestCase
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]
-        {
-            {
-                GraphAlgoFactory.aStar( PathExpanders.allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
-            },
-            {
-                new TraversalAStar( PathExpanders.allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
-            }
-        } );
+                {
+                        {
+                                GraphAlgoFactory.aStar( PathExpanders.allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
+                        },
+                        {
+                                new TraversalAStar( PathExpanders.allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
+                        }
+                } );
     }
 
     private final PathFinder<WeightedPath> finder;

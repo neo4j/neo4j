@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,19 +29,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneOffset;
 import java.util.TimeZone;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class SystemTimeZoneLoggingIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     @Test
     public void databaseLogsUseSystemTimeZoneIfConfigure() throws IOException
@@ -68,7 +71,7 @@ public class SystemTimeZoneLoggingIT
         Path databasePath = storeDir.toPath();
         Path debugLog = Paths.get( "logs", "debug.log" );
         String debugLogLine = getLogLine( databasePath, debugLog );
-        assertTrue( debugLogLine, debugLogLine.contains( timeZoneSuffix ) );
+        assertTrue( debugLogLine.contains( timeZoneSuffix ), debugLogLine );
     }
 
     private String getLogLine( Path databasePath, Path logFilePath ) throws IOException

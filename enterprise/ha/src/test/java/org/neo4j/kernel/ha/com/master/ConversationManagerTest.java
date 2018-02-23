@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Duration;
 
@@ -33,16 +32,17 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.extension.MockitoExtension;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class ConversationManagerTest
 {
 

@@ -1183,18 +1183,18 @@ public class IndexingServiceTest
     }
 
     private IndexingService newIndexingServiceWithMockedDependencies( IndexPopulator populator,
-                                                                      IndexAccessor accessor,
-                                                                      DataUpdates data,
-                                                                      IndexRule... rules ) throws IOException
+            IndexAccessor accessor,
+            DataUpdates data,
+            IndexRule... rules ) throws IOException
     {
         return newIndexingServiceWithMockedDependencies( populator, accessor, data, IndexingService.NO_MONITOR, rules );
     }
 
     private IndexingService newIndexingServiceWithMockedDependencies( IndexPopulator populator,
-                                                                      IndexAccessor accessor,
-                                                                      DataUpdates data,
-                                                                      IndexingService.Monitor monitor,
-                                                                      IndexRule... rules ) throws IOException
+            IndexAccessor accessor,
+            DataUpdates data,
+            IndexingService.Monitor monitor,
+            IndexRule... rules ) throws IOException
     {
         when( indexProvider.getInitialState( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
@@ -1212,14 +1212,14 @@ public class IndexingServiceTest
         Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
 
         return life.add( IndexingServiceFactory.createIndexingService( config,
-                        life.add( new Neo4jJobScheduler() ),
-                        new DefaultSchemaIndexProviderMap( indexProvider ),
-                        storeView,
-                        nameLookup,
-                        loop( iterator( rules ) ),
-                        logProvider,
-                        monitor,
-                        schemaState )
+                life.add( new Neo4jJobScheduler() ),
+                new DefaultSchemaIndexProviderMap( indexProvider ),
+                storeView,
+                nameLookup,
+                loop( iterator( rules ) ),
+                logProvider,
+                monitor,
+                schemaState )
         );
     }
 

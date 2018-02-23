@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -48,8 +48,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
@@ -64,13 +64,13 @@ public class LuceneIndexRecoveryIT
     private GraphDatabaseAPI db;
     private DirectoryFactory directoryFactory;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         if ( db != null )

@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.report;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.helpers.Strings;

@@ -19,18 +19,18 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.shell.Variables.PROMPT_KEY;
 
 public class ServerClientInteractionIT extends AbstractShellIT
 {
     private SilentLocalOutput out = new SilentLocalOutput();
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         makeServerRemotelyAvailable();
@@ -47,8 +47,8 @@ public class ServerClientInteractionIT extends AbstractShellIT
 
         // THEN
         String regexPattern = "MyPrompt .{1,3} .{1,3} \\d{1,2} \\d{2}:\\d{2}:\\d{2}\\$";
-        assertTrue( "Prompt from server '" + response.getPrompt() + "' didn't match pattern '" + regexPattern + "'",
-                compile( regexPattern ).matcher( response.getPrompt() ).find() );
+        assertTrue( compile( regexPattern ).matcher( response.getPrompt() ).find(),
+                "Prompt from server '" + response.getPrompt() + "' didn't match pattern '" + regexPattern + "'" );
     }
 
 }

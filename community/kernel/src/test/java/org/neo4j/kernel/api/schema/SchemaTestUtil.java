@@ -24,7 +24,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SchemaTestUtil
 {
@@ -34,9 +34,8 @@ public class SchemaTestUtil
 
     public static void assertEquality( Object o1, Object o2 )
     {
-        assertTrue( o1.getClass().getSimpleName() + "s are not equal", o1.equals( o2 ) );
-        assertTrue( o1.getClass().getSimpleName() + "s do not have the same hashcode",
-                o1.hashCode() == o2.hashCode() );
+        assertTrue( o1.equals( o2 ), o1.getClass().getSimpleName() + "s are not equal" );
+        assertTrue( o1.hashCode() == o2.hashCode(), o1.getClass().getSimpleName() + "s do not have the same hashcode" );
     }
 
     public static void assertArray( int[] values, int... expected )
@@ -44,8 +43,8 @@ public class SchemaTestUtil
         assertThat( values.length, equalTo( expected.length ) );
         for ( int i = 0; i < values.length; i++ )
         {
-            assertTrue( format( "Expected %d, got %d at index %d", expected[i], values[i], i ),
-                    values[i] == expected[i] );
+            assertTrue( values[i] == expected[i],
+                    format( "Expected %d, got %d at index %d", expected[i], values[i], i ) );
         }
     }
 

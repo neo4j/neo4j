@@ -20,12 +20,15 @@
 package org.neo4j.kernel.internal;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -38,21 +41,24 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.internal.locker.StoreLocker.STORE_LOCK_FILENAME;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class StoreLockerTest
 {
-    @Rule
-    public final TestDirectory target = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory target;
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
@@ -68,7 +74,7 @@ public class StoreLockerTest
             try
             {
                 storeLocker.checkLock();
-                fail();
+                fail("Failure was expected");
             }
             catch ( StoreLockException e )
             {
@@ -83,9 +89,8 @@ public class StoreLockerTest
             // expected
         }
 
-        assertEquals( "Expect that number of open channels will remain the same for ",
-                numberOfCallesToOpen, fileSystemAbstraction
-                .getNumberOfCallsToOpen() );
+        assertEquals( numberOfCallesToOpen, fileSystemAbstraction.getNumberOfCallsToOpen(),
+                "Expect that number of open channels will remain the same for " );
     }
 
     @Test
@@ -109,7 +114,7 @@ public class StoreLockerTest
         try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
         {
             storeLocker1.checkLock();
-            fail();
+            fail("Failure was expected");
         }
         catch ( StoreLockException e )
         {
@@ -120,7 +125,7 @@ public class StoreLockerTest
         try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
         {
             storeLocker1.checkLock();
-            fail();
+            fail("Failure was expected");
         }
         catch ( StoreLockException e )
         {
@@ -150,7 +155,7 @@ public class StoreLockerTest
         }
         catch ( StoreLockException e )
         {
-            fail();
+            fail("Failure was expected");
         }
     }
 
@@ -196,7 +201,7 @@ public class StoreLockerTest
         try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
         {
             storeLocker.checkLock();
-            fail();
+            fail("Failure was expected");
         }
         catch ( StoreLockException e )
         {
@@ -230,7 +235,7 @@ public class StoreLockerTest
         try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
         {
             storeLocker.checkLock();
-            fail();
+            fail("Failure was expected");
         }
         catch ( StoreLockException e )
         {
@@ -270,7 +275,7 @@ public class StoreLockerTest
         try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
             storeLocker.checkLock();
-            fail();
+            fail("Failure was expected");
         }
         catch ( StoreLockException e )
         {

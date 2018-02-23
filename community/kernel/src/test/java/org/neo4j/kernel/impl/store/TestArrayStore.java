@@ -175,8 +175,8 @@ public class TestArrayStore
     {
         PointValue[] array =
                 new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.Cartesian,
-                        Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                                Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
                         Values.pointValue( CoordinateReferenceSystem.WGS84,
                                 Double.longBitsToDouble( 0x1L ),
                                 Double.longBitsToDouble( 0x1L ) )};
@@ -190,9 +190,9 @@ public class TestArrayStore
     {
         PointValue[] array =
                 new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.Cartesian,
-                        Double.longBitsToDouble( 0x1L ),
-                        Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x7L ) ),
                         Values.pointValue( CoordinateReferenceSystem.Cartesian,
                                 Double.longBitsToDouble( 0x1L ),
                                 Double.longBitsToDouble( 0x1L ),

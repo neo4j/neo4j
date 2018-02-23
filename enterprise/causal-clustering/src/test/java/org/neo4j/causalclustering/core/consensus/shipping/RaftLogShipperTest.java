@@ -35,10 +35,10 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.AppendEntries;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.collection.Iterables;
@@ -118,7 +118,7 @@ public class RaftLogShipperTest
     private void startLogShipper()
     {
         logShipper = new RaftLogShipper( outbound, logProvider, raftLog, clock, timerService, leader, follower, leaderTerm, leaderCommit,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new ConsecutiveInFlightCache() );
+                retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new ConsecutiveInFlightCache() );
         logShipper.start();
     }
 

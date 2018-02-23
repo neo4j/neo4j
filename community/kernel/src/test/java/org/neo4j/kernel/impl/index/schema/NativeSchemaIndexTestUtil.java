@@ -97,7 +97,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
         Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
         List<Hit<KEY,VALUE>> actualHits = new ArrayList<>();
         try ( GBPTree<KEY,VALUE> tree = getTree();
-              RawCursor<Hit<KEY,VALUE>,IOException> scan = scan( tree ) )
+                RawCursor<Hit<KEY,VALUE>,IOException> scan = scan( tree ) )
         {
             while ( scan.next() )
             {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.com;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -32,11 +32,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.lang.String.valueOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResourcePoolTest
 {
@@ -293,8 +294,8 @@ public class ResourcePoolTest
 
         // then
         // currentPeakSize should not be higher than bellowPoolMinSize
-        assertTrue( String.valueOf( stateMonitor.currentPeakSize.get() ),
-                stateMonitor.currentPeakSize.get() <= bellowPoolMinSize );
+        assertTrue( stateMonitor.currentPeakSize.get() <= bellowPoolMinSize,
+                valueOf( stateMonitor.currentPeakSize.get() ) );
         // target size should remain at pool min size
         assertEquals( poolMinSize, stateMonitor.targetSize.get() );
         assertEquals( poolMinSize, pool.unusedSize() );

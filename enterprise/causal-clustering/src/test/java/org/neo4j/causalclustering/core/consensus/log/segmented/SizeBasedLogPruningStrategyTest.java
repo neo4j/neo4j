@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SizeBasedLogPruningStrategyTest extends PruningStrategyTest
 {

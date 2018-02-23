@@ -20,13 +20,18 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import javax.annotation.Resource;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -34,19 +39,23 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
 public class PageCacheLongArrayTest
 {
     private static final int COUNT = 1_000_000;
 
+    @Resource
+    public TestDirectory dir;
+    @Resource
+    public RandomRule random;
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory();
-    private final RandomRule random = new RandomRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( dir ).around( random ).around( pageCacheRule );
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( pageCacheRule );
 
     @Test
     public void verifyPageCacheLongArray() throws Exception

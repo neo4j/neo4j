@@ -19,7 +19,7 @@
  */
 package org.neo4j.codegen.source;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathFor;
 import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathStringFor;
 

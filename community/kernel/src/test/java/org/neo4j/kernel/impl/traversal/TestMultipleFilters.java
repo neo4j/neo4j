@@ -63,7 +63,7 @@ public class TestMultipleFilters extends TraversalTestBase
     @After
     public void tearDown()
     {
-         tx.close();
+        tx.close();
     }
 
     private static class MustBeConnectedToNodeFilter implements Predicate<Path>, Evaluator
@@ -107,7 +107,7 @@ public class TestMultipleFilters extends TraversalTestBase
         Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
         Evaluator mustNotHaveMoreThanTwoOutRels =
                 path -> Evaluation.ofIncludes( Iterables
-                                                       .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
+                        .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
 
         TraversalDescription description = getGraphDb().traversalDescription().evaluator( mustBeConnectedToK );
         expectNodes( description.traverse( node( "a" ) ), "b", "c" );
@@ -127,7 +127,7 @@ public class TestMultipleFilters extends TraversalTestBase
                 .traverse( node( "a" ) ) );
         // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
         expectNodes( getGraphDb().traversalDescription()
-                        .evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) )
-                        .traverse( node( "a" ) ), "a", "b" );
+                .evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) )
+                .traverse( node( "a" ) ), "a", "b" );
     }
 }

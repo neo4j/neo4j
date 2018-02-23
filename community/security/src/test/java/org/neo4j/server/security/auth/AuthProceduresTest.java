@@ -20,7 +20,8 @@
 package org.neo4j.server.security.auth;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
+@EnableRuleMigrationSupport
 public class AuthProceduresTest extends KernelIntegrationTest
 {
     @Rule

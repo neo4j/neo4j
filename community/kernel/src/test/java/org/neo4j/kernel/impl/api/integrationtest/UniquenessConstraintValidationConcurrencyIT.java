@@ -19,32 +19,35 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Future;
 import java.util.function.Function;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
+@ExtendWith( {ImpermanentDatabaseExtension.class, OtherThreadExtension.class} )
 public class UniquenessConstraintValidationConcurrencyIT
 {
-    @Rule
-    public final DatabaseRule database = new ImpermanentDatabaseRule();
-    @Rule
-    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    @Resource
+    public ImpermanentDatabaseRule database;
+    @Resource
+    public OtherThreadRule<Void> otherThread;
 
     @Test
     public void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
@@ -60,7 +63,7 @@ public class UniquenessConstraintValidationConcurrencyIT
         } );
 
         // then
-        assertTrue( "Node creation should succeed", created.get() );
+        assertTrue( created.get(), "Node creation should succeed" );
     }
 
     @Test
@@ -84,7 +87,7 @@ public class UniquenessConstraintValidationConcurrencyIT
         } );
 
         // then
-        assertFalse( "node creation should fail", created.get() );
+        assertFalse( created.get(), "node creation should fail" );
     }
 
     @Test
@@ -108,7 +111,7 @@ public class UniquenessConstraintValidationConcurrencyIT
         } );
 
         // then
-        assertTrue( "Node creation should succeed", created.get() );
+        assertTrue( created.get(), "Node creation should succeed" );
     }
 
     private static Function<GraphDatabaseService, Void> createUniquenessConstraint(

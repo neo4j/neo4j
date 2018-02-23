@@ -21,16 +21,17 @@ package org.neo4j.bolt.security.auth;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.security.auth.BasicAuthManager;
@@ -41,10 +42,11 @@ import org.neo4j.time.Clocks;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+@EnableRuleMigrationSupport
 public class BasicAuthenticationTest
 {
     @Rule
@@ -185,7 +187,7 @@ public class BasicAuthenticationTest
                 .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", "secret" ) );
     }
 
-    @Before
+    @BeforeEach
     public void setup() throws Throwable
     {
         authentication = createAuthentication( 3 );

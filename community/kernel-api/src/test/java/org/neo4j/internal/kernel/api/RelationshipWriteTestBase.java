@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
@@ -30,9 +30,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -129,7 +129,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             tx.success();
         }
 

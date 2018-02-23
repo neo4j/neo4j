@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Array;
 
@@ -33,10 +33,11 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
+import static org.neo4j.values.storable.Values.of;
 
 /**
  * Test read access to committed properties.
@@ -111,12 +112,11 @@ public class StorageLayerPropertyTest extends StorageLayerTest
                         Value propVal = props.get().value();
 
                         //then
-                        assertTrue( propVal + ".equals(" + value + ")",
-                                propVal.equals( Values.of( value ) ) );
+                        assertTrue( propVal.equals( of( value ) ), propVal + ".equals(" + value + ")" );
                     }
                     else
                     {
-                        fail();
+                        fail("Failure was expected");
                     }
                 }
             }
@@ -131,7 +131,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
 
         // THEN
-        assertTrue( "Should have created a non-negative id", id >= 0 );
+        assertTrue( id >= 0, "Should have created a non-negative id" );
     }
 
     @Test

@@ -19,10 +19,10 @@
  */
 package org.neo4j.graphdb.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 public class IndexPopulationProgressTest
@@ -30,13 +30,13 @@ public class IndexPopulationProgressTest
     @Test
     public void testNone()
     {
-        assertEquals( 0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0 );
+        assertEquals( 0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0.01 );
     }
 
     @Test
     public void testDone()
     {
-        assertEquals( 100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0 );
+        assertEquals( 100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0.01 );
     }
 
     @Test
@@ -73,7 +73,7 @@ public class IndexPopulationProgressTest
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 0 );
         assertEquals( 0, progress.getCompletedCount() );
         assertEquals( 0, progress.getTotalCount() );
-        assertEquals( 0, progress.getCompletedPercentage(), 0 );
+        assertEquals( 0, progress.getCompletedPercentage(), 0.01 );
     }
 
     @Test
@@ -82,7 +82,7 @@ public class IndexPopulationProgressTest
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 1 );
         assertEquals( 1, progress.getTotalCount() );
         assertEquals( 0, progress.getCompletedCount() );
-        assertEquals( 0, progress.getCompletedPercentage(), 0 );
+        assertEquals( 0, progress.getCompletedPercentage(), 0.01 );
     }
 
     @Test
@@ -103,7 +103,7 @@ public class IndexPopulationProgressTest
     public void testGetCompletedPercentage()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
-        assertEquals( 50.0f, progress.getCompletedPercentage(), 0.0f );
+        assertEquals( 50.0f, progress.getCompletedPercentage(), 0.01f );
     }
 
     @Test

@@ -19,9 +19,9 @@
  */
 package org.neo4j.com;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -32,28 +32,35 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.ports.allocation.PortAuthority;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
+import static org.neo4j.com.MadeUpServerProcess.PORT;
+import static org.neo4j.com.ResourceReleaser.NO_OP;
+import static org.neo4j.com.Response.Handler;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.com.TransactionStream.EMPTY;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
+import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.ports.allocation.PortAuthority.allocatePort;
 
 public class CommunicationIT
 {
@@ -64,14 +71,14 @@ public class CommunicationIT
     private StoreId storeIdToUse;
     private Builder builder;
 
-    @Before
+    @BeforeEach
     public void doBefore()
     {
         storeIdToUse = newStoreIdForCurrentVersion();
         builder = new Builder();
     }
 
-    @After
+    @AfterEach
     public void shutdownLife()
     {
         life.shutdown();
@@ -99,28 +106,32 @@ public class CommunicationIT
         long time = currentTimeMillis();
         while ( !server.responseHasBeenWritten() && currentTimeMillis() - time < maxTime )
         {
-            Thread.sleep( 50 );
+            sleep( 50 );
         }
     }
 
-    @Test( expected = MismatchingStoreIdException.class )
+    @Test
     public void makeSureClientStoreIdsMustMatch()
     {
-        MadeUpServer server = builder.server();
-        MadeUpClient client = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).client();
-        addToLifeAndStart( server, client );
+        assertThrows( MismatchingStoreIdException.class, () -> {
+            MadeUpServer server = builder.server();
+            MadeUpClient client = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).client();
+            addToLifeAndStart( server, client );
 
-        client.multiply( 1, 2 );
+            client.multiply( 1, 2 );
+        } );
     }
 
-    @Test( expected = MismatchingStoreIdException.class )
+    @Test
     public void makeSureServerStoreIdsMustMatch()
     {
-        MadeUpServer server = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).server();
-        MadeUpClient client = builder.client();
-        addToLifeAndStart( server, client );
+        assertThrows( MismatchingStoreIdException.class, () -> {
+            MadeUpServer server = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).server();
+            MadeUpClient client = builder.client();
+            addToLifeAndStart( server, client );
 
-        client.multiply( 1, 2 );
+            client.multiply( 1, 2 );
+        } );
     }
 
     @Test
@@ -143,8 +154,8 @@ public class CommunicationIT
             public Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize )
             {
                 writer.write( new FailingByteChannel( dataSize, failureMessage ) );
-                return new TransactionStreamResponse<>( null, storeIdToUse, TransactionStream.EMPTY,
-                        ResourceReleaser.NO_OP );
+                return new TransactionStreamResponse<>( null, storeIdToUse, EMPTY,
+                        NO_OP );
             }
         };
         MadeUpServer server = builder.server( serverImplementation );
@@ -167,7 +178,7 @@ public class CommunicationIT
     {
         ServerInterface server = builder.serverInOtherJvm();
         server.awaitStarted();
-        MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).client();
+        MadeUpClient client = builder.port( PORT ).client();
         life.add( client );
         life.start();
 
@@ -218,7 +229,7 @@ public class CommunicationIT
         ServerInterface server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) )
                                         .serverInOtherJvm();
         server.awaitStarted();
-        MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).client();
+        MadeUpClient client = builder.port( PORT ).client();
         life.add( client );
         life.start();
 
@@ -254,7 +265,7 @@ public class CommunicationIT
     {
         ServerInterface server = builder.internalProtocolVersion( (byte) 1 ).serverInOtherJvm();
         server.awaitStarted();
-        MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).internalProtocolVersion( (byte) 2 ).client();
+        MadeUpClient client = builder.port( PORT ).internalProtocolVersion( (byte) 2 ).client();
         life.add( client );
         life.start();
 
@@ -289,13 +300,13 @@ public class CommunicationIT
         }
         assertTrue( writer.getSizeRead() >= failAtSize );
 
-        long maxWaitUntil = System.currentTimeMillis() + 60_000L;
-        while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil )
+        long maxWaitUntil = currentTimeMillis() + 60_000L;
+        while ( !server.responseFailureEncountered() && currentTimeMillis() < maxWaitUntil )
         {
             sleep( 100 );
         }
-        assertTrue( "Failure writing the response should have been encountered", server.responseFailureEncountered() );
-        assertFalse( "Response shouldn't have been successful", server.responseHasBeenWritten() );
+        assertTrue( server.responseFailureEncountered(), "Failure writing the response should have been encountered" );
+        assertFalse( server.responseHasBeenWritten(), "Response shouldn't have been successful" );
     }
 
     @Test
@@ -356,7 +367,7 @@ public class CommunicationIT
     @Test
     public void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Throwable
     {
-        Builder myBuilder = builder.chunkSize( MadeUpServer.FRAME_LENGTH + 10 );
+        Builder myBuilder = builder.chunkSize( FRAME_LENGTH + 10 );
         try
         {
             MadeUpServer server = myBuilder.server();
@@ -413,7 +424,7 @@ public class CommunicationIT
         assertNotNull( exceptionThrownOnRequest );
         assertEquals( comExceptionMessage, exceptionThrownOnRequest.getMessage() );
 
-        ArgumentCaptor<ComException> exceptionCaptor = ArgumentCaptor.forClass( ComException.class );
+        ArgumentCaptor<ComException> exceptionCaptor = forClass( ComException.class );
         verify( handler ).handle( exceptionCaptor.capture() );
         assertEquals( comExceptionMessage, exceptionCaptor.getValue().getMessage() );
         verifyNoMoreInteractions( handler );
@@ -432,7 +443,7 @@ public class CommunicationIT
         client.multiply( 42, 42 );
 
         // Then
-        ArgumentCaptor<Response> captor = ArgumentCaptor.forClass( Response.class );
+        ArgumentCaptor<Response> captor = forClass( Response.class );
         verify( responseUnpacker ).unpackResponse( captor.capture(), eq( NO_OP_TX_HANDLER ) );
         assertEquals( storeIdToUse, captor.getValue().getStoreId() );
         assertEquals( 42 * 42, captor.getValue().response() );
@@ -471,7 +482,7 @@ public class CommunicationIT
 
         // THEN
         assertEquals( value, responseValue );
-        assertEquals( txCount, handler.expectedTxId - TransactionIdStore.BASE_TX_ID );
+        assertEquals( txCount, handler.expectedTxId - BASE_TX_ID );
     }
 
     @Test
@@ -514,7 +525,7 @@ public class CommunicationIT
 
         Builder()
         {
-            this( PortAuthority.allocatePort(), FRAME_LENGTH, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
+            this( allocatePort(), FRAME_LENGTH, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
                     ALWAYS_MATCH, storeIdToUse );
         }
 
@@ -579,7 +590,7 @@ public class CommunicationIT
 
         public MadeUpClient client()
         {
-            return clientWith( ResponseUnpacker.NO_OP_RESPONSE_UNPACKER );
+            return clientWith( NO_OP_RESPONSE_UNPACKER );
         }
 
         public MadeUpClient clientWith( ResponseUnpacker responseUnpacker )
@@ -605,7 +616,7 @@ public class CommunicationIT
     }
 
     public class TransactionStreamVerifyingResponseHandler
-            implements Response.Handler, Visitor<CommittedTransactionRepresentation,Exception>
+            implements Handler, Visitor<CommittedTransactionRepresentation,Exception>
     {
         private final long txCount;
         private long expectedTxId = 1;
@@ -630,14 +641,14 @@ public class CommunicationIT
         @Override
         public boolean visit( CommittedTransactionRepresentation element )
         {
-            assertEquals( expectedTxId + TransactionIdStore.BASE_TX_ID, element.getCommitEntry().getTxId() );
+            assertEquals( expectedTxId + BASE_TX_ID, element.getCommitEntry().getTxId() );
             expectedTxId++;
-            assertThat( element.getCommitEntry().getTxId(), lessThanOrEqualTo( txCount + TransactionIdStore.BASE_TX_ID ) );
+            assertThat( element.getCommitEntry().getTxId(), lessThanOrEqualTo( txCount + BASE_TX_ID ) );
             return false;
         }
     }
 
-    public class TransactionObligationVerifyingResponseHandler implements Response.Handler
+    public class TransactionObligationVerifyingResponseHandler implements Handler
     {
         volatile long obligationTxId;
 

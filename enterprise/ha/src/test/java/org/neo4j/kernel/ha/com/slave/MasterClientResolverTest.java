@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.com.storecopy.ResponseUnpacker;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class MasterClientResolverTest

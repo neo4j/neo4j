@@ -19,9 +19,9 @@
  */
 package visibility;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -33,7 +33,7 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TestDatasourceCommitOrderDataVisibility
 {
@@ -45,13 +45,13 @@ public class TestDatasourceCommitOrderDataVisibility
 
     private GraphDatabaseService graphDatabaseService;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         graphDatabaseService.shutdown();

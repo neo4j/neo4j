@@ -19,17 +19,19 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -37,8 +39,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.contains;
@@ -50,10 +52,11 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class SchemaAcceptanceTest
 {
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
 
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
@@ -66,7 +69,7 @@ public class SchemaAcceptanceTest
         MY_OTHER_LABEL
     }
 
-    @Before
+    @BeforeEach
     public void init()
     {
         db = dbRule.getGraphDatabaseAPI();

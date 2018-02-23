@@ -22,9 +22,9 @@ package org.neo4j.bolt.v1.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -42,9 +42,9 @@ import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -56,14 +56,14 @@ public class ChunkedOutputTest
     private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
     private ChunkedOutput out;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
         this.out = new ChunkedOutput( ch, 16 );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         out.close();

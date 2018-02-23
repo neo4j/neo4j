@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.monitoring.tracing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -27,7 +27,7 @@ import org.neo4j.logging.BufferingLog;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class VerboseTracerFactoryTest
 {

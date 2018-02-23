@@ -28,9 +28,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -41,14 +41,18 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
+import static io.netty.buffer.ByteBufAllocator.DEFAULT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.logging.NullLogProvider.getInstance;
+import static org.neo4j.ports.allocation.PortAuthority.allocatePort;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class ReconnectingChannelIT
 {
-    private static final int PORT = PortAuthority.allocatePort();
+    private static final int PORT = allocatePort();
     private static final ChannelHandler VOID_HANDLER = new ChannelInitializer<SocketChannel>()
     {
         @Override
@@ -58,14 +62,14 @@ public class ReconnectingChannelIT
     };
     private static final long DEFAULT_TIMEOUT_MS = 20_000;
 
-    private final Log log = NullLogProvider.getInstance().getLog( getClass() );
+    private final Log log = getInstance().getLog( getClass() );
     private final SocketAddress serverAddress = new SocketAddress( "localhost", PORT );
     private final TestServer server = new TestServer( PORT );
 
     private EventLoopGroup elg;
     private ReconnectingChannel channel;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         elg = new NioEventLoopGroup( 0 );
@@ -73,7 +77,7 @@ public class ReconnectingChannelIT
         channel = new ReconnectingChannel( bootstrap, elg.next(), serverAddress, log );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         elg.shutdownGracefully( 0, DEFAULT_TIMEOUT_MS, MILLISECONDS ).awaitUninterruptibly();
@@ -93,7 +97,7 @@ public class ReconnectingChannelIT
         Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will be successfully completed
-        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+        fSend.get( DEFAULT_TIMEOUT_MS, MILLISECONDS );
     }
 
     @Test
@@ -110,20 +114,22 @@ public class ReconnectingChannelIT
         Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will be successfully completed
-        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+        fSend.get( DEFAULT_TIMEOUT_MS, MILLISECONDS );
     }
 
-    @Test( expected = ExecutionException.class )
-    public void shouldFailSendWhenNoServer() throws Exception
+    @Test
+    public void shouldFailSendWhenNoServer()
     {
-        // given
-        channel.start();
+        assertThrows( ExecutionException.class, () -> {
+            // given
+            channel.start();
 
-        // when
-        Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
+            // when
+            Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
-        // then will throw
-        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+            // then will throw
+            fSend.get( DEFAULT_TIMEOUT_MS, MILLISECONDS );
+        } );
     }
 
     @Test
@@ -137,7 +143,7 @@ public class ReconnectingChannelIT
         Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will not throw
-        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+        fSend.get( DEFAULT_TIMEOUT_MS, MILLISECONDS );
 
         // when
         server.stop();
@@ -146,7 +152,7 @@ public class ReconnectingChannelIT
         // then will throw
         try
         {
-            fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+            fSend.get( DEFAULT_TIMEOUT_MS, MILLISECONDS );
             fail( "Expected failure to send" );
         }
         catch ( ExecutionException ex )
@@ -159,7 +165,7 @@ public class ReconnectingChannelIT
         fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will not throw
-        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+        fSend.get( DEFAULT_TIMEOUT_MS, MILLISECONDS );
     }
 
     @Test
@@ -192,6 +198,6 @@ public class ReconnectingChannelIT
 
     private ByteBuf emptyBuffer()
     {
-        return ByteBufAllocator.DEFAULT.buffer();
+        return DEFAULT.buffer();
     }
 }

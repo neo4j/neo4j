@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,13 +38,13 @@ public class JavaValueCompatibilityTest
 {
     private GraphDatabaseService  db;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         db.shutdown();

@@ -19,38 +19,41 @@
  */
 package org.neo4j.kernel.configuration.ssl;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.PkiUtils;
 import org.neo4j.ssl.SslPolicy;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class SslPolicyLoaderTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private File home;
     private File publicCertificateFile;
     private File privateKeyFile;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception
     {
         home = testDirectory.directory( "home" );
@@ -121,7 +124,7 @@ public class SslPolicyLoaderTest
         try
         {
             SslPolicyLoader.create( config, NullLogProvider.getInstance() );
-            fail();
+            fail("Failure was expected");
         }
         catch ( Exception e )
         {
@@ -147,7 +150,7 @@ public class SslPolicyLoaderTest
         try
         {
             sslPolicyLoader.getPolicy( "unknown" );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalArgumentException e )
         {
@@ -184,7 +187,7 @@ public class SslPolicyLoaderTest
         {
             // when
             SslPolicyLoader.create( config, NullLogProvider.getInstance() );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalArgumentException e )
         {

@@ -21,14 +21,14 @@ package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,7 +43,7 @@ public class WritableIndexReferenceTest
     private CloseTrackingIndexReader reader = new CloseTrackingIndexReader();
     private WritableIndexReference indexReference = new WritableIndexReference( identifier, searcher, indexWriter );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( searcher.getIndexReader() ).thenReturn( reader );
@@ -58,10 +58,10 @@ public class WritableIndexReferenceTest
     @Test
     public void stalingWritableIndex()
     {
-        assertFalse( "Index is not stale by default.", indexReference.checkAndClearStale() );
+        assertFalse( indexReference.checkAndClearStale(), "Index is not stale by default." );
         indexReference.setStale();
-        assertTrue( "We should be able to reset stale index state.", indexReference.checkAndClearStale() );
-        assertFalse( "Index is not stale anymore.", indexReference.checkAndClearStale() );
+        assertTrue( indexReference.checkAndClearStale(), "We should be able to reset stale index state." );
+        assertFalse( indexReference.checkAndClearStale(), "Index is not stale anymore." );
 
     }
 
@@ -69,8 +69,8 @@ public class WritableIndexReferenceTest
     public void disposeWritableIndex() throws Exception
     {
         indexReference.dispose();
-        assertTrue( "Reader should be closed.", reader.isClosed() );
-        assertTrue( "Writer should be closed.", indexReference.isWriterClosed() );
+        assertTrue( reader.isClosed(), "Reader should be closed." );
+        assertTrue( indexReference.isWriterClosed(), "Writer should be closed." );
     }
 
 }

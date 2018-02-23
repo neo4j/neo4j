@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Map;
@@ -37,9 +37,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -49,7 +49,7 @@ public class TestIndexImplOnNeo
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void createDb()
     {
         db = new TestGraphDatabaseFactory()
@@ -63,7 +63,7 @@ public class TestIndexImplOnNeo
         createDb();
     }
 
-    @After
+    @AfterEach
     public void shutdownDb()
     {
         db.shutdown();

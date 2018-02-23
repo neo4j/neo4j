@@ -19,9 +19,9 @@
  */
 package org.neo4j.jmx.impl;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
@@ -31,19 +31,19 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConfigurationBeanIT
 {
     private static GraphDatabaseService graphdb;
 
-    @BeforeClass
+    @BeforeAll
     public static void startDb()
     {
         graphdb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopDb()
     {
         if ( graphdb != null )

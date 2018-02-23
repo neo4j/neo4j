@@ -20,10 +20,12 @@
 package org.neo4j.io.fs;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
@@ -41,34 +43,39 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
 import static org.neo4j.io.fs.FileHandle.handleRename;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
+@EnableRuleMigrationSupport
+@ExtendWith( { TestDirectoryExtension.class} )
 public abstract class FileSystemAbstractionTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
+    @Resource
+    public TestDirectory testDirectory;
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -77,18 +84,17 @@ public abstract class FileSystemAbstractionTest
     private int pageCachePageSize = 32;
     private int recordsPerFilePage = pageCachePageSize / recordSize;
     private int recordCount = 25 * maxPages * recordsPerFilePage;
-    private int filePageSize = recordsPerFilePage * recordSize;
     protected FileSystemAbstraction fsa;
     protected File path;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         fsa = buildFileSystemAbstraction();
         path = new File( testDirectory.directory(), UUID.randomUUID().toString() );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         fsa.close();

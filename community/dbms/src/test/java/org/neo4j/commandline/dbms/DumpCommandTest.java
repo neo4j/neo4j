@@ -19,10 +19,13 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
@@ -37,6 +40,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
+import javax.annotation.Resource;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -50,17 +54,17 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -71,10 +75,12 @@ import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class DumpCommandTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
@@ -84,7 +90,7 @@ public class DumpCommandTest
     private Dumper dumper;
     private Path databaseDirectory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
@@ -132,10 +138,9 @@ public class DumpCommandTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // Can't reliably create symlinks on windows
     public void shouldHandleDatabaseSymlink() throws Exception
     {
-        assumeFalse( "Can't reliably create symlinks on windows", SystemUtils.IS_OS_WINDOWS );
-
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
 
@@ -238,10 +243,9 @@ public class DumpCommandTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
     public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {

@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
 import org.neo4j.graphdb.Result;
@@ -39,19 +40,20 @@ import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class ExecutionEngineTest
 {
     private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
 
-    @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule database;
 
     @Test
     public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception

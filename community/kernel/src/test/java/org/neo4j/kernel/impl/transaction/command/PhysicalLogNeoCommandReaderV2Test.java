@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PhysicalLogNeoCommandReaderV2Test
 {

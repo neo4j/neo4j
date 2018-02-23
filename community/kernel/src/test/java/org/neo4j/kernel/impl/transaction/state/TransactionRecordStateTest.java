@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -89,12 +89,12 @@ import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -143,18 +143,18 @@ public class TransactionRecordStateTest
         {
             rel = recordChangeSet.getRelRecords().getOrLoad( relId, null ).forReadingData();
             // count is stored in the back pointer of the first relationship in the chain
-            assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
-            assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
-                    manuallyCountRelationships( recordChangeSet, nodeId, relId ) );
+            assertEquals( outCount, rel.getFirstPrevRel(), "Stored relationship count for OUTGOING differs" );
+            assertEquals( outCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
+                    "Manually counted relationships for OUTGOING differs" );
         }
 
         relId = group.getFirstIn();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             rel = recordChangeSet.getRelRecords().getOrLoad( relId, null ).forReadingData();
-            assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
-            assertEquals( "Manually counted relationships for INCOMING differs", inCount,
-                    manuallyCountRelationships( recordChangeSet, nodeId, relId ) );
+            assertEquals( inCount, rel.getSecondPrevRel(), "Stored relationship count for INCOMING differs" );
+            assertEquals( inCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
+                    "Manually counted relationships for INCOMING differs" );
         }
     }
 
@@ -873,14 +873,14 @@ public class TransactionRecordStateTest
                     }
                     else
                     {
-                        fail();
+                        fail("Failure was expected");
                     }
                 }
                 return false;
             }
         } ) );
 
-        assertTrue( "Did not create relationship group command", foundRelationshipGroupInUse.get() );
+        assertTrue( foundRelationshipGroupInUse.get(), "Did not create relationship group command" );
     }
 
     @Test
@@ -1224,7 +1224,7 @@ public class TransactionRecordStateTest
     {
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
-        assertTrue( "Node should be dense, is " + node, node.isDense() );
+        assertTrue( node.isDense(), "Node should be dense, is " + node );
         long groupId = node.getNextRel();
         int cursor = 0;
         List<RelationshipGroupRecord> seen = new ArrayList<>();
@@ -1234,10 +1234,10 @@ public class TransactionRecordStateTest
             RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId,
                     relationshipGroupStore.newRecord(), NORMAL );
             seen.add( group );
-            assertEquals( "Invalid type, seen groups so far " + seen, types[cursor++], group.getType() );
+            assertEquals( types[cursor++], group.getType(), "Invalid type, seen groups so far " + seen );
             groupId = group.getNext();
         }
-        assertEquals( "Not enough relationship group records found in chain for " + node, types.length, cursor );
+        assertEquals( types.length, cursor, "Not enough relationship group records found in chain for " + node );
     }
 
     private Iterable<NodeUpdates> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
@@ -1272,7 +1272,7 @@ public class TransactionRecordStateTest
 
     private void assertCommand( StorageCommand next, Class<?> klass )
     {
-        assertTrue( "Expected " + klass + ". was: " + next, klass.isInstance( next ) );
+        assertTrue( klass.isInstance( next ), "Expected " + klass + ". was: " + next );
     }
 
     private CommittedTransactionRepresentation readFromChannel( ReadableLogChannel channel )

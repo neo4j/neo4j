@@ -198,7 +198,7 @@ public class CommonAbstractStoreTest
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer pageCursorTracer = new RecordingPageCursorTracer( Pin.class );
         PageCacheRule.PageCacheConfig pageCacheConfig = config().withTracer( tracer )
-                                        .withCursorTracerSupplier( pageCursorTracerSupplier( pageCursorTracer ) );
+                .withCursorTracerSupplier( pageCursorTracerSupplier( pageCursorTracer ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), pageCacheConfig, Config.defaults() );
 
         try ( NodeStore store = new NodeStore( storeFile, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),

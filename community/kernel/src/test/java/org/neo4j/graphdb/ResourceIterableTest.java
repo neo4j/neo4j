@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
@@ -67,6 +67,6 @@ public class ResourceIterableTest
 
         // Then
         assertEquals( asList(1,2,3), result );
-        assertEquals( "two calls to close", 2, closed.get() );
+        assertEquals( 2, closed.get(), "two calls to close" );
     }
 }

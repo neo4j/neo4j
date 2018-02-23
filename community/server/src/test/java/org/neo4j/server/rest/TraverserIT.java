@@ -134,11 +134,11 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Traversal using a return filter.\n" +
-                 "\n" +
-                 "In this example, the +none+ prune evaluator is used and a return filter\n" +
-                 "is supplied in order to return all names containing \"t\".\n" +
-                 "The result is to be returned as nodes and the max depth is\n" +
-                 "set to 3." )
+            "\n" +
+            "In this example, the +none+ prune evaluator is used and a return filter\n" +
+            "is supplied in order to return all names containing \"t\".\n" +
+            "The result is to be returned as nodes and the max depth is\n" +
+            "set to 3." )
     @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription()
@@ -165,8 +165,8 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Traversal returning nodes below a certain depth.\n" +
-                 "\n" +
-                 "Here, all nodes at a traversal depth below 3 are returned." )
+            "\n" +
+            "Here, all nodes at a traversal depth below 3 are returned." )
     @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
     @Test
     public void shouldGetExpectedHitsWhenTraversingAtDepth()
@@ -195,9 +195,9 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
 
     @Test
     @Graph( {"Root knows Mattias",
-             "Root knows Johan",  "Johan knows Emil", "Emil knows Peter",
-             "Root eats Cork",    "Cork hates Root",
-             "Root likes Banana", "Banana is_a Fruit"} )
+            "Root knows Johan",  "Johan knows Emil", "Emil knows Peter",
+            "Root eats Cork",    "Cork hates Root",
+            "Root likes Banana", "Banana is_a Fruit"} )
     public void shouldAllowTypeOrderedTraversals()
             throws JsonParseException
     {
@@ -205,17 +205,17 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
         String description = createJsonFrom( map(
                 "expander", "order_by_type",
                 "relationships",
-                    new Map[]{
+                new Map[]{
                         map( "type", "eats"),
                         map( "type", "knows" ),
                         map( "type", "likes" )
-                    },
+                },
                 "prune_evaluator",
-                    map( "language", "builtin",
-                         "name", "none" ),
+                map( "language", "builtin",
+                        "name", "none" ),
                 "return_filter",
-                    map( "language", "javascript",
-                         "body", "position.length()<2;" )
+                map( "language", "javascript",
+                        "body", "position.length()<2;" )
         ) );
         @SuppressWarnings( "unchecked" )
         List<Map<String,Object>> nodes = (List<Map<String, Object>>) readJson( gen().expectedStatus( 200 ).payload(

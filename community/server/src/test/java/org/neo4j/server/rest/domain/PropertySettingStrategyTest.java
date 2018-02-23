@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest.domain;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,8 +36,9 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PropertySettingStrategyTest
@@ -46,26 +47,26 @@ public class PropertySettingStrategyTest
     private Transaction tx;
     private static PropertySettingStrategy propSetter;
 
-    @BeforeClass
+    @BeforeAll
     public static void createDb()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         propSetter = new PropertySettingStrategy( db );
     }
 
-    @AfterClass
+    @AfterAll
     public static void closeDb()
     {
         db.shutdown();
     }
 
-    @Before
+    @BeforeEach
     public void beginTx()
     {
         tx = db.beginTx();
     }
 
-    @After
+    @AfterEach
     public void rollbackTx()
     {
         tx.close();
@@ -160,25 +161,29 @@ public class PropertySettingStrategyTest
         assertThat( node.getProperty( "arr" ), is(new String[]{}));
     }
 
-    @Test( expected = PropertyValueException.class )
-    public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingProperty() throws Exception
+    @Test
+    public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingProperty()
     {
-        // Given
-        Node node = db.createNode();
+        assertThrows( PropertyValueException.class, () -> {
+            // Given
+            Node node = db.createNode();
 
-        // When
-        propSetter.setProperty( node, "arr", new ArrayList<>() );
+            // When
+            propSetter.setProperty( node, "arr", new ArrayList<>() );
+        } );
     }
 
-    @Test( expected = PropertyValueException.class )
-    public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingEmptyArray() throws Exception
+    @Test
+    public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingEmptyArray()
     {
-        // Given
-        Node node = db.createNode();
-        node.setProperty( "arr", "hello" );
+        assertThrows( PropertyValueException.class, () -> {
+            // Given
+            Node node = db.createNode();
+            node.setProperty( "arr", "hello" );
 
-        // When
-        propSetter.setProperty( node, "arr", new ArrayList<>() );
+            // When
+            propSetter.setProperty( node, "arr", new ArrayList<>() );
+        } );
     }
 
     @Test

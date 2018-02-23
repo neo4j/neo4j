@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JsonInputTest
 {
@@ -40,7 +40,7 @@ public class JsonInputTest
     {
         Map<String, Object> map = input.readMap( "{}" );
         assertNotNull( map );
-        assertTrue( "map is not empty", map.isEmpty() );
+        assertTrue( map.isEmpty(), "map is not empty" );
     }
 
     @Test
@@ -50,7 +50,7 @@ public class JsonInputTest
         assertNotNull( map );
         assertThat( map, hasEntry( "key1", "value1" ) );
         assertThat( map, hasEntry( "key2", "value11" ) );
-        assertTrue( "map contained extra values", map.size() == 2 );
+        assertTrue( map.size() == 2, "map contained extra values" );
     }
 
     @Test
@@ -59,7 +59,7 @@ public class JsonInputTest
         Map<String, Object> map = input.readMap( "{\"nested\": {\"key\": \"valuable\"}}" );
         assertNotNull( map );
         assertThat( map, hasKey( "nested" ) );
-        assertTrue( "map contained extra values", map.size() == 1 );
+        assertTrue( map.size() == 1, "map contained extra values" );
         Object nested = map.get( "nested" );
         assertThat( nested, instanceOf( Map.class ) );
         @SuppressWarnings( "unchecked" )

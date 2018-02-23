@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.annotation.Resource;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -44,6 +43,8 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -52,10 +53,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class PropertyLevelSecurityIT
 {
-    @Rule
-    public TemporaryFolder tmpdir = new TemporaryFolder();
+    @Resource
+    public TestDirectory testDirectory;
 
     private GraphDatabaseFacade db;
     private EnterpriseAuthAndUserManager authManager;
@@ -63,11 +65,11 @@ public class PropertyLevelSecurityIT
     private LoginContext smith;
     private LoginContext morpheus;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Throwable
     {
         TestGraphDatabaseFactory s = new TestEnterpriseGraphDatabaseFactory();
-        db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( tmpdir.getRoot() )
+        db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( testDirectory.directory() )
                 .setConfig( SecuritySettings.property_level_authorization_enabled, "true" )
                 .setConfig( SecuritySettings.property_level_authorization_permissions, "Agent=alias,secret" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" )
@@ -436,7 +438,7 @@ public class PropertyLevelSecurityIT
     // RELATIONSHIPS
     // TODO: when the realtionship properties are returned through PropertyCursor as well this should be unignored and expanded upon
 
-    @Ignore
+    @Disabled
     public void shouldBehaveLikeDataIsMissingForRelationshipProperties() throws Throwable
     {
         execute( neo, "CREATE (n {name: 'Andersson'}) CREATE (m { name: 'Betasson'}) CREATE (n)-[:Neighbour]->(m)", Collections.emptyMap() ).close();

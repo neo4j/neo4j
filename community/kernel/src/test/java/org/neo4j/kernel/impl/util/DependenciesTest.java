@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -27,8 +27,8 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class DependenciesTest
 {
@@ -141,7 +141,7 @@ public class DependenciesTest
         try
         {
             dependencies.resolveDependency( Collection.class );
-            fail();
+            fail("Failure was expected");
         }
         catch ( UnsatisfiedDependencyException e )
         {

@@ -19,31 +19,34 @@
  */
 package org.neo4j.kernel.configuration.ssl;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.ssl.ClientAuth;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class SslPolicyConfigTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     @Test
     public void shouldFindPolicyDefaults()
@@ -175,7 +178,7 @@ public class SslPolicyConfigTest
         try
         {
             config.get( policyConfig.private_key );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalArgumentException e )
         {
@@ -185,7 +188,7 @@ public class SslPolicyConfigTest
         try
         {
             config.get( policyConfig.public_certificate );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalArgumentException e )
         {

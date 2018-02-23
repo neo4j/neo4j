@@ -19,9 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +28,7 @@ import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
+import javax.annotation.Resource;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.DataAfterQuoteException;
@@ -39,6 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
@@ -49,9 +51,8 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -60,16 +61,16 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.datas;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
+@ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
 public class ImportPanicIT
 {
     private static final int BUFFER_SIZE = 1000;
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final RandomRule random = new RandomRule();
-
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( directory );
+    @Resource
+    public TestDirectory directory;
+    @Resource
+    public RandomRule random;
 
     /**
      * There was this problem where some steps and in particular parallel CSV input parsing that

@@ -307,7 +307,7 @@ public class TransactionIT
         try ( Transaction ignored = env.graph().beginTx() )
         {
             assertFalse( "Query was not terminated in time - nodes were created!",
-                         env.graph().findNodes( Label.label( "ShouldNotExist" ) ).hasNext() );
+                    env.graph().findNodes( Label.label( "ShouldNotExist" ) ).hasNext() );
         }
     }
 

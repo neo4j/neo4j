@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.util.Arrays;
@@ -49,10 +49,10 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -312,7 +312,7 @@ public class CommandApplicationProcessTest
         try
         {
             applicationProcess.start();
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {

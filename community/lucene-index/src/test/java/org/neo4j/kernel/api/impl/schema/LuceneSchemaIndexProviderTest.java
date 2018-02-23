@@ -134,7 +134,7 @@ public class LuceneSchemaIndexProviderTest
     }
 
     private LuceneSchemaIndexProvider getLuceneSchemaIndexProvider( Config config, DirectoryFactory directoryFactory,
-                                                                    FileSystemAbstraction fs, File graphDbDir )
+            FileSystemAbstraction fs, File graphDbDir )
     {
         return new LuceneSchemaIndexProvider( fs, directoryFactory, defaultDirectoryStructure( graphDbDir ),
                 SchemaIndexProvider.Monitor.EMPTY, config, OperationalMode.single );

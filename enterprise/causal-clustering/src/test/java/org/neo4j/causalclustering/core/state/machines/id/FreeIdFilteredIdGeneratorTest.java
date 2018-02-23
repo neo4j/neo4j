@@ -20,7 +20,7 @@
 package org.neo4j.causalclustering.core.state.machines.id;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.BooleanSupplier;
 

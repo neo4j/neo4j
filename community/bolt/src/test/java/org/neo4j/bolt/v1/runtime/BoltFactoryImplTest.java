@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 
@@ -36,9 +36,9 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.udc.UsageData;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

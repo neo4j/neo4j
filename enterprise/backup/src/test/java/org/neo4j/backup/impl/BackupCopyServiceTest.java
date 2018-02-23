@@ -19,20 +19,22 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.com.storecopy.FileMoveAction;
 import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -40,16 +42,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class BackupCopyServiceTest
 {
     private FileMoveProvider fileMoveProvider;
 
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     BackupCopyService subject;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         PageCache pageCache = mock( PageCache.class );

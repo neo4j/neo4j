@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -40,9 +40,9 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SlaveStatementLocksFactoryIT
 {
@@ -55,7 +55,7 @@ public class SlaveStatementLocksFactoryIT
             .withSharedSetting( HaSettings.tx_push_factor, "2" );
     private ClusterManager.ManagedCluster managedCluster;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         managedCluster = clusterRule.startCluster();

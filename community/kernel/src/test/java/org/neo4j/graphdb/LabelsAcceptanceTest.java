@@ -19,8 +19,8 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
+import javax.annotation.Resource;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -61,18 +62,20 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.consume;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -85,12 +88,13 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoNodes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNodes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
+@ExtendWith( {ImpermanentDatabaseExtension.class, TestDirectoryExtension.class} )
 public class LabelsAcceptanceTest
 {
-    @Rule
-    public final ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
+    @Resource
+    public TestDirectory testDirectory;
 
     private enum Labels implements Label
     {
@@ -133,7 +137,7 @@ public class LabelsAcceptanceTest
             }
             return labels1;
         } );
-        assertEquals( labels.toString(), 1, labels.size() );
+        assertEquals( 1, labels.size(), labels.toString() );
         assertEquals( "BAZQUX", labels.get( 0 ).name() );
     }
 
@@ -561,7 +565,7 @@ public class LabelsAcceptanceTest
             {
                 labels.add( label.name() );
             }
-            assertEquals( "labels on node: " + labels, NUMBER_OF_PRESERVED_LABELS, labels.size() );
+            assertEquals( NUMBER_OF_PRESERVED_LABELS, labels.size(), "labels on node: " + labels );
         }
     }
 

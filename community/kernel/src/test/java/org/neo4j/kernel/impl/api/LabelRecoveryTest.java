@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 
 public class LabelRecoveryTest
@@ -37,7 +37,7 @@ public class LabelRecoveryTest
     public final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private GraphDatabaseService database;
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if ( database != null )

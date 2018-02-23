@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,9 +36,9 @@ import org.neo4j.time.Clocks;
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.function.Suppliers.singleton;
@@ -83,7 +83,7 @@ public class DelayedBufferTest
         // ... ensuring the test is sane itself (did we really offer all these IDs?)
         for ( int i = 0; i < size; i++ )
         {
-            assertEquals( "ID " + i, (byte) 1, offeredIds[i] );
+            assertEquals( (byte) 1, offeredIds[i], "ID " + i );
         }
         maintenance.halt();
         buffer.close();

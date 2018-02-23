@@ -90,9 +90,9 @@ public class ReversedSingleFileTransactionCursorTest
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
-                                           .withLogVersionRepository( logVersionRepository )
-                                           .withTransactionIdStore( transactionIdStore )
-                                           .build();
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .build();
         life.add( logFiles );
         logFile = logFiles.getLogFile();
     }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongPredicate;
 
 import org.neo4j.graphdb.Resource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PrimitiveLongResourceCollectionsTest
 {
@@ -48,7 +48,7 @@ public class PrimitiveLongResourceCollectionsTest
         iterator.close();
 
         // Then
-        assertEquals( "exactly one call to close", 1, resource.closeCount() );
+        assertEquals( 1, resource.closeCount(), "exactly one call to close" );
     }
 
     // FILTER
@@ -70,7 +70,7 @@ public class PrimitiveLongResourceCollectionsTest
         filtered.close();
 
         // Then
-        assertEquals( "exactly one call to close", 1, resource.closeCount() );
+        assertEquals( 1, resource.closeCount(), "exactly one call to close" );
     }
 
     // CONCAT
@@ -93,7 +93,7 @@ public class PrimitiveLongResourceCollectionsTest
         concat.close();
 
         // Then
-        assertEquals( "all concatenated iterators are closed", 2, resource.closeCount() );
+        assertEquals( 2, resource.closeCount(), "all concatenated iterators are closed" );
     }
 
     private void assertContent( PrimitiveLongResourceIterator iterator, long... expected )
@@ -101,9 +101,9 @@ public class PrimitiveLongResourceCollectionsTest
         int i = 0;
         while ( iterator.hasNext() )
         {
-            assertEquals( "has expected value", expected[i++], iterator.next() );
+            assertEquals( expected[i++], iterator.next(), "has expected value" );
         }
-        assertEquals( "has all expected values", expected.length, i );
+        assertEquals( expected.length, i, "has all expected values" );
     }
 
     private static class CountingResource implements Resource

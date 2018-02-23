@@ -19,25 +19,29 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( {ImpermanentDatabaseExtension.class, OtherThreadExtension.class} )
 public class NestedIndexReadersIT
 {
     private static final int NODE_PER_ID = 3;
@@ -45,10 +49,10 @@ public class NestedIndexReadersIT
     private static final Label LABEL = Label.label( "Label" );
     private static final String KEY = "key";
 
-    @Rule
-    public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
-    @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Resource
+    public ImpermanentDatabaseRule db;
+    @Resource
+    public OtherThreadRule<Void> t2;
 
     @Test
     public void shouldReadCorrectResultsFromMultipleNestedReaders()
@@ -175,8 +179,8 @@ public class NestedIndexReadersIT
         assertTrue( reader.hasNext() );
         Node node = reader.next();
         assertTrue( node.hasLabel( LABEL ) );
-        assertEquals( "Expected node " + node + " (returned by index reader) to have 'id' property w/ value " + id,
-                id, node.getProperty( KEY ) );
+        assertEquals( id, node.getProperty( KEY ),
+                "Expected node " + node + " (returned by index reader) to have 'id' property w/ value " + id );
     }
 
     private void createIndex()

@@ -19,23 +19,27 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class DenseNodeIT
 {
-    @Rule
-    public ImpermanentDatabaseRule databaseRule = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule databaseRule;
 
     @Test
     public void testBringingNodeOverDenseThresholdIsConsistent()

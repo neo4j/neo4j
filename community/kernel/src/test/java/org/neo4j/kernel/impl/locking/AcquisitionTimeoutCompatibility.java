@@ -54,8 +54,8 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
 
     @Rule
     public VerboseTimeout timeout = VerboseTimeout.builder()
-                                        .withTimeout( TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS )
-                                        .build();
+            .withTimeout( TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS )
+            .build();
 
     public AcquisitionTimeoutCompatibility( LockingCompatibilityTestSuite suite )
     {

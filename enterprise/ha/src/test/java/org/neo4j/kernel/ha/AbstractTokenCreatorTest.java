@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -28,8 +28,8 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -60,7 +60,7 @@ public class AbstractTokenCreatorTest
         }
     };
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         when( requestContextFactory.newRequestContext() ).thenReturn( context );

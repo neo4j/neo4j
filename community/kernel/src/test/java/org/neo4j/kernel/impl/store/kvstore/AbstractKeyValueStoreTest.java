@@ -60,9 +60,9 @@ public class AbstractKeyValueStoreTest
     private final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
     private final ThreadingRule threading = new ThreadingRule();
     private final Timeout timeout = Timeout.builder()
-                                           .withTimeout( 20, TimeUnit.SECONDS )
-                                           .withLookingForStuckThread( true )
-                                           .build();
+            .withTimeout( 20, TimeUnit.SECONDS )
+            .withLookingForStuckThread( true )
+            .build();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( expectedException )

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -37,7 +37,7 @@ import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.loop;
@@ -59,13 +59,13 @@ public class SchemaIndexAcceptanceTest
     private final Label label = label( "PERSON" );
     private final String propertyKey = "key";
 
-    @Before
+    @BeforeEach
     public void before()
     {
         db = newDb();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

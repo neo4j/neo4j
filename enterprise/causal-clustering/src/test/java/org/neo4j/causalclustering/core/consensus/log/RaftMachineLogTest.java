@@ -19,11 +19,10 @@
  */
 package org.neo4j.causalclustering.core.consensus.log;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMachineBuilder;
@@ -32,14 +31,15 @@ import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
+import org.neo4j.test.extension.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class RaftMachineLogTest
 {
     @Mock
@@ -51,7 +51,7 @@ public class RaftMachineLogTest
 
     private RaftMachine raft;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         // given

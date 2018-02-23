@@ -1073,7 +1073,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     {
         Index<Node> index = nodeIndex( MapUtil.stringMap(
                 new HashMap<>( LuceneIndexImplementation.FULLTEXT_CONFIG ),
-                        "to_lower_case", "false" ) );
+                "to_lower_case", "false" ) );
         Node node = graphDb.createNode();
         String key = "name";
         String value = "Mattias Persson";

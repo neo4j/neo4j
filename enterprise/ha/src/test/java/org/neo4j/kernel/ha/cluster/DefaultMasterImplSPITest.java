@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 

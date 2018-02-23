@@ -19,12 +19,13 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,22 +38,23 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.SilentLocalOutput;
 import org.neo4j.shell.Variables;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class CdTest
 {
-    @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
 
     private final Output silence = new SilentLocalOutput();
     private final Session session = new Session( "test" );
     private GraphDatabaseAPI db;
     private GraphDatabaseShellServer server;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception
     {
         db = dbRule.getGraphDatabaseAPI();
@@ -60,7 +62,7 @@ public class CdTest
         session.set( Variables.TITLE_KEYS_KEY, "name" );
     }
 
-    @After
+    @AfterEach
     public void shutdown() throws Exception
     {
         server.shutdown();
@@ -93,8 +95,8 @@ public class CdTest
             }
         }
 
-        assertTrue( "Should have found a candidate among " + candidates + " starting with '" + shouldStartWith + "'",
-                found );
+        assertTrue( found,
+                "Should have found a candidate among " + candidates + " starting with '" + shouldStartWith + "'" );
     }
 
     private Node createNodeWithSomeSubNodes( String... names )

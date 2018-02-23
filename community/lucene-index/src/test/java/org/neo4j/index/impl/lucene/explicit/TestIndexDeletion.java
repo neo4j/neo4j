@@ -19,11 +19,11 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,12 +37,15 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.impl.lucene.explicit.Contains.contains;
+import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.FULLTEXT_CONFIG;
 
 public class TestIndexDeletion
 {
@@ -55,19 +58,19 @@ public class TestIndexDeletion
     private String value;
     private List<WorkThread> workers;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpStuff()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownStuff()
     {
         graphDb.shutdown();
     }
 
-    @After
+    @AfterEach
     public void commitTx() throws Exception
     {
         finishTx( true );
@@ -97,7 +100,7 @@ public class TestIndexDeletion
         }
     }
 
-    @Before
+    @BeforeEach
     public void createInitialData()
     {
         beginTx();
@@ -136,7 +139,7 @@ public class TestIndexDeletion
         index.delete();
         restartTx();
 
-        Index<Node> recreatedIndex = graphDb.index().forNodes( INDEX_NAME, LuceneIndexImplementation.FULLTEXT_CONFIG );
+        Index<Node> recreatedIndex = graphDb.index().forNodes( INDEX_NAME, FULLTEXT_CONFIG );
         assertNull( recreatedIndex.get( key, value ).getSingle() );
         recreatedIndex.add( node, key, value );
         restartTx();
@@ -183,7 +186,7 @@ public class TestIndexDeletion
         try
         {
             index.add( node, key, value );
-            fail();
+            fail( "Failure was expected" );
         }
         catch ( NotFoundException e )
         {
@@ -191,21 +194,25 @@ public class TestIndexDeletion
         }
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex3()
     {
-        restartTx();
-        index.delete();
-        index.query( key, "own" );
+        assertThrows( IllegalStateException.class, () -> {
+            restartTx();
+            index.delete();
+            index.query( key, "own" );
+        } );
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex4()
     {
-        restartTx();
-        index.delete();
-        Index<Node> newIndex = graphDb.index().forNodes( INDEX_NAME );
-        newIndex.query( key, "own" );
+        assertThrows( IllegalStateException.class, () -> {
+            restartTx();
+            index.delete();
+            Index<Node> newIndex = graphDb.index().forNodes( INDEX_NAME );
+            newIndex.query( key, "own" );
+        } );
     }
 
     @Test
@@ -228,8 +235,8 @@ public class TestIndexDeletion
         firstTx.beginTransaction();
         secondTx.beginTransaction();
 
-        firstTx.createNodeAndIndexBy(key, "some value");
-        secondTx.createNodeAndIndexBy(key, "some other value");
+        firstTx.createNodeAndIndexBy( key, "some value" );
+        secondTx.createNodeAndIndexBy( key, "some other value" );
 
         firstTx.deleteIndex();
         firstTx.commit();
@@ -248,7 +255,7 @@ public class TestIndexDeletion
         secondTx.rollback();
 
         // Since $Before will start a tx, add a value and keep tx open and
-        // workers will delete the index so this test will fail in @After
+        // workers will delete the index so this test will fail in @AfterEach
         // if we don't rollback this tx
         rollbackTx();
     }
@@ -266,7 +273,7 @@ public class TestIndexDeletion
         try ( Transaction transaction = graphDb.beginTx() )
         {
             IndexHits<Node> indexHits = index.get( key, value );
-            assertThat( indexHits, Contains.contains( node ) );
+            assertThat( indexHits, contains( node ) );
         }
 
         firstTx.rollback();

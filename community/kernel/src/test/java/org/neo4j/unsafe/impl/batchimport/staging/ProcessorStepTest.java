@@ -19,29 +19,31 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Resource;
 
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
+@ExtendWith( OtherThreadExtension.class )
 public class ProcessorStepTest
 {
-    @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Resource
+    public OtherThreadRule<Void> t2;
 
     @Test
     public void shouldUpholdProcessOrderingGuarantee() throws Exception

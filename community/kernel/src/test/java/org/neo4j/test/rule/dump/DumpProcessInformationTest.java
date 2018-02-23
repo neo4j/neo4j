@@ -19,9 +19,9 @@
  */
 package org.neo4j.test.rule.dump;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,30 +31,33 @@ import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class DumpProcessInformationTest
 {
     private static final String SIGNAL = "here";
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
-    @Before
+    @BeforeEach
     public void checkEnvironment()
     {
         assumeTrue( commandExists( "jps" ) );

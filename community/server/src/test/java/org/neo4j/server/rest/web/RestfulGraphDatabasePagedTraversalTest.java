@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -45,9 +45,9 @@ import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class RestfulGraphDatabasePagedTraversalTest
 {
@@ -60,7 +60,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     private LeaseManager leaseManager;
     private GraphDatabaseFacade graph;
 
-    @Before
+    @BeforeEach
     public void startDatabase()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -73,7 +73,7 @@ public class RestfulGraphDatabasePagedTraversalTest
         service = new TransactionWrappingRestfulGraphDatabase( graph, service );
     }
 
-    @After
+    @AfterEach
     public void shutdownDatabase()
     {
         this.graph.shutdown();

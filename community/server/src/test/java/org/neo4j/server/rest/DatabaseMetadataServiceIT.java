@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;

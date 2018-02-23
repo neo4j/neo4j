@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.ParameterizedType;
@@ -32,7 +33,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -45,6 +46,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntList;
 
+@EnableRuleMigrationSupport
 public class ListConverterTest
 {
 

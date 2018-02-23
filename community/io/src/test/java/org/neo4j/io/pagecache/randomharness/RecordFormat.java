@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.StubPageCursor;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class RecordFormat
 {

@@ -19,14 +19,14 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.csv.reader.Extractors.IntExtractor;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ExtractorsTest
 {
@@ -308,10 +308,10 @@ public class ExtractorsTest
 
     private void assertBooleanArrayEquals( boolean[] expected, boolean[] values )
     {
-        assertEquals( "Array lengths differ", expected.length, values.length );
+        assertEquals( expected.length, values.length, "Array lengths differ" );
         for ( int i = 0; i < expected.length; i++ )
         {
-            assertEquals( "Item " + i + " differs", expected[i], values[i] );
+            assertEquals( expected[i], values[i], "Item " + i + " differs" );
         }
     }
 }

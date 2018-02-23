@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -66,8 +66,8 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -242,7 +242,7 @@ public class IndexRecoveryIT
     private final String key = "number_of_bananas_owned";
     private final Label myLabel = label( "MyLabel" );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( mockedIndexProvider.getProviderDescriptor() )
@@ -291,7 +291,7 @@ public class IndexRecoveryIT
         return result;
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         if ( db != null )

@@ -21,13 +21,14 @@ package org.neo4j.metrics;
 
 
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -37,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -58,14 +60,15 @@ import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_UNPINS;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_USAGE_RATIO;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class PageCacheMetricsIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     private File metricsDirectory;
     private GraphDatabaseService database;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         metricsDirectory = testDirectory.directory( "metrics" );
@@ -79,7 +82,7 @@ public class PageCacheMetricsIT
                 .newGraphDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         database.shutdown();

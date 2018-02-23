@@ -20,7 +20,7 @@
 package org.neo4j.server.rest.transactional;
 
 import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
 
 import java.io.ByteArrayOutputStream;
@@ -66,9 +66,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -560,14 +560,14 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         int r1 = result.indexOf( rel1 );
         int _0 = result.indexOf( row0 );
         int _1 = result.indexOf( row1 );
-        assertTrue( "result should contain row0", _0 > 0 );
-        assertTrue( "result should contain row1 after row0", _1 > _0 );
-        assertTrue( "result should contain node0 after row0", n0 > _0 );
-        assertTrue( "result should contain node1 after row0", n1 > _0 );
-        assertTrue( "result should contain node2 after row1", n2 > _1 );
-        assertTrue( "result should contain node3 after row1", n3 > _1 );
-        assertTrue( "result should contain rel0 after node0 and node1", r0 > n0 && r0 > n1 );
-        assertTrue( "result should contain rel1 after node2 and node3", r1 > n2 && r1 > n3 );
+        assertTrue( _0 > 0, "result should contain row0" );
+        assertTrue( _1 > _0, "result should contain row1 after row0" );
+        assertTrue( n0 > _0, "result should contain node0 after row0" );
+        assertTrue( n1 > _0, "result should contain node1 after row0" );
+        assertTrue( n2 > _1, "result should contain node2 after row1" );
+        assertTrue( n3 > _1, "result should contain node3 after row1" );
+        assertTrue( r0 > n0 && r0 > n1, "result should contain rel0 after node0 and node1" );
+        assertTrue( r1 > n2 && r1 > n3, "result should contain rel1 after node2 and node3" );
     }
 
     @Test
@@ -750,7 +750,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         Set<Set<String>> identifiers = new HashSet<>();
         for ( JsonNode child : root.get( "children" ) )
         {
-            assertTrue( "Expected object", child.isObject() );
+            assertTrue( child.isObject(), "Expected object" );
             assertEquals( "child", child.get( "operatorType" ).getTextValue() );
             identifiers.add( identifiersOf( child ) );
             childIds.add( child.get( "id" ).asInt() );
@@ -792,10 +792,10 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         JsonNode results = json.get( "results" ).get( 0 );
 
         JsonNode plan = results.get( "plan" );
-        assertTrue( "Expected plan to be an object", plan != null && plan.isObject() );
+        assertTrue( plan != null && plan.isObject(), "Expected plan to be an object" );
 
         JsonNode root = plan.get("root");
-        assertTrue("Expected plan to be an object", root != null && root.isObject());
+        assertTrue( root != null && root.isObject(), "Expected plan to be an object" );
 
         return root;
     }

@@ -19,12 +19,11 @@
  */
 package org.neo4j.causalclustering.core.consensus.roles;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
@@ -39,6 +38,7 @@ import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.test.extension.MockitoExtension;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -49,7 +49,7 @@ import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appe
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class AppendEntriesMessageFlowTest
 {
     private MemberId myself = member( 0 );
@@ -67,7 +67,7 @@ public class AppendEntriesMessageFlowTest
 
     private RaftMachine raft;
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException
     {
         // given

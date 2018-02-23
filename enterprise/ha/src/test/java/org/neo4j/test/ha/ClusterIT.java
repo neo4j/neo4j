@@ -83,8 +83,8 @@ public class ClusterIT
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
                 .withSharedConfig(
                         stringMap(
-                            HaSettings.tx_push_factor.name(), "2",
-                            OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()  ) )
+                                HaSettings.tx_push_factor.name(), "2",
+                                OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()  ) )
 
                 .build();
         createClusterWithNode( clusterManager );
@@ -399,7 +399,7 @@ public class ClusterIT
     private static void clearLastTransactionCommitTimestampField( File storeDir ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              PageCache pageCache = createPageCache( fileSystem ) )
+                PageCache pageCache = createPageCache( fileSystem ) )
         {
             File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP,

@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -38,21 +36,32 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.memoryRequiredForPages;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
+import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.configuredCounter;
+import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories;
+import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.countCreatedPageSwapperFactories;
+import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.createdCounter;
+import static org.neo4j.logging.NullLog.getInstance;
 
 public class ConfiguringPageCacheFactoryTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        PageSwapperFactoryForTesting.createdCounter.set( 0 );
-        PageSwapperFactoryForTesting.configuredCounter.set( 0 );
+        createdCounter.set( 0 );
+        configuredCounter.set( 0 );
     }
 
     @Test
@@ -60,8 +69,8 @@ public class ConfiguringPageCacheFactoryTest
     {
         // Given
         long pageCount = 60;
-        long memory = MuninnPageCache.memoryRequiredForPages( pageCount );
-        Config config = Config.defaults(
+        long memory = memoryRequiredForPages( pageCount );
+        Config config = defaults(
                 pagecache_memory, Long.toString( memory ) );
 
         // When
@@ -72,7 +81,7 @@ public class ConfiguringPageCacheFactoryTest
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
         {
-            assertThat( cache.pageSize(), equalTo( PageCache.PAGE_SIZE ) );
+            assertThat( cache.pageSize(), equalTo( PAGE_SIZE ) );
             assertThat( cache.maxCachedPages(), equalTo( pageCount ) );
         }
     }
@@ -81,8 +90,8 @@ public class ConfiguringPageCacheFactoryTest
     public void shouldWarnWhenCreatedWithConfiguredPageCache()
     {
         // Given
-        Config config = Config.defaults( stringMap(
-                GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
+        Config config = defaults( stringMap(
+                mapped_memory_page_size.name(), "4096",
                 pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log log = logProvider.getLog( PageCache.class );
@@ -104,7 +113,7 @@ public class ConfiguringPageCacheFactoryTest
     public void mustUseAndLogConfiguredPageSwapper()
     {
         // Given
-        Config config = Config.defaults( stringMap(
+        Config config = defaults( stringMap(
                 pagecache_memory.name(), "8m",
                 pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -116,21 +125,23 @@ public class ConfiguringPageCacheFactoryTest
         cacheFactory.getOrCreatePageCache().close();
 
         // Then
-        assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
-        assertThat( PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories(), is( 1 ) );
+        assertThat( countCreatedPageSwapperFactories(), is( 1 ) );
+        assertThat( countConfiguredPageSwapperFactories(), is( 1 ) );
         logProvider.assertContainsMessageContaining( TEST_PAGESWAPPER_NAME );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void mustThrowIfConfiguredPageSwapperCannotBeFound()
     {
-        // Given
-        Config config = Config.defaults( stringMap(
-                pagecache_memory.name(), "8m",
-                pagecache_swapper.name(), "non-existing" ) );
+        assertThrows( IllegalArgumentException.class, () -> {
+            // Given
+            Config config = Config.defaults( stringMap(
+                    pagecache_memory.name(), "8m",
+                    pagecache_swapper.name(), "non-existing" ) );
 
-        // When
-        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY ).getOrCreatePageCache().close();
+            // When
+            new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+                    NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY ).getOrCreatePageCache().close();
+        } );
     }
 }

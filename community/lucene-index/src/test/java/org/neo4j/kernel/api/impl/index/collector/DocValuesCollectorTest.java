@@ -26,7 +26,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -35,12 +35,13 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
 
+import static java.lang.Float.NaN;
 import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public final class DocValuesCollectorTest
 {
@@ -151,7 +152,7 @@ public final class DocValuesCollectorTest
 
         // then
         DocValuesCollector.MatchingDocs matchingDocs = collector.getMatchingDocs().get( 0 );
-        assertArrayEquals( new float[]{13.42f}, matchingDocs.scores, 0.0f );
+        assertArrayEquals( new float[]{13.42f}, matchingDocs.scores, 0.01f );
     }
 
     @Test
@@ -170,7 +171,7 @@ public final class DocValuesCollectorTest
 
         // then
         DocValuesCollector.MatchingDocs matchingDocs = collector.getMatchingDocs().get( 0 );
-        assertArrayEquals( new float[]{1.0f, 41.0f}, matchingDocs.scores, 0.0f );
+        assertArrayEquals( new float[]{1.0f, 41.0f}, matchingDocs.scores, 0.01f );
     }
 
     @Test
@@ -193,7 +194,7 @@ public final class DocValuesCollectorTest
         DocValuesCollector.MatchingDocs matchingDocs = collector.getMatchingDocs().get( 0 );
         float[] scores = new float[42];
         Arrays.fill( scores, 1.0f );
-        assertArrayEquals( scores, matchingDocs.scores, 0.0f );
+        assertArrayEquals( scores, matchingDocs.scores, 0.01f );
     }
 
     @Test
@@ -234,9 +235,9 @@ public final class DocValuesCollectorTest
         IndexHits<Document> indexHits = collector.getIndexHits( Sort.RELEVANCE );
         assertEquals( 2, indexHits.size() );
         assertEquals( "2", indexHits.next().get( "id" ) );
-        assertEquals( 2.0f, indexHits.currentScore(), 0.0f );
+        assertEquals( indexHits.currentScore(), 0.0f, 2.0f );
         assertEquals( "1", indexHits.next().get( "id" ) );
-        assertEquals( 1.0f, indexHits.currentScore(), 0.0f );
+        assertEquals( indexHits.currentScore(), 0.0f, 1.0f );
         assertFalse( indexHits.hasNext() );
     }
 
@@ -299,7 +300,7 @@ public final class DocValuesCollectorTest
         // then
         IndexHits<Document> indexHits = collector.getIndexHits( null );
         assertEquals( 0, indexHits.size() );
-        assertEquals( Float.NaN, indexHits.currentScore(), 0.0f );
+        assertEquals( NaN, indexHits.currentScore(), 0.01f );
         assertFalse( indexHits.hasNext() );
     }
 

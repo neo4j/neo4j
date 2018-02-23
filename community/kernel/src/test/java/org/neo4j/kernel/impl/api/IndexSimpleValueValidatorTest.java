@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.impl.util.Validator;
@@ -29,6 +30,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.api.IndexSimpleValueValidator.INSTANCE;
 
+@EnableRuleMigrationSupport
 public class IndexSimpleValueValidatorTest
 {
 

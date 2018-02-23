@@ -167,8 +167,8 @@ public class BatchInsertTest
     }
 
     private static RelationshipType[] relTypeArray = {
-        RelTypes.REL_TYPE1, RelTypes.REL_TYPE2, RelTypes.REL_TYPE3,
-        RelTypes.REL_TYPE4, RelTypes.REL_TYPE5 };
+            RelTypes.REL_TYPE1, RelTypes.REL_TYPE2, RelTypes.REL_TYPE3,
+            RelTypes.REL_TYPE4, RelTypes.REL_TYPE5 };
 
     static
     {
@@ -182,7 +182,7 @@ public class BatchInsertTest
         properties.put( "key7", true );
         properties.put( "key8", (char) 8 );
         properties.put( "key10", new String[] {
-            "SDSDASSDLKSDSAKLSLDAKSLKDLSDAKLDSLA", "dsasda", "dssadsad"
+                "SDSDASSDLKSDSAKLSLDAKSLKDLSDAKLDSLA", "dsasda", "dssadsad"
         } );
         properties.put( "key11", new int[] {1,2,3,4,5,6,7,8,9 } );
         properties.put( "key12", new short[] {1,2,3,4,5,6,7,8,9} );
@@ -449,19 +449,19 @@ public class BatchInsertTest
         {
             switch ( key )
             {
-                case "key0":
-                    assertFalse( inserter.nodeHasProperty( theNode, key ) );
-                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-                    break;
-                case "key1":
-                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                    assertFalse( inserter.relationshipHasProperty( relationship,
-                            key ) );
-                    break;
-                default:
-                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-                    break;
+            case "key0":
+                assertFalse( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                break;
+            case "key1":
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertFalse( inserter.relationshipHasProperty( relationship,
+                        key ) );
+                break;
+            default:
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                break;
             }
         }
         inserter.shutdown();
@@ -471,19 +471,19 @@ public class BatchInsertTest
         {
             switch ( key )
             {
-                case "key0":
-                    assertFalse( inserter.nodeHasProperty( theNode, key ) );
-                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-                    break;
-                case "key1":
-                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                    assertFalse( inserter.relationshipHasProperty( relationship,
-                            key ) );
-                    break;
-                default:
-                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-                    break;
+            case "key0":
+                assertFalse( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                break;
+            case "key1":
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertFalse( inserter.relationshipHasProperty( relationship,
+                        key ) );
+                break;
+            default:
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                break;
             }
         }
         inserter.shutdown();
@@ -535,7 +535,7 @@ public class BatchInsertTest
         {
             endNodes[i] = graphDb.createNode( properties );
             rels.add( graphDb.createRelationship( startNode, endNodes[i],
-                relTypeArray[i % 5], properties ) );
+                    relTypeArray[i % 5], properties ) );
         }
         for ( BatchRelationship rel : graphDb.getRelationships( startNode ) )
         {
@@ -809,9 +809,9 @@ public class BatchInsertTest
                 indexRule = (IndexRule) rule1;
             }
             assertEquals( "index should reference constraint",
-                          constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
+                    constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
             assertEquals( "constraint should reference index",
-                          indexRule.getId(), constraintRule.getOwnedIndex() );
+                    indexRule.getId(), constraintRule.getOwnedIndex() );
         }
         finally
         {
@@ -1084,8 +1084,8 @@ public class BatchInsertTest
         properties.put("birthday_month", 11);
         properties.put("birthday_day", 8);
         long time = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" )
-                        .parse( "2010-04-22T18:05:40.912+0000" )
-                        .getTime();
+                .parse( "2010-04-22T18:05:40.912+0000" )
+                .getTime();
         properties.put("creationDate", time );
         properties.put("locationIP", "46.151.255.205");
         properties.put( "browserUsed", "Firefox" );
@@ -1259,7 +1259,7 @@ public class BatchInsertTest
         catch ( ConstraintViolationException e )
         {
             assertEquals( format( "Node(0) already exists with label `%s` and property `%s` = '%s'",
-                                    label.name(), propertyKey, duplicatedValue ), e.getMessage() );
+                    label.name(), propertyKey, duplicatedValue ), e.getMessage() );
         }
         finally
         {

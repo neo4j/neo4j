@@ -19,10 +19,9 @@
  */
 package visibility;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -31,30 +30,28 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
-import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.rule.RepeatRule.Repeat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class TestPropertyReadOnNewEntityBeforeLockRelease
 {
     private static final String INDEX_NAME = "nodes";
     private static final int MAX_READER_DELAY_MS = 10;
 
-    @ClassRule
-    public static final DatabaseRule db = new ImpermanentDatabaseRule();
-    @Rule
-    public final RepeatRule repeat = new RepeatRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
 
-    @BeforeClass
-    public static void initializeIndex()
+    @BeforeEach
+    public void initializeIndex()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -64,8 +61,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease
         }
     }
 
-    @Test
-    @Repeat( times = 100 )
+    @RepeatedTest( 100 )
     public void shouldBeAbleToReadPropertiesFromNewNodeReturnedFromIndex() throws Exception
     {
         String propertyKey = UUID.randomUUID().toString();

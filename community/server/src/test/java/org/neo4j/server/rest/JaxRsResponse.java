@@ -21,7 +21,7 @@ package org.neo4j.server.rest;
 
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Collections;
@@ -37,8 +37,8 @@ import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.rest.management.repr.ServerRootRepresentation;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class JaxRsResponse extends Response

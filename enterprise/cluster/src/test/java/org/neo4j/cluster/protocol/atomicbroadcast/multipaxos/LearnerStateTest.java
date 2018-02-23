@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
 import java.net.URI;
@@ -37,7 +37,7 @@ import org.neo4j.cluster.statemachine.State;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

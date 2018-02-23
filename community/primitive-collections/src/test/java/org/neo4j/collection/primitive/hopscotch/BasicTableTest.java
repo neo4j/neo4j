@@ -19,9 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,19 +30,15 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 
-@RunWith( Parameterized.class )
 public class BasicTableTest
 {
-    private final TableFactory factory;
-
     private static final long seed = currentTimeMillis();
     private static final Random random = new Random( seed );
 
-    @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
         Collection<Object[]> result = new ArrayList<>();
@@ -210,13 +205,9 @@ public class BasicTableTest
         return result;
     }
 
-    public BasicTableTest( TableFactory factory )
-    {
-        this.factory = factory;
-    }
-
-    @Test
-    public void shouldSetAndGetSmallKey()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldSetAndGetSmallKey( TableFactory factory )
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -238,8 +229,9 @@ public class BasicTableTest
         }
     }
 
-    @Test
-    public void shouldSetAndGetBigKey()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldSetAndGetBigKey( TableFactory factory )
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -258,8 +250,9 @@ public class BasicTableTest
         }
     }
 
-    @Test
-    public void shouldRemoveBigKey()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldRemoveBigKey( TableFactory factory )
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -279,8 +272,9 @@ public class BasicTableTest
         }
     }
 
-    @Test
-    public void shouldSetHopBits()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldSetHopBits( TableFactory factory )
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -298,8 +292,9 @@ public class BasicTableTest
         }
     }
 
-    @Test
-    public void shouldMoveHopBit()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldMoveHopBit( TableFactory factory )
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -316,8 +311,9 @@ public class BasicTableTest
         }
     }
 
-    @Test
-    public void shouldClearTable()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldClearTable( TableFactory factory )
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {

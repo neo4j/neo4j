@@ -89,7 +89,7 @@ public class StoreCopyClientTest
 
     @Rule
     public TestRule rules = RuleChain.outerRule( directory ).around( fileSystemRule ).
-                                      around( pageCacheRule ).around( cleanup );
+            around( pageCacheRule ).around( cleanup );
 
     private FileSystemAbstraction fileSystem;
 

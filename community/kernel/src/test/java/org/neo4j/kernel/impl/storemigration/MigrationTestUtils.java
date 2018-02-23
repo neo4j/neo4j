@@ -43,9 +43,9 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
@@ -162,7 +162,7 @@ public class MigrationTestUtils
                         byte[] otherBytes = new byte[buffer.limit()];
                         buffer.get( otherBytes );
 
-                        assertArrayEquals( "Different content in " + originalFile, originalBytes, otherBytes );
+                        assertArrayEquals( originalBytes, otherBytes, "Different content in " + originalFile );
                     }
                 }
             }

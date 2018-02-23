@@ -22,7 +22,8 @@ package org.neo4j.bolt.v1.transport;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.net.InetSocketAddress;
@@ -39,6 +40,7 @@ import org.neo4j.logging.NullLog;
 
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
+@EnableRuleMigrationSupport
 public class NettyServerTest
 {
     @Rule

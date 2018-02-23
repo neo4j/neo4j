@@ -20,13 +20,14 @@
 package org.neo4j.cypher;
 
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -38,19 +39,20 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class GraphDatabaseServiceExecuteTest
 {
 
-    @Rule
-    public final DatabaseRule graphDb = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule graphDb;
 
     @Test
     public void shouldExecuteCypher()

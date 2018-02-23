@@ -72,7 +72,7 @@ public class SocketTransportHandlerTest
         return Arrays.asList( new Neo4jPackV1(), new Neo4jPackV2() );
     }
 
-    @Test
+    @org.junit.Test
     public void shouldCloseProtocolOnChannelInactive() throws Throwable
     {
         // Given

@@ -19,9 +19,9 @@
  */
 package org.neo4j.consistency.checking.cache;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -30,21 +30,21 @@ import java.util.concurrent.Future;
 
 import org.neo4j.consistency.statistics.DefaultCounts;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DefaultClientTest
 {
 
     private static ExecutorService executor;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp()
     {
         executor = Executors.newSingleThreadExecutor();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown()
     {
         executor.shutdown();

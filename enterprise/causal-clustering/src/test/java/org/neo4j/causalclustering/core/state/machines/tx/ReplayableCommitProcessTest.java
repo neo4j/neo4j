@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;

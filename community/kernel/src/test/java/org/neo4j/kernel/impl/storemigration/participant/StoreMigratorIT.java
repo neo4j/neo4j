@@ -104,7 +104,7 @@ public class StoreMigratorIT
     private static Function<TransactionId,Boolean> txInfoAcceptanceOnIdAndTimestamp( long id, long timestamp )
     {
         return txInfo -> txInfo.transactionId() == id &&
-               txInfo.commitTimestamp() == timestamp;
+                txInfo.commitTimestamp() == timestamp;
     }
 
     @Test

@@ -67,6 +67,6 @@ public class RemoveRelationshipIT extends AbstractRestFunctionalTestBase
 
     private JaxRsResponse sendDeleteRequest( URI requestUri )
     {
-       return RestRequest.req().delete(requestUri);
+        return RestRequest.req().delete(requestUri);
     }
 }

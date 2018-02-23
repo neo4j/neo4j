@@ -19,9 +19,9 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -31,21 +31,21 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 public class TestImpermanentGraphDatabase
 {
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void createDb()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         db.shutdown();
@@ -56,7 +56,7 @@ public class TestImpermanentGraphDatabase
     {
         createNode();
 
-        assertEquals( "Expected one new node", 1, nodeCount() );
+        assertEquals( 1, nodeCount(), "Expected one new node" );
     }
 
     @Test
@@ -67,7 +67,7 @@ public class TestImpermanentGraphDatabase
 
         createDb();
 
-        assertEquals( "Should not see anything.", 0, nodeCount() );
+        assertEquals( 0, nodeCount(), "Should not see anything." );
     }
 
     @Test

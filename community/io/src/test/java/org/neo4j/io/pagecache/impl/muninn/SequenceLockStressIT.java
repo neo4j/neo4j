@@ -19,10 +19,10 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,33 +35,28 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public class SequenceLockStressIT
 {
     private static final ExecutorService executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
 
-    @AfterClass
+    @AfterAll
     public static void shutDownExecutor()
     {
         executor.shutdown();
     }
 
-    @Rule
-    public RepeatRule repeatRule = new RepeatRule();
-
     private long lockAddr;
 
-    @Before
+    @BeforeEach
     public void allocateLock()
     {
         lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
         UnsafeUtil.putLong( lockAddr, 0 );
     }
 
-    @RepeatRule.Repeat( times = 2 )
-    @Test
+    @RepeatedTest( 2 )
     public void stressTest() throws Exception
     {
         int[][] data = new int[10][10];

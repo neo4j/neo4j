@@ -19,29 +19,36 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer.Mode.SANDBOXED;
+import static org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer.Mode.UNSAFE;
+import static org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer.initialize;
 
 public class TestGlobalJavascriptInitializer
 {
 
-    @Test( expected = RuntimeException.class )
+    @Test
     public void shouldNotAllowChangingMode()
     {
-        // Given
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        assertThrows( RuntimeException.class, () -> {
+            // Given
+            initialize( SANDBOXED );
 
-        // When
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.UNSAFE );
+            // When
+            initialize( UNSAFE );
+        } );
     }
 
     @Test
     public void initializingTheSameModeTwiceIsFine()
     {
         // Given
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        initialize( SANDBOXED );
 
         // When
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        initialize( SANDBOXED );
 
         // Then
         // no exception should have been thrown.

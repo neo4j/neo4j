@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -28,28 +28,32 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import javax.annotation.Nonnull;
+import javax.annotation.Resource;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
+@ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
 public class ServerBootstrapperTest
 {
-    @Rule
-    public final SuppressOutput suppress = SuppressOutput.suppress( SuppressOutput.System.out );
+    @Resource
+    public SuppressOutput suppress;
 
-    @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory homeDir;
 
     @Test
     public void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception

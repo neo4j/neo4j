@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.statemachine;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;

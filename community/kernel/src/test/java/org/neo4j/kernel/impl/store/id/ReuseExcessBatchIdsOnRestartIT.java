@@ -19,28 +19,34 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static java.lang.Integer.parseInt;
 import static java.lang.Math.toIntExact;
+import static java.lang.Runtime.getRuntime;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_id_batch_size;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class ReuseExcessBatchIdsOnRestartIT
 {
-    @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule db;
 
     // Knowing that ids are grabbed in batches internally we only create one node and later assert
     // that the excess ids that were only grabbed, but not used can be reused.
@@ -69,47 +75,49 @@ public class ReuseExcessBatchIdsOnRestartIT
         assertEquals( firstNode.getId() + 1, secondNode.getId() );
     }
 
-    @Test( timeout = 30_000 )
-    public void shouldBeAbleToReuseAllIdsInConcurrentCommitsWithRestart() throws Exception
+    @Test
+    public void shouldBeAbleToReuseAllIdsInConcurrentCommitsWithRestart()
     {
-        // given
-        int threads = Runtime.getRuntime().availableProcessors();
-        int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
-        ExecutorService executor = Executors.newFixedThreadPool( threads );
-        AtomicIntegerArray createdIds = new AtomicIntegerArray( threads * batchSize );
-        for ( int i = 0; i < threads; i++ )
-        {
-            executor.submit( () ->
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    for ( int j = 0; j < batchSize / 2; j++ )
-                    {
-                        int index = toIntExact( db.createNode().getId() );
-                        createdIds.set( index, 1 );
-                    }
-                    tx.success();
-                }
-            } );
-        }
-        executor.shutdown();
-        while ( !executor.awaitTermination( 1, SECONDS ) )
-        {   // Just wait longer
-        }
-        assertFalse( allSet( createdIds ) );
+        assertTimeout( ofMillis( 30_000 ), () -> {
+            //  given
 
-        // when/then
-        db.restartDatabase();
-        try ( Transaction tx = db.beginTx() )
-        {
-            while ( !allSet( createdIds ) )
+            int threads = getRuntime().availableProcessors();
+            int batchSize = parseInt( record_id_batch_size.getDefaultValue() );
+            ExecutorService executor = newFixedThreadPool( threads );
+            AtomicIntegerArray createdIds = new AtomicIntegerArray( threads * batchSize );
+            for ( int i = 0; i < threads; i++ )
             {
-                int index = toIntExact( db.createNode().getId() );
-                assert createdIds.get( index ) != 1;
-                createdIds.set( index, 1 );
+                executor.submit( () -> {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        for ( int j = 0; j < batchSize / 2; j++ )
+                        {
+                            int index = toIntExact( db.createNode().getId() );
+                            createdIds.set( index, 1 );
+                        }
+                        tx.success();
+                    }
+                } );
             }
-            tx.success();
-        }
+            executor.shutdown();
+            while ( !executor.awaitTermination( 1, SECONDS ) )
+            {   // Just wait longer
+            }
+            assertFalse( allSet( createdIds ) );
+
+            // when/then
+            db.restartDatabase();
+            try ( Transaction tx = db.beginTx() )
+            {
+                while ( !allSet( createdIds ) )
+                {
+                    int index = toIntExact( db.createNode().getId() );
+                    assert createdIds.get( index ) != 1;
+                    createdIds.set( index, 1 );
+                }
+                tx.success();
+            }
+        } );
     }
 
     private static boolean allSet( AtomicIntegerArray values )

@@ -20,38 +20,43 @@
 package org.neo4j.kernel.ha.lock;
 
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertTrue;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.kernel.ha.lock.LockStatus.OK_LOCKED;
+import static org.neo4j.kernel.impl.locking.LockTracer.NONE;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.logging.NullLogProvider.getInstance;
+import static org.neo4j.time.Clocks.systemClock;
 
 public class SlaveLocksClientConcurrentTest
 {
@@ -62,58 +67,59 @@ public class SlaveLocksClientConcurrentTest
     private RequestContextFactory requestContextFactory;
     private AvailabilityGuard availabilityGuard;
 
-    @BeforeClass
+    @BeforeAll
     public static void initExecutor()
     {
-        executor = Executors.newCachedThreadPool();
+        executor = newCachedThreadPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void closeExecutor()
     {
         executor.shutdownNow();
     }
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         master = mock( Master.class, new LockedOnMasterAnswer() );
-        lockManager = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
+        lockManager = new ForsetiLockManager( defaults(), systemClock(), ResourceTypes.values() );
         requestContextFactory = mock( RequestContextFactory.class );
-        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), mock( Log.class ) );
+        availabilityGuard = new AvailabilityGuard( systemClock(), mock( Log.class ) );
 
-        when( requestContextFactory.newRequestContext( Mockito.anyInt() ) )
-                .thenReturn( RequestContext.anonymous( 1 ) );
+        when( requestContextFactory.newRequestContext( anyInt() ) ).thenReturn( anonymous( 1 ) );
     }
 
-    @Test( timeout = 1000 )
+    @Test
     public void readersCanAcquireLockAsSoonAsItReleasedOnMaster() throws InterruptedException
     {
-        SlaveLocksClient reader = createClient();
-        SlaveLocksClient writer = createClient();
+        assertTimeout( ofMillis( 1000 ), () -> {
+            SlaveLocksClient reader = createClient();
+            SlaveLocksClient writer = createClient();
 
-        CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
-        CountDownLatch resourceLatch = new CountDownLatch( 1 );
+            CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
+            CountDownLatch resourceLatch = new CountDownLatch( 1 );
 
-        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).then(
-                new WaitLatchAnswer( resourceLatch, readerCompletedLatch ) );
+            when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) )
+                    .then( new WaitLatchAnswer( resourceLatch, readerCompletedLatch ) );
 
-        long nodeId = 10L;
-        ResourceReader resourceReader =
-                new ResourceReader( reader, ResourceTypes.NODE, nodeId, resourceLatch, readerCompletedLatch );
-        ResourceWriter resourceWriter = new ResourceWriter( writer, ResourceTypes.NODE, nodeId );
+            long nodeId = 10L;
+            ResourceReader resourceReader =
+                    new ResourceReader( reader, NODE, nodeId, resourceLatch, readerCompletedLatch );
+            ResourceWriter resourceWriter = new ResourceWriter( writer, NODE, nodeId );
 
-        executor.submit( resourceReader );
-        executor.submit( resourceWriter );
+            executor.submit( resourceReader );
+            executor.submit( resourceWriter );
 
-        assertTrue( "Reader should wait for writer to release locks before acquire",
-                readerCompletedLatch.await( 1000, TimeUnit.MILLISECONDS ) );
+            assertTrue( readerCompletedLatch.await( 1000, MILLISECONDS ),
+                    "Reader should wait for writer to release locks before acquire" );
+        } );
     }
 
     private SlaveLocksClient createClient()
     {
-        return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
-                requestContextFactory, availabilityGuard, NullLogProvider.getInstance() );
+        return new SlaveLocksClient( master, lockManager.newClient(), lockManager, requestContextFactory,
+                availabilityGuard, getInstance() );
     }
 
     private static class LockedOnMasterAnswer implements Answer
@@ -122,8 +128,8 @@ public class SlaveLocksClientConcurrentTest
 
         LockedOnMasterAnswer()
         {
-            lockResult = Mockito.mock( Response.class );
-            when( lockResult.response() ).thenReturn( new LockResult( LockStatus.OK_LOCKED ) );
+            lockResult = mock( Response.class );
+            when( lockResult.response() ).thenReturn( new LockResult( OK_LOCKED ) );
         }
 
         @Override
@@ -167,7 +173,7 @@ public class SlaveLocksClientConcurrentTest
         @Override
         public void run()
         {
-            locksClient.acquireExclusive( LockTracer.NONE, resourceType, id );
+            locksClient.acquireExclusive( NONE, resourceType, id );
             locksClient.close();
         }
     }
@@ -191,7 +197,7 @@ public class SlaveLocksClientConcurrentTest
             try
             {
                 resourceLatch.await();
-                locksClient.acquireShared( LockTracer.NONE, resourceType, id );
+                locksClient.acquireShared( NONE, resourceType, id );
                 resourceReleaseLatch.countDown();
                 locksClient.close();
             }

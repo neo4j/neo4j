@@ -64,8 +64,8 @@ public class ClusterFormationIT
         cluster.addReadReplicaWithId( 0 ).start();
 
         Stream.concat(
-            cluster.readReplicas().stream().map( ReadReplica::database),
-            cluster.coreMembers().stream().map(CoreClusterMember::database)
+                cluster.readReplicas().stream().map( ReadReplica::database),
+                cluster.coreMembers().stream().map(CoreClusterMember::database)
         ).forEach( gdb ->
         {
             // (1) BuiltInProcedures from community

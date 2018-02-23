@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.load_balancing.filters.Filter;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterBuilder.filter;
 
 public class FilterConfigParserTest
@@ -176,8 +176,8 @@ public class FilterConfigParserTest
             try
             {
                 Filter<ServerInfo> parsedFilter = FilterConfigParser.parse( config );
-                assertEquals( format( "Config '%s' should generate expected filter", config ),
-                        expectedFilter, parsedFilter );
+                assertEquals( expectedFilter, parsedFilter,
+                        format( "Config '%s' should generate expected filter", config ) );
             }
             catch ( InvalidFilterSpecification e )
             {

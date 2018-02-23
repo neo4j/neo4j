@@ -69,10 +69,10 @@ public class TestBranchState extends TraversalTestBase
         try ( Transaction tx = beginTx() )
         {
 
-        /*
-         * Asserts that state continues down branches even when expander doesn't
-         * set new state for every step.
-         */
+            /*
+             * Asserts that state continues down branches even when expander doesn't
+             * set new state for every step.
+             */
             IncrementEveryOtherDepthCountingExpander expander = new IncrementEveryOtherDepthCountingExpander();
             Iterables.count( getGraphDb().traversalDescription().expand( expander,
                     new InitialBranchState.State<>( 0, 0 ) ).traverse( getNodeWithName( "a" ) ) );

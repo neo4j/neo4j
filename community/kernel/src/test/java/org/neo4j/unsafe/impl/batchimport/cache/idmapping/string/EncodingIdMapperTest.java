@@ -596,15 +596,15 @@ public class EncodingIdMapperTest
     private LongFunction<CollisionValues> autoDetect( Encoder encoder )
     {
         return numberOfCollisions -> encoder instanceof LongEncoder
-                ? new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions )
-                : new StringCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions );
+                                     ? new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions )
+                                     : new StringCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions );
 
     }
 
     private static final TrackerFactory RANDOM_TRACKER_FACTORY =
             ( arrayFactory, size ) -> System.currentTimeMillis() % 2 == 0
-                    ? new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) )
-                    : new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) );
+                                      ? new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) )
+                                      : new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) );
 
     private class ValueGenerator implements LongFunction<Object>
     {
@@ -635,109 +635,109 @@ public class EncodingIdMapperTest
     private enum ValueType
     {
         LONGS
-        {
-            @Override
-            Encoder encoder()
-            {
-                return new LongEncoder();
-            }
-
-            @Override
-            Factory<Radix> radix()
-            {
-                return Radix.LONG;
-            }
-
-            @Override
-            Factory<Object> data( final Random random )
-            {
-                return () -> random.nextInt( 1_000_000_000 );
-            }
-        },
-        LONGS_AS_STRINGS
-        {
-            @Override
-            Encoder encoder()
-            {
-                return new StringEncoder();
-            }
-
-            @Override
-            Factory<Radix> radix()
-            {
-                return Radix.STRING;
-            }
-
-            @Override
-            Factory<Object> data( final Random random )
-            {
-                return () -> String.valueOf( random.nextInt( 1_000_000_000 ) );
-            }
-        },
-        VERY_LONG_STRINGS
-        {
-            char[] CHARS = "½!\"#¤%&/()=?`´;:,._-<>".toCharArray();
-
-            @Override
-            Encoder encoder()
-            {
-                return new StringEncoder();
-            }
-
-            @Override
-            Factory<Radix> radix()
-            {
-                return Radix.STRING;
-            }
-
-            @Override
-            Factory<Object> data( final Random random )
-            {
-                return new Factory<Object>()
                 {
                     @Override
-                    public Object newInstance()
+                    Encoder encoder()
                     {
-                        // Randomize length, although reduce chance of really long strings
-                        int length = 1500;
-                        for ( int i = 0; i < 4; i++ )
-                        {
-                            length = random.nextInt( length ) + 20;
-                        }
-                        char[] chars = new char[length];
-                        for ( int i = 0; i < length; i++ )
-                        {
-                            char ch;
-                            if ( random.nextBoolean() )
-                            {   // A letter
-                                ch = randomLetter( random );
-                            }
-                            else
-                            {
-                                ch = CHARS[random.nextInt( CHARS.length )];
-                            }
-                            chars[i] = ch;
-                        }
-                        return new String( chars );
+                        return new LongEncoder();
                     }
 
-                    private char randomLetter( Random random )
+                    @Override
+                    Factory<Radix> radix()
                     {
-                        int base;
-                        if ( random.nextBoolean() )
-                        {   // lower case
-                            base = 'a';
-                        }
-                        else
-                        {   // upper case
-                            base = 'A';
-                        }
-                        int size = 'z' - 'a';
-                        return (char) (base + random.nextInt( size ));
+                        return Radix.LONG;
+                    }
+
+                    @Override
+                    Factory<Object> data( final Random random )
+                    {
+                        return () -> random.nextInt( 1_000_000_000 );
+                    }
+                },
+        LONGS_AS_STRINGS
+                {
+                    @Override
+                    Encoder encoder()
+                    {
+                        return new StringEncoder();
+                    }
+
+                    @Override
+                    Factory<Radix> radix()
+                    {
+                        return Radix.STRING;
+                    }
+
+                    @Override
+                    Factory<Object> data( final Random random )
+                    {
+                        return () -> String.valueOf( random.nextInt( 1_000_000_000 ) );
+                    }
+                },
+        VERY_LONG_STRINGS
+                {
+                    char[] CHARS = "½!\"#¤%&/()=?`´;:,._-<>".toCharArray();
+
+                    @Override
+                    Encoder encoder()
+                    {
+                        return new StringEncoder();
+                    }
+
+                    @Override
+                    Factory<Radix> radix()
+                    {
+                        return Radix.STRING;
+                    }
+
+                    @Override
+                    Factory<Object> data( final Random random )
+                    {
+                        return new Factory<Object>()
+                        {
+                            @Override
+                            public Object newInstance()
+                            {
+                                // Randomize length, although reduce chance of really long strings
+                                int length = 1500;
+                                for ( int i = 0; i < 4; i++ )
+                                {
+                                    length = random.nextInt( length ) + 20;
+                                }
+                                char[] chars = new char[length];
+                                for ( int i = 0; i < length; i++ )
+                                {
+                                    char ch;
+                                    if ( random.nextBoolean() )
+                                    {   // A letter
+                                        ch = randomLetter( random );
+                                    }
+                                    else
+                                    {
+                                        ch = CHARS[random.nextInt( CHARS.length )];
+                                    }
+                                    chars[i] = ch;
+                                }
+                                return new String( chars );
+                            }
+
+                            private char randomLetter( Random random )
+                            {
+                                int base;
+                                if ( random.nextBoolean() )
+                                {   // lower case
+                                    base = 'a';
+                                }
+                                else
+                                {   // upper case
+                                    base = 'A';
+                                }
+                                int size = 'z' - 'a';
+                                return (char) (base + random.nextInt( size ));
+                            }
+                        };
                     }
                 };
-            }
-        };
 
         abstract Encoder encoder();
 

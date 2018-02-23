@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,8 +30,8 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DnsHostnameResolverTest
 {

@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.proc;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
@@ -48,13 +49,13 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -64,6 +65,7 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 @SuppressWarnings( "WeakerAccess" )
+@EnableRuleMigrationSupport
 public class ReflectiveProcedureTest
 {
     @Rule
@@ -73,7 +75,7 @@ public class ReflectiveProcedureTest
     private ComponentRegistry components;
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         components = new ComponentRegistry();
@@ -349,11 +351,11 @@ public class ReflectiveProcedureTest
             switch ( name )
             {
             case "newProc":
-                assertFalse( "Should not be deprecated", proc.signature().deprecated().isPresent() );
+                assertFalse( proc.signature().deprecated().isPresent(), "Should not be deprecated" );
                 break;
             case "oldProc":
             case "badProc":
-                assertTrue( "Should be deprecated", proc.signature().deprecated().isPresent() );
+                assertTrue( proc.signature().deprecated().isPresent(), "Should be deprecated" );
                 assertThat( proc.signature().deprecated().get(), equalTo( "newProc" ) );
                 break;
             default:

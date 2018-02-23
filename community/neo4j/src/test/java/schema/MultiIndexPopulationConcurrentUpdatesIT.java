@@ -267,7 +267,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
         try ( Transaction transaction = embeddedDatabase.beginTx();
-              Statement statement = transactionStatementContextBridge.get() )
+                Statement statement = transactionStatementContextBridge.get() )
         {
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( updates, neoStores, labelScanStore );
 

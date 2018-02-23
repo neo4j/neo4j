@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,10 +34,10 @@ import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
@@ -123,7 +123,7 @@ public class RelationshipRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+        assertTrue( target.isUseFixedReferences(), "Record should use fixed reference format." );
         verifySameReferences( source, target);
     }
 
@@ -138,7 +138,7 @@ public class RelationshipRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertFalse( "Record should use variable length format.", target.isUseFixedReferences() );
+        assertFalse( target.isUseFixedReferences(), "Record should use variable length format." );
         verifySameReferences( source, target);
     }
 
@@ -153,7 +153,7 @@ public class RelationshipRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+        assertTrue( target.isUseFixedReferences(), "Record should use fixed reference format." );
         verifySameReferences( source, target);
     }
 
@@ -185,7 +185,8 @@ public class RelationshipRecordFormatTest
 
         writeReadRecord( source, target, RelationshipRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
 
-        assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
+        assertFalse( target.isUseFixedReferences(),
+                "Record should use variable length reference if format record is too small." );
         verifySameReferences( source, target);
     }
 
@@ -200,7 +201,7 @@ public class RelationshipRecordFormatTest
 
         writeReadRecord( source, target, RelationshipRecordFormat.FIXED_FORMAT_RECORD_SIZE );
 
-        assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
+        assertTrue( target.isUseFixedReferences(), "Record should use fixed reference if can fit in format record." );
         verifySameReferences( source, target);
     }
 
@@ -224,11 +225,11 @@ public class RelationshipRecordFormatTest
 
             if ( nullPoison )
             {
-                assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+                assertTrue( target.isUseFixedReferences(), "Record should use fixed reference format." );
             }
             else
             {
-                assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+                assertFalse( target.isUseFixedReferences(), "Record should use variable length reference format." );
             }
             verifySameReferences( source, target );
             Collections.rotate( references, 1 );
@@ -292,14 +293,19 @@ public class RelationshipRecordFormatTest
 
     private void verifySameReferences( RelationshipRecord record, RelationshipRecord recordFromStore )
     {
-        assertEquals( "Types should be equal.", record.getType(), recordFromStore.getType() );
-        assertEquals( "First Next references should be equal.", record.getFirstNextRel(), recordFromStore.getFirstNextRel() );
-        assertEquals( "First Node references should be equal.", record.getFirstNode(), recordFromStore.getFirstNode() );
-        assertEquals( "First Prev Rel references should be equal.", record.getFirstPrevRel(), recordFromStore.getFirstPrevRel() );
-        assertEquals( "Second Next Rel references should be equal.", record.getSecondNextRel(), recordFromStore.getSecondNextRel() );
-        assertEquals( "Second Node references should be equal.", record.getSecondNode(), recordFromStore.getSecondNode() );
-        assertEquals( "Second Prev Rel references should be equal.", record.getSecondPrevRel(), recordFromStore.getSecondPrevRel() );
-        assertEquals( "Next Prop references should be equal.", record.getNextProp(), recordFromStore.getNextProp() );
+        assertEquals( record.getType(), recordFromStore.getType(), "Types should be equal." );
+        assertEquals( record.getFirstNextRel(), recordFromStore.getFirstNextRel(),
+                "First Next references should be equal." );
+        assertEquals( record.getFirstNode(), recordFromStore.getFirstNode(), "First Node references should be equal." );
+        assertEquals( record.getFirstPrevRel(), recordFromStore.getFirstPrevRel(),
+                "First Prev Rel references should be equal." );
+        assertEquals( record.getSecondNextRel(), recordFromStore.getSecondNextRel(),
+                "Second Next Rel references should be equal." );
+        assertEquals( record.getSecondNode(), recordFromStore.getSecondNode(),
+                "Second Node references should be equal." );
+        assertEquals( record.getSecondPrevRel(), recordFromStore.getSecondPrevRel(),
+                "Second Prev Rel references should be equal." );
+        assertEquals( record.getNextProp(), recordFromStore.getNextProp(), "Next Prop references should be equal." );
     }
 
     private void resetCursor( StubPageCursor cursor, int recordOffset )

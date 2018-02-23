@@ -48,7 +48,7 @@ public class StoreVersionCheckTest
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( directory )
-                    .around( fileSystemRule ).around( pageCacheRule );
+            .around( fileSystemRule ).around( pageCacheRule );
 
     @Test
     public void shouldFailIfFileDoesNotExist()

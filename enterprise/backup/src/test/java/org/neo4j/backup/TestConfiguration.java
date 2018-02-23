@@ -19,36 +19,39 @@
  */
 package org.neo4j.backup;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class TestConfiguration
 {
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    public TestDirectory dir = TestDirectory.testDirectory( TestConfiguration.class );
-    @Rule
-    public RuleChain rules = RuleChain.outerRule( dir ).around( suppressOutput );
+    @Resource
+    public SuppressOutput suppressOutput;
+    @Resource
+    public TestDirectory dir;
 
     private static final String HOST_ADDRESS = "127.0.0.1";
 
     private File sourceDir;
     private String backupDir;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         sourceDir = dir.makeGraphDbDir();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.stresstests;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 

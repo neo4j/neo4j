@@ -23,7 +23,7 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,8 +35,8 @@ import org.neo4j.com.BlockLogReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TestBlockLogBuffer
 {
@@ -67,8 +67,8 @@ public class TestBlockLogBuffer
         assertEquals( byteValue, verificationBuffer.get() );
         assertEquals( intValue, verificationBuffer.getInt() );
         assertEquals( longValue, verificationBuffer.getLong() );
-        assertEquals( floatValue, verificationBuffer.getFloat(), 0.0 );
-        assertEquals( doubleValue, verificationBuffer.getDouble(), 0.0 );
+        assertEquals( verificationBuffer.getFloat(), 0.0, floatValue );
+        assertEquals( verificationBuffer.getDouble(), 0.0, doubleValue );
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
         assertThat( actualBytes, new ArrayMatches<>( bytesValue ) );
@@ -134,8 +134,8 @@ public class TestBlockLogBuffer
         assertEquals( byteValue, verificationBuffer.get() );
         assertEquals( intValue, verificationBuffer.getInt() );
         assertEquals( longValue, verificationBuffer.getLong() );
-        assertEquals( floatValue, verificationBuffer.getFloat(), 0.0 );
-        assertEquals( doubleValue, verificationBuffer.getDouble(), 0.0 );
+        assertEquals( verificationBuffer.getFloat(), 0.0, floatValue );
+        assertEquals( verificationBuffer.getDouble(), 0.0, doubleValue );
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
         assertThat( actualBytes, new ArrayMatches<>( bytesValue ) );

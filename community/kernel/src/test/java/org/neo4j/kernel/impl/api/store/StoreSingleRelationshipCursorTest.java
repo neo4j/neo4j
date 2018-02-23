@@ -105,7 +105,7 @@ public class StoreSingleRelationshipCursorTest
 
     private void createRelationshipRecord( RelationshipStore relationshipStore, boolean used )
     {
-       relationshipStore.updateRecord(
+        relationshipStore.updateRecord(
                 new RelationshipRecord( RELATIONSHIP_ID, used, 1, 2, 1, -1, -1, -1, -1, true, true ) );
     }
 

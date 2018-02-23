@@ -24,7 +24,6 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -32,22 +31,29 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.protocol.Protocol;
-import org.neo4j.logging.NullLog;
 
+import static io.netty.channel.ChannelOption.SO_REUSEADDR;
+import static java.lang.Integer.MAX_VALUE;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.causalclustering.protocol.Protocol.Identifier.CATCHUP;
+import static org.neo4j.causalclustering.protocol.Protocol.Identifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.Protocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.RAFT_3;
+import static org.neo4j.logging.NullLog.getInstance;
 
 public class NettyProtocolHandshakeIT
 {
@@ -58,7 +64,7 @@ public class NettyProtocolHandshakeIT
     private Client client;
     private HandshakeServer handshakeServer;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         server = new Server();
@@ -70,7 +76,7 @@ public class NettyProtocolHandshakeIT
         client.connect( server.port() );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         client.disconnect();
@@ -82,10 +88,10 @@ public class NettyProtocolHandshakeIT
     {
         // when
         CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.RAFT );
+                handshakeClient.initiate( new SimpleNettyChannel( client.channel, getInstance() ), protocolRepository, RAFT );
 
         // then
-        ProtocolStack clientProtocolStack = clientHandshakeFuture.get( 1, TimeUnit.MINUTES );
+        ProtocolStack clientProtocolStack = clientHandshakeFuture.get( 1, MINUTES );
         assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_LATEST ) );
     }
 
@@ -94,52 +100,56 @@ public class NettyProtocolHandshakeIT
     {
         // when
         CompletableFuture<ProtocolStack> clientFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.RAFT );
+                handshakeClient.initiate( new SimpleNettyChannel( client.channel, getInstance() ), protocolRepository, RAFT );
         CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
 
         // then
-        ProtocolStack serverProtocolStack = serverHandshakeFuture.get( 1, TimeUnit.MINUTES );
+        ProtocolStack serverProtocolStack = serverHandshakeFuture.get( 1, MINUTES );
         assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_LATEST ) );
     }
 
-    @Test( expected = ClientHandshakeException.class )
-    public void shouldFailHandshakeForUnknownProtocolOnClient() throws Throwable
+    @Test
+    public void shouldFailHandshakeForUnknownProtocolOnClient()
     {
-        // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
-        CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.CATCHUP );
+        assertThrows( ClientHandshakeException.class, () -> {
+            // when
+            protocolRepository = new ProtocolRepository( new Protocol[]{RAFT_1} );
+            CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient
+                    .initiate( new SimpleNettyChannel( client.channel, getInstance() ), protocolRepository, CATCHUP );
 
-        // then
-        try
-        {
-            clientHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        }
-        catch ( ExecutionException ex )
-        {
-            throw ex.getCause();
-        }
+            // then
+            try
+            {
+                clientHandshakeFuture.get( 1, MINUTES );
+            }
+            catch ( ExecutionException ex )
+            {
+                throw ex.getCause();
+            }
+        } );
     }
 
-    @Test( expected = ServerHandshakeException.class )
-    public void shouldFailHandshakeForUnknownProtocolOnServer() throws Throwable
+    @Test
+    public void shouldFailHandshakeForUnknownProtocolOnServer()
     {
-        // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
-        CompletableFuture<ProtocolStack> clientFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.CATCHUP );
+        assertThrows( ServerHandshakeException.class, () -> {
+            // when
+            protocolRepository = new ProtocolRepository( new Protocol[]{RAFT_1} );
+            CompletableFuture<ProtocolStack> clientFuture = handshakeClient
+                    .initiate( new SimpleNettyChannel( client.channel, getInstance() ), protocolRepository, CATCHUP );
 
-        CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
+            CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
 
-        // then
-        try
-        {
-            serverHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        }
-        catch ( ExecutionException ex )
-        {
-            throw ex.getCause();
-        }
+            // then
+            try
+            {
+                serverHandshakeFuture.get( 1, MINUTES );
+            }
+            catch ( ExecutionException ex )
+            {
+                throw ex.getCause();
+            }
+        } );
     }
 
     /**
@@ -162,17 +172,17 @@ public class NettyProtocolHandshakeIT
         {
             eventLoopGroup = new NioEventLoopGroup();
             ServerBootstrap bootstrap = new ServerBootstrap().group( eventLoopGroup ).channel( NioServerSocketChannel.class ).option(
-                    ChannelOption.SO_REUSEADDR, true ).localAddress( 0 ).childHandler( new ChannelInitializer<SocketChannel>()
+                    SO_REUSEADDR, true ).localAddress( 0 ).childHandler( new ChannelInitializer<SocketChannel>()
             {
                 @Override
                 protected void initChannel( SocketChannel ch )
                 {
                     ChannelPipeline pipeline = ch.pipeline();
                     pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
-                    pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
+                    pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( MAX_VALUE, 0, 4, 0, 4 ) );
                     pipeline.addLast( "responseMessageEncoder", new ServerMessageEncoder() );
                     pipeline.addLast( "requestMessageDecoder", new ServerMessageDecoder() );
-                    handshakeServer = new HandshakeServer( new SimpleNettyChannel( ch, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.RAFT );
+                    handshakeServer = new HandshakeServer( new SimpleNettyChannel( ch, getInstance() ), protocolRepository, RAFT );
                     pipeline.addLast( new NettyHandshakeServer( handshakeServer ) );
                 }
             } );
@@ -236,7 +246,7 @@ public class NettyProtocolHandshakeIT
         {
             ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
-            pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
+            pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( MAX_VALUE, 0, 4, 0, 4 ) );
             pipeline.addLast( "requestMessageEncoder", new ClientMessageEncoder() );
             pipeline.addLast( "responseMessageDecoder", new ClientMessageDecoder() );
             pipeline.addLast( new NettyHandshakeClient( handshakeClient ) );

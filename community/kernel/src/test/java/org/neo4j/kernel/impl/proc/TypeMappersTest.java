@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.impl.proc.TypeMappers.TypeChecker;

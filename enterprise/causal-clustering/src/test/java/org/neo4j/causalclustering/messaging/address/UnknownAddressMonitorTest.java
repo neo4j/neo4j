@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.messaging.address;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.Log;

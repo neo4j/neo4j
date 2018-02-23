@@ -163,7 +163,7 @@ public class QueryInvalidationIT
             params.put( "user1", user1 );
             params.put( "user2", user2 );
             db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
-                        "MERGE (user1) -[:FRIEND]- (user2)", params );
+                    "MERGE (user1) -[:FRIEND]- (user2)", params );
         }
     }
 
@@ -173,7 +173,7 @@ public class QueryInvalidationIT
 
         try ( Result result = db.execute(
                 "MATCH (user:User { userId: {userId} } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " +
-                "RETURN COUNT(distinct distantFriend)", params ) )
+                        "RETURN COUNT(distinct distantFriend)", params ) )
         {
             while ( result.hasNext() )
             {
@@ -217,7 +217,7 @@ public class QueryInvalidationIT
         public String toString()
         {
             return "TestMonitor{hits=" + hits + ", misses=" + misses + ", discards=" + discards + ", waitTime=" +
-                   waitTime + "}";
+                    waitTime + "}";
         }
 
         public void reset()

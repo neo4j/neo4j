@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -29,21 +31,21 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
-
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.single;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class DropBrokenUniquenessConstraintIT
 {
     private final Label label = Label.label( "Label" );
     private final String key = "key";
 
-    @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule db;
 
     @Test
     public void shouldDropUniquenessConstraintWithBrokenBackingIndex()

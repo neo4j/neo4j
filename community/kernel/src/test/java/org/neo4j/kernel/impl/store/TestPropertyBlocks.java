@@ -373,9 +373,9 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         int thirdBlockInSecondRecord = PropertyType.getPayloadSizeLongs() + 2;
 
         assertEquals( String.valueOf( secondBlockInSecondRecord ),
-                      node.removeProperty( "shortString" + secondBlockInSecondRecord ) );
+                node.removeProperty( "shortString" + secondBlockInSecondRecord ) );
         assertEquals( String.valueOf( thirdBlockInSecondRecord ),
-                      node.removeProperty( "shortString" + thirdBlockInSecondRecord ) );
+                node.removeProperty( "shortString" + thirdBlockInSecondRecord ) );
 
         newTransaction();
         assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
@@ -539,8 +539,8 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     public void testRevertOverflowingChange()
     {
         Relationship rel = getGraphDb().createNode()
-                                       .createRelationshipTo( getGraphDb().createNode(),
-                                               RelationshipType.withName( "INVALIDATES" ) );
+                .createRelationshipTo( getGraphDb().createNode(),
+                        RelationshipType.withName( "INVALIDATES" ) );
 
         long recordsInUseAtStart = propertyRecordsInUse();
         long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();

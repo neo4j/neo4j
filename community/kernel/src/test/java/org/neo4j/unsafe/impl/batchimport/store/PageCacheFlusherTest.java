@@ -19,51 +19,57 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Future;
+import javax.annotation.Resource;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.Barrier;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static java.time.Duration.ofMillis;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.test.Barrier.Control;
 
+@ExtendWith( OtherThreadExtension.class )
 public class PageCacheFlusherTest
 {
-    @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Resource
+    public OtherThreadRule<Void> t2;
 
-    @Test( timeout = 10_000 )
-    public void shouldWaitForCompletionInHalt() throws Exception
+    @Test
+    public void shouldWaitForCompletionInHalt()
     {
-        // GIVEN
-        PageCache pageCache = mock( PageCache.class );
-        Barrier.Control barrier = new Barrier.Control();
-        doAnswer( invocation ->
-        {
-            barrier.reached();
-            return null;
-        } ).when( pageCache ).flushAndForce();
-        PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
-        flusher.start();
+        assertTimeout( ofMillis( 10_000 ), () -> {
+            //  GIVEN
 
-        // WHEN
-        barrier.await();
-        Future<Object> halt = t2.execute( state ->
-        {
-            flusher.halt();
-            return null;
+            PageCache pageCache = mock( PageCache.class );
+            Control barrier = new Control();
+            doAnswer( invocation -> {
+                barrier.reached();
+                return null;
+            } ).when( pageCache ).flushAndForce();
+            PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
+            flusher.start();
+
+            // WHEN
+            barrier.await();
+            Future<Object> halt = t2.execute( state -> {
+                flusher.halt();
+                return null;
+            } );
+            t2.get().waitUntilWaiting( details -> details.isAt( PageCacheFlusher.class, "halt" ) );
+            barrier.release();
+
+            // THEN halt call exits normally after (confirmed) ongoing flushAndForce call completed.
+            halt.get();
         } );
-        t2.get().waitUntilWaiting( details -> details.isAt( PageCacheFlusher.class, "halt" ) );
-        barrier.release();
-
-        // THEN halt call exits normally after (confirmed) ongoing flushAndForce call completed.
-        halt.get();
     }
 
     @Test
@@ -72,8 +78,7 @@ public class PageCacheFlusherTest
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
         RuntimeException failure = new RuntimeException();
-        doAnswer( invocation ->
-        {
+        doAnswer( invocation -> {
             throw failure;
         } ).when( pageCache ).flushAndForce();
         PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
@@ -83,7 +88,7 @@ public class PageCacheFlusherTest
         try
         {
             flusher.halt();
-            fail();
+            fail( "Failure was expected" );
         }
         catch ( RuntimeException e )
         {

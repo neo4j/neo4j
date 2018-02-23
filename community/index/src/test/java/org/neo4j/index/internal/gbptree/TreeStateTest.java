@@ -19,22 +19,22 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TreeStateTest
 {
     private final int pageSize = 256;
     private PageAwareByteArrayCursor cursor;
 
-    @Before
+    @BeforeEach
     public void initiateCursor()
     {
         cursor = new PageAwareByteArrayCursor( pageSize );

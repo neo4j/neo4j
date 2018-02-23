@@ -21,13 +21,16 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -47,40 +50,44 @@ import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.test.Randoms;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.rule.RepeatRule.Repeat;
 import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.staging.SimpleStageControl;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@EnableRuleMigrationSupport
+@ExtendWith( RandomExtension.class )
 public class DeleteDuplicateNodesStepTest
 {
-    private final RandomRule random = new RandomRule().withConfiguration( new Randoms.Default()
-    {
-        @Override
-        public int stringMaxLength()
-        {
-            return 200;
-        }
-
-        @Override
-        public int arrayMaxLength()
-        {
-            return 200;
-        }
-    } );
-    private final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
-    private final RepeatRule repeater = new RepeatRule();
-
+    @Resource
+    public RandomRule random;
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( repeater ).around( random ).around( neoStoresRule );
+    private final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
 
-    @Repeat( times = 10 )
-    @Test
+    @BeforeEach
+    void setUp()
+    {
+        random.withConfiguration( new Randoms.Default()
+        {
+            @Override
+            public int stringMaxLength()
+            {
+                return 200;
+            }
+
+            @Override
+            public int arrayMaxLength()
+            {
+                return 200;
+            }
+        } );
+    }
+
+    @RepeatedTest( 10 )
     public void shouldDeleteEverythingAboutTheDuplicatedNodes() throws Exception
     {
         // given

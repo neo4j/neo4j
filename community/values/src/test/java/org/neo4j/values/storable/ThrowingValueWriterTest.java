@@ -20,11 +20,13 @@
 package org.neo4j.values.storable;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import static org.neo4j.values.storable.ThrowingValueWriter.throwing;
 
+@EnableRuleMigrationSupport
 public class ThrowingValueWriterTest
 {
     @Rule

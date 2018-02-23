@@ -159,8 +159,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
                         String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
-                                       "\"QINVALID\"%n" +
-                                       " ^" ) ), msgIgnored() ) );
+                                "\"QINVALID\"%n" +
+                                " ^" ) ), msgIgnored() ) );
 
         // When
         connection.send( util.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
@@ -320,9 +320,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                         new TestNotification( "Neo.ClientNotification.Statement.UnknownLabelWarning",
                                 "The provided label is not in the database.",
                                 "One of the labels in your query is not available in the database, " +
-                                "make sure you didn't misspell it or that the label is available when " +
-                                "you run this statement in your application (the missing label name is: " +
-                                "THIS_IS_NOT_A_LABEL)",
+                                        "make sure you didn't misspell it or that the label is available when " +
+                                        "you run this statement in your application (the missing label name is: " +
+                                        "THIS_IS_NOT_A_LABEL)",
                                 SeverityLevel.WARNING, new InputPosition( 17, 1, 18 ) ) ) ) );
 
     }

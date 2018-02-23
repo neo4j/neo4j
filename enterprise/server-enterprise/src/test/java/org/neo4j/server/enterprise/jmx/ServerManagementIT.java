@@ -55,10 +55,10 @@ public class ServerManagementIT
         String dataDirectory2 = baseDir.directory( "data2" ).getAbsolutePath();
 
         Config config = Config.fromFile( EnterpriseServerBuilder
-                    .serverOnRandomPorts()
-                    .withDefaultDatabaseTuning()
-                    .usingDataDir( dataDirectory1 )
-                    .createConfigFiles() )
+                .serverOnRandomPorts()
+                .withDefaultDatabaseTuning()
+                .usingDataDir( dataDirectory1 )
+                .createConfigFiles() )
                 .withHome( baseDir.directory() )
                 .withSetting( GraphDatabaseSettings.logs_directory, baseDir.directory( "logs" ).getPath() )
                 .build();

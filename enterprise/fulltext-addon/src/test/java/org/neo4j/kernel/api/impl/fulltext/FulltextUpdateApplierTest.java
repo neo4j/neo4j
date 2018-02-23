@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.util.concurrent.ExecutionException;
@@ -37,8 +37,8 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class FulltextUpdateApplierTest
 {
@@ -48,7 +48,7 @@ public class FulltextUpdateApplierTest
     private JobScheduler scheduler;
     private Log log;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         life = new LifeSupport();
@@ -63,7 +63,7 @@ public class FulltextUpdateApplierTest
         applier = life.add( new FulltextUpdateApplier( log, availabilityGuard, scheduler ) );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         life.shutdown();

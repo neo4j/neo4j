@@ -19,9 +19,9 @@
  */
 package org.neo4j.concurrencytest;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,18 +31,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class ExplicitIndexAddDropConcurrentlyTest
 {
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
 
-    @Ignore
+    @Disabled
     @Test
     public void shouldHandleConcurrentIndexDropping() throws Exception
     {

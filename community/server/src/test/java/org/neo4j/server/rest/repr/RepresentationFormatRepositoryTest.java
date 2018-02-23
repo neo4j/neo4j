@@ -19,9 +19,8 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
@@ -32,16 +31,25 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
+import static javax.ws.rs.core.MediaType.WILDCARD_TYPE;
+import static javax.ws.rs.core.MediaType.valueOf;
+import static javax.ws.rs.core.Response.ResponseBuilder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.repr.StreamingFormat.STREAM_HEADER;
+import static org.neo4j.server.rest.repr.ValueRepresentation.string;
 
 public class RepresentationFormatRepositoryTest
 {
@@ -50,41 +58,43 @@ public class RepresentationFormatRepositoryTest
     @Test
     public void canProvideJsonFormat()
     {
-        assertNotNull( repository.inputFormat( MediaType.valueOf( "application/json" ) ) );
+        assertNotNull( repository.inputFormat( valueOf( "application/json" ) ) );
     }
 
     @Test
     public void canProvideUTF8EncodedJsonFormat()
     {
-        assertNotNull( repository.inputFormat( MediaType.valueOf( "application/json;charset=UTF-8" ) ) );
+        assertNotNull( repository.inputFormat( valueOf( "application/json;charset=UTF-8" ) ) );
     }
 
-    @Test( expected = MediaTypeNotSupportedException.class )
-    public void canNotGetInputFormatBasedOnWildcardMediaType() throws Exception
+    @Test
+    public void canNotGetInputFormatBasedOnWildcardMediaType()
     {
-        InputFormat format = repository.inputFormat( MediaType.WILDCARD_TYPE );
-        format.readValue( "foo" );
-        fail( "Got InputFormat based on wild card type: " + format );
+        assertThrows( MediaTypeNotSupportedException.class, () -> {
+            InputFormat format = repository.inputFormat( WILDCARD_TYPE );
+            format.readValue( "foo" );
+            fail( "Got InputFormat based on wild card type: " + format );
+        } );
     }
 
     @Test
     public void canProvideJsonOutputFormat()
     {
-        OutputFormat format = repository.outputFormat( asList( MediaType.APPLICATION_JSON_TYPE ), null, null );
+        OutputFormat format = repository.outputFormat( asList( APPLICATION_JSON_TYPE ), null, null );
         assertNotNull( format );
-        assertEquals( "\"test\"", format.assemble( ValueRepresentation.string( "test" ) ) );
+        assertEquals( "\"test\"", format.assemble( string( "test" ) ) );
     }
 
     @Test
     public void cannotProvideStreamingForOtherMediaTypes() throws Exception
     {
-        final Response.ResponseBuilder responseBuilder = mock( Response.ResponseBuilder.class );
+        final ResponseBuilder responseBuilder = mock( ResponseBuilder.class );
         // no streaming
         when( responseBuilder.entity( any(byte[].class) ) ).thenReturn( responseBuilder );
-        Mockito.verify( responseBuilder, never() ).entity( isA( StreamingOutput.class ) );
+        verify( responseBuilder, never() ).entity( isA( StreamingOutput.class ) );
         when( responseBuilder.type( ArgumentMatchers.<MediaType>any() ) ).thenReturn( responseBuilder );
         when( responseBuilder.build() ).thenReturn( null );
-        OutputFormat format = repository.outputFormat( asList( MediaType.TEXT_HTML_TYPE ),
+        OutputFormat format = repository.outputFormat( asList( TEXT_HTML_TYPE ),
                 new URI( "http://some.host" ), streamingHeader() );
         assertNotNull( format );
         format.response( responseBuilder, new ExceptionRepresentation( new RuntimeException() ) );
@@ -95,8 +105,8 @@ public class RepresentationFormatRepositoryTest
     {
         Response response = mock( Response.class );
         final AtomicReference<StreamingOutput> ref = new AtomicReference<>();
-        final Response.ResponseBuilder responseBuilder = mockResponsBuilder( response, ref );
-        OutputFormat format = repository.outputFormat( asList( MediaType.APPLICATION_JSON_TYPE ), null,
+        final ResponseBuilder responseBuilder = mockResponsBuilder( response, ref );
+        OutputFormat format = repository.outputFormat( asList( APPLICATION_JSON_TYPE ), null,
                 streamingHeader() );
         assertNotNull( format );
         Response returnedResponse = format.response( responseBuilder, new MapRepresentation( map( "a", "test" ) ) );
@@ -107,10 +117,10 @@ public class RepresentationFormatRepositoryTest
         assertEquals( "{\"a\":\"test\"}", baos.toString() );
     }
 
-    private Response.ResponseBuilder mockResponsBuilder( Response response, final AtomicReference<StreamingOutput> ref )
+    private ResponseBuilder mockResponsBuilder( Response response, final AtomicReference<StreamingOutput> ref )
     {
-        final Response.ResponseBuilder responseBuilder = mock( Response.ResponseBuilder.class );
-        when( responseBuilder.entity( ArgumentMatchers.isA( StreamingOutput.class ) ) ).thenAnswer(
+        final ResponseBuilder responseBuilder = mock( ResponseBuilder.class );
+        when( responseBuilder.entity( isA( StreamingOutput.class ) ) ).thenAnswer(
                 invocationOnMock ->
                 {
                     ref.set( invocationOnMock.getArgument( 0 ) );
@@ -125,7 +135,7 @@ public class RepresentationFormatRepositoryTest
     private MultivaluedMap<String, String> streamingHeader()
     {
         MultivaluedMap<String, String> headers = mock( MultivaluedMap.class );
-        when( headers.getFirst( StreamingFormat.STREAM_HEADER ) ).thenReturn( "true" );
+        when( headers.getFirst( STREAM_HEADER ) ).thenReturn( "true" );
         return headers;
     }
 }

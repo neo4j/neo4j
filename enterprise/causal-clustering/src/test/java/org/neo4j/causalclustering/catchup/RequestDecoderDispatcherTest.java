@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.catchup;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.AssertableLogProvider;
 

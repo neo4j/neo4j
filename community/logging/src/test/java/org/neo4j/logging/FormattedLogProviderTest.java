@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.function.Suppliers;
 

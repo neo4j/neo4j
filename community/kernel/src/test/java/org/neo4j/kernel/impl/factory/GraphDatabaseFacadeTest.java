@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
@@ -58,7 +58,7 @@ public class GraphDatabaseFacadeTest
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         queryService = mock( GraphDatabaseQueryService.class );

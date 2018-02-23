@@ -19,15 +19,15 @@
  */
 package org.neo4j.server;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Optional;
 
 import org.neo4j.kernel.configuration.Config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 

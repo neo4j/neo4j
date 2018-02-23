@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
@@ -76,6 +76,6 @@ public class CountsRecordStateTest
         List<CountsRecordState.Difference> differences = oracle.verify( victim );
 
         // then
-        assertTrue( differences.toString(), differences.isEmpty() );
+        assertTrue( differences.isEmpty(), differences.toString() );
     }
 }

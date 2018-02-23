@@ -19,18 +19,20 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -42,28 +44,30 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyFile;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
+@ExtendWith( {RandomExtension.class, EmbeddedDatabaseExtension.class} )
 public class AllNodesInStoreExistInLabelIndexTest
 {
-    @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule db;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABEL_ALPHABET = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
@@ -83,7 +87,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         ConsistencyCheckService.Result result = fullConsistencyCheck();
 
         // then
-        assertTrue( "Expected consistency check to succeed", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected consistency check to succeed" );
     }
 
     @Test
@@ -106,7 +110,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
         assertThat( readReport( result ),
                 hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
     }
@@ -125,7 +129,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertTrue( "Expected consistency check to fail", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
         assertThat( readReport( result ),
                 hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
     }
@@ -150,7 +154,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     @Test
@@ -173,7 +177,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     @Test
@@ -196,7 +200,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     @Test
@@ -219,7 +223,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     private List<String> readReport( ConsistencyCheckService.Result result )

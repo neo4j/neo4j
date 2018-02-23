@@ -20,7 +20,8 @@
 package org.neo4j.kernel.configuration;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
@@ -33,22 +34,22 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
 import static org.neo4j.kernel.configuration.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
 
+@EnableRuleMigrationSupport
 public class HttpConnectorValidatorTest
 {
-    HttpConnectorValidator cv = new HttpConnectorValidator();
-
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
-    Consumer<String> warningConsumer = mock( Consumer.class );
+    private final HttpConnectorValidator cv = new HttpConnectorValidator();
+    private final Consumer<String> warningConsumer = mock( Consumer.class );
 
     @Test
     public void doesNotValidateUnrelatedStuff()
@@ -316,7 +317,7 @@ public class HttpConnectorValidatorTest
 
         for ( Setting s : settings )
         {
-            assertTrue( "every setting should be deprecated: " + s.name(), s.deprecated() );
+            assertTrue( s.deprecated(), "every setting should be deprecated: " + s.name() );
             String[] parts = s.name().split( "\\." );
             if ( !"encryption".equals( parts[3] ) && !"type".equals( parts[3] ) )
             {
@@ -339,7 +340,7 @@ public class HttpConnectorValidatorTest
 
         for ( Setting s : settings )
         {
-            assertTrue( "every setting should be deprecated: " + s.name(), s.deprecated() );
+            assertTrue( s.deprecated(), "every setting should be deprecated: " + s.name() );
             String[] parts = s.name().split( "\\." );
 
             if ( !"encryption".equals( parts[3] ) && !"type".equals( parts[3] ) )

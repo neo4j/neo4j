@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,7 +40,7 @@ public class UsageTest
     @Mock
     private Consumer<String> out;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         MockitoAnnotations.initMocks( this );

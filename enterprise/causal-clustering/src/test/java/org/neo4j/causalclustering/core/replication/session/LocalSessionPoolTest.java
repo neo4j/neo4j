@@ -19,14 +19,14 @@
  */
 package org.neo4j.causalclustering.core.replication.session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class LocalSessionPoolTest
 {

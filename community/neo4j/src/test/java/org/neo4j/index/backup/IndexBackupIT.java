@@ -21,9 +21,9 @@ package org.neo4j.index.backup;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.index.IndexFileNames;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -42,29 +43,32 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( {RandomExtension.class, EmbeddedDatabaseExtension.class} )
 public class IndexBackupIT
 {
     private static final String PROPERTY_PREFIX = "property";
     private static final int NUMBER_OF_INDEXES = 10;
 
-    @Rule
-    public RandomRule randomRule = new RandomRule();
-    @Rule
-    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
+    @Resource
+    public RandomRule randomRule;
+    @Resource
+    public EmbeddedDatabaseRule database;
     private CheckPointer checkPointer;
     private IndexingService indexingService;
     private FileSystemAbstraction fileSystem;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         checkPointer = resolveDependency( CheckPointer.class );
@@ -151,15 +155,15 @@ public class IndexBackupIT
                 hasSize( NUMBER_OF_INDEXES ) );
         for ( String fileName : firstSnapshotFileNames )
         {
-            assertFalse( "Snapshot segments fileset should not have files from another snapshot set." +
-                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
-                    secondSnapshotFileNames.contains( fileName ) );
+            assertFalse( secondSnapshotFileNames.contains( fileName ),
+                    "Snapshot segments fileset should not have files from another snapshot set." +
+                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ) );
             String path = FilenameUtils.getFullPath( fileName );
-            assertTrue( "Snapshot should contain files for index in path: " + path + "." +
-                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
-                    secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ) );
-            assertTrue( format( "Snapshot segment file '%s' should exist.", fileName ),
-                    fileSystem.fileExists( new File( fileName ) ) );
+            assertTrue( secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ),
+                    "Snapshot should contain files for index in path: " + path + "." +
+                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ) );
+            assertTrue( fileSystem.fileExists( new File( fileName ) ),
+                    format( "Snapshot segment file '%s' should exist.", fileName ) );
         }
     }
 

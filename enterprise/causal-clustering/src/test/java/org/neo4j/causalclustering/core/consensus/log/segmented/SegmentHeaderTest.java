@@ -19,10 +19,10 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
@@ -71,7 +71,7 @@ public class SegmentHeaderTest
         try
         {
             marshal.unmarshal( channel );
-            fail();
+            fail("Failure was expected");
         }
         catch ( EndOfStreamException e )
         {

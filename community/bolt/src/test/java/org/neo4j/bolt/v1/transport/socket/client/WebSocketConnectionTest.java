@@ -21,23 +21,28 @@ package org.neo4j.bolt.v1.transport.socket.client;
 
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith( SuppressOutputExtension.class )
+@EnableRuleMigrationSupport
 public class WebSocketConnectionTest
 {
-
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public SuppressOutput suppressOutput;
 
     @Test
     public void shouldNotThrowAnyExceptionWhenDataReceivedBeforeClose() throws Throwable

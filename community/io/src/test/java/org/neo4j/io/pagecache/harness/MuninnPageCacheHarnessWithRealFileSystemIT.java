@@ -19,16 +19,20 @@
  */
 package org.neo4j.io.pagecache.harness;
 
-import org.junit.Rule;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class MuninnPageCacheHarnessWithRealFileSystemIT extends MuninnPageCacheHarnessTest
 {
-    @Rule
-    public TestDirectory directory = TestDirectory.testDirectory( MuninnPageCacheHarnessWithRealFileSystemIT.class );
+    @Resource
+    public TestDirectory directory;
 
     @Override
     protected Fixture<MuninnPageCache> createFixture()

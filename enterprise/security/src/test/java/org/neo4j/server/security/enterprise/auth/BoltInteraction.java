@@ -62,8 +62,8 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.ResetMessage.reset;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME;
@@ -215,19 +215,19 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     @Override
     public void assertAuthenticated( BoltSubject subject )
     {
-        assertTrue( "Should be authenticated", subject.isAuthenticated() );
+        assertTrue( subject.isAuthenticated(), "Should be authenticated" );
     }
 
     @Override
     public void assertPasswordChangeRequired( BoltSubject subject )
     {
-        assertTrue( "Should need to change password", subject.passwordChangeRequired() );
+        assertTrue( subject.passwordChangeRequired(), "Should need to change password" );
     }
 
     @Override
     public void assertInitFailed( BoltSubject subject )
     {
-        assertFalse( "Should not be authenticated", subject.isAuthenticated() );
+        assertFalse( subject.isAuthenticated(), "Should not be authenticated" );
     }
 
     @Override

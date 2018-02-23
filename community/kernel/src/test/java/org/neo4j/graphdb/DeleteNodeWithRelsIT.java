@@ -20,15 +20,22 @@
 package org.neo4j.graphdb;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
+import javax.annotation.Resource;
+
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+@EnableRuleMigrationSupport
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class DeleteNodeWithRelsIT
 {
-    @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();

@@ -19,21 +19,23 @@
  */
 package org.neo4j.ports.allocation;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMinimum;
+import org.junit.Rule;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMinimum;
 
+@EnableRuleMigrationSupport
 public class PortRepositoryIT
 {
     @Rule
@@ -69,7 +71,7 @@ public class PortRepositoryIT
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void shouldNotInterfereWithOtherRepositories() throws Exception
     {
         PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
@@ -97,7 +99,7 @@ public class PortRepositoryIT
         {
             portRepository1.reserveNextPort( "foo" );
 
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {

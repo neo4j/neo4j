@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Instant;

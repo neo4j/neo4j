@@ -19,35 +19,39 @@
  */
 package files;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
+@DisabledOnOs( OS.WINDOWS )
 public class TestNoFileDescriptorLeaks
 {
     private static final AtomicInteger counter = new AtomicInteger();
 
-    @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule db;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass()
     {
-        Assume.assumeFalse( SystemUtils.IS_OS_WINDOWS );
-        Assume.assumeThat( OsBeanUtil.getOpenFileDescriptors(), not( OsBeanUtil.VALUE_UNAVAILABLE ) );
+        assumeThat( OsBeanUtil.getOpenFileDescriptors(), not( OsBeanUtil.VALUE_UNAVAILABLE ) );
     }
 
     @Test

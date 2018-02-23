@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -34,6 +33,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import javax.annotation.Resource;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -49,8 +49,8 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -59,13 +59,13 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -73,17 +73,11 @@ import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 
+@ExtendWith( RandomExtension.class )
 public class TxStateTest
 {
-    public final RandomRule random = new RandomRule();
-
-    @Rule
-    public final TestRule repeatWithDifferentRandomization()
-    {
-        return RuleChain.outerRule( new RepeatRule() ).around( random );
-    }
-
-    //region node label update tests
+    @Resource
+    public RandomRule random;
 
     @Test
     public void shouldGetAddedLabels()
@@ -1107,7 +1101,7 @@ public class TxStateTest
             @Override
             public void visitCreatedNode( long id )
             {
-                assertEquals( "Should not create any other node than 1", 1, id );
+                assertEquals( 1, id, "Should not create any other node than 1" );
             }
 
             @Override
@@ -1131,7 +1125,7 @@ public class TxStateTest
             public void visitDeletedNode( long id )
             {
                 // Then
-                assertEquals( "Wrong deleted node id", 42, id );
+                assertEquals( 42, id, "Wrong deleted node id" );
             }
         } );
     }
@@ -1177,7 +1171,7 @@ public class TxStateTest
             @Override
             public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
             {
-                assertEquals( "Should not create any other relationship than 1", 1, id );
+                assertEquals( 1, id, "Should not create any other relationship than 1" );
             }
 
             @Override
@@ -1201,7 +1195,7 @@ public class TxStateTest
             public void visitDeletedRelationship( long id )
             {
                 // Then
-                assertEquals( "Wrong deleted relationship id", 42, id );
+                assertEquals( 42, id, "Wrong deleted relationship id" );
             }
         } );
     }
@@ -1239,8 +1233,7 @@ public class TxStateTest
         assertFalse( state.relationshipIsDeletedInThisTx( relationshipId ) );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatedTest( 100 )
     public void shouldVisitCreatedNodesBeforeDeletedNodes() throws Exception
     {
         // when
@@ -1276,8 +1269,7 @@ public class TxStateTest
         } );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatedTest( 100 )
     public void shouldVisitCreatedNodesBeforeCreatedRelationships() throws Exception
     {
         // when
@@ -1316,8 +1308,7 @@ public class TxStateTest
         } );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatedTest( 100 )
     public void shouldVisitCreatedRelationshipsBeforeDeletedRelationships() throws Exception
     {
         // when
@@ -1358,8 +1349,7 @@ public class TxStateTest
         } );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatedTest( 100 )
     public void shouldVisitDeletedNodesAfterDeletedRelationships() throws Exception
     {
         // when
@@ -1461,12 +1451,12 @@ public class TxStateTest
             {
                 RelationshipItem relationship = augmented.get();
                 RelationshipItem actual = expectedRelationships.remove( relationship.id() );
-                assertNotNull( "Augmented cursor returned relationship " + relationship + ", but shouldn't have",
-                        actual );
+                assertNotNull( actual,
+                        "Augmented cursor returned relationship " + relationship + ", but shouldn't have" );
                 assertRelationshipEquals( actual, relationship );
             }
-            assertTrue( "Augmented cursor didn't return some expected relationships: " + expectedRelationships,
-                    expectedRelationships.isEmpty() );
+            assertTrue( expectedRelationships.isEmpty(),
+                    "Augmented cursor didn't return some expected relationships: " + expectedRelationships );
         }
     }
 
@@ -1568,7 +1558,7 @@ public class TxStateTest
                     visitMethods.add( method.getName() );
                 }
             }
-            assertEquals( "should implement exactly two visit*(...) methods", 2, visitMethods.size() );
+            assertEquals( 2, visitMethods.size(), "should implement exactly two visit*(...) methods" );
             do
             {
                 if ( random.nextBoolean() )
@@ -1626,7 +1616,7 @@ public class TxStateTest
 
     private TransactionState state;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         state = new TxState();

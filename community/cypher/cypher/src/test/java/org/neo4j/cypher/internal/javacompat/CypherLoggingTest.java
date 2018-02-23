@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.AssertableLogProvider;
@@ -35,13 +35,13 @@ public class CypherLoggingTest
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService database;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         database = new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         database.shutdown();

@@ -19,45 +19,51 @@
  */
 package org.neo4j.helpers.collection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LruCacheTest
 {
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
     {
-        new LruCache<>( "TestCache", 0 );
+        assertThrows( IllegalArgumentException.class, () -> new LruCache<>( "TestCache", 0 ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldThrowWhenPuttingEntryWithNullKey()
     {
-        new LruCache<>( "TestCache", 70 ).put( null, new Object() );
+        assertThrows( IllegalArgumentException.class, () ->
+        new LruCache<>( "TestCache", 70 ).put( null, new Object() ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldThrowWhenPuttingEntryWithNullValue()
     {
-        new LruCache<>( "TestCache", 70 ).put( new Object(), null );
+        assertThrows( IllegalArgumentException.class, () ->
+        new LruCache<>( "TestCache", 70 ).put( new Object(), null ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldThrowWhenGettingWithANullKey()
     {
-        new LruCache<>( "TestCache", 70 ).get( null );
+        assertThrows( IllegalArgumentException.class, () ->
+        new LruCache<>( "TestCache", 70 ).get( null ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldThrowWhenRemovingWithANullKey()
     {
-        new LruCache<>( "TestCache", 70 ).remove( null );
+        assertThrows( IllegalArgumentException.class, () ->
+        new LruCache<>( "TestCache", 70 ).remove( null ) );
     }
 
     @Test
@@ -94,9 +100,9 @@ public class LruCacheTest
         int size = cache.size();
 
         assertEquals( 3, size );
-        assertEquals( null, cache.get( key1 ) );
+        assertNull( cache.get( key1 ) );
         assertEquals( s2, cache.get( key2 ) );
-        assertEquals( null, cache.get( key3 ) );
+        assertNull( cache.get( key3 ) );
         assertEquals( s4, cache.get( key4 ) );
         assertEquals( s5, cache.get( key5 ) );
 

@@ -36,7 +36,7 @@ import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.monitoring.DispatchingListener;
 import com.sun.jersey.spi.monitoring.RequestListener;
 import com.sun.jersey.spi.monitoring.ResponseListener;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,8 +46,8 @@ import javax.ws.rs.ext.Providers;
 import org.neo4j.server.web.XForwardFilter;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XForwardFilterTest
 {

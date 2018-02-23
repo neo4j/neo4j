@@ -20,7 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +40,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,25 +59,24 @@ import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.charset.Charset.defaultCharset;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
@@ -89,6 +91,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class CsvInputBatchImportIT
 {
     /** Don't support these counts at the moment so don't compute them */
@@ -98,8 +102,8 @@ public class CsvInputBatchImportIT
         return (String) node.properties()[1];
     }
 
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
     @Rule
     public  final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final long seed = currentTimeMillis();
@@ -336,11 +340,9 @@ public class CsvInputBatchImportIT
                     translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
-                assertEquals( "Label count mismatch for label " + count.first(),
-                        count.other().longValue(),
-                        neoStores.getCounts()
-                                .nodeCount( count.first().intValue(), newDoubleLongRegister() )
-                                .readSecond() );
+                assertEquals( count.other().longValue(),
+                        neoStores.getCounts().nodeCount( count.first().intValue(), newDoubleLongRegister() )
+                                .readSecond(), "Label count mismatch for label " + count.first() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
@@ -349,11 +351,9 @@ public class CsvInputBatchImportIT
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
-                assertEquals( "Label count mismatch for label " + key,
-                        count.other().longValue(),
-                        neoStores.getCounts()
-                                .relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() )
-                                .readSecond() );
+                assertEquals( count.other().longValue(), neoStores.getCounts()
+                        .relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() )
+                        .readSecond(), "Label count mismatch for label " + key );
             }
 
             tx.success();

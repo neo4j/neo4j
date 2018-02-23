@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,7 +29,7 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class AnnotationBasedConfigurationMigratorTest

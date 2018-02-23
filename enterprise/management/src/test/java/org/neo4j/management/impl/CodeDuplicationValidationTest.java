@@ -21,7 +21,7 @@ package org.neo4j.management.impl;
 
 import javax.management.ObjectName;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
@@ -35,7 +35,7 @@ import org.neo4j.management.LockManager;
 import org.neo4j.management.MemoryMapping;
 import org.neo4j.management.TransactionManager;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CodeDuplicationValidationTest
 {

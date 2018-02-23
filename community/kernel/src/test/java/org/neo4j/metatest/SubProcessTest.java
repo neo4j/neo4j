@@ -19,13 +19,13 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Callable;
 
 import org.neo4j.test.subprocess.SubProcess;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SubProcessTest
 {

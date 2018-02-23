@@ -20,29 +20,35 @@
 package org.neo4j.test.impl;
 
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class ChannelOutputStreamTest
 {
     @Rule
     public FileSystemRule fs = new EphemeralFileSystemRule();
 
-    @Rule
-    public TemporaryFolder tmpDir = new TemporaryFolder();
+    @Resource
+    public TestDirectory tmpDir;
 
     @Test
     public void shouldStoreAByteAtBoundary() throws Exception
     {
-        File workFile = tmpDir.newFile();
-        fs.mkdirs( tmpDir.getRoot() );
+        File workFile = tmpDir.file( "test" );
+        fs.mkdirs( tmpDir.directory() );
         OutputStream out = fs.openAsOutputStream( workFile, false );
 
         // When I write a byte[] that is larger than the internal buffer in

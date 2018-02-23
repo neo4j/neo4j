@@ -19,16 +19,20 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.scripting.ScriptExecutor;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
+import static org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer.Mode.SANDBOXED;
+import static org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer.initialize;
 
 public class TestJavascriptSecurityRestrictions
 {
@@ -38,10 +42,10 @@ public class TestJavascriptSecurityRestrictions
 
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void doBullshitGlobalStateCrap()
     {
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        initialize( SANDBOXED );
     }
 
     @Test
@@ -58,30 +62,34 @@ public class TestJavascriptSecurityRestrictions
 
         // Then
         assertThat( result, is( instanceOf( Evaluation.class ) ) );
-        assertThat( result, is(Evaluation.INCLUDE_AND_CONTINUE) );
+        assertThat( result, is(INCLUDE_AND_CONTINUE) );
     }
 
-    @Test( expected = EvaluationException.class )
+    @Test
     public void shouldNotBeAbleToImportUnsafeClasses()
     {
-        // Given
-        String classThatShouldBeInaccessible = TestJavascriptSecurityRestrictions.class.getName();
+        assertThrows( EvaluationException.class, () -> {
+            // Given
+            String classThatShouldBeInaccessible = TestJavascriptSecurityRestrictions.class.getName();
 
-        ScriptExecutor executor = new JavascriptExecutor(
-                classThatShouldBeInaccessible + ".methodThatShouldNotBeCallable();" );
+            ScriptExecutor executor =
+                    new JavascriptExecutor( classThatShouldBeInaccessible + ".methodThatShouldNotBeCallable();" );
 
-        // When
-        executor.execute( null );
+            // When
+            executor.execute( null );
+        } );
     }
 
-    @Test( expected = EvaluationException.class )
+    @Test
     public void shouldNotBeAbleToUseReflectionToInstantiateThings()
     {
-        // Given
-        ScriptExecutor executor = new JavascriptExecutor(
-                Evaluation.class.getName() + ".getClass().getClassLoader();" );
+        assertThrows( EvaluationException.class, () -> {
+            // Given
+            ScriptExecutor executor =
+                    new JavascriptExecutor( Evaluation.class.getName() + ".getClass().getClassLoader();" );
 
-        // When
-        executor.execute( null );
+            // When
+            executor.execute( null );
+        } );
     }
 }

@@ -146,10 +146,10 @@ public class TestBidirectionalTraversal extends TraversalTestBase
 
         expectPaths( getGraphDb().bidirectionalTraversalDescription()
                         .mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ) )
-            .collisionEvaluator( Evaluators.atDepth( 3 ) )
-            .collisionEvaluator( Evaluators.includeIfContainsAll( getNodeWithName( "e" ) ) )
-            .traverse( getNodeWithName( "a" ), getNodeWithName( "c" ) ),
-            "a,d,e,c" );
+                        .collisionEvaluator( Evaluators.atDepth( 3 ) )
+                        .collisionEvaluator( Evaluators.includeIfContainsAll( getNodeWithName( "e" ) ) )
+                        .traverse( getNodeWithName( "a" ), getNodeWithName( "c" ) ),
+                "a,d,e,c" );
     }
 
     @Test
@@ -167,9 +167,9 @@ public class TestBidirectionalTraversal extends TraversalTestBase
         PathExpander<Void> expander = PathExpanderBuilder.empty().add( to ).build();
         TraversalDescription side = getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand( expander );
         expectPaths( getGraphDb().bidirectionalTraversalDescription().mirroredSides( side ).traverse(
-                    asList( getNodeWithName( "a" ), getNodeWithName( "b" ), getNodeWithName( "c" ) ),
-                    asList( getNodeWithName( "f" ), getNodeWithName( "g" ) ) ),
-                    "a,d,e,f", "a,d,e,g", "b,d,e,f", "b,d,e,g", "c,d,e,f", "c,d,e,g" );
+                asList( getNodeWithName( "a" ), getNodeWithName( "b" ), getNodeWithName( "c" ) ),
+                asList( getNodeWithName( "f" ), getNodeWithName( "g" ) ) ),
+                "a,d,e,f", "a,d,e,g", "b,d,e,f", "b,d,e,g", "c,d,e,f", "c,d,e,g" );
     }
 
     @Test
@@ -184,10 +184,10 @@ public class TestBidirectionalTraversal extends TraversalTestBase
         Node b = getNodeWithName( "b" );
         Relationship r = a.getSingleRelationship( to, OUTGOING );
         Path path = Iterables.single( getGraphDb().bidirectionalTraversalDescription()
-            .mirroredSides( getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( NODE_PATH ) )
-            .collisionEvaluator( Evaluators.atDepth( 1 ) )
-            .sideSelector( SideSelectorPolicies.LEVEL, 1 )
-            .traverse( a, b ) );
+                .mirroredSides( getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( NODE_PATH ) )
+                .collisionEvaluator( Evaluators.atDepth( 1 ) )
+                .sideSelector( SideSelectorPolicies.LEVEL, 1 )
+                .traverse( a, b ) );
         assertContainsInOrder( path.nodes(), a, b );
         assertContainsInOrder( path.reverseNodes(), b, a );
         assertContainsInOrder( path.relationships(), r );

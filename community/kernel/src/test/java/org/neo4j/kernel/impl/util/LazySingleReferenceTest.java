@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -30,9 +30,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class LazySingleReferenceTest
@@ -63,8 +63,8 @@ public class LazySingleReferenceTest
         int e2 = t2Evaluate.get();
 
         // THEN
-        assertEquals( "T1 evaluation", 1, e1 );
-        assertEquals( "T2 evaluation", 1, e2 );
+        assertEquals( 1, e1, "T1 evaluation" );
+        assertEquals( 1, e2, "T2 evaluation" );
     }
 
     @Test
@@ -93,7 +93,7 @@ public class LazySingleReferenceTest
         t2Invalidate.get();
 
         // THEN
-        assertEquals( "Evaluation", 1, e );
+        assertEquals( 1, e, "Evaluation" );
     }
 
     @Test
@@ -109,14 +109,14 @@ public class LazySingleReferenceTest
                 return initCalls.incrementAndGet();
             }
         };
-        assertEquals( "First evaluation", 1, ref.get().intValue() );
+        assertEquals( 1, ref.get().intValue(), "First evaluation" );
 
         // WHEN
         ref.invalidate();
         int e2 = ref.get();
 
         // THEN
-        assertEquals( "Second evaluation", 2, e2 );
+        assertEquals( 2, e2, "Second evaluation" );
     }
 
     @Test
@@ -142,23 +142,23 @@ public class LazySingleReferenceTest
         boolean fourthResult = ref.isCreated();
 
         // THEN
-        assertFalse( "Should not start off as initialized", firstResult );
-        assertTrue( "Should be initialized after an evaluation", secondResult );
-        assertFalse( "Should not be initialized after invalidated", thirdResult );
-        assertTrue( "Should be initialized after a re-evaluation", fourthResult );
+        assertFalse( firstResult, "Should not start off as initialized" );
+        assertTrue( secondResult, "Should be initialized after an evaluation" );
+        assertFalse( thirdResult, "Should not be initialized after invalidated" );
+        assertTrue( fourthResult, "Should be initialized after a re-evaluation" );
     }
 
     private OtherThreadExecutor<Void> t1;
     private OtherThreadExecutor<Void> t2;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         t1 = new OtherThreadExecutor<>( "T1", null );
         t2 = new OtherThreadExecutor<>( "T2", null );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         t2.close();

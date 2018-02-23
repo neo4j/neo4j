@@ -29,7 +29,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helper.RepeatUntilCallable;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StartStop extends RepeatUntilCallable
 {

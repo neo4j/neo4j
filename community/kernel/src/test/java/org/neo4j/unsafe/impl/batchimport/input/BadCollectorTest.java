@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -31,8 +31,8 @@ import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 
@@ -176,7 +176,7 @@ public class BadCollectorTest
             }
             collectBadRelationship( badCollector );
             badCollector.collectExtraColumns( "a,b,c", 1, "a" );
-            assertEquals( "Output stream should not have any reported entries", 0, outputStream.size() );
+            assertEquals( 0, outputStream.size(), "Output stream should not have any reported entries" );
         }
     }
 

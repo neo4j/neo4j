@@ -21,7 +21,7 @@ package org.neo4j.server.web;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -31,7 +31,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.SuppressOutput;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class JettyThreadLimitIT
@@ -59,7 +59,7 @@ public class JettyThreadLimitIT
             CountDownLatch endLatch = loadThreadPool( threadPool, configuredMaxThreads + 1, startLatch );
             startLatch.await(); // Wait for threadPool to create threads
             int threads = threadPool.getThreads();
-            assertEquals( "Wrong number of threads in pool", configuredMaxThreads, threads );
+            assertEquals( configuredMaxThreads, threads, "Wrong number of threads in pool" );
             endLatch.countDown();
         }
         finally

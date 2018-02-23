@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.timeline;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -40,20 +40,21 @@ import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static java.util.Collections.sort;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 
 public class TestTimeline
 {
     private GraphDatabaseService db;
 
-    @Before
-    public void before()
+    @BeforeEach
+    public void before() throws Exception
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

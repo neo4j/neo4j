@@ -20,8 +20,8 @@
 package org.neo4j.bolt.v1.runtime.concurrent;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -42,9 +42,9 @@ import org.neo4j.logging.AssertableLogProvider;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyListOf;
@@ -67,7 +67,7 @@ public class RunnableBoltWorkerTest
     private LogService logService;
     private BoltStateMachine machine;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         internalLog = new AssertableLogProvider();

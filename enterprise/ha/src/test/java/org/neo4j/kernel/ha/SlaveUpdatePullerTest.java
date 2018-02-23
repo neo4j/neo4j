@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.OngoingStubbing;
 
@@ -49,9 +49,9 @@ import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -83,7 +83,7 @@ public class SlaveUpdatePullerTest
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Throwable
     {
         when( requestContextFactory.newRequestContext() ).thenReturn( new RequestContext( 42, 42, 42, 42, 42 ) );
@@ -95,7 +95,7 @@ public class SlaveUpdatePullerTest
         updatePuller.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Throwable
     {
         updatePuller.stop();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,16 +28,18 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.kernel.impl.store.record.Record.NOT_IN_USE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -49,23 +51,25 @@ public class LabelTokenStoreTest
     private final LogProvider logProvider = mock( LogProvider.class );
     private final DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
     private final PageCursor pageCursor = mock( PageCursor.class );
-    private final Config config = Config.defaults();
+    private final Config config = defaults();
 
     @Test
     public void forceGetRecordSkipInUsecheck() throws IOException
     {
         LabelTokenStore store = new UnusedLabelTokenStore();
         LabelTokenRecord record = store.getRecord( 7, store.newRecord(), FORCE );
-        assertFalse( "Record should not be in use", record.inUse() );
+        assertFalse( record.inUse(), "Record should not be in use" );
     }
 
-    @Test( expected = InvalidRecordException.class )
-    public void getRecord() throws IOException
+    @Test
+    public void getRecord()
     {
-        when( pageCursor.getByte() ).thenReturn( Record.NOT_IN_USE.byteValue() );
+        assertThrows( InvalidRecordException.class, () -> {
+            when( pageCursor.getByte() ).thenReturn( NOT_IN_USE.byteValue() );
 
-        LabelTokenStore store = new UnusedLabelTokenStore();
-        store.getRecord( 7, store.newRecord(), NORMAL );
+            LabelTokenStore store = new UnusedLabelTokenStore();
+            store.getRecord( 7, store.newRecord(), NORMAL );
+        } );
     }
 
     class UnusedLabelTokenStore extends LabelTokenStore
@@ -73,7 +77,7 @@ public class LabelTokenStoreTest
         UnusedLabelTokenStore() throws IOException
         {
             super( file, config, generatorFactory, cache, logProvider, dynamicStringStore,
-                    RecordFormatSelector.defaultFormat() );
+                    defaultFormat() );
             storeFile = mock( PagedFile.class );
 
             when( storeFile.io( any( Long.class ), any( Integer.class ) ) ).thenReturn( pageCursor );

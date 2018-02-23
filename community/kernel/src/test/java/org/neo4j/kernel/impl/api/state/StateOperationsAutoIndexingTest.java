@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -62,7 +62,7 @@ public class StateOperationsAutoIndexingTest
     private final StateHandlingStatementOperations context = new StateHandlingStatementOperations(
             storeLayer, idx, mock(ConstraintIndexCreator.class), mock(ExplicitIndexStore.class) );
 
-    @Before
+    @BeforeEach
     public void setup() throws InvalidTransactionTypeKernelException
     {
         when( idx.nodes() ).thenReturn( nodeOps );

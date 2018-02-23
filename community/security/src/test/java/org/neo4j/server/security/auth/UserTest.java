@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
