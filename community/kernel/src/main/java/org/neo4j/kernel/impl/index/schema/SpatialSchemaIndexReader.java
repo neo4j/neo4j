@@ -34,12 +34,10 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -128,7 +126,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
             client.initialize( descriptor, multiProgressor, query );
             SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
-            Envelope completeEnvelope = SpatialKnownIndex.envelopeFromCRS( spatial.crs );
+            Envelope completeEnvelope = SpatialCRSSchemaIndex.envelopeFromCRS( spatial.crs );
             double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
             Envelope envelope = new Envelope( from, to );

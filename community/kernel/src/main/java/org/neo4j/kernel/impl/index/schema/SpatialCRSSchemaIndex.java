@@ -65,18 +65,17 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
 
 /**
- * An instance of this class represents a dynamically created sub-index specific to a particular coordinate reference system.
+ * A dynamically created sub-index specific to a particular coordinate reference system.
  * This allows the fusion index design to be extended to an unknown number of sub-indexes, one for each CRS.
  */
-public class SpatialKnownIndex
+public class SpatialCRSSchemaIndex
 {
     private UniqueIndexSampler uniqueSampler;
     private final File indexFile;
     private final PageCache pageCache;
+    private final IndexDescriptor descriptor;
     private final CoordinateReferenceSystem crs;
-    private final long indexId;
     private final FileSystemAbstraction fs;
-    private final SchemaIndexProvider.Monitor monitor;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final SpaceFillingCurve curve;
 
@@ -92,18 +91,19 @@ public class SpatialKnownIndex
     private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> workSync;
     private DefaultNonUniqueIndexSampler generalSampler;
 
-    /**
-     * Create a representation of a spatial index for a specific coordinate reference system.
-     * This constructor should be used for first time creation.
-     */
-    public SpatialKnownIndex( IndexDirectoryStructure directoryStructure, CoordinateReferenceSystem crs, long indexId, PageCache pageCache,
-            FileSystemAbstraction fs, SchemaIndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public SpatialCRSSchemaIndex( IndexDescriptor descriptor,
+            IndexDirectoryStructure directoryStructure,
+            CoordinateReferenceSystem crs,
+            long indexId,
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            SchemaIndexProvider.Monitor monitor,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
+        this.descriptor = descriptor;
         this.crs = crs;
-        this.indexId = indexId;
         this.pageCache = pageCache;
         this.fs = fs;
-        this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
 
         // Depends on crs
@@ -125,25 +125,31 @@ public class SpatialKnownIndex
             throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + crs );
         }
         state = State.NONE;
+
+        layout = layout( descriptor );
+        treeKey = layout.newKey();
+        treeValue = layout.newValue();
+        schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
+
     }
 
     /**
      * Makes sure that the index is initialized
      */
-    public void init( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public void init( IndexSamplingConfig samplingConfig )
     {
         if ( state == State.NONE )
         {
-            initialize( descriptor, samplingConfig );
+            initialize( samplingConfig );
         }
     }
 
     /**
      * Makes sure that the index is ready to populate
      */
-    public void startPopulation( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public void startPopulation( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        init( descriptor, samplingConfig );
+        init( samplingConfig );
         if ( state == State.INIT )
         {
             // First add to sub-index, make sure to create
@@ -158,9 +164,9 @@ public class SpatialKnownIndex
     /**
      * Makes sure that the index is online
      */
-    public void takeOnline( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public void takeOnline( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        init( descriptor, samplingConfig );
+        init( samplingConfig );
         if ( !indexExists() )
         {
             throw new IOException( "Index file does not exist." );
@@ -175,14 +181,14 @@ public class SpatialKnownIndex
         }
     }
 
-    public IndexUpdater updaterWithCreate( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populating ) throws IOException
+    public IndexUpdater updaterWithCreate( IndexSamplingConfig samplingConfig, boolean populating ) throws IOException
     {
         if ( populating )
         {
             if ( state == State.NONE )
             {
                 // sub-index didn't exist, create in populating mode
-                initialize( descriptor, samplingConfig );
+                initialize( samplingConfig );
                 create();
             }
             return newPopulatingUpdater();
@@ -192,7 +198,7 @@ public class SpatialKnownIndex
             if ( state == State.NONE )
             {
                 // sub-index didn't exist, create and make it online
-                initialize( descriptor, samplingConfig );
+                initialize( samplingConfig );
                 create();
                 finishPopulation( true );
                 online();
@@ -434,13 +440,9 @@ public class SpatialKnownIndex
         state = State.POPULATING;
     }
 
-    private void initialize( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    private void initialize( IndexSamplingConfig samplingConfig )
     {
         assert state == State.NONE;
-        layout = layout( descriptor );
-        treeKey = layout.newKey();
-        treeValue = layout.newValue();
-        schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
         if ( isUnique( descriptor ) )
         {
             uniqueSampler = new UniqueIndexSampler();
@@ -552,7 +554,8 @@ public class SpatialKnownIndex
 
     public interface Factory
     {
-        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
+        SpatialCRSSchemaIndex selectAndCreate( IndexDescriptor descriptor,
+                Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
                 CoordinateReferenceSystem crs );
     }
 

@@ -38,17 +38,18 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implements SpatialKnownIndex.Factory
+public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implements SpatialCRSSchemaIndex.Factory
 {
     public static final String KEY = "spatial";
     public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    private static final Pattern CRS_DIR_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -56,7 +57,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    private Map<Long,Map<CoordinateReferenceSystem,SpatialKnownIndex>> indexes = new HashMap<>();
+    private Map<Long,Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex>> indexes = new HashMap<>();
 
     public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
@@ -68,7 +69,6 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
-        findAndCreateKnownSpatialIndexes();
     }
 
     @Override
@@ -87,7 +87,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         return new SpatialFusionIndexAccessor( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
     }
 
-    Map<CoordinateReferenceSystem,SpatialKnownIndex> indexesFor( long indexId )
+    Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexesFor( long indexId )
     {
         return indexes.computeIfAbsent( indexId, k -> new HashMap<>() );
     }
@@ -99,7 +99,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         {
             // This assumes a previous call to getInitialState returned that at least one index was failed
             // We find the first failed index failure message
-            for ( SpatialKnownIndex index : indexesFor( indexId ).values() )
+            for ( SpatialCRSSchemaIndex index : indexesFor( indexId ).values() )
             {
                 String indexFailure = index.readPopulationFailure( descriptor );
                 if ( indexFailure != null )
@@ -120,8 +120,12 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     {
         // loop through all files, check if file exists, then check state
         // if any have failed, return failed, else if any are populating return populating, else online
+
+        Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap = indexesFor( indexId );
+        findAndCreateSpatialIndex( indexMap, indexId, descriptor );
+
         InternalIndexState state = InternalIndexState.ONLINE;
-        for ( SpatialKnownIndex index : indexesFor( indexId ).values() )
+        for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
             try
             {
@@ -159,10 +163,12 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
+    public SpatialCRSSchemaIndex selectAndCreate( IndexDescriptor descriptor,
+            Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
     {
         return indexMap.computeIfAbsent( crs,
-                crsKey -> new SpatialKnownIndex( directoryStructure(), crsKey, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
+                crsKey -> new SpatialCRSSchemaIndex( descriptor, directoryStructure(), crsKey, indexId, pageCache, fs, monitor,
+                        recoveryCleanupWorkCollector ) );
     }
 
     /**
@@ -170,39 +176,26 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
      * provider/{indexId}/spatial/{crs-tableId}-{crs-code}/index-{indexId}
      * If a directory is found for a crs and it is missing the index file, the index will be marked as failed.
      */
-    private void findAndCreateKnownSpatialIndexes()
+    private void findAndCreateSpatialIndex( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor )
     {
-        Pattern pattern = Pattern.compile( "(\\d+)-(\\d+)" );
-        File rootDirectory = this.directoryStructure().rootDirectory();
-        if ( rootDirectory == null )
+        File directoryForIndex = this.directoryStructure().directoryForIndex( indexId );
+        if ( directoryForIndex != null )
         {
-            return;
-        }
-        File[] files = rootDirectory.listFiles();
-        if ( files != null )
-        {
-            for ( File file : files )
+            File[] crsDirs = directoryForIndex.listFiles();
+            if ( crsDirs != null )
             {
-                if ( file.isDirectory() )
+                for ( File crsDir : crsDirs )
                 {
-                    Integer indexId = Integer.valueOf( file.getName() );
-                    File[] subdirs = this.directoryStructure().directoryForIndex( indexId ).listFiles();
-                    if ( subdirs != null )
+                    Matcher m = CRS_DIR_PATTERN.matcher( crsDir.getName() );
+                    if ( m.matches() )
                     {
-                        for ( File subdir : subdirs )
+                        int tableId = Integer.parseInt( m.group( 1 ) );
+                        int code = Integer.parseInt( m.group( 2 ) );
+                        CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
+                        SpatialCRSSchemaIndex index = selectAndCreate( descriptor, indexMap, indexId, crs );
+                        if ( !index.indexExists() )
                         {
-                            Matcher m = pattern.matcher( subdir.getName() );
-                            if ( m.matches() )
-                            {
-                                int tableId = Integer.parseInt( m.group( 1 ) );
-                                int code = Integer.parseInt( m.group( 2 ) );
-                                CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-                                SpatialKnownIndex index = selectAndCreate( indexesFor( indexId ), indexId, crs );
-                                if ( !index.indexExists() )
-                                {
-                                    index.markAsFailed( "Index file was not found" );
-                                }
-                            }
+                            index.markAsFailed( "Index file was not found" );
                         }
                     }
                 }

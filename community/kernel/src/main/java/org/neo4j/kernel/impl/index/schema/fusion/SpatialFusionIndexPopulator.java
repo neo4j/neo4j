@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -46,11 +46,11 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     private final long indexId;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private final SpatialKnownIndex.Factory indexFactory;
-    private final Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap;
+    private final SpatialCRSSchemaIndex.Factory indexFactory;
+    private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
 
-    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, SpatialKnownIndex.Factory indexFactory )
+    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Factory indexFactory )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
@@ -73,7 +73,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void drop() throws IOException
     {
-        forAll( SpatialKnownIndex::drop, indexMap.values() );
+        forAll( SpatialCRSSchemaIndex::drop, indexMap.values() );
         indexMap.clear();
     }
 
@@ -87,8 +87,8 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         }
         for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
-            SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-            index.startPopulation( descriptor, samplingConfig );
+            SpatialCRSSchemaIndex index = indexFactory.selectAndCreate( descriptor, indexMap, indexId, crs );
+            index.startPopulation( samplingConfig );
             index.add( batchMap.get( crs ) );
         }
     }
@@ -131,14 +131,14 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         Value[] values = update.values();
         assert values.length == 1;
         CoordinateReferenceSystem crs = ((PointValue) values[0]).getCoordinateReferenceSystem();
-        SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-        index.init( descriptor, samplingConfig );
+        SpatialCRSSchemaIndex index = indexFactory.selectAndCreate( descriptor, indexMap, indexId, crs );
+        index.init( samplingConfig );
         index.includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( indexMap.values().stream().map( SpatialKnownIndex::sampleResult ).toArray( IndexSample[]::new ) );
+        return combineSamples( indexMap.values().stream().map( SpatialCRSSchemaIndex::sampleResult ).toArray( IndexSample[]::new ) );
     }
 }

@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -47,30 +47,30 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class SpatialFusionIndexAccessor implements IndexAccessor
 {
-    private final Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap;
+    private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
     private final long indexId;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private final SpatialKnownIndex.Factory indexFactory;
+    private final SpatialCRSSchemaIndex.Factory indexFactory;
 
-    SpatialFusionIndexAccessor( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, SpatialKnownIndex.Factory indexFactory ) throws IOException
+    SpatialFusionIndexAccessor( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Factory indexFactory ) throws IOException
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.indexFactory = indexFactory;
-        for ( SpatialKnownIndex index : indexMap.values() )
+        for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
-            index.takeOnline(descriptor, samplingConfig);
+            index.takeOnline( samplingConfig );
         }
     }
 
     @Override
     public void drop() throws IOException
     {
-        forAll( SpatialKnownIndex::drop, indexMap.values() );
+        forAll( SpatialCRSSchemaIndex::drop, indexMap.values() );
         indexMap.clear();
     }
 
@@ -83,7 +83,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        forAll( spatialKnownIndex -> spatialKnownIndex.force( ioLimiter ), indexMap.values() );
+        forAll( spatialCRSSchemaIndex -> spatialCRSSchemaIndex.force( ioLimiter ), indexMap.values() );
     }
 
     @Override
@@ -95,14 +95,14 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     @Override
     public void close() throws IOException
     {
-        forAll( SpatialKnownIndex::close, indexMap.values() );
+        forAll( SpatialCRSSchemaIndex::close, indexMap.values() );
     }
 
     @Override
     public IndexReader newReader()
     {
         Map<CoordinateReferenceSystem,IndexReader> indexReaders = new HashMap<>();
-        for ( Map.Entry<CoordinateReferenceSystem,SpatialKnownIndex> index : indexMap.entrySet() )
+        for ( Map.Entry<CoordinateReferenceSystem,SpatialCRSSchemaIndex> index : indexMap.entrySet() )
         {
             // TODO should this be populated here, or delegate to SpatialFusionIndexReader?
             indexReaders.put( index.getKey(), index.getValue().newReader( samplingConfig, descriptor ) );
@@ -114,7 +114,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     public BoundedIterable<Long> newAllEntriesReader()
     {
         ArrayList<BoundedIterable<Long>> allEntriesReader = new ArrayList<>();
-        for ( SpatialKnownIndex index : indexMap.values() )
+        for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
             allEntriesReader.add( index.newAllEntriesReader() );
         }
@@ -151,7 +151,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         List<ResourceIterator<File>> snapshotFiles = new ArrayList<>();
-        for ( SpatialKnownIndex index : indexMap.values() )
+        for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
             snapshotFiles.add( index.snapshotFiles() );
         }
@@ -168,6 +168,6 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     @Override
     public boolean isDirty()
     {
-        return indexMap.values().stream().anyMatch( SpatialKnownIndex::wasDirtyOnStartup );
+        return indexMap.values().stream().anyMatch( SpatialCRSSchemaIndex::wasDirtyOnStartup );
     }
 }
