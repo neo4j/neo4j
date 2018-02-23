@@ -33,6 +33,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -44,7 +45,8 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
-public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
+public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
+        extends KernelAPIWriteTestBase<G>
 {
     @Test
     public void shouldSeeSingleRelationshipInTransaction() throws Exception
@@ -253,7 +255,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
             try ( NodeCursor node = cursors.allocateNodeCursor();
-                    RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+                  RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( "should access node", node.next() );
@@ -344,23 +346,29 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertTrue( "should access relationship", relationship.next() );
 
                 relationship.properties( property );
-                assertTrue( property.next() );
-                //First property
-                assertEquals( prop1, property.propertyKey() );
-                assertEquals( property.propertyValue(), stringValue( "hello" ) );
-                //second property
-                assertTrue( property.next() );
-                assertEquals( prop2, property.propertyKey() );
-                assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should only find two properties", property.next() );
+                while ( property.next() )
+                {
+                    if ( property.propertyKey() == prop1 )
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "hello" ) );
+                    }
+                    else if ( property.propertyKey() == prop2 )
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "world" ) );
+                    }
+                    else
+                    {
+                        fail( property.propertyKey() + " was not the property key you were looking for" );
+                    }
+                }
+
                 assertFalse( "should only find one relationship", relationship.next() );
             }
             tx.success();
         }
     }
 
-    //start here
     @Test
     public void shouldSeeAddedPropertyFromExistingRelationshipWithoutPropertiesInTransaction() throws Exception
     {
@@ -379,7 +387,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( Transaction tx = session.beginTransaction() )
         {
             int propToken = session.token().propertyKeyGetOrCreateForName( propKey );
-            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
 
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
@@ -421,7 +430,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
             propToken1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
-            assertEquals( write.relationshipSetProperty( relationshipId, propToken1, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken1, stringValue( "hello" ) ),
+                    NO_VALUE );
             tx.success();
         }
 
@@ -429,7 +439,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( Transaction tx = session.beginTransaction() )
         {
             propToken2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
-            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken2, stringValue( "world" ) ), NO_VALUE );
+            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken2, stringValue( "world" ) ),
+                    NO_VALUE );
 
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
@@ -439,17 +450,23 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
                 relationship.properties( property );
 
-                //property 2, start with tx state
-                assertTrue( property.next() );
-                assertEquals( propToken2, property.propertyKey() );
-                assertEquals( property.propertyValue(), stringValue( "world" ) );
+                while ( property.next() )
+                {
+                    if ( property.propertyKey() == propToken1 )//from disk
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "hello" ) );
 
-                //property 1, from disk
-                assertTrue( property.next() );
-                assertEquals( propToken1, property.propertyKey() );
-                assertEquals( property.propertyValue(), stringValue( "hello" ) );
+                    }
+                    else if ( property.propertyKey() == propToken2 )//from tx state
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "world" ) );
+                    }
+                    else
+                    {
+                        fail( property.propertyKey() + " was not the property you were looking for" );
+                    }
+                }
 
-                assertFalse( "should only find two properties", property.next() );
                 assertFalse( "should only find one relationship", relationship.next() );
             }
             tx.success();
@@ -476,7 +493,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
             propToken = session.token().propertyKeyGetOrCreateForName( propKey );
-            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
             tx.success();
         }
 
@@ -512,7 +530,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldSeeRemovedPropertyInTransaction() throws Exception
+    public void shouldNotSeeRemovedPropertyInTransaction() throws Exception
     {
         // Given
         long relationshipId;
@@ -524,14 +542,16 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
             propToken = session.token().propertyKeyGetOrCreateForName( propKey );
-            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
             tx.success();
         }
 
         // When/Then
         try ( Transaction tx = session.beginTransaction() )
         {
-            assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ), stringValue( "hello" ) );
+            assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ),
+                    stringValue( "hello" ) );
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
@@ -566,15 +586,18 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
             propToken = session.token().propertyKeyGetOrCreateForName( propKey );
-            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
             tx.success();
         }
 
         // When/Then
         try ( Transaction tx = session.beginTransaction() )
         {
-            assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ), stringValue( "hello" ) );
-            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ), NO_VALUE );
+            assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ),
+                    stringValue( "hello" ) );
+            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ),
+                    NO_VALUE );
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
@@ -702,7 +725,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     private Map<String,Integer> modifyStartNodeRelationships( RelationshipTestSupport.StartNode start, Transaction tx )
             throws KernelException
     {
-        Map<String, Integer> expectedCounts = new HashMap<>();
+        Map<String,Integer> expectedCounts = new HashMap<>();
         for ( Map.Entry<String,List<RelationshipTestSupport.StartRelationship>> kv : start.relationships.entrySet() )
         {
             List<RelationshipTestSupport.StartRelationship> rs = kv.getValue();

@@ -439,7 +439,6 @@ public class Operations implements Write, ExplicitIndexWrite
 
         if ( existingValue != NO_VALUE )
         {
-            //no existing value, we just add it
             autoIndexing.nodes().propertyRemoved( this, node, propertyKey);
             ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue);
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
@@ -486,7 +485,6 @@ public class Operations implements Write, ExplicitIndexWrite
 
         if ( existingValue != NO_VALUE )
         {
-            //no existing value, we just add it
             autoIndexing.relationships().propertyRemoved( this, relationship, propertyKey);
             ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey, existingValue);
         }
