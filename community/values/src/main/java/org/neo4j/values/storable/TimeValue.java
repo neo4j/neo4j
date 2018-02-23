@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandle;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -60,10 +61,10 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return time( hour, minute, second, nanosOfSecond, parseOffset( offset ) );
     }
 
-    public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneId offset )
+    public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneOffset offset )
     {
         return new TimeValue(
-                OffsetTime.ofInstant( Instant.ofEpochSecond( hour * 3600 + minute * 60 + second, nanosOfSecond ), offset) );
+                OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
     public static TimeValue time( long nanosOfDayUTC, ZoneId offset )
@@ -158,7 +159,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                         (int) safeCastIntegral( "minute", minute, 0 ),
                         (int) safeCastIntegral( "second", second, 0 ),
                         validNano( millisecond, microsecond, nanosecond ),
-                        timezone() );
+                        timezone().toString() );
             }
 
             private OffsetTime offsetTime( AnyValue value )

@@ -68,7 +68,6 @@ Feature: TemporalCreateAcceptance
       | '12:00'              |
     And no side effects
 
-    # TODO timezone does not get through
   Scenario: Should construct time
     Given an empty graph
     When executing query:
@@ -85,13 +84,7 @@ Feature: TemporalCreateAcceptance
               time({hour:12, minute:31, second:14, millisecond: 645, timezone: '+01:00'}),
               time({hour:12, minute:31, second:14, timezone: '+01:00'}),
               time({hour:12, minute:31, timezone: '+01:00'}),
-              time({hour:12, timezone: '+01:00'}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: 'Europe/Stockholm'}),
-              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: 'Europe/Stockholm'}),
-              time({hour:12, minute:31, second:14, millisecond: 645, timezone: 'Europe/Stockholm'}),
-              time({hour:12, minute:31, second:14, timezone: 'Europe/Stockholm'}),
-              time({hour:12, minute:31, timezone: 'Europe/Stockholm'}),
-              time({hour:12, timezone: 'Europe/Stockholm'})] as d
+              time({hour:12, timezone: '+01:00'})] as d
       RETURN d
       """
     Then the result should be, in order:
@@ -103,18 +96,12 @@ Feature: TemporalCreateAcceptance
       | '12:31:14Z' |
       | '12:31Z' |
       | '12:00Z' |
-      | '13:31:14.645876123+01:00' |
-      | '13:31:14.645876+01:00' |
-      | '13:31:14.645+01:00' |
-      | '13:31:14+01:00' |
-      | '13:31+01:00' |
-      | '13:00+01:00' |
-      | '13:31:14.645876123+01:00' |
-      | '13:31:14.645876+01:00' |
-      | '13:31:14.645+01:00' |
-      | '13:31:14+01:00' |
-      | '13:31+01:00' |
-      | '13:00+01:00' |
+      | '12:31:14.645876123+01:00' |
+      | '12:31:14.645876+01:00' |
+      | '12:31:14.645+01:00' |
+      | '12:31:14+01:00' |
+      | '12:31+01:00' |
+      | '12:00+01:00' |
     And no side effects
 
   Scenario: Should construct local date time
