@@ -21,6 +21,7 @@ package org.neo4j.scheduler;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -33,23 +34,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
- * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so on.
+ * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so
+ * on.
  */
 public interface JobScheduler extends Lifecycle
 {
     /**
      * Represents a common group of jobs, defining how they should be scheduled.
      */
-    class Group
+    final class Group
     {
         public static final String THREAD_ID = "thread-id";
-        public static final Map<String, String> NO_METADATA = Collections.emptyMap();
+        public static final Map<String,String> NO_METADATA = Collections.emptyMap();
 
         private final AtomicInteger threadCounter = new AtomicInteger();
         private final String name;
 
         public Group( String name )
         {
+            Objects.requireNonNull( name, "Group name cannot be null." );
             this.name = name;
         }
 
@@ -61,9 +64,10 @@ public interface JobScheduler extends Lifecycle
         /**
          * Name a new thread. This method may or may not be used, it is up to the scheduling strategy to decide
          * to honor this.
+         *
          * @param metadata comes from {@link #schedule(Group, Runnable, Map)}
          */
-        public String threadName( Map<String, String> metadata )
+        public String threadName( Map<String,String> metadata )
         {
             if ( metadata.containsKey( THREAD_ID ) )
             {
@@ -71,12 +75,35 @@ public interface JobScheduler extends Lifecycle
             }
             return "neo4j." + name() + "-" + threadCounter.incrementAndGet();
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Group group = (Group) o;
+
+            return name.equals( group.name );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return name.hashCode();
+        }
     }
 
     /**
      * This is an exhaustive list of job types that run in the database. It should be expanded as needed for new groups
      * of jobs.
-     *
+     * <p>
      * For now, this does minimal configuration, but opens up for things like common
      * failure handling, shared threads and affinity strategies.
      */
@@ -157,7 +184,7 @@ public interface JobScheduler extends Lifecycle
         /**
          * UDC timed events.
          */
-        public static final Group udc  = new Group( "UsageDataCollection" );
+        public static final Group udc = new Group( "UsageDataCollection" );
 
         /**
          * Storage maintenance.
@@ -251,10 +278,10 @@ public interface JobScheduler extends Lifecycle
      * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.
      * This is a lower-level alternative than {@link #executor(Group)}, where you are in control of when to spin
      * up new threads for your jobs.
-     *
+     * <p>
      * The lifecycle of the threads you get out of here are not managed by the JobScheduler, you own the lifecycle and
      * must start the thread before it can be used.
-     *
+     * <p>
      * This mechanism is strongly preferred over manually creating threads, as it allows a central place for record
      * keeping of thread creation, central place for customizing the threads based on their groups, and lays a
      * foundation for controlling things like thread affinity and priorities in a coordinated manner in the future.
@@ -265,7 +292,7 @@ public interface JobScheduler extends Lifecycle
     JobHandle schedule( Group group, Runnable job );
 
     /** Schedule a new job in the specified group, passing in metadata for the scheduling strategy to use. */
-    JobHandle schedule( Group group, Runnable job, Map<String, String> metadata );
+    JobHandle schedule( Group group, Runnable job, Map<String,String> metadata );
 
     /** Schedule a new job in the specified group with the given delay */
     JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit );

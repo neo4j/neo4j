@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.Future;
@@ -38,40 +38,58 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 import static org.neo4j.scheduler.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private ExecutorService globalPool;
-    private ScheduledThreadPoolExecutor scheduledExecutor;
+    private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger();
+    private static final Group SCHEDULER_GROUP = new Group( "Scheduler" );
 
-    // Contains JobHandles which hasn't been cancelled yet, this to be able to cancel those when shutting down
-    // This Set is synchronized, which is fine because there are only a handful of jobs generally and only
-    // added when starting a database.
-    private final Set<JobHandle> jobs = Collections.synchronizedSet( new HashSet<>() );
+    private ScheduledThreadPoolExecutor scheduledExecutor;
 
     // Contains workStealingExecutors for each group that have asked for one.
     // If threads need to be created, they need to be inside one of these pools.
     // We also need to remember to shutdown all pools when we shutdown the database to shutdown queries in an orderly fashion.
-    private final ConcurrentHashMap<Group,ExecutorService> workStealingExecutors = new ConcurrentHashMap<>( 1 );
+    private final ConcurrentHashMap<Group,ExecutorService> workStealingExecutors;
+
+    private final ThreadGroup topLevelGroup;
+    private final ConcurrentHashMap<Group,ThreadPool> pools;
+    private final Function<Group,ThreadPool> poolBuilder;
+
+    private volatile boolean started;
+
+    public Neo4jJobScheduler()
+    {
+        workStealingExecutors = new ConcurrentHashMap<>( 1 );
+        topLevelGroup = new ThreadGroup( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() + trackTest() );
+        pools = new ConcurrentHashMap<>();
+        poolBuilder = group -> new ThreadPool( group, topLevelGroup );
+    }
 
     @Override
     public void init()
     {
-        this.globalPool = newCachedThreadPool( daemon( "neo4j.Pooled" + trackTest() ) );
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 1, daemon( "neo4j.Scheduler" + trackTest() ) );
+        ThreadFactory threadFactory = new GroupedDaemonThreadFactory( SCHEDULER_GROUP, topLevelGroup );
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 1, threadFactory );
+        started = true;
+    }
+
+    private ThreadPool getThreadPool( Group group )
+    {
+        return pools.computeIfAbsent( group, poolBuilder );
     }
 
     @Override
-    public Executor executor( final Group group )
+    public Executor executor( Group group )
     {
         return job -> schedule( group, job );
     }
@@ -83,20 +101,15 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
-    public ThreadFactory threadFactory( final Group group )
+    public ThreadFactory threadFactory( Group group )
     {
-        return job -> createNewThread( group, job, NO_METADATA );
+        return getThreadPool( group ).getThreadFactory();
     }
 
     private ExecutorService createNewWorkStealingExecutor( Group group, int parallelism )
     {
-        final ForkJoinPool.ForkJoinWorkerThreadFactory factory = pool ->
-        {
-            final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread( pool );
-            worker.setName( group.threadName( new HashMap<>() ) );
-            return worker;
-        };
-
+        ForkJoinPool.ForkJoinWorkerThreadFactory factory =
+                new GroupedDaemonThreadFactory( group, topLevelGroup );
         return new ForkJoinPool( parallelism, factory, null, false );
     }
 
@@ -109,41 +122,12 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
-        if ( globalPool == null )
+        if ( !started )
         {
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
-
-        return register( new PooledJobHandle( globalPool.submit( job ) ) );
-    }
-
-    private JobHandle register( PooledJobHandle pooledJobHandle )
-    {
-        jobs.add( pooledJobHandle );
-
-        // Return a JobHandle which removes itself from this register,
-        // otherwise functions like the supplied handle
-        return new JobHandle()
-        {
-            @Override
-            public void waitTermination() throws InterruptedException, ExecutionException
-            {
-                pooledJobHandle.waitTermination();
-            }
-
-            @Override
-            public void cancel( boolean mayInterruptIfRunning )
-            {
-                pooledJobHandle.cancel( mayInterruptIfRunning );
-                jobs.remove( pooledJobHandle );
-            }
-
-            @Override
-            public void registerCancelListener( CancelListener listener )
-            {
-                pooledJobHandle.registerCancelListener( listener );
-            }
-        };
+        ThreadPool threadPool = getThreadPool( group );
+        return threadPool.submit( job );
     }
 
     @Override
@@ -175,60 +159,26 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void shutdown()
     {
-        RuntimeException exception = null;
-        try
-        {
-            // Cancel jobs which hasn't been cancelled already, this to avoid having to wait the full
-            // max wait time and then just leave them.
-            jobs.forEach( handle -> handle.cancel( true ) );
-            jobs.clear();
+        started = false;
 
-            shutdownPool( globalPool );
-        }
-        catch ( RuntimeException e )
-        {
-            exception = e;
-        }
-        finally
-        {
-            globalPool = null;
-        }
+        // Cancel jobs which hasn't been cancelled already, this to avoid having to wait the full
+        // max wait time and then just leave them.
+        pools.forEach( (group,pool) -> pool.cancelAllJobs() );
+        pools.forEach( (group,pool) -> pool.shutDown() );
+        InterruptedException exception = pools.values().stream().reduce( null,
+                ( e, p ) -> Exceptions.chain( e, p.shutdownInterrupted ), Exceptions::chain );
 
-        try
-        {
-            shutdownPool( scheduledExecutor );
-        }
-        catch ( RuntimeException e )
-        {
-            exception = Exceptions.chain( exception, e );
-        }
-        finally
-        {
-            scheduledExecutor = null;
-        }
+        ScheduledThreadPoolExecutor executor = scheduledExecutor;
+        scheduledExecutor = null;
+        exception = shutdownPool( executor, exception );
 
-        for ( ExecutorService executor : workStealingExecutors.values() )
+        for ( ExecutorService workStealingExecutor : workStealingExecutors.values() )
         {
-            try
-            {
-                shutdownPool( executor );
-            }
-            catch ( RuntimeException e )
-            {
-                exception = Exceptions.chain( exception, e );
-            }
-            finally
-            {
-                scheduledExecutor = null;
-            }
+            exception = shutdownPool( workStealingExecutor, exception );
         }
+        workStealingExecutors.clear();
 
         if ( exception != null )
         {
@@ -236,7 +186,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         }
     }
 
-    private void shutdownPool( ExecutorService pool )
+    private InterruptedException shutdownPool( ExecutorService pool, InterruptedException exception )
     {
         if ( pool != null )
         {
@@ -247,20 +197,10 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             }
             catch ( InterruptedException e )
             {
-                throw new RuntimeException( e );
+                return Exceptions.chain( exception, e );
             }
         }
-    }
-
-    /**
-     * Used to spin up new threads for groups or access-patterns that don't use the pooled thread options.
-     * The returned thread is not started, to allow users to modify it before setting it in motion.
-     */
-    private Thread createNewThread( Group group, Runnable job, Map<String,String> metadata )
-    {
-        Thread thread = new Thread( null, job, group.threadName( metadata ) );
-        thread.setDaemon( true );
-        return thread;
+        return exception;
     }
 
     private static class PooledJobHandle implements JobHandle
@@ -296,7 +236,25 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         }
     }
 
-    private static class ScheduledTask implements Runnable, CancelListener
+    private static class RegisteringPooledJobHandle extends PooledJobHandle
+    {
+        private final Set<JobHandle> register;
+
+        RegisteringPooledJobHandle( Future<?> job, Set<JobHandle> register )
+        {
+            super( job );
+            this.register = register;
+        }
+
+        @Override
+        public void cancel( boolean mayInterruptIfRunning )
+        {
+            super.cancel( mayInterruptIfRunning );
+            register.remove( this );
+        }
+    }
+
+    private static final class ScheduledTask implements Runnable, CancelListener
     {
         private final JobScheduler scheduler;
         private final Group group;
@@ -323,6 +281,100 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             if ( handle != null )
             {
                 handle.cancel( mayInterruptIfRunning );
+            }
+        }
+    }
+
+    private static class GroupedDaemonThreadFactory implements ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory
+    {
+        private final Group group;
+        private final ThreadGroup threadGroup;
+
+        private GroupedDaemonThreadFactory( Group group, ThreadGroup parentThreadGroup )
+        {
+            this.group = group;
+            threadGroup = new ThreadGroup( parentThreadGroup, group.name() );
+        }
+
+        @Override
+        public Thread newThread( @SuppressWarnings( "NullableProblems" ) Runnable job )
+        {
+            Thread thread = new Thread( threadGroup, job, group.threadName( NO_METADATA ) );
+            thread.setDaemon( true );
+            return thread;
+        }
+
+        @Override
+        public ForkJoinWorkerThread newThread( ForkJoinPool pool )
+        {
+            // We do this complicated dance of allocating the ForkJoinThread in a separate thread,
+            // because there is no way to give it a specific ThreadGroup, other than through inheritance
+            // from the allocating thread.
+            ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
+            AtomicReference<ForkJoinWorkerThread> reference = new AtomicReference<>();
+            Thread allocator = newThread( () ->  reference.set( factory.newThread( pool ) ) );
+            allocator.start();
+            do
+            {
+                try
+                {
+                    allocator.join();
+                }
+                catch ( InterruptedException ignore )
+                {
+                }
+            }
+            while ( reference.get() == null );
+            ForkJoinWorkerThread worker = reference.get();
+            worker.setName( group.threadName( NO_METADATA ) );
+            return worker;
+        }
+    }
+
+    private static final class ThreadPool
+    {
+        private final GroupedDaemonThreadFactory threadFactory;
+        private final ExecutorService executor;
+        private final Set<JobHandle> jobs;
+        private InterruptedException shutdownInterrupted;
+
+        private ThreadPool( Group group, ThreadGroup parentThreadGroup )
+        {
+            threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
+            executor = Executors.newCachedThreadPool( threadFactory );
+            jobs = Collections.synchronizedSet( new HashSet<>() );
+        }
+
+        public ThreadFactory getThreadFactory()
+        {
+            return threadFactory;
+        }
+
+        public JobHandle submit( Runnable job )
+        {
+            Future<?> future = executor.submit( job );
+            return new RegisteringPooledJobHandle( future, jobs );
+        }
+
+        void cancelAllJobs()
+        {
+            jobs.removeIf( handle ->
+            {
+                handle.cancel( true );
+                return true;
+            } );
+        }
+
+        void shutDown()
+        {
+            executor.shutdown();
+            try
+            {
+                executor.awaitTermination( 30, TimeUnit.SECONDS );
+            }
+            catch ( InterruptedException e )
+            {
+                shutdownInterrupted = e;
             }
         }
     }

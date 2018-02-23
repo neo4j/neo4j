@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,13 +44,9 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
-import static org.neo4j.test.ReflectionUtil.replaceValueInPrivateField;
 
 public class Neo4jJobSchedulerTest
 {
@@ -187,37 +181,6 @@ public class Neo4jJobSchedulerTest
         while ( System.nanoTime() < deadline );
         fail( "Only managed to start " + startedCounter.get() + " tasks in 10 seconds, when " +
               handles.size() + " was expected." );
-    }
-
-    @Test
-    public void shouldNotSwallowExceptions() throws Exception
-    {
-        // given
-        Neo4jJobScheduler neo4jJobScheduler = new Neo4jJobScheduler();
-        neo4jJobScheduler.init();
-
-        // mock stuff
-        ExecutorService es = mock( ExecutorService.class );
-        doThrow( new RuntimeException( "ES" ) ).when( es ).shutdown();
-        replaceValueInPrivateField( neo4jJobScheduler, "globalPool", ExecutorService.class, es );
-        ScheduledThreadPoolExecutor stpe = mock( ScheduledThreadPoolExecutor.class );
-        doThrow( new RuntimeException( "STPE" ) ).when( stpe ).shutdown();
-        replaceValueInPrivateField( neo4jJobScheduler, "scheduledExecutor", ScheduledThreadPoolExecutor.class, stpe );
-
-        // when
-        try
-        {
-            neo4jJobScheduler.shutdown();
-        }
-        catch ( RuntimeException t )
-        {
-            // then
-            assertEquals( "Unable to shut down job scheduler properly.", t.getMessage() );
-            Throwable inner = t.getCause();
-            assertEquals( "ES", inner.getMessage() );
-            assertEquals( 1, inner.getSuppressed().length );
-            assertEquals( "STPE", inner.getSuppressed()[0].getMessage() );
-        }
     }
 
     @Test
