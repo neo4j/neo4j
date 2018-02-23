@@ -20,6 +20,7 @@
 package org.neo4j.values.utils;
 
 import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Values;
@@ -47,6 +48,26 @@ public final class ValueMath
     public static LongValue add( long a, long b )
     {
         return longValue( Math.addExact( a, b ) );
+    }
+
+    /**
+     * Overflow safe addition of two number values.
+     *
+     * Will not overflow but instead widen the type as necessary.
+     * @param a left-hand operand
+     * @param b right-hand operand
+     * @return a + b
+     */
+    public static NumberValue overflowSafeAdd( NumberValue a, NumberValue b )
+    {
+        if ( a instanceof IntegralValue && b instanceof IntegralValue )
+        {
+            return overflowSafeAdd( a.longValue(), b.longValue() );
+        }
+        else
+        {
+            return a.plus( b );
+        }
     }
 
     /**

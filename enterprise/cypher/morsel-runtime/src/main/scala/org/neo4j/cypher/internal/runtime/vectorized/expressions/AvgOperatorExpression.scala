@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.symbols.CTAny
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.{LongValue, NumberValue, Values}
+import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 /*
@@ -54,7 +55,7 @@ class AvgMapper(value: Expression) extends AggregationMapper {
     case Values.NO_VALUE =>
     case number: NumberValue =>
       count += 1
-      sum = sum.plus(number)
+      sum = overflowSafeAdd(sum, number);
   }
 }
 
@@ -68,7 +69,7 @@ class AvgReducer extends AggregationReducer {
   override def reduce(value: AnyValue): Unit = value match {
     case l: ListValue =>
       count += l.value(0).asInstanceOf[LongValue].longValue()
-      sum = sum.plus(l.value(1).asInstanceOf[NumberValue])
+      sum = overflowSafeAdd(sum, l.value(1).asInstanceOf[NumberValue]);
     case _ =>
   }
 }
