@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public class DateTimeArray extends TemporalArray<ZonedDateTime, DateTimeValue>
+public class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeValue>
 {
     private final ZonedDateTime[] value;
 
@@ -55,18 +55,24 @@ public class DateTimeArray extends TemporalArray<ZonedDateTime, DateTimeValue>
     @Override
     public boolean equals( ZonedDateTime[] x )
     {
-        return Arrays.equals( value, x);
+        return Arrays.equals( value, x );
     }
 
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writeTo( writer, ValueWriter.ArrayType.ZONED_DATE_TIME ,value );
+        writeTo( writer, ValueWriter.ArrayType.ZONED_DATE_TIME, value );
     }
 
     @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.ZONED_DATE_TIME_ARRAY;
+    }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareToNonPrimitiveArray( (DateTimeArray) otherValue );
     }
 }

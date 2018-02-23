@@ -81,4 +81,10 @@ public class PointArray extends NonPrimitiveArray<PointValue>
     {
         return Values.point( value[offset] );
     }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareToNonPrimitiveArray( (PointArray) otherValue );
+    }
 }

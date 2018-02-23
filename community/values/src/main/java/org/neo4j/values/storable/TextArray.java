@@ -23,9 +23,10 @@ public abstract class TextArray extends ArrayValue
 {
     public abstract String stringValue( int offset );
 
-    public int compareTo( TextArray other )
+    @Override
+    int unsafeCompareTo( Value otherValue )
     {
-        return TextValues.compareTextArrays( this, other );
+        return TextValues.compareTextArrays( this, (TextArray) otherValue );
     }
 
     @Override

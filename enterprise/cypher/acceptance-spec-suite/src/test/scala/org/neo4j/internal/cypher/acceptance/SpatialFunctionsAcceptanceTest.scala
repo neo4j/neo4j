@@ -19,7 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
@@ -221,6 +224,69 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
+  }
+
+  // TODO add 3D here too
+  test("inequality on cartesian points") {
+    // case same point
+    shouldCompareLike("point({x: 0, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = false)
+
+    // case top right quadrant
+    shouldCompareLike("point({x: 1, y: 1})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
+    // case bottom left quadrant
+    shouldCompareLike("point({x: -1, y: -1})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
+    // case top left quadrant
+    shouldCompareLike("point({x: -1, y: 1})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
+    // case bottom right quadrant
+    shouldCompareLike("point({x: 1, y: -1})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
+
+    // case staight top
+    shouldCompareLike("point({x: 0, y: 1})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
+    // case staight right
+    shouldCompareLike("point({x: 1, y: 0})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
+    // case staight bottom
+    shouldCompareLike("point({x: 0, y: -1})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
+    // case staight left
+    shouldCompareLike("point({x: -1, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
+  }
+
+  // TODO what about the poles!?
+  test("inequality on geographic points") {
+    // case same point
+    shouldCompareLike("point({longitude: 0, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = false)
+
+    // case top right quadrant
+    shouldCompareLike("point({longitude: 1, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
+    // case bottom left quadrant
+    shouldCompareLike("point({longitude: -1, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+    // case top left quadrant
+    shouldCompareLike("point({longitude: -1, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = null, aSmallerB = null)
+    // case bottom right quadrant
+    shouldCompareLike("point({longitude: 1, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = null, aSmallerB = null)
+
+    // case staight top
+    shouldCompareLike("point({longitude: 0, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
+    // case staight right
+    shouldCompareLike("point({longitude: 1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
+    // case staight bottom
+    shouldCompareLike("point({longitude: 0, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+    // case staight left
+    shouldCompareLike("point({longitude: -1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+  }
+
+  test("inequality on mixed points") {
+    shouldCompareLike("point({longitude: 0, latitude: 0})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
+  }
+
+  private def shouldCompareLike(a: String, b: String, aBiggerB: Any, aSmallerB: Any) = {
+    val query =
+      s"""WITH $a as a, $b as b
+        |RETURN a > b, a < b
+      """.stripMargin
+
+    val pointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
+    val result = executeWith(pointConfig, query).toList
+    result should equal(List(Map("a > b" -> aBiggerB, "a < b" -> aSmallerB)))
   }
 
   test("array of points should be assignable to node property") {

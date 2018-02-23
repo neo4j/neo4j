@@ -102,4 +102,10 @@ final class NoValue extends Value
     {
         return NumberType.NO_NUMBER;
     }
+
+    @Override
+    int unsafeCompareTo( Value other )
+    {
+        return 0;
+    }
 }

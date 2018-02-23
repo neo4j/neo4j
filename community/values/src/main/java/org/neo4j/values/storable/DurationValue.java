@@ -237,9 +237,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         this.nanos = (int) nanos;
     }
 
+    @Override
     public int compareTo( DurationValue other )
     {
         return COMPARATOR.compare( this, other );
+    }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareTo( (DurationValue) otherValue );
     }
 
     private long averageLengthInSeconds()

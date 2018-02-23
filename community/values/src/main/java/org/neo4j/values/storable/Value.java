@@ -170,6 +170,17 @@ public abstract class Value extends AnyValue
         return false;
     }
 
+    abstract int unsafeCompareTo( Value other );
+
+    /**
+     * Should return {@code null} for values that cannot be compared
+     * under Comparability semantics.
+     */
+    Integer unsafeTernaryCompareTo( Value other )
+    {
+        return unsafeCompareTo( other );
+    }
+
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {

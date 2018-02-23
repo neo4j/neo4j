@@ -69,4 +69,10 @@ public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
     {
         return ValueGroup.ZONED_TIME_ARRAY;
     }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareToNonPrimitiveArray( (TimeArray) otherValue );
+    }
 }
