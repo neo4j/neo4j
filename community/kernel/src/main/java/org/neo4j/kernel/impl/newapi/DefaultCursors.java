@@ -19,7 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
+
+import static java.lang.String.format;
 
 public class DefaultCursors implements CursorFactory
 {
@@ -33,12 +42,15 @@ public class DefaultCursors implements CursorFactory
     private DefaultNodeExplicitIndexCursor nodeExplicitIndexCursor;
     private DefaultRelationshipExplicitIndexCursor relationshipExplicitIndexCursor;
 
+    private static final boolean DEBUG_CLOSING = false;
+    private List<CloseableStacktrace> closeables = new ArrayList<>();
+
     @Override
     public DefaultNodeCursor allocateNodeCursor()
     {
         if ( nodeCursor == null )
         {
-            return new DefaultNodeCursor( this );
+            return trace( new DefaultNodeCursor( this ) );
         }
 
         try
@@ -65,7 +77,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipScanCursor == null )
         {
-            return new DefaultRelationshipScanCursor( this );
+            return trace( new DefaultRelationshipScanCursor( this ) );
         }
 
         try
@@ -92,7 +104,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipTraversalCursor == null )
         {
-            return new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( null ), this );
+            return trace( new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( null ), this ) );
         }
 
         try
@@ -119,7 +131,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( propertyCursor == null )
         {
-            return new DefaultPropertyCursor( this );
+            return trace( new DefaultPropertyCursor( this ) );
         }
 
         try
@@ -146,7 +158,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipGroupCursor == null )
         {
-            return new DefaultRelationshipGroupCursor( this );
+            return trace( new DefaultRelationshipGroupCursor( this ) );
         }
 
         try
@@ -173,7 +185,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeValueIndexCursor == null )
         {
-            return new DefaultNodeValueIndexCursor( this );
+            return trace( new DefaultNodeValueIndexCursor( this ) );
         }
 
         try
@@ -200,7 +212,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeLabelIndexCursor == null )
         {
-            return new DefaultNodeLabelIndexCursor( this );
+            return trace( new DefaultNodeLabelIndexCursor( this ) );
         }
 
         try
@@ -227,7 +239,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeExplicitIndexCursor == null )
         {
-            return new DefaultNodeExplicitIndexCursor( this );
+            return trace( new DefaultNodeExplicitIndexCursor( this ) );
         }
 
         try
@@ -254,7 +266,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipExplicitIndexCursor == null )
         {
-            return new DefaultRelationshipExplicitIndexCursor( this );
+            return trace( new DefaultRelationshipExplicitIndexCursor( this ) );
         }
 
         try
@@ -322,6 +334,56 @@ public class DefaultCursors implements CursorFactory
         {
             relationshipExplicitIndexCursor.release();
             relationshipExplicitIndexCursor = null;
+        }
+    }
+
+    private <T extends AutoCloseablePlus> T trace( T closeable )
+    {
+        if ( DEBUG_CLOSING )
+        {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            closeables.add( new CloseableStacktrace( closeable, Arrays.copyOfRange( stackTrace, 2, stackTrace.length ) ) );
+        }
+        return closeable;
+    }
+
+    void assertClosed()
+    {
+        if ( DEBUG_CLOSING )
+        {
+            for ( CloseableStacktrace c : closeables )
+            {
+                c.assertClosed();
+            }
+            closeables.clear();
+        }
+    }
+
+    static class CloseableStacktrace
+    {
+        private final AutoCloseablePlus c;
+        private final StackTraceElement[] stackTrace;
+
+        CloseableStacktrace( AutoCloseablePlus c, StackTraceElement[] stackTrace )
+        {
+            this.c = c;
+            this.stackTrace = stackTrace;
+        }
+
+        void assertClosed()
+        {
+            if ( !c.isClosed() )
+            {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                PrintStream printStream = new PrintStream( out );
+
+                for ( StackTraceElement traceElement : stackTrace )
+                {
+                    printStream.println( "\tat " + traceElement );
+                }
+                printStream.println();
+                throw new IllegalStateException( format( "Closeable %s was not closed!\n%s", c, out.toString() ) );
+            }
         }
     }
 }

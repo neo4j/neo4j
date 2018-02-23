@@ -37,7 +37,7 @@ class TaskCloser {
     if (!closed) {
       closed = true
       var foundException: Option[Throwable] = None
-      _tasks foreach {
+      _tasks.reverse foreach {
         f =>
           try {
             f(success)

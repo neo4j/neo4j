@@ -694,6 +694,7 @@ public class Operations implements Write, ExplicitIndexWrite
             relationshipCursor = null;
         }
 
+        cursors.assertClosed();
         cursors.release();
     }
 
