@@ -91,7 +91,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
-        log.error( "Fatal error occurred when handling a client connection: " + cause.getMessage(), cause );
+        log.error( "Fatal error occurred when handling a client connection: " + ctx.channel(), cause );
         close( ctx );
     }
 
