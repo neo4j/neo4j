@@ -61,17 +61,17 @@ public class SpatialFusionIndexPopulatorTest
     @Before
     public void setup() throws Exception
     {
-        SpatialCRSSchemaIndex.Factory indexFactory = mock( SpatialCRSSchemaIndex.Factory.class );
+        SpatialCRSSchemaIndex.Supplier indexSupplier = mock( SpatialCRSSchemaIndex.Supplier.class );
         IndexDescriptor descriptor = mock( IndexDescriptor.class );
 
         for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
         {
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
 
-            when( indexFactory.selectAndCreate( descriptor, indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
+            when( indexSupplier.get( descriptor, indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
         }
 
-        fusionIndexPopulator = new SpatialFusionIndexPopulator( indexMap, 0, descriptor, null, indexFactory );
+        fusionIndexPopulator = new SpatialFusionIndexPopulator( indexMap, 0, descriptor, null, indexSupplier );
     }
 
     @Test

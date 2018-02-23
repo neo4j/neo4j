@@ -46,17 +46,17 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     private final long indexId;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private final SpatialCRSSchemaIndex.Factory indexFactory;
+    private final SpatialCRSSchemaIndex.Supplier indexSupplier;
     private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
 
     SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Factory indexFactory )
+            IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Supplier indexSupplier )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
-        this.indexFactory = indexFactory;
+        this.indexSupplier = indexSupplier;
     }
 
     @Override
@@ -87,7 +87,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         }
         for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
-            SpatialCRSSchemaIndex index = indexFactory.selectAndCreate( descriptor, indexMap, indexId, crs );
+            SpatialCRSSchemaIndex index = indexSupplier.get( descriptor, indexMap, indexId, crs );
             index.startPopulation( samplingConfig );
             index.add( batchMap.get( crs ) );
         }
@@ -110,7 +110,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexFactory, descriptor, samplingConfig );
+        return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexSupplier, descriptor, samplingConfig );
     }
 
     @Override
@@ -131,7 +131,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         Value[] values = update.values();
         assert values.length == 1;
         CoordinateReferenceSystem crs = ((PointValue) values[0]).getCoordinateReferenceSystem();
-        SpatialCRSSchemaIndex index = indexFactory.selectAndCreate( descriptor, indexMap, indexId, crs );
+        SpatialCRSSchemaIndex index = indexSupplier.get( descriptor, indexMap, indexId, crs );
         index.init( samplingConfig );
         index.includeSample( update );
     }

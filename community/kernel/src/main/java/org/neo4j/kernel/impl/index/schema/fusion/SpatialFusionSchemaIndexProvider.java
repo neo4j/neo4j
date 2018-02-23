@@ -45,7 +45,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implements SpatialCRSSchemaIndex.Factory
+public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implements SpatialCRSSchemaIndex.Supplier
 {
     public static final String KEY = "spatial";
     public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -163,7 +163,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public SpatialCRSSchemaIndex selectAndCreate( IndexDescriptor descriptor,
+    public SpatialCRSSchemaIndex get( IndexDescriptor descriptor,
             Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
     {
         return indexMap.computeIfAbsent( crs,
@@ -192,7 +192,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
                         int tableId = Integer.parseInt( m.group( 1 ) );
                         int code = Integer.parseInt( m.group( 2 ) );
                         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-                        SpatialCRSSchemaIndex index = selectAndCreate( descriptor, indexMap, indexId, crs );
+                        SpatialCRSSchemaIndex index = get( descriptor, indexMap, indexId, crs );
                         if ( !index.indexExists() )
                         {
                             index.markAsFailed( "Index file was not found" );

@@ -58,7 +58,7 @@ public class SpatialFusionIndexUpdaterTest
     @Before
     public void setup() throws Exception
     {
-        SpatialCRSSchemaIndex.Factory indexFactory = mock( SpatialCRSSchemaIndex.Factory.class );
+        SpatialCRSSchemaIndex.Supplier indexSupplier = mock( SpatialCRSSchemaIndex.Supplier.class );
         IndexDescriptor descriptor = mock( IndexDescriptor.class );
         IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
 
@@ -66,15 +66,15 @@ public class SpatialFusionIndexUpdaterTest
         {
             updaterMap.put( crs, mock( IndexUpdater.class ) );
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
-            when( indexFactory.selectAndCreate( descriptor, indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
+            when( indexSupplier.get( descriptor, indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
             when( indexMap.get( crs ).updaterWithCreate( samplingConfig, true ) ).thenReturn( updaterMap.get( crs ) );
             when( indexMap.get( crs ).updaterWithCreate( samplingConfig, false ) ).thenReturn( updaterMap.get( crs ) );
         }
 
         fusionIndexAccessorUpdater = SpatialFusionIndexUpdater.updaterForAccessor(
-                indexMap, 0, indexFactory, descriptor, samplingConfig );
+                indexMap, 0, indexSupplier, descriptor, samplingConfig );
         fusionIndexPopulatorUpdater = SpatialFusionIndexUpdater.updaterForPopulator(
-                indexMap, 0, indexFactory, descriptor, samplingConfig );
+                indexMap, 0, indexSupplier, descriptor, samplingConfig );
     }
 
     @Test

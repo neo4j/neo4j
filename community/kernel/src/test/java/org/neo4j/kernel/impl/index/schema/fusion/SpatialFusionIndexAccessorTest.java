@@ -68,7 +68,7 @@ public class SpatialFusionIndexAccessorTest
     @Before
     public void setup() throws Exception
     {
-        SpatialCRSSchemaIndex.Factory indexFactory = mock( SpatialCRSSchemaIndex.Factory.class );
+        SpatialCRSSchemaIndex.Supplier indexFactory = mock( SpatialCRSSchemaIndex.Supplier.class );
 
         for ( CoordinateReferenceSystem crs : asList( WGS84, Cartesian ) )
         {

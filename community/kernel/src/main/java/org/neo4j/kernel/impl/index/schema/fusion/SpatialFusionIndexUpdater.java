@@ -40,29 +40,33 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
     private final Map<CoordinateReferenceSystem,IndexUpdater> currentUpdaters = new HashMap<>();
     private final long indexId;
-    private final SpatialCRSSchemaIndex.Factory indexFactory;
+    private final SpatialCRSSchemaIndex.Supplier indexSupplier;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
     private final boolean populating;
 
     static SpatialFusionIndexUpdater updaterForAccessor( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
-            SpatialCRSSchemaIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            SpatialCRSSchemaIndex.Supplier indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, false );
     }
 
     static SpatialFusionIndexUpdater updaterForPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
-            SpatialCRSSchemaIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            SpatialCRSSchemaIndex.Supplier indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, true );
     }
 
-    private SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, SpatialCRSSchemaIndex.Factory indexFactory,
-            IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populating )
+    private SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap,
+                                       long indexId,
+                                       SpatialCRSSchemaIndex.Supplier indexSupplier,
+                                       IndexDescriptor descriptor,
+                                       IndexSamplingConfig samplingConfig,
+                                       boolean populating )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
-        this.indexFactory = indexFactory;
+        this.indexSupplier = indexSupplier;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.populating = populating;
@@ -112,7 +116,7 @@ class SpatialFusionIndexUpdater implements IndexUpdater
         {
             return updater;
         }
-        SpatialCRSSchemaIndex index = indexFactory.selectAndCreate( descriptor, indexMap, indexId, crs );
+        SpatialCRSSchemaIndex index = indexSupplier.get( descriptor, indexMap, indexId, crs );
         IndexUpdater indexUpdater = index.updaterWithCreate( samplingConfig, populating );
         return remember( crs, indexUpdater );
     }

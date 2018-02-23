@@ -552,9 +552,9 @@ public class SpatialCRSSchemaIndex
         FAILED
     }
 
-    public interface Factory
+    public interface Supplier
     {
-        SpatialCRSSchemaIndex selectAndCreate( IndexDescriptor descriptor,
+        SpatialCRSSchemaIndex get( IndexDescriptor descriptor,
                 Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
                 CoordinateReferenceSystem crs );
     }

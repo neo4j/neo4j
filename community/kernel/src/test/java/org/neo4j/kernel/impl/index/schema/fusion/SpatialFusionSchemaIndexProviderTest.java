@@ -118,9 +118,9 @@ public class SpatialFusionSchemaIndexProviderTest
         {
             PointValue point = (PointValue) spatialValue;
             CoordinateReferenceSystem crs = point.getCoordinateReferenceSystem();
-            SpatialCRSSchemaIndex index = provider.selectAndCreate( descriptor, indexMap, 0, point.getCoordinateReferenceSystem() );
+            SpatialCRSSchemaIndex index = provider.get( descriptor, indexMap, 0, point.getCoordinateReferenceSystem() );
             assertSame( indexMap.get( crs ), index );
-            index = provider.selectAndCreate( descriptor, indexMap, 0, crs );
+            index = provider.get( descriptor, indexMap, 0, crs );
             assertSame( indexMap.get( crs ), index );
         }
     }

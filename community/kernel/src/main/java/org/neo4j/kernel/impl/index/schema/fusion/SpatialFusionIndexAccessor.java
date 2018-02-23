@@ -51,10 +51,10 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     private final long indexId;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private final SpatialCRSSchemaIndex.Factory indexFactory;
+    private final SpatialCRSSchemaIndex.Supplier indexFactory;
 
     SpatialFusionIndexAccessor( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Factory indexFactory ) throws IOException
+            IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Supplier indexFactory ) throws IOException
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
