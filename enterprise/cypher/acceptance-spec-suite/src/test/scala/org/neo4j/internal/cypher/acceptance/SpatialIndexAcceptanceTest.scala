@@ -76,6 +76,32 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
   }
 
+  test("persisted indexed 3D point should be readable from node property") {
+    graph.createIndex("Place", "location")
+    createLabeledNode("Place")
+
+    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0}) RETURN p.location as point")
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
+
+    restartGraphDatabase()
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
+  }
+
+  test("persisted indexed 3D cartesian point should be readable from node property") {
+    graph.createIndex("Place", "location")
+    createLabeledNode("Place")
+
+    graph.execute("MATCH (p:Place) SET p.location = point({x: -1, y: 1, z: -1}) RETURN p.location as point")
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({x: -1, y: 1, z: -1}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -1, 1, -1))
+
+    restartGraphDatabase()
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({x: -1, y: 1, z: -1}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -1, 1, -1))
+  }
+
   test("create index after adding node and also survive restart") {
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
     graph.createIndex("Place", "location")
@@ -92,25 +118,41 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
 
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
     graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
-    //graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
-    //graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
 
     val query = "MATCH (p:Place) WHERE EXISTS(p.location) RETURN p.location AS point"
-    testPointScan(query, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7), Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
-/*    testPointScan(query,
+    testPointScan(query,
       Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
       Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78),
       Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))*/
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
 
     restartGraphDatabase()
 
-    testPointScan(query, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7), Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
-/*    testPointScan(query,
+    testPointScan(query,
       Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
       Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78),
       Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))*/
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
+  }
+
+  test("indexScan should handle multiple different types of 3D points and also survive restart") {
+    graph.createIndex("Place", "location")
+
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
+
+    val query = "MATCH (p:Place) WHERE EXISTS(p.location) RETURN p.location AS point"
+    testPointScan(query,
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
+
+    restartGraphDatabase()
+
+    testPointScan(query,
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
   }
 
   test("indexSeek should handle multiple different types of points and also survive restart") {
