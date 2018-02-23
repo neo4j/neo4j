@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -79,7 +78,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
             {
                 return null;
             }
-        }};
+        } };
 
         // Install the all-trusting trust manager
         SSLContext sc = SSLContext.getInstance( "TLS" );

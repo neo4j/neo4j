@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import javax.ws.rs.core.Response;
-
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;

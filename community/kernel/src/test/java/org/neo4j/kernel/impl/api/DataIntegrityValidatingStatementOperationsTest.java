@@ -24,9 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.mockito.stubbing.Answer;
-
-import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -54,7 +51,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForLabel;
@@ -274,25 +270,22 @@ public class DataIntegrityValidatingStatementOperationsTest
     @Test
     public void shouldFailNodeExistenceCreateOnRepeatedPropertyId()
     {
-        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.nodePropertyExistenceConstraintCreate( state, forLabel( 0, 1, 1 ) ) );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class,
+                () -> ops.nodePropertyExistenceConstraintCreate( state, forLabel( 0, 1, 1 ) ) );
     }
 
     @Test
     public void shouldFailRelExistenceCreateOnRepeatedPropertyId()
     {
-        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.relationshipPropertyExistenceConstraintCreate( state, forRelType( 0, 1, 1 ) ) );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class,
+                () -> ops.relationshipPropertyExistenceConstraintCreate( state, forRelType( 0, 1, 1 ) ) );
     }
 
     @Test
     public void shouldFailUniquenessCreateOnRepeatedPropertyId()
     {
-        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.uniquePropertyConstraintCreate( state, forLabel( 0, 1, 1 ) ) );
-    }
-
-    @SafeVarargs
-    private static <T> Answer<Iterator<T>> withIterator( final T... content )
-    {
-        return invocationOnMock -> iterator( content );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class,
+                () -> ops.uniquePropertyConstraintCreate( state, forLabel( 0, 1, 1 ) ) );
     }
 
     private final KernelStatement state = mockedState();
