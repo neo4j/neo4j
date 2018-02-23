@@ -19,7 +19,9 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,9 +31,15 @@ import static org.neo4j.values.storable.Values.floatValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortValue;
+import static org.neo4j.values.utils.ValueMath.overflowSafeAdd;
+import static org.neo4j.values.utils.ValueMath.overflowSafeMultiply;
+import static org.neo4j.values.utils.ValueMath.overflowSafeSubtract;
 
 public class NumberValueMathTest
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void shouldAddSimpleIntegers()
     {
@@ -86,7 +94,7 @@ public class NumberValueMathTest
         NumberValue[] integers =
                 new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
         NumberValue[] floats =
-                new NumberValue[]{floatValue( 42 ), doubleValue( 42 ) };
+                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
 
         for ( NumberValue a : integers )
         {
@@ -104,7 +112,7 @@ public class NumberValueMathTest
         NumberValue[] integers =
                 new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
         NumberValue[] floats =
-                new NumberValue[]{floatValue( 42 ), doubleValue( 42 ) };
+                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
 
         for ( NumberValue a : integers )
         {
@@ -122,33 +130,63 @@ public class NumberValueMathTest
         NumberValue[] integers =
                 new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
         NumberValue[] floats =
-                new NumberValue[]{floatValue( 42 ), doubleValue( 42 ) };
+                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
 
         for ( NumberValue a : integers )
         {
             for ( NumberValue b : floats )
             {
-                assertThat( a.times( b ), equalTo( doubleValue( 42 * 42) ) );
+                assertThat( a.times( b ), equalTo( doubleValue( 42 * 42 ) ) );
                 assertThat( b.times( a ), equalTo( doubleValue( 42 * 42 ) ) );
             }
         }
     }
 
     @Test
-    public void shouldNotOverflowOnAddition()
+    public void shouldFailOnOverflowingAdd()
     {
-        assertThat( longValue( Long.MAX_VALUE ).plus( longValue( 1 ) ), equalTo( doubleValue( (double) Long.MAX_VALUE + 1 ) ) );
+        //Expect
+        exception.expect( ArithmeticException.class );
+
+        //WHEN
+        longValue( Long.MAX_VALUE ).plus( longValue( 1 ) );
     }
 
     @Test
-    public void shouldNotOverflowOnSubtraction()
+    public void shouldFailOnOverflowingSubtraction()
     {
-        assertThat( longValue( Long.MAX_VALUE ).minus( longValue( -1 ) ), equalTo( doubleValue( (double) Long.MAX_VALUE + 1 ) ) );
+        //Expect
+        exception.expect( ArithmeticException.class );
+
+        //WHEN
+        longValue( Long.MAX_VALUE ).minus( longValue( -1 ) );
+    }
+
+    @Test
+    public void shouldFailOnOverflowingMultiplication()
+    {
+        //Expect
+        exception.expect( ArithmeticException.class );
+
+        //When
+        longValue( Long.MAX_VALUE ).times( 2 );
+    }
+
+    @Test
+    public void shouldNotOverflowOnSafeAddition()
+    {
+        assertThat( overflowSafeAdd( Long.MAX_VALUE, 1 ), equalTo( doubleValue( (double) Long.MAX_VALUE + 1 ) ) );
+    }
+
+    @Test
+    public void shouldNotOverflowOnSafeSubtraction()
+    {
+        assertThat( overflowSafeSubtract( Long.MAX_VALUE, -1 ), equalTo( doubleValue( (double) Long.MAX_VALUE + 1 ) ) );
     }
 
     @Test
     public void shouldNotOverflowOnMultiplication()
     {
-        assertThat( longValue( Long.MAX_VALUE ).times( 2 ), equalTo( doubleValue( (double) Long.MAX_VALUE * 2 ) ) );
+        assertThat( overflowSafeMultiply( Long.MAX_VALUE, 2 ), equalTo( doubleValue( (double) Long.MAX_VALUE * 2 ) ) );
     }
 }

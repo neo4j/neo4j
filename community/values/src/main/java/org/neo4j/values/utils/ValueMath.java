@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.utils;
 
+import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Values;
 
@@ -37,6 +39,18 @@ public final class ValueMath
 
     /**
      * Overflow safe addition of two longs
+     *
+     * @param a left-hand operand
+     * @param b right-hand operand
+     * @return a + b
+     */
+    public static LongValue add( long a, long b )
+    {
+        return longValue( Math.addExact( a, b ) );
+    }
+
+    /**
+     * Overflow safe addition of two longs
      * <p>
      * If the result doesn't fit in a long we widen type to use double instead.
      *
@@ -44,7 +58,7 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a + b
      */
-    public static NumberValue add( long a, long b )
+    public static NumberValue overflowSafeAdd( long a, long b )
     {
         long r = a + b;
         //Check if result overflows
@@ -62,9 +76,21 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a + b
      */
-    public static NumberValue add( double a, double b )
+    public static DoubleValue add( double a, double b )
     {
         return Values.doubleValue( a + b );
+    }
+
+    /**
+     * Overflow safe subtraction of two longs
+     *
+     * @param a left-hand operand
+     * @param b right-hand operand
+     * @return a - b
+     */
+    public static LongValue subtract( long a, long b )
+    {
+        return longValue( Math.subtractExact( a, b ) );
     }
 
     /**
@@ -76,7 +102,7 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a + b
      */
-    public static NumberValue subtract( long a, long b )
+    public static NumberValue overflowSafeSubtract( long a, long b )
     {
         long r = a - b;
         //Check if result overflows
@@ -94,9 +120,21 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a - b
      */
-    public static NumberValue subtract( double a, double b )
+    public static DoubleValue subtract( double a, double b )
     {
         return Values.doubleValue( a - b );
+    }
+
+    /**
+     * Overflow safe multiplication of two longs
+     *
+     * @param a left-hand operand
+     * @param b right-hand operand
+     * @return a * b
+     */
+    public static LongValue multiply( long a, long b )
+    {
+        return longValue( Math.multiplyExact( a, b ) );
     }
 
     /**
@@ -108,7 +146,7 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a * b
      */
-    public static NumberValue multiply( long a, long b )
+    public static NumberValue overflowSafeMultiply( long a, long b )
     {
         long r = a * b;
         //Check if result overflows
@@ -131,7 +169,7 @@ public final class ValueMath
      * @param b right-hand operand
      * @return a * b
      */
-    public static NumberValue multiply( double a, double b )
+    public static DoubleValue multiply( double a, double b )
     {
         return Values.doubleValue( a * b );
     }
