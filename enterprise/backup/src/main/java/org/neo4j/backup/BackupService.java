@@ -157,7 +157,7 @@ class BackupService
             storeCopier.copyStore(
                     storeCopyRequester,
                     CancellationRequest.NEVER_CANCELLED,
-                    MoveAfterCopy.moveReplaceExisting() );
+                    MoveAfterCopy.moveReplaceExisting(), false );
 
             bumpDebugDotLogFileVersion( targetDirectory, timestamp );
             boolean consistent = false;
@@ -187,7 +187,7 @@ class BackupService
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
 
-        Map<String,String> temporaryDbConfig = getTemporaryDbConfig( config );
+        Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
         config = config.with( temporaryDbConfig );
         try ( PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction(), config ) )
         {
@@ -212,13 +212,12 @@ class BackupService
         }
     }
 
-    private Map<String,String> getTemporaryDbConfig( Config userConfig )
+    private Map<String,String> getTemporaryDbConfig()
     {
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
-
-        // In case someone deleted the logical log from a full backup
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), "1 txs" );
+        tempDbConfig.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
         return tempDbConfig;
     }
 
