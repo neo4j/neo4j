@@ -132,19 +132,43 @@ object LdbcQueries {
                         | (ff21)-[:WORKS_AT {ff21WorkAtCompany1}]->(company1)""".stripMargin
 
 
-    val query = """MATCH (:Person {id:{1}})-[path:KNOWS*1..3]-(friend:Person)
-                  |WHERE friend.firstName = {2}
+    val query = """MATCH path=(:Person {id:{1}})-[:KNOWS*1..3]-(friend)
+                  |WHERE friend.firstName={2}
                   |WITH friend, min(length(path)) AS distance
                   |ORDER BY distance ASC, friend.lastName ASC, friend.id ASC
                   |LIMIT {3}
                   |MATCH (friend)-[:PERSON_IS_LOCATED_IN]->(friendCity:City)
                   |OPTIONAL MATCH (friend)-[studyAt:STUDY_AT]->(uni:University)-[:ORGANISATION_IS_LOCATED_IN]->(uniCity:City)
-                  |WITH friend, collect(CASE uni.name WHEN null THEN null ELSE [uni.name, studyAt.classYear, uniCity.name] END) AS unis, friendCity, distance
-                  |OPTIONAL MATCH (friend)-[worksAt:WORKS_AT]->(company:Company)-[:ORGANISATION_IS_LOCATED_IN]->(companyCountry:Country)
-                  |WITH friend, collect(CASE company.name WHEN null THEN null ELSE [company.name, worksAt.workFrom, companyCountry.name] END) AS companies, unis, friendCity, distance
-                  |RETURN friend.id AS id, friend.lastName AS lastName, distance, friend.birthday AS birthday, friend.creationDate AS creationDate, friend.gender AS gender, friend.browserUsed AS browser, friend.locationIP AS locationIp, friend.email AS emails, friend.languages AS languages, friendCity.name AS cityName, unis, companies
-                  |ORDER BY distance ASC, friend.lastName ASC, friend.id ASC
-                  |LIMIT {3}""".stripMargin
+                  |WITH friend,
+                  |     collect( CASE
+                  |                WHEN uni IS NULL THEN null
+                  |                ELSE [uni.name, studyAt.classYear, uniCity.name]
+                  |              END ) AS unis,
+                  |     friendCity,
+                  |     distance
+                  |OPTIONAL MATCH (friend)-[worksAt:WORKS_AT]->(company:Company)-[:ORGANISATION_IS_LOCATED_IN]->(country:Country)
+                  |WITH friend,
+                  |     collect( CASE
+                  |                WHEN company IS NULL THEN null
+                  |                ELSE [company.name, worksAt.workFrom, country.name]
+                  |              END ) AS companies,
+                  |     unis,
+                  |     friendCity,
+                  |     distance
+                  |RETURN friend.id AS id,
+                  |       friend.lastName AS lastName,
+                  |       distance,
+                  |       friend.birthday AS birthday,
+                  |       friend.creationDate AS creationDate,
+                  |       friend.gender AS gender,
+                  |       friend.browserUsed AS browser,
+                  |       friend.locationIP AS locationIp,
+                  |       friend.email AS emails,
+                  |       friend.languages AS languages,
+                  |       friendCity.name AS cityName,
+                  |       unis,
+                  |       companies
+                  |ORDER BY distance ASC, friend.lastName ASC, friend.id ASC""".stripMargin
 
     def createParams = Map("ff21" ->
       Map("id" -> 21, "languages" -> Seq.empty, "birthday" -> 21, "creationDate" -> 21, "lastName" -> "last21-ᚠさ丵פش", "browserUsed" -> "browser21", "email" -> Seq.empty, "locationIP" -> "ip21", "gender" -> "gender21", "firstName" -> "name1"), "company1" ->
@@ -271,10 +295,15 @@ object LdbcQueries {
         Map("content" -> "[p1Comment1] content", "id" -> 17, "creationDate" -> 1, "browserUsed" -> "browser1", "locationIP" -> "1"), "f4Post1" ->
         Map("content" -> "[f4Post1] content", "id" -> 4, "creationDate" -> 4, "browserUsed" -> "4", "locationIP" -> "4", "imageFile" -> "[f4Post1] image", "language" -> "4"))
 
-    val query = """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
-                  |WHERE message.creationDate <= {2} AND (message:Post OR message:Comment)
-                  |RETURN friend.id AS personId, friend.firstName AS personFirstName, friend.lastName AS personLastName, message.id AS messageId, CASE exists(message.content) WHEN true THEN message.content ELSE message.imageFile END AS messageContent,
-                  | message.creationDate AS messageDate
+    val query = """MATCH (:Person {id:{1}})-[:KNOWS]-(friend),
+                  |      (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
+                  |WHERE message.creationDate <= {2}
+                  |RETURN friend.id AS personId,
+                  |       friend.firstName AS personFirstName,
+                  |       friend.lastName AS personLastName,
+                  |       message.id AS messageId,
+                  |       coalesce(message.content, message.imageFile) AS messageContent,
+                  |       message.creationDate AS messageDate
                   |ORDER BY messageDate DESC, messageId ASC
                   |LIMIT {3}""".stripMargin
 
@@ -408,18 +437,35 @@ object LdbcQueries {
         Map("content" -> "[f3Post3] content", "id" -> 3, "creationDate" -> 946940400000L, "browserUsed" -> "browser3", "locationIP" -> "ip3", "imageFile" -> "image3", "language" -> "language3"), "f4Post1" ->
         Map("content" -> "[f4Post1] content", "id" -> 4, "creationDate" -> 946854000000L, "browserUsed" -> "browser4", "locationIP" -> "ip4", "imageFile" -> "image4", "language" -> "language4"))
 
-    val query = """MATCH (countryX:Country {name:{2}}), (countryY:Country {name:{3}}), (person:Person {id:{1}})
-                  |MATCH (person)-[:KNOWS*1..2]-(friend:Person)-[:PERSON_IS_LOCATED_IN]->()-[:IS_PART_OF]->(country:Country)
-                  |WHERE not(person=friend) AND not(country=countryX) AND not(country=countryY)
-                  |MATCH (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(messageX)-[:POST_IS_LOCATED_IN|COMMENT_IS_LOCATED_IN]->(countryX)
-                  |WHERE messageX.creationDate>={4} AND messageX.creationDate<{5}
-                  |WITH friend, countryY, count(DISTINCT messageX) AS xCount
-                  |MATCH (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(messageY)-[:POST_IS_LOCATED_IN|COMMENT_IS_LOCATED_IN]->(countryY)
-                  |WHERE messageY.creationDate>={4} AND messageY.creationDate<{5}
-                  |WITH friend.id AS friendId, friend.firstName AS friendFirstName, friend.lastName AS friendLastName , xCount, count(DISTINCT messageY) AS yCount
-                  |RETURN friendId, friendFirstName, friendLastName, xCount, yCount, xCount + yCount AS xyCount
-                  |ORDER BY xyCount DESC, friendId ASC
-                  |LIMIT {6}""".stripMargin
+    val query = """|MATCH (countryX:Country {name:{2}}),
+                   |      (countryY:Country{name:{3}}),
+                   |      (person:Person {id:{1}})
+                   |WITH person, countryX, countryY
+                   |LIMIT 1
+                   |MATCH (city:City)-[:IS_PART_OF]->(country:Country)
+                   |WHERE country IN [countryX, countryY]
+                   |WITH person, countryX, countryY, collect(city) AS cities
+                   |MATCH (person)-[:KNOWS*1..2]-(friend)-[:PERSON_IS_LOCATED_IN]->(city)
+                   |WHERE NOT person=friend AND NOT city IN cities
+                   |WITH DISTINCT friend, countryX, countryY
+                   |MATCH (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
+                   |      (message)-[:POST_IS_LOCATED_IN|COMMENT_IS_LOCATED_IN]->(country)
+                   |WHERE {5}>message.creationDate>={4} AND
+                   |      country IN [countryX, countryY]
+                   |WITH friend,
+                   |     CASE WHEN country=countryX THEN 1 ELSE 0 END AS messageX,
+                   |     CASE WHEN country=countryY THEN 1 ELSE 0 END AS messageY
+                   |WITH friend, sum(messageX) AS xCount, sum(messageY) AS yCount
+                   |WHERE xCount>0 AND yCount>0
+                   |RETURN friend.id AS friendId,
+                   |       friend.firstName AS friendFirstName,
+                   |       friend.lastName AS friendLastName,
+                   |       xCount,
+                   |       yCount,
+                   |       xCount + yCount AS xyCount
+                   |ORDER BY xyCount DESC, friendId ASC
+                   |LIMIT {6}
+                   |""".stripMargin
 
     def params = {
       val startTime = new DateTime(2000, 1, 3, 0, 0, 0, DateTimeZone.forID("Europe/Stockholm"))
@@ -500,16 +546,23 @@ object LdbcQueries {
         Map("id" -> 4, "languages" -> Seq("language4a", "language4b"), "birthday" -> 1, "creationDate" -> 1, "lastName" -> "last4", "browserUsed" -> "browser4", "email" -> Seq("friend4@email.com"), "locationIP" -> "ip4", "gender" -> "gender4", "firstName" -> "f4"))
 
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS]-(:Person)<-[:POST_HAS_CREATOR]-(post:Post)-[:POST_HAS_TAG]->(tag:Tag)
-                  |WHERE post.creationDate >= {2} AND post.creationDate < {3}
-                  |OPTIONAL MATCH (tag)<-[:POST_HAS_TAG]-(oldPost:Post)
-                  |WHERE oldPost.creationDate < {2}
-                  |WITH tag, post, length(collect(oldPost)) AS oldPostCount
-                  |WHERE oldPostCount=0
-                  |RETURN tag.name AS tagName, length(collect(post)) AS postCount
+    val query = """MATCH (person:Person {id:{1}})-[:KNOWS]-(friend),
+                  |      (friend)<-[:POST_HAS_CREATOR]-(post)-[:POST_HAS_TAG]->(tag)
+                  |WITH DISTINCT tag, post
+                  |WITH tag,
+                  |     CASE
+                  |       WHEN {3} > post.creationDate >= {2} THEN 1
+                  |       ELSE 0
+                  |     END AS valid,
+                  |     CASE
+                  |       WHEN {2} > post.creationDate THEN 1
+                  |       ELSE 0
+                  |     END AS inValid
+                  |WITH tag, sum(valid) AS postCount, sum(inValid) AS inValidPostCount
+                  |WHERE postCount>0 AND inValidPostCount=0
+                  |RETURN tag.name AS tagName, postCount
                   |ORDER BY postCount DESC, tagName ASC
-                  |LIMIT {4}
-                  | """.stripMargin
+                  |LIMIT {4}""".stripMargin
 
     def params = {
       val startTime = new DateTime(2000, 1, 3, 0, 0, 0,  DateTimeZone.forID("Europe/Stockholm"))
@@ -607,14 +660,19 @@ object LdbcQueries {
       Map("joinDate" -> 946681200000L), "forum1HasMemberF3" ->
       Map("joinDate" -> 946681200000L))
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend:Person)<-[membership:HAS_MEMBER]-(forum:Forum)
-                  |WHERE membership.joinDate>{2} AND not(person=friend)
-                  |WITH DISTINCT friend, forum
-                  |OPTIONAL MATCH (friend)<-[:POST_HAS_CREATOR]-(post:Post)<-[:CONTAINER_OF]-(forum)
+    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+                  |WHERE NOT person=friend
+                  |WITH DISTINCT friend
+                  |MATCH (friend)<-[membership:HAS_MEMBER]-(forum)
+                  |WHERE membership.joinDate>{2}
+                  |WITH forum, collect(friend) AS friends
+                  |OPTIONAL MATCH (friend)<-[:POST_HAS_CREATOR]-(post)<-[:CONTAINER_OF]-(forum)
+                  |WHERE friend IN friends
                   |WITH forum, count(post) AS postCount
                   |RETURN forum.title AS forumName, postCount
                   |ORDER BY postCount DESC, forum.id ASC
-                  |LIMIT {3}""".stripMargin
+                  |LIMIT {3}
+                  |""".stripMargin
 
     def params = {
       val startTime = new DateTime(2000, 1, 2, 0, 0, 0)
@@ -685,14 +743,17 @@ object LdbcQueries {
       Map("content" -> "[s7Post2] content", "id" -> 11L, "creationDate" -> 946854000000L, "browserUsed" -> "browser7", "locationIP" -> "ip7", "imageFile" -> "image7", "language" -> "language7"), "f4" ->
       Map("id" -> 4L, "languages" -> Seq("language4"), "birthday" -> 4L, "creationDate" -> 4L, "lastName" -> "last4", "browserUsed" -> "browser4", "email" -> Seq("f4@email.com"), "locationIP" -> "ip4", "gender" -> "gender4", "firstName" -> "f4"))
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend:Person)<-[:POST_HAS_CREATOR]-(friendPost:Post)-[:POST_HAS_TAG]->(knownTag:Tag {name:{2}})
-                  |WHERE not(person=friend)
-                  |MATCH (friendPost)-[:POST_HAS_TAG]->(commonTag:Tag)
-                  |WHERE not(commonTag=knownTag)
-                  |WITH DISTINCT commonTag, knownTag, friend
-                  |MATCH (commonTag)<-[:POST_HAS_TAG]-(commonPost:Post)-[:POST_HAS_TAG]->(knownTag)
-                  |WHERE (commonPost)-[:POST_HAS_CREATOR]->(friend)
-                  |RETURN commonTag.name AS tagName, count(commonPost) AS postCount
+   val query = """|MATCH (knownTag:Tag {name:{2}})
+                  |MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+                  |WHERE NOT person=friend
+                  |WITH DISTINCT friend, knownTag
+                  |MATCH (friend)<-[:POST_HAS_CREATOR]-(post)
+                  |WHERE (post)-[:POST_HAS_TAG]->(knownTag)
+                  |WITH post, knownTag
+                  |MATCH (post)-[:POST_HAS_TAG]->(commonTag)
+                  |WHERE NOT commonTag=knownTag
+                  |WITH commonTag, count(post) AS postCount
+                  |RETURN commonTag.name AS tagName, postCount
                   |ORDER BY postCount DESC, tagName ASC
                   |LIMIT {3}""".stripMargin
 
@@ -768,16 +829,25 @@ object LdbcQueries {
                         |(f4)<-[:COMMENT_HAS_CREATOR]-(f4Comment1)""".stripMargin
 
 
-    val query = """MATCH (person:Person {id:{1}})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)<-[like:LIKES_POST|LIKES_COMMENT]-(liker:Person)
-                  |    WITH liker, message, like.creationDate AS likeCreationDate, person
-                  |    ORDER BY likeCreationDate DESC, message.id ASC
-                  |      WITH liker, head(collect({msg: message, likeTime: likeCreationDate})) AS latestLike, person
-                  |    RETURN liker.id AS personId, liker.firstName AS personFirstName, liker.lastName AS personLastName,
-                  |    latestLike.likeTime AS likeTime, not((liker)-[:KNOWS]-(person)) AS isNew, latestLike.msg.id AS messageId,
-                  |    CASE exists(latestLike.msg.content) WHEN true THEN latestLike.msg.content
-                  |    ELSE latestLike.msg.imageFile END AS messageContent, latestLike.likeTime - latestLike.msg.creationDate AS latencyAsMilli
-                  |    ORDER BY likeTime DESC, personId ASC
-                  |      LIMIT {2}""".stripMargin
+    val query = """MATCH (person:Person {id:{1}})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
+                  |      (message)<-[like:LIKES_POST|LIKES_COMMENT]-(liker)
+                  |WITH liker, message, like.creationDate AS likeTime, person
+                  |ORDER BY likeTime DESC, message.id ASC
+                  |WITH liker,
+                  |     head(collect(message)) AS message,
+                  |     head(collect(likeTime)) AS likeTime,
+                  |     person
+                  |RETURN
+                  | liker.id AS personId,
+                  | liker.firstName AS personFirstName,
+                  | liker.lastName AS personLastName,
+                  | likeTime,
+                  | not((liker)-[:KNOWS]-(person)) AS isNew,
+                  | message.id AS messageId,
+                  | coalesce(message.content,message.imageFile) AS messageContent,
+                  | message.creationDate AS messageCreationDate
+                  |ORDER BY likeTime DESC, personId ASC
+                  |LIMIT {2}""".stripMargin
 
     def createParams = Map("person1Post2" ->
       Map("content" -> "person1post2", "id" -> 2L, "creationDate" -> 946681320000L, "browserUsed" -> "browser2", "locationIP" -> "ip2", "imageFile" -> "imageFile2", "language" -> "language2"), "person1Post3" ->
@@ -814,7 +884,7 @@ object LdbcQueries {
     def params = Map("1" -> 1, "2" -> 1)
 
     def expectedResult = List(
-      Map("isNew" -> true, "likeTime" -> 946681800000L, "personId" -> 8, "latencyAsMilli" -> 480000, "messageId" -> 2,
+      Map("isNew" -> true, "likeTime" -> 946681800000L, "personId" -> 8, "messageCreationDate" -> 946681320000L, "messageId" -> 2,
         "personLastName" -> "last8-ᚠさ丵פش", "messageContent" -> "person1post2", "personFirstName" -> "s8"))
 
     override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
@@ -899,8 +969,15 @@ object LdbcQueries {
       Map("content" -> "C211", "id" -> 18L, "creationDate" -> 8L), "friend2" ->
       Map("id" -> 2L, "lastName" -> "two-ᚠさ丵פش", "firstName" -> "friend"))
 
-    val query = """MATCH (start:Person {id:{1}})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-()<-[:REPLY_OF_POST|REPLY_OF_COMMENT]-(comment:Comment)-[:COMMENT_HAS_CREATOR]->(person:Person)
-                  |RETURN person.id AS personId, person.firstName AS personFirstName, person.lastName AS personLastName, comment.id AS commentId, comment.creationDate AS commentCreationDate, comment.content AS commentContent
+    val query = """MATCH (start:Person {id:{1}})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
+                  |      (message)<-[:REPLY_OF_POST|REPLY_OF_COMMENT]-(comment)-[:COMMENT_HAS_CREATOR]->(person)
+                  |RETURN
+                  | person.id AS personId,
+                  | person.firstName AS personFirstName,
+                  | person.lastName AS personLastName,
+                  | comment.id AS commentId,
+                  | comment.creationDate AS commentCreationDate,
+                  | comment.content AS commentContent
                   |ORDER BY commentCreationDate DESC, commentId ASC
                   |LIMIT {2}""".stripMargin
 
@@ -985,12 +1062,21 @@ object LdbcQueries {
       Map("content" -> "C211", "id" -> 211L, "creationDate" -> 7L), "friend2" ->
       Map("id" -> 2L, "lastName" -> "two-ᚠさ丵פش", "firstName" -> "friend"))
 
-    val query = """MATCH (:Person {id:{1}})-[:KNOWS*1..2]-(friend:Person)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
+    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+                  |WHERE NOT person=friend
+                  |WITH DISTINCT friend
+                  |MATCH (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
                   |WHERE message.creationDate < {2}
-                  |RETURN DISTINCT message.id AS messageId, CASE exists(message.content) WHEN true THEN message.content ELSE message.imageFile END AS messageContent,
-                  | message.creationDate AS messageCreationDate, friend.id AS personId, friend.firstName AS personFirstName, friend.lastName AS personLastName
+                  |WITH friend, message
                   |ORDER BY message.creationDate DESC, message.id ASC
-                  |LIMIT {3}""".stripMargin
+                  |LIMIT {3}
+                  |RETURN message.id AS messageId,
+                  |       coalesce(message.content,message.imageFile) AS messageContent,
+                  |       message.creationDate AS messageCreationDate,
+                  |       friend.id AS personId,
+                  |       friend.firstName AS personFirstName,
+                  |       friend.lastName AS personLastName
+                  |""".stripMargin
 
     def params = Map("1" -> 0, "2" -> 12L, "3" -> 10)
 
@@ -1113,15 +1199,28 @@ object LdbcQueries {
       Map("name" -> "uncommon tag 2"), "post113" ->
       Map("content" -> "P113", "id" -> 113L))
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*2..2]-(friend:Person)-[:PERSON_IS_LOCATED_IN]->(city:City)
-                  |WHERE ((friend.birthday_month = {2} AND friend.birthday_day >= 21) OR (friend.birthday_month = ({2}%12)+1 AND friend.birthday_day < 22)) AND not(friend=person) AND not((friend)-[:KNOWS]-(person))
-                  |WITH DISTINCT friend, city, person
-                  |OPTIONAL MATCH (friend)<-[:POST_HAS_CREATOR]-(post:Post)
-                  |WITH friend, city, collect(post) AS posts, person
-                  |WITH friend, city, length(posts) AS postCount, length([p IN posts WHERE (p)-[:POST_HAS_TAG]->(:Tag)<-[:HAS_INTEREST]-(person)]) AS commonPostCount
-                  |RETURN friend.id AS personId, friend.firstName AS personFirstName, friend.lastName AS personLastName, friend.gender AS personGender, city.name AS personCityName, commonPostCount - (postCount - commonPostCount) AS commonInterestScore
-                  |ORDER BY commonInterestScore DESC, personId ASC
-                  |LIMIT {4}""".stripMargin
+   val query = """MATCH (person:Person {id:{1}})-[:KNOWS*2..2]-(friend),
+                 |       (friend)-[:PERSON_IS_LOCATED_IN]->(city)
+                 |WHERE NOT friend=person AND
+                 |      NOT (friend)-[:KNOWS]-(person) AND
+                 |      ( (friend.birthday_month={2} AND friend.birthday_day>=21) OR
+                 |        (friend.birthday_month=({2}%12)+1 AND friend.birthday_day<22) )
+                 |WITH DISTINCT friend, city, person
+                 |OPTIONAL MATCH (friend)<-[:POST_HAS_CREATOR]-(post)
+                 |WITH friend, city, collect(post) AS posts, person
+                 |WITH friend,
+                 |     city,
+                 |     length(posts) AS postCount,
+                 |     length([p IN posts WHERE (p)-[:POST_HAS_TAG]->()<-[:HAS_INTEREST]-(person)]) AS commonPostCount
+                 |RETURN friend.id AS personId,
+                 |       friend.firstName AS personFirstName,
+                 |       friend.lastName AS personLastName,
+                 |       friend.gender AS personGender,
+                 |       city.name AS personCityName,
+                 |       commonPostCount - (postCount - commonPostCount) AS commonInterestScore
+                 |ORDER BY commonInterestScore DESC, personId ASC
+                 |LIMIT {4}
+                 |""".stripMargin
 
     def params = Map("1" -> 0, "2" -> 1, "4" -> 7)
 
@@ -1192,14 +1291,20 @@ object LdbcQueries {
       Map("id" -> 2L, "lastName" -> "two-ᚠさ丵פش", "firstName" -> "friend"), "ff11" ->
       Map("id" -> 11L, "lastName" -> "one one-ᚠさ丵פش", "firstName" -> "friend friend"))
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend:Person)
-                  |WHERE not(person=friend)
-                  |WITH DISTINCT friend
-                  |MATCH (friend)-[worksAt:WORKS_AT]->(company:Company)-[:ORGANISATION_IS_LOCATED_IN]->(:Country {name:{3}})
-                  |WHERE worksAt.workFrom < {2}
-                  |RETURN friend.id AS friendId, friend.firstName AS friendFirstName, friend.lastName AS friendLastName, worksAt.workFrom AS workFromYear, company.name AS companyName
-                  |ORDER BY workFromYear ASC, friendId ASC, companyName DESC
-                  |LIMIT {4}""".stripMargin
+    val query = """|MATCH (country:Country {name:{3}})
+                   |MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+                   |WHERE NOT person=friend
+                   |WITH DISTINCT friend, country
+                   |MATCH (friend)-[worksAt:WORKS_AT]->(company)-[:ORGANISATION_IS_LOCATED_IN]->(country)
+                   |WHERE worksAt.workFrom<{2}
+                   |RETURN
+                   | friend.id AS friendId,
+                   | friend.firstName AS friendFirstName,
+                   | friend.lastName AS friendLastName,
+                   | worksAt.workFrom AS workFromYear,
+                   | company.name AS companyName
+                   |ORDER BY workFromYear ASC, friendId ASC, companyName DESC
+                   |LIMIT {4}""".stripMargin
 
     def params = Map("1" -> 0, "3" -> "country0", "2" -> 5, "4" -> 4)
 
@@ -1307,7 +1412,7 @@ object LdbcQueries {
                         |(tc1)<-[:HAS_TYPE]-(t11),
                         |(tc11)<-[:HAS_TYPE]-(t111),
                         |(tc11)<-[:HAS_TYPE]-(t112),
-                        |(tc1211)<-[:HAS_TYPE]-(t12111),
+                        |//(tc1211)<-[:HAS_TYPE]-(t12111), // Since tag names get collected with a different order with rule planner we disable this to get only single results below
                         |(tc2)<-[:HAS_TYPE]-(t21),
                         |(tc21)<-[:HAS_TYPE]-(t211),
                         |(tc11)-[:IS_SUBCLASS_OF]->(tc1),
@@ -1317,41 +1422,46 @@ object LdbcQueries {
                         |(tc21)-[:IS_SUBCLASS_OF]->(tc2)""".stripMargin
 
 
-    def createParams = Map("tc1211" ->
-      Map("name" -> "1211"), "t21" ->
-      Map("name" -> "tag21-ᚠさ丵פش"), "tc12" ->
-      Map("name" -> "12"), "t11" ->
-      Map("name" -> "tag11-ᚠさ丵פش"), "person0" ->
-      Map("id" -> 0L, "lastName" -> "0", "firstName" -> "person"), "t12111" ->
-      Map("name" -> "tag12111-ᚠさ丵פش"), "t211" ->
-      Map("name" -> "tag211-ᚠさ丵פش"), "tc121" ->
-      Map("name" -> "121"), "tc21" ->
-      Map("name" -> "21"), "t111" ->
-      Map("name" -> "tag111-ᚠさ丵פش"), "tc11" ->
-      Map("name" -> "11"), "f1" ->
-      Map("id" -> 1L, "lastName" -> "1", "firstName" -> "f"), "t112" ->
-      Map("name" -> "tag112-ᚠさ丵פش"), "tc2" ->
-      Map("name" -> "2"), "f3" ->
-      Map("id" -> 3L, "lastName" -> "3", "firstName" -> "f"), "tc1" ->
-      Map("name" -> "1"), "f2" ->
-      Map("id" -> 2L, "lastName" -> "2", "firstName" -> "f"), "ff11" ->
-      Map("id" -> 11L, "lastName" -> "11", "firstName" -> "ff"), "f4" ->
-      Map("id" -> 4L, "lastName" -> "4", "firstName" -> "f"))
+    def createParams = Map("tc1211" -> Map("name" -> "1211"),
+      "t21" -> Map("name" -> "tag21-ᚠさ丵פش"),
+      "tc12" -> Map("name" -> "12"),
+      "t11" -> Map("name" -> "tag11-ᚠさ丵פش"),
+      "person0" -> Map("id" -> 0L, "lastName" -> "0", "firstName" -> "person"),
+      "t12111" -> Map("name" -> "tag12111-ᚠさ丵פش"),
+      "t211" -> Map("name" -> "tag211-ᚠさ丵פش"),
+      "tc121" -> Map("name" -> "121"),
+      "tc21" -> Map("name" -> "21"),
+      "t111" -> Map("name" -> "tag111-ᚠさ丵פش"),
+      "tc11" -> Map("name" -> "11"),
+      "f1" -> Map("id" -> 1L, "lastName" -> "1", "firstName" -> "f"),
+      "t112" -> Map("name" -> "tag112-ᚠさ丵פش"),
+      "tc2" -> Map("name" -> "2"),
+      "f3" -> Map("id" -> 3L, "lastName" -> "3", "firstName" -> "f"),
+      "tc1" -> Map("name" -> "1"),
+      "f2" -> Map("id" -> 2L, "lastName" -> "2", "firstName" -> "f"),
+      "ff11" -> Map("id" -> 11L, "lastName" -> "11", "firstName" -> "ff"),
+      "f4" -> Map("id" -> 4L, "lastName" -> "4", "firstName" -> "f"))
 
-    val query = """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)
-                  |OPTIONAL MATCH (friend)<-[:COMMENT_HAS_CREATOR]-(comment:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_TAG]->(tag:Tag)-[:HAS_TYPE]->(tagClass:TagClass)-[:IS_SUBCLASS_OF*0..]->(baseTagClass:TagClass)
-                  |WHERE tagClass.name = {2} OR baseTagClass.name = {2}
-                  |RETURN friend.id AS friendId, friend.firstName AS friendFirstName, friend.lastName AS friendLastName, collect(DISTINCT tag.name) AS tagNames, count(DISTINCT comment) AS count
+    val query = """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person),
+                  |      (friend)<-[:COMMENT_HAS_CREATOR]-(comment:Comment),
+                  |      (comment)-[:REPLY_OF_POST]->(post:Post),
+                  |      (post)-[:POST_HAS_TAG]->(tag:Tag),
+                  |      (tag)-[:HAS_TYPE|IS_SUBCLASS_OF*0..]->(:TagClass{name:{2}})
+                  |RETURN
+                  | friend.id AS friendId,
+                  | friend.firstName AS friendFirstName,
+                  | friend.lastName AS friendLastName,
+                  | collect(DISTINCT tag.name) AS tagNames,
+                  | count(DISTINCT comment) AS count
                   |ORDER BY count DESC, friendId ASC
                   |LIMIT {3}""".stripMargin
 
-    def params = Map("1" -> 0, "2" -> 1, "3" -> 10)
+    def params = Map("1" -> 0, "2" -> "1", "3" -> 10)
 
     def expectedResult = List(
-      Map("friendLastName" -> "1", "tagNames" -> Seq.empty, "friendId" -> 1, "count" -> 0, "friendFirstName" -> "f"),
-      Map("friendLastName" -> "2", "tagNames" -> Seq.empty, "friendId" -> 2, "count" -> 0, "friendFirstName" -> "f"),
-      Map("friendLastName" -> "3", "tagNames" -> Seq.empty, "friendId" -> 3, "count" -> 0, "friendFirstName" -> "f"),
-      Map("friendLastName" -> "4", "tagNames" -> Seq.empty, "friendId" -> 4, "count" -> 0, "friendFirstName" -> "f"))
+      Map("friendLastName" -> "1", "tagNames" -> Seq("tag111-ᚠさ丵פش"), "friendId" -> 1, "count" -> 1, "friendFirstName" -> "f"),
+      Map("friendLastName" -> "2", "tagNames" -> Seq("tag111-ᚠさ丵פش"), "friendId" -> 2, "count" -> 1, "friendFirstName" -> "f"),
+      Map("friendLastName" -> "3", "tagNames" -> Seq("tag11-ᚠさ丵פش"), "friendId" -> 3, "count" -> 1, "friendFirstName" -> "f"))
 
     override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
@@ -1390,7 +1500,7 @@ object LdbcQueries {
     def createParams = Map.empty
 
     val query = """MATCH (person1:Person {id:{1}}), (person2:Person {id:{2}})
-                  |OPTIONAL MATCH path = shortestPath((person1)-[:KNOWS*0..100]-(person2))
+                  |OPTIONAL MATCH path = shortestPath((person1)-[:KNOWS*0..]-(person2))
                   |RETURN CASE path IS NULL WHEN true THEN -1 ELSE length(path) END AS pathLength""".stripMargin
 
     def params = Map("1" -> 0, "2" -> 5)

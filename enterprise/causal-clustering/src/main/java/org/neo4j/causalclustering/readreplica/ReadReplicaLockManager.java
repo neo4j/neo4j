@@ -116,7 +116,7 @@ public class ReadReplicaLockManager implements Locks
         }
 
         @Override
-        public Stream<? extends ActiveLock> activeLocks()
+        public Stream<ActiveLock> activeLocks()
         {
             return Stream.empty();
         }

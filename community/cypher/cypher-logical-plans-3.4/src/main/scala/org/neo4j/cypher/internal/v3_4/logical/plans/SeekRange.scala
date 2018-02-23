@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
+
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the
   same node and property (n.prop) during planning, esp. for generating index seek by range plans.
@@ -178,6 +180,10 @@ final case class PrefixRange[T](prefix: T) extends SeekRange[T] {
   def map[X](f: T => X): PrefixRange[X] = copy(f(prefix))
 
   override def toString: String = prefix.toString
+}
+
+final case class PointDistanceRange[T](point: T, distance: T, inclusive: Boolean) extends SeekRange[T] {
+  def map[X](f: T => X): PointDistanceRange[X] = copy(f(point), f(distance), inclusive)
 }
 
 final case class MinBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {

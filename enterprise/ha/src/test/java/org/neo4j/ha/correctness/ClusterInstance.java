@@ -360,7 +360,7 @@ class ClusterInstance
         @Override
         public boolean process( Message<? extends MessageType> message )
         {
-            messages.add( message.setHeader( Message.FROM, uri.toASCIIString() ) );
+            messages.add( message.setHeader( Message.HEADER_FROM, uri.toASCIIString() ) );
             return true;
         }
 

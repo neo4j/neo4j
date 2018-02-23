@@ -38,11 +38,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -75,7 +75,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     }
 
     @Override
-    public void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
+    public final void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
     {
         this.id = id;
         this.type = type;

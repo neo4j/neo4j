@@ -75,7 +75,7 @@ public class JmxKernelExtension implements Lifecycle
                 }
             }
             catch ( Exception e )
-            { // Unexpected exception
+            {
                 log.info( "Failed to register JMX Bean " + provider + " (" + e + ")" );
             }
         }
@@ -132,7 +132,7 @@ public class JmxKernelExtension implements Lifecycle
         throw new NotFoundException( "No management bean found for " + type.getName() );
     }
 
-    public <T> Collection<T> getManagementBeans( Class<T> beanInterface )
+    private <T> Collection<T> getManagementBeans( Class<T> beanInterface )
     {
         Collection<T> result = null;
         if ( support.getClass() != ManagementSupport.class && beans.size() > 0 && beans.get( 0 ) instanceof KernelBean )
@@ -143,7 +143,7 @@ public class JmxKernelExtension implements Lifecycle
             }
             catch ( UnsupportedOperationException ignore )
             {
-                result = null; // go to fall back
+                // go to fall back
             }
         }
         if ( result == null )

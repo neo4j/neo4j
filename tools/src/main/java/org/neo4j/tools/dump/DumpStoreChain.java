@@ -102,11 +102,11 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         tool.dump( storeFile );
     }
 
-    long first;
+    long firstRecord;
 
-    private DumpStoreChain( long first )
+    private DumpStoreChain( long firstRecord )
     {
-        this.first = first;
+        this.firstRecord = firstRecord;
     }
 
     private static LogProvider logProvider()
@@ -128,7 +128,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             {
                 RecordStore<RECORD> store = store( neoStores );
                 RECORD record = store.newRecord();
-                for ( long next = first; next != -1; )
+                for ( long next = firstRecord; next != -1; )
                 {
                     store.getRecord( next, record, RecordLoad.FORCE );
                     System.out.println( record );
@@ -173,7 +173,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
                 RelationshipStore store( NeoStores neoStores )
                 {
                     NodeRecord nodeRecord = nodeRecord( neoStores, node );
-                    first = nodeRecord.isDense() ? -1 : nodeRecord.getNextRel();
+                    firstRecord = nodeRecord.isDense() ? -1 : nodeRecord.getNextRel();
                     return super.store( neoStores );
                 }
             };
@@ -185,7 +185,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
                 @Override
                 PropertyStore store( NeoStores neoStores )
                 {
-                    first = nodeRecord( neoStores, node ).getNextProp();
+                    firstRecord = nodeRecord( neoStores, node ).getNextProp();
                     return super.store( neoStores );
                 }
             };

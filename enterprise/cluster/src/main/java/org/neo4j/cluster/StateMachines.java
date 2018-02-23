@@ -41,8 +41,8 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.CREATED_BY;
+import static org.neo4j.cluster.com.message.Message.HEADER_CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.HEADER_CREATED_BY;
 
 
 /**
@@ -160,7 +160,7 @@ public class StateMachines
                         {
                             while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
                             {
-                                message.copyHeadersTo( outgoingMessage, CONVERSATION_ID, CREATED_BY );
+                                message.copyHeadersTo( outgoingMessage, HEADER_CONVERSATION_ID, HEADER_CREATED_BY );
 
                                 for ( MessageProcessor outgoingProcessor : outgoingProcessors )
                                 {
@@ -177,9 +177,9 @@ public class StateMachines
                                     }
                                 }
 
-                                if ( outgoingMessage.hasHeader( Message.TO ) )
+                                if ( outgoingMessage.hasHeader( Message.HEADER_TO ) )
                                 {
-                                    outgoingMessage.setHeader( Message.INSTANCE_ID, instanceIdHeaderValue );
+                                    outgoingMessage.setHeader( Message.HEADER_INSTANCE_ID, instanceIdHeaderValue );
                                     toSend.add( outgoingMessage );
                                 }
                                 else

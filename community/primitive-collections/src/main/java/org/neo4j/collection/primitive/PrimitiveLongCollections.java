@@ -58,6 +58,7 @@ public class PrimitiveLongCollections
 
     private PrimitiveLongCollections()
     {
+        throw new AssertionError( "no instance" );
     }
 
     public static PrimitiveLongIterator iterator( final long... items )
@@ -74,26 +75,6 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static PrimitiveLongIterator reversed( final long... items )
-    {
-        return new PrimitiveLongBaseIterator()
-        {
-            private int index = items.length;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                return --index >= 0 && next( items[index] );
-            }
-        };
-    }
-
-    public static PrimitiveLongIterator reversed( PrimitiveLongIterator source )
-    {
-        long[] items = asArray( source );
-        return reversed( items );
-    }
-
     // Concating
     public static PrimitiveLongIterator concat( PrimitiveLongIterator... primitiveLongIterators )
     {
@@ -103,53 +84,6 @@ public class PrimitiveLongCollections
     public static PrimitiveLongIterator concat( Iterable<PrimitiveLongIterator> primitiveLongIterators )
     {
         return new PrimitiveLongConcatingIterator( primitiveLongIterators.iterator() );
-    }
-
-    public static PrimitiveLongIterator concat( Iterator<PrimitiveLongIterator> iterators )
-    {
-        return new PrimitiveLongConcatingIterator( iterators );
-    }
-
-    public static PrimitiveLongIterator prepend( final long item, final PrimitiveLongIterator iterator )
-    {
-        return new PrimitiveLongBaseIterator()
-        {
-            private boolean singleItemReturned;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                if ( !singleItemReturned )
-                {
-                    singleItemReturned = true;
-                    return next( item );
-                }
-                return iterator.hasNext() && next( iterator.next() );
-            }
-        };
-    }
-
-    public static PrimitiveLongIterator append( final PrimitiveLongIterator iterator, final long item )
-    {
-        return new PrimitiveLongBaseIterator()
-        {
-            private boolean singleItemReturned;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                if ( iterator.hasNext() )
-                {
-                    return next( iterator.next() );
-                }
-                else if ( !singleItemReturned )
-                {
-                    singleItemReturned = true;
-                    return next( item );
-                }
-                return false;
-            }
-        };
     }
 
     public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final LongPredicate filter )
@@ -176,164 +110,10 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static PrimitiveLongIterator deduplicate( PrimitiveLongIterator source )
-    {
-        return new PrimitiveLongFilteringIterator( source )
-        {
-            private final PrimitiveLongSet visited = Primitive.longSet();
-
-            @Override
-            public boolean test( long testItem )
-            {
-                return visited.add( testItem );
-            }
-        };
-    }
-
-    public static PrimitiveLongIterator not( PrimitiveLongIterator source, final long disallowedValue )
-    {
-        return new PrimitiveLongFilteringIterator( source )
-        {
-            @Override
-            public boolean test( long testItem )
-            {
-                return testItem != disallowedValue;
-            }
-        };
-    }
-
-    public static PrimitiveLongIterator skip( PrimitiveLongIterator source, final int skipTheFirstNItems )
-    {
-        return new PrimitiveLongFilteringIterator( source )
-        {
-            private int skipped;
-
-            @Override
-            public boolean test( long item )
-            {
-                if ( skipped < skipTheFirstNItems )
-                {
-                    skipped++;
-                    return false;
-                }
-                return true;
-            }
-        };
-    }
-
-    // Limitinglic
-    public static PrimitiveLongIterator limit( final PrimitiveLongIterator source, final int maxItems )
-    {
-        return new PrimitiveLongBaseIterator()
-        {
-            private int visited;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                if ( visited++ < maxItems )
-                {
-                    if ( source.hasNext() )
-                    {
-                        return next( source.next() );
-                    }
-                }
-                return false;
-            }
-        };
-    }
-
     // Range
-    public static PrimitiveLongIterator range( long end )
-    {
-        return range( 0, end );
-    }
-
     public static PrimitiveLongIterator range( long start, long end )
     {
-        return range( start, end, 1 );
-    }
-
-    public static PrimitiveLongIterator range( long start, long end, long stride )
-    {
-        return new PrimitiveLongRangeIterator( start, end, stride );
-    }
-
-    public static PrimitiveLongIterator singleton( final long item )
-    {
-        return new PrimitiveLongBaseIterator()
-        {
-            private boolean returned;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                try
-                {
-                    return !returned && next( item );
-                }
-                finally
-                {
-                    returned = true;
-                }
-            }
-        };
-    }
-
-    public static long first( PrimitiveLongIterator iterator )
-    {
-        assertMoreItems( iterator );
-        return iterator.next();
-    }
-
-    private static void assertMoreItems( PrimitiveLongIterator iterator )
-    {
-        if ( !iterator.hasNext() )
-        {
-            throw new NoSuchElementException( "No element in " + iterator );
-        }
-    }
-
-    public static long first( PrimitiveLongIterator iterator, long defaultItem )
-    {
-        return iterator.hasNext() ? iterator.next() : defaultItem;
-    }
-
-    public static long last( PrimitiveLongIterator iterator )
-    {
-        assertMoreItems( iterator );
-        return last( iterator, 0 /*will never be used*/ );
-    }
-
-    public static long last( PrimitiveLongIterator iterator, long defaultItem )
-    {
-        long result = defaultItem;
-        while ( iterator.hasNext() )
-        {
-            result = iterator.next();
-        }
-        return result;
-    }
-
-    public static long single( PrimitiveLongIterator iterator )
-    {
-        try
-        {
-            assertMoreItems( iterator );
-            long item = iterator.next();
-            if ( iterator.hasNext() )
-            {
-                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                        ", second:" + iterator.next() );
-            }
-            closeSafely( iterator );
-            return item;
-        }
-        catch ( NoSuchElementException exception )
-        {
-            closeSafely( iterator, exception );
-            throw exception;
-        }
+        return new PrimitiveLongRangeIterator( start, end );
     }
 
     public static long single( PrimitiveLongIterator iterator, long defaultItem )
@@ -361,55 +141,6 @@ public class PrimitiveLongCollections
         }
     }
 
-    public static long itemAt( PrimitiveLongIterator iterator, int index )
-    {
-        if ( index >= 0 )
-        {   // Look forwards
-            for ( int i = 0; iterator.hasNext() && i < index; i++ )
-            {
-                iterator.next();
-            }
-            assertMoreItems( iterator );
-            return iterator.next();
-        }
-
-        // Look backwards
-        int fromEnd = index * -1;
-        long[] trail = new long[fromEnd];
-        int cursor = 0;
-        for ( ; iterator.hasNext(); cursor++ )
-        {
-            trail[cursor % trail.length] = iterator.next();
-        }
-        if ( cursor < fromEnd )
-        {
-            throw new NoSuchElementException( "Item " + index + " not found in " + iterator );
-        }
-        return trail[cursor % fromEnd];
-    }
-
-    public static long itemAt( PrimitiveLongIterator iterator, int index, long defaultItem )
-    {
-        if ( index >= 0 )
-        {   // Look forwards
-            for ( int i = 0; iterator.hasNext() && i < index; i++ )
-            {
-                iterator.next();
-            }
-            return iterator.hasNext() ? iterator.next() : defaultItem;
-        }
-
-        // Look backwards
-        int fromEnd = index * -1;
-        long[] trail = new long[fromEnd];
-        int cursor = 0;
-        for ( ; iterator.hasNext(); cursor++ )
-        {
-            trail[cursor % trail.length] = iterator.next();
-        }
-        return cursor < fromEnd ? defaultItem : trail[cursor % fromEnd];
-    }
-
     /**
      * Returns the index of the given item in the iterator(zero-based). If no items in {@code iterator}
      * equals {@code item} {@code -1} is returned.
@@ -428,29 +159,6 @@ public class PrimitiveLongCollections
             }
         }
         return -1;
-    }
-
-    /**
-     * Validates whether two {@link Iterator}s are equal or not, i.e. if they have contain same number of items
-     * and each orderly item equals one another.
-     *
-     * @param first the {@link Iterator} containing the first items.
-     * @param other the {@link Iterator} containing the other items.
-     * @return whether the two iterators are equal or not.
-     */
-    public static boolean equals( PrimitiveLongIterator first, PrimitiveLongIterator other )
-    {
-        boolean firstHasNext;
-        boolean otherHasNext;
-        // single | so that both iterator's hasNext() gets evaluated.
-        while ( (firstHasNext = first.hasNext()) | (otherHasNext = other.hasNext()) )
-        {
-            if ( firstHasNext != otherHasNext || first.next() != other.next() )
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     public static PrimitiveLongSet asSet( Collection<Long> collection )
@@ -502,18 +210,6 @@ public class PrimitiveLongCollections
         {   // Just loop through this
         }
         return count;
-    }
-
-    public static boolean contains( long[] values, long candidate )
-    {
-        for ( long value : values )
-        {
-            if ( value == candidate )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static long[] asArray( PrimitiveLongIterator iterator )
@@ -622,24 +318,6 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static PrimitiveLongIterator constant( final long value )
-    {
-        return new PrimitiveLongBaseIterator()
-        {
-            @Override
-            protected boolean fetchNext()
-            {
-                return next( value );
-            }
-        };
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> PrimitiveLongObjectMap<T> emptyObjectMap()
-    {
-        return Empty.EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
-    }
-
     /**
      * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each long.
      *
@@ -656,7 +334,6 @@ public class PrimitiveLongCollections
         return out;
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
     public static Iterator<Long> toIterator( final PrimitiveLongIterator primIterator )
     {
         return new Iterator<Long>()
@@ -922,13 +599,11 @@ public class PrimitiveLongCollections
     {
         private long current;
         private final long end;
-        private final long stride;
 
-        PrimitiveLongRangeIterator( long start, long end, long stride )
+        PrimitiveLongRangeIterator( long start, long end )
         {
             this.current = start;
             this.end = end;
-            this.stride = stride;
         }
 
         @Override
@@ -940,7 +615,7 @@ public class PrimitiveLongCollections
             }
             finally
             {
-                current += stride;
+                current++;
             }
         }
     }

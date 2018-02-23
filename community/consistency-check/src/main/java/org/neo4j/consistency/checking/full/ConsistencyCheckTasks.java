@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.NodeRecordCheck;
 import org.neo4j.consistency.checking.PropertyChain;
 import org.neo4j.consistency.checking.RelationshipRecordCheck;
@@ -33,11 +34,15 @@ import org.neo4j.consistency.checking.index.IndexEntryProcessor;
 import org.neo4j.consistency.checking.index.IndexIterator;
 import org.neo4j.consistency.checking.labelscan.LabelScanCheck;
 import org.neo4j.consistency.checking.labelscan.LabelScanDocumentProcessor;
+import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.consistency.store.synthetic.IndexRecord;
+import org.neo4j.consistency.store.synthetic.LabelScanIndex;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -176,6 +181,7 @@ public class ConsistencyCheckTasks
         if ( checkLabelScanStore )
         {
             long highId = nativeStores.getNodeStore().getHighId();
+            tasks.add( new LabelIndexDirtyCheckTask() );
             tasks.add( recordScanner( "LabelScanStore",
                     new GapFreeAllEntriesLabelScanReader( labelScanStore.allNodeLabelRanges(), highId ),
                     new LabelScanDocumentProcessor( filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
@@ -183,6 +189,7 @@ public class ConsistencyCheckTasks
         }
         if ( checkIndexes )
         {
+            tasks.add( new IndexDirtyCheckTask() );
             for ( IndexRule indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
@@ -218,5 +225,48 @@ public class ConsistencyCheckTasks
     {
         return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, multiPartBuilder,
                 cacheAccess, processor, distribution );
+    }
+
+    private class LabelIndexDirtyCheckTask extends ConsistencyCheckerTask
+    {
+        LabelIndexDirtyCheckTask()
+        {
+            super( "Label index dirty check", Statistics.NONE, 1 );
+        }
+
+        @Override
+        public void run()
+        {
+            if ( labelScanStore instanceof NativeLabelScanStore )
+            {
+                if ( ((NativeLabelScanStore)labelScanStore).isDirty() )
+                {
+                    reporter.report( new LabelScanIndex(), ConsistencyReport.LabelScanConsistencyReport.class,
+                            RecordType.LABEL_SCAN_DOCUMENT ).dirtyIndex();
+                }
+            }
+        }
+    }
+
+    private class IndexDirtyCheckTask extends ConsistencyCheckerTask
+    {
+        IndexDirtyCheckTask()
+        {
+            super( "Indexes dirty check", Statistics.NONE, 1 );
+        }
+
+        @Override
+        public void run()
+        {
+            for ( IndexRule indexRule : indexes.onlineRules() )
+            {
+                if ( indexes.accessorFor( indexRule ).isDirty() )
+                {
+                    reporter.report( new IndexRecord( indexRule ), ConsistencyReport.IndexConsistencyReport.class,
+                            RecordType.INDEX ).dirtyIndex();
+                }
+            }
+
+        }
     }
 }

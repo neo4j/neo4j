@@ -65,7 +65,7 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        forAll( accessor -> ((IndexAccessor) accessor).drop(), nativeAccessor, spatialAccessor, luceneAccessor );
+        forAll( IndexAccessor::drop, nativeAccessor, spatialAccessor, luceneAccessor );
         dropAction.drop( indexId );
     }
 
@@ -93,7 +93,7 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public void close() throws IOException
     {
-        forAll( accessor -> ((IndexAccessor) accessor).close(), nativeAccessor, spatialAccessor, luceneAccessor );
+        forAll( IndexAccessor::close, nativeAccessor, spatialAccessor, luceneAccessor );
     }
 
     @Override
@@ -123,7 +123,7 @@ class FusionIndexAccessor implements IndexAccessor
             @Override
             public void close() throws Exception
             {
-                forAll( entries -> ((BoundedIterable) entries).close(), nativeAllEntries, spatialAllEntries, luceneAllEntries );
+                forAll( BoundedIterable::close, nativeAllEntries, spatialAllEntries, luceneAllEntries );
             }
 
             @Override
@@ -148,5 +148,11 @@ class FusionIndexAccessor implements IndexAccessor
         nativeAccessor.verifyDeferredConstraints( propertyAccessor );
         spatialAccessor.verifyDeferredConstraints( propertyAccessor );
         luceneAccessor.verifyDeferredConstraints( propertyAccessor );
+    }
+
+    @Override
+    public boolean isDirty()
+    {
+        return nativeAccessor.isDirty();
     }
 }

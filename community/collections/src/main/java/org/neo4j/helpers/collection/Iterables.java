@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,23 +47,20 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public final class Iterables
 {
-
-    @SuppressWarnings( "rawtypes" )
-    private static final ResourceIterable EMPTY_RESOURCE_ITERATOR = new EmptyResourceIterable<>();
-
     private Iterables()
     {
+        throw new AssertionError( "no instance" );
     }
 
-    @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> empty()
     {
         return Collections.emptyList();
     }
 
+    @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> emptyResourceIterable()
     {
-        return (Iterable<T>) EMPTY_RESOURCE_ITERATOR;
+        return (Iterable<T>) EmptyResourceIterable.EMPTY_RESOURCE_ITERABLE;
     }
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
@@ -223,68 +219,6 @@ public final class Iterables
         return new FlattenIterable<>( multiIterator );
     }
 
-    @SafeVarargs
-    public static <T> Iterable<T> mix( final Iterable<T>... iterables )
-    {
-        return () ->
-        {
-            final Iterable<Iterator<T>> iterators = asList( map( Iterable::iterator, Arrays.asList(iterables) ) );
-
-            return new Iterator<T>()
-            {
-                Iterator<Iterator<T>> iterator;
-
-                Iterator<T> iter;
-
-                @Override
-                public boolean hasNext()
-                {
-                    for ( Iterator<T> iterator : iterators )
-                    {
-                        if ( iterator.hasNext() )
-                        {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                @Override
-                public T next()
-                {
-                    if ( iterator == null )
-                    {
-                        iterator = iterators.iterator();
-                    }
-
-                    while ( iterator.hasNext() )
-                    {
-                        iter = iterator.next();
-
-                        if ( iter.hasNext() )
-                        {
-                            return iter.next();
-                        }
-                    }
-
-                    iterator = null;
-
-                    return next();
-                }
-
-                @Override
-                public void remove()
-                {
-                    if ( iter != null )
-                    {
-                        iter.remove();
-                    }
-                }
-            };
-        };
-    }
-
     public static <FROM, TO> Iterable<TO> map( Function<? super FROM, ? extends TO> function, Iterable<FROM> from )
     {
         return new MapIterable<>( from, function );
@@ -305,7 +239,7 @@ public final class Iterables
     @SuppressWarnings( "unchecked" )
     public static <T, C> Iterable<T> cast( Iterable<C> iterable )
     {
-        return (Iterable) iterable;
+        return (Iterable<T>) iterable;
     }
 
     @SafeVarargs
@@ -646,7 +580,7 @@ public final class Iterables
         {
             if ( iterator instanceof ResourceIterator )
             {
-                ((ResourceIterator) iterator).close();
+                ((ResourceIterator<?>) iterator).close();
             }
         }
     }
@@ -943,18 +877,9 @@ public final class Iterables
         return Iterators.stream( iterable.iterator(), characteristics );
     }
 
-    public static <T extends Enum<T>> List<String> enumNames( Class<T> cls )
-    {
-        List<String> names = new ArrayList<>();
-        EnumSet.allOf( cls ).forEach( item -> names.add( item.name() ) );
-        return names;
-    }
-
     private static class EmptyResourceIterable<T> implements ResourceIterable<T>
     {
-        private EmptyResourceIterable()
-        {
-        }
+        private static final ResourceIterable<Object> EMPTY_RESOURCE_ITERABLE = new EmptyResourceIterable<>();
 
         @Override
         public ResourceIterator<T> iterator()

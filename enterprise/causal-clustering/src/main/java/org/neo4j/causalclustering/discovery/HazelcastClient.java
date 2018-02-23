@@ -43,7 +43,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-class HazelcastClient extends LifecycleAdapter implements TopologyService
+public class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
     private final Log log;
     private final ClientConnectorAddresses connectorAddresses;
@@ -64,7 +64,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile ReadReplicaTopology rrTopology = ReadReplicaTopology.EMPTY;
 
-    HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config,
+    public HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config,
             MemberId myself, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         this.hzInstance = new RobustHazelcastWrapper( connector );
@@ -77,15 +77,15 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.myself = myself;
         this.groups = config.get( CausalClusteringSettings.server_groups );
-        this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod );
+        this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod, logProvider );
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis )
+    private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis, LogProvider logProvider )
     {
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
     @Override

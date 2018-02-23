@@ -64,7 +64,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
+public class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private final Config config;
@@ -89,7 +89,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private Thread startingThread;
     private volatile boolean stopped;
 
-    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+    public HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {

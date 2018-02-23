@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
  * or {@link #schemaWriteOperations()}, otherwise if already decided, verified so that it's
  * of the same type.
  */
-public interface Statement extends Resource
+public interface Statement extends Resource, ResourceManager
 {
     /**
      * @return interface exposing all read operations.

@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -85,6 +86,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
     private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>();
+    private final Map<String,BaseSetting<?>> settingsMap; // Only contains fixed settings and not groups
 
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log = new BufferingLog();
@@ -287,7 +289,7 @@ public class Config implements DiagnosticsProvider, Configuration
         public Config build() throws InvalidSettingException
         {
             List<LoadableConfig> loadableConfigs =
-                    Optional.ofNullable( settingsClasses ).orElse( LoadableConfig.allConfigClasses() );
+                    Optional.ofNullable( settingsClasses ).orElseGet( LoadableConfig::allConfigClasses );
 
             // If reading from a file, make sure we always have a neo4j_home
             if ( configFile != null && !initialSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
@@ -380,6 +382,13 @@ public class Config implements DiagnosticsProvider, Configuration
                 .map( LoadableConfig::getConfigOptions )
                 .flatMap( List::stream )
                 .collect( Collectors.toList() );
+
+        settingsMap = new HashMap<>();
+        configOptions.stream()
+                .map( ConfigOptions::settingGroup )
+                .filter( BaseSetting.class::isInstance )
+                .map( BaseSetting.class::cast )
+                .forEach( setting -> settingsMap.put( setting.name(), setting ) );
 
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
@@ -558,7 +567,7 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return a configured setting
      */
-    public Optional<?> getValue( @Nonnull String key )
+    public Optional<Object> getValue( @Nonnull String key )
     {
         return configOptions.stream()
                 .map( it -> it.asConfigValues( params ) )
@@ -566,7 +575,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 .filter( it -> it.name().equals( key ) )
                 .map( ConfigValue::value )
                 .findFirst()
-                .orElse( Optional.empty() );
+                .orElseGet( Optional::empty );
     }
 
     /**
@@ -588,18 +597,18 @@ public class Config implements DiagnosticsProvider, Configuration
 
         synchronized ( params )
         {
-            boolean oldDefault = false;
-            boolean newDefault = false;
+            boolean oldValueIsDefault = false;
+            boolean newValueIsDefault = false;
             String oldValue;
             String newValue;
             if ( update == null || update.isEmpty() )
             {
                 // Empty means we want to delete the configured value and fallback to the default value
                 String overriddenDefault = overriddenDefaults.get( setting );
-                oldDefault = overriddenDefault != null;
-                oldValue = oldDefault ? params.put( setting, overriddenDefault ) : params.remove( setting );
-                newValue = getConfiguredValueOf( setting );
-                newDefault = true;
+                boolean hasDefault = overriddenDefault != null;
+                oldValue = hasDefault ? params.put( setting, overriddenDefault ) : params.remove( setting );
+                newValue = getDefaultValueOf( setting );
+                newValueIsDefault = true;
             }
             else
             {
@@ -613,16 +622,21 @@ public class Config implements DiagnosticsProvider, Configuration
                     validator.validate( newEntry, ignore -> {} ); // Throws if invalid
                 }
 
-                oldValue = getConfiguredValueOf( setting );
-                if ( params.put( setting, update ) == null )
+                String previousValue = params.put( setting, update );
+                if ( previousValue != null )
                 {
-                    oldDefault = true;
+                    oldValue = previousValue;
+                }
+                else
+                {
+                    oldValue = getDefaultValueOf( setting );
+                    oldValueIsDefault = true;
                 }
                 newValue = update;
             }
             log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
-                    setting, oldDefault ? "default (" + oldValue + ")" : oldValue,
-                    newDefault ? "default (" + newValue + ")" : newValue, origin );
+                    setting, oldValueIsDefault ? "default (" + oldValue + ")" : oldValue,
+                    newValueIsDefault ? "default (" + newValue + ")" : newValue, origin );
             updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
     }
@@ -643,9 +657,17 @@ public class Config implements DiagnosticsProvider, Configuration
         }
     }
 
-    private String getConfiguredValueOf( String setting )
+    private String getDefaultValueOf( String setting )
     {
-        return getValue( setting ).map( Object::toString ).orElse( "<no default>" );
+        if ( overriddenDefaults.containsKey( setting ) )
+        {
+            return overriddenDefaults.get( setting );
+        }
+        if ( settingsMap.containsKey( setting ) )
+        {
+            return settingsMap.get( setting ).getDefaultValue();
+        }
+        return "<no default>";
     }
 
     private Optional<ConfigValue> findConfigValue( String setting )
@@ -833,7 +855,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream().map( BoltConnector::new ).filter(
-                c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) );
+                c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT == c.type.apply( params::get ) );
     }
 
     /**
@@ -875,7 +897,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 .map( Connector::new )
                 .filter( c -> c.group.groupKey.equalsIgnoreCase( "http" ) ||
                         c.group.groupKey.equalsIgnoreCase( "https" ) ||
-                        HTTP.equals( c.type.apply( params::get ) ) )
+                        HTTP == c.type.apply( params::get ) )
                 .map( c ->
                 {
                     final String name = c.group.groupKey;

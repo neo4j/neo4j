@@ -105,7 +105,7 @@ public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.S
     @Override
     public boolean equals( Object o )
     {
-        if ( o != null && o instanceof ConstraintRule )
+        if ( o instanceof ConstraintRule )
         {
             ConstraintRule that = (ConstraintRule) o;
             return this.descriptor.equals( that.descriptor );

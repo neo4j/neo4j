@@ -32,6 +32,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.ssl.PkiUtils;
@@ -48,6 +49,7 @@ public class CertificatesIT
     private static File keyFile;
     private static File certFile;
     private static PkiUtils certFactory;
+    private static TransportTestUtil util;
 
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
@@ -68,7 +70,7 @@ public class CertificatesIT
         {
             // WHEN
             connection.connect( server.lookupConnector( DEFAULT_CONNECTOR_KEY ) )
-                    .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+                    .send( util.acceptedVersions( 1, 0, 0, 0 ) );
 
             // THEN
             Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
@@ -102,6 +104,8 @@ public class CertificatesIT
         certFile.delete();
 
         certFactory.createSelfSignedCertificate( certFile, keyFile, "my.domain" );
+
+        util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
 }

@@ -249,18 +249,22 @@ enum SystemDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            for ( File subdir : SYS_BLOCK.listFiles( File::isDirectory ) )
+            File[] files = SYS_BLOCK.listFiles( File::isDirectory );
+            if ( files != null )
             {
-                File scheduler = new File( subdir, "queue/scheduler" );
-                if ( scheduler.isFile() )
+                for ( File subdir : files )
                 {
-                    try ( Stream<String> lines = Files.lines( scheduler.toPath() ) )
+                    File scheduler = new File( subdir, "queue/scheduler" );
+                    if ( scheduler.isFile() )
                     {
-                        lines.forEach( logger::log );
-                    }
-                    catch ( IOException e )
-                    {
-                        // ignore
+                        try ( Stream<String> lines = Files.lines( scheduler.toPath() ) )
+                        {
+                            lines.forEach( logger::log );
+                        }
+                        catch ( IOException e )
+                        {
+                            // ignore
+                        }
                     }
                 }
             }

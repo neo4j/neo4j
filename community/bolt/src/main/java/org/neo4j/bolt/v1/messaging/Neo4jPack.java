@@ -70,4 +70,6 @@ public interface Neo4jPack
     Packer newPacker( PackOutput output );
 
     Unpacker newUnpacker( PackInput input );
+
+    int version();
 }

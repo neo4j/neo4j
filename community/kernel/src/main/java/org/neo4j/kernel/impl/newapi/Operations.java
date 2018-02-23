@@ -87,7 +87,6 @@ public class Operations implements Write, ExplicitIndexWrite
     private DefaultPropertyCursor propertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
     private final DefaultCursors cursors;
-    private final NodeSchemaMatcher schemaMatcher;
 
     public Operations(
             AllStoreHolder allStoreHolder,
@@ -96,8 +95,7 @@ public class Operations implements Write, ExplicitIndexWrite
             KernelTransactionImplementation ktx,
             KernelToken token,
             DefaultCursors cursors,
-            AutoIndexing autoIndexing,
-            NodeSchemaMatcher schemaMatcher )
+            AutoIndexing autoIndexing )
     {
         this.token = token;
         this.autoIndexing = autoIndexing;
@@ -106,7 +104,6 @@ public class Operations implements Write, ExplicitIndexWrite
         this.statement = statement;
         this.updater = updater;
         this.cursors = cursors;
-        this.schemaMatcher = schemaMatcher;
     }
 
     public void initialize()
@@ -367,7 +364,7 @@ public class Operations implements Write, ExplicitIndexWrite
         Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
                 new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
 
-        schemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, propertyKey,
+        NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, propertyKey,
                 ( constraint, propertyIds ) ->
                 {
                     if ( propertyIds.contains( propertyKey ) )

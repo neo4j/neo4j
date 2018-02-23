@@ -28,7 +28,7 @@ public class SchemaIndexUsage extends IndexUsage
     private final String[] propertyKeys;
     private final int labelId;
 
-    SchemaIndexUsage( String identifier, int labelId, String label, String[] propertyKeys )
+    public SchemaIndexUsage( String identifier, int labelId, String label, String... propertyKeys )
     {
         super( identifier );
         this.label = label;

@@ -942,6 +942,34 @@ public class GBPTreeTest
         write.get();
     }
 
+    @Test
+    public void dirtyIndexIsNotCleanOnNextStartWithoutRecovery() throws IOException
+    {
+        makeDirty();
+
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        {
+            assertTrue( index.wasDirtyOnStartup() );
+        }
+    }
+
+    @Test
+    public void correctlyShutdownIndexIsClean() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 1L ), new MutableLong( 2L ) );
+            }
+            index.checkpoint( IOLimiter.unlimited() );
+        }
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            assertFalse( index.wasDirtyOnStartup() );
+        }
+    }
+
     @Test( timeout = 5_000L )
     public void cleanJobShouldLockOutCheckpoint() throws Exception
     {

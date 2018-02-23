@@ -26,7 +26,6 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -52,10 +51,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     @Override
     void createTestGraph( GraphDatabaseService graphDb )
     {
-        IndexDefinition index;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            index = graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -69,7 +67,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexOnline( index, 60, SECONDS );
+            graphDb.schema().awaitIndexesOnline( 60, SECONDS );
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )

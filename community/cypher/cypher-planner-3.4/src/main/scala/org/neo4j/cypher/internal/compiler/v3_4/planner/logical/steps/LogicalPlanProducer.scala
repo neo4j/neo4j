@@ -200,16 +200,24 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
                         propertyKeys: Seq[PropertyKeyToken],
                         valueExpr: QueryExpression[Expression],
                         solvedPredicates: Seq[Expression] = Seq.empty,
+                        solvedPredicatesForCardinalityEstimation: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[String],
                         context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
+    val queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-    annotate(NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds), solved, context)
+    // We know solvedPredicates is a subset of solvedPredicatesForCardinalityEstimation
+    val solved = RegularPlannerQuery(queryGraph = queryGraph)
+    val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
+
+    val plan = NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)
+    val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
+    solveds.set(plan.id, solved)
+    cardinalities.set(plan.id, cardinality)
+    plan
   }
 
   def planNodeIndexScan(idName: String,
@@ -316,6 +324,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
       .withArgumentIds(ids)
     )
     annotate(Optional(inputPlan, ids), solved, context)
+  }
+
+  def planActiveRead(inputPlan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inputPlan.id)
+    annotate(ActiveRead(inputPlan), solved, context)
   }
 
   def planLeftOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
@@ -686,9 +699,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     produceResult
   }
 
-  private def annotate(plan: LogicalPlan, plannerQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
-    solveds.set(plan.id, plannerQuery)
+  private def annotate(plan: LogicalPlan, solved: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
+    solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
     plan
   }

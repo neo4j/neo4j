@@ -64,10 +64,10 @@ public class IndexCreatorImpl implements IndexCreator
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
         }
 
-        return actions.createIndexDefinition( label, propertyKeys.toArray( new String[propertyKeys.size()] ) );
+        return actions.createIndexDefinition( label, propertyKeys.toArray( new String[0] ) );
     }
 
-    protected void assertInUnterminatedTransaction()
+    private void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
     }

@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.util.Validator;
 
 public class ExplicitIndexValueValidator implements Validator<Object>
 {
-    public static ExplicitIndexValueValidator INSTANCE = new ExplicitIndexValueValidator();
+    public static final ExplicitIndexValueValidator INSTANCE = new ExplicitIndexValueValidator();
 
     private ExplicitIndexValueValidator()
     {

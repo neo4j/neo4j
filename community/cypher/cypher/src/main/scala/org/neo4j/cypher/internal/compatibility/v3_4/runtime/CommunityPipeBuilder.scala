@@ -160,6 +160,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
           LazyTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
 
+      case ActiveRead(_) =>
+        ActiveReadPipe(source)(id = id)
+
       case Optional(inner, protectedSymbols) =>
         OptionalPipe((inner.availableSymbols -- protectedSymbols), source)(id = id)
 

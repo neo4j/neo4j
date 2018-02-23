@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -112,7 +113,7 @@ public class DeleteDuplicateNodesStepTest
         int expectedProperties = 0;
         for ( Ids entity : ids )
         {
-            boolean expectedToBeInUse = !PrimitiveLongCollections.contains( duplicateNodeIds, entity.node.getId() );
+            boolean expectedToBeInUse = !ArrayUtils.contains( duplicateNodeIds, entity.node.getId() );
             int stride = expectedToBeInUse ? 1 : 0;
             expectedNodes += stride;
 

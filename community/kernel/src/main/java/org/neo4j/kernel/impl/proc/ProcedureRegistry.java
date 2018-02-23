@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -191,7 +192,7 @@ public class ProcedureRegistry
         return Optional.of( func.signature() );
     }
 
-    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input )
+    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
         CallableProcedure proc = procedures.get( name );
@@ -199,7 +200,7 @@ public class ProcedureRegistry
         {
             throw noSuchProcedure( name );
         }
-        return proc.apply( ctx, input );
+        return proc.apply( ctx, input, resourceTracker );
     }
 
     public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input )

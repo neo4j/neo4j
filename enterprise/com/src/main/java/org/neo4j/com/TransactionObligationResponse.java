@@ -31,7 +31,10 @@ import org.neo4j.kernel.impl.store.StoreId;
  */
 public class TransactionObligationResponse<T> extends Response<T>
 {
-    public static final byte RESPONSE_TYPE = -1;
+    static final byte RESPONSE_TYPE = -1;
+
+    static final Response<Void> EMPTY_RESPONSE = new TransactionObligationResponse<>( null, StoreId.DEFAULT,
+            -1, ResourceReleaser.NO_OP );
 
     private final long obligationTxId;
 

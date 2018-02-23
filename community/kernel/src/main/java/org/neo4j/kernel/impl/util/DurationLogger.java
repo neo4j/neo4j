@@ -29,7 +29,6 @@ public class DurationLogger implements AutoCloseable
     private final String tag;
 
     private long start;
-    private long end;
     private String outcome = "Not finished";
 
     public DurationLogger( Log log, String tag )
@@ -53,7 +52,7 @@ public class DurationLogger implements AutoCloseable
     @Override
     public void close()
     {
-        end = System.currentTimeMillis();
+        long end = System.currentTimeMillis();
         long duration = end - start;
         if ( outcome == null )
         {

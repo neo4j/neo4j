@@ -23,12 +23,12 @@ import java.io.PrintWriter
 import java.util
 import java.util.Collections
 
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalExecutionResult, InternalQueryType}
-import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
+import org.neo4j.helpers.collection.Iterators
 
 case class ExplainExecutionResult(fieldNames: Array[String],
                                   executionPlanDescription: InternalPlanDescription,
@@ -36,7 +36,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
                                   notifications: Set[Notification])
   extends InternalExecutionResult {
 
-  def javaIterator: ResourceIterator[util.Map[String, Any]] = ResourceIterator.empty()
+  def javaIterator: ResourceIterator[util.Map[String, Any]] = Iterators.emptyResourceIterator()
   def columnAs[T](column: String) = Iterator.empty
   override def javaColumns: util.List[String] = Collections.emptyList()
 
@@ -52,7 +52,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
        |+--------------------------------------------+
        |""".stripMargin
 
-  def javaColumnAs[T](column: String): ResourceIterator[T] = ResourceIterator.empty()
+  def javaColumnAs[T](column: String): ResourceIterator[T] = Iterators.emptyResourceIterator()
 
   def planDescriptionRequested = true
 

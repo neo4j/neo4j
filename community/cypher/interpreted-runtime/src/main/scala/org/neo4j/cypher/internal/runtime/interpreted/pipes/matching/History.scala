@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
@@ -52,7 +53,7 @@ abstract class History {
 
 }
 
-class InitialHistory(source: ExecutionContext, alreadySeen: Seq[RelationshipValue]) extends History {
+class InitialHistory(source: ExecutionContext, alreadySeen: Seq[RelationshipValue], exFactory: ExecutionContextFactory) extends History {
 
   def hasSeen(p: Any) = p match {
     case r: RelationshipValue => alreadySeen.contains(r)
@@ -61,21 +62,21 @@ class InitialHistory(source: ExecutionContext, alreadySeen: Seq[RelationshipValu
 
   def contains(p: MatchingPair) = false
 
-  def add(pair: MatchingPair) = new AddedHistory(this, pair)
+  def add(pair: MatchingPair) = new AddedHistory(this, pair, exFactory)
 
   val toMap = source
 }
 
-class AddedHistory(val parent: History, val pair: MatchingPair) extends History {
+class AddedHistory(val parent: History, val pair: MatchingPair, exFactory: ExecutionContextFactory) extends History {
 
   def hasSeen(p: Any) = pair.matches(p) || parent.hasSeen(p)
 
   def contains(p: MatchingPair) = pair == p || parent.contains(p)
 
-  def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this, pair)
+  def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this, pair, exFactory)
 
   lazy val toMap = {
-    parent.toMap.set(toIndexedSeq(pair))
+    exFactory.copyWith(parent.toMap, toIndexedSeq(pair))
   }
 
   def toIndexedSeq(p: MatchingPair): Seq[(String, AnyValue)] = {

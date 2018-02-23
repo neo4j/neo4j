@@ -22,10 +22,7 @@ package org.neo4j.bolt.v1.transport.integration;
 import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -34,16 +31,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -55,30 +47,16 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 /**
  * Multiple concurrent users should be able to connect simultaneously. We test this with multiple users running
  * load that they roll back, asserting they don't see each others changes.
  */
-@RunWith( Parameterized.class )
-public class ConcurrentAccessIT
+public class ConcurrentAccessIT extends AbstractBoltTransportsTest
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
             settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
-
-    @Parameterized.Parameter
-    public Factory<TransportConnection> cf;
-
-    @Parameterized.Parameters
-    public static Collection<Factory<TransportConnection>> transports()
-    {
-        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
-                SecureWebSocketConnection::new );
-    }
 
     @Test
     public void shouldRunSimpleStatement() throws Throwable
@@ -119,22 +97,22 @@ public class ConcurrentAccessIT
     {
         return new Callable<Void>()
         {
-            private final byte[] init = chunk( InitMessage.init( "TestClient", emptyMap() ) );
-            private final byte[] createAndRollback = chunk(
+            private final byte[] init = util.chunk( InitMessage.init( "TestClient", emptyMap() ) );
+            private final byte[] createAndRollback = util.chunk(
                     run( "BEGIN" ), pullAll(),
                     run( "CREATE (n)" ), pullAll(),
                     run( "ROLLBACK" ), pullAll() );
 
-            private final byte[] matchAll = chunk(
+            private final byte[] matchAll = util.chunk(
                     run( "MATCH (n) RETURN n" ), pullAll() );
 
             @Override
             public Void call() throws Exception
             {
                 // Connect
-                TransportConnection client = cf.newInstance();
-                client.connect( server.lookupDefaultConnector() ).send( acceptedVersions( 1, 0, 0, 0 ) );
-                assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+                TransportConnection client = newConnection();
+                client.connect( server.lookupDefaultConnector() ).send( util.defaultAcceptedVersions() );
+                assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
 
                 init( client );
 
@@ -149,15 +127,13 @@ public class ConcurrentAccessIT
             private void init( TransportConnection client ) throws Exception
             {
                 client.send( init );
-                assertThat( client, eventuallyReceives(
-                        msgSuccess()
-                ) );
+                assertThat( client, util.eventuallyReceives( msgSuccess() ) );
             }
 
             private void createAndRollback( TransportConnection client ) throws Exception
             {
                 client.send( createAndRollback );
-                assertThat( client, eventuallyReceives(
+                assertThat( client, util.eventuallyReceives(
                         msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
                                 hasKey( "result_available_after" ) ) ),
                         msgSuccess(),
@@ -170,7 +146,7 @@ public class ConcurrentAccessIT
 
                 // Verify no visible data
                 client.send( matchAll );
-                assertThat( client, eventuallyReceives(
+                assertThat( client, util.eventuallyReceives(
                         msgSuccess(CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
                                 hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );

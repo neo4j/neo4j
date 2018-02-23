@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
@@ -61,7 +62,7 @@ class SpatialFusionIndexReader implements IndexReader
     @Override
     public void close()
     {
-        forAll( reader -> ((IndexReader) reader).close(), readerMap.values().toArray() );
+        forAll( Resource::close, readerMap.values() );
     }
 
     @Override

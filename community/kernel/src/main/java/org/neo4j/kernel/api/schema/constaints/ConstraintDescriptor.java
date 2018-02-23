@@ -76,7 +76,7 @@ public abstract class ConstraintDescriptor implements org.neo4j.internal.kernel.
     @Override
     public final boolean equals( Object o )
     {
-        if ( o != null && o instanceof ConstraintDescriptor )
+        if ( o instanceof ConstraintDescriptor )
         {
             ConstraintDescriptor that = (ConstraintDescriptor)o;
             return this.type() == that.type() && this.schema().equals( that.schema() );

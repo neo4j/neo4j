@@ -31,7 +31,7 @@ abstract class AdvancedManagementSupport extends ManagementSupport
     @Override
     protected final boolean supportsMxBeans()
     {
-        return BeanProxy.supportsMxBeans();
+        return true;
     }
 
     @Override

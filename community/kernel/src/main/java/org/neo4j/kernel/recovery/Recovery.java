@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.recovery;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -60,7 +62,7 @@ public class Recovery extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws Throwable
+    public void init() throws IOException
     {
         RecoveryStartInformation recoveryStartInformation = recoveryService.getRecoveryStartInformation();
         if ( !recoveryStartInformation.isRecoveryRequired() )

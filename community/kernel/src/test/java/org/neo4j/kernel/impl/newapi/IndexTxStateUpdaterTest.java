@@ -29,7 +29,6 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -111,7 +110,7 @@ public class IndexTxStateUpdaterTest
         Read readOps = mock( Read.class );
         when( readOps.txState() ).thenReturn( txState );
 
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, new NodeSchemaMatcher( readOps ) );
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
 
     }
 

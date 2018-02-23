@@ -71,8 +71,8 @@ abstract class BaseFeatureTest {
   }
 
   @TestFactory
-  def runCost(): Collection[DynamicTest] = {
-    createTests(scenarios, CostTestConfig)
+  def runCostInterpreted(): Collection[DynamicTest] = {
+    createTests(scenarios, CostInterpretedTestConfig)
   }
 
   @TestFactory
@@ -132,8 +132,8 @@ abstract class BaseFeatureTest {
   }
 
   @Ignore
-  def generateBlacklistCost(): Unit = {
-    printComputedBlacklist(scenarios, CostTestConfig)
+  def generateBlacklistCostInterpreted(): Unit = {
+    printComputedBlacklist(scenarios, CostInterpretedTestConfig)
     fail("Do not forget to add @ignore to this method")
   }
 

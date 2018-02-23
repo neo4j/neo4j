@@ -58,6 +58,8 @@ trait QueryContext extends TokenContext {
 
   def transactionalContext: QueryTransactionalContext
 
+  def withActiveRead: QueryContext
+
   def resources: CloseableResource
 
   def nodeOps: Operations[NodeValue]
@@ -243,6 +245,10 @@ trait QueryTransactionalContext extends CloseableResource {
   def cursors : CursorFactory
 
   def dataRead: Read
+
+  def stableDataRead: Read
+
+  def markAsStable(): Unit
 
   def tokenRead: TokenRead
 

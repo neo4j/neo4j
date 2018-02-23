@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -83,6 +84,17 @@ class FusionIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        forAll( updater -> ((IndexUpdater) updater).close(), nativeUpdater, spatialUpdater, luceneUpdater );
+        try
+        {
+            forAll( IndexUpdater::close, Arrays.asList( nativeUpdater, spatialUpdater, luceneUpdater ) );
+        }
+        catch ( IOException | IndexEntryConflictException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

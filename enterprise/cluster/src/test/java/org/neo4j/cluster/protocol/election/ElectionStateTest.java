@@ -225,7 +225,7 @@ public class ElectionStateTest
         Message<ElectionMessage> voteRequest = Message.to( ElectionMessage.vote, URI.create( "some://instance" ),
                 new ElectionContext.VoteRequest( "coordinator", version )
         );
-        voteRequest.setHeader( Message.FROM, "some://other" );
+        voteRequest.setHeader( Message.HEADER_FROM, "some://other" );
 
         election.handle( context, voteRequest, holder );
 
@@ -264,7 +264,7 @@ public class ElectionStateTest
         Message<ElectionMessage> votedMessage = Message.to(
                 ElectionMessage.voted, URI.create( "some://instance" ),
                 new ElectionMessage.VotedData( COORDINATOR, new InstanceId( 1 ), voteCredentialComparable ) );
-        votedMessage.setHeader( Message.FROM, "some://other" );
+        votedMessage.setHeader( Message.HEADER_FROM, "some://other" );
 
         election.handle( electionContext, votedMessage, holder );
 

@@ -26,6 +26,8 @@ case object Distance extends Function with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTPoint, CTGeometry), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTGeometry, CTPoint), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat),
+    // Will return null:
+    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTFloat)
   )
 }

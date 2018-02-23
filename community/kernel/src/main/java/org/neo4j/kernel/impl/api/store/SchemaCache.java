@@ -206,7 +206,7 @@ public class SchemaCache
             this.indexByProperty = PrimitiveIntCollections.copy( schemaCacheState.indexByProperty );
         }
 
-        public void load( Iterable<SchemaRule> schemaRuleIterator )
+        private void load( Iterable<SchemaRule> schemaRuleIterator )
         {
             for ( SchemaRule schemaRule : schemaRuleIterator )
             {

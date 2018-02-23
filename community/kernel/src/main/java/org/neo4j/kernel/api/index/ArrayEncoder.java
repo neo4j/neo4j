@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.Base64;
 
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
@@ -33,7 +34,6 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public final class ArrayEncoder
 {
@@ -58,7 +58,7 @@ public final class ArrayEncoder
 
     static class ValueEncoder implements ValueWriter<RuntimeException>
     {
-        StringBuilder builder;
+        private StringBuilder builder;
 
         ValueEncoder()
         {

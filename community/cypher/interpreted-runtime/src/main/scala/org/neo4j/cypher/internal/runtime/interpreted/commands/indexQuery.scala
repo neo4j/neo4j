@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.SeqCombiner.combine
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
@@ -76,6 +76,9 @@ object indexQuery extends GraphElementPropertyFunctions {
 
         case InequalitySeekRangeExpression(innerRange) =>
           innerRange.mapBounds(expression => makeValueNeoSafe(expression(m, state)).asObject())
+
+        case PointDistanceSeekRangeExpression(innerRange) =>
+          innerRange.map(expression => makeValueNeoSafe(expression(m, state)).asObject())
       }
       index(Seq(range)).toIterator
   }

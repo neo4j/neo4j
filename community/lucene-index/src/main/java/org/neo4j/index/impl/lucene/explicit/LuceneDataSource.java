@@ -88,7 +88,7 @@ public class LuceneDataSource extends LifecycleAdapter
     /**
      * Default {@link Analyzer} for fulltext parsing.
      */
-    public static final Analyzer LOWER_CASE_WHITESPACE_ANALYZER = new Analyzer()
+    static final Analyzer LOWER_CASE_WHITESPACE_ANALYZER = new Analyzer()
     {
         @Override
         protected TokenStreamComponents createComponents( String fieldName )
@@ -114,11 +114,10 @@ public class LuceneDataSource extends LifecycleAdapter
     private IndexClockCache indexSearchers;
     private File baseStorePath;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    final IndexConfigStore indexStore;
+    private final IndexConfigStore indexStore;
     private IndexTypeCache typeCache;
     private boolean readOnly;
     private boolean closed;
-    private LuceneFilesystemFacade filesystemFacade;
     private IndexReferenceFactory indexReferenceFactory;
     private Map<IndexIdentifier,Map<String,DocValuesType>> indexTypeMap;
 
@@ -139,13 +138,13 @@ public class LuceneDataSource extends LifecycleAdapter
     @Override
     public void init()
     {
-        this.filesystemFacade = config.get( Configuration.ephemeral ) ? LuceneFilesystemFacade.MEMORY
-                : LuceneFilesystemFacade.FS;
+        LuceneFilesystemFacade filesystemFacade =
+                config.get( Configuration.ephemeral ) ? LuceneFilesystemFacade.MEMORY : LuceneFilesystemFacade.FS;
         readOnly = isReadOnly( config, operationalMode );
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
-        this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
+        this.baseStorePath = filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
                 getLuceneIndexStoreDirectory( storeDir ) );
-        this.filesystemFacade.cleanWriteLocks( baseStorePath );
+        filesystemFacade.cleanWriteLocks( baseStorePath );
         this.typeCache = new IndexTypeCache( indexStore );
         this.indexReferenceFactory = readOnly ?
                                      new ReadOnlyIndexReferenceFactory( filesystemFacade, baseStorePath, typeCache ) :
@@ -154,8 +153,7 @@ public class LuceneDataSource extends LifecycleAdapter
         closed = false;
     }
 
-    public void assertValidType( String key, Object value, IndexIdentifier identifier )
-            throws ExplicitIndexNotFoundKernelException
+    void assertValidType( String key, Object value, IndexIdentifier identifier ) throws ExplicitIndexNotFoundKernelException
     {
         DocValuesType expectedType;
         String expectedTypeName;
@@ -226,7 +224,7 @@ public class LuceneDataSource extends LifecycleAdapter
     private synchronized IndexReference[] getAllIndexes()
     {
         Collection<IndexReference> indexReferences = indexSearchers.values();
-        return indexReferences.toArray( new IndexReference[indexReferences.size()] );
+        return indexReferences.toArray( new IndexReference[0] );
     }
 
     void force()
@@ -268,7 +266,7 @@ public class LuceneDataSource extends LifecycleAdapter
         lock.writeLock().unlock();
     }
 
-    static File getFileDirectory( File storeDir, IndexEntityType type )
+    private static File getFileDirectory( File storeDir, IndexEntityType type )
     {
         File path = new File( storeDir, "lucene" );
         String extra = type.nameToLowerCase();
@@ -324,7 +322,7 @@ public class LuceneDataSource extends LifecycleAdapter
         }
     }
 
-    synchronized IndexReference syncGetIndexSearcher( IndexIdentifier identifier )
+    private synchronized IndexReference syncGetIndexSearcher( IndexIdentifier identifier )
             throws ExplicitIndexNotFoundKernelException
     {
         try
@@ -550,7 +548,7 @@ public class LuceneDataSource extends LifecycleAdapter
         return Iterators.asResourceIterator( files.iterator() );
     }
 
-    public ResourceIterator<File> listStoreFiles() throws IOException
+    ResourceIterator<File> listStoreFiles() throws IOException
     {
         if ( readOnly )
         {

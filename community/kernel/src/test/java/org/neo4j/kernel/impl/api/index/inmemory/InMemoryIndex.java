@@ -233,6 +233,12 @@ class InMemoryIndex
         {
             InMemoryIndex.this.verifyDeferredConstraints( propertyAccessor );
         }
+
+        @Override
+        public boolean isDirty()
+        {
+            return false;
+        }
     }
 
     protected IndexUpdater newUpdater( IndexUpdateMode mode, boolean populating )

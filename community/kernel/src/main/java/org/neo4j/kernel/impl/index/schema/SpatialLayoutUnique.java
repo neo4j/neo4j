@@ -29,9 +29,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 public class SpatialLayoutUnique extends SpatialLayout
 {
     private static final String IDENTIFIER_NAME = "UPI";
-    public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 1;
-    public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
+    private static final long LAYOUT_IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     SpatialLayoutUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
@@ -41,7 +41,7 @@ public class SpatialLayoutUnique extends SpatialLayout
     @Override
     public long identifier()
     {
-        return IDENTIFIER;
+        return LAYOUT_IDENTIFIER;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class SpatialLayoutUnique extends SpatialLayout
         if ( comparison == 0 )
         {
             // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getEntityIdIsSpecialTieBreaker() || o2.getEntityIdIsSpecialTieBreaker() )
+            if ( o1.getCompareId() || o2.getCompareId() )
             {
                 return Long.compare( o1.getEntityId(), o2.getEntityId() );
             }

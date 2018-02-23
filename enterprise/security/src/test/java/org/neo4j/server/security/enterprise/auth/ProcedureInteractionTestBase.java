@@ -40,10 +40,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -62,6 +62,7 @@ import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
@@ -73,8 +74,8 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -148,6 +149,7 @@ public abstract class ProcedureInteractionTestBase<S>
     EnterpriseUserManager userManager;
 
     protected NeoInteractionLevel<S> neo;
+    protected TransportTestUtil util;
     File securityLog;
 
     Map<String,String> defaultConfiguration() throws IOException
@@ -164,6 +166,7 @@ public abstract class ProcedureInteractionTestBase<S>
     public void setUp() throws Throwable
     {
         configuredSetup( defaultConfiguration() );
+        util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     void configuredSetup( Map<String,String> config ) throws Throwable
@@ -615,11 +618,11 @@ public abstract class ProcedureInteractionTestBase<S>
         HostnamePort address = neo.lookupConnector( DEFAULT_CONNECTOR_KEY );
         Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
 
-        connection.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken ) ) );
+        connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( init( "TestClient/1.1", authToken ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( connection, eventuallyReceives( msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
         return connection;
     }
 

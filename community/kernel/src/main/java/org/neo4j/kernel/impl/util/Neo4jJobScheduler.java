@@ -177,10 +177,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         {
             // Cancel jobs which hasn't been cancelled already, this to avoid having to wait the full
             // max wait time and then just leave them.
-            for ( JobHandle handle : jobs )
-            {
-                handle.cancel( true );
-            }
+            jobs.forEach( handle -> handle.cancel( true ) );
             jobs.clear();
 
             shutdownPool( globalPool );

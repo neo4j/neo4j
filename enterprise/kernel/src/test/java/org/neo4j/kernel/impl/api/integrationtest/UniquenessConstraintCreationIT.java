@@ -27,15 +27,17 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -285,9 +287,10 @@ public class UniquenessConstraintCreationIT
     private String userMessage( ConstraintValidationException cause )
             throws TransactionFailureException
     {
-        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperationsInNewTransaction() );
-        String actualMessage = cause.getUserMessage( lookup );
-        commit();
-        return actualMessage;
+        try ( KernelTransaction tx = newTransaction() )
+        {
+            TokenNameLookup lookup = new SilentTokenNameLookup( tx.tokenRead() );
+            return cause.getUserMessage( lookup );
+        }
     }
 }

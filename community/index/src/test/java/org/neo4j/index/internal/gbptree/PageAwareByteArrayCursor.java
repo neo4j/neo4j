@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,6 +138,18 @@ class PageAwareByteArrayCursor extends PageCursor
         for ( int i = 0; i < bytesToCopy; i++ )
         {
             targetCursor.putByte( targetOffset + i, getByte( sourceOffset + i ) );
+        }
+        return bytesToCopy;
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer buf )
+    {
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        for ( int i = 0; i < bytesToCopy; i++ )
+        {
+            byte b = getByte( sourceOffset + i );
+            buf.put( b );
         }
         return bytesToCopy;
     }
