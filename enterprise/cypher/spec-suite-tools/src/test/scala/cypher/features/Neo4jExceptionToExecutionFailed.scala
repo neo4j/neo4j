@@ -32,8 +32,8 @@ object Neo4jExceptionToExecutionFailed {
 
   def convert(phase: String, t: Throwable): ExecutionFailed = {
     val neo4jException = t match {
-      case _ => throw t
       case re: RuntimeException => re
+      case _ => throw t
     }
     val errorType = Status.statusCodeOf(neo4jException)
     val msg = neo4jException.getMessage
