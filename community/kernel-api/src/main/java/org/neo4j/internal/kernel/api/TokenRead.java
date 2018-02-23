@@ -31,6 +31,14 @@ public interface TokenRead
     int NO_TOKEN = -1;
 
     /**
+     * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.
+     *
+     * @param name The label name.
+     * @return the label id, or NO_TOKEN
+     */
+    int nodeLabel( String name );
+
+    /**
      * Returns the name of a label given its label id
      *
      * @param labelId The label id
@@ -38,14 +46,6 @@ public interface TokenRead
      * @throws LabelNotFoundKernelException if no label is associates with this id
      */
     String nodeLabelName( int labelId ) throws LabelNotFoundKernelException;
-
-    /**
-     * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.
-     *
-     * @param name The label name.
-     * @return the label id, or NO_TOKEN
-     */
-    int nodeLabel( String name );
 
     /**
      * Return the id of the provided relationship type, or NO_TOKEN if the type isn't known to the graph.

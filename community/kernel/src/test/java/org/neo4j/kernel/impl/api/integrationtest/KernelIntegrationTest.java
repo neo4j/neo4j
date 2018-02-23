@@ -107,6 +107,11 @@ public abstract class KernelIntegrationTest
         return statement.readOperations();
     }
 
+    protected KernelTransaction newTransaction() throws TransactionFailureException
+    {
+        return kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+    }
+
     protected DbmsOperations dbmsOperations()
     {
         return dbmsOperations;

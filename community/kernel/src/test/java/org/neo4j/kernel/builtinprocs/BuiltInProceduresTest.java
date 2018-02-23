@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -88,6 +89,7 @@ public class BuiltInProceduresTest
     private final Map<Integer,String> relTypes = new HashMap<>();
 
     private final ReadOperations read = mock( ReadOperations.class );
+    private final TokenRead tokens = mock( TokenRead.class );
     private final Statement statement = mock( Statement.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
@@ -482,6 +484,7 @@ public class BuiltInProceduresTest
         procs.registerProcedure( BuiltInDbmsProcedures.class );
 
         when( tx.acquireStatement() ).thenReturn( statement );
+        when( tx.tokenRead() ).thenReturn( tokens );
         when( statement.readOperations() ).thenReturn( read );
 
         when( read.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
@@ -492,10 +495,10 @@ public class BuiltInProceduresTest
         when( read.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
         when( read.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 
-        when( read.propertyKeyGetName( anyInt() ) )
+        when( tokens.propertyKeyName( anyInt() ) )
                 .thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
-        when( read.labelGetName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
-        when( read.relationshipTypeGetName( anyInt() ) )
+        when( tokens.nodeLabelName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
+        when( tokens.relationshipTypeName( anyInt() ) )
                 .thenAnswer( invocation -> relTypes.get( invocation.getArgument( 0 ) ) );
 
         // Make it appear that labels are in use

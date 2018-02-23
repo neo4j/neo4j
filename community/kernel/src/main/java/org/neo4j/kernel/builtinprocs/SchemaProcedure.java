@@ -38,11 +38,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -69,7 +70,7 @@ public class SchemaProcedure
         try ( Statement statement = kernelTransaction.acquireStatement() )
         {
             ReadOperations readOperations = statement.readOperations();
-            StatementTokenNameLookup statementTokenNameLookup = new StatementTokenNameLookup( readOperations );
+            TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( kernelTransaction.tokenRead() );
 
             try ( Transaction transaction = graphDatabaseAPI.beginTx() )
             {
@@ -90,7 +91,7 @@ public class SchemaProcedure
                             if ( index.type() == GENERAL )
                             {
                                 String[] propertyNames = PropertyNameUtils.getPropertyKeys(
-                                        statementTokenNameLookup, index.schema().getPropertyIds() );
+                                        tokenNameLookup, index.schema().getPropertyIds() );
                                 indexes.add( String.join( ",", propertyNames ) );
                             }
                         }
@@ -102,7 +103,7 @@ public class SchemaProcedure
                         while ( nodePropertyConstraintIterator.hasNext() )
                         {
                             ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
-                            constraints.add( constraint.prettyPrint( statementTokenNameLookup ) );
+                            constraints.add( constraint.prettyPrint( tokenNameLookup ) );
                         }
                         properties.put( "constraints", constraints );
 
