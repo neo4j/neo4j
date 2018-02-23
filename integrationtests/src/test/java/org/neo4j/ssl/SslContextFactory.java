@@ -34,14 +34,14 @@ import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.configuration.ssl.SslSystemSettings;
 import org.neo4j.logging.NullLogProvider;
 
-class SslContextFactory
+public class SslContextFactory
 {
-    interface Ciphers
+    public interface Ciphers
     {
         SslParameters ciphers( String... ciphers );
     }
 
-    static class SslParameters implements Ciphers
+    public static class SslParameters implements Ciphers
     {
         private String protocols;
         private String ciphers;
@@ -52,16 +52,24 @@ class SslContextFactory
             this.ciphers = ciphers;
         }
 
-        static Ciphers protocols( String... protocols )
+        public static Ciphers protocols( String... protocols )
         {
-            return new SslParameters( String.join( ",", protocols ), null );
+            return new SslParameters( joinOrNull( protocols ), null );
         }
 
         @Override
         public SslParameters ciphers( String... ciphers )
         {
-            this.ciphers = String.join( ",", ciphers );
+            this.ciphers = joinOrNull( ciphers );
             return this;
+        }
+
+        /**
+         * The low-level frameworks use null to signify that defaults shall be used, and so does our SSL framework.
+         */
+        private static String joinOrNull( String[] parts )
+        {
+            return parts.length > 0 ? String.join( ",", parts ) : null;
         }
 
         @Override
@@ -71,22 +79,22 @@ class SslContextFactory
         }
     }
 
-    static SslContext makeSslContext( SslResource sslResource, boolean forServer, SslParameters params ) throws CertificateException, IOException
+    public static SslContext makeSslContext( SslResource sslResource, boolean forServer, SslParameters params ) throws CertificateException, IOException
     {
         return makeSslContext( sslResource, forServer, SslProvider.JDK.name(), params.protocols, params.ciphers );
     }
 
-    static SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider ) throws CertificateException, IOException
+    public static SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider ) throws CertificateException, IOException
     {
         return makeSslContext( sslResource, forServer, sslProvider, null, null );
     }
 
-    static SslContext makeSslContext( SslResource sslResource, boolean forServer ) throws CertificateException, IOException
+    public static SslContext makeSslContext( SslResource sslResource, boolean forServer ) throws CertificateException, IOException
     {
         return makeSslContext( sslResource, forServer, SslProvider.JDK.name(), null, null );
     }
 
-    static SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider, String protocols, String ciphers ) throws CertificateException, IOException
+    public static SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider, String protocols, String ciphers ) throws CertificateException, IOException
     {
         Map<String,String> config = new HashMap<>();
         config.put( SslSystemSettings.netty_ssl_provider.name(), sslProvider );

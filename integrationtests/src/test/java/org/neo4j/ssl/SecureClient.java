@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-class SecureClient
+public class SecureClient
 {
     private Bootstrap bootstrap;
     private ClientInitializer clientInitializer;
@@ -49,7 +49,7 @@ class SecureClient
     private Channel channel;
     private Bucket bucket = new Bucket();
 
-    SecureClient( SslContext sslContext )
+    public SecureClient( SslContext sslContext )
     {
         eventLoopGroup = new NioEventLoopGroup();
         clientInitializer = new ClientInitializer( sslContext, bucket );
@@ -59,11 +59,14 @@ class SecureClient
                 .handler( clientInitializer );
     }
 
-    @SuppressWarnings( "SameParameterValue" )
-    void connect( int port )
+    public void connect( int port )
     {
         ChannelFuture channelFuture = bootstrap.connect( "localhost", port ).awaitUninterruptibly();
         channel = channelFuture.channel();
+        if ( !channelFuture.isSuccess() )
+        {
+            throw new RuntimeException( "Failed to connect", channelFuture.cause() );
+        }
     }
 
     void disconnect()
@@ -87,17 +90,17 @@ class SecureClient
         return channel;
     }
 
-    Future<Channel> sslHandshakeFuture()
+    public Future<Channel> sslHandshakeFuture()
     {
         return clientInitializer.handshakeFuture;
     }
 
-    String ciphers()
+    public String ciphers()
     {
         return clientInitializer.sslEngine.getSession().getCipherSuite();
     }
 
-    String protocol()
+    public String protocol()
     {
         return clientInitializer.sslEngine.getSession().getProtocol();
     }
