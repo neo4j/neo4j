@@ -48,13 +48,10 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateApply;
 import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateWork;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
@@ -70,10 +67,8 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE
  */
 public class SpatialCRSSchemaIndex
 {
-    private UniqueIndexSampler uniqueSampler;
     private final File indexFile;
     private final PageCache pageCache;
-    private final IndexDescriptor descriptor;
     private final CoordinateReferenceSystem crs;
     private final FileSystemAbstraction fs;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
@@ -89,7 +84,6 @@ public class SpatialCRSSchemaIndex
     private Writer<SpatialSchemaKey,NativeSchemaValue> singleTreeWriter;
     private NativeSchemaIndex<SpatialSchemaKey,NativeSchemaValue> schemaIndex;
     private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> workSync;
-    private DefaultNonUniqueIndexSampler generalSampler;
 
     public SpatialCRSSchemaIndex( IndexDescriptor descriptor,
             IndexDirectoryStructure directoryStructure,
@@ -100,7 +94,6 @@ public class SpatialCRSSchemaIndex
             SchemaIndexProvider.Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        this.descriptor = descriptor;
         this.crs = crs;
         this.pageCache = pageCache;
         this.fs = fs;
@@ -124,32 +117,19 @@ public class SpatialCRSSchemaIndex
         {
             throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + crs );
         }
-        state = State.NONE;
+        state = State.INIT;
 
         layout = layout( descriptor );
         treeKey = layout.newKey();
         treeValue = layout.newValue();
         schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
-
-    }
-
-    /**
-     * Makes sure that the index is initialized
-     */
-    public void init( IndexSamplingConfig samplingConfig )
-    {
-        if ( state == State.NONE )
-        {
-            initialize( samplingConfig );
-        }
     }
 
     /**
      * Makes sure that the index is ready to populate
      */
-    public void startPopulation( IndexSamplingConfig samplingConfig ) throws IOException
+    public void startPopulation() throws IOException
     {
-        init( samplingConfig );
         if ( state == State.INIT )
         {
             // First add to sub-index, make sure to create
@@ -164,9 +144,8 @@ public class SpatialCRSSchemaIndex
     /**
      * Makes sure that the index is online
      */
-    public void takeOnline( IndexSamplingConfig samplingConfig ) throws IOException
+    public void takeOnline() throws IOException
     {
-        init( samplingConfig );
         if ( !indexExists() )
         {
             throw new IOException( "Index file does not exist." );
@@ -181,24 +160,22 @@ public class SpatialCRSSchemaIndex
         }
     }
 
-    public IndexUpdater updaterWithCreate( IndexSamplingConfig samplingConfig, boolean populating ) throws IOException
+    public IndexUpdater updaterWithCreate( boolean populating ) throws IOException
     {
         if ( populating )
         {
-            if ( state == State.NONE )
+            if ( state == State.INIT )
             {
                 // sub-index didn't exist, create in populating mode
-                initialize( samplingConfig );
                 create();
             }
             return newPopulatingUpdater();
         }
         else
         {
-            if ( state == State.NONE )
+            if ( state == State.INIT )
             {
                 // sub-index didn't exist, create and make it online
-                initialize( samplingConfig );
                 create();
                 finishPopulation( true );
                 online();
@@ -291,62 +268,6 @@ public class SpatialCRSSchemaIndex
         applyWithWorkSync( updates );
     }
 
-    public void includeSample( IndexEntryUpdate<?> update )
-    {
-        if ( uniqueSampler != null )
-        {
-            uniqueSampler.increment( 1 );
-        }
-        else if ( generalSampler != null )
-        {
-            generalSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
-        }
-        else
-        {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    public IndexSample sampleResult()
-    {
-        if ( uniqueSampler != null )
-        {
-            return uniqueSampler.result();
-        }
-        else if ( generalSampler != null )
-        {
-            // Close the writer before scanning
-            try
-            {
-                closeWriter();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-
-            try
-            {
-                return generalSampler.result();
-            }
-            finally
-            {
-                try
-                {
-                    instantiateWriter();
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-            }
-        }
-        else
-        {
-            throw new UnsupportedOperationException();
-        }
-    }
-
     private IndexUpdater newPopulatingUpdater()
     {
         return new IndexUpdater()
@@ -391,7 +312,7 @@ public class SpatialCRSSchemaIndex
         finally
         {
             dropped = true;
-            state = State.NONE;
+            state = State.INIT;
         }
     }
 
@@ -438,20 +359,6 @@ public class SpatialCRSSchemaIndex
         instantiateWriter();
         workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger<>() ) );
         state = State.POPULATING;
-    }
-
-    private void initialize( IndexSamplingConfig samplingConfig )
-    {
-        assert state == State.NONE;
-        if ( isUnique( descriptor ) )
-        {
-            uniqueSampler = new UniqueIndexSampler();
-        }
-        else
-        {
-            generalSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
-        }
-        state = State.INIT;
     }
 
     private void online() throws IOException
@@ -544,7 +451,6 @@ public class SpatialCRSSchemaIndex
 
     private enum State
     {
-        NONE,
         INIT,
         POPULATING,
         POPULATED,

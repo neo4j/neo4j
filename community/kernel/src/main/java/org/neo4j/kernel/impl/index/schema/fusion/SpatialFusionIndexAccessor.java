@@ -63,7 +63,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
         this.indexFactory = indexFactory;
         for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
-            index.takeOnline( samplingConfig );
+            index.takeOnline();
         }
     }
 
@@ -77,7 +77,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return SpatialFusionIndexUpdater.updaterForAccessor( indexMap, indexId, indexFactory, descriptor, samplingConfig );
+        return SpatialFusionIndexUpdater.updaterForAccessor( indexMap, indexId, indexFactory, descriptor );
     }
 
     @Override
@@ -142,7 +142,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
             @Override
             public Iterator<Long> iterator()
             {
-                return new CombiningIterable( allEntriesReader ).iterator();
+                return new CombiningIterable<>( allEntriesReader ).iterator();
             }
         };
     }

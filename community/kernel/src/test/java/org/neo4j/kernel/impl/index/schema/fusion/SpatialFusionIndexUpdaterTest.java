@@ -67,14 +67,14 @@ public class SpatialFusionIndexUpdaterTest
             updaterMap.put( crs, mock( IndexUpdater.class ) );
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
             when( indexSupplier.get( descriptor, indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
-            when( indexMap.get( crs ).updaterWithCreate( samplingConfig, true ) ).thenReturn( updaterMap.get( crs ) );
-            when( indexMap.get( crs ).updaterWithCreate( samplingConfig, false ) ).thenReturn( updaterMap.get( crs ) );
+            when( indexMap.get( crs ).updaterWithCreate( true ) ).thenReturn( updaterMap.get( crs ) );
+            when( indexMap.get( crs ).updaterWithCreate( false ) ).thenReturn( updaterMap.get( crs ) );
         }
 
         fusionIndexAccessorUpdater = SpatialFusionIndexUpdater.updaterForAccessor(
-                indexMap, 0, indexSupplier, descriptor, samplingConfig );
+                indexMap, 0, indexSupplier, descriptor );
         fusionIndexPopulatorUpdater = SpatialFusionIndexUpdater.updaterForPopulator(
-                indexMap, 0, indexSupplier, descriptor, samplingConfig );
+                indexMap, 0, indexSupplier, descriptor );
     }
 
     @Test

@@ -89,26 +89,13 @@ public class SpatialKnownIndexTest
     }
 
     @Test
-    public void shouldNotCreateFileOnInit()
-    {
-        // given
-        assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-
-        // when
-        index.init( samplingConfig );
-
-        // then
-        assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-    }
-
-    @Test
     public void shouldCreateFileOnCreate() throws IOException
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 
         // when
-        index.startPopulation( samplingConfig );
+        index.startPopulation();
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
@@ -123,7 +110,7 @@ public class SpatialKnownIndexTest
         try
         {
             // when
-            index.takeOnline( samplingConfig );
+            index.takeOnline();
             fail("should have thrown exception");
         }
         catch ( IOException e )
@@ -139,12 +126,12 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.startPopulation( samplingConfig );
+        index.startPopulation();
 
         // when
         try
         {
-            index.takeOnline( samplingConfig );
+            index.takeOnline();
             fail( "Should have thrown exception." );
         }
         catch ( IllegalStateException e )
@@ -160,11 +147,11 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.startPopulation( samplingConfig );
+        index.startPopulation();
         index.finishPopulation( true );
 
         // when
-        index.takeOnline( samplingConfig );
+        index.takeOnline();
         index.close();
     }
 
@@ -174,7 +161,7 @@ public class SpatialKnownIndexTest
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 
         // when
-        IndexUpdater updater = index.updaterWithCreate( samplingConfig, false );
+        IndexUpdater updater = index.updaterWithCreate( false );
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
@@ -189,7 +176,7 @@ public class SpatialKnownIndexTest
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 
         // when
-        IndexUpdater updater = index.updaterWithCreate( samplingConfig, true );
+        IndexUpdater updater = index.updaterWithCreate( true );
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
@@ -203,7 +190,7 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.startPopulation( samplingConfig );
+        index.startPopulation();
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
 
         // when
