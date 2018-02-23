@@ -31,7 +31,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveCollection;
-import org.neo4j.collection.primitive.PrimitiveIntLongMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
@@ -129,32 +128,6 @@ public class PrimitiveCollectionEqualityTest
                 public boolean remove( PrimitiveLongSet coll )
                 {
                     return coll.remove( x );
-                }
-            };
-        }
-    };
-
-    @DataPoint
-    public static ValueProducer<PrimitiveIntLongMap> intLongV = new ValueProducer<PrimitiveIntLongMap>(
-            PrimitiveIntLongMap.class )
-    {
-        @Override
-        public Value<PrimitiveIntLongMap> randomValue()
-        {
-            final int x = randomInt();
-            final long y = randomLong();
-            return new Value<PrimitiveIntLongMap>()
-            {
-                @Override
-                public void add( PrimitiveIntLongMap coll )
-                {
-                    coll.put( x, y );
-                }
-
-                @Override
-                public boolean remove( PrimitiveIntLongMap coll )
-                {
-                    return coll.remove( x ) == y;
                 }
             };
         }
@@ -293,12 +266,6 @@ public class PrimitiveCollectionEqualityTest
     @DataPoint
     public static Factory<PrimitiveLongSet> offheapLongSetWithCapacity =
             () -> Primitive.offHeapLongSet( randomCapacity(), GlobalMemoryTracker.INSTANCE );
-
-    @DataPoint
-    public static Factory<PrimitiveIntLongMap> intLongMap = Primitive::intLongMap;
-
-    @DataPoint
-    public static Factory<PrimitiveIntLongMap> intLongMapWithCapacity = () -> Primitive.intLongMap( randomCapacity() );
 
     @DataPoint
     public static Factory<PrimitiveLongIntMap> longIntMap = Primitive::longIntMap;
