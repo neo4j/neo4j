@@ -152,5 +152,11 @@ public class PageCacheStressTest
             this.workingDirectory = workingDirectory;
             return this;
         }
+
+        public Builder withPageCursorTracerSupplier( PageCursorTracerSupplier cursorTracerSupplier )
+        {
+            this.pageCursorTracerSupplier = cursorTracerSupplier;
+            return this;
+        }
     }
 }
