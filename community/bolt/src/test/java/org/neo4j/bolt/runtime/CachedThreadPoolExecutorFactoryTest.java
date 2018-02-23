@@ -21,13 +21,22 @@ package org.neo4j.bolt.runtime;
 
 import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,17 +45,39 @@ import org.neo4j.logging.NullLog;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
+import static org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory.SYNCHRONOUS_QUEUE;
+import static org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory.UNBOUNDED_QUEUE;
 
+@RunWith( Parameterized.class )
 public class CachedThreadPoolExecutorFactoryTest
 {
+    private static final int TEST_BOUNDED_QUEUE_SIZE = 5;
+
     private final ExecutorFactory factory = new CachedThreadPoolExecutorFactory( NullLog.getInstance() );
     private ExecutorService executorService;
+
+    @Parameter( 0 )
+    public int queueSize;
+
+    @Parameter( 1 )
+    public String name;
+
+    @Parameters( name = "{1}" )
+    public static List<Object[]> parameters()
+    {
+        return Arrays.asList( new Object[]{UNBOUNDED_QUEUE, "Unbounded Queue"}, new Object[]{SYNCHRONOUS_QUEUE, "Synchronous Queue"},
+                new Object[]{TEST_BOUNDED_QUEUE_SIZE, "Bounded Queue"} );
+    }
 
     @After
     public void cleanup()
@@ -58,9 +89,37 @@ public class CachedThreadPoolExecutorFactoryTest
     }
 
     @Test
+    public void createShouldAssignCorrectQueue()
+    {
+        executorService = factory.create( 0, 1, Duration.ZERO, queueSize, newThreadFactory() );
+
+        if ( executorService instanceof ThreadPoolExecutor )
+        {
+            BlockingQueue<Runnable> queue = ((ThreadPoolExecutor) executorService).getQueue();
+
+            switch ( queueSize )
+            {
+            case UNBOUNDED_QUEUE:
+                assertThat( queue, instanceOf( LinkedBlockingQueue.class ) );
+                assertEquals( Integer.MAX_VALUE, queue.remainingCapacity() );
+                break;
+            case SYNCHRONOUS_QUEUE:
+                assertThat( queue, instanceOf( SynchronousQueue.class ) );
+                break;
+            case TEST_BOUNDED_QUEUE_SIZE:
+                assertThat( queue, instanceOf( ArrayBlockingQueue.class ) );
+                assertEquals( queueSize, queue.remainingCapacity() );
+                break;
+            default:
+                fail( String.format( "Unexpected queue size %d", queueSize ) );
+            }
+        }
+    }
+
+    @Test
     public void createShouldCreateExecutor()
     {
-        executorService = factory.create( 0, 1, Duration.ZERO, 0, newThreadFactory() );
+        executorService = factory.create( 0, 1, Duration.ZERO, queueSize, newThreadFactory() );
 
         assertNotNull( executorService );
         assertFalse( executorService.isShutdown() );
@@ -124,7 +183,7 @@ public class CachedThreadPoolExecutorFactoryTest
     }
 
     @Test
-    public void destroyShouldDestroyExecutor()
+    public void destroyShouldShutdownExecutor()
     {
         executorService = factory.create( 0, 1, Duration.ZERO, 0, newThreadFactory() );
 
@@ -217,5 +276,4 @@ public class CachedThreadPoolExecutorFactoryTest
             return Executors.defaultThreadFactory().newThread( job );
         };
     }
-
 }

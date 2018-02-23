@@ -36,6 +36,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class CachedThreadPoolExecutorFactory implements ExecutorFactory
 {
+    public static final int UNBOUNDED_QUEUE = -1;
+    public static final int SYNCHRONOUS_QUEUE = 0;
+
     private final Log log;
     private final RejectedExecutionHandler rejectionHandler;
 
@@ -51,9 +54,9 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
     }
 
     @Override
-    public ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepLive, int queueSize, ThreadFactory threadFactory )
+    public ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, ThreadFactory threadFactory )
     {
-        ThreadPool result = new ThreadPool( corePoolSize, maxPoolSize, keepLive, createTaskQueue( queueSize ), threadFactory, rejectionHandler );
+        ThreadPool result = new ThreadPool( corePoolSize, maxPoolSize, keepAlive, createTaskQueue( queueSize ), threadFactory, rejectionHandler );
 
         return result;
     }
@@ -89,11 +92,11 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
 
     private static BlockingQueue createTaskQueue( int queueSize )
     {
-        if ( queueSize == -1 )
+        if ( queueSize == UNBOUNDED_QUEUE )
         {
             return new LinkedBlockingQueue();
         }
-        else if ( queueSize == 0 )
+        else if ( queueSize == SYNCHRONOUS_QUEUE )
         {
             return new SynchronousQueue();
         }
@@ -108,10 +111,10 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
     private class ThreadPool extends ThreadPoolExecutor
     {
 
-        private ThreadPool( int corePoolSize, int maxPoolSize, Duration keepLive, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
+        private ThreadPool( int corePoolSize, int maxPoolSize, Duration keepAlive, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
                 RejectedExecutionHandler rejectionHandler )
         {
-            super( corePoolSize, maxPoolSize, keepLive.toMillis(), MILLISECONDS, workQueue, threadFactory, rejectionHandler );
+            super( corePoolSize, maxPoolSize, keepAlive.toMillis(), MILLISECONDS, workQueue, threadFactory, rejectionHandler );
         }
 
     }

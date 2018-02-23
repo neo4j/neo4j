@@ -139,7 +139,7 @@ public class DefaultBoltConnection implements BoltConnection
         return processNextBatch( maxBatchSize );
     }
 
-    private boolean processNextBatch( int batchCount )
+    protected boolean processNextBatch( int batchCount )
     {
         try
         {
