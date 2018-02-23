@@ -36,6 +36,6 @@ public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
             Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+                signature().description().orElse( "Failed to load " + signature().name() ) );
     }
 }

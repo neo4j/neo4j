@@ -76,7 +76,7 @@ public enum ProposerState
                                     new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
                             context.getLog( ProposerState.class ).debug( "Propose for instance " + instance
-                                    + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
+                                    + " rejected from " + message.getHeader( Message.HEADER_FROM ) + " with ballot "
                                     + rejectPropose.getBallot() );
 
                             // Ignore multiple rejects on same prepare

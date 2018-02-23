@@ -352,9 +352,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         {
             if ( current > 0 && current % DOT_GROUP_SIZE == 0 )
             {
-                out.print( " " );
+                out.print( ' ' );
             }
-            out.print( "." );
+            out.print( '.' );
             current++;
         }
     }

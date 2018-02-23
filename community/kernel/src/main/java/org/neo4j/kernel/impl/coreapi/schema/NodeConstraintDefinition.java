@@ -71,7 +71,6 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
         }
         NodeConstraintDefinition that = (NodeConstraintDefinition) o;
         return label.name().equals( that.label.name() ) && Arrays.equals( propertyKeys, that.propertyKeys );
-
     }
 
     protected String propertyText()

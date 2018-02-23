@@ -19,16 +19,15 @@
  */
 package org.neo4j.management.impl;
 
-import javax.management.ObjectName;
-
 import org.junit.Test;
+
+import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.StoreFile;
 import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.management.BranchedStore;
-import org.neo4j.management.Cache;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.IndexSamplingManager;
 import org.neo4j.management.LockManager;
@@ -77,7 +76,6 @@ public class CodeDuplicationValidationTest
     {
         assertEqualBeanName( Kernel.class );
         assertEqualBeanName( Primitives.class );
-        assertEqualBeanName( Cache.class );
         assertEqualBeanName( HighAvailability.class );
         assertEqualBeanName( BranchedStore.class );
         assertEqualBeanName( LockManager.class );

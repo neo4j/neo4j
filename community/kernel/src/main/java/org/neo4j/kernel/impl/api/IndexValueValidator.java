@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Values;
 
 public class IndexValueValidator implements Validator<Value>
 {
-    public static IndexValueValidator INSTANCE = new IndexValueValidator();
+    public static final IndexValueValidator INSTANCE = new IndexValueValidator();
 
     private IndexValueValidator()
     {

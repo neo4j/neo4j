@@ -121,7 +121,7 @@ public class User
         return "User{" +
                 "name='" + name + '\'' +
                 ", credentials=" + credential +
-                ", flags=" + flags.toString() +
+                ", flags=" + flags +
                 '}';
     }
 

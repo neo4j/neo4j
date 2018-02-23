@@ -158,9 +158,9 @@ public class NetworkMock
         // Now send them and figure out latency
         for ( Message message : messages )
         {
-            String to = message.getHeader( Message.TO );
+            String to = message.getHeader( Message.HEADER_TO );
             long delay = 0;
-            if ( message.getHeader( Message.TO ).equals( message.getHeader( Message.FROM ) ) )
+            if ( message.getHeader( Message.HEADER_TO ).equals( message.getHeader( Message.HEADER_FROM ) ) )
             {
                 log.debug( "Sending message to itself; zero latency" );
             }

@@ -52,9 +52,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
 
 import static java.lang.Character.isDigit;
-import static java.lang.Double.parseDouble;
-import static java.lang.Float.parseFloat;
-import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
@@ -377,7 +374,7 @@ public class Settings
         {
             try
             {
-                return parseInt( value );
+                return Integer.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -399,7 +396,7 @@ public class Settings
         {
             try
             {
-                return parseLong( value );
+                return Long.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -421,11 +418,11 @@ public class Settings
         {
             if ( value.equalsIgnoreCase( "true" ) )
             {
-                return true;
+                return Boolean.TRUE;
             }
             else if ( value.equalsIgnoreCase( "false" ) )
             {
-                return false;
+                return Boolean.FALSE;
             }
             else
             {
@@ -447,7 +444,7 @@ public class Settings
         {
             try
             {
-                return parseFloat( value );
+                return Float.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -469,7 +466,7 @@ public class Settings
         {
             try
             {
-                return parseDouble( value );
+                return Double.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -818,10 +815,10 @@ public class Settings
         String comma = "";
         for ( Object optionValue : optionValues )
         {
-            builder.append( comma ).append( optionValue.toString() );
+            builder.append( comma ).append( optionValue );
             comma = "`, `";
         }
-        builder.append( "`" );
+        builder.append( '`' );
         return builder.toString();
     }
 
@@ -848,7 +845,7 @@ public class Settings
             @Override
             public String toString()
             {
-                return "a list separated by \"" + separator + "\" where items are " + itemParser.toString();
+                return "a list separated by \"" + separator + "\" where items are " + itemParser;
             }
         };
     }
@@ -879,7 +876,7 @@ public class Settings
         };
     }
 
-    public static BiFunction<List<String>,Function<String,String>,List<String>> nonEmptyList =
+    public static final BiFunction<List<String>,Function<String,String>,List<String>> nonEmptyList =
             new BiFunction<List<String>,Function<String,String>,List<String>>()
             {
                 @Override
@@ -1018,7 +1015,7 @@ public class Settings
                      && !format( MATCHES_PATTERN_MESSAGE, ANY ).equals(
                              valueFunction.toString() ) )
                 {
-                    description += " (" + valueFunction.toString() + ")";
+                    description += " (" + valueFunction + ")";
                 }
                 return description;
             }
@@ -1289,7 +1286,7 @@ public class Settings
         public String valueDescription()
         {
             StringBuilder builder = new StringBuilder(  );
-            builder.append( name() ).append( " is " ).append( parser.toString() );
+            builder.append( name() ).append( " is " ).append( parser );
 
             if ( valueConverters != null && valueConverters.size() > 0 )
             {

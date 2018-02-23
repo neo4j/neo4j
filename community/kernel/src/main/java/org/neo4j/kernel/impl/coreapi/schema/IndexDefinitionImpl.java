@@ -112,7 +112,7 @@ public class IndexDefinitionImpl implements IndexDefinition
                Arrays.stream( propertyKeys ).collect( Collectors.joining( "," ) ) + "]";
     }
 
-    protected void assertInUnterminatedTransaction()
+    private void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
     }

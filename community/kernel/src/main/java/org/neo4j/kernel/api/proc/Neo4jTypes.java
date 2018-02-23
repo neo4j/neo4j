@@ -129,7 +129,7 @@ public class Neo4jTypes
 
         public ListType( AnyType innerType )
         {
-            super( "LIST? OF " + innerType.toString() );
+            super( "LIST? OF " + innerType );
             this.innerType = innerType;
         }
 

@@ -54,15 +54,15 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
                 !message.getMessageType().equals( HeartbeatMessage.i_am_alive ) &&
                 !message.getMessageType().equals( HeartbeatMessage.suspicions ) )
         {
-            // We assume the FROM header always exists.
-            String from =  message.getHeader( Message.FROM );
-            if ( !from.equals( message.getHeader( Message.TO ) )  )
+            // We assume the HEADER_FROM header always exists.
+            String from =  message.getHeader( Message.HEADER_FROM );
+            if ( !from.equals( message.getHeader( Message.HEADER_TO ) )  )
             {
                 InstanceId theId;
-                if ( message.hasHeader( Message.INSTANCE_ID ) )
+                if ( message.hasHeader( Message.HEADER_INSTANCE_ID ) )
                 {
-                    // INSTANCE_ID is there since after 1.9.6
-                    theId = new InstanceId( Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+                    // HEADER_INSTANCE_ID is there since after 1.9.6
+                    theId = new InstanceId( Integer.parseInt( message.getHeader( Message.HEADER_INSTANCE_ID ) ) );
                 }
                 else
                 {
@@ -75,7 +75,7 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
                     Message<HeartbeatMessage> heartbeatMessage = message.copyHeadersTo(
                             Message.internal( HeartbeatMessage.i_am_alive,
                                     new HeartbeatMessage.IAmAliveState( theId ) ),
-                            Message.FROM, Message.INSTANCE_ID
+                            Message.HEADER_FROM, Message.HEADER_INSTANCE_ID
                     );
                     output.offer( heartbeatMessage );
                 }

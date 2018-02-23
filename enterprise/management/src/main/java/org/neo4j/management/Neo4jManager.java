@@ -224,11 +224,6 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         this.proxy = getBean( Kernel.class );
     }
 
-    public Collection<Cache> getCacheBeans()
-    {
-        return getBeans( Cache.class );
-    }
-
     public LockManager getLockManagerBean()
     {
         return getBean( LockManager.class );

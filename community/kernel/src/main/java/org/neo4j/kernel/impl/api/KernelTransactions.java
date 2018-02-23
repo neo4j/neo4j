@@ -165,7 +165,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                         new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
         this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
-        blockNewTransactions();
+        doBlockNewTransactions();
         this.cursors = cursors;
         this.token = token;
     }
@@ -284,6 +284,14 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      * Blocking call.
      */
     public void blockNewTransactions()
+    {
+        doBlockNewTransactions();
+    }
+
+    /**
+     * This is private since it's called from the constructor.
+     */
+    private void doBlockNewTransactions()
     {
         newTransactionsLock.writeLock().lock();
     }

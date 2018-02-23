@@ -116,7 +116,7 @@ public class AtomicBroadcastStateTest
 
     private Message<AtomicBroadcastMessage> message( int id )
     {
-        return to( failed, uri( id ), "some payload" ).setHeader( Message.CONVERSATION_ID, "some id" );
+        return to( failed, uri( id ), "some payload" ).setHeader( Message.HEADER_CONVERSATION_ID, "some id" );
     }
 
     private URI uri( int i )

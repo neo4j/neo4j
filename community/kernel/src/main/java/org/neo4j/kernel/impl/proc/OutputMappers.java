@@ -83,7 +83,7 @@ public class OutputMappers
         }
     }
 
-    public static OutputMapper VOID_MAPPER = new OutputMapper( new FieldSignature[0], new FieldMapper[0] )
+    private static final OutputMapper VOID_MAPPER = new OutputMapper( new FieldSignature[0], new FieldMapper[0] )
     {
         @Override
         public List<FieldSignature> signature()

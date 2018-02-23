@@ -230,7 +230,7 @@ public class NetworkSender
     {
         if ( !paused )
         {
-            if ( message.hasHeader( Message.TO ) )
+            if ( message.hasHeader( Message.HEADER_TO ) )
             {
                 send( message );
             }
@@ -257,7 +257,7 @@ public class NetworkSender
     {
         monitor.queuedMessage( message );
 
-        final URI to = URI.create( message.getHeader( Message.TO ) );
+        final URI to = URI.create( message.getHeader( Message.HEADER_TO ) );
 
         ExecutorService senderExecutor = senderExecutors.computeIfAbsent( to, t -> Executors
                 .newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender " + t.toASCIIString(), monitor ) ) );
@@ -291,8 +291,8 @@ public class NetworkSender
 
             try
             {
-                // Set FROM header
-                message.setHeader( Message.FROM, me.toASCIIString() );
+                // Set HEADER_FROM header
+                message.setHeader( Message.HEADER_FROM, me.toASCIIString() );
 
                 msgLog.debug( "Sending to " + to + ": " + message );
 

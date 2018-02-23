@@ -41,7 +41,7 @@ abstract class ExecutingQueryList
 
     abstract void waitsFor( ExecutingQuery query );
 
-    static ExecutingQueryList EMPTY = new ExecutingQueryList()
+    static final ExecutingQueryList EMPTY = new ExecutingQueryList()
     {
         @Override
         Stream<ExecutingQuery> queries()
@@ -75,8 +75,8 @@ abstract class ExecutingQueryList
 
     private static class Entry extends ExecutingQueryList
     {
-        final ExecutingQuery query;
-        final ExecutingQueryList next;
+        private final ExecutingQuery query;
+        private final ExecutingQueryList next;
 
         Entry( ExecutingQuery query, ExecutingQueryList next )
         {

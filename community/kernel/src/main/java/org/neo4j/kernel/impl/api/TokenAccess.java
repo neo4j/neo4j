@@ -129,9 +129,9 @@ public abstract class TokenAccess<R>
 
     private abstract static class TokenIterator<T> extends PrefetchingResourceIterator<T>
     {
-        Statement statement;
-        final TokenAccess<T> access;
-        final Iterator<Token> tokens;
+        private Statement statement;
+        protected final TokenAccess<T> access;
+        protected final Iterator<Token> tokens;
 
         private TokenIterator( Statement statement, TokenAccess<T> access )
         {
@@ -160,9 +160,9 @@ public abstract class TokenAccess<R>
                     while ( tokens.hasNext() )
                     {
                         Token token = tokens.next();
-                        if ( access.inUse( statement.readOperations(), token.id() ) )
+                        if ( this.access.inUse( statement.readOperations(), token.id() ) )
                         {
-                            return access.token( token );
+                            return this.access.token( token );
                         }
                     }
                     close();

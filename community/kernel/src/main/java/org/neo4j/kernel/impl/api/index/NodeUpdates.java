@@ -371,10 +371,10 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             result.append( ", " );
             result.append( key );
             result.append( " -> " );
-            result.append( propertyValue.toString() );
+            result.append( propertyValue );
             return false;
         } );
-        return result.append( "]" ).toString();
+        return result.append( ']' ).toString();
     }
 
     @Override

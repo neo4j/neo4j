@@ -26,8 +26,8 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.FROM;
+import static org.neo4j.cluster.com.message.Message.HEADER_CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.HEADER_FROM;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
 
 /**
@@ -65,9 +65,9 @@ public class StateTransitionLogger
             StringBuilder line = new StringBuilder( state ).append( ": " ).append( transition );
 
             // Who was this message from?
-            if ( transition.getMessage().hasHeader( FROM ) )
+            if ( transition.getMessage().hasHeader( HEADER_FROM ) )
             {
-                line.append( " from:" ).append( transition.getMessage().getHeader( FROM ) );
+                line.append( " from:" ).append( transition.getMessage().getHeader( HEADER_FROM ) );
             }
 
             if ( transition.getMessage().hasHeader( INSTANCE ) )
@@ -75,9 +75,9 @@ public class StateTransitionLogger
                 line.append( " instance:" ).append( transition.getMessage().getHeader( INSTANCE ) );
             }
 
-            if ( transition.getMessage().hasHeader( CONVERSATION_ID ) )
+            if ( transition.getMessage().hasHeader( HEADER_CONVERSATION_ID ) )
             {
-                line.append( " conversation-id:" ).append( transition.getMessage().getHeader( CONVERSATION_ID ) );
+                line.append( " conversation-id:" ).append( transition.getMessage().getHeader( HEADER_CONVERSATION_ID ) );
             }
 
             Object payload = transition.getMessage().getPayload();

@@ -42,7 +42,6 @@ public class PropertyValueComparisonTest
 
     Object[] values = new Object[]{
             // OTHER
-            PropertyValueComparison.LOWEST_OBJECT,
             new Object(),
 
             // STRING

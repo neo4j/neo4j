@@ -144,7 +144,7 @@ public class Format
         boolean use = false;
         for ( TimeUnit unit : units )
         {
-            if ( unit.equals( highestGranularity ) )
+            if ( unit == highestGranularity )
             {
                 use = true;
             }
@@ -152,7 +152,7 @@ public class Format
             if ( use )
             {
                 durationMillis = extractFromDuration( durationMillis, unit, builder );
-                if ( unit.equals( lowestGranularity ) )
+                if ( unit == lowestGranularity )
                 {
                     break;
                 }

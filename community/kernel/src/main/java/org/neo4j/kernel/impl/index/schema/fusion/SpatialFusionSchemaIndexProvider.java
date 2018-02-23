@@ -41,8 +41,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.Value;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
@@ -187,7 +185,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
             {
                 if ( file.isDirectory() )
                 {
-                    Integer indexId = Integer.parseInt( file.getName() );
+                    Integer indexId = Integer.valueOf( file.getName() );
                     File[] subdirs = this.directoryStructure().directoryForIndex( indexId ).listFiles();
                     if ( subdirs != null )
                     {

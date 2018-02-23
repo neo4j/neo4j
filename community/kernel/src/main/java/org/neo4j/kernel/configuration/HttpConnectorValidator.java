@@ -65,7 +65,7 @@ public class HttpConnectorValidator extends ConnectorValidator
         final String name = parts[2];
         final String subsetting = parts[3];
 
-        final boolean encrypted = encryptionSetting( name ).apply( params::get ).equals( Encryption.TLS );
+        final boolean encrypted = encryptionSetting( name ).apply( params::get ) == Encryption.TLS;
         BaseSetting setting;
 
         switch ( subsetting )
@@ -146,7 +146,7 @@ public class HttpConnectorValidator extends ConnectorValidator
 
         if ( "https".equalsIgnoreCase( name ) )
         {
-            if ( encryption.isPresent() && !TLS.equals( encryption.get() ) )
+            if ( encryption.isPresent() && encryption.get() != TLS )
             {
                 throw new InvalidSettingException(
                         format( "'%s' is only allowed to be '%s'; not '%s'",
@@ -155,7 +155,7 @@ public class HttpConnectorValidator extends ConnectorValidator
         }
         else if ( "http".equalsIgnoreCase( name ) )
         {
-            if ( encryption.isPresent() && !NONE.equals( encryption.get() ) )
+            if ( encryption.isPresent() && encryption.get() != NONE )
             {
                 throw new InvalidSettingException(
                         format( "'%s' is only allowed to be '%s'; not '%s'",

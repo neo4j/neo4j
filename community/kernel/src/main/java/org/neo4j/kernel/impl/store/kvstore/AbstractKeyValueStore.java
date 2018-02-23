@@ -50,7 +50,6 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
-    private final VersionContextSupplier versionContextSupplier;
     private final RotationTimerFactory rotationTimerFactory;
     volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
@@ -64,7 +63,6 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             int valueSize, HeaderField<?>... headerFields )
     {
         this.fs = fs;
-        this.versionContextSupplier = versionContextSupplier;
         this.keySize = keySize;
         this.valueSize = valueSize;
         Rotation rotation = getClass().getAnnotation( Rotation.class );
@@ -369,7 +367,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         protected abstract boolean visitKeyValuePair( Key key, ReadableBuffer value );
     }
 
-    protected HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
+    private HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
     {
         return format.defaultHeaderFieldsForFormat( formatSpecifier );
     }

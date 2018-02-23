@@ -212,7 +212,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         allocateRecordsFromBytes( target, bytes, recordAllocator );
     }
 
-    private static <E> void allocateFromCompositeType(
+    private static void allocateFromCompositeType(
             Collection<DynamicRecord> target,
             byte[] bytes,
             DynamicRecordAllocator recordAllocator,
