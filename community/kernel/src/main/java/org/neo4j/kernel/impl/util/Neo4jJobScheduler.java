@@ -34,6 +34,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +67,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     public void init()
     {
         this.globalPool = newCachedThreadPool( daemon( "neo4j.Pooled" + trackTest() ) );
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "neo4j.Scheduled" + trackTest() ) );
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 1, daemon( "neo4j.Scheduler" + trackTest() ) );
     }
 
     @Override
@@ -155,13 +156,22 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
             TimeUnit timeUnit )
     {
-        return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
+        ScheduledTask scheduledTask = new ScheduledTask( this, group, runnable );
+        ScheduledFuture<?> future = scheduledExecutor.scheduleAtFixedRate(
+                scheduledTask, initialDelay, period, timeUnit );
+        PooledJobHandle handle = new PooledJobHandle( future );
+        handle.registerCancelListener( scheduledTask );
+        return handle;
     }
 
     @Override
     public JobHandle schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
-        return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
+        ScheduledTask scheduledTask = new ScheduledTask( this, group, runnable );
+        ScheduledFuture<?> future = scheduledExecutor.schedule( scheduledTask, initialDelay, timeUnit );
+        PooledJobHandle handle = new PooledJobHandle( future );
+        handle.registerCancelListener( scheduledTask );
+        return handle;
     }
 
     @Override
@@ -283,6 +293,37 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         public void registerCancelListener( CancelListener listener )
         {
             cancelListeners.add( listener );
+        }
+    }
+
+    private static class ScheduledTask implements Runnable, CancelListener
+    {
+        private final JobScheduler scheduler;
+        private final Group group;
+        private final Runnable task;
+        private volatile JobHandle latestHandle;
+
+        private ScheduledTask( JobScheduler scheduler, Group group, Runnable task )
+        {
+            this.scheduler = scheduler;
+            this.group = group;
+            this.task = task;
+        }
+
+        @Override
+        public void run()
+        {
+            latestHandle = scheduler.schedule( group, task );
+        }
+
+        @Override
+        public void cancelled( boolean mayInterruptIfRunning )
+        {
+            JobHandle handle = this.latestHandle;
+            if ( handle != null )
+            {
+                handle.cancel( mayInterruptIfRunning );
+            }
         }
     }
 }

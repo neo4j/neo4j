@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.util;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
@@ -137,6 +140,53 @@ public class Neo4jJobSchedulerTest
         latch.await();
 
         assertTrue( time + TimeUnit.MILLISECONDS.toNanos( 100 ) <= runTime.get() );
+    }
+
+    @Test
+    public void longRunningScheduledJobsMustNotDelayOtherLongRunningJobs() throws Exception
+    {
+        life.start();
+
+        List<JobHandle> handles = new ArrayList<>( 30 );
+        JobScheduler.Group group = new JobScheduler.Group( "test" );
+        AtomicLong startedCounter = new AtomicLong();
+        BinaryLatch blockLatch = new BinaryLatch();
+        Runnable task = () ->
+        {
+            startedCounter.incrementAndGet();
+            blockLatch.await();
+        };
+
+        for ( int i = 0; i < 10; i++ )
+        {
+            handles.add( scheduler.schedule( group, task, 0, TimeUnit.MILLISECONDS ) );
+        }
+        for ( int i = 0; i < 10; i++ )
+        {
+            handles.add( scheduler.scheduleRecurring( group, task, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
+        }
+        for ( int i = 0; i < 10; i++ )
+        {
+            handles.add( scheduler.scheduleRecurring( group, task, 0, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
+        }
+
+        long deadline = TimeUnit.SECONDS.toNanos( 10 ) + System.nanoTime();
+        do
+        {
+            if ( startedCounter.get() == handles.size() )
+            {
+                // All jobs got started. We're good!
+                blockLatch.release();
+                for ( JobHandle handle : handles )
+                {
+                    handle.cancel( false );
+                }
+                return;
+            }
+        }
+        while ( System.nanoTime() < deadline );
+        fail( "Only managed to start " + startedCounter.get() + " tasks in 10 seconds, when " +
+              handles.size() + " was expected." );
     }
 
     @Test
