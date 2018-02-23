@@ -19,6 +19,8 @@
  */
 package org.neo4j.tools.txlog;
 
+import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -29,7 +31,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongLongMap;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.tools.txlog.checktypes.CheckType;
 import org.neo4j.tools.txlog.checktypes.CheckTypes;
@@ -128,33 +128,31 @@ public class CheckTxLogs
         final long lowestLogVersion = logFiles.getLowestLogVersion();
         final long highestLogVersion = logFiles.getHighestLogVersion();
         boolean success = true;
-        try ( PrimitiveLongLongMap logFileSizes = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE ) )
+        final MutableLongLongMap logFileSizes = Primitive.longLongMap();
+        for ( long i = lowestLogVersion; i <= highestLogVersion; i++ )
         {
-            for ( long i = lowestLogVersion; i <= highestLogVersion; i++ )
-            {
-                logFileSizes.put( i, fs.getFileSize( logFiles.getLogFileForVersion( i ) ) );
-            }
+            logFileSizes.put( i, fs.getFileSize( logFiles.getLogFileForVersion( i ) ) );
+        }
 
-            try ( LogEntryCursor logEntryCursor = openLogEntryCursor( logFiles ) )
+        try ( LogEntryCursor logEntryCursor = openLogEntryCursor( logFiles ) )
+        {
+            while ( logEntryCursor.next() )
             {
-                while ( logEntryCursor.next() )
+                LogEntry logEntry = logEntryCursor.get();
+                if ( logEntry instanceof CheckPoint )
                 {
-                    LogEntry logEntry = logEntryCursor.get();
-                    if ( logEntry instanceof CheckPoint )
+                    LogPosition logPosition = logEntry.<CheckPoint>as().getLogPosition();
+                    // if the file has been pruned we cannot validate the check point
+                    if ( logPosition.getLogVersion() >= lowestLogVersion )
                     {
-                        LogPosition logPosition = logEntry.<CheckPoint>as().getLogPosition();
-                        // if the file has been pruned we cannot validate the check point
-                        if ( logPosition.getLogVersion() >= lowestLogVersion )
+                        long size = logFileSizes.getIfAbsent( logPosition.getLogVersion(), -1 );
+                        if ( logPosition.getByteOffset() < 0 || size < 0 || logPosition.getByteOffset() > size )
                         {
-                            long size = logFileSizes.get( logPosition.getLogVersion() );
-                            if ( logPosition.getByteOffset() < 0 || size < 0 || logPosition.getByteOffset() > size )
-                            {
-                                long currentLogVersion = logEntryCursor.getCurrentLogVersion();
-                                handler.reportInconsistentCheckPoint( currentLogVersion, logPosition, size );
-                                success = false;
-                            }
-
+                            long currentLogVersion = logEntryCursor.getCurrentLogVersion();
+                            handler.reportInconsistentCheckPoint( currentLogVersion, logPosition, size );
+                            success = false;
                         }
+
                     }
                 }
             }

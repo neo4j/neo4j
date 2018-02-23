@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongLongMap;
-import org.neo4j.memory.GlobalMemoryTracker;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -41,34 +40,33 @@ public class ResourceTypesIT
     public void indexEntryHashing()
     {
         int collisions = 0;
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( 35_000_000, GlobalMemoryTracker.INSTANCE ) )
+        int labelIdCount = 50;
+        int propertyKeyIdCount = 50;
+        int objectCount = 10000;
+        MutableLongLongMap map = Primitive.longLongMap( 50 * 50 * 10000 );
+        String[] values = precomputeValues( objectCount );
+
+        for ( int labelId = 0; labelId < labelIdCount; labelId++ )
         {
-
-            int labelIdCount = 50;
-            int propertyKeyIdCount = 50;
-            int objectCount = 10000;
-            String[] values = precomputeValues( objectCount );
-
-            for ( int labelId = 0; labelId < labelIdCount; labelId++ )
+            for ( int propertyKeyId = 0; propertyKeyId < propertyKeyIdCount; propertyKeyId++ )
             {
-                for ( int propertyKeyId = 0; propertyKeyId < propertyKeyIdCount; propertyKeyId++ )
+                for ( int objectId = 0; objectId < objectCount; objectId++ )
                 {
-                    for ( int objectId = 0; objectId < objectCount; objectId++ )
-                    {
-                        String object = values[objectId];
-                        long resourceId = indexEntryResourceId( labelId, exact( propertyKeyId, object ) );
+                    String object = values[objectId];
+                    long resourceId = indexEntryResourceId( labelId, exact( propertyKeyId, object ) );
 
-                        long newValue = packValue( labelId, propertyKeyId, objectId );
-                        long oldValue = map.put( resourceId, newValue );
-                        if ( oldValue != -1 )
+                    long newValue = packValue( labelId, propertyKeyId, objectId );
+                    final boolean hasOldValue = map.containsKey( resourceId );
+                    final long oldValue = map.get( resourceId );
+                    map.put( resourceId, newValue );
+                    if ( hasOldValue )
+                    {
+                        System.out.printf( "Collision on %s: %s ~= %s%n", resourceId, toValueString( newValue ),
+                                toValueString( oldValue ) );
+                        collisions++;
+                        if ( collisions > 100 )
                         {
-                            System.out.printf( "Collision on %s: %s ~= %s%n", resourceId, toValueString( newValue ),
-                                    toValueString( oldValue ) );
-                            collisions++;
-                            if ( collisions > 100 )
-                            {
-                                fail( "This hashing is terrible!" );
-                            }
+                            fail( "This hashing is terrible!" );
                         }
                     }
                 }

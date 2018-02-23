@@ -21,13 +21,13 @@ package org.neo4j.collection.primitive;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyLongValueTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyLongValueUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
@@ -35,7 +35,6 @@ import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
@@ -101,29 +100,14 @@ public class Primitive
         return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( initialCapacity ), NO_MONITOR );
     }
 
-    public static PrimitiveLongLongMap longLongMap()
+    public static MutableLongLongMap longLongMap()
     {
         return longLongMap( DEFAULT_HEAP_CAPACITY );
     }
 
-    public static PrimitiveLongLongMap longLongMap( int initialCapacity )
+    public static MutableLongLongMap longLongMap( int initialCapacity )
     {
-        return new PrimitiveLongLongHashMap( new LongKeyLongValueTable( initialCapacity ), NO_MONITOR );
-    }
-
-    public static PrimitiveLongLongMap offHeapLongLongMap()
-    {
-        return offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
-    }
-
-    public static PrimitiveLongLongMap offHeapLongLongMap( MemoryAllocationTracker allocationTracker )
-    {
-        return offHeapLongLongMap( DEFAULT_OFFHEAP_CAPACITY, allocationTracker );
-    }
-
-    public static PrimitiveLongLongMap offHeapLongLongMap( int initialCapacity, MemoryAllocationTracker allocationTracker )
-    {
-        return new PrimitiveLongLongHashMap( new LongKeyLongValueUnsafeTable( initialCapacity, allocationTracker ), NO_MONITOR );
+        return new LongLongHashMap( initialCapacity );
     }
 
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()

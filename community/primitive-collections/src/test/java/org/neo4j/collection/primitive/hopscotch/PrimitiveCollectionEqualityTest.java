@@ -34,7 +34,6 @@ import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
-import org.neo4j.collection.primitive.PrimitiveLongLongMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.Factory;
@@ -160,32 +159,6 @@ public class PrimitiveCollectionEqualityTest
     };
 
     @DataPoint
-    public static ValueProducer<PrimitiveLongLongMap> longLongV = new ValueProducer<PrimitiveLongLongMap>(
-            PrimitiveLongLongMap.class )
-    {
-        @Override
-        public Value<PrimitiveLongLongMap> randomValue()
-        {
-            final long x = randomLong();
-            final long y = randomLong();
-            return new Value<PrimitiveLongLongMap>()
-            {
-                @Override
-                public void add( PrimitiveLongLongMap coll )
-                {
-                    coll.put( x, y );
-                }
-
-                @Override
-                public boolean remove( PrimitiveLongLongMap coll )
-                {
-                    return coll.remove( x ) == y;
-                }
-            };
-        }
-    };
-
-    @DataPoint
     public static ValueProducer<PrimitiveIntObjectMap> intObjV =
             new ValueProducer<PrimitiveIntObjectMap>( PrimitiveIntObjectMap.class )
     {
@@ -272,21 +245,6 @@ public class PrimitiveCollectionEqualityTest
 
     @DataPoint
     public static Factory<PrimitiveLongIntMap> longIntMapWithCapacity = () -> Primitive.longIntMap( randomCapacity() );
-
-    @DataPoint
-    public static Factory<PrimitiveLongLongMap> longLongMap = Primitive::longLongMap;
-
-    @DataPoint
-    public static Factory<PrimitiveLongLongMap> longLongMapWithCapacity =
-            () -> Primitive.longLongMap( randomCapacity() );
-
-    @DataPoint
-    public static Factory<PrimitiveLongLongMap> offheapLongLongMap =
-            () -> Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
-
-    @DataPoint
-    public static Factory<PrimitiveLongLongMap> offheapLongLongMapWithCapacity =
-            () -> Primitive.offHeapLongLongMap( randomCapacity(), GlobalMemoryTracker.INSTANCE );
 
     @DataPoint
     public static Factory<PrimitiveIntObjectMap> intObjMap = Primitive::intObjectMap;
