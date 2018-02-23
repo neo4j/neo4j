@@ -304,7 +304,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   test("indexed 3D points with distance query and points within bbox") {
     // Given
     graph.createIndex("Place", "location")
-    setupPointsBothCRS(is3D = true)
+    setupPointsBothCRS(Seq(-10, 0, 10))
 
     // <= cartesian
     {
@@ -316,12 +316,14 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
       // Then
       val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 9.99, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 10, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 10, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -10, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, -10, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0)),
-        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 9.99, 0))
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, 10))
       )
       expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
     }
@@ -351,11 +353,13 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
       // Then
       val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 10, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 10, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -10, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, -10, 0)),
-        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 0))
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 10))
       )
       expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
     }
@@ -370,7 +374,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
       // Then
       val expected = Set(
-        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 0))
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 10))
       )
       expectResultsAndIndexUsage(query, expected, inclusiveRange = false)
     }
@@ -449,7 +455,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   test("doughnut shape query uses the index in 3D") {
     // Given
     graph.createIndex("Place", "location")
-    setupPointsBothCRS(is3D = true)
+    setupPointsBothCRS(Seq(0))
 
     // <= cartesian
     {
@@ -637,8 +643,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     resultNoIndex.toList shouldBe empty
   }
 
-  private def setupPointsBothCRS(is3D: Boolean = false): Unit = {
-    val zText = if(is3D) ", z: 0" else ""
+  private def setupPointsBothCRS(zText: String = ""): Unit = {
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: -10, x: -10$zText})")
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: -10, x: 10$zText})")
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: 10, x: -10$zText})")
@@ -663,6 +668,12 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     // Create enough points so that an index seek gets planned
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i$zText})"))
     Range(11, 89).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: $i, longitude: $i$zText})"))
+  }
+
+  private def setupPointsBothCRS(zSet: Seq[Int]): Unit = {
+    zSet.foreach { z =>
+      setupPointsBothCRS(s", z: $z")
+    }
   }
 
   private def expectResultsAndIndexUsage(query: String, expectedResults: Set[_ <: Any], inclusiveRange: Boolean) = {

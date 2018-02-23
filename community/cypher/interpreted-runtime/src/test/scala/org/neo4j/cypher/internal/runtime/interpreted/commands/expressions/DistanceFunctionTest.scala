@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
+import org.neo4j.values.storable.{CRSCalculator, CoordinateReferenceSystem, PointValue, Values}
 import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -116,7 +116,7 @@ class DistanceFunctionTest extends CypherFunSuite {
     val farWest = Values.pointValue(CoordinateReferenceSystem.WGS84, -179.99, 0)
     val farEast = Values.pointValue(CoordinateReferenceSystem.WGS84, 179.99, 0)
 
-    distance(farEast, farWest) should be < CoordinateReferenceSystem.GeographicCalculator.EARTH_RADIUS_METERS
+    distance(farEast, farWest) should be < CRSCalculator.GeographicCalculator.EARTH_RADIUS_METERS
   }
 
   test("bounding box including the north pole should be extended to all longitudes") {
@@ -186,7 +186,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
     val lat1 = Math.toRadians(startingPoint.coordinate()(1))
     val long1 = Math.toRadians(startingPoint.coordinate()(0))
-    val R = CoordinateReferenceSystem.GeographicCalculator.EARTH_RADIUS_METERS
+    val R = CRSCalculator.GeographicCalculator.EARTH_RADIUS_METERS
     val lat2 = Math.asin(Math.sin(lat1) * Math.cos(d / R) + Math.cos(lat1) * Math.sin(d / R) * Math.cos(brng))
     val long2 = long1 + Math.atan2(Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1), Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2))
     val normLong2 = (long2 + 3 * Math.PI) % (2 * Math.PI) - Math.PI

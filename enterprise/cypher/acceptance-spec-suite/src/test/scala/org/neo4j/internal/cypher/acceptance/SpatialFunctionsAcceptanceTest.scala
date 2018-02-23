@@ -252,6 +252,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
+    result.toList.length should be(1)
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     // And CRS names should equal
@@ -283,6 +284,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
+    result.toList.length should be(1)
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))
     // And CRS names should equal
@@ -350,13 +352,13 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
             val smaller = x <= 0 && y <= 0 && z <= 0
             val larger = x >= 0 && y >= 0 && z >= 0
             if (same) {
-              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = false, aSmallerB = false)
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = false, aSmallerB = false)
             } else if (smaller) {
-              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = false, aSmallerB = true)
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = false, aSmallerB = true)
             } else if (larger) {
-              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = true, aSmallerB = false)
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = true, aSmallerB = false)
             } else {
-              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = null, aSmallerB = null)
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = null, aSmallerB = null)
             }
           }
         }
