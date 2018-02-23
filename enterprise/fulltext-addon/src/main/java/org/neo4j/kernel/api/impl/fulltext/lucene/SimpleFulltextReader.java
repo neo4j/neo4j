@@ -22,15 +22,11 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
-import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -38,7 +34,6 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
-import static java.util.stream.Collectors.joining;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_ENTITY_ID;
 
 /**
@@ -71,18 +66,6 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         {
             throw new IndexReaderCloseException( e );
         }
-    }
-
-    @Override
-    public FulltextIndexConfiguration getConfigurationDocument() throws IOException
-    {
-        IndexSearcher indexSearcher = getIndexSearcher();
-        TopDocs docs = indexSearcher.search( new TermQuery( FulltextIndexConfiguration.TERM ), 1 );
-        if ( docs.scoreDocs.length < 1 )
-        {
-            return null;
-        }
-        return new FulltextIndexConfiguration( indexSearcher.doc( docs.scoreDocs[0].doc ) );
     }
 
     @Override

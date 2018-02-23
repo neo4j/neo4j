@@ -36,16 +36,12 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class FulltextIndexPopulator implements IndexPopulator
 {
-    private final long indexId;
     private final FulltextIndexDescriptor descriptor;
-    private final IndexSamplingConfig samplingConfig;
     private final WritableFulltext index;
 
     public FulltextIndexPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, WritableFulltext index )
     {
-        this.indexId = indexId;
         this.descriptor = descriptor;
-        this.samplingConfig = samplingConfig;
         this.index = index;
     }
 
@@ -96,9 +92,7 @@ public class FulltextIndexPopulator implements IndexPopulator
     public void markAsFailed( String failure ) throws IOException
     {
         //TODO whatever??
-        System.out.println( "Mark as failed" );
-        System.out.println( failure );
-
+        index.setFailed( failure );
     }
 
     @Override

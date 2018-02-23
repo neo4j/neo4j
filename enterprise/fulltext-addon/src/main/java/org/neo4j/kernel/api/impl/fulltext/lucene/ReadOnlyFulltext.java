@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 public interface ReadOnlyFulltext extends AutoCloseable
 {
-//TODO javadoc
+    //TODO javadoc
     PrimitiveLongIterator query( String query );
 
     @Override
     void close();
-
-    FulltextIndexConfiguration getConfigurationDocument() throws IOException;
 }

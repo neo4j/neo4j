@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 
 @Ignore( "These are rudimentary benchmarks, but implemented via the jUnit framework to make them easy to run " +
          "from an IDE." )
@@ -78,7 +77,6 @@ public class BloomFulltextIndexBenchmarks
     {
         createTestGraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
-        builder.setConfig( bloom_enabled, "true" );
         db = builder.newGraphDatabase();
         registerBloomProcedures();
     }
@@ -156,7 +154,6 @@ public class BloomFulltextIndexBenchmarks
 
         // Then measure startup performance
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
-        builder.setConfig( bloom_enabled, "true" );
 
         db = builder.newGraphDatabase();
         registerBloomProcedures();

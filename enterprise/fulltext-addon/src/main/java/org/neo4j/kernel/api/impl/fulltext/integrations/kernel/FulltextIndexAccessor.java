@@ -162,7 +162,7 @@ public class FulltextIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close() throws IOException
         {
             if ( hasChanges && refresh )
             {

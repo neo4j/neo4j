@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
@@ -67,34 +66,15 @@ public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFullte
         return indexWriter;
     }
 
-    Set<String> getProperties()
+    public void setFailed( String failure )
     {
-        return luceneIndex.getProperties();
-    }
-
-    void setPopulated()
-    {
-        luceneIndex.markAsOnline();
-    }
-
-    void setFailed()
-    {
+        // TODO how to handle that string?
         luceneIndex.setFailed();
     }
 
     public ReadOnlyFulltext getIndexReader() throws IOException
     {
         return luceneIndex.getIndexReader();
-    }
-
-    String getAnalyzerName()
-    {
-        return luceneIndex.getAnalyzerName();
-    }
-
-    void saveConfiguration( long lastCommittedTransactionId ) throws IOException
-    {
-        luceneIndex.saveConfiguration( lastCommittedTransactionId );
     }
 
     InternalIndexState getState()

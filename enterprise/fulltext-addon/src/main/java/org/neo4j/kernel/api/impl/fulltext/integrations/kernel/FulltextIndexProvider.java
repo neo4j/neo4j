@@ -125,6 +125,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
+        //TODO properly handle index failures
         return "TODO Failure";
     }
 

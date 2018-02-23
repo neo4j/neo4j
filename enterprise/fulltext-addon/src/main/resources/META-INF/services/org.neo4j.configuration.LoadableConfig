@@ -1,1 +1,1 @@
-org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig
+org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextConfig

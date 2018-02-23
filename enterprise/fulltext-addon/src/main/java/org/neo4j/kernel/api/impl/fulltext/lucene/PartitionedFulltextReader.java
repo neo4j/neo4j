@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -78,20 +77,6 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         {
             throw new IndexReaderCloseException( e );
         }
-    }
-
-    @Override
-    public FulltextIndexConfiguration getConfigurationDocument() throws IOException
-    {
-        for ( ReadOnlyFulltext indexReader : indexReaders )
-        {
-            FulltextIndexConfiguration config = indexReader.getConfigurationDocument();
-            if ( config != null )
-            {
-                return config;
-            }
-        }
-        return null;
     }
 
     private PrimitiveLongIterator partitionedOperation( Function<ReadOnlyFulltext,PrimitiveLongIterator> readerFunction )

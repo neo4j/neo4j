@@ -33,7 +33,6 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
@@ -57,7 +56,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 
 public class BloomIT
 {
@@ -87,8 +85,7 @@ public class BloomIT
     public void before() throws Exception
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
-                         .setConfig( bloom_enabled, "true" );
+        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
     }
 
     @After
@@ -466,7 +463,7 @@ public class BloomIT
         }
         db.shutdown();
 
-        Config config = Config.defaults( bloom_enabled, "true" );
+        Config config = Config.defaults();
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
         ConsistencyFlags checkConsistencyConfig = new ConsistencyFlags( true, true, true, true );
         ConsistencyCheckService.Result result =
@@ -524,50 +521,51 @@ public class BloomIT
         }
     }
 
-    @Test
-    public void shouldReindexAfterBeingTemporarilyDisabled() throws Exception
-    {
-
-        // Create a node while the index is enabled.
-        db = getDb();
-        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.createNode().setProperty( "prop", "Hello and hello again." );
-            tx.success();
-        }
-
-        // Shut down, disable the index, start up again and create a node that would have been indexed had the index
-        // been enabled.
-        db.shutdown();
-        builder.setConfig( bloom_enabled, "false" );
-        db = builder.newGraphDatabase();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.createNode().setProperty( "prop", "En tomte bodde i ett hus." );
-            tx.success();
-        }
-
-        // Re-enable the index and restart. Wait for the index to rebuild.
-        db.shutdown();
-        builder.setConfig( bloom_enabled, "true" );
-        db = getDb();
-        db.execute( AWAIT_POPULATION ).close();
-
-        // Now we should be able to find the node that was added while the index was disabled.
-        try ( Transaction ignore = db.beginTx() )
-        {
-            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"hello\"", false, false ) ) )
-            {
-                assertThat( Iterators.count( result ), is( 1L ) );
-            }
-            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"tomte\"", false, false ) ) )
-            {
-                assertThat( Iterators.count( result ), is( 1L ) );
-            }
-        }
-    }
+    //TODO Make a way to disable/remove the indexes?
+//    @Test
+//    public void shouldReindexAfterBeingTemporarilyDisabled() throws Exception
+//    {
+//
+//        // Create a node while the index is enabled.
+//        db = getDb();
+//        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+//        try ( Transaction tx = db.beginTx() )
+//        {
+//            db.createNode().setProperty( "prop", "Hello and hello again." );
+//            tx.success();
+//        }
+//
+//        // Shut down, disable the index, start up again and create a node that would have been indexed had the index
+//        // been enabled.
+//        db.shutdown();
+//        builder.setConfig( bloom_enabled, "false" );
+//        db = builder.newGraphDatabase();
+//
+//        try ( Transaction tx = db.beginTx() )
+//        {
+//            db.createNode().setProperty( "prop", "En tomte bodde i ett hus." );
+//            tx.success();
+//        }
+//
+//        // Re-enable the index and restart. Wait for the index to rebuild.
+//        db.shutdown();
+//        builder.setConfig( bloom_enabled, "true" );
+//        db = getDb();
+//        db.execute( AWAIT_POPULATION ).close();
+//
+//        // Now we should be able to find the node that was added while the index was disabled.
+//        try ( Transaction ignore = db.beginTx() )
+//        {
+//            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"hello\"", false, false ) ) )
+//            {
+//                assertThat( Iterators.count( result ), is( 1L ) );
+//            }
+//            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"tomte\"", false, false ) ) )
+//            {
+//                assertThat( Iterators.count( result ), is( 1L ) );
+//            }
+//        }
+//    }
 
     @Test
     public void indexedPropertiesShouldBeSetByProcedure() throws Exception
@@ -618,23 +616,5 @@ public class BloomIT
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertFalse( result.hasNext() );
-    }
-
-    @Test
-    public void databaseShouldBeAbleToStartWithBloomPresentButDisabled() throws Exception
-    {
-        builder.setConfig( bloom_enabled, "false" );
-        db = getDb();
-        //all good.
-    }
-
-    @Test
-    public void shouldThrowSomewhatHelpfulMessageIfCalledWhenDisabled() throws Exception
-    {
-        builder.setConfig( bloom_enabled, "false" );
-        db = getDb();
-        expectedException.expect( QueryExecutionException.class );
-        expectedException.expectMessage( "enabled" );
-        db.execute( AWAIT_POPULATION );
     }
 }

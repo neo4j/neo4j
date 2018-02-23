@@ -24,11 +24,9 @@ import org.apache.lucene.index.IndexWriterConfig;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.fulltext.FulltextIndexType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -79,24 +77,6 @@ public class FulltextFactory
             throw new RuntimeException( "Could not create the configured analyzer", e );
         }
         return analyzer;
-    }
-
-    LuceneFulltext createFulltextIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
-    {
-        File indexRootFolder = new File( indexDir, identifier );
-        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
-        PartitionedIndexStorage storage = storageBuilder.build();
-        return new LuceneFulltext( storage, partitionFactory, properties, analyzer, identifier, type );
-    }
-
-    LuceneFulltext openFulltextIndex( String identifier, FulltextIndexType type ) throws IOException
-    {
-        File indexRootFolder = new File( indexDir, identifier );
-        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
-        PartitionedIndexStorage storage = storageBuilder.build();
-        return new LuceneFulltext( storage, partitionFactory, analyzer, identifier, type );
     }
 
     public LuceneFulltext createFulltextIndex( FulltextIndexDescriptor descriptor )

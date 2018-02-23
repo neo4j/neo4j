@@ -31,12 +31,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.impl.fulltext.FulltextIndexType;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
@@ -57,34 +55,6 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
         this.identifier = identifier;
         this.type = type;
         state = InternalIndexState.POPULATING;
-    }
-
-    LuceneFulltext( PartitionedIndexStorage indexStorage, WritableIndexPartitionFactory partitionFactory, Analyzer analyzer, String identifier,
-            FulltextIndexType type ) throws IOException
-    {
-        this( indexStorage, partitionFactory, Collections.EMPTY_SET, analyzer, identifier, type );
-        this.properties = readProperties();
-    }
-
-    private Set<String> readProperties() throws IOException
-    {
-        Set<String> props;
-        open();
-        FulltextIndexConfiguration configurationDocument;
-        try ( ReadOnlyFulltext indexReader = getIndexReader() )
-        {
-            configurationDocument = indexReader.getConfigurationDocument();
-        }
-        if ( configurationDocument != null )
-        {
-            props = Collections.unmodifiableSet( configurationDocument.getProperties() );
-        }
-        else
-        {
-            props = Collections.emptySet();
-        }
-        close();
-        return props;
     }
 
     @Override
@@ -127,21 +97,6 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
         return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
     }
 
-    FulltextIndexType getType()
-    {
-        return type;
-    }
-
-    Set<String> getProperties()
-    {
-        return properties;
-    }
-
-    String getIdentifier()
-    {
-        return identifier;
-    }
-
     private SimpleFulltextReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
@@ -153,19 +108,6 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
         return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
-    }
-
-    void saveConfiguration( long txId ) throws IOException
-    {
-        PartitionedIndexWriter writer = getIndexWriter( new WritableFulltext( this ) );
-        String analyzerName = analyzer.getClass().getCanonicalName();
-        FulltextIndexConfiguration config = new FulltextIndexConfiguration( analyzerName, properties, txId );
-        writer.updateDocument( FulltextIndexConfiguration.TERM, config.asDocument() );
-    }
-
-    String getAnalyzerName()
-    {
-        return analyzer.getClass().getCanonicalName();
     }
 
     InternalIndexState getState()

@@ -58,9 +58,6 @@ public class BloomProcedures
     public static final String BLOOM_NODES = "bloomNodes";
 
     @Context
-    public FulltextProvider provider;
-
-    @Context
     public KernelTransaction tx;
 
     @Context

@@ -1,2 +1,1 @@
 org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexProviderFactory
-org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory

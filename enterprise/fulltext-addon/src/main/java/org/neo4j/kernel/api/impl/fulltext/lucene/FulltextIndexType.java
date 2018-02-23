@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 /**
  * Fulltext index type.
  */
-public enum FulltextIndexType
+enum FulltextIndexType
 {
     NODES
             {
