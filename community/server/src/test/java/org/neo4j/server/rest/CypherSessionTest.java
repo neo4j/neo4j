@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.jupiter.api.Test;
 
 import javax.servlet.http.HttpServletRequest;

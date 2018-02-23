@@ -1278,7 +1278,7 @@ public class ProcedureIT
                 record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDescription" ) )
                 .collect( Collectors.toList() );
         // Then
-        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertFalse( results.isEmpty(), "Expected to find test procedure" );
         assertThat( results.get( 0 ).get( "mode" ), equalTo( "WRITE" ) );
     }
 

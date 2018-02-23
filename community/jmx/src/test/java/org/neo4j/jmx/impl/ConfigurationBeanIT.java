@@ -19,9 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import javax.management.Attribute;
-import javax.management.AttributeList;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

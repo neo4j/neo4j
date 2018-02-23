@@ -385,13 +385,15 @@ public class CheckPointerImplTest
     @Test
     public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeout( ofMillis( 5000 ), () -> verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
+        assertTimeout( ofMillis( 5000 ), () -> verifyAsyncActionCausesConcurrentFlushingRush(
+                checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
     }
 
     @Test
     public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeout( ofMillis( 5000 ), () -> verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
+        assertTimeout( ofMillis( 5000 ), () -> verifyAsyncActionCausesConcurrentFlushingRush(
+                checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
     }
 
     private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )

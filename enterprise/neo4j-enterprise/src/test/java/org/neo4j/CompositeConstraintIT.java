@@ -23,12 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
-
-import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckTool;
