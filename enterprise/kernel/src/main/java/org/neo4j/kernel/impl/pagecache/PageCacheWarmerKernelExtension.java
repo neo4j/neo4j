@@ -126,13 +126,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     {
         if ( profilingStarted.compareAndSet( false, true ) )
         {
-            // At this point, we are currently executing inside a *scheduled* executor thread. There are, at this time
-            // of writing, only two executor threads. Therefor, we *must* hand off the actual profiling work to another
-            // thread, so we don't cause congestion in the scheduler. Congestion could for instance arise if the
-            // profile gets stuck on some lock in the page cache. We cannot allow this to block a scheduler thread for
-            // an extended period of time, since there are many other services that rely on timely activation from the
-            // scheduler. For instance, catchup in causal cluster is relying the timeliness of the scheduler.
-            scheduler.schedule( pageCacheIOHelper, this::doProfile );
+            doProfile();
         }
     }
 
