@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -103,7 +104,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
     IndexStoreView EMPTY = new IndexStoreView()
     {
         @Override
-        public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+        public void loadProperties( long nodeId, EntityType type, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
         {
         }
 

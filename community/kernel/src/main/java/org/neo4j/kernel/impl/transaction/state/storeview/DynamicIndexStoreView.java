@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
@@ -148,8 +149,8 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+    public void loadProperties( long nodeId, EntityType type, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
     {
-        neoStoreIndexStoreView.loadProperties( nodeId, propertyIds, sink );
+        neoStoreIndexStoreView.loadProperties( nodeId, type, propertyIds, sink );
     }
 }

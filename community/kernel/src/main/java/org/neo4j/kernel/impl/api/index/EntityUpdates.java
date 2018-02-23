@@ -33,6 +33,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -185,7 +187,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
      * @return IndexEntryUpdates for all relevant index keys
      */
     public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
-            Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader )
+            Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader, EntityType type )
     {
         List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
         PrimitiveIntSet additionalPropertiesToLoad = Primitive.intSet();
@@ -201,7 +203,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
 
         if ( !additionalPropertiesToLoad.isEmpty() )
         {
-            loadProperties( propertyLoader, additionalPropertiesToLoad );
+            loadProperties( propertyLoader, additionalPropertiesToLoad, type );
         }
 
         return gatherUpdatesForPotentials( potentiallyRelevant );
@@ -249,10 +251,10 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         return schema.isAffected( entityTokensAfter ) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
-    private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
+    private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad, EntityType type )
     {
         hasLoadedAdditionalProperties = true;
-        propertyLoader.loadProperties( entityId, additionalPropertiesToLoad, this );
+        propertyLoader.loadProperties( entityId, type, additionalPropertiesToLoad, this );
 
         // loadProperties removes loaded properties from the input set, so the remaining ones were not on the node
         PrimitiveIntIterator propertiesWithNoValue = additionalPropertiesToLoad.iterator();
@@ -359,6 +361,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     {
         for ( int propertyId : propertyIds )
         {
+            //TODO depends on schema type?
             if ( knownProperties.get( propertyId ).type == Changed )
             {
                 return true;

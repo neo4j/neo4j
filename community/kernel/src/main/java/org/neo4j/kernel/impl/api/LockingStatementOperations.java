@@ -182,7 +182,10 @@ public class LockingStatementOperations implements
     {
         state.assertOpen();
         IndexDescriptor indexDescriptor = schemaReadDelegate.indexGetForName( state, name );
-        lockSchemaShared( state, indexDescriptor.schema() );
+        if ( indexDescriptor != null )
+        {
+            lockSchemaShared( state, indexDescriptor.schema() );
+        }
         return indexDescriptor;
     }
 

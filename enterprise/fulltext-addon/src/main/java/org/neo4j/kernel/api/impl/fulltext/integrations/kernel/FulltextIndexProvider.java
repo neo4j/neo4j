@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
@@ -209,8 +210,13 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     }
 
     @Override
-    public PrimitiveLongIterator query( String indexName, String queryString ) throws IOException
+    public PrimitiveLongIterator query( String indexName, String queryString ) throws IOException, IndexNotFoundKernelException
     {
-        return accessorsByName.get( indexName ).query( queryString );
+        FulltextIndexAccessor fulltextIndexAccessor = accessorsByName.get( indexName );
+        if ( fulltextIndexAccessor == null )
+        {
+            throw new IndexNotFoundKernelException( "The requested fulltext index could not be accessed. Perhaps population has not completed yet?" );
+        }
+        return fulltextIndexAccessor.query( queryString );
     }
 }

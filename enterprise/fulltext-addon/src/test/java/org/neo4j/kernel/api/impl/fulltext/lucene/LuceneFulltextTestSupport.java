@@ -119,43 +119,47 @@ public class LuceneFulltextTestSupport
         return relationship.getId();
     }
 
-    protected void assertExactQueryFindsNothing( String indexName, String query ) throws IOException
+    protected void assertExactQueryFindsNothing( String indexName, String query ) throws IOException, IndexNotFoundKernelException
     {
         assertExactQueryFindsIds( indexName, query, false );
     }
 
-    protected void assertExactQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids ) throws IOException
+    protected void assertExactQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids )
+            throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery(query, false, matchAll);
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertExactQueryFindsIdsInOrder( String indexName, Collection<String> query, boolean matchAll, long... ids ) throws IOException
+    protected void assertExactQueryFindsIdsInOrder( String indexName, Collection<String> query, boolean matchAll, long... ids )
+            throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery(query, false, matchAll);
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
-    protected void assertExactQueryFindsIds( String indexName, String query, boolean matchAll, long... ids ) throws IOException
+    protected void assertExactQueryFindsIds( String indexName, String query, boolean matchAll, long... ids ) throws IOException, IndexNotFoundKernelException
     {
         assertExactQueryFindsIds( indexName, Arrays.asList( query ), matchAll, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( String indexName, String query, boolean matchAll, long... ids ) throws IOException
+    protected void assertFuzzyQueryFindsIds( String indexName, String query, boolean matchAll, long... ids ) throws IOException, IndexNotFoundKernelException
     {
         assertFuzzyQueryFindsIds( indexName, Arrays.asList( query ), matchAll, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids ) throws IOException
+    protected void assertFuzzyQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids )
+            throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery(query, true, matchAll);
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertFuzzyQueryFindsIdsInOrder( String indexName, String query, boolean matchAll, long... ids ) throws IOException
+    protected void assertFuzzyQueryFindsIdsInOrder( String indexName, String query, boolean matchAll, long... ids )
+            throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery(Arrays.asList( query ), true, matchAll);
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );

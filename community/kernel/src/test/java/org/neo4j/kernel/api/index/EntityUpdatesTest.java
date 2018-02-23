@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyLoader;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -68,7 +69,7 @@ public class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ), emptyIterable() );
     }
 
     @Test
@@ -81,7 +82,7 @@ public class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ), emptyIterable() );
     }
 
     @Test
@@ -91,7 +92,7 @@ public class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ), emptyIterable() );
     }
 
     @Test
@@ -102,7 +103,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1 ), EntityType.NODE ),
                 containsInAnyOrder(
                     IndexEntryUpdate.add( nodeId, index1, property1.value() )
                 ) );
@@ -120,7 +121,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.add( nodeId, index2, property2.value() ),
@@ -135,7 +136,7 @@ public class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels, empty ).build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, propertyLoader() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ), emptyIterable() );
     }
 
     @Test
@@ -147,7 +148,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1 ), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.remove( nodeId, index1, property1.value() )
                 ) );
@@ -162,7 +163,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.remove( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.remove( nodeId, index2, property2.value() ),
@@ -179,7 +180,7 @@ public class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ), emptyIterable() );
     }
 
     @Test
@@ -192,7 +193,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader() ),
+                updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() )
                 ) );
@@ -209,7 +210,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.add( nodeId, index2, property2.value() ),
@@ -227,7 +228,7 @@ public class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ), emptyIterable() );
     }
 
     @Test
@@ -240,7 +241,7 @@ public class EntityUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ), emptyIterable() );
     }
 
     @Test
@@ -251,7 +252,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading() ),
+                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading(), EntityType.NODE ),
                 emptyIterable() );
     }
 
@@ -265,7 +266,7 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading() ),
+                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading(), EntityType.NODE ),
                 emptyIterable() );
     }
 
@@ -276,7 +277,7 @@ public class EntityUpdatesTest
         {
             propertyMap.put( p.propertyKeyId(), p.value() );
         }
-        return ( nodeId1, propertyIds, sink ) ->
+        return ( nodeId1, type, propertyIds, sink ) ->
         {
             PrimitiveIntIterator iterator = propertyIds.iterator();
             while ( iterator.hasNext() )
@@ -293,6 +294,6 @@ public class EntityUpdatesTest
 
     private PropertyLoader assertNoLoading()
     {
-        return ( nodeId1, propertyIds, sink ) -> fail( "Should never attempt to load properties!" );
+        return ( nodeId1, type, propertyIds, sink ) -> fail( "Should never attempt to load properties!" );
     }
 }

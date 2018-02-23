@@ -202,13 +202,6 @@ public final class IndexMap implements Cloneable
         }
         else
         {
-            //TODO remove most of this shit
-            if ( changedEntityTokens.length == 1 && properties.isEmpty() )
-            {
-                Set<SchemaDescriptor> descriptors = descriptorsByReltype.get( (int) changedEntityTokens[0] );
-                return descriptors == null ? Collections.emptySet() : descriptors;
-            }
-
             if ( changedEntityTokens.length == 0 && properties.size() == 1 )
             {
                 return getRelDescriptorsByProperties( unchangedEntityTokens, properties );

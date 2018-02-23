@@ -129,10 +129,10 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     private void gatherUpdatesFor( long reltionshipId, List<PropertyCommand> propertyCommands )
     {
-        EntityUpdates.Builder nodePropertyUpdate =
+        EntityUpdates.Builder relationshipPropertyUpdate =
                 gatherUpdatesFromCommandsForRelationship( reltionshipId, propertyCommands );
 
-        EntityUpdates entityUpdates = nodePropertyUpdate.build();
+        EntityUpdates entityUpdates = relationshipPropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
         for ( IndexEntryUpdate<SchemaDescriptor> update :  updateService.convertToIndexUpdates( entityUpdates, EntityType.RELATIONSHIP ) )

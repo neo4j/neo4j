@@ -448,7 +448,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                                                 entityUpdates.propertiesChanged(),
                                                 entityType);
 
-        return entityUpdates.forIndexKeys( relatedIndexes, storeView );
+        return entityUpdates.forIndexKeys( relatedIndexes, storeView, entityType );
     }
 
     /**

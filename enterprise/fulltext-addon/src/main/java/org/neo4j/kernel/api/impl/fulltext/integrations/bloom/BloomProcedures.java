@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -27,19 +28,24 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextQueryHelper;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.storageengine.api.EntityType;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.RELATIONSHIPS;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 
@@ -55,52 +61,118 @@ public class BloomProcedures
     public FulltextProvider provider;
 
     @Context
-    public FulltextAccessor accessor;
+    public KernelTransaction tx;
 
     @Context
-    public ReadOperations readOperations;
+    public FulltextAccessor accessor;
 
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "bloom.awaitPopulation", mode = READ )
     public void awaitPopulation() throws Exception
     {
-        provider.awaitPopulation();
+        await( BLOOM_NODES );
+        await( BLOOM_RELATIONSHIPS );
+    }
+
+    private void await( String indexName ) throws IndexPopulationFailedKernelException
+    {
+        //TODO real await
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            //noinspection StatementWithEmptyBody
+            IndexDescriptor descriptor = stmt.readOperations().indexGetForName( indexName );
+            InternalIndexState state;
+            while ( (state = stmt.readOperations().indexGetState( descriptor )) != InternalIndexState.ONLINE )
+            {
+                if ( state == InternalIndexState.FAILED )
+                {
+                    StatementTokenNameLookup lookup = new StatementTokenNameLookup( stmt.readOperations() );
+                    throw new IndexPopulationFailedKernelException( descriptor.schema(), descriptor.userDescription( lookup ),
+                            "Population of index " + indexName + " has failed." );
+                }
+            }
+        }
+        catch ( IndexNotFoundKernelException | SchemaRuleNotFoundException e )
+        {
+            //This is fine
+        }
     }
 
     @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
     public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws Exception
     {
-        return accessor.propertyKeyStrings(readOperations.indexGetForName( BLOOM_NODES )).map( PropertyOutput::new );
-    }
-
-    @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
-    @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
-    {
-        return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            return accessor.propertyKeyStrings( readOperations.indexGetForName( BLOOM_NODES ) ).map( PropertyOutput::new );
+        }
     }
 
     @Description( "Set the node property keys to index" )
     @Procedure( name = "bloom.setIndexedNodePropertyKeys", mode = SCHEMA )
     public void setIndexedNodePropertyKeys( @Name( "propertyKeys" ) List<String> propertyKeys ) throws Exception
     {
-        provider.changeIndexedProperties( BLOOM_NODES, NODES, propertyKeys );
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            stmt.schemaWriteOperations().indexDrop( readOperations.indexGetForName( BLOOM_NODES ) );
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            //this is fine
+        }
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            IndexDescriptor indexDescriptor = accessor.indexDescriptorFor( BLOOM_NODES, EntityType.NODE, new String[0], propertyKeys.toArray( new String[0] ) );
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( indexDescriptor );
+        }
+    }
+
+    @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
+    @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
+    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
+    {
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            return accessor.propertyKeyStrings( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) ).map( PropertyOutput::new );
+        }
     }
 
     @Description( "Set the relationship property keys to index" )
     @Procedure( name = "bloom.setIndexedRelationshipPropertyKeys", mode = SCHEMA )
     public void setIndexedRelationshipPropertyKeys( @Name( "propertyKeys" ) List<String> propertyKeys ) throws Exception
     {
-        provider.changeIndexedProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS, propertyKeys );
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            stmt.schemaWriteOperations().indexDrop( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) );
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            //this is fine
+        }
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            IndexDescriptor indexDescriptor =
+                    accessor.indexDescriptorFor( BLOOM_RELATIONSHIPS, EntityType.RELATIONSHIP, new String[0], propertyKeys.toArray( new String[0] ) );
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( indexDescriptor );
+        }
     }
 
     @Description( "Check the status of the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.indexStatus", mode = READ )
     public Stream<StatusOutput> indexStatus() throws Exception
     {
-        InternalIndexState nodeIndexState = provider.getState( BLOOM_NODES, NODES );
-        InternalIndexState relationshipIndexState = provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
+        InternalIndexState nodeIndexState;
+        InternalIndexState relationshipIndexState;
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            nodeIndexState = readOperations.indexGetState( readOperations.indexGetForName( BLOOM_NODES ) );
+            relationshipIndexState = readOperations.indexGetState( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) );
+        }
         return Stream.of( nodeIndexState, relationshipIndexState ).map( StatusOutput::new );
     }
 
@@ -111,10 +183,7 @@ public class BloomProcedures
             @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
             @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
-        try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_NODES, NODES ) )
-        {
-            return queryAsStream( terms, indexReader, fuzzy, matchAll );
-        }
+        return queryAsStream( terms, BLOOM_NODES, fuzzy, matchAll );
     }
 
     @Description( "Query the Bloom fulltext index for relationships" )
@@ -124,26 +193,15 @@ public class BloomProcedures
             @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
             @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
-        try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) )
-        {
-            return queryAsStream( terms, indexReader, fuzzy, matchAll );
-        }
+        return queryAsStream( terms, BLOOM_RELATIONSHIPS, fuzzy, matchAll );
     }
 
-    private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader, boolean fuzzy, boolean matchAll )
+    private Stream<EntityOutput> queryAsStream( List<String> terms, String indexName, boolean fuzzy, boolean matchAll )
+            throws IOException, IndexNotFoundKernelException
     {
-        return null;
-//        PrimitiveLongIterator primitiveLongIterator;
-////        if ( fuzzy )
-////        {
-////            primitiveLongIterator = indexReader.fuzzyQuery( terms, matchAll );
-////        }
-////        else
-////        {
-////            primitiveLongIterator = indexReader.query( terms, matchAll );
-////        }
-//        Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, primitiveLongIterator );
-//        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
+        String query = FulltextQueryHelper.createQuery( terms, fuzzy, matchAll );
+        Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, accessor.query( indexName, query ) );
+        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
     }
 
     public static class EntityOutput

@@ -44,6 +44,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextConfig;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -122,6 +123,7 @@ public class BloomIT
             relationship.setProperty( "relprop", "They relate" );
             transaction.success();
         }
+        db.execute( AWAIT_POPULATION ).close();
 
         Result result = db.execute( String.format( NODES, "\"integration\"") );
         assertTrue( result.hasNext() );
@@ -134,6 +136,8 @@ public class BloomIT
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
     }
+
+    //TODO add tests that add properties to existing nodes and rels
 
     @Test
     public void exactQueryShouldBeExact() throws Exception
@@ -151,6 +155,7 @@ public class BloomIT
             relationship.setProperty( "prop", "They relate" );
             transaction.success();
         }
+        db.execute( AWAIT_POPULATION ).close();
 
         Result result = db.execute( String.format( NODES_ADVANCED, "\"integration\"", false, false ) );
         assertEquals( 0L, result.next().get( ENTITYID ) );
@@ -172,6 +177,8 @@ public class BloomIT
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         db.execute( String.format( SET_REL_KEYS, "\"prop\"" ) );
+        db.execute( AWAIT_POPULATION ).close();
+
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -197,9 +204,11 @@ public class BloomIT
     @Test
     public void shouldBeAbleToConfigureAnalyzer() throws Exception
     {
-        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
+        builder.setConfig( FulltextConfig.fulltext_default_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        db.execute( AWAIT_POPULATION ).close();
+
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -235,11 +244,13 @@ public class BloomIT
             nodeId = node.getId();
             tx.success();
         }
+        db.execute( AWAIT_POPULATION ).close();
+
         Result result = db.execute( String.format( NODES, "\"Roskildevej\"") );
         assertFalse( result.hasNext() );
         db.shutdown();
 
-        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
+        builder.setConfig( FulltextConfig.fulltext_default_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
 
@@ -314,6 +325,7 @@ public class BloomIT
 
         db.shutdown();
         db = getDb();
+        db.execute( AWAIT_POPULATION ).close();
         // Should not be found after restart
         result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertFalse( result.hasNext() );
@@ -398,6 +410,7 @@ public class BloomIT
     {
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        db.execute( AWAIT_POPULATION ).close();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -443,6 +456,8 @@ public class BloomIT
     {
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        db.execute( AWAIT_POPULATION ).close();
+
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -466,7 +481,7 @@ public class BloomIT
         String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
         String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
-        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, ENGLISH );
+        builder.setConfig( FulltextConfig.fulltext_default_analyzer, ENGLISH );
 
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
@@ -477,6 +492,8 @@ public class BloomIT
 
             tx.success();
         }
+        db.execute( AWAIT_POPULATION ).close();
+
         try ( Transaction ignore = db.beginTx() )
         {
             try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"and\"", false, false ) ) )
@@ -490,7 +507,7 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, SWEDISH );
+        builder.setConfig( FulltextConfig.fulltext_default_analyzer, SWEDISH );
         db = getDb();
         db.execute( AWAIT_POPULATION ).close();
 
@@ -564,6 +581,7 @@ public class BloomIT
             db.createNode().setProperty( "prop", "Hello and hello again." );
             tx.success();
         }
+        db.execute( AWAIT_POPULATION );
 
         try ( Transaction ignore = db.beginTx() )
         {
@@ -582,8 +600,8 @@ public class BloomIT
         db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"otherprop\", \"proppmatt\"" ) );
 
         Result result = db.execute( GET_NODE_KEYS );
-        assertEquals( "otherprop", result.next().get( "propertyKey" ) );
         assertEquals( "prop", result.next().get( "propertyKey" ) );
+        assertEquals( "otherprop", result.next().get( "propertyKey" ) );
         assertEquals( "proppmatt", result.next().get( "propertyKey" ) );
         assertFalse( result.hasNext() );
     }
