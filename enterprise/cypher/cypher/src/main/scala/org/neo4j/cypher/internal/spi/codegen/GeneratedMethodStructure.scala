@@ -24,12 +24,11 @@ import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMa
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.eclipse.collections.api.set.primitive.LongSet
-import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap
+import org.eclipse.collections.impl.map.mutable.primitive.{LongIntHashMap, LongLongHashMap}
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive._
-import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.frontend.v3_5.helpers._
@@ -1203,7 +1202,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def joinTableType(resultType: JoinTableType): TypeReference = {
     val returnType = resultType match {
       case LongToCountTable =>
-        typeRef[PrimitiveLongIntMap]
+        typeRef[LongIntHashMap]
       case LongsToCountTable =>
         parameterizedType(classOf[JHashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
       case LongToListTable(tupleDescriptor, _) =>
@@ -1231,15 +1230,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case LongToCountTable =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
-      val countName = context.namer.newVarName()
-      generator.assign(typeRef[Int], countName,
-                       invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
       generator.expression(
         pop(
-          invoke(generator.load(tableVar), countingTablePut, generator.load(keyVar),
-                 ternary(
-                   equal(generator.load(countName), getStatic(staticField[LongKeyIntValueTable, Int]("NULL"))),
-                   constant(1), add(generator.load(countName), constant(1))))))
+          invoke(generator.load(tableVar), countingTableIncrement, generator.load(keyVar), constant(1))
+        ));
 
     case LongsToCountTable =>
       val countName = context.namer.newVarName()

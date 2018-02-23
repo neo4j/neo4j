@@ -27,14 +27,12 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
@@ -88,16 +86,6 @@ public class Primitive
     {
         return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( initialCapacity, VALUE_MARKER, allocationTracker ),
                 VALUE_MARKER, NO_MONITOR );
-    }
-
-    public static PrimitiveLongIntMap longIntMap()
-    {
-        return longIntMap( DEFAULT_HEAP_CAPACITY );
-    }
-
-    public static PrimitiveLongIntMap longIntMap( int initialCapacity )
-    {
-        return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( initialCapacity ), NO_MONITOR );
     }
 
     public static MutableLongLongMap longLongMap()

@@ -33,7 +33,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.Factory;
@@ -133,32 +132,6 @@ public class PrimitiveCollectionEqualityTest
     };
 
     @DataPoint
-    public static ValueProducer<PrimitiveLongIntMap> longIntV = new ValueProducer<PrimitiveLongIntMap>(
-            PrimitiveLongIntMap.class )
-    {
-        @Override
-        public Value<PrimitiveLongIntMap> randomValue()
-        {
-            final long x = randomLong();
-            final int y = randomInt();
-            return new Value<PrimitiveLongIntMap>()
-            {
-                @Override
-                public void add( PrimitiveLongIntMap coll )
-                {
-                    coll.put( x, y );
-                }
-
-                @Override
-                public boolean remove( PrimitiveLongIntMap coll )
-                {
-                    return coll.remove( x ) == y;
-                }
-            };
-        }
-    };
-
-    @DataPoint
     public static ValueProducer<PrimitiveIntObjectMap> intObjV =
             new ValueProducer<PrimitiveIntObjectMap>( PrimitiveIntObjectMap.class )
     {
@@ -239,12 +212,6 @@ public class PrimitiveCollectionEqualityTest
     @DataPoint
     public static Factory<PrimitiveLongSet> offheapLongSetWithCapacity =
             () -> Primitive.offHeapLongSet( randomCapacity(), GlobalMemoryTracker.INSTANCE );
-
-    @DataPoint
-    public static Factory<PrimitiveLongIntMap> longIntMap = Primitive::longIntMap;
-
-    @DataPoint
-    public static Factory<PrimitiveLongIntMap> longIntMapWithCapacity = () -> Primitive.longIntMap( randomCapacity() );
 
     @DataPoint
     public static Factory<PrimitiveIntObjectMap> intObjMap = Primitive::intObjectMap;
