@@ -181,7 +181,7 @@ public class NumberValueMathTest
     @Test
     public void shouldNotOverflowOnSafeSubtraction()
     {
-        assertThat( overflowSafeSubtract( Long.MAX_VALUE, -1 ), equalTo( doubleValue( (double) Long.MAX_VALUE + 1 ) ) );
+        assertThat( overflowSafeSubtract( Long.MAX_VALUE, -1 ), equalTo( doubleValue( ((double) Long.MAX_VALUE)  + (double) 1 ) ) );
     }
 
     @Test

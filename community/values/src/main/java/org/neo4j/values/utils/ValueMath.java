@@ -121,13 +121,13 @@ public final class ValueMath
      *
      * @param a left-hand operand
      * @param b right-hand operand
-     * @return a + b
+     * @return a - b
      */
     public static NumberValue overflowSafeSubtract( long a, long b )
     {
         long r = a - b;
         //Check if result overflows
-        if ( ((a ^ r) & (b ^ r)) < 0 )
+        if ( ((a ^ b) & (a ^ r)) < 0)
         {
             return Values.doubleValue( (double) a - (double) b );
         }
@@ -177,7 +177,7 @@ public final class ValueMath
         {
             if ( ((b != 0) && (r / b != a)) || (a == Long.MIN_VALUE && b == -1) )
             {
-                return doubleValue( (double) a + (double) b );
+                return doubleValue( (double) a * (double) b );
             }
         }
         return longValue( r );
