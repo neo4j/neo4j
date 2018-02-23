@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -42,8 +43,10 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -142,7 +145,7 @@ public class SocketTransportHandlerTest
         // Then
         verify( machine ).close();
         logging.assertExactly( inLog( SocketTransportHandler.class )
-                .error( equalTo( "Fatal error occurred when handling a client connection: Oh no!" ), is( cause ) ) );
+                .error( startsWith( "Fatal error occurred when handling a client connection" ), is( cause ) ) );
     }
 
     @Test
@@ -161,8 +164,7 @@ public class SocketTransportHandlerTest
         // Then
         verify( context ).close();
         logging.assertExactly( inLog( SocketTransportHandler.class )
-                .error( equalTo( "Fatal error occurred when handling a client connection: Oh no!" ),
-                        is( cause ) ) );
+                .error( startsWith( "Fatal error occurred when handling a client connection" ), is( cause ) ) );
     }
 
     @Test
@@ -181,6 +183,25 @@ public class SocketTransportHandlerTest
         BoltMessagingProtocolHandler protocol2 = chooser.chosenProtocol();
 
         assertSame( protocol1, protocol2 );
+    }
+
+    @Test
+    public void shouldLogChannelWhenExceptionCaught() throws Exception
+    {
+        BoltStateMachine stateMachine = mock( BoltStateMachine.class );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        SocketTransportHandler handler = new SocketTransportHandler( protocolChooser( stateMachine ), logProvider, BOLT_LOGGING );
+
+        ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
+        EmbeddedChannel channel = new EmbeddedChannel();
+        when( ctx.channel() ).thenReturn( channel );
+        RuntimeException error = new RuntimeException( "Hello!" );
+
+        handler.exceptionCaught( ctx, error );
+
+        logProvider.assertAtLeastOnce( inLog( containsString( SocketTransportHandler.class.getSimpleName() ) ).error(
+                equalTo( "Fatal error occurred when handling a client connection: " + channel ),
+                equalTo( error ) ) );
     }
 
     private static SocketTransportHandler newSocketTransportHandler( BoltHandshakeProtocolHandler handler )
