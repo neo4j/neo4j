@@ -19,6 +19,7 @@
  */
 package org.neo4j.adversaries.pagecache;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -74,6 +75,12 @@ public class AdversarialPagedFile implements PagedFile
     {
         adversary.injectFailure( IllegalStateException.class );
         return delegate.fileSize();
+    }
+
+    @Override
+    public File file()
+    {
+        return delegate.file();
     }
 
     @Override

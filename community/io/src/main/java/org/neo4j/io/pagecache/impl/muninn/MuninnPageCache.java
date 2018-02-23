@@ -690,6 +690,12 @@ public class MuninnPageCache implements PageCache
         return swapperFactory.getFileSystemAbstraction();
     }
 
+    @Override
+    public void reportEvents()
+    {
+        pageCursorTracerSupplier.get().reportEvents();
+    }
+
     int getPageCacheId()
     {
         return pageCacheId;
@@ -999,7 +1005,7 @@ public class MuninnPageCache implements PageCache
 
     void vacuum( SwapperSet swappers )
     {
-        if ( getFreelistHead() instanceof AtomicInteger  && swappers.countAvailableIds() > 200 )
+        if ( getFreelistHead() instanceof AtomicInteger && swappers.countAvailableIds() > 200 )
         {
             return; // We probably still have plenty of free pages left. Don't bother vacuuming just yet.
         }
@@ -1025,6 +1031,6 @@ public class MuninnPageCache implements PageCache
             {
                 throw new UncheckedIOException( e );
             }
-        });
+        } );
     }
 }

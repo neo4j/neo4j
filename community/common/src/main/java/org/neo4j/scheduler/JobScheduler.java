@@ -160,47 +160,52 @@ public interface JobScheduler extends Lifecycle
         /**
          * UDC timed events.
          */
-        public static Group udc  = new Group( "UsageDataCollection" );
+        public static final Group udc  = new Group( "UsageDataCollection" );
 
         /**
          * Storage maintenance.
          */
-        public static Group storageMaintenance = new Group( "StorageMaintenance" );
+        public static final Group storageMaintenance = new Group( "StorageMaintenance" );
 
         /**
          * Raft timers.
          */
-        public static Group raft = new Group( "RaftTimer" );
+        public static final Group raft = new Group( "RaftTimer" );
 
         /**
          * Native security.
          */
-        public static Group nativeSecurity = new Group( "NativeSecurity" );
+        public static final Group nativeSecurity = new Group( "NativeSecurity" );
 
         /**
          * File watch service group
          */
-        public static Group fileWatch = new Group( "FileWatcher" );
+        public static final Group fileWatch = new Group( "FileWatcher" );
 
         /**
          * Recovery cleanup.
          */
-        public static Group recoveryCleanup = new Group( "RecoveryCleanup" );
+        public static final Group recoveryCleanup = new Group( "RecoveryCleanup" );
 
         /**
          * Kernel transaction timeout monitor.
          */
-        public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor" );
+        public static final Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor" );
 
         /**
          * Kernel transaction timeout monitor.
          */
-        public static Group cypherWorker = new Group( "CypherWorker" );
+        public static final Group cypherWorker = new Group( "CypherWorker" );
 
         /**
          * VM pause monitor
          */
-        public static Group vmPauseMonitor = new Group( "VmPauseMonitor" );
+        public static final Group vmPauseMonitor = new Group( "VmPauseMonitor" );
+
+        /**
+         * IO helper threads for page cache and IO related stuff.
+         */
+        public static final Group pageCacheIOHelper = new Group( "PageCacheIOHelper" );
 
         private Groups()
         {
@@ -235,7 +240,9 @@ public interface JobScheduler extends Lifecycle
     /** Expose a group scheduler as an {@link Executor} */
     Executor executor( Group group );
 
-    /** Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}*/
+    /**
+     * Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}
+     */
     ExecutorService workStealingExecutor( Group group, int parallelism );
 
     /**

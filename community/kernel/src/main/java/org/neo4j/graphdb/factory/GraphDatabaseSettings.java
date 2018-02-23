@@ -567,6 +567,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.memory.pagecache.swapper", STRING, null );
 
+    @Internal
+    @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
+                  "warmup after a restart, reducing the mean time to performance." )
+    public static final Setting<Duration> pagecache_warmup_profiling_interval =
+            setting( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, "1m" );
+
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.

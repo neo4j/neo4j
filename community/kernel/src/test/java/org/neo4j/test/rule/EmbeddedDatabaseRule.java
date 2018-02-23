@@ -31,7 +31,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
  * JUnit @Rule for configuring, creating and managing an EmbeddedGraphDatabase instance.
- *
+ * <p>
  * The database instance is created lazily, so configurations can be injected prior to calling
  * {@link #getGraphDatabaseAPI()}.
  */
@@ -78,5 +78,16 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     public Statement apply( Statement base, Description description )
     {
         return testDirectory.apply( super.apply( base, description ), description );
+    }
+
+    /**
+     * Get the inner {@link TestDirectory} instance that is used to prepare the store directory for this database.
+     * <p>
+     * <strong>Note:</strong> There is no need to add a {@link org.junit.Rule} annotation on this {@link TestDirectory}
+     * instance.
+     */
+    public TestDirectory getTestDirectory()
+    {
+        return testDirectory;
     }
 }

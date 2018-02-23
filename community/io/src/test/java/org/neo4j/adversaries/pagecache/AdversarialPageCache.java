@@ -128,4 +128,10 @@ public class AdversarialPageCache implements PageCache
     {
         return delegate.getCachedFileSystem();
     }
+
+    @Override
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
 }
