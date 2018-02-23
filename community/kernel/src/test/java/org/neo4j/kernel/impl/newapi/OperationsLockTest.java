@@ -111,6 +111,7 @@ public class OperationsLockTest
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
+        when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
