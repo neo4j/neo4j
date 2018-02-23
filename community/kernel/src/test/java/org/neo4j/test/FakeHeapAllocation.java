@@ -19,20 +19,19 @@
  */
 package org.neo4j.test;
 
+import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.neo4j.collection.primitive.PrimitiveLongLongMap;
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.resources.HeapAllocation;
 
 import static java.lang.Thread.currentThread;
-import static org.neo4j.collection.primitive.Primitive.offHeapLongLongMap;
+import static org.neo4j.collection.primitive.Primitive.longLongMap;
 
 public class FakeHeapAllocation extends HeapAllocation implements TestRule
 {
-    private final PrimitiveLongLongMap allocation = offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
+    private final MutableLongLongMap allocation = longLongMap();
 
     @Override
     public long allocatedBytes( long threadId )
@@ -59,14 +58,7 @@ public class FakeHeapAllocation extends HeapAllocation implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                try
-                {
-                    base.evaluate();
-                }
-                finally
-                {
-                    allocation.close();
-                }
+                base.evaluate();
             }
         };
     }

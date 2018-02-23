@@ -23,6 +23,8 @@ import java.util.stream.{DoubleStream, IntStream, LongStream}
 import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.eclipse.collections.api.set.primitive.LongSet
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
@@ -899,11 +901,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType]) = {
     if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
-      generator.assign(generator.declare(typeRef[PrimitiveLongLongMap], name),
-                       invoke(method[Primitive, PrimitiveLongLongMap]("longLongMap")))
-      _finalizers.append((_: Boolean) => (block) =>
-                           block.expression(
-                             invoke(block.load(name), method[PrimitiveLongLongMap, Unit]("close"))))
+      generator.assign(generator.declare(typeRef[LongLongHashMap], name),
+        createNewInstance(typeRef[LongLongHashMap]))
     } else {
       val local = generator.declare(typeRef[JHashMap[Object, java.lang.Long]], name)
       generator.assign(local, createNewInstance(typeRef[JHashMap[Object, java.lang.Long]]))
@@ -977,11 +976,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
     if (key.size == 1 && key.head._2._1.repr == LongType) {
       val (_, (_, keyExpression)) = key.head
-      generator.assign(local, invoke(generator.load(mapName), method[PrimitiveLongLongMap, Long]("get", typeRef[
-        Long]), keyExpression))
-      using(generator.ifStatement(equal(generator.load(valueVarName), constant(Long.box(-1L))))) { body =>
-        body.assign(local, constant(Long.box(0L)))
-      }
+      generator.assign(local, invoke(generator.load(mapName), method[LongLongHashMap, Long]("get", typeRef[Long]), keyExpression))
     } else {
       newUniqueAggregationKey(keyVar, key)
       generator.assign(local, unbox(
@@ -1110,8 +1105,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (key.size == 1 && key.head._2._1.repr == LongType) {
       val (_, (_, keyExpression)) = key.head
       generator.expression(pop(invoke(generator.load(name),
-                                      method[PrimitiveLongLongMap, Long]("put", typeRef[Long], typeRef[Long]),
-                                      keyExpression, value)))
+        method[LongLongHashMap, Long]("put", typeRef[Long], typeRef[Long]), keyExpression, value)))
     } else {
 
       if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
@@ -1129,16 +1123,20 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val (keyName, keyType) = key.head
       val localName = context.namer.newVarName()
       val variable = generator.declare(typeRef[LongIterator], localName)
-      generator.assign(variable, invoke(generator.load(name),
-        method[PrimitiveLongLongMap, LongIterator]("longIterator")))
+      generator.assign(variable,
+        invoke(
+          invoke(generator.load(name), method[LongLongHashMap, LongSet]("keySet")),
+          method[LongSet, LongIterator]("longIterator")
+        )
+      )
       using(generator.whileLoop(
         invoke(generator.load(localName), method[LongIterator, Boolean]("hasNext")))) { body =>
 
         body.assign(body.declare(typeRef[Long], keyName),
           invoke(body.load(localName), method[LongIterator, Long]("next")))
         body.assign(body.declare(typeRef[Long], valueVar),
-                    invoke(body.load(name), method[PrimitiveLongLongMap, Long]("get", typeRef[Long]),
-                           body.load(keyName)))
+          invoke(body.load(name), method[LongLongHashMap, Long]("getIfAbsent", typeRef[Long]),
+            body.load(keyName), constantLong(-1L)))
         block(copy(generator = body))
       }
     } else {
