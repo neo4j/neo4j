@@ -289,7 +289,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/9157/")
   }
 
-  // TODO add 3D here too
   test("inequality on cartesian points") {
     // case same point
     shouldCompareLike("point({x: 0, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = false)
@@ -303,17 +302,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // case bottom right quadrant
     shouldCompareLike("point({x: 1, y: -1})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
 
-    // case staight top
+    // case straight top
     shouldCompareLike("point({x: 0, y: 1})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight right
+    // case straight right
     shouldCompareLike("point({x: 1, y: 0})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight bottom
+    // case straight bottom
     shouldCompareLike("point({x: 0, y: -1})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
-    // case staight left
+    // case straight left
     shouldCompareLike("point({x: -1, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
   }
 
-  // TODO what about the poles!?
   test("inequality on geographic points") {
     // case same point
     shouldCompareLike("point({longitude: 0, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = false)
@@ -327,14 +325,43 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // case bottom right quadrant
     shouldCompareLike("point({longitude: 1, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = null, aSmallerB = null)
 
-    // case staight top
+    // case straight top
     shouldCompareLike("point({longitude: 0, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight right
+    // case straight right
     shouldCompareLike("point({longitude: 1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight bottom
+    // case straight bottom
     shouldCompareLike("point({longitude: 0, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
-    // case staight left
+    // case straight left
     shouldCompareLike("point({longitude: -1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+
+    // the poles might be the same point, but in the effective projection onto 2D plane, they are not the same
+    shouldCompareLike("point({longitude: -1, latitude: 90})", "point({longitude: 1, latitude: 90})", aBiggerB = false, aSmallerB = true)
+    shouldCompareLike("point({longitude: 1, latitude: 90})", "point({longitude: -1, latitude: 90})", aBiggerB = true, aSmallerB = false)
+    shouldCompareLike("point({longitude: -1, latitude: -90})", "point({longitude: 1, latitude: -90})", aBiggerB = false, aSmallerB = true)
+    shouldCompareLike("point({longitude: 1, latitude: -90})", "point({longitude: -1, latitude: -90})", aBiggerB = true, aSmallerB = false)
+  }
+
+  test("inequality on 3D points") {
+    Seq("cartesian-3D","WGS-84-3D").foreach { crsName =>
+      (-1 to 1).foreach { x =>
+        (-1 to 1).foreach { y =>
+          (-1 to 1).foreach { z =>
+            val same = x == 0 && y == 0 && z == 0
+            val smaller = x <= 0 && y <= 0 && z <= 0
+            val larger = x >= 0 && y >= 0 && z >= 0
+            if (same) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = false, aSmallerB = false)
+            } else if (smaller) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = false, aSmallerB = true)
+            } else if (larger) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = true, aSmallerB = false)
+            } else {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: $crsName})", "point({x: 0, y: 0, z: 0, crs: $crsName})", aBiggerB = null, aSmallerB = null)
+            }
+          }
+        }
+      }
+    }
   }
 
   test("inequality on mixed points") {
@@ -349,7 +376,9 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
     val pointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
     val result = executeWith(pointConfig, query).toList
-    result should equal(List(Map("a > b" -> aBiggerB, "a < b" -> aSmallerB)))
+    withClue(s"Comparing '$a' to '$b'") {
+      result should equal(List(Map("a > b" -> aBiggerB, "a < b" -> aSmallerB)))
+    }
   }
 
   test("array of points should be assignable to node property") {
