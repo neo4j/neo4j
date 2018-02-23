@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.spi.codegen
 import java.util
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap
 import org.neo4j.codegen.MethodReference
-import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongResourceIterator}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.QueryExecutionEvent
@@ -44,9 +44,10 @@ import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualNodeValue,
 object Methods {
 
   import GeneratedQueryStructure.{method, typeRef}
-  val countingTablePut: MethodReference = method[PrimitiveLongIntMap, Int]("put", typeRef[Long], typeRef[Int])
+
+  val countingTableIncrement: MethodReference = method[LongIntHashMap, Int]("addToValue", typeRef[Long], typeRef[Int])
   val countingTableCompositeKeyPut: MethodReference = method[util.HashMap[CompositeKey, Integer], Object]("put", typeRef[Object], typeRef[Object])
-  val countingTableGet: MethodReference = method[PrimitiveLongIntMap, Int]("get", typeRef[Long])
+  val countingTableGet: MethodReference = method[LongIntHashMap, Int]("get", typeRef[Long])
   val countingTableCompositeKeyGet: MethodReference = method[util.HashMap[CompositeKey, Integer], Object]("get", typeRef[Object])
   val compositeKey: MethodReference = method[CompiledConversionUtils, CompositeKey]("compositeKey", typeRef[Array[Long]])
   val hasNextLong: MethodReference = method[LongIterator, Boolean]("hasNext")
