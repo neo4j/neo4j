@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.utils.ValueMath;
 
 import static java.lang.String.format;
 
@@ -72,112 +71,5 @@ public final class IntValue extends IntegralValue
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapInt( this );
-    }
-
-    @Override
-    public NumberValue minus( byte b )
-    {
-        return ValueMath.subtract( value, b );
-    }
-
-    @Override
-    public NumberValue minus( short b )
-    {
-        return ValueMath.subtract( value, b );
-    }
-
-    @Override
-    public NumberValue minus( int b )
-    {
-        return ValueMath.subtract( value, b );
-    }
-
-    @Override
-    public NumberValue minus( long b )
-    {
-        return ValueMath.subtract( value, b );
-    }
-
-    @Override
-    public NumberValue minus( float b )
-    {
-        return ValueMath.subtract( value, b );
-    }
-
-    @Override
-    public NumberValue minus( double b )
-    {
-        return ValueMath.subtract( value, b );
-    }
-
-    @Override
-    public NumberValue plus( byte b )
-    {
-        return ValueMath.add( value, b );
-    }
-
-    @Override
-    public NumberValue plus( short b )
-    {
-        return ValueMath.add( value, b );
-    }
-
-    @Override
-    public NumberValue plus( int b )
-    {
-        return ValueMath.add( value, b );
-    }
-
-    @Override
-    public NumberValue plus( long b )
-    {
-        return ValueMath.add( value, b );
-    }
-
-    @Override
-    public NumberValue plus( float b )
-    {
-        return ValueMath.add( value, b );
-    }
-
-    @Override
-    public NumberValue plus( double b )
-    {
-        return ValueMath.add( value, b );
-    }
-    @Override
-    public NumberValue times( byte b )
-    {
-        return ValueMath.multiply( value, b );
-    }
-
-    @Override
-    public NumberValue times( short b )
-    {
-        return ValueMath.multiply( value, b );
-    }
-
-    @Override
-    public NumberValue times( int b )
-    {
-        return ValueMath.multiply( value, b );
-    }
-
-    @Override
-    public NumberValue times( long b )
-    {
-        return ValueMath.multiply( value, b );
-    }
-
-    @Override
-    public NumberValue times( float b )
-    {
-        return ValueMath.multiply( value, b );
-    }
-
-    @Override
-    public NumberValue times( double b )
-    {
-        return ValueMath.multiply( value, b );
     }
 }

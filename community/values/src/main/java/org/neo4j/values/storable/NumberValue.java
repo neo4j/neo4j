@@ -79,39 +79,15 @@ public abstract class NumberValue extends ScalarValue
         return ValueGroup.NUMBER;
     }
 
-    public abstract NumberValue minus( byte b );
-
-    public abstract NumberValue minus( short b );
-
-    public abstract NumberValue minus( int b );
-
     public abstract NumberValue minus( long b );
-
-    public abstract NumberValue minus( float b );
 
     public abstract NumberValue minus( double b );
 
-    public abstract NumberValue plus( byte b );
-
-    public abstract NumberValue plus( short b );
-
-    public abstract NumberValue plus( int b );
-
     public abstract NumberValue plus( long b );
-
-    public abstract NumberValue plus( float b );
 
     public abstract NumberValue plus( double b );
 
-    public abstract NumberValue times( byte b );
-
-    public abstract NumberValue times( short b );
-
-    public abstract NumberValue times( int b );
-
     public abstract NumberValue times( long b );
-
-    public abstract NumberValue times( float b );
 
     public abstract NumberValue times( double b );
 
