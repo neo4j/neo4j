@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThat;
 
 /*
 Note that when running this test from within an IDE, the version field will be an empty string. This is because the
-code that generates the version identifier is written by Maven as part of the build processNextBatch(!). The tests will pass
+code that generates the version identifier is written by Maven as part of the build process(!). The tests will pass
 both in the IDE (where the empty string will be correctly compared).
  */
 public class EnterpriseVersionAndEditionServiceIT extends EnterpriseVersionIT

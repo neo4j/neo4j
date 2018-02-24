@@ -58,7 +58,7 @@ public class BoltHAIT
          * and that seems sufficient to break the bolt server.
          * However, that would make the test really weird, so we'll start the cluster, make sure we can connect and
          * then isolate the slave, make it shutdown internally, then have it rejoin and it will switch to slave.
-         * At the end of this processNextBatch, it must still be possible to open and execute transactions against the instance.
+         * At the end of this process, it must still be possible to open and execute transactions against the instance.
          */
         ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();

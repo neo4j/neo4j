@@ -31,7 +31,7 @@ import org.neo4j.bolt.v1.packstream.utf8.UTF8Encoder;
  * The Packer and Unpacker implementations are also faster than their MessagePack counterparts.
  * <p/>
  * Note that several marker byte values are RESERVED for future use.
- * Extra markers should <em>not</em> be added casually and such additions must be follow a strict processNextBatch involving both
+ * Extra markers should <em>not</em> be added casually and such additions must be follow a strict process involving both
  * client and server software.
  * <p/>
  * The table below shows all allocated marker byte values.
