@@ -19,29 +19,18 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
@@ -162,7 +151,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         pools.forEach( ( group, pool ) -> pool.cancelAllJobs() );
         pools.forEach( ( group, pool ) -> pool.shutDown() );
         InterruptedException exception = pools.values().stream().reduce( null,
-                ( e, p ) -> Exceptions.chain( e, p.shutdownInterrupted ), Exceptions::chain );
+                ( e, p ) -> Exceptions.chain( e, p.getShutdownException() ), Exceptions::chain );
 
         ScheduledThreadPoolExecutor executor = scheduledExecutor;
         scheduledExecutor = null;
@@ -195,249 +184,5 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
             }
         }
         return exception;
-    }
-
-    private static class PooledJobHandle implements JobHandle
-    {
-        private final Future<?> job;
-        private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
-
-        PooledJobHandle( Future<?> job )
-        {
-            this.job = job;
-        }
-
-        @Override
-        public void cancel( boolean mayInterruptIfRunning )
-        {
-            job.cancel( mayInterruptIfRunning );
-            for ( CancelListener cancelListener : cancelListeners )
-            {
-                cancelListener.cancelled( mayInterruptIfRunning );
-            }
-        }
-
-        @Override
-        public void waitTermination() throws InterruptedException, ExecutionException
-        {
-            job.get();
-        }
-
-        @Override
-        public void registerCancelListener( CancelListener listener )
-        {
-            cancelListeners.add( listener );
-        }
-    }
-
-    private static class ScheduledJobHandle extends PooledJobHandle
-    {
-        private final ScheduledTask scheduledTask;
-        private final ScheduledFuture<?> job;
-
-        ScheduledJobHandle( ScheduledFuture<?> job, ScheduledTask scheduledTask )
-        {
-            super( job );
-            this.job = job;
-            this.scheduledTask = scheduledTask;
-        }
-
-        @Override
-        public void waitTermination() throws InterruptedException, ExecutionException
-        {
-            try
-            {
-                scheduledTask.waitTermination();
-            }
-            catch ( ExecutionException e )
-            {
-                job.cancel( true );
-                throw e;
-            }
-            super.waitTermination();
-        }
-    }
-
-    private static class RegisteringPooledJobHandle extends PooledJobHandle
-    {
-        private final Set<JobHandle> register;
-
-        RegisteringPooledJobHandle( Future<?> job, Set<JobHandle> register )
-        {
-            super( job );
-            this.register = register;
-        }
-
-        @Override
-        public void cancel( boolean mayInterruptIfRunning )
-        {
-            super.cancel( mayInterruptIfRunning );
-            register.remove( this );
-        }
-    }
-
-    private static final class ScheduledTask implements Runnable, CancelListener
-    {
-        private final BinaryLatch handleRelease;
-        private final JobScheduler scheduler;
-        private final Group group;
-        private final Runnable task;
-        private volatile JobHandle latestHandle;
-        private volatile Throwable lastException;
-
-        private ScheduledTask( JobScheduler scheduler, Group group, Runnable task )
-        {
-            handleRelease = new BinaryLatch();
-            this.scheduler = scheduler;
-            this.group = group;
-            this.task = () ->
-            {
-                try
-                {
-                    task.run();
-                }
-                catch ( Throwable e )
-                {
-                    lastException = e;
-                }
-            };
-        }
-
-        @Override
-        public void run()
-        {
-            checkPreviousRunFailure();
-            latestHandle = scheduler.schedule( group, task );
-            handleRelease.release();
-        }
-
-        private void checkPreviousRunFailure()
-        {
-            Throwable e = lastException;
-            if ( e != null )
-            {
-                if ( e instanceof Error )
-                {
-                    throw (Error) e;
-                }
-                if ( e instanceof RuntimeException )
-                {
-                    throw (RuntimeException) e;
-                }
-                throw new RuntimeException( e );
-            }
-        }
-
-        @Override
-        public void cancelled( boolean mayInterruptIfRunning )
-        {
-            JobHandle handle = this.latestHandle;
-            if ( handle != null )
-            {
-                handle.cancel( mayInterruptIfRunning );
-            }
-        }
-
-        public void waitTermination() throws ExecutionException, InterruptedException
-        {
-
-            handleRelease.await();
-
-            latestHandle.waitTermination();
-        }
-    }
-
-    private static class GroupedDaemonThreadFactory implements ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory
-    {
-        private final Group group;
-        private final ThreadGroup threadGroup;
-
-        private GroupedDaemonThreadFactory( Group group, ThreadGroup parentThreadGroup )
-        {
-            this.group = group;
-            threadGroup = new ThreadGroup( parentThreadGroup, group.name() );
-        }
-
-        @Override
-        public Thread newThread( @SuppressWarnings( "NullableProblems" ) Runnable job )
-        {
-            Thread thread = new Thread( threadGroup, job, group.threadName() );
-            thread.setDaemon( true );
-            return thread;
-        }
-
-        @Override
-        public ForkJoinWorkerThread newThread( ForkJoinPool pool )
-        {
-            // We do this complicated dance of allocating the ForkJoinThread in a separate thread,
-            // because there is no way to give it a specific ThreadGroup, other than through inheritance
-            // from the allocating thread.
-            ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
-            AtomicReference<ForkJoinWorkerThread> reference = new AtomicReference<>();
-            Thread allocator = newThread( () -> reference.set( factory.newThread( pool ) ) );
-            allocator.start();
-            do
-            {
-                try
-                {
-                    allocator.join();
-                }
-                catch ( InterruptedException ignore )
-                {
-                }
-            }
-            while ( reference.get() == null );
-            ForkJoinWorkerThread worker = reference.get();
-            worker.setName( group.threadName() );
-            return worker;
-        }
-    }
-
-    private static final class ThreadPool
-    {
-        private final GroupedDaemonThreadFactory threadFactory;
-        private final ExecutorService executor;
-        private final Set<JobHandle> jobs;
-        private InterruptedException shutdownInterrupted;
-
-        private ThreadPool( Group group, ThreadGroup parentThreadGroup )
-        {
-            threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
-            executor = Executors.newCachedThreadPool( threadFactory );
-            jobs = Collections.synchronizedSet( new HashSet<>() );
-        }
-
-        public ThreadFactory getThreadFactory()
-        {
-            return threadFactory;
-        }
-
-        public JobHandle submit( Runnable job )
-        {
-            Future<?> future = executor.submit( job );
-            return new RegisteringPooledJobHandle( future, jobs );
-        }
-
-        void cancelAllJobs()
-        {
-            jobs.removeIf( handle ->
-            {
-                handle.cancel( true );
-                return true;
-            } );
-        }
-
-        void shutDown()
-        {
-            executor.shutdown();
-            try
-            {
-                executor.awaitTermination( 30, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException e )
-            {
-                shutdownInterrupted = e;
-            }
-        }
     }
 }
