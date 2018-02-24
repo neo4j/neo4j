@@ -19,8 +19,6 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -44,9 +42,6 @@ public interface JobScheduler extends Lifecycle
      */
     final class Group
     {
-        public static final String THREAD_ID = "thread-id";
-        public static final Map<String,String> NO_METADATA = Collections.emptyMap();
-
         private final AtomicInteger threadCounter = new AtomicInteger();
         private final String name;
 
@@ -64,15 +59,9 @@ public interface JobScheduler extends Lifecycle
         /**
          * Name a new thread. This method may or may not be used, it is up to the scheduling strategy to decide
          * to honor this.
-         *
-         * @param metadata comes from {@link #schedule(Group, Runnable, Map)}
          */
-        public String threadName( Map<String,String> metadata )
+        public String threadName()
         {
-            if ( metadata.containsKey( THREAD_ID ) )
-            {
-                return "neo4j." + name() + "-" + metadata.get( THREAD_ID );
-            }
             return "neo4j." + name() + "-" + threadCounter.incrementAndGet();
         }
 
@@ -290,9 +279,6 @@ public interface JobScheduler extends Lifecycle
 
     /** Schedule a new job in the specified group. */
     JobHandle schedule( Group group, Runnable job );
-
-    /** Schedule a new job in the specified group, passing in metadata for the scheduling strategy to use. */
-    JobHandle schedule( Group group, Runnable job, Map<String,String> metadata );
 
     /** Schedule a new job in the specified group with the given delay */
     JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit );

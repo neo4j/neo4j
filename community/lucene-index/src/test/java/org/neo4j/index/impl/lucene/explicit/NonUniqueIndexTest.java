@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -34,13 +33,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -141,12 +140,6 @@ public class NonUniqueIndexTest
             public JobHandle schedule( Group group, Runnable job )
             {
                 return super.schedule( group, slowRunnable( job ) );
-            }
-
-            @Override
-            public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
-            {
-                return super.schedule( group, slowRunnable(job), metadata );
             }
         };
     }

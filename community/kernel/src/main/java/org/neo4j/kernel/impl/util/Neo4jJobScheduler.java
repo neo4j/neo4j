@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.util;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
-import static org.neo4j.scheduler.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
@@ -117,12 +115,6 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
-    {
-        return schedule( group, job, NO_METADATA );
-    }
-
-    @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
         if ( !started )
         {
@@ -369,7 +361,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         @Override
         public Thread newThread( @SuppressWarnings( "NullableProblems" ) Runnable job )
         {
-            Thread thread = new Thread( threadGroup, job, group.threadName( NO_METADATA ) );
+            Thread thread = new Thread( threadGroup, job, group.threadName() );
             thread.setDaemon( true );
             return thread;
         }
@@ -396,7 +388,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             }
             while ( reference.get() == null );
             ForkJoinWorkerThread worker = reference.get();
-            worker.setName( group.threadName( NO_METADATA ) );
+            worker.setName( group.threadName() );
             return worker;
         }
     }

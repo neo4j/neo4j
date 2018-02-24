@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,15 +36,15 @@ import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.EnterpriseSecurityModule;
 import org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm;
@@ -185,12 +184,6 @@ abstract class FlatFileStressBase
 
         @Override
         public JobHandle schedule( Group group, Runnable job )
-        {
-            return null;
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
         {
             return null;
         }

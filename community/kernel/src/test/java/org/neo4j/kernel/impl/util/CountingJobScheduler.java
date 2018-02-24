@@ -65,13 +65,6 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
-    {
-        counter.getAndIncrement();
-        return delegate.schedule( group, job, metadata );
-    }
-
-    @Override
     public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
         counter.getAndIncrement();
