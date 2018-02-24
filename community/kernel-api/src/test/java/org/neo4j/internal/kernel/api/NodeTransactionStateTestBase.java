@@ -787,6 +787,27 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
+    public void shouldCountNewNodesFromTxState() throws Exception
+    {
+        // Given
+        createNode();
+        createNode();
+
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeCreate();
+            long countTxState = tx.dataRead().countsForNode( -1 );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( -1 );
+
+            // then
+            assertEquals( 3, countTxState );
+            assertEquals( 2, countNoTxState );
+        }
+    }
+
+    @Test
     public void shouldNotCountRemovedLabelsFromTxState() throws Exception
     {
         // Given

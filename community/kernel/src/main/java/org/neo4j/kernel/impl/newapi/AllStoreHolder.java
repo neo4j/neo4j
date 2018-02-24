@@ -153,6 +153,38 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public long countsForRelationship(int startLabelId, int typeId, int endLabelId )
+    {
+        long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            CountsRecordState counts = new CountsRecordState();
+            try
+            {
+                TransactionState txState = ktx.txState();
+                txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
+                       statement, txState, counts ) );
+                if ( counts.hasChanges() )
+                {
+                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
+                            .readSecond();
+                }
+            }
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        return storeReadLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+    }
+
+    @Override
     public boolean relationshipExists( long reference )
     {
         ktx.assertOpen();

@@ -209,6 +209,19 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean relationshipExists( long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );

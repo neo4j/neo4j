@@ -1022,6 +1022,57 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
+    @Test
+    public void shouldCountNewRelationships() throws Exception
+    {
+        int relationship;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationship = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            write.relationshipCreate( write.nodeCreate(), relationship, write.nodeCreate() );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            write.relationshipCreate( write.nodeCreate(), relationship, write.nodeCreate() );
+
+            long countsTxState = tx.dataRead().countsForRelationship( -1, relationship, -1 );
+            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState( -1, relationship, -1 );
+
+            assertEquals( 2, countsTxState );
+            assertEquals( 1, countsNoTxState );
+        }
+    }
+
+    @Test
+    public void shouldNotCountRemovedRelationships() throws Exception
+    {
+        int relationshipId;
+        long relationship;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationshipId = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            relationship = write.relationshipCreate( write.nodeCreate(), relationshipId, write.nodeCreate() );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            write.relationshipDelete( relationship );
+
+            long countsTxState = tx.dataRead().countsForRelationship( -1, relationshipId, -1 );
+            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState( -1, relationshipId, -1 );
+
+            assertEquals( 0, countsTxState );
+            assertEquals( 1, countsNoTxState );
+        }
+    }
+
     private void assertRelationships( RelationshipDirection direction, RelationshipGroupCursor group,
             RelationshipTraversalCursor traversal, long... relationships )
     {
