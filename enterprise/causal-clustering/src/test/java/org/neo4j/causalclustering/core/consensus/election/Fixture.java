@@ -38,7 +38,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.TestNetwork;
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -51,7 +51,7 @@ public class Fixture
     private final Set<MemberId> members = new HashSet<>();
     private final Set<BootstrapWaiter> bootstrapWaiters = new HashSet<>();
     private final List<TimerService> timerServices = new ArrayList<>();
-    private final JobScheduler scheduler = new Neo4jJobScheduler();
+    private final JobScheduler scheduler = new CentralJobScheduler();
     final Set<RaftFixture> rafts = new HashSet<>();
     final TestNetwork net;
 

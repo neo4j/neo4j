@@ -37,7 +37,7 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -91,7 +91,7 @@ public class SharedDiscoveryServiceIT
     private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory,
             Set<MemberId> expectedTargetSet )
     {
-        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
+        CentralJobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
         HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 

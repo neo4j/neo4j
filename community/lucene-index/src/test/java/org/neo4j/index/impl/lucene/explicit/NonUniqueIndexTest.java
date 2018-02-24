@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -116,7 +116,7 @@ public class NonUniqueIndexTest
                 return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
-                    protected Neo4jJobScheduler createJobScheduler()
+                    protected CentralJobScheduler createJobScheduler()
                     {
                         return newSlowJobScheduler();
                     }
@@ -132,9 +132,9 @@ public class NonUniqueIndexTest
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 
-    private static Neo4jJobScheduler newSlowJobScheduler()
+    private static CentralJobScheduler newSlowJobScheduler()
     {
-        return new Neo4jJobScheduler()
+        return new CentralJobScheduler()
         {
             @Override
             public JobHandle schedule( Group group, Runnable job )

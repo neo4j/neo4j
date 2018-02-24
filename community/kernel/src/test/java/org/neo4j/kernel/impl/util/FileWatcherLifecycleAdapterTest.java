@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.SilentFileWatcher;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.watcher.FileWatcherLifecycleAdapter;
 
 import static org.mockito.Mockito.verify;
@@ -35,13 +36,13 @@ import static org.mockito.Mockito.verify;
 public class FileWatcherLifecycleAdapterTest
 {
 
-    private static Neo4jJobScheduler jobScheduler;
+    private static CentralJobScheduler jobScheduler;
     private FileWatcher fileWatcher = Mockito.mock( FileWatcher.class );
 
     @BeforeClass
     public static void setUp()
     {
-        jobScheduler = new Neo4jJobScheduler();
+        jobScheduler = new CentralJobScheduler();
     }
 
     @AfterClass

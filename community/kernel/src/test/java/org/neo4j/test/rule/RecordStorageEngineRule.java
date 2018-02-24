@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.KernelEventHandlers;
@@ -107,7 +107,7 @@ public class RecordStorageEngineRule extends ExternalResource
         ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
         when( explicitIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
-        JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+        JobScheduler scheduler = life.add( new CentralJobScheduler() );
         Config config = Config.defaults();
 
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =

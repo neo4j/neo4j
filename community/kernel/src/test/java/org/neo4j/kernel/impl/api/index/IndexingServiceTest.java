@@ -79,7 +79,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
@@ -1224,7 +1224,7 @@ public class IndexingServiceTest
         Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
 
         return life.add( IndexingServiceFactory.createIndexingService( config,
-                        life.add( new Neo4jJobScheduler() ),
+                        life.add( new CentralJobScheduler() ),
                         new DefaultIndexProviderMap( indexProvider ),
                         storeView,
                         nameLookup,

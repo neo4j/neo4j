@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.scheduler;
 
 import org.junit.After;
 import org.junit.Test;
@@ -50,11 +50,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 
-public class Neo4jJobSchedulerTest
+public class CentralJobSchedulerTest
 {
     private final AtomicInteger invocations = new AtomicInteger();
     private final LifeSupport life = new LifeSupport();
-    private final Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+    private final CentralJobScheduler scheduler = life.add( new CentralJobScheduler() );
 
     private final Runnable countInvocationsJob = invocations::incrementAndGet;
 
@@ -189,8 +189,8 @@ public class Neo4jJobSchedulerTest
     public void shouldNotifyCancelListeners()
     {
         // GIVEN
-        Neo4jJobScheduler neo4jJobScheduler = new Neo4jJobScheduler();
-        neo4jJobScheduler.init();
+        CentralJobScheduler centralJobScheduler = new CentralJobScheduler();
+        centralJobScheduler.init();
 
         // WHEN
         AtomicBoolean halted = new AtomicBoolean();
@@ -201,19 +201,19 @@ public class Neo4jJobSchedulerTest
                 LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
         };
-        JobHandle handle = neo4jJobScheduler.schedule( indexPopulation, job );
+        JobHandle handle = centralJobScheduler.schedule( indexPopulation, job );
         handle.registerCancelListener( mayBeInterrupted -> halted.set( true ) );
         handle.cancel( false );
 
         // THEN
         assertTrue( halted.get() );
-        neo4jJobScheduler.shutdown();
+        centralJobScheduler.shutdown();
     }
 
     @Test( timeout = 10_000 )
     public void waitTerminationOnDelayedJobMustWaitUntilJobCompletion() throws Exception
     {
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        CentralJobScheduler scheduler = new CentralJobScheduler();
         scheduler.init();
 
         AtomicBoolean triggered = new AtomicBoolean();
@@ -232,7 +232,7 @@ public class Neo4jJobSchedulerTest
     @Test( timeout = 10_000 )
     public void scheduledTasksThatThrowsMustPropagateException() throws Exception
     {
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        CentralJobScheduler scheduler = new CentralJobScheduler();
         scheduler.init();
 
         RuntimeException boom = new RuntimeException( "boom" );
@@ -258,7 +258,7 @@ public class Neo4jJobSchedulerTest
     @Test( timeout = 10_000 )
     public void scheduledTasksThatThrowsShouldStop() throws Exception
     {
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        CentralJobScheduler scheduler = new CentralJobScheduler();
         scheduler.init();
 
         BinaryLatch triggerLatch = new BinaryLatch();

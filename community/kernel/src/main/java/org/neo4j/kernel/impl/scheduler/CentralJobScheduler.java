@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.scheduler;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -48,7 +48,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 
-public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
+public class CentralJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger();
     private static final Group SCHEDULER_GROUP = new Group( "Scheduler" );
@@ -67,7 +67,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
     private volatile boolean started;
 
-    public Neo4jJobScheduler()
+    public CentralJobScheduler()
     {
         workStealingExecutors = new ConcurrentHashMap<>( 1 );
         topLevelGroup = new ThreadGroup( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() + trackTest() );
