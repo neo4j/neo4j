@@ -57,7 +57,7 @@ public class DefaultConversationSPITest
     public void testScheduleRecurringJob()
     {
         Runnable job = mock( Runnable.class );
-        JobScheduler.Group group = mock( JobScheduler.Group.class );
+        JobScheduler.Group group = new JobScheduler.Group( "group" );
         conversationSpi.scheduleRecurringJob( group, 0, job );
 
         verify( jobScheduler ).scheduleRecurring( group, job, 0, TimeUnit.MILLISECONDS );
