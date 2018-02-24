@@ -543,7 +543,7 @@ public class SpaceFillingCurveTest
         String formatBody = "%5d  %-42s   %7.2f%7.2f%7.2f   %7.2f%7d%7d   %7.2f%7d%7d";
 
         // For all 3D levels
-        for ( int level = 7; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level+=3 )
+        for ( int level = 7; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level += 3 )
         {
             log( "" );
             log( formatHeader1 );
@@ -597,9 +597,10 @@ public class SpaceFillingCurveTest
                                             final long start = System.currentTimeMillis();
                                             List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, config, monitor );
                                             final long end = System.currentTimeMillis();
-                                            debug( String.format( "Results for level %d, with search %s. " +
-                                                            "Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n", level, searchEnvelope.toString(),
-                                                    monitor.getSearchArea(), monitor.getCoveredArea(), (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
+                                            debug( String.format( "Results for level %d, with search %s.", level, searchEnvelope.toString() ) );
+                                            debug( String.format( "Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
+                                                    monitor.getSearchArea(), monitor.getCoveredArea(),
+                                                    (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
                                             int[] counts = monitor.getCounts();
                                             for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
                                             {

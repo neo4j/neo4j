@@ -200,5 +200,3 @@ public abstract class CRSCalculator
         }
     }
 }
-
-
