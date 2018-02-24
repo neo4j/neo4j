@@ -80,7 +80,7 @@ public class SchemaRecoveryIT
         }
     }
 
-    interface Process
+    public interface Process
     {
         void waitForSchemaTransactionCommitted() throws InterruptedException;
     }

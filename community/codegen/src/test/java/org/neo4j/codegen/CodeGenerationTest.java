@@ -1608,7 +1608,7 @@ public class CodeGenerationTest
         return (boolean) compareFcn.invoke( lhs, rhs );
     }
 
-    static class TernaryChecker
+    public static class TernaryChecker
     {
         private boolean ranOnTrue;
         private boolean ranOnFalse;
@@ -1928,18 +1928,18 @@ public class CodeGenerationTest
         return generator.generateClass( base, PACKAGE, name, interfaces );
     }
 
-    static class NamedBase
+    public static class NamedBase
     {
         final String name;
         private boolean defaultConstructorCalled;
 
-        NamedBase()
+        public NamedBase()
         {
             this.defaultConstructorCalled = true;
             this.name = null;
         }
 
-        NamedBase( String name )
+        public NamedBase( String name )
         {
             this.name = name;
         }
@@ -1950,7 +1950,7 @@ public class CodeGenerationTest
         }
     }
 
-    static class SomeBean
+    public static class SomeBean
     {
         private String foo;
         private String bar;
@@ -1996,11 +1996,11 @@ public class CodeGenerationTest
         return methodReference( Runnable.class, void.class, "run" );
     }
 
-    private static class MyFirstException extends RuntimeException
+    public static class MyFirstException extends RuntimeException
     {
     }
 
-    private static class MySecondException extends RuntimeException
+    public static class MySecondException extends RuntimeException
     {
     }
 

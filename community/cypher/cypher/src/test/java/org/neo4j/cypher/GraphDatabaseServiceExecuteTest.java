@@ -323,7 +323,7 @@ class GraphDatabaseServiceExecuteTest
         };
     }
 
-    private static class PointProcs
+    public static class PointProcs
     {
         @Procedure( "spatial.point" )
         public Stream<PointResult> spatialPoint( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
@@ -339,9 +339,9 @@ class GraphDatabaseServiceExecuteTest
         }
     }
 
-    static class PointResult
+    public static class PointResult
     {
-        Point point;
+        public Point point;
 
         PointResult( Point point )
         {
@@ -349,9 +349,9 @@ class GraphDatabaseServiceExecuteTest
         }
     }
 
-    static class GeometryResult
+    public static class GeometryResult
     {
-        Geometry geometry;
+        public Geometry geometry;
 
         GeometryResult( Geometry geometry )
         {

@@ -21,8 +21,10 @@ package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
+import org.junit.platform.commons.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Resource;
 
@@ -38,12 +40,14 @@ abstract class StatefullFieldExtension<T> implements TestInstancePostProcessor
     public void postProcessTestInstance( Object testInstance, ExtensionContext context ) throws Exception
     {
         Class<?> clazz = testInstance.getClass();
-        Field[] declaredFields = clazz.getFields();
-        for ( Field declaredField : declaredFields )
+        List<Field> fields =
+                ReflectionUtils.findFields( clazz, a -> true, ReflectionUtils.HierarchyTraversalMode.BOTTOM_UP );
+        for ( Field declaredField : fields )
         {
             if ( declaredField.isAnnotationPresent( Resource.class ) &&
                     getFieldType().equals( declaredField.getType() ) )
             {
+                declaredField.setAccessible( true );
                 declaredField.set( testInstance, createFieldInstance( context ) );
             }
         }

@@ -43,7 +43,7 @@ public class JavaAggregationFunctionsTestIT
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private static class MyFunctions
+    public static class MyFunctions
     {
         @UserAggregationFunction
         public EliteAggregator myFunc()

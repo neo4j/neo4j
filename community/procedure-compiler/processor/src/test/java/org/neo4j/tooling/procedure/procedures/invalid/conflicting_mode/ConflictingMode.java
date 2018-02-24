@@ -23,7 +23,7 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
-class ConflictingMode
+public class ConflictingMode
 {
     @Procedure( mode = Mode.DBMS )
     @PerformsWrites

@@ -885,10 +885,10 @@ public abstract class ProcedureInteractionTestBase<S>
     }
 
     @SuppressWarnings( "unused" )
-    static class ClassWithFunctions
+    public static class ClassWithFunctions
     {
         @Context
-        GraphDatabaseService db;
+        public GraphDatabaseService db;
 
         @UserFunction( name = "test.nonAllowedFunc" )
         public String nonAllowedFunc()

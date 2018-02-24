@@ -21,7 +21,7 @@ package org.neo4j.tooling.procedure.procedures.invalid.duplicated;
 
 import org.neo4j.procedure.Procedure;
 
-class Sproc1
+public class Sproc1
 {
 
     @Procedure

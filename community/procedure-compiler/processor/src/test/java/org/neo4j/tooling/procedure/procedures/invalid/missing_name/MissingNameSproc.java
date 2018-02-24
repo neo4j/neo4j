@@ -25,7 +25,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
-class MissingNameSproc
+public class MissingNameSproc
 {
 
     @Context

@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
-class UserFunctions
+public class UserFunctions
 {
 
     @UserFunction

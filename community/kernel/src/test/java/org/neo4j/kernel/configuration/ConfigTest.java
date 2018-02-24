@@ -80,7 +80,6 @@ import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @EnableRuleMigrationSupport
@@ -107,18 +106,21 @@ public class ConfigTest
             }
         };
 
-        static Setting<String> newer = setting( "newer", STRING, "" );
+        @SuppressWarnings( "WeakerAccess" )
+        public static Setting<String> newer = setting( "newer", STRING, "" );
     }
 
     public static class MySettingsWithDefaults implements LoadableConfig
     {
-        static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
+        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
-        static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
+        @SuppressWarnings( "WeakerAccess" )
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
+        @SuppressWarnings( "WeakerAccess" )
         @Internal
         @DocumentedDefaultValue( "<documented default value>" )
-        static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, TRUE );
+        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
 
         @Deprecated
         @ReplacedBy( "hello" )
@@ -345,8 +347,10 @@ public class ConfigTest
     {
         Connector httpConnector = new HttpConnector();
         Connector boltConnector = new BoltConnector();
-        Config config = builder().withSetting( httpConnector.enabled, "true" ).withSetting( httpConnector.type, HTTP.name() )
-                .withSetting( boltConnector.enabled, "true" ).withSetting( boltConnector.type, BOLT.name() ).withConnectorsDisabled().build();
+        Config config =
+                builder().withSetting( httpConnector.enabled, "true" ).withSetting( httpConnector.type, HTTP.name() )
+                        .withSetting( boltConnector.enabled, "true" ).withSetting( boltConnector.type, BOLT.name() )
+                        .withConnectorsDisabled().build();
         assertFalse( config.get( httpConnector.enabled ) );
         assertFalse( config.get( boltConnector.enabled ) );
     }
@@ -360,10 +364,11 @@ public class ConfigTest
         assertEquals( "new default", config.get( hello ) );
     }
 
-    static class MyDynamicSettings implements LoadableConfig
+    public static class MyDynamicSettings implements LoadableConfig
     {
+        @SuppressWarnings( "WeakerAccess" )
         @Dynamic
-        static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
     }
 
     @Test

@@ -868,13 +868,13 @@ public class UserFunctionIT
         }
     }
 
-    static class ClassWithFunctions
+    public static class ClassWithFunctions
     {
         @Context
-        GraphDatabaseService db;
+        public GraphDatabaseService db;
 
         @Context
-        Log log;
+        public Log log;
 
         @UserFunction
         public long integrationTestMe()

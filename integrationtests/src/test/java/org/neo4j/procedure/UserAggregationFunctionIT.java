@@ -311,7 +311,7 @@ public class UserAggregationFunctionIT
     public static class ClassWithFunctions
     {
         @Context
-        GraphDatabaseService db;
+        public GraphDatabaseService db;
 
         @Context
         public Log log;

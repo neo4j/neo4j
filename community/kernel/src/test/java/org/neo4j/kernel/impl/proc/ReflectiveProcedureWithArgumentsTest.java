@@ -145,17 +145,18 @@ public class ReflectiveProcedureWithArgumentsTest
         compile( ClassWithProcedureWithBadlyTypedDefault.class );
     }
 
-    static class MyOutputRecord
+    @SuppressWarnings( "WeakerAccess" )
+    public static class MyOutputRecord
     {
-        String name;
+        public String name;
 
-        MyOutputRecord( String name )
+        public MyOutputRecord( String name )
         {
             this.name = name;
         }
     }
 
-    private static class ClassWithProcedureWithSimpleArgs
+    public static class ClassWithProcedureWithSimpleArgs
     {
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople( @Name( "name" ) String name, @Name( "age" ) long age )
@@ -164,7 +165,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    private static class ClassWithProcedureWithGenericArgs
+    public static class ClassWithProcedureWithGenericArgs
     {
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople( @Name( "names" ) List<String> names,
@@ -182,7 +183,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    private static class ClassWithProcedureWithoutAnnotatedArgs
+    public static class ClassWithProcedureWithoutAnnotatedArgs
     {
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople( String name, int age )
@@ -191,7 +192,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    private static class ClassWithProcedureWithDefaults
+    public static class ClassWithProcedureWithDefaults
     {
         @Procedure
         public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "a" ) String a,
@@ -201,7 +202,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    private static class ClassWithProcedureWithMisplacedDefault
+    public static class ClassWithProcedureWithMisplacedDefault
     {
         @Procedure
         public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a,
@@ -211,7 +212,7 @@ public class ReflectiveProcedureWithArgumentsTest
         }
     }
 
-    private static class ClassWithProcedureWithBadlyTypedDefault
+    public static class ClassWithProcedureWithBadlyTypedDefault
     {
         @Procedure
         public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two" ) long b )

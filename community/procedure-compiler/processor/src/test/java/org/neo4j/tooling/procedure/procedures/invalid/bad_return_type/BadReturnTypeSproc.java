@@ -24,7 +24,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-class BadReturnTypeSproc
+public class BadReturnTypeSproc
 {
 
     @Context

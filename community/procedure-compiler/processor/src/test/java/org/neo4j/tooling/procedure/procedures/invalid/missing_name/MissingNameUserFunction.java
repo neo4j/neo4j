@@ -21,7 +21,7 @@ package org.neo4j.tooling.procedure.procedures.invalid.missing_name;
 
 import org.neo4j.procedure.UserFunction;
 
-class MissingNameUserFunction
+public class MissingNameUserFunction
 {
 
     @UserFunction

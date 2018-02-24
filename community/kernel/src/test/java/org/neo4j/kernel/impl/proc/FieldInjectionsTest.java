@@ -124,52 +124,57 @@ public class FieldInjectionsTest
         assertEquals( 1337, syntheticField.innerField );
     }
 
-    private static class ProcedureWithNonInjectedMemberFields
+    public static class ProcedureWithNonInjectedMemberFields
     {
         public boolean someState;
     }
 
-    private static class ProcedureWithPrivateMemberField
+    @SuppressWarnings( "WeakerAccess" )
+    public static class ProcedureWithPrivateMemberField
     {
         @Context
         private boolean someState;
     }
 
-    private static class ProcedureWithStaticFields
+    @SuppressWarnings( "WeakerAccess" )
+    public static class ProcedureWithStaticFields
     {
         private static boolean someState;
     }
 
-    static class ParentProcedure
+    @SuppressWarnings( "WeakerAccess" )
+    public static class ParentProcedure
     {
         @Context
-        int parentField;
+        public int parentField;
     }
 
-    static class ChildProcedure extends ParentProcedure
+    @SuppressWarnings( "WeakerAccess" )
+    public static class ChildProcedure extends ParentProcedure
     {
         @Context
-        int childField;
+        public int childField;
     }
 
     //The outer class is just here to force a synthetic field in the inner class.
     //This is not a realistic scenario but we merely want to make sure the loader
     //does not choke on synthetic fields since compilers, e.g. groovy, can generate
     //these.
-    static class Outer
+    public static class Outer
     {
         ClassWithSyntheticField classWithSyntheticField()
         {
             return new ClassWithSyntheticField();
         }
 
-        class ClassWithSyntheticField
+        @SuppressWarnings( "WeakerAccess" )
+        public class ClassWithSyntheticField
         {
             //this class will have a generated field:
             //synthetic Outer this$0;
 
             @Context
-            int innerField;
+            public int innerField;
         }
     }
 }

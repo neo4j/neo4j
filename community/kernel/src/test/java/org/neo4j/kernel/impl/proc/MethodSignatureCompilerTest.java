@@ -58,22 +58,23 @@ public class MethodSignatureCompilerTest
         public UnmappableRecord wat;
     }
 
-    static class ClassWithProcedureWithSimpleArgs
+    @SuppressWarnings( "WeakerAccess" )
+    public static class ClassWithProcedureWithSimpleArgs
     {
         @Procedure
-        Stream<MyOutputRecord> echo( @Name( "name" ) String in )
+        public Stream<MyOutputRecord> echo( @Name( "name" ) String in )
         {
             return Stream.of( new MyOutputRecord( in ));
         }
 
         @Procedure
-        Stream<MyOutputRecord> echoWithoutAnnotations( @Name( "name" ) String in1, String in2 )
+        public Stream<MyOutputRecord> echoWithoutAnnotations( @Name( "name" ) String in1, String in2 )
         {
             return Stream.of( new MyOutputRecord( in1 + in2 ));
         }
 
         @Procedure
-        Stream<MyOutputRecord> echoWithInvalidType( @Name( "name" ) UnmappableRecord in )
+        public Stream<MyOutputRecord> echoWithInvalidType( @Name( "name" ) UnmappableRecord in )
         {
             return Stream.of( new MyOutputRecord( "echo" ));
         }

@@ -58,7 +58,7 @@ import static org.neo4j.procedure.Mode.WRITE;
 public class TestProcedure
 {
     @Context
-    private GraphDatabaseService db;
+    public GraphDatabaseService db;
 
     @Procedure( "org.neo4j.aNodeWithLabel" )
     @Description( "org.neo4j.aNodeWithLabel" )
@@ -141,9 +141,9 @@ public class TestProcedure
         return StreamSupport.stream( path.nodes().spliterator(), false ).map( NodeResult::new  );
     }
 
-    static class NodeResult
+    public static class NodeResult
     {
-        Node node;
+        public Node node;
 
         NodeResult( Node node )
         {
@@ -151,10 +151,10 @@ public class TestProcedure
         }
     }
 
-    static class CountResult
+    public static class CountResult
     {
-        long count;
-        String name;
+        public long count;
+        public String name;
 
         CountResult( long count, String name )
         {
@@ -180,9 +180,9 @@ public class TestProcedure
         return td.traverse( start ).stream().map( PathResult::new );
     }
 
-    static class PathResult
+    public static class PathResult
     {
-        Path path;
+        public Path path;
 
         PathResult( Path path )
         {
@@ -190,7 +190,7 @@ public class TestProcedure
         }
     }
 
-    static class LabelEvaluator implements Evaluator
+    public static class LabelEvaluator implements Evaluator
     {
         private Set<String> endNodeLabels;
         private long limit = -1;

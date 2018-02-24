@@ -37,8 +37,8 @@ class SetStaticFieldTest
         assertEquals( "HELLO WORLD!", Apa.X );
     }
 
-    static class Apa
+    public static class Apa
     {
-        static String X;
+        public static String X;
     }
 }

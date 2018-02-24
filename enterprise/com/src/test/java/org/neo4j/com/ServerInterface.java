@@ -19,7 +19,7 @@
  */
 package org.neo4j.com;
 
-interface ServerInterface
+public interface ServerInterface
 {
     void shutdown();
 

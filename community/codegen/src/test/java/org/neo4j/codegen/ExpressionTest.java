@@ -166,12 +166,12 @@ class ExpressionTest
         assertSame( TRUE, or( TRUE, expression ) );
     }
 
-    static boolean TRUE()
+    public static boolean TRUE()
     {
         return true;
     }
 
-    static Object value()
+    public static Object value()
     {
         return null;
     }

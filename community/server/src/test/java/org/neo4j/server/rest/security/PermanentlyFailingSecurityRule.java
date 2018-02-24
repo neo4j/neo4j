@@ -21,7 +21,7 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
-class PermanentlyFailingSecurityRule implements SecurityRule
+public class PermanentlyFailingSecurityRule implements SecurityRule
 {
 
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-)

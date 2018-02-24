@@ -50,9 +50,9 @@ public class JavaProceduresTest
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    static class MyProcedures
+    public static class MyProcedures
     {
-        static class OutputRecord
+        public static class OutputRecord
         {
             public long someNumber = 1337;
         }
@@ -70,15 +70,15 @@ public class JavaProceduresTest
         }
     }
 
-    static class MyProceduresUsingMyService
+    public static class MyProceduresUsingMyService
     {
-        static class OutputRecord
+        public static class OutputRecord
         {
-            String result;
+            public String result;
         }
 
         @Context
-        SomeService service;
+        public SomeService service;
 
         @Procedure( "hello" )
         public Stream<OutputRecord> hello()
@@ -89,15 +89,15 @@ public class JavaProceduresTest
         }
     }
 
-    static class MyProceduresUsingMyCoreAPI
+    public static class MyProceduresUsingMyCoreAPI
     {
-        static class LongResult
+        public static class LongResult
         {
-            Long value;
+            public Long value;
         }
 
         @Context
-        MyCoreAPI myCoreAPI;
+        public MyCoreAPI myCoreAPI;
 
         @Procedure( value = "makeNode", mode = Mode.WRITE )
         public Stream<LongResult> makeNode( @Name( "label" ) String label ) throws ProcedureException

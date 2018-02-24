@@ -225,7 +225,7 @@ public class ProceduresTest
         procs.registerProcedure( ProcedureWithDBMSConflictAnnotation.class );
     }
 
-    private static class ProcedureWithReadConflictAnnotation
+    public static class ProcedureWithReadConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.READ )
@@ -234,7 +234,7 @@ public class ProceduresTest
         }
     }
 
-    private static class ProcedureWithWriteConflictAnnotation
+    public static class ProcedureWithWriteConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.WRITE )
@@ -243,7 +243,7 @@ public class ProceduresTest
         }
     }
 
-    private static class ProcedureWithDBMSConflictAnnotation
+    public static class ProcedureWithDBMSConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.DBMS )
@@ -252,7 +252,7 @@ public class ProceduresTest
         }
     }
 
-    private static class ProcedureWithSchemaConflictAnnotation
+    public static class ProcedureWithSchemaConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Mode.SCHEMA )

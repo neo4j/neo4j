@@ -424,7 +424,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    private static class SingleAggregationFunction
+    public static class SingleAggregationFunction
     {
         @UserAggregationFunction
         public CoolPeopleAggregator collectCool()
@@ -580,7 +580,7 @@ public class ReflectiveUserAggregationFunctionTest
     public static class LoggingFunction
     {
         @Context
-        Log log;
+        public Log log;
 
         @UserAggregationFunction
         public LoggingAggregator log()
@@ -628,7 +628,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    private static class MultiFunction
+    public static class MultiFunction
     {
         @UserAggregationFunction
         public CoolPeopleAggregator collectCool()
@@ -643,9 +643,9 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    static class WierdConstructorFunction
+    public static class WierdConstructorFunction
     {
-        WierdConstructorFunction( WierdConstructorFunction wat )
+        public WierdConstructorFunction( WierdConstructorFunction wat )
         {
 
         }
@@ -734,7 +734,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    static class PrivateConstructorFunction
+    public static class PrivateConstructorFunction
     {
         private PrivateConstructorFunction()
         {
@@ -748,7 +748,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    static class PrivateConstructorButNoFunctions
+    public static class PrivateConstructorButNoFunctions
     {
         private PrivateConstructorButNoFunctions()
         {
@@ -761,7 +761,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    private static class FunctionWithOverriddenName
+    public static class FunctionWithOverriddenName
     {
         @UserAggregationFunction( "org.mystuff.thisisActuallyTheName" )
         public CoolPeopleAggregator collectCool()
@@ -770,7 +770,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    private static class FunctionWithSingleName
+    public static class FunctionWithSingleName
     {
         @UserAggregationFunction( "singleName" )
         public CoolPeopleAggregator collectCool()
@@ -801,7 +801,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    static class NonPublicTestMethod
+    public static class NonPublicTestMethod
     {
         @UserAggregationFunction
         InnerAggregator test()
@@ -809,7 +809,7 @@ public class ReflectiveUserAggregationFunctionTest
             return new InnerAggregator();
         }
 
-        static class InnerAggregator
+        public static class InnerAggregator
         {
             @UserAggregationUpdate
             public void update()

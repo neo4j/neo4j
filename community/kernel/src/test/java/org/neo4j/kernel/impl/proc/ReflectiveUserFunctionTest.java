@@ -329,10 +329,10 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    static class LoggingFunction
+    public static class LoggingFunction
     {
         @Context
-        Log log;
+        public Log log;
 
         @UserFunction
         public long logAround()
@@ -345,7 +345,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    private static class SingleReadOnlyFunction
+    public static class SingleReadOnlyFunction
     {
         @UserFunction
         public List<String> listCoolPeople()
@@ -354,7 +354,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    private static class FunctionWithVoidOutput
+    public static class FunctionWithVoidOutput
     {
         @UserFunction
         public void voidOutput()
@@ -362,7 +362,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    private static class MultiFunction
+    public static class MultiFunction
     {
         @UserFunction
         public List<String> listCoolPeople()
@@ -379,9 +379,9 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    static class WierdConstructorFunction
+    public static class WierdConstructorFunction
     {
-        WierdConstructorFunction( WierdConstructorFunction wat )
+        public WierdConstructorFunction( WierdConstructorFunction wat )
         {
 
         }
@@ -393,7 +393,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    private static class FunctionWithInvalidOutput
+    public static class FunctionWithInvalidOutput
     {
         @UserFunction
         public char[] test( )
@@ -402,7 +402,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    private static class FunctionWithStaticContextAnnotatedField
+    public static class FunctionWithStaticContextAnnotatedField
     {
         @Context
         public static GraphDatabaseService gdb;
@@ -414,7 +414,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    private static class FunctionThatThrowsNullMsgExceptionAtInvocation
+    public static class FunctionThatThrowsNullMsgExceptionAtInvocation
     {
         @UserFunction
         public String throwsAtInvocation( )
@@ -423,7 +423,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    static class PrivateConstructorFunction
+    public static class PrivateConstructorFunction
     {
         private PrivateConstructorFunction()
         {
@@ -437,7 +437,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    static class PrivateConstructorButNoFunctions
+    public static class PrivateConstructorButNoFunctions
     {
         private PrivateConstructorButNoFunctions()
         {
@@ -450,7 +450,7 @@ public class ReflectiveUserFunctionTest
         }
     }
 
-    private static class FunctionWithOverriddenName
+    public static class FunctionWithOverriddenName
     {
         @UserFunction( "org.mystuff.thisisActuallyTheName" )
         public Object somethingThatShouldntMatter()
@@ -460,7 +460,7 @@ public class ReflectiveUserFunctionTest
 
     }
 
-    private static class FunctionWithSingleName
+    public static class FunctionWithSingleName
     {
         @UserFunction( "singleName" )
         public String blahDoesntMatterEither()

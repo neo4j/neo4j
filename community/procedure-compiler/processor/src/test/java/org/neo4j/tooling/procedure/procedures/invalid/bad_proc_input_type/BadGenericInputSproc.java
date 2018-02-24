@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-class BadGenericInputSproc
+public class BadGenericInputSproc
 {
 
     @Procedure

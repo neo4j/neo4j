@@ -21,7 +21,7 @@ package org.neo4j.tooling.procedure.procedures.invalid.aggregation;
 
 import org.neo4j.procedure.UserAggregationFunction;
 
-class FunctionWithWrongReturnType
+public class FunctionWithWrongReturnType
 {
     @UserAggregationFunction
     public void aggregateAllTheThings()

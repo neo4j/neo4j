@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.server.configuration.ServerSettings;
 
-class PermanentlyPassingSecurityRule implements SecurityRule
+public class PermanentlyPassingSecurityRule implements SecurityRule
 {
 
     private static final String REALM = "WallyWorld"; // as per RFC2617 :-);

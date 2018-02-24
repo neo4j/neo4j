@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.procedure.Procedure;
 
-class BadRecordSimpleFieldTypeSproc
+public class BadRecordSimpleFieldTypeSproc
 {
 
     @Procedure

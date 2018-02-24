@@ -45,7 +45,7 @@ public class JavaFunctionsTestIT
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private static class MyFunctions
+    public static class MyFunctions
     {
 
         @UserFunction
@@ -61,11 +61,11 @@ public class JavaFunctionsTestIT
         }
     }
 
-    static class MyFunctionsUsingMyService
+    public static class MyFunctionsUsingMyService
     {
 
         @Context
-        SomeService service;
+        public SomeService service;
 
         @UserFunction( "my.hello" )
         public String hello()
@@ -74,10 +74,10 @@ public class JavaFunctionsTestIT
         }
     }
 
-    static class MyFunctionsUsingMyCoreAPI
+    public static class MyFunctionsUsingMyCoreAPI
     {
         @Context
-        MyCoreAPI myCoreAPI;
+        public MyCoreAPI myCoreAPI;
 
         @UserFunction( value = "my.willFail" )
         public long willFail() throws ProcedureException

@@ -42,11 +42,12 @@ public class OutputMappersTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    static class SingleStringFieldRecord
+    @SuppressWarnings( "WeakerAccess" )
+    public static class SingleStringFieldRecord
     {
-        String name;
+        public String name;
 
-        SingleStringFieldRecord( String name )
+        public SingleStringFieldRecord( String name )
         {
             this.name = name;
         }
@@ -67,13 +68,14 @@ public class OutputMappersTest
         public Map<RecordWithNonStringKeyMap,Object> wat;
     }
 
-    static class RecordWithStaticFields
+    @SuppressWarnings( "WeakerAccess" )
+    public static class RecordWithStaticFields
     {
         public static String skipMePublic;
-        String includeMe;
+        public String includeMe;
         private static String skipMePrivate;
 
-        RecordWithStaticFields( String val )
+        public RecordWithStaticFields( String val )
         {
             this.includeMe = val;
         }

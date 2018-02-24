@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-class BadRecordGenericFieldType
+public class BadRecordGenericFieldType
 {
 
     public Map<String,Integer> wrongType1;
