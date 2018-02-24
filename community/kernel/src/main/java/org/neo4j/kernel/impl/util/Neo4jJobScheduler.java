@@ -59,7 +59,8 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
     // Contains workStealingExecutors for each group that have asked for one.
     // If threads need to be created, they need to be inside one of these pools.
-    // We also need to remember to shutdown all pools when we shutdown the database to shutdown queries in an orderly fashion.
+    // We also need to remember to shutdown all pools when we shutdown the database to shutdown queries in an orderly
+    // fashion.
     private final ConcurrentHashMap<Group,ExecutorService> workStealingExecutors;
 
     private final ThreadGroup topLevelGroup;
@@ -139,7 +140,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
     @Override
     public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
-            TimeUnit timeUnit )
+                                        TimeUnit timeUnit )
     {
         ScheduledTask scheduledTask = new ScheduledTask( this, group, runnable );
         ScheduledFuture<?> future = scheduledExecutor.scheduleAtFixedRate(
@@ -166,8 +167,8 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
         // Cancel jobs which hasn't been cancelled already, this to avoid having to wait the full
         // max wait time and then just leave them.
-        pools.forEach( (group,pool) -> pool.cancelAllJobs() );
-        pools.forEach( (group,pool) -> pool.shutDown() );
+        pools.forEach( ( group, pool ) -> pool.cancelAllJobs() );
+        pools.forEach( ( group, pool ) -> pool.shutDown() );
         InterruptedException exception = pools.values().stream().reduce( null,
                 ( e, p ) -> Exceptions.chain( e, p.shutdownInterrupted ), Exceptions::chain );
 
@@ -381,7 +382,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             // from the allocating thread.
             ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
             AtomicReference<ForkJoinWorkerThread> reference = new AtomicReference<>();
-            Thread allocator = newThread( () ->  reference.set( factory.newThread( pool ) ) );
+            Thread allocator = newThread( () -> reference.set( factory.newThread( pool ) ) );
             allocator.start();
             do
             {
