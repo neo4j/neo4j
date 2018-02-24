@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
@@ -143,7 +144,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         ScheduledTask scheduledTask = new ScheduledTask( this, group, runnable );
         ScheduledFuture<?> future = scheduledExecutor.scheduleAtFixedRate(
                 scheduledTask, initialDelay, period, timeUnit );
-        PooledJobHandle handle = new PooledJobHandle( future );
+        ScheduledJobHandle handle = new ScheduledJobHandle( future, scheduledTask );
         handle.registerCancelListener( scheduledTask );
         return handle;
     }
@@ -153,7 +154,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     {
         ScheduledTask scheduledTask = new ScheduledTask( this, group, runnable );
         ScheduledFuture<?> future = scheduledExecutor.schedule( scheduledTask, initialDelay, timeUnit );
-        PooledJobHandle handle = new PooledJobHandle( future );
+        ScheduledJobHandle handle = new ScheduledJobHandle( future, scheduledTask );
         handle.registerCancelListener( scheduledTask );
         return handle;
     }
@@ -236,6 +237,34 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         }
     }
 
+    private static class ScheduledJobHandle extends PooledJobHandle
+    {
+        private final ScheduledTask scheduledTask;
+        private final ScheduledFuture<?> job;
+
+        ScheduledJobHandle( ScheduledFuture<?> job, ScheduledTask scheduledTask )
+        {
+            super( job );
+            this.job = job;
+            this.scheduledTask = scheduledTask;
+        }
+
+        @Override
+        public void waitTermination() throws InterruptedException, ExecutionException
+        {
+            try
+            {
+                scheduledTask.waitTermination();
+            }
+            catch ( ExecutionException e )
+            {
+                job.cancel( true );
+                throw e;
+            }
+            super.waitTermination();
+        }
+    }
+
     private static class RegisteringPooledJobHandle extends PooledJobHandle
     {
         private final Set<JobHandle> register;
@@ -256,22 +285,54 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
     private static final class ScheduledTask implements Runnable, CancelListener
     {
+        private final BinaryLatch handleRelease;
         private final JobScheduler scheduler;
         private final Group group;
         private final Runnable task;
         private volatile JobHandle latestHandle;
+        private volatile Throwable lastException;
 
         private ScheduledTask( JobScheduler scheduler, Group group, Runnable task )
         {
+            handleRelease = new BinaryLatch();
             this.scheduler = scheduler;
             this.group = group;
-            this.task = task;
+            this.task = () ->
+            {
+                try
+                {
+                    task.run();
+                }
+                catch ( Throwable e )
+                {
+                    lastException = e;
+                }
+            };
         }
 
         @Override
         public void run()
         {
+            checkPreviousRunFailure();
             latestHandle = scheduler.schedule( group, task );
+            handleRelease.release();
+        }
+
+        private void checkPreviousRunFailure()
+        {
+            Throwable e = lastException;
+            if ( e != null )
+            {
+                if ( e instanceof Error )
+                {
+                    throw (Error) e;
+                }
+                if ( e instanceof RuntimeException )
+                {
+                    throw (RuntimeException) e;
+                }
+                throw new RuntimeException( e );
+            }
         }
 
         @Override
@@ -282,6 +343,14 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             {
                 handle.cancel( mayInterruptIfRunning );
             }
+        }
+
+        public void waitTermination() throws ExecutionException, InterruptedException
+        {
+
+            handleRelease.await();
+
+            latestHandle.waitTermination();
         }
     }
 

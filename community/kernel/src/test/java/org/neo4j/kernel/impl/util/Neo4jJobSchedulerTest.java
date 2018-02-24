@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,11 +40,12 @@ import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
@@ -137,7 +139,7 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void longRunningScheduledJobsMustNotDelayOtherLongRunningJobs() throws Exception
+    public void longRunningScheduledJobsMustNotDelayOtherLongRunningJobs()
     {
         life.start();
 
@@ -206,6 +208,75 @@ public class Neo4jJobSchedulerTest
         // THEN
         assertTrue( halted.get() );
         neo4jJobScheduler.shutdown();
+    }
+
+    @Test( timeout = 10_000 )
+    public void waitTerminationOnDelayedJobMustWaitUntilJobCompletion() throws Exception
+    {
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        scheduler.init();
+
+        AtomicBoolean triggered = new AtomicBoolean();
+        Runnable job = () ->
+        {
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+            triggered.set( true );
+        };
+
+        JobHandle handle = scheduler.schedule( indexPopulation, job, 10, TimeUnit.MILLISECONDS );
+
+        handle.waitTermination();
+        assertTrue( triggered.get() );
+    }
+
+    @Test( timeout = 10_000 )
+    public void scheduledTasksThatThrowsMustPropagateException() throws Exception
+    {
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        scheduler.init();
+
+        RuntimeException boom = new RuntimeException( "boom" );
+        AtomicInteger triggerCounter = new AtomicInteger();
+        Runnable job = () ->
+        {
+            triggerCounter.incrementAndGet();
+            throw boom;
+        };
+
+        JobHandle handle = scheduler.scheduleRecurring( indexPopulation, job, 1, TimeUnit.MILLISECONDS );
+        try
+        {
+            handle.waitTermination();
+            fail( "waitTermination should have failed." );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), is( boom ) );
+        }
+    }
+
+    @Test( timeout = 10_000 )
+    public void scheduledTasksThatThrowsShouldStop() throws Exception
+    {
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        scheduler.init();
+
+        BinaryLatch triggerLatch = new BinaryLatch();
+        RuntimeException boom = new RuntimeException( "boom" );
+        AtomicInteger triggerCounter = new AtomicInteger();
+        Runnable job = () ->
+        {
+            triggerCounter.incrementAndGet();
+            triggerLatch.release();
+            throw boom;
+        };
+
+        scheduler.scheduleRecurring( indexPopulation, job, 1, TimeUnit.MILLISECONDS );
+
+        triggerLatch.await();
+        Thread.sleep( 50 );
+
+        assertThat( triggerCounter.get(), is( 1 ) );
     }
 
     private void awaitFirstInvocation() throws InterruptedException
