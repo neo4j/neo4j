@@ -26,6 +26,8 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
  */
 public interface Read
 {
+    int ANY_LABEL = -1;
+
     /**
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
@@ -80,6 +82,34 @@ public interface Read
      * @return {@code true} if the node exists, otherwise {@code false}
      */
     boolean nodeExists( long reference );
+
+    /**
+     * The number of nodes in the graph, including anything changed in the transaction state.
+     *
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
+     * {@code MATCH (n) RETURN count(n)}.
+     *
+     * If the label parameter is set to any other value, this method returns the number of nodes that has that label,
+     * i.e. {@code MATCH (n:LBL) RETURN count(n)}.
+     *
+     * @param labelId the label to get the count for, or {@link #ANY_LABEL} to get the total number of nodes.
+     * @return the number of matching nodes in the graph.
+     */
+    long countsForNode( int labelId );
+
+    /**
+     * The number of nodes in the graph, without taking into account anything in the transaction state.
+     *
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
+     * {@code MATCH (n) RETURN count(n)}.
+     *
+     * If the label parameter is set to any other value, this method returns the number of nodes that has that label,
+     * i.e. {@code MATCH (n:LBL) RETURN count(n)}.
+     *
+     * @param labelId the label to get the count for, or {@link #ANY_LABEL} to get the total number of nodes.
+     * @return the number of matching nodes in the graph.
+     */
+    long countsForNodeWithoutTxState( int labelId );
 
     /**
      * @param reference

@@ -29,8 +29,8 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.NamedFunction;
@@ -47,13 +47,13 @@ public class NodeCountsTest
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
-    private Supplier<Statement> statementSupplier;
+    private Supplier<KernelTransaction> kernelTransactionSupplier;
 
     @Before
     public void setUp()
     {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class );
+        kernelTransactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     @Test
@@ -212,9 +212,6 @@ public class NodeCountsTest
 
     private long countsForNode()
     {
-        try ( Statement statement = statementSupplier.get() )
-        {
-            return statement.readOperations().countsForNode( ReadOperations.ANY_LABEL );
-        }
+        return kernelTransactionSupplier.get().dataRead().countsForNode( ReadOperations.ANY_LABEL );
     }
 }

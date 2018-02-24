@@ -765,6 +765,69 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
+    @Test
+    public void shouldCountNewLabelsFromTxState() throws Exception
+    {
+        // Given
+        Node node1 = createNode( "label" );
+        Node node2 = createNode();
+
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeAddLabel( node2.node, node1.labels[0] );
+            long countTxState = tx.dataRead().countsForNode( node1.labels[0] );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( node1.labels[0] );
+
+            // then
+            assertEquals( 2, countTxState );
+            assertEquals( 1, countNoTxState );
+        }
+    }
+
+    @Test
+    public void shouldNotCountRemovedLabelsFromTxState() throws Exception
+    {
+        // Given
+        Node node1 = createNode( "label" );
+        Node node2 = createNode( "label" );
+
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( node2.node, node2.labels[0] );
+            long countTxState = tx.dataRead().countsForNode( node1.labels[0] );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( node1.labels[0] );
+
+            // then
+            assertEquals( 1, countTxState );
+            assertEquals( 2, countNoTxState );
+        }
+    }
+
+    @Test
+    public void shouldNotCountRemovedNodesFromTxState() throws Exception
+    {
+        // Given
+        Node node1 = createNode( "label" );
+        Node node2 = createNode( "label" );
+
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeDelete( node2.node );
+            long countTxState = tx.dataRead().countsForNode( node1.labels[0] );
+            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState( node1.labels[0] );
+
+            // then
+            assertEquals( 1, countTxState );
+            assertEquals( 2, countNoTxState );
+        }
+    }
+
     private void assertLabels( LabelSet labels, int... expected )
     {
         assertEquals( expected.length, labels.numberOfLabels() );

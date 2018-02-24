@@ -196,6 +196,19 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public long countsForNode( int labelId )
+    {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public long countsForNodeWithoutTxState( int labelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean relationshipExists( long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );
