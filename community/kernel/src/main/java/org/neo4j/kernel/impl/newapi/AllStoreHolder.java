@@ -153,7 +153,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public long countsForRelationship(int startLabelId, int typeId, int endLabelId )
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
         long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
         if ( ktx.hasTxStateWithChanges() )

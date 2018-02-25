@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -541,9 +540,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
 
-  private def getOrLoadReadOperations: MethodReference =
-    methodReference(generator.owner(), typeRef[ReadOperations], "getOrLoadReadOperations")
-
   private def dataRead: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead"))
 
@@ -564,9 +560,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def propertyCursor: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[PropertyCursor], "propertyCursor"))
-
-  private def readOperations: Expression =
-    invoke(generator.self(), getOrLoadReadOperations)
 
   private def nodeManager = get(generator.self(), fields.entityAccessor)
 
