@@ -46,7 +46,7 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
     {
         while ( next() )
         {
-            if ( relationshipLabel < relationshipLabel() )
+            if ( relationshipLabel < type() )
             {
                 return true;
             }
@@ -54,7 +54,7 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
         return false;
     }
 
-    int relationshipLabel();
+    int type();
 
     int outgoingCount();
 
@@ -78,6 +78,4 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
     long incomingReference();
 
     long loopsReference();
-
-    int type();
 }

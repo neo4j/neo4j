@@ -1143,7 +1143,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                     // then
                     RelationshipTestSupport
-                            .assertCount( session, relationship, expectedCounts, group.relationshipLabel(), OUTGOING );
+                            .assertCount( session, relationship, expectedCounts, group.type(), OUTGOING );
 
                     // incoming
                     if ( detached )
@@ -1156,7 +1156,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                     // then
                     RelationshipTestSupport
-                            .assertCount( session, relationship, expectedCounts, group.relationshipLabel(), INCOMING );
+                            .assertCount( session, relationship, expectedCounts, group.type(), INCOMING );
 
                     // loops
                     if ( detached )
@@ -1169,7 +1169,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                     // then
                     RelationshipTestSupport
-                            .assertCount( session, relationship, expectedCounts, group.relationshipLabel(), BOTH );
+                            .assertCount( session, relationship, expectedCounts, group.type(), BOTH );
                 }
             }
         }

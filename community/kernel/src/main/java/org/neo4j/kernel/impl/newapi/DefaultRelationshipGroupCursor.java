@@ -48,7 +48,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private PageCursor page;
     private PageCursor edgePage;
     private boolean hasCheckedTxState;
-    private PrimitiveIntSet txTypes = Primitive.intSet();
+    private final PrimitiveIntSet txTypes = Primitive.intSet();
     private PrimitiveIntIterator txTypeIterator;
 
     DefaultRelationshipGroupCursor()
@@ -256,7 +256,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     }
 
     @Override
-    public int relationshipLabel()
+    public int type()
     {
         return getType();
     }
@@ -397,12 +397,6 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     {
         long loops = getFirstLoop();
         return loops == NO_ID ? encodeNoLoopRels( getType() ) : encodeRelationshipReference( loops );
-    }
-
-    @Override
-    public int type()
-    {
-        return getType();
     }
 
     @Override

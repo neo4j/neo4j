@@ -79,7 +79,7 @@ class StubGroupCursor implements RelationshipGroupCursor
     }
 
     @Override
-    public int relationshipLabel()
+    public int type()
     {
         return groups[offset].type;
     }
@@ -136,12 +136,6 @@ class StubGroupCursor implements RelationshipGroupCursor
     public long loopsReference()
     {
         return groups[offset].loop;
-    }
-
-    @Override
-    public int type()
-    {
-        return groups[offset].type;
     }
 
     static class GroupData
