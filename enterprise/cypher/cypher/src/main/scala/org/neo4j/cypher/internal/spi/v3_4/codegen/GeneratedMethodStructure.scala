@@ -1522,11 +1522,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   def wildCardToken = Expression.constant(-1)
 
   override def nodeCountFromCountStore(expression: Expression): Expression =
-    invoke(readOperations, countsForNode, expression )
+    invoke(dataRead, countsForNode, expression )
 
   override def relCountFromCountStore(start: Expression, end: Expression, types: Expression*): Expression =
-    if (types.isEmpty) invoke(readOperations, Methods.countsForRel, start, wildCardToken, end )
-    else types.map(invoke(readOperations, Methods.countsForRel, start, _, end )).reduceLeft(Expression.add)
+    if (types.isEmpty) invoke(dataRead, Methods.countsForRel, start, wildCardToken, end )
+    else types.map(invoke(dataRead, Methods.countsForRel, start, _, end )).reduceLeft(Expression.add)
 
   override def coerceToBoolean(propertyExpression: Expression): Expression =
     invoke(coerceToPredicate, propertyExpression)
