@@ -127,7 +127,7 @@ public final class ValueMath
     {
         long r = a - b;
         //Check if result overflows
-        if ( ((a ^ b) & (a ^ r)) < 0)
+        if ( ((a ^ b) & (a ^ r)) < 0 )
         {
             return Values.doubleValue( (double) a - (double) b );
         }
