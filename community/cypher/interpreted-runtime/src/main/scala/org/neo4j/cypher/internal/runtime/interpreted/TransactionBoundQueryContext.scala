@@ -65,9 +65,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
-import org.neo4j.values.storable._
-import org.neo4j.values.storable.{PointValue, TextValue, Value, Values}
-import org.neo4j.values.storable.{TextValue, Value, Values}
+import org.neo4j.values.storable.{PointValue, TextValue, Value, Values, _}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 import org.neo4j.values.{AnyValue, ValueMapper}
 
@@ -944,11 +942,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {
-    transactionalContext.statement.readOperations().countsForNode(labelId)
+    reads().countsForNode(labelId)
   }
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = {
-    transactionalContext.statement.readOperations().countsForRelationship(startLabelId, typeId, endLabelId)
+    reads().countsForRelationship(startLabelId, typeId, endLabelId)
   }
 
   override def lockNodes(nodeIds: Long*) =

@@ -21,17 +21,19 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.internal.kernel.api.Read
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 
 object TransactionBoundGraphStatistics {
-  def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
+  def apply(read: Read, ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, ops))
 
-  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics with IndexDescriptorCompatibility {
+  //TODD remove ReadOperations when schema ops are ported
+  private class BaseTransactionBoundGraphStatistics(read: Read, operations: ReadOperations) extends GraphStatistics with IndexDescriptorCompatibility {
 
     def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val labeledNodes = operations.countsForNodeWithoutTxState( index.label ).toDouble
+        val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
         val indexEntrySelectivity = operations.indexUniqueValuesSelectivity(cypherToKernel(index))
@@ -46,7 +48,7 @@ object TransactionBoundGraphStatistics {
 
     def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val labeledNodes = operations.countsForNodeWithoutTxState( index.label ).toDouble
+        val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
 
         // Probability of any node with the given label, to have a given property
         val indexSize = operations.indexSize(cypherToKernel(index))
@@ -59,10 +61,10 @@ object TransactionBoundGraphStatistics {
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      atLeastOne(operations.countsForNodeWithoutTxState(labelId))
+      atLeastOne(read.countsForNodeWithoutTxState(labelId))
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      atLeastOne(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+      atLeastOne(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
 
     /**
       * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out
@@ -76,7 +78,7 @@ object TransactionBoundGraphStatistics {
         Cardinality(count)
     }
 
-    override def nodesAllCardinality(): Cardinality = atLeastOne(operations.countsForNodeWithoutTxState(-1))
+    override def nodesAllCardinality(): Cardinality = atLeastOne(read.countsForNodeWithoutTxState(-1))
   }
 }
 
