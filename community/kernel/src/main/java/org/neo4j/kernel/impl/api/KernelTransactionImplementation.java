@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -1070,6 +1071,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public NodeCursor nodeCursor()
     {
         return operations.nodeCursor();
+    }
+
+    @Override
+    public RelationshipScanCursor relationshipCursor()
+    {
+        return operations.relationshipCursor();
     }
 
     @Override

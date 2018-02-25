@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -205,6 +206,8 @@ public interface KernelTransaction extends Transaction
     Revertable overrideWith( SecurityContext context );
 
     NodeCursor nodeCursor();
+
+    RelationshipScanCursor relationshipCursor();
 
     PropertyCursor propertyCursor();
 

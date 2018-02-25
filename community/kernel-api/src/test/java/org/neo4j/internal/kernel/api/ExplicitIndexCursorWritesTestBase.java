@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -264,8 +263,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         }
     }
 
-    //TODO unignore when we support relationship creation.
-    @Ignore
+    @Test
     public void shouldAddRelationshipToExplicitIndex() throws Exception
     {
         long relId;

@@ -39,8 +39,7 @@ import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
-import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read, _}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
@@ -151,7 +150,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.lookupPropertyKey("prop", "prop")
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
           m.declareProperty("propVar")
-          m.relationshipGetPropertyForVar("rel", "prop", "propVar")
+          m.relationshipGetPropertyForVar("rel", CodeGenType.primitiveNode, "prop", "propVar")
         }),
         Operation("property by id for relationship", m => {
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
@@ -244,6 +243,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         skip = body.field(typeRef[Boolean], "skip"),
         cursors = body.field(typeRef[CursorFactory], "cursors"),
         nodeCursor = body.field(typeRef[NodeCursor], "nodeCursor"),
+        relationshipScanCursor = body.field(typeRef[RelationshipScanCursor], "relationshipScanCursor"),
         propertyCursor = body.field(typeRef[PropertyCursor], "propertyCursor"),
         dataRead = body.field(typeRef[Read], "dataRead"),
         tokenRead = body.field(typeRef[TokenRead], "tokenRead"),
@@ -260,6 +260,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       Templates.getOrLoadTokenRead(body, fields)
       Templates.getOrLoadSchemaRead(body, fields)
       Templates.nodeCursor(body, fields)
+      Templates.relationshipScanCursor(body, fields)
       Templates.propertyCursor(body, fields)
       body.handle()
     }
