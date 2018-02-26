@@ -29,6 +29,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
+import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
 /**
@@ -42,13 +43,15 @@ public class ChunkedTransactionStream implements ChunkedInput<Object>
 
     private boolean endOfInput;
     private boolean noMoreTransactions;
+    private long expectedTxId;
     private long lastTxId;
 
     private Object pending;
 
-    ChunkedTransactionStream( StoreId storeId, IOCursor<CommittedTransactionRepresentation> txCursor, CatchupServerProtocol protocol )
+    ChunkedTransactionStream( StoreId storeId, long firstTxId, IOCursor<CommittedTransactionRepresentation> txCursor, CatchupServerProtocol protocol )
     {
         this.storeId = storeId;
+        this.expectedTxId = firstTxId;
         this.txCursor = txCursor;
         this.protocol = protocol;
     }
@@ -96,6 +99,12 @@ public class ChunkedTransactionStream implements ChunkedInput<Object>
 
             CommittedTransactionRepresentation tx = txCursor.get();
             lastTxId = tx.getCommitEntry().getTxId();
+            if ( lastTxId != expectedTxId )
+            {
+                String msg = format( "Transaction cursor out of order. Expected %d but was %d", expectedTxId, lastTxId );
+                throw new IllegalStateException( msg );
+            }
+            expectedTxId++;
             pending = new TxPullResponse( storeId, tx );
             return ResponseMessageType.TX;
         }
@@ -128,5 +137,10 @@ public class ChunkedTransactionStream implements ChunkedInput<Object>
     public long progress()
     {
         return 0;
+    }
+
+    public long lastTxId()
+    {
+        return lastTxId;
     }
 }

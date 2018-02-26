@@ -19,10 +19,9 @@
  */
 package org.neo4j.causalclustering.catchup.tx;
 
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -71,6 +71,7 @@ public class TxPullRequestHandlerTest
         // given
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
         when( logicalTransactionStore.getTransactions( 14L ) ).thenReturn( txCursor( cursor( tx( 14 ), tx( 15 ) ) ) );
+        when( context.writeAndFlush( any() ) ).thenReturn( mock( ChannelFuture.class ) );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
