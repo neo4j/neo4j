@@ -105,13 +105,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         throw new UnsupportedOperationException( "not implemented" );
     }
 
+    static final LocalTime DEFAULT_LOCAL_TIME = LocalTime.of( Field.hour.defaultValue, Field.minute.defaultValue );
+
     static TimeValue.TimeBuilder<LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new TimeValue.TimeBuilder<LocalTimeValue>( defaultZone )
         {
-
-            private final LocalTime defaulLocalTime = LocalTime.of( Field.hour.defaultValue, Field.minute.defaultValue );
-
             @Override
             public LocalTimeValue buildInternal()
             {
@@ -127,7 +126,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                 }
                 else
                 {
-                    result = defaulLocalTime;
+                    result = DEFAULT_LOCAL_TIME;
                 }
 
                 result = assignAllFields( result );

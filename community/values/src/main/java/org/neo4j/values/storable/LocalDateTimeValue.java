@@ -119,40 +119,79 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         throw new UnsupportedOperationException( "not implemented" );
     }
 
+    static final LocalDateTime DEFAULT_LOCAL_DATE_TIME =
+            LocalDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
+                    Field.minute.defaultValue );
+
     static DateTimeValue.DateTimeBuilder<LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new DateTimeValue.DateTimeBuilder<LocalDateTimeValue>( defaultZone )
         {
-            private final LocalDateTime defaulLocalDateTime =
-                    LocalDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
-                            Field.minute.defaultValue );
-
             @Override
             public LocalDateTimeValue buildInternal()
             {
+                boolean selectingDate = fields.containsKey( Field.date );
+                boolean selectingTime = fields.containsKey( Field.time );
+                boolean selectingDateTime = fields.containsKey( Field.datetime );
                 LocalDateTime result;
-                if ( fields.containsKey( Field.time ) || fields.containsKey( Field.date ) || fields.containsKey( Field.datetime ) )
+                if ( selectingDateTime )
                 {
-//                    AnyValue time = fields.get( Field.time );
-//                    if ( !(time instanceof TemporalValue) )
-//                    {
-//                        throw new IllegalArgumentException( String.format( "Cannot construct local date time from: %s", time ) );
-//                    }
-                    // TODO select date, time, or both
-                    throw new UnsupportedOperationException(  );
+                    AnyValue dtField = fields.get( Field.datetime );
+                    if ( !(dtField instanceof TemporalValue) )
+                    {
+                        throw new IllegalArgumentException( String.format( "Cannot construct local date time from: %s", dtField ) );
+                    }
+                    TemporalValue dt = (TemporalValue) dtField;
+                    result = LocalDateTime.of( dt.getDatePart(), dt.getLocalTimePart() );
                 }
-                else if ( fields.containsKey( Field.week ) )
+                else if ( selectingTime || selectingDate )
+                {
+                    LocalTime time;
+                    if ( selectingTime )
+                    {
+                        AnyValue timeField = fields.get( Field.time );
+                        if ( !(timeField instanceof TemporalValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
+                        }
+                        TemporalValue t = (TemporalValue) timeField;
+                        time = t.getLocalTimePart();
+                    }
+                    else
+                    {
+                        time = LocalTimeValue.DEFAULT_LOCAL_TIME;
+                    }
+                    LocalDate date;
+                    if ( selectingDate )
+                    {
+                        AnyValue dateField = fields.get( Field.date );
+                        if ( !(dateField instanceof TemporalValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
+                        }
+                        TemporalValue t = (TemporalValue) dateField;
+                        date = t.getDatePart();
+                    }
+                    else
+                    {
+                        date = DateValue.DEFAULT_CALENDER_DATE;
+                    }
+
+                    result = LocalDateTime.of( date, time );
+                }
+                else
+                {
+                    result = DEFAULT_LOCAL_DATE_TIME;
+                }
+
+                if ( fields.containsKey( Field.week ) && !selectingDate && !selectingDateTime )
                 {
                     // Be sure to be in the start of the week based year (which can be later than 1st Jan)
-                    result = defaulLocalDateTime
+                    result = result
                             .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( Field.year.name(), fields.get( Field.year ),
                                     Field.year.defaultValue ) )
                             .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
                             .with( ChronoField.DAY_OF_WEEK, 1 );
-                }
-                else
-                {
-                    result = defaulLocalDateTime;
                 }
 
                 result = assignAllFields( result );

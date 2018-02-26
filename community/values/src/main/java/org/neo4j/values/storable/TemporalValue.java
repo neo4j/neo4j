@@ -439,11 +439,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             @Override
             void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsDate() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
                 if ( builder.state == null )
                 {
                     builder.state = new DateTimeBuilder();
                 }
-                builder.state.date( value );
+                builder.state = builder.state.assign( this, value );
             }
 
             @Override
@@ -458,11 +462,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             @Override
             void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsTime() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
                 if ( builder.state == null )
                 {
                     builder.state = new DateTimeBuilder();
                 }
-                builder.state.time( value );
+                builder.state = builder.state.assign( this, value );
             }
 
             @Override
@@ -477,14 +485,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             @Override
             void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsDate() || !builder.supportsTime() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
                 if ( builder.state == null )
                 {
-                    builder.state = new DateTimeBuilder( value );
+                    builder.state = new DateTimeBuilder( );
                 }
-                else
-                {
-                    throw new IllegalArgumentException( "Cannot select datetime when assigning other fields." );
-                }
+                builder.state = builder.state.assign( this, value );
             }
 
             @Override
@@ -537,23 +546,23 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 builder.state = new DateTimeBuilder();
             }
-            builder.state.assign( this, value );
+            builder.state = builder.state.assign( this, value );
         }
     }
 
-    private static final class DateTimeBuilder
+    private static class DateTimeBuilder
     {
-        private DateBuilder date;
-        private ConstructTime time;
-        private AnyValue datetime;
+        protected DateBuilder date;
+        protected ConstructTime time;
 
         DateTimeBuilder()
         {
         }
 
-        DateTimeBuilder( AnyValue datetime )
+        DateTimeBuilder( DateBuilder date, ConstructTime time )
         {
-            this.datetime = datetime;
+            this.date = date;
+            this.time = time;
         }
 
         void checkAssignments( boolean requiresDate )
@@ -579,26 +588,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
         }
 
-        void assign( Field field, AnyValue value )
+        DateTimeBuilder assign( Field field, AnyValue value )
         {
             if ( field == Field.datetime )
             {
-                if ( date != null )
-                {
-                    date = new ConstructDate( datetime );
-                }
-                else
-                {
-                    date.assign( field, value );
-                }
-                if ( time != null )
-                {
-                    time = new ConstructTime( datetime );
-                }
-                else
-                {
-                    time.assign( field, value );
-                }
+                return new SelectDateTimeDTBuilder( date, time );
+            }
+            else if ( field == Field.time || field == Field.date )
+            {
+                return new SelectDateOrTimeDTBuilder( date, time ).assign( field, value );
             }
             else if ( field.field.isDateBased() )
             {
@@ -616,24 +614,85 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 }
                 time.assign( field, value );
             }
+            return this;
+        }
+    }
+
+    private static class SelectDateTimeDTBuilder extends DateTimeBuilder
+    {
+        SelectDateTimeDTBuilder( DateBuilder date, ConstructTime time )
+        {
+            super( date, time );
         }
 
-        void date( AnyValue date )
+        @Override
+        void checkAssignments( boolean requiresDate )
         {
-            if ( this.date != null )
-            {
-                throw new IllegalArgumentException( "cannot select date when also assigning date" );
-            }
-            this.date = new ConstructDate( date );
+            // Nothing to do
         }
 
-        void time( AnyValue time )
+        @Override
+        DateTimeBuilder assign( Field field, AnyValue value )
         {
-            if ( this.time != null )
+            if ( field == Field.date || field == Field.time )
             {
-                throw new IllegalArgumentException( "cannot select time when also assigning time" );
+                throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
             }
-            this.time = new ConstructTime( time );
+            else if ( field == Field.datetime )
+            {
+                throw new IllegalArgumentException( "cannot re-assign " + field );
+            }
+            else if ( field.field.isDateBased() )
+            {
+                if ( date == null )
+                {
+                    date = new ConstructDate();
+                }
+                date = date.assign( field, value );
+            }
+            else
+            {
+                if ( time == null )
+                {
+                    time = new ConstructTime();
+                }
+                time.assign( field, value );
+            }
+            return this;
+        }
+    }
+
+    private static class SelectDateOrTimeDTBuilder extends DateTimeBuilder
+    {
+        SelectDateOrTimeDTBuilder( DateBuilder date, ConstructTime time )
+        {
+            super( date, time );
+        }
+
+        @Override
+        DateTimeBuilder assign( Field field, AnyValue value )
+        {
+            if ( field == Field.datetime )
+            {
+                throw new IllegalArgumentException( field.name() + " cannot be selected together with date or time." );
+            }
+            else if ( field != Field.time && (field == Field.date || field.field.isDateBased()) )
+            {
+                if ( date == null )
+                {
+                    date = new ConstructDate();
+                }
+                date = date.assign( field, value );
+            }
+            else
+            {
+                if ( time == null )
+                {
+                    time = new ConstructTime();
+                }
+                time.assign( field, value );
+            }
+            return this;
         }
     }
 
@@ -658,11 +717,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         ConstructTime()
         {
-        }
-
-        ConstructTime( AnyValue time )
-        {
-            this.time = time;
         }
 
         void assign( Field field, AnyValue value )
@@ -690,6 +744,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             case time:
             case datetime:
                 time = assignment( field, time, value );
+                break;
             default:
                 throw new IllegalStateException( "Not a time field: " + field );
             }

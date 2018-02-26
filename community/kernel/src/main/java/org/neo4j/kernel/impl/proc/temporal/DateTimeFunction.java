@@ -76,7 +76,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
     @Override
     protected DateTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedOperationException(  );
+        return DateTimeValue.select( from, defaultZone );
     }
 
     @Override

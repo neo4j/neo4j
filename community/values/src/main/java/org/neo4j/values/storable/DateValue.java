@@ -377,6 +377,8 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
                 .with( IsoFields.DAY_OF_QUARTER, dayOfQuarter );
     }
 
+    static final LocalDate DEFAULT_CALENDER_DATE = LocalDate.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue );
+
     private static class DateBuilder extends Builder<DateValue>
     {
         DateBuilder( Supplier<ZoneId> defaultZone )
@@ -406,8 +408,6 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
         }
 
-        private final LocalDate defaulCalenderDate = LocalDate.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue );
-
         @Override
         public DateValue buildInternal()
         {
@@ -419,7 +419,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             else if ( fields.containsKey( Field.week ) )
             {
                 // Be sure to be in the start of the week based year (which can be later than 1st Jan)
-                result = defaulCalenderDate
+                result = DEFAULT_CALENDER_DATE
                         .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( Field.year.name(), fields.get( Field.year ),
                                 Field.year.defaultValue ) )
                         .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
@@ -427,7 +427,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             }
             else
             {
-                result = defaulCalenderDate;
+                result = DEFAULT_CALENDER_DATE;
             }
             result = assignAllFields( result );
             return date( result );

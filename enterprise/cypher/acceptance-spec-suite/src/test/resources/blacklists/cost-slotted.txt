@@ -2,13 +2,6 @@ Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 
-Feature "TemporalSelectAcceptance": Scenario "Should select date"
-Feature "TemporalSelectAcceptance": Scenario "Should select local time"
-Feature "TemporalSelectAcceptance": Scenario "Should select time"
-Feature "TemporalSelectAcceptance": Scenario "Should select local date time"
-Feature "TemporalSelectAcceptance": Scenario "Should select local date time 2"
-Feature "TemporalSelectAcceptance": Scenario "Should select date time"
-Feature "TemporalSelectAcceptance": Scenario "Should select date time 2"
 Feature "TemporalComparisonAcceptance": Scenario "Should compare dates"
 Feature "TemporalComparisonAcceptance": Scenario "Should compare local times"
 Feature "TemporalComparisonAcceptance": Scenario "Should compare times"

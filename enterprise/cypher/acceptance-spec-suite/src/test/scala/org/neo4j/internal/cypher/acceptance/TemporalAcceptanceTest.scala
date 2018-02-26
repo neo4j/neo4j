@@ -84,7 +84,8 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     val queries = Seq("{year:1984, month: 2, week:11}", "{year:1984, month: 2, dayOfWeek:6}",
       "{year:1984, month: 2, quarter:11}", "{year:1984, month: 2, dayOfQuarter:11}",
       "{year:1984, week: 2, day:11}", "{year:1984, week: 2, quarter:11}", "{year:1984, week: 2, dayOfQuarter:11}",
-      "{year:1984, quarter: 2, day:11}", "{year:1984, quarter: 2, dayOfWeek:6}")
+      "{year:1984, quarter: 2, day:11}", "{year:1984, quarter: 2, dayOfWeek:6}", "{datetime: datetime(), date: date()}",
+      "{datetime: datetime(), time: time()}")
     shouldNotConstructWithArg("localdatetime", queries)
   }
 
@@ -107,7 +108,8 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     val queries = Seq("{year:1984, month: 2, week:11}", "{year:1984, month: 2, dayOfWeek:6}",
       "{year:1984, month: 2, quarter:11}", "{year:1984, month: 2, dayOfQuarter:11}",
       "{year:1984, week: 2, day:11}", "{year:1984, week: 2, quarter:11}", "{year:1984, week: 2, dayOfQuarter:11}",
-      "{year:1984, quarter: 2, day:11}", "{year:1984, quarter: 2, dayOfWeek:6}")
+      "{year:1984, quarter: 2, day:11}", "{year:1984, quarter: 2, dayOfWeek:6}", "{datetime: datetime(), date: date()}",
+      "{datetime: datetime(), time: time()}")
     shouldNotConstructWithArg("datetime", queries)
   }
 
@@ -144,32 +146,32 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   ignore("should not select time into date") {
-    shouldNotSelectWithArg[IllegalStateException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg[IllegalArgumentException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("date"), Seq("{time:x}", "{hour: x.hour}", "{minute: x.minute}", "{second: x.second}", "{timezone: x.timezone}"))
   }
 
   ignore("should not select date into time") {
-    shouldNotSelectWithArg[IllegalStateException]("date({year:1984, month: 2, day:11})",
+    shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
       Seq("time"), Seq("{date:x}", "{year: x.year}", "{month: x.month}", "{day: x.day}"))
   }
 
   ignore("should not select date into local time") {
-    shouldNotSelectWithArg[IllegalStateException]("date({year:1984, month: 2, day:11})",
+    shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
       Seq("localtime"), Seq("{date:x}", "{year: x.year}", "{month: x.month}", "{day: x.day}"))
   }
 
   test("should not select datetime into date") {
-    shouldNotSelectWithArg[IllegalStateException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg[IllegalArgumentException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("date"), Seq("{datetime:x}"))
   }
 
   test("should not select datetime into time") {
-    shouldNotSelectWithArg[IllegalStateException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg[IllegalArgumentException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("time"), Seq("{datetime:x}"))
   }
 
   test("should not select datetime into local time") {
-    shouldNotSelectWithArg[IllegalStateException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg[IllegalArgumentException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("localtime"), Seq("{datetime:x}"))
   }
 

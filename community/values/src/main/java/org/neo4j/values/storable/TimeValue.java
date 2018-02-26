@@ -109,14 +109,16 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         throw new UnsupportedOperationException( "not implemented" );
     }
 
+    static OffsetTime defaultTime( ZoneId zoneId )
+    {
+        return OffsetTime.of( Field.hour.defaultValue, Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue,
+                ZoneOffset.of( zoneId.toString() ) );
+    }
+
     static TimeBuilder<TimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new TimeBuilder<TimeValue>( defaultZone )
         {
-
-            private final OffsetTime defaulTime =
-                    OffsetTime.of( Field.hour.defaultValue, Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue,
-                            ZoneOffset.of( timezone().toString() ) );
 
             @Override
             public TimeValue buildInternal()
@@ -134,7 +136,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 }
                 else
                 {
-                    result = defaulTime;
+                    result = defaultTime( timezone() );
                 }
 
                 result = assignAllFields( result );

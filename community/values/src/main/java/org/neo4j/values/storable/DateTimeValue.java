@@ -141,6 +141,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return StructureBuilder.build( builder( defaultZone ), map );
     }
 
+    public static DateTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return builder( defaultZone ).selectDateTime( from );
+    }
+
     public static DateTimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -150,7 +155,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static StructureBuilder<AnyValue,DateTimeValue> builder( Supplier<ZoneId> defaultZone )
+    static DateTimeBuilder<DateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new DateTimeBuilder<DateTimeValue>( defaultZone )
         {
@@ -161,34 +166,81 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             @Override
             public DateTimeValue buildInternal()
             {
+                boolean selectingDate = fields.containsKey( Field.date );
+                boolean selectingTime = fields.containsKey( Field.time );
+                boolean selectingDateTime = fields.containsKey( Field.datetime );
                 ZonedDateTime result;
-                if ( fields.containsKey( Field.time ) || fields.containsKey( Field.date ) || fields.containsKey( Field.datetime ) )
+                if ( selectingDateTime )
                 {
-//                    AnyValue time = fields.get( Field.time );
-//                    if ( !(time instanceof TemporalValue) )
-//                    {
-//                        throw new IllegalArgumentException( String.format( "Cannot construct local date time from: %s", time ) );
-//                    }
-                    // TODO select date, time, or both
-                    throw new UnsupportedOperationException();
+                    AnyValue dtField = fields.get( Field.datetime );
+                    if ( !(dtField instanceof TemporalValue) )
+                    {
+                        throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", dtField ) );
+                    }
+                    TemporalValue dt = (TemporalValue) dtField;
+                    OffsetTime timePart = dt.getTimePart( defaultZone );
+                    result = ZonedDateTime.of( dt.getDatePart(), timePart.toLocalTime(), timePart.getOffset() );
                 }
-                else if ( fields.containsKey( Field.week ) )
+                else if ( selectingTime || selectingDate )
                 {
-                    // Be sure to be in the start of the week based year (which can be later than 1st Jan)
-                    result = defaulZonedDateTime.with( IsoFields.WEEK_BASED_YEAR,
-                            safeCastIntegral( Field.year.name(), fields.get( Field.year ), Field.year.defaultValue ) ).with( IsoFields.WEEK_OF_WEEK_BASED_YEAR,
-                            1 ).with( ChronoField.DAY_OF_WEEK, 1 );
+                    OffsetTime time;
+                    if ( selectingTime )
+                    {
+                        AnyValue timeField = fields.get( Field.time );
+                        if ( !(timeField instanceof TemporalValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
+                        }
+                        TemporalValue t = (TemporalValue) timeField;
+                        time = t.getTimePart( defaultZone );
+                    }
+                    else
+                    {
+                        time = TimeValue.defaultTime( timezone() );
+                    }
+                    LocalDate date;
+                    if ( selectingDate )
+                    {
+                        AnyValue dateField = fields.get( Field.date );
+                        if ( !(dateField instanceof TemporalValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
+                        }
+                        TemporalValue t = (TemporalValue) dateField;
+                        date = t.getDatePart();
+                    }
+                    else
+                    {
+                        date = DateValue.DEFAULT_CALENDER_DATE;
+                    }
+                    result = ZonedDateTime.of( date, time.toLocalTime(), time.getOffset() );
                 }
                 else
                 {
                     result = defaulZonedDateTime;
                 }
 
+                if ( fields.containsKey( Field.week ) && !selectingDate && !selectingDateTime )
+                {
+                    // Be sure to be in the start of the week based year (which can be later than 1st Jan)
+                    result = result
+                            .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( Field.year.name(), fields.get( Field.year ),
+                                    Field.year.defaultValue ) )
+                            .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
+                            .with( ChronoField.DAY_OF_WEEK, 1 );
+                }
+
                 result = assignAllFields( result );
                 if ( timezone != null )
                 {
-                    // TODO this will be different when selecting
-                    result = result.withZoneSameLocal( timezone() );
+                    if ( selectingTime || selectingDateTime )
+                    {
+                        result = result.withZoneSameInstant( timezone() );
+                    }
+                    else
+                    {
+                        result = result.withZoneSameLocal( timezone() );
+                    }
                 }
                 return datetime( result );
             }
