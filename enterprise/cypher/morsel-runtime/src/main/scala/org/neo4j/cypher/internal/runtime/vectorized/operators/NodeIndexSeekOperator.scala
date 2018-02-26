@@ -20,28 +20,47 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
+import org.neo4j.internal.kernel.api._
 
-class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
+class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
+                            label: LabelToken,
+                            propertyKey: PropertyKeyToken,
+                            valueExpr: Expression) extends Operator {
+
+  private var reference: IndexReference = CapableIndexReference.NO_INDEX
+
+  private def reference(context: QueryContext): IndexReference = {
+    if (reference == CapableIndexReference.NO_INDEX) {
+      reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
+    }
+    reference
+  }
 
   override def operate(message: Message,
                        data: Morsel,
                        context: QueryContext,
                        state: QueryState): Continuation = {
-    var nodeCursor: NodeCursor = null
+    var nodeCursor: NodeValueIndexCursor  = null
     var iterationState: Iteration = null
     val read = context.transactionalContext.dataRead
+    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
+    val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     message match {
       case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeCursor()
-        read.allNodesScan(nodeCursor)
+        nodeCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
+        read.nodeIndexSeek(reference(context), nodeCursor, IndexOrder.NONE,
+                           IndexQuery.exact(propertyKey.nameId.id, valueExpr(currentRow, queryState) ))
         iterationState = is
       case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
-        nodeCursor = it.asInstanceOf[NodeCursor]
+        nodeCursor = it.asInstanceOf[NodeValueIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()
+
     }
 
     val longs: Array[Long] = data.longs

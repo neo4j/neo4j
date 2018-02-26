@@ -47,7 +47,7 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
     var eagerRecipient: Pipeline = null
     do {
       if(eagerAcc.nonEmpty) {
-        jobStack.push((StartLoopWithEagerData(eagerAcc.toVector, iteration), eagerRecipient))
+        jobStack.push((StartLoopWithEagerData(eagerAcc.toArray, iteration), eagerRecipient))
         eagerAcc.clear()
         eagerRecipient = null
       }

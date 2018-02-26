@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValu
 import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
 import org.neo4j.values.storable._
 import org.neo4j.values.storable.{PointValue, TextValue, Value, Values}
+import org.neo4j.values.storable.{TextValue, Value, Values}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 import org.neo4j.values.{AnyValue, ValueMapper}
 
@@ -219,6 +220,20 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), cursor, types.orNull)
       }
       new RelationshipCursorIterator(selectionCursor)
+    }
+  }
+
+  override def getRelationshipsCursor(node: Long, dir: SemanticDirection,
+                                               types: Option[Array[Int]]): RelationshipSelectionCursor = {
+    val read = reads()
+    read.singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) RelationshipSelectionCursor.EMPTY
+    else {
+      dir match {
+        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+      }
     }
   }
 

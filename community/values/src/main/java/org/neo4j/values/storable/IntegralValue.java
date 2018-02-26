@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.ValueMath;
 
 public abstract class IntegralValue extends NumberValue
 {
@@ -102,5 +103,41 @@ public abstract class IntegralValue extends NumberValue
     public double doubleValue()
     {
         return longValue();
+    }
+
+    @Override
+    public LongValue minus( long b )
+    {
+        return ValueMath.subtract( longValue(), b );
+    }
+
+    @Override
+    public DoubleValue minus( double b )
+    {
+        return ValueMath.subtract( longValue(), b );
+    }
+
+    @Override
+    public LongValue plus( long b )
+    {
+        return ValueMath.add( longValue(), b );
+    }
+
+    @Override
+    public DoubleValue plus( double b )
+    {
+        return ValueMath.add( longValue(), b );
+    }
+
+    @Override
+    public LongValue times( long b )
+    {
+        return ValueMath.multiply( longValue(), b );
+    }
+
+    @Override
+    public DoubleValue times( double b )
+    {
+        return ValueMath.multiply( longValue(), b );
     }
 }

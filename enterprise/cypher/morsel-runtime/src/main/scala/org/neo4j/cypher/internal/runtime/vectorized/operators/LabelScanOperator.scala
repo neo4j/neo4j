@@ -20,28 +20,32 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 
-class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
+class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: LazyLabel) extends Operator {
 
   override def operate(message: Message,
                        data: Morsel,
                        context: QueryContext,
                        state: QueryState): Continuation = {
-    var nodeCursor: NodeCursor = null
+    var nodeCursor: NodeLabelIndexCursor  = null
     var iterationState: Iteration = null
     val read = context.transactionalContext.dataRead
+    val labelId = label.getOptId(context)
+    if (labelId.isEmpty) return EndOfLoop(iterationState)
 
     message match {
       case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeCursor()
-        read.allNodesScan(nodeCursor)
+        nodeCursor = context.transactionalContext.cursors.allocateNodeLabelIndexCursor()
+        read.nodeLabelScan(labelId.get.id,  nodeCursor)
         iterationState = is
       case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
-        nodeCursor = it.asInstanceOf[NodeCursor]
+        nodeCursor = it.asInstanceOf[NodeLabelIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()
+
     }
 
     val longs: Array[Long] = data.longs

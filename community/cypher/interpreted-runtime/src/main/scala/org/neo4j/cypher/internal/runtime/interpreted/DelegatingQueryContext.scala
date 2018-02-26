@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -45,6 +47,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
   protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
   protected def manyDbHits[A](value: RelationshipIterator): RelationshipIterator = value
+  protected def manyDbHits[A](value: RelationshipSelectionCursor): RelationshipSelectionCursor = value
   protected def manyDbHits(count: Int): Int = count
 
   override def resources: CloseableResource = inner.resources
@@ -82,6 +85,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
   manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
+
+  override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor =
+    manyDbHits(inner.getRelationshipsCursor(node, dir, types))
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
