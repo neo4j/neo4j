@@ -137,7 +137,15 @@ public abstract class TokenAccess<R>
         {
             this.access = access;
             this.statement = transaction.acquireStatement();
-            this.tokens = access.tokens( transaction.tokenRead() );
+            try
+            {
+                this.tokens = access.tokens( transaction.tokenRead() );
+            }
+            catch ( Exception e )
+            {
+                close();
+                throw e;
+            }
         }
 
         @Override

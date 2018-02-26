@@ -27,7 +27,7 @@ public final class NamedToken
     private final int id;
     private final String name;
 
-    public NamedToken( int id, String name )
+    public NamedToken( String name, int id )
     {
         this.id = id;
         this.name = name;
