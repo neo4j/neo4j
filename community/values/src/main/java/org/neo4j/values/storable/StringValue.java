@@ -93,7 +93,7 @@ public abstract class StringValue extends TextValue
         List<AnyValue> l = new ArrayList<>();
         int offset = 0;
 
-        while (true)
+        while ( true )
         {
             int index = input.indexOf( delim, offset );
             if ( index == -1 )
