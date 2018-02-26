@@ -99,6 +99,11 @@ public interface Transaction extends AutoCloseable
     TokenWrite tokenWrite();
 
     /**
+     * @return Token read and write operations
+     */
+    Token token();
+
+    /**
      * @return The schema index read operations of the graph, used for finding indexes.
      */
     SchemaRead schemaRead();

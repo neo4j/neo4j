@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 
 public class KernelTokenArgumentTest
 {
-    private KernelToken token = new KernelToken( mock( StoreReadLayer.class ) );
+    private KernelToken token = new KernelToken( mock( StoreReadLayer.class ), ktx );
 
     @Test
     public void labelGetOrCreateForName()

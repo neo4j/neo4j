@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.DefaultCursors;
-import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -103,12 +101,12 @@ public class KernelTransactionFactory
                 Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
-                storageEngine, new CanWrite(), new KernelToken( storeReadLayer ), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
+                storageEngine, new CanWrite(), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class), EmptyVersionContextSupplier.EMPTY );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, loginContext.authorize( mock( Token.class ) ), 0L, 1L );
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, loginContext.authorize( (s) -> -1 ), 0L, 1L );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }

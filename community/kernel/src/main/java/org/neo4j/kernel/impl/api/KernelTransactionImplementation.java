@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -182,7 +183,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability, KernelToken token, DefaultCursors cursors, AutoIndexing autoIndexing,
+            StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier )
     {
         this.statementOperations = statementOperations;
@@ -214,7 +215,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         allStoreHolder,
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
                         storageStatement,
-                        this, token, cursors, autoIndexing );
+                        this, new KernelToken( storeLayer, this ), cursors, autoIndexing );
     }
 
     /**
@@ -737,6 +738,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public TokenWrite tokenWrite()
+    {
+        currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+        accessCapability.assertCanWrite();
+
+        return operations.token();
+    }
+
+    @Override
+    public Token token()
     {
         currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         accessCapability.assertCanWrite();
