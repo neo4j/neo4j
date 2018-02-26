@@ -19,78 +19,117 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.CancelListener;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
-final class ScheduledTask implements Runnable, JobScheduler.CancelListener
+final class ScheduledTask implements JobHandle
 {
-    private final BinaryLatch handleRelease;
-    private final JobScheduler scheduler;
+    static final int STATE_RUNNABLE = 0;
+    static final int STATE_SUBMITTED = 1;
+    static final int STATE_FAILED = 2;
+
+    // Accessed and modified by the TimeBasedTaskScheduler:
+    volatile ScheduledTask next;
+    long nextDeadlineNanos;
+
     private final JobScheduler.Group group;
+    private final long reschedulingDelayNanos;
+    private final AtomicInteger state;
+    private final CopyOnWriteArrayList<CancelListener> cancelListeners;
+    private final BinaryLatch handleRelease;
     private final Runnable task;
-    private volatile JobScheduler.JobHandle latestHandle;
+    private volatile JobHandle latestHandle;
     private volatile Throwable lastException;
 
-    ScheduledTask( JobScheduler scheduler, JobScheduler.Group group, Runnable task )
+    ScheduledTask( JobScheduler.Group group, Runnable task, long nextDeadlineNanos, long reschedulingDelayNanos )
     {
-        handleRelease = new BinaryLatch();
-        this.scheduler = scheduler;
         this.group = group;
+        this.nextDeadlineNanos = nextDeadlineNanos;
+        this.reschedulingDelayNanos = reschedulingDelayNanos;
+        state = new AtomicInteger();
+        handleRelease = new BinaryLatch();
+        cancelListeners = new CopyOnWriteArrayList<>();
         this.task = () ->
         {
             try
             {
                 task.run();
+                // Use compareAndSet to avoid overriding any cancellation state.
+                compareAndSetState( STATE_SUBMITTED, STATE_RUNNABLE );
             }
             catch ( Throwable e )
             {
                 lastException = e;
+                state.set( STATE_FAILED );
             }
         };
     }
 
-    @Override
-    public void run()
+    boolean compareAndSetState( int expect, int update )
     {
-        checkPreviousRunFailure();
-        latestHandle = scheduler.schedule( group, task );
+        return state.compareAndSet( expect, update );
+    }
+
+    int getState()
+    {
+        return state.get();
+    }
+
+    long getReschedulingDelayNanos()
+    {
+        return reschedulingDelayNanos;
+    }
+
+    void submitTo( ThreadPoolManager pools )
+    {
+        latestHandle = pools.submit( group, task );
         handleRelease.release();
     }
 
-    private void checkPreviousRunFailure()
-    {
-        Throwable e = lastException;
-        if ( e != null )
-        {
-            if ( e instanceof Error )
-            {
-                throw (Error) e;
-            }
-            if ( e instanceof RuntimeException )
-            {
-                throw (RuntimeException) e;
-            }
-            throw new RuntimeException( e );
-        }
-    }
-
     @Override
-    public void cancelled( boolean mayInterruptIfRunning )
+    public void cancel( boolean mayInterruptIfRunning )
     {
-        JobScheduler.JobHandle handle = this.latestHandle;
+        state.set( STATE_FAILED );
+        JobHandle handle = latestHandle;
         if ( handle != null )
         {
             handle.cancel( mayInterruptIfRunning );
         }
+        for ( CancelListener cancelListener : cancelListeners )
+        {
+            cancelListener.cancelled( mayInterruptIfRunning );
+        }
     }
 
+    @Override
     public void waitTermination() throws ExecutionException, InterruptedException
     {
-
         handleRelease.await();
-
         latestHandle.waitTermination();
+        if ( state.get() == STATE_FAILED )
+        {
+            Throwable exception = this.lastException;
+            if ( exception != null )
+            {
+                throw new ExecutionException( exception );
+            }
+            else
+            {
+                throw new CancellationException();
+            }
+        }
+    }
+
+    @Override
+    public void registerCancelListener( CancelListener listener )
+    {
+        cancelListeners.add( listener );
     }
 }

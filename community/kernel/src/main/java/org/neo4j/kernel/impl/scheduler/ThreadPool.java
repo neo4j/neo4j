@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -29,19 +27,20 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 final class ThreadPool
 {
     private final GroupedDaemonThreadFactory threadFactory;
     private final ExecutorService executor;
-    private final Set<JobScheduler.JobHandle> jobs;
+    private final ConcurrentHashMap<Object,Future<?>> registry;
     private InterruptedException shutdownInterrupted;
 
     ThreadPool( JobScheduler.Group group, ThreadGroup parentThreadGroup )
     {
         threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
         executor = Executors.newCachedThreadPool( threadFactory );
-        jobs = Collections.synchronizedSet( new HashSet<>() );
+        registry = new ConcurrentHashMap<>();
     }
 
     public ThreadFactory getThreadFactory()
@@ -49,17 +48,30 @@ final class ThreadPool
         return threadFactory;
     }
 
-    public JobScheduler.JobHandle submit( Runnable job )
+    public JobHandle submit( Runnable job )
     {
-        Future<?> future = executor.submit( job );
-        return new RegisteredPooledJobHandle( future, jobs );
+        Object registryKey = new Object();
+        Runnable registeredJob = () ->
+        {
+            try
+            {
+                job.run();
+            }
+            finally
+            {
+                registry.remove( registryKey );
+            }
+        };
+        Future<?> future = executor.submit( registeredJob );
+        registry.put( registryKey, future );
+        return new PooledJobHandle( future, registryKey, registry );
     }
 
     void cancelAllJobs()
     {
-        jobs.removeIf( handle ->
+        registry.values().removeIf( future ->
         {
-            handle.cancel( true );
+            future.cancel( true );
             return true;
         } );
     }

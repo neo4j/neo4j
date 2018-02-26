@@ -20,20 +20,25 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.scheduler.JobScheduler;
 
-class PooledJobHandle implements JobScheduler.JobHandle
+final class PooledJobHandle implements JobScheduler.JobHandle
 {
     private final Future<?> job;
+    private final Object registryKey;
+    private final ConcurrentHashMap<Object,Future<?>> registry;
     private final List<JobScheduler.CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
-    PooledJobHandle( Future<?> job )
+    PooledJobHandle( Future<?> job, Object registryKey, ConcurrentHashMap<Object,Future<?>> registry )
     {
         this.job = job;
+        this.registryKey = registryKey;
+        this.registry = registry;
     }
 
     @Override
@@ -44,6 +49,7 @@ class PooledJobHandle implements JobScheduler.JobHandle
         {
             cancelListener.cancelled( mayInterruptIfRunning );
         }
+        registry.remove( registryKey );
     }
 
     @Override

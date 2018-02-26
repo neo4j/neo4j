@@ -279,6 +279,32 @@ public class CentralJobSchedulerTest
         assertThat( triggerCounter.get(), is( 1 ) );
     }
 
+    @Test( timeout = 10_000 )
+    public void shutDownMustKillCancelledJobs()
+    {
+        CentralJobScheduler scheduler = new CentralJobScheduler();
+        scheduler.init();
+
+        BinaryLatch startLatch = new BinaryLatch();
+        BinaryLatch stopLatch = new BinaryLatch();
+        scheduler.schedule( indexPopulation, () ->
+        {
+            try
+            {
+                startLatch.release();
+                Thread.sleep( 100_000 );
+            }
+            catch ( InterruptedException e )
+            {
+                stopLatch.release();
+                throw new RuntimeException( e );
+            }
+        } );
+        startLatch.await();
+        scheduler.shutdown();
+        stopLatch.await();
+    }
+
     private void awaitFirstInvocation() throws InterruptedException
     {
         awaitInvocationCount( 1 );
