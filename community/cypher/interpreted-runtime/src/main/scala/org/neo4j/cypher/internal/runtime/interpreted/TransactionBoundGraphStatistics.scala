@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 object TransactionBoundGraphStatistics {
   def apply(read: Read, ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, ops))
 
-  //TODD remove ReadOperations when schema ops are ported
+  //TODO remove ReadOperations when schema ops are ported
   private class BaseTransactionBoundGraphStatistics(read: Read, operations: ReadOperations) extends GraphStatistics with IndexDescriptorCompatibility {
 
     def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
