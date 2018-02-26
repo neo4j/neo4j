@@ -226,7 +226,7 @@ public class BuiltInProcedures
             throws ProcedureException
     {
         try ( Statement ignore = tx.acquireStatement();
-              NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor())
+              NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor() )
         {
             tx.indexRead().nodeExplicitIndexLookup( cursor, explicitIndexName, key, Values.of( value ) );
 
