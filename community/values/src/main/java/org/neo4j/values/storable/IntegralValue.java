@@ -140,4 +140,16 @@ public abstract class IntegralValue extends NumberValue
     {
         return ValueMath.multiply( longValue(), b );
     }
+
+    @Override
+    public LongValue dividedBy( long b )
+    {
+        return Values.longValue( longValue() / b );
+    }
+
+    @Override
+    public DoubleValue dividedBy( double b )
+    {
+        return Values.doubleValue( doubleValue() / b );
+    }
 }
