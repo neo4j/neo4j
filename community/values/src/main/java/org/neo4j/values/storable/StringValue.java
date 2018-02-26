@@ -19,15 +19,17 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.stringArray;
-import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 public abstract class StringValue extends TextValue
 {
@@ -81,8 +83,32 @@ public abstract class StringValue extends TextValue
         {
             return EMPTY_SPLIT;
         }
-        String[] split = asString.split( separator );
-        return fromArray( stringArray( split ) );
+
+        List<AnyValue> split = splitNonRegex( asString, separator );
+        return VirtualValues.fromList( split );
+    }
+
+    static List<AnyValue> splitNonRegex( String input, String delim )
+    {
+        List<AnyValue> l = new ArrayList<>();
+        int offset = 0;
+
+        while (true)
+        {
+            int index = input.indexOf( delim, offset );
+            if ( index == -1 )
+            {
+                String substring = input.substring( offset );
+                l.add( Values.stringValue( substring ) );
+                return l;
+            }
+            else
+            {
+                String substring = input.substring( offset, index );
+                l.add( Values.stringValue( substring ) );
+                offset = index + delim.length();
+            }
+        }
     }
 
     @Override

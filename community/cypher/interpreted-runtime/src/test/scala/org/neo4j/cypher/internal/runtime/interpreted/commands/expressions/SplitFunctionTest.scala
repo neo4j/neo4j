@@ -51,6 +51,10 @@ class SplitFunctionTest extends CypherFunSuite {
     split(",", ",") should be(seq("",""))
   }
 
+  test("splitting with character that has a meaning in regex") {
+    split("a|b", "|") should be(seq("a","b"))
+  }
+
   test("using an empty separator should split on every character") {
     split("banana", "") should be(seq("b", "a", "n", "a", "n", "a"))
     split("a", "") should be(seq("a"))
