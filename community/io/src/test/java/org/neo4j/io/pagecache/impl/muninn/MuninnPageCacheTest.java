@@ -42,7 +42,6 @@ import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -614,7 +613,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         PageList pages = pageCache.pages;
         for ( int pageId = 0; pageId < pages.getPageCount(); pageId++ )
         {
-            pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+            long pageReference = pages.deref( pageId );
+            while ( pages.isLoaded( pageReference ) )
+            {
+                pages.tryEvict( pageReference, EvictionRunEvent.NULL );
+            }
         }
         for ( int pageId = 0; pageId < pages.getPageCount(); pageId++ )
         {
