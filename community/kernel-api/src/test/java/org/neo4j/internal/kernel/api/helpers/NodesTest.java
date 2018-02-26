@@ -94,15 +94,12 @@ public class NodesTest
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
                 group( 1 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 5 ),
-                group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 ),
-                group( 1 ).withOutCount( 2 ).withInCount( 1 ).withLoopCount( 2 ),
-                group( 2 ).withOutCount( 3 ).withInCount( 1 ).withLoopCount( 1 ),
-                group( 1 ).withOutCount( 5 ).withInCount( 1 ).withLoopCount( 1 )
+                group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 )
         );
 
         // Then
-        assertThat( countOutgoing( new StubNodeCursor(), groupCursor, 1 ), equalTo( 16 ) );
-        assertThat( countOutgoing( new StubNodeCursor(), groupCursor, 2 ), equalTo( 8 ) );
+        assertThat( countOutgoing( new StubNodeCursor(), groupCursor, 1 ), equalTo( 6 ) );
+        assertThat( countOutgoing( new StubNodeCursor(), groupCursor, 2 ), equalTo( 4 ) );
     }
 
     @Test
@@ -111,15 +108,12 @@ public class NodesTest
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
                 group( 1 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 5 ),
-                group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 ),
-                group( 1 ).withOutCount( 2 ).withInCount( 1 ).withLoopCount( 2 ),
-                group( 2 ).withOutCount( 3 ).withInCount( 1 ).withLoopCount( 1 ),
-                group( 1 ).withOutCount( 5 ).withInCount( 1 ).withLoopCount( 1 )
+                group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 )
         );
 
         // Then
-        assertThat( countIncoming( new StubNodeCursor(), groupCursor, 1 ), equalTo( 11 ) );
-        assertThat( countIncoming( new StubNodeCursor(), groupCursor, 2 ), equalTo( 6 ) );
+        assertThat( countIncoming( new StubNodeCursor(), groupCursor, 1 ), equalTo( 6 ) );
+        assertThat( countIncoming( new StubNodeCursor(), groupCursor, 2 ), equalTo( 4 ) );
     }
 
     @Test
@@ -128,15 +122,12 @@ public class NodesTest
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
                 group( 1 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 5 ),
-                group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 ),
-                group( 1 ).withOutCount( 2 ).withInCount( 1 ).withLoopCount( 2 ),
-                group( 2 ).withOutCount( 3 ).withInCount( 1 ).withLoopCount( 1 ),
-                group( 1 ).withOutCount( 5 ).withInCount( 1 ).withLoopCount( 1 )
+                group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 )
         );
 
         // Then
-        assertThat( countAll( new StubNodeCursor(), groupCursor, 1 ), equalTo( 19 ) );
-        assertThat( countAll( new StubNodeCursor(), groupCursor, 2 ), equalTo( 10 ) );
+        assertThat( countAll( new StubNodeCursor(), groupCursor, 1 ), equalTo( 7 ) );
+        assertThat( countAll( new StubNodeCursor(), groupCursor, 2 ), equalTo( 5 ) );
     }
 
     private StubGroupCursor.GroupData group()

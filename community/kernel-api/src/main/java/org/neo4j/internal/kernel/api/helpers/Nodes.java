@@ -103,15 +103,14 @@ public final class Nodes
     public static int countOutgoing( NodeCursor nodeCursor, RelationshipGroupCursor group, int type )
     {
         nodeCursor.relationships( group );
-        int count = 0;
         while ( group.next() )
         {
             if ( group.type() == type )
             {
-                count += group.outgoingCount() + group.loopCount();
+                return group.outgoingCount() + group.loopCount();
             }
         }
-        return count;
+        return 0;
     }
 
     /**
