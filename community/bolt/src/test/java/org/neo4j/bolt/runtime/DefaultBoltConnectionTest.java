@@ -260,11 +260,6 @@ public class DefaultBoltConnectionTest
 
         verify( stateMachine ).terminate();
         verify( stateMachine ).close();
-
-        connection.processNextBatch();
-
-        verify( stateMachine ).terminate();
-        verify( stateMachine ).close();
     }
 
     @Test

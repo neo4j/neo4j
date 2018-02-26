@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -30,6 +31,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.function.Predicates;
@@ -37,17 +39,20 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLog;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -56,20 +61,20 @@ import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
 
 public class ExecutorBoltSchedulerTest
 {
+    private static final String CONNECTOR_KEY = "connector-id";
+
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final LogService logService = new SimpleLogService( logProvider );
     private final Config config = Config.defaults();
-    private final ExecutorFactory executorFactory = mock( ExecutorFactory.class );
+    private final ExecutorFactory executorFactory = new CachedThreadPoolExecutorFactory( NullLog.getInstance() );
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
-            new ExecutorBoltScheduler( executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool() );
+            new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool() );
 
     @Before
     public void setup()
     {
         when( jobScheduler.threadFactory( any() ) ).thenReturn( Executors.defaultThreadFactory() );
-        when( executorFactory.create( anyInt(), anyInt(), any( Duration.class ), anyInt(), any( ThreadFactory.class ) ) ).thenReturn(
-                Executors.newCachedThreadPool() );
     }
 
     @After
@@ -187,17 +192,15 @@ public class ExecutorBoltSchedulerTest
     {
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
-        AtomicInteger counter = new AtomicInteger( 0 );
-        doAnswer( inv -> counter.incrementAndGet() > 0 ).when( connection ).processNextBatch();
+        when( connection.processNextBatch() ).thenReturn( true );
         when( connection.hasPendingJobs() ).thenReturn( true ).thenReturn( false );
 
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 
-        Predicates.await( () -> counter.get() > 1, 1, MINUTES );
+        Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
 
-        assertFalse( boltScheduler.isActive( connection ) );
         verify( connection, times( 2 ) ).processNextBatch();
     }
 
@@ -227,10 +230,64 @@ public class ExecutorBoltSchedulerTest
         assertEquals( 1,processNextBatchCount.get() );
     }
 
+    @Test
+    public void createdWorkerThreadsShouldContainConnectorName() throws Exception
+    {
+        final AtomicReference<Thread> poolThread = new AtomicReference<>();
+        final AtomicReference<String> poolThreadName = new AtomicReference<>();
+
+        AtomicInteger processNextBatchCount = new AtomicInteger();
+        String id = UUID.randomUUID().toString();
+        BoltConnection connection = newConnection( id );
+        when( connection.processNextBatch() ).thenAnswer( inv ->
+        {
+            poolThread.set( Thread.currentThread() );
+            poolThreadName.set( Thread.currentThread().getName() );
+            return true;
+        } );
+
+        boltScheduler.start();
+        boltScheduler.created( connection );
+        boltScheduler.enqueued( connection, machine -> nothing() );
+
+        Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
+
+        assertThat( poolThread.get().getName(), not( equalTo( poolThreadName.get() ) ) );
+        assertThat( poolThread.get().getName(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
+        assertThat( poolThread.get().getName(), not( containsString( String.format( "[%s]", connection.remoteAddress() ) ) ) );
+    }
+
+    @Test
+    public void createdWorkerThreadsShouldContainConnectorNameAndRemoteAddressInTheirNamesWhenActive() throws Exception
+    {
+        final AtomicReference<String> capturedThreadName = new AtomicReference<>();
+
+        AtomicInteger processNextBatchCount = new AtomicInteger();
+        String id = UUID.randomUUID().toString();
+        BoltConnection connection = newConnection( id );
+        AtomicBoolean exitCondition = new AtomicBoolean();
+        when( connection.processNextBatch() ).thenAnswer( inv ->
+        {
+            processNextBatchCount.incrementAndGet();
+            capturedThreadName.set( Thread.currentThread().getName() );
+            return awaitExit( exitCondition );
+        } );
+
+        boltScheduler.start();
+        boltScheduler.created( connection );
+        boltScheduler.enqueued( connection, machine -> nothing() );
+
+        Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
+
+        assertThat( capturedThreadName.get(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
+        assertThat( capturedThreadName.get(), containsString( String.format( "[%s]", connection.remoteAddress() ) ) );
+    }
+
     private BoltConnection newConnection( String id )
     {
         BoltConnection result = mock( BoltConnection.class );
         when( result.id() ).thenReturn( id );
+        when( result.remoteAddress() ).thenReturn( new InetSocketAddress( "localhost", 32_000 ) );
         return result;
     }
 

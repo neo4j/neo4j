@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.time.Duration;
@@ -28,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -36,6 +36,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
 {
+    private final String connector;
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
     private final Log log;
@@ -49,9 +50,11 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
 
     private ExecutorService threadPool;
 
-    public ExecutorBoltScheduler( ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService, int corePoolSize, int maxPoolSize,
+    public ExecutorBoltScheduler( String connector, ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService, int corePoolSize,
+            int maxPoolSize,
             Duration keepAlive, int queueSize, ExecutorService forkJoinPool )
     {
+        this.connector = connector;
         this.executorFactory = executorFactory;
         this.scheduler = scheduler;
         this.log = logService.getInternalLog( getClass() );
@@ -74,7 +77,8 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
 
     public void start()
     {
-        threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, scheduler.threadFactory( JobScheduler.Groups.boltWorker ) );
+        threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize,
+                new NameAppendingThreadFactory( connector, scheduler.threadFactory( JobScheduler.Groups.boltWorker ) ) );
     }
 
     public void stop()
@@ -124,12 +128,29 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         try
         {
             activeWorkItems.computeIfAbsent( connection.id(),
-                    key -> CompletableFuture.supplyAsync( connection::processNextBatch, threadPool ).whenCompleteAsync(
+                    key -> CompletableFuture.supplyAsync( () -> executeBatch( connection ), threadPool ).whenCompleteAsync(
                             ( result, error ) -> handleCompletion( connection, result, error ), forkJoinPool ) );
         }
         catch ( RejectedExecutionException ex )
         {
             connection.handleSchedulingError( ex );
+        }
+    }
+
+    private boolean executeBatch( BoltConnection connection )
+    {
+        Thread currentThread = Thread.currentThread();
+        String originalName = currentThread.getName();
+        String newName = String.format( "%s [%s] ", originalName, connection.remoteAddress(), connector );
+
+        currentThread.setName( newName );
+        try
+        {
+            return connection.processNextBatch();
+        }
+        finally
+        {
+            currentThread.setName( originalName );
         }
     }
 
@@ -158,4 +179,23 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         }
     }
 
+    private static class NameAppendingThreadFactory implements ThreadFactory
+    {
+        private final String nameToAppend;
+        private final ThreadFactory factory;
+
+        public NameAppendingThreadFactory( String nameToAppend, ThreadFactory factory )
+        {
+            this.nameToAppend = nameToAppend;
+            this.factory = factory;
+        }
+
+        @Override
+        public Thread newThread( Runnable r )
+        {
+            Thread newThread = factory.newThread( r );
+            newThread.setName( String.format( "%s [%s]", newThread.getName(), nameToAppend ) );
+            return newThread;
+        }
+    }
 }
