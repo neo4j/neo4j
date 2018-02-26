@@ -26,9 +26,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
@@ -38,80 +40,78 @@ public abstract class TokenAccess<R>
     public static final TokenAccess<RelationshipType> RELATIONSHIP_TYPES = new TokenAccess<RelationshipType>()
     {
         @Override
-        Iterator<Token> tokens( ReadOperations read )
+        Iterator<NamedToken> tokens( TokenRead read )
         {
             return read.relationshipTypesGetAllTokens();
         }
 
         @Override
-        RelationshipType token( Token token )
+        RelationshipType token( NamedToken token )
         {
-            if ( token instanceof RelationshipType )
-            {
-                return (RelationshipType) token;
-            }
             return RelationshipType.withName( token.name() );
         }
 
         @Override
-        boolean inUse( ReadOperations read, int tokenId )
+        boolean inUse( KernelTransaction transaction, int tokenId )
         {
-            return hasAny( read.constraintsGetForRelationshipType( tokenId ) ) ||   // used by constraint
-                   read.countsForRelationship( ANY_LABEL, tokenId, ANY_LABEL ) > 0; // used by data
+            return hasAny( transaction.schemaRead().constraintsGetForRelationshipType( tokenId ) ) ||   // used by constraint
+                   transaction.dataRead().countsForRelationship( ANY_LABEL, tokenId, ANY_LABEL ) > 0; // used by data
         }
     };
     public static final TokenAccess<Label> LABELS = new TokenAccess<Label>()
     {
         @Override
-        Iterator<Token> tokens( ReadOperations read )
+        Iterator<NamedToken> tokens( TokenRead read )
         {
             return read.labelsGetAllTokens();
         }
 
         @Override
-        Label token( Token token )
+        Label token( NamedToken token )
         {
             return label( token.name() );
         }
 
         @Override
-        boolean inUse( ReadOperations read, int tokenId )
+        boolean inUse( KernelTransaction transaction, int tokenId )
         {
-            return hasAny( read.indexesGetForLabel( tokenId ) ) ||     // used by index
-                   hasAny( read.constraintsGetForLabel( tokenId ) ) || // used by constraint
-                   read.countsForNode( tokenId ) > 0;                  // used by data
+
+            SchemaRead schemaRead = transaction.schemaRead();
+            return hasAny( schemaRead.indexesGetForLabel( tokenId ) ) ||     // used by index
+                   hasAny( schemaRead.constraintsGetForLabel( tokenId ) ) || // used by constraint
+                   transaction.dataRead().countsForNode( tokenId ) > 0;                  // used by data
         }
     };
 
     public static final TokenAccess<String> PROPERTY_KEYS = new TokenAccess<String>()
     {
         @Override
-        Iterator<Token> tokens( ReadOperations read )
+        Iterator<NamedToken> tokens( TokenRead read )
         {
             return read.propertyKeyGetAllTokens();
         }
 
         @Override
-        String token( Token token )
+        String token( NamedToken token )
         {
             return token.name();
         }
 
         @Override
-        boolean inUse( ReadOperations read, int tokenId )
+        boolean inUse( KernelTransaction transaction, int tokenId )
         {
             return true; // TODO: add support for telling if a property key is in use or not
         }
     };
 
-    public final ResourceIterator<R> inUse( Statement statement )
+    public final ResourceIterator<R> inUse( KernelTransaction transaction )
     {
-        return TokenIterator.inUse( statement, this );
+        return TokenIterator.inUse( transaction, this );
     }
 
-    public final ResourceIterator<R> all( Statement statement )
+    public final ResourceIterator<R> all( KernelTransaction transaction )
     {
-        return TokenIterator.all( statement, this );
+        return TokenIterator.all( transaction, this );
     }
 
     private static boolean hasAny( Iterator<?> iter )
@@ -131,13 +131,13 @@ public abstract class TokenAccess<R>
     {
         private Statement statement;
         protected final TokenAccess<T> access;
-        protected final Iterator<Token> tokens;
+        protected final Iterator<NamedToken> tokens;
 
-        private TokenIterator( Statement statement, TokenAccess<T> access )
+        private TokenIterator( KernelTransaction transaction, TokenAccess<T> access )
         {
-            this.statement = statement;
             this.access = access;
-            this.tokens = access.tokens( statement.readOperations() );
+            this.statement = transaction.acquireStatement();
+            this.tokens = access.tokens( transaction.tokenRead() );
         }
 
         @Override
@@ -150,17 +150,17 @@ public abstract class TokenAccess<R>
             }
         }
 
-        static <T> ResourceIterator<T> inUse( Statement statement, TokenAccess<T> access )
+        static <T> ResourceIterator<T> inUse( KernelTransaction transaction, TokenAccess<T> access )
         {
-            return new TokenIterator<T>( statement, access )
+            return new TokenIterator<T>( transaction, access )
             {
                 @Override
                 protected T fetchNextOrNull()
                 {
                     while ( tokens.hasNext() )
                     {
-                        Token token = tokens.next();
-                        if ( this.access.inUse( statement.readOperations(), token.id() ) )
+                        NamedToken token = tokens.next();
+                        if ( this.access.inUse( transaction, token.id() ) )
                         {
                             return this.access.token( token );
                         }
@@ -171,9 +171,9 @@ public abstract class TokenAccess<R>
             };
         }
 
-        static <T> ResourceIterator<T> all( Statement statement, TokenAccess<T> access )
+        static <T> ResourceIterator<T> all( KernelTransaction transaction, TokenAccess<T> access )
         {
-            return new TokenIterator<T>( statement, access )
+            return new TokenIterator<T>( transaction, access )
             {
                 @Override
                 protected T fetchNextOrNull()
@@ -192,9 +192,9 @@ public abstract class TokenAccess<R>
         }
     }
 
-    abstract Iterator<Token> tokens( ReadOperations read );
+    abstract Iterator<NamedToken> tokens( TokenRead tokenRead );
 
-    abstract R token( Token token );
+    abstract R token( NamedToken token );
 
-    abstract boolean inUse( ReadOperations read, int tokenId );
+    abstract boolean inUse( KernelTransaction transaction, int tokenId );
 }
