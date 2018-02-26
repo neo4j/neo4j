@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.api.security;
 
-import org.neo4j.internal.kernel.api.Token;
+import java.util.function.Function;
+
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -67,7 +68,7 @@ public class AnonymousContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Token token )
+    public SecurityContext authorize( Function<String, Integer> tokenLookup )
     {
         return new SecurityContext( subject(), accessMode );
     }

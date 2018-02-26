@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -67,7 +66,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         return neoShiroSubject;
     }
 
-    private StandardAccessMode mode( Token token )
+    private StandardAccessMode mode( Function<String, Integer> tokenLookup )
     {
         boolean isAuthenticated = shiroSubject.isAuthenticated();
         return new StandardAccessMode(
@@ -77,14 +76,14 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 isAuthenticated && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
                 shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
                 queryForRoleNames(),
-                queryForPropertyPermissions( token )
+                queryForPropertyPermissions( tokenLookup )
             );
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Token token )
+    public EnterpriseSecurityContext authorize( Function<String, Integer> tokenLookup )
     {
-        StandardAccessMode mode = mode( token );
+        StandardAccessMode mode = mode( tokenLookup );
         return new EnterpriseSecurityContext( neoShiroSubject, mode, mode.roles, isAdmin() );
     }
 
@@ -107,9 +106,9 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 .collect( Collectors.toSet() );
     }
 
-    private IntPredicate queryForPropertyPermissions( Token token )
+    private IntPredicate queryForPropertyPermissions( Function<String, Integer> tokenLookup )
     {
-        return authManager.getPropertyPermissions( roles(), token );
+        return authManager.getPropertyPermissions( roles(), tokenLookup );
     }
 
     private static class StandardAccessMode implements AccessMode

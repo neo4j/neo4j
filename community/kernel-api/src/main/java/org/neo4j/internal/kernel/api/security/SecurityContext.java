@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import org.neo4j.internal.kernel.api.Token;
+import java.util.function.Function;
 
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
@@ -62,7 +62,7 @@ public class SecurityContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Token token )
+    public SecurityContext authorize( Function<String, Integer> tokenLookup )
     {
         return this;
     }

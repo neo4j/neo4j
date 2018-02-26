@@ -24,10 +24,10 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -41,7 +41,6 @@ import org.neo4j.test.DoubleLatch;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -115,7 +114,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         return new EnterpriseLoginContext()
         {
             @Override
-            public EnterpriseSecurityContext authorize( Token token )
+            public EnterpriseSecurityContext authorize( Function<String, Integer> tokenLookup )
             {
                 return new EnterpriseSecurityContext( subject(), inner.mode(), Collections.emptySet(), false );
             }
@@ -126,7 +125,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
                 return Collections.emptySet();
             }
 
-            SecurityContext inner = AnonymousContext.none().authorize( mock( Token.class ) );
+            SecurityContext inner = AnonymousContext.none().authorize( (s) -> -1  );
 
             @Override
             public AuthSubject subject()

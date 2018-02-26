@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import org.neo4j.internal.kernel.api.Token;
+import java.util.function.Function;
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
- * By calling {@link #authorize(Token)} the user is also authorized, and a full SecurityContext is returned,
+ * By calling {@link #authorize(Function<String,Integer>)} the user is also authorized, and a full SecurityContext is returned,
  * which can be used to assert user permissions during query execution.
  */
 public interface LoginContext
@@ -36,10 +36,10 @@ public interface LoginContext
     /**
      * Authorize the user and return a SecurityContext.
      *
-     * @param token token lookup, used to compile property level security verification
+     * @param tokenLookup token lookup, used to compile property level security verification
      * @return the security context
      */
-    SecurityContext authorize( Token token );
+    SecurityContext authorize( Function<String, Integer> tokenLookup );
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
@@ -50,7 +50,7 @@ public interface LoginContext
         }
 
         @Override
-        public SecurityContext authorize( Token token )
+        public SecurityContext authorize( Function<String, Integer> tokenLookup )
         {
             return SecurityContext.AUTH_DISABLED;
         }

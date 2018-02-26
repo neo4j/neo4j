@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.internal.kernel.api.Token;
+import java.util.function.Function;
+
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -107,7 +108,7 @@ public class BasicLoginContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Token token )
+    public SecurityContext authorize( Function<String, Integer> tokenLookup )
     {
         return new SecurityContext( authSubject, accessMode );
     }
