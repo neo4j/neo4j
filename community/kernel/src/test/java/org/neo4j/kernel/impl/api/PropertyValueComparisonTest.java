@@ -69,9 +69,15 @@ public class PropertyValueComparisonTest
             Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 0 ),
             Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 1 ),
             Values.pointValue( CoordinateReferenceSystem.WGS84, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84_3D, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 0, 0, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84_3D, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
             Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ),
             Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
             Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
 
             // NUMBER
             Double.NEGATIVE_INFINITY,

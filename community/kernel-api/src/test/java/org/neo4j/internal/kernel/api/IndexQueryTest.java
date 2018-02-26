@@ -258,6 +258,11 @@ public class IndexQueryTest
     private PointValue gps6 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 58.7 );
     private PointValue gps7 = Values.pointValue( CoordinateReferenceSystem.WGS84, 15.6, 59.7 );
     private PointValue car1 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 );
+    private PointValue car2 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2, 2 );
+    private PointValue car3 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2, 3 );
+    private PointValue car4 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 3, 4 );
+    private PointValue gps1_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.8, 100.0 );
+    private PointValue gps2_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.8, 56.9, 200.0 );
 
     //TODO: Also insert points which can't be compared e.g. Cartesian and (-100, 100)
 
@@ -280,6 +285,9 @@ public class IndexQueryTest
         assertFalse( test( p, gps6 ) );
         assertFalse( test( p, gps7 ) );
         assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
     }
 
     @Test
@@ -292,6 +300,9 @@ public class IndexQueryTest
         assertTrue( test( p, gps5 ) );
         assertFalse( test( p, gps6 ) );
         assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
     }
 
     @Test
@@ -304,6 +315,9 @@ public class IndexQueryTest
         assertTrue( test( p, gps3 ) );
         assertFalse( test( p, gps5 ) );
         assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
     }
 
     @Test
@@ -316,6 +330,9 @@ public class IndexQueryTest
         assertTrue( test( p, gps4 ) );
         assertFalse( test( p, gps5 ) );
         assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
     }
 
     @Test
@@ -327,6 +344,9 @@ public class IndexQueryTest
         assertTrue( test( p, gps3 ) );
         assertTrue( test( p, gps7 ) );
         assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
     }
 
     @Test
@@ -338,6 +358,57 @@ public class IndexQueryTest
         assertTrue( test( p, gps3 ) );
         assertFalse( test( p, gps5 ) );
         assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
+    @Test
+    public void testGeometryRange_Cartesian()
+    {
+        GeometryRangePredicate p = IndexQuery.range( propId, car1, false, car2, true );
+
+        assertFalse( test( p, gps1 ) );
+        assertFalse( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertTrue( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, car4 ) );
+        assertFalse( test( p, gps1_3d ) );
+        assertFalse( test( p, gps2_3d ) );
+    }
+
+    @Test
+    public void testGeometryRange_Cartesian3D()
+    {
+        GeometryRangePredicate p = IndexQuery.range( propId, car3, true, car4, true );
+
+        assertFalse( test( p, gps1 ) );
+        assertFalse( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertTrue( test( p, car3 ) );
+        assertTrue( test( p, car4 ) );
+        assertFalse( test( p, gps1_3d ) );
+        assertFalse( test( p, gps2_3d ) );
+    }
+
+    @Test
+    public void testGeometryRange_WGS84_3D()
+    {
+        GeometryRangePredicate p = IndexQuery.range( propId, gps1_3d, true, gps2_3d, true );
+
+        assertFalse( test( p, gps1 ) );
+        assertFalse( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, car4 ) );
+        assertTrue( test( p, gps1_3d ) );
+        assertTrue( test( p, gps2_3d ) );
     }
 
     // STRING PREFIX
