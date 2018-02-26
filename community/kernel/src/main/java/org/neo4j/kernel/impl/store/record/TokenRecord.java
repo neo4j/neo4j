@@ -83,8 +83,8 @@ public abstract class TokenRecord extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        StringBuilder buf = new StringBuilder( simpleName() + "[" );
-        buf.append( getId() ).append( "," ).append( inUse() ? "in" : "no" ).append( " use" );
+        StringBuilder buf = new StringBuilder( simpleName() + '[' );
+        buf.append( getId() ).append( ',' ).append( inUse() ? "in" : "no" ).append( " use" );
         buf.append( ",nameId=" ).append( nameId );
         additionalToString( buf );
         if ( !isLight() )

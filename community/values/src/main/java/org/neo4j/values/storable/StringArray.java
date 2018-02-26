@@ -92,12 +92,6 @@ public class StringArray extends TextArray
     }
 
     @Override
-    public int compareTo( TextArray other )
-    {
-        return TextValues.compareTextArrays( this, other );
-    }
-
-    @Override
     public String prettyPrint()
     {
         return Arrays.toString( value );

@@ -21,6 +21,10 @@ package org.neo4j.helpers;
 
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FormatTest
@@ -121,5 +125,13 @@ public class FormatTest
         // then
         assertTrue( format.startsWith( "4" ) );
         assertTrue( format.endsWith( "T" ) );
+    }
+
+    @Test
+    public void displayDuration()
+    {
+        assertThat( Format.duration( MINUTES.toMillis( 1 ) + SECONDS.toMillis( 2 ) ), is( "1m 2s" ) );
+        assertThat( Format.duration( 42 ), is( "42ms" ) );
+        assertThat( Format.duration( 0 ), is( "0ms" ) );
     }
 }

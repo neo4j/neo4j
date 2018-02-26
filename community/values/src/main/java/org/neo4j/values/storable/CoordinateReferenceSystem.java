@@ -68,6 +68,22 @@ public class CoordinateReferenceSystem implements CRS
         }
     }
 
+    public static CoordinateReferenceSystem get( int code )
+    {
+        if ( WGS84.code == code )
+        {
+            return WGS84;
+        }
+        else if ( Cartesian.code == code )
+        {
+            return Cartesian;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown CRS code: " + code );
+        }
+    }
+
     private final String name;
     private final CRSTable table;
     private final int code;

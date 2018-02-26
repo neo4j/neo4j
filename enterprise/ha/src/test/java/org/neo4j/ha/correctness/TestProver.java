@@ -91,12 +91,12 @@ public class TestProver
         // When
         ClusterState firstState = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join,
                 new URI( "cluster://localhost:5002" ), new Object[]{"defaultcluster",
-                        new URI[]{new URI( "cluster://localhost:5003" )}} ).setHeader( Message.CONVERSATION_ID,
-                "-1" ).setHeader( Message.FROM, "cluster://localhost:5002" ) ) );
+                        new URI[]{new URI( "cluster://localhost:5003" )}} ).setHeader( Message.HEADER_CONVERSATION_ID,
+                "-1" ).setHeader( Message.HEADER_FROM, "cluster://localhost:5002" ) ) );
         ClusterState secondState = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join,
                 new URI( "cluster://localhost:5002" ), new Object[]{"defaultcluster",
-                        new URI[]{new URI( "cluster://localhost:5003" )}} ).setHeader( Message.CONVERSATION_ID,
-                "-1" ).setHeader( Message.FROM, "cluster://localhost:5002" ) ) );
+                        new URI[]{new URI( "cluster://localhost:5003" )}} ).setHeader( Message.HEADER_CONVERSATION_ID,
+                "-1" ).setHeader( Message.HEADER_FROM, "cluster://localhost:5002" ) ) );
 
         // Then
         assertEquals( firstState, secondState );

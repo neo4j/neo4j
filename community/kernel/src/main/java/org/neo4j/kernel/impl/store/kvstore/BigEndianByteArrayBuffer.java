@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableBuffer
 {
-    static BigEndianByteArrayBuffer buffer( int size )
+    static BigEndianByteArrayBuffer newBuffer( int size )
     {
         return new BigEndianByteArrayBuffer( size );
     }

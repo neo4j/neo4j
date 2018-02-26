@@ -200,9 +200,10 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         this.value = value;
     }
 
-    public int compareTo( DateValue other )
+    @Override
+    int unsafeCompareTo( Value otherValue )
     {
-
+        DateValue other = (DateValue) otherValue;
         return value.compareTo( other.value );
     }
 

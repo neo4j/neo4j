@@ -64,8 +64,8 @@ class ProverTimeouts extends Timeouts
         long timeout = time++;
 
         timeouts.put( key, Pair.of( new ProverTimeout( timeout, timeoutMessage
-                .setHeader( Message.TO, to.toASCIIString() )
-                .setHeader( Message.FROM, to.toASCIIString() ) ), timeout ) );
+                .setHeader( Message.HEADER_TO, to.toASCIIString() )
+                .setHeader( Message.HEADER_FROM, to.toASCIIString() ) ), timeout ) );
     }
 
     @Override

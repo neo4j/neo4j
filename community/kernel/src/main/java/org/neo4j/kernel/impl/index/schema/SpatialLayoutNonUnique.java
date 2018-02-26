@@ -29,9 +29,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 public class SpatialLayoutNonUnique extends SpatialLayout
 {
     private static final String IDENTIFIER_NAME = "NUPI";
-    public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 1;
-    public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
+    private static final long LAYOUT_IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     SpatialLayoutNonUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
@@ -41,7 +41,7 @@ public class SpatialLayoutNonUnique extends SpatialLayout
     @Override
     public long identifier()
     {
-        return IDENTIFIER;
+        return LAYOUT_IDENTIFIER;
     }
 
     @Override

@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public class DateArray extends TemporalArray<LocalDate, DateValue>
+public class DateArray extends TemporalArray<LocalDate,DateValue>
 {
     private final LocalDate[] value;
 
@@ -55,18 +55,24 @@ public class DateArray extends TemporalArray<LocalDate, DateValue>
     @Override
     public boolean equals( LocalDate[] x )
     {
-        return Arrays.equals( value, x);
+        return Arrays.equals( value, x );
     }
 
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writeTo( writer, ValueWriter.ArrayType.DATE ,value );
+        writeTo( writer, ValueWriter.ArrayType.DATE, value );
     }
 
     @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.DATE_ARRAY;
+    }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareToNonPrimitiveArray( (DateArray) otherValue );
     }
 }

@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
@@ -39,6 +40,7 @@ public class BoltV1DechunkerTest
     @Test
     public void shouldReadMessageWhenTheHeaderIsSplitAcrossChunks() throws Exception
     {
+        Neo4jPack neo4jPack = new Neo4jPackV1();
         Random random = ThreadLocalRandom.current();
         for ( int len = 1; len <= 0x8000; len = len << 1 )
         {
@@ -49,7 +51,7 @@ public class BoltV1DechunkerTest
                 content.appendCodePoint( 'a' + random.nextInt( 'z' - 'a' ) );
             }
             RunMessage run = run( content.toString() );
-            byte[] message = MessageMatchers.serialize( run );
+            byte[] message = MessageMatchers.serialize( neo4jPack, run );
             byte head1 = (byte) (message.length >> 8);
             byte head2 = (byte) (message.length & 0xFF);
             byte[] chunk2 = new byte[message.length + 3];
@@ -57,7 +59,7 @@ public class BoltV1DechunkerTest
             System.arraycopy( message, 0, chunk2, 1, message.length );
 
             BoltRequestMessageRecorder messages = new BoltRequestMessageRecorder();
-            BoltV1Dechunker dechunker = new BoltV1Dechunker( new Neo4jPackV1(), messages, () ->
+            BoltV1Dechunker dechunker = new BoltV1Dechunker( neo4jPack, messages, () ->
             {
             } );
 

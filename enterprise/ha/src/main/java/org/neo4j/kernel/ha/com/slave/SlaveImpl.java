@@ -43,7 +43,7 @@ public class SlaveImpl implements Slave
         {
             throw new RuntimeException( e );
         }
-        return Response.EMPTY;
+        return Response.empty();
     }
 
     @Override

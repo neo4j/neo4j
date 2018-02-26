@@ -110,6 +110,34 @@ object AsValueRangeSeekable {
   }
 }
 
+// WHERE distance(p.prop, otherPoint) < number
+// and the like
+object AsDistanceSeekable {
+  def unapply(v: Any): Option[PointDistanceSeekable] = v match {
+    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint)), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey))), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint)), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey), _)), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+
+
+    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint))) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)))) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint))) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)))) =>
+      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+
+    case _ =>
+      None
+  }
+}
+
 sealed trait Sargable[+T <: Expression] {
   def expr: T
   def ident: LogicalVariable
@@ -149,6 +177,19 @@ case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr
 
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
+}
+
+case class PointDistanceSeekable(ident: LogicalVariable,
+                                 propertyKeyName: PropertyKeyName,
+                                 range: PointDistanceRange[Expression])
+  extends RangeSeekable[Expression, Expression] {
+
+  override def expr: Expression = range.point
+
+  override def dependencies: Set[LogicalVariable] = range.point.dependencies ++ range.distance.dependencies
+
+  def asQueryExpression: QueryExpression[Expression] =
+    RangeQueryExpression(PointDistanceSeekRangeWrapper(range)(range.point.position))
 }
 
 case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)

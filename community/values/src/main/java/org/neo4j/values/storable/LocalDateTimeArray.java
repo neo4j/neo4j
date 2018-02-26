@@ -69,4 +69,10 @@ public class LocalDateTimeArray extends TemporalArray<LocalDateTime, LocalDateTi
     {
         return ValueGroup.LOCAL_DATE_TIME_ARRAY;
     }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareToNonPrimitiveArray( (LocalDateTimeArray) otherValue );
+    }
 }

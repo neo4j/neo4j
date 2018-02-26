@@ -488,7 +488,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         final IndexRule[] rules = getIndexesNeedingPopulation();
-        final List<IndexPopulatorWithSchema> populators = new ArrayList<>();
+        final List<IndexPopulatorWithSchema> populators = new ArrayList<>( rules.length );
 
         final LabelSchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
 

@@ -34,6 +34,6 @@ public class FailedLoadFunction extends CallableUserFunction.BasicUserFunction
     public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
     {
         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+                signature().description().orElse( "Failed to load " + signature().name() ) );
     }
 }

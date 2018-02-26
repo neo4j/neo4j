@@ -237,7 +237,7 @@
         <plugin>
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.9.5</version>
+          <version>0.10.0</version>
           <configuration>
             <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
             <analysisConfiguration>
@@ -297,6 +297,27 @@
                   <class>org.neo4j.graphalgo.WeightedPath</class>
                   <justification>Cleanup accidental Path exposure as a Resource.</justification>
                 </item>
+                <item>
+                  <code>java.class.removed</code>
+                  <old>interface org.neo4j.management.Cache</old>
+                  <classSimpleName>Cache</classSimpleName>
+                  <package>org.neo4j.management</package>
+                  <elementKind>interface</elementKind>
+                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
+                </item>
+                <item>
+                  <code>java.method.removed</code>
+                  <classSimpleName>Neo4jManager</classSimpleName>
+                  <methodName>getCacheBeans</methodName>
+                  <package>org.neo4j.management</package>
+                  <elementKind>method</elementKind>
+                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
+                </item>
+                <item>
+                  <code>java.class.removed</code>
+                  <class>org.neo4j.helpers.FailableConcurrentTransfer</class>
+                  <justification>Class is never used</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
@@ -316,12 +337,12 @@
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
-              <version>0.14.4</version>
+              <version>0.15.1</version>
             </dependency>
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-basic-features</artifactId>
-              <version>0.6.3</version>
+              <version>0.7.0</version>
             </dependency>
           </dependencies>
           <executions>
@@ -520,6 +541,29 @@
           </executions>
         </plugin>
 
+        <!-- Enforce naming if packages -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.0.0-M1</version>
+          <configuration>
+            <rules>
+              <evaluateBeanshell>
+                <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
+                <condition>String s = "${project.groupId}"; s.startsWith("org.neo4j")</condition>
+              </evaluateBeanshell>
+              <requireFilesDontExist>
+                <message>You are not allowed to have classes in "com" package</message>
+                <files>
+                  <file>${project.build.sourceDirectory}/com</file>
+                  <file>${project.build.testSourceDirectory}/com</file>
+                </files>
+              </requireFilesDontExist>
+            </rules>
+            <fail>true</fail>
+          </configuration>
+        </plugin>
+
         <!-- Plugin version management -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -712,6 +756,19 @@
             <inceptionYear>${project.inceptionYear}</inceptionYear>
           </properties>
         </configuration>
+      </plugin>
+
+      <!-- Always enforce -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>
@@ -1139,7 +1196,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.17.Final</version>
+        <version>4.1.21.Final</version>
       </dependency>
 
       <dependency>

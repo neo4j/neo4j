@@ -279,9 +279,10 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         this.value = value;
     }
 
-    public int compareTo( LocalDateTimeValue other )
+    @Override
+    int unsafeCompareTo( Value otherValue )
     {
-
+        LocalDateTimeValue other = (LocalDateTimeValue) otherValue;
         return value.compareTo( other.value );
     }
 

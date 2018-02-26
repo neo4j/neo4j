@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.toIndexedSeq.toIterator
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    val buffer = input.toIndexedSeq
+    state.query.transactionalContext.markAsStable()
+    buffer.toIterator
+  }
 }

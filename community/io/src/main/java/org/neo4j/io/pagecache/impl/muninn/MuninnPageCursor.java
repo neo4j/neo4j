@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.neo4j.io.pagecache.CursorException;
@@ -820,6 +821,51 @@ abstract class MuninnPageCursor extends PageCursor
         }
         outOfBounds = true;
         return 0;
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer buf )
+    {
+        if ( buf.getClass() == UnsafeUtil.directByteBufferClass && buf.isDirect() && !buf.isReadOnly() )
+        {
+            // We expect that the mutable direct byte buffer is implemented with a class that is distinct from the
+            // non-mutable (read-only) and non-direct (on-heap) byte buffers. By comparing class object instances,
+            // we also implicitly assume that the classes are loaded by the same class loader, which should be
+            // trivially true in almost all practical cases.
+            // If our expectations are not met, then the additional isDirect and !isReadOnly checks will send all
+            // calls to the byte-wise-copy fallback.
+            return copyToDirectByteBuffer( sourceOffset, buf );
+        }
+        return copyToByteBufferByteWise( sourceOffset, buf );
+    }
+
+    private int copyToDirectByteBuffer( int sourceOffset, ByteBuffer buf )
+    {
+        int pos = buf.position();
+        int bytesToCopy = Math.min( buf.limit() - pos, pageSize - sourceOffset );
+        long source = pointer + sourceOffset;
+        if ( sourceOffset < getCurrentPageSize() & sourceOffset >= 0 )
+        {
+            long target = UnsafeUtil.getDirectByteBufferAddress( buf );
+            UnsafeUtil.copyMemory( source, target + pos, bytesToCopy );
+            buf.position( pos + bytesToCopy );
+        }
+        else
+        {
+            outOfBounds = true;
+        }
+        return bytesToCopy;
+    }
+
+    private int copyToByteBufferByteWise( int sourceOffset, ByteBuffer buf )
+    {
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        for ( int i = 0; i < bytesToCopy; i++ )
+        {
+            byte b = getByte( sourceOffset + i );
+            buf.put( b );
+        }
+        return bytesToCopy;
     }
 
     @Override

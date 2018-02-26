@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
  * The Resource Allocation Graph manager is used for deadlock detection. It
@@ -68,9 +68,7 @@ public class RagManager
     // stopWaitOn( resource ) method must be invoked
 
     private final Map<Object,List<Object>> resourceMap = new HashMap<>();
-
-    private final ArrayMap<Object,Object> waitingTxMap =
-            new ArrayMap<>( (byte) 5, false, true );
+    private final Map<Object, Object> waitingTxMap = new HashMap<>();
 
     synchronized void lockAcquired( Object resource, Object tx )
     {
@@ -132,7 +130,7 @@ public class RagManager
 
         Iterator<Object> itr = lockingTxList.iterator();
         List<Object> checkedTransactions = new LinkedList<>();
-        Stack<Object> graphStack = new Stack<>();
+        final Deque<Object> graphStack = new ArrayDeque<>();
         // has resource,transaction interleaved
         graphStack.push( resource );
         while ( itr.hasNext() )
@@ -162,8 +160,7 @@ public class RagManager
                 continue;
             }
             graphStack.push( lockingTx );
-            checkWaitOnRecursive( lockingTx, tx, checkedTransactions,
-                    graphStack );
+            checkWaitOnRecursive( lockingTx, tx, checkedTransactions, graphStack );
             graphStack.pop();
         }
 
@@ -173,7 +170,7 @@ public class RagManager
 
     private synchronized void checkWaitOnRecursive( Object lockingTx,
                                                     Object waitingTx, List<Object> checkedTransactions,
-                                                    Stack<Object> graphStack ) throws DeadlockDetectedException
+                                                    Deque<Object> graphStack ) throws DeadlockDetectedException
     {
         if ( lockingTx.equals( waitingTx ) )
         {

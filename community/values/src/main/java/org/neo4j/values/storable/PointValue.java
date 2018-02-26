@@ -31,7 +31,7 @@ import org.neo4j.values.utils.PrettyPrinter;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 
-public class PointValue extends ScalarValue implements Comparable<PointValue>, Point
+public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
@@ -106,6 +106,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
         return other != null && ((other instanceof Value && equals( (Value) other )) || (other instanceof Point && equals( (Point) other )));
     }
 
+    @Override
     public int compareTo( PointValue other )
     {
         int cmpCRS = this.crs.getCode() - other.crs.getCode();
@@ -125,13 +126,46 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
 
         for ( int i = 0; i < coordinate.length; i++ )
         {
-            int cmpVal = Double.compare(this.coordinate[i], other.coordinate[i]);
+            int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
             if ( cmpVal != 0 )
             {
                 return cmpVal;
             }
         }
         return 0;
+    }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareTo( (PointValue) otherValue );
+    }
+
+    @Override
+    Integer unsafeTernaryCompareTo( Value otherValue )
+    {
+        PointValue other = (PointValue) otherValue;
+
+        if ( this.crs.getCode() != other.crs.getCode() || this.coordinate.length != other.coordinate.length )
+        {
+            return null;
+        }
+
+        int result = 0;
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
+            if ( cmpVal != 0 && cmpVal != result )
+            {
+                if ( (cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0) )
+                {
+                    return null;
+                }
+                result = cmpVal;
+            }
+        }
+
+        return result;
     }
 
     @Override

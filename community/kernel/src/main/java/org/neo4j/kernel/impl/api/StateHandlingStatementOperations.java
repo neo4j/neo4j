@@ -24,16 +24,15 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -50,7 +49,6 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -267,14 +265,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
+    public PrimitiveIntSet nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
     {
-        PrimitiveIntStack keys = new PrimitiveIntStack();
+        final PrimitiveIntSet keys = Primitive.intSet();
         try ( Cursor<PropertyItem> properties = nodeGetProperties( statement, node ) )
         {
             while ( properties.next() )
             {
-                keys.push( properties.get().propertyKeyId() );
+                keys.add( properties.get().propertyKeyId() );
             }
         }
 
@@ -347,15 +345,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+    public PrimitiveIntSet relationshipGetPropertyKeys( KernelStatement statement,
             RelationshipItem relationship )
     {
-        PrimitiveIntStack keys = new PrimitiveIntStack();
+        final PrimitiveIntSet keys = Primitive.intSet();
         try ( Cursor<PropertyItem> properties = relationshipGetProperties( statement, relationship ) )
         {
             while ( properties.next() )
             {
-                keys.push( properties.get().propertyKeyId() );
+                keys.add( properties.get().propertyKeyId() );
             }
         }
 

@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -71,6 +70,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class OperationsLockTest
 {
@@ -112,12 +112,12 @@ public class OperationsLockTest
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
+        when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                store, transaction, new KernelToken( storeReadLayer ), cursors, autoindexing,
-                mock( NodeSchemaMatcher.class ) );
+                store, transaction, new KernelToken( storeReadLayer ), cursors, autoindexing );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storeReadLayer );
@@ -271,7 +271,7 @@ public class OperationsLockTest
         Value value = Values.of( 9 );
         when( propertyCursor.next() ).thenReturn( true );
         when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
-        when( propertyCursor.propertyValue() ).thenReturn( Values.NO_VALUE );
+        when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
 
         // when
         operations.nodeSetProperty( 123, propertyKeyId, value );
@@ -279,6 +279,25 @@ public class OperationsLockTest
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( txState ).nodeDoAddProperty( 123, propertyKeyId, value );
+    }
+
+    @Test
+    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
+    {
+        // given
+        when( relationshipCursor.next() ).thenReturn( true );
+        int propertyKeyId = 8;
+        Value value = Values.of( 9 );
+        when( propertyCursor.next() ).thenReturn( true );
+        when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
+        when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
+
+        // when
+        operations.relationshipSetProperty( 123, propertyKeyId, value );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
+        order.verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
     }
 
     @Test
@@ -298,6 +317,24 @@ public class OperationsLockTest
         // then
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
         verify( txState ).nodeDoAddProperty( 123, propertyKeyId, value );
+    }
+
+    @Test
+    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
+    {
+        // given
+        when( relationshipCursor.next() ).thenReturn( true );
+        when( transaction.hasTxStateWithChanges() ).thenReturn( true );
+        txState.relationshipDoCreate( 123, 42, 43, 45 );
+        int propertyKeyId = 8;
+        Value value = Values.of( 9 );
+
+        // when
+        operations.relationshipSetProperty( 123, propertyKeyId, value );
+
+        // then
+        verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
+        verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
     }
 
     @Test

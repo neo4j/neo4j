@@ -128,7 +128,18 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     {
         while ( !currentUpdaters.isEmpty() )
         {
-            forAll( updater -> ((IndexUpdater) updater).close(), currentUpdaters.values().toArray() );
+            try
+            {
+                forAll( IndexUpdater::close, currentUpdaters.values() );
+            }
+            catch ( IOException | IndexEntryConflictException e  )
+            {
+                throw e;
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
             currentUpdaters.clear();
         }
     }

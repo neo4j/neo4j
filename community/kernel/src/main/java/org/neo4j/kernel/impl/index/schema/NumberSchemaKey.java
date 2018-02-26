@@ -44,21 +44,19 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
             Long.BYTES;  /* entityId */
 
     private long entityId;
-    private boolean entityIdIsSpecialTieBreaker;
+    private boolean compareId;
 
     byte type;
     long rawValueBits;
 
-    @Override
-    public void setEntityIdIsSpecialTieBreaker( boolean entityIdIsSpecialTieBreaker )
+    public void setCompareId( boolean compareId )
     {
-        this.entityIdIsSpecialTieBreaker = entityIdIsSpecialTieBreaker;
+        this.compareId = compareId;
     }
 
-    @Override
-    public boolean getEntityIdIsSpecialTieBreaker()
+    public boolean getCompareId()
     {
-        return entityIdIsSpecialTieBreaker;
+        return compareId;
     }
 
     @Override
@@ -78,7 +76,7 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     {
         extractRawBitsAndType( assertValidValue( values ) );
         this.entityId = entityId;
-        entityIdIsSpecialTieBreaker = false;
+        compareId = false;
     }
 
     private NumberValue assertValidValue( Value... values )
@@ -117,7 +115,7 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     {
         writeFloatingPoint( Double.NEGATIVE_INFINITY );
         entityId = Long.MIN_VALUE;
-        entityIdIsSpecialTieBreaker = true;
+        compareId = true;
     }
 
     @Override
@@ -125,7 +123,7 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     {
         writeFloatingPoint( Double.POSITIVE_INFINITY );
         entityId = Long.MAX_VALUE;
-        entityIdIsSpecialTieBreaker = true;
+        compareId = true;
     }
 
     /**

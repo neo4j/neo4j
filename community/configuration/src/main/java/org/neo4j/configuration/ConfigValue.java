@@ -31,7 +31,7 @@ public class ConfigValue
     private final String name;
     private final Optional<String> description;
     private final Optional<String> documentedDefaultValue;
-    private final Optional<?> value;
+    private final Optional<Object> value;
     private final String valueDescription;
     private final boolean internal;
     private final boolean dynamic;
@@ -39,7 +39,7 @@ public class ConfigValue
     private final Optional<String> replacement;
 
     public ConfigValue( @Nonnull String name, @Nonnull Optional<String> description,
-            @Nonnull Optional<String> documentedDefaultValue, @Nonnull Optional<?> value,
+            @Nonnull Optional<String> documentedDefaultValue, @Nonnull Optional<Object> value,
             @Nonnull String valueDescription, boolean internal, boolean dynamic, boolean deprecated,
             @Nonnull Optional<String> replacement )
     {
@@ -67,7 +67,7 @@ public class ConfigValue
     }
 
     @Nonnull
-    public Optional<?> value()
+    public Optional<Object> value()
     {
         return value;
     }
@@ -119,7 +119,7 @@ public class ConfigValue
 
     static String valueToString( Object v )
     {
-        if ( v != null && v instanceof Duration )
+        if ( v instanceof Duration )
         {
             Duration d = (Duration) v;
             return String.format( "%dms", d.toMillis() );

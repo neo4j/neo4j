@@ -58,6 +58,8 @@ trait QueryContext extends TokenContext {
 
   def transactionalContext: QueryTransactionalContext
 
+  def withActiveRead: QueryContext
+
   def resources: CloseableResource
 
   def nodeOps: Operations[NodeValue]
@@ -87,8 +89,6 @@ trait QueryContext extends TokenContext {
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
 
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
-
-  def getPropertiesForRelationship(relId: Long): Iterator[Int]
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
@@ -243,6 +243,10 @@ trait QueryTransactionalContext extends CloseableResource {
   def cursors : CursorFactory
 
   def dataRead: Read
+
+  def stableDataRead: Read
+
+  def markAsStable(): Unit
 
   def tokenRead: TokenRead
 

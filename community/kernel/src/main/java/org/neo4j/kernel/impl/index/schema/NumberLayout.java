@@ -39,7 +39,7 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
         into.type = key.type;
         into.rawValueBits = key.rawValueBits;
         into.setEntityId( key.getEntityId() );
-        into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
+        into.setCompareId( key.getCompareId() );
         return into;
     }
 

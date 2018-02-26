@@ -91,6 +91,7 @@ import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -122,7 +123,7 @@ import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.cho
  */
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
-    EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
+    public EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
                                         final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
         LogService logging = platformModule.logging;
@@ -192,7 +193,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         TopologyService topologyService =
                 discoveryServiceFactory.topologyService( config, logProvider, platformModule.jobScheduler, myself,
-                        hostnameResolver, resolveStrategy( config ) );
+                        hostnameResolver, resolveStrategy( config, logProvider ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
@@ -303,7 +304,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         return Predicates.any( fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
-                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ),
+                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF ),
+                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF_TMP ) );
     }
 
     @Override
@@ -368,13 +371,13 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         }
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )
     {
         long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
     private static Map<String,String> backupDisabledSettings()

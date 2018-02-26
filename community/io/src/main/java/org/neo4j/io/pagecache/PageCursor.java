@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * A PageCursor is returned from {@link org.neo4j.io.pagecache.PagedFile#io(long, int)},
@@ -163,6 +164,7 @@ public abstract class PageCursor implements AutoCloseable
      * Set the given number of bytes to the given value, beginning at current offset into the page.
      */
     public abstract void putBytes( int bytes, byte value );
+
     /**
      * Get the signed short at the current page offset, and then increment the offset by one.
      */
@@ -306,10 +308,22 @@ public abstract class PageCursor implements AutoCloseable
     public abstract int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
 
     /**
-     * Shift the specified number of bytes starting from given offset the specified number of bytes to the left or right. The area
+     * Copy bytes from the specified offset in this page, into the given buffer, until either the limit of the buffer
+     * is reached, or the end of the page is reached. The actual number of bytes copied is returned.
+     *
+     * @param sourceOffset The offset into this page to copy from.
+     * @param targetBuffer The buffer the data will be copied to.
+     * @return The number of bytes actually copied.
+     */
+    public abstract int copyTo( int sourceOffset, ByteBuffer targetBuffer );
+
+    /**
+     * Shift the specified number of bytes starting from given offset the specified number of bytes to the left or
+     * right. The area
      * left behind after the shift is not padded and thus is left with garbage.
      * <p>
-     * Out of bounds flag is raised if either start or end of either source range or target range fall outside end of this cursor
+     * Out of bounds flag is raised if either start or end of either source range or target range fall outside end of
+     * this cursor
      * or if length is negative.
      *
      * @param sourceOffset The offset into this page to start moving from.

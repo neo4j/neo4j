@@ -56,7 +56,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class SpatialKnownIndexTest
 {
-    final FileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final FileSystemRule fsRule = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fsRule.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     protected final RandomRule random = new RandomRule();
@@ -184,7 +184,7 @@ public class SpatialKnownIndexTest
     }
 
     @Test
-    public void shouldGetUpdaterWhenPopuating() throws IOException, IndexEntryConflictException
+    public void shouldGetUpdaterWhenPopulating() throws IOException, IndexEntryConflictException
     {
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 

@@ -66,7 +66,7 @@ class FusionIndexPopulator implements IndexPopulator
     @Override
     public void drop() throws IOException
     {
-        forAll( entries -> ((IndexPopulator) entries).drop(), nativePopulator, spatialPopulator, lucenePopulator );
+        forAll( IndexPopulator::drop, nativePopulator, spatialPopulator, lucenePopulator );
         dropAction.drop( indexId );
     }
 
@@ -106,13 +106,13 @@ class FusionIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( entries -> ((IndexPopulator) entries).close( populationCompletedSuccessfully ), nativePopulator, spatialPopulator, lucenePopulator );
+        forAll( populator -> populator.close( populationCompletedSuccessfully ), nativePopulator, spatialPopulator, lucenePopulator );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( entries -> ((IndexPopulator) entries).markAsFailed( failure ), nativePopulator, spatialPopulator, lucenePopulator );
+        forAll( populator -> populator.markAsFailed( failure ), nativePopulator, spatialPopulator, lucenePopulator );
     }
 
     @Override

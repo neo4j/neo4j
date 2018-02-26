@@ -33,13 +33,15 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 
 class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
 
   override def entityAccessor: EmbeddedProxySPI = inner.entityAccessor
+
+  override def withActiveRead: QueryContext = inner.withActiveRead
 
   override def resources: CloseableResource = inner.resources
 
@@ -78,9 +80,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(inner.removeLabelsFromNode(node, labelIds))
-
-  override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
-    translateException(inner.getPropertiesForRelationship(relId))
 
   override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(inner.getPropertyKeyName(propertyKeyId))

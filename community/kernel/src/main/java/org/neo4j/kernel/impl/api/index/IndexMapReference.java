@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -100,7 +100,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     }
 
     public Iterable<LabelSchemaDescriptor> getRelatedIndexes(
-            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
+            long[] changedLabels, long[] unchangedLabels, PrimitiveIntSet properties )
     {
         return indexMap.getRelatedIndexes( changedLabels, unchangedLabels, properties );
     }

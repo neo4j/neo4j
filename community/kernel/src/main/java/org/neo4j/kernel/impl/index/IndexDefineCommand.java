@@ -186,7 +186,7 @@ public class IndexDefineCommand extends Command
         return indexNameIdRange;
     }
 
-    public void setIndexNameIdRange( Map<String,Integer> indexNameIdRange )
+    private void setIndexNameIdRange( Map<String,Integer> indexNameIdRange )
     {
         this.indexNameIdRange = indexNameIdRange;
     }
@@ -196,7 +196,7 @@ public class IndexDefineCommand extends Command
         return keyIdRange;
     }
 
-    public void setKeyIdRange( Map<String,Integer> keyIdRange )
+    private void setKeyIdRange( Map<String,Integer> keyIdRange )
     {
         this.keyIdRange = keyIdRange;
     }

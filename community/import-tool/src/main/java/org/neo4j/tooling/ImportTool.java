@@ -47,13 +47,14 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
@@ -555,6 +556,7 @@ public class ImportTool
         dbConfig.augment( logs_directory, logsDir.getCanonicalPath() );
         File internalLogFile = dbConfig.get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
+        final Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
 
         life.start();
         BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( storeDir,
@@ -562,7 +564,7 @@ public class ImportTool
                 null, // no external page cache
                 configuration,
                 logService,
-                ExecutionMonitors.defaultVisible( in ),
+                ExecutionMonitors.defaultVisible( in, jobScheduler ),
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),

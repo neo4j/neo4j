@@ -152,7 +152,7 @@ public class ExplicitIndexStore
     private String getDefaultProvider( @Nullable String indexName, @Nonnull Config dbConfig )
     {
         return dbConfig.getRaw( "index." + indexName )
-                .orElse( dbConfig.getRaw( "index" ).orElse( "lucene" ) );
+                .orElseGet( () -> dbConfig.getRaw( "index" ).orElse( "lucene" ) );
     }
 
     private Map<String, String> getOrCreateIndexConfig(

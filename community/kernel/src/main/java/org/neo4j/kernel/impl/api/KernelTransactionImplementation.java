@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -52,8 +53,8 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -208,14 +209,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
-        org.neo4j.kernel.impl.newapi.NodeSchemaMatcher matcher =
-                new org.neo4j.kernel.impl.newapi.NodeSchemaMatcher( allStoreHolder );
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
                         storageStatement,
-                        this, token, cursors, autoIndexing, matcher );
+                        this, token, cursors, autoIndexing );
     }
 
     /**
@@ -1072,6 +1071,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public NodeCursor nodeCursor()
     {
         return operations.nodeCursor();
+    }
+
+    @Override
+    public RelationshipScanCursor relationshipCursor()
+    {
+        return operations.relationshipCursor();
     }
 
     @Override

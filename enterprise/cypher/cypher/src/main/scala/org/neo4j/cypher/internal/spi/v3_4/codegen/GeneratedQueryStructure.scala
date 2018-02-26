@@ -184,6 +184,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     Templates.getOrLoadSchemaRead(clazz, fields)
     Templates.getOrLoadCursors(clazz, fields)
     Templates.nodeCursor(clazz, fields)
+    Templates.relationshipScanCursor(clazz, fields)
     Templates.propertyCursor(clazz, fields)
     Templates.closeCursors(clazz, fields)
     clazz.generate(Templates.setCompletable(clazz.handle()))
@@ -215,6 +216,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       skip = clazz.field(typeRef[Boolean], "skip"),
       cursors = clazz.field(typeRef[CursorFactory], "cursors"),
       nodeCursor = clazz.field(typeRef[NodeCursor], "nodeCursor"),
+      relationshipScanCursor = clazz.field(typeRef[RelationshipScanCursor], "relationshipScanCursor"),
       propertyCursor = clazz.field(typeRef[PropertyCursor], "propertyCursor"),
       dataRead =  clazz.field(typeRef[Read], "dataRead"),
       tokenRead =  clazz.field(typeRef[TokenRead], "tokenRead"),

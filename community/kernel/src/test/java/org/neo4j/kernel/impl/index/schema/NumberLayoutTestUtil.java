@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -35,21 +33,37 @@ import org.neo4j.values.storable.Values;
 
 abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
 {
+    private static final Number[] ALL_EXTREME_VALUES = new Number[]
+            {
+                    Byte.MAX_VALUE,
+                    Byte.MIN_VALUE,
+                    Short.MAX_VALUE,
+                    Short.MIN_VALUE,
+                    Integer.MAX_VALUE,
+                    Integer.MIN_VALUE,
+                    Long.MAX_VALUE,
+                    Long.MIN_VALUE,
+                    Float.MAX_VALUE,
+                    -Float.MAX_VALUE,
+                    Double.MAX_VALUE,
+                    -Double.MAX_VALUE,
+                    Double.POSITIVE_INFINITY,
+                    Double.NEGATIVE_INFINITY,
+                    0,
+                    // These two values below coerce to the same double
+                    1234567890123456788L,
+                    1234567890123456789L
+            };
+
     NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
     }
 
     @Override
-    IndexQuery rangeQuery( Number from, boolean fromInclusive, Number to, boolean toInclusive )
+    IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive )
     {
-        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
-    }
-
-    @Override
-    Value asValue( Number value )
-    {
-        return Values.of( value );
+        return IndexQuery.range( 0, (Number) from, fromInclusive, (Number) to, toInclusive );
     }
 
     @Override
@@ -63,51 +77,30 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
         return typeCompare;
     }
 
-    @Override
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
-        double fractionDuplicates = fractionDuplicates();
-        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
+        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
+    }
+
+    @Override
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
+    {
+        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
+    }
+
+    @Override
+    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    {
+        Number value;
+        Double compareValue;
+        do
         {
-            private final Set<Double> uniqueCompareValues = new HashSet<>();
-            private final List<Value> uniqueValues = new ArrayList<>();
-            private long currentEntityId;
-
-            @Override
-            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
-            {
-                Value value;
-                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() && random.nextFloat() < fractionDuplicates )
-                {
-                    value = existingNonUniqueValue( random );
-                }
-                else
-                {
-                    value = newUniqueValue( random );
-                }
-
-                return add( currentEntityId++, value );
-            }
-
-            private Value newUniqueValue( RandomRule randomRule )
-            {
-                Number value;
-                Double compareValue;
-                do
-                {
-                    value = randomRule.numberPropertyValue();
-                    compareValue = value.doubleValue();
-                }
-                while ( !uniqueCompareValues.add( compareValue ) );
-                Value storableValue = asValue( value );
-                uniqueValues.add( storableValue );
-                return storableValue;
-            }
-
-            private Value existingNonUniqueValue( RandomRule randomRule )
-            {
-                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
-            }
-        };
+            value = random.numberPropertyValue();
+            compareValue = value.doubleValue();
+        }
+        while ( !uniqueCompareValues.add( compareValue ) );
+        Value storableValue = Values.of( value );
+        uniqueValues.add( storableValue );
+        return storableValue;
     }
 }

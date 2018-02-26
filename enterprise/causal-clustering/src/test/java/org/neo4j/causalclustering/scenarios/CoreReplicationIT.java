@@ -23,7 +23,6 @@ package org.neo4j.causalclustering.scenarios;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -42,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.test.causalclustering.ClusterRule;
-import org.neo4j.test.rule.VerboseTimeout;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -59,14 +57,12 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CoreReplicationIT
 {
-    private final ClusterRule clusterRule =
-            new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
-    private final VerboseTimeout timeout = VerboseTimeout.builder()
-            .withTimeout( 1000, SECONDS )
-            .build();
-
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( clusterRule ).around( timeout );
+    public final ClusterRule clusterRule =
+            new ClusterRule()
+                    .withNumberOfCoreMembers( 3 )
+                    .withNumberOfReadReplicas( 0 )
+                    .withTimeout( 1000, SECONDS );
 
     private Cluster cluster;
 

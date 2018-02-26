@@ -64,12 +64,12 @@ public class ScriptableNetworkFailureLatencyStrategy
     @Override
     public long messageDelay( Message<? extends MessageType> message, String serverIdTo )
     {
-        if ( nodesDown.contains( serverIdTo ) || nodesDown.contains( message.getHeader( Message.FROM ) ) )
+        if ( nodesDown.contains( serverIdTo ) || nodesDown.contains( message.getHeader( Message.HEADER_FROM ) ) )
         {
             return LOST;
         }
 
-        if ( linksDown.contains( new String[]{message.getHeader( Message.FROM ), serverIdTo} ) )
+        if ( linksDown.contains( new String[]{message.getHeader( Message.HEADER_FROM ), serverIdTo} ) )
         {
             return LOST;
         }

@@ -38,8 +38,8 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -83,8 +83,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.DefaultCursors;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -774,10 +774,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // Write new checkpoint in the log only if the kernel is healthy.
         // We cannot throw here since we need to shutdown without exceptions,
         // so let's make the checkpointing part of the life, so LifeSupport can handle exceptions properly
-        return  new LifecycleAdapter()
+        return new LifecycleAdapter()
         {
             @Override
-            public void shutdown() throws Throwable
+            public void shutdown() throws IOException
             {
                 if ( databaseHealth.isHealthy() )
                 {

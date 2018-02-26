@@ -28,7 +28,7 @@ import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies>
 {
     public static final String IDENTIFIER = "test-dummy-neo-index";
-    public static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
+    static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
 
     public DummyIndexExtensionFactory()
     {

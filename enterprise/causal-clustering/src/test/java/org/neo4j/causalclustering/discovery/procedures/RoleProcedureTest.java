@@ -43,7 +43,7 @@ public class RoleProcedureTest
         RoleProcedure proc = new CoreRoleProcedure( raft );
 
         // when
-        RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
+        RawIterator<Object[], ProcedureException> result = proc.apply( null, null, null );
 
         // then
         assertEquals( Role.LEADER.name(), single( result )[0]);
@@ -58,7 +58,7 @@ public class RoleProcedureTest
         RoleProcedure proc = new CoreRoleProcedure( raft );
 
         // when
-        RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
+        RawIterator<Object[], ProcedureException> result = proc.apply( null, null, null );
 
         // then
         assertEquals( Role.FOLLOWER.name(), single( result )[0]);
@@ -71,7 +71,7 @@ public class RoleProcedureTest
         RoleProcedure proc = new ReadReplicaRoleProcedure();
 
         // when
-        RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
+        RawIterator<Object[], ProcedureException> result = proc.apply( null, null, null );
 
         // then
         assertEquals( Role.READ_REPLICA.name(), single( result )[0]);

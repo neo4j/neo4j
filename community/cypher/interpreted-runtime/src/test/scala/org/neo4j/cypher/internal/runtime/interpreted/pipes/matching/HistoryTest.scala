@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityExecutionContextFactory
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Relationship, RelationshipType}
@@ -36,20 +37,20 @@ class HistoryTest extends CypherFunSuite {
     val pr: PatternRelationship = a.relateTo("r", b, Seq(), SemanticDirection.BOTH)
     val r: Relationship = mock[Relationship]
     val mp = MatchingPair(pr, r)
-    val history = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)
+    val history = new InitialHistory(ExecutionContext.empty, Seq.empty, CommunityExecutionContextFactory()).add(mp)
 
     history.removeSeen(Set[PatternRelationship](pr)) shouldBe empty
   }
 
   test("should_known_that_it_has_seen_a_relationship") {
     val r = relationshipValue(11L, nodeValue(11L, stringArray("f"), EMPTY_MAP), nodeValue(12L, stringArray("f"), EMPTY_MAP), stringValue("T"), EMPTY_MAP)
-    val history = new InitialHistory(ExecutionContext.empty, Seq(r))
+    val history = new InitialHistory(ExecutionContext.empty, Seq(r), CommunityExecutionContextFactory())
     history.hasSeen(r) should equal(true)
   }
 
   test("should_know_that_it_has_not_seen_a_relationship") {
     val r = mock[Relationship]
-    val history = new InitialHistory(ExecutionContext.empty, Seq.empty)
+    val history = new InitialHistory(ExecutionContext.empty, Seq.empty, CommunityExecutionContextFactory())
     history.hasSeen(r) should equal(false)
   }
 }

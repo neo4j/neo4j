@@ -25,11 +25,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -37,9 +41,12 @@ import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCount;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCounts;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.computeKey;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.count;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
-public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
+public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
+        extends KernelAPIWriteTestBase<G>
 {
     @Test
     public void shouldSeeSingleRelationshipInTransaction() throws Exception
@@ -248,7 +255,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
             try ( NodeCursor node = cursors.allocateNodeCursor();
-                    RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+                  RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( "should access node", node.next() );
@@ -310,6 +317,310 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( RelationshipTestSupport.dense( graphDb ), true );
+    }
+
+    @Test
+    public void shouldSeeNewRelationshipPropertyInTransaction() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            String propKey1 = "prop1";
+            String propKey2 = "prop2";
+            long n1 = tx.dataWrite().nodeCreate();
+            long n2 = tx.dataWrite().nodeCreate();
+            int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
+            int prop1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
+            int prop2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
+            assertEquals( tx.dataWrite().relationshipSetProperty( r, prop1, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( tx.dataWrite().relationshipSetProperty( r, prop2, stringValue( "world" ) ), NO_VALUE );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( n1, node );
+                assertTrue( "should access node", node.next() );
+                node.allRelationships( relationship );
+
+                assertTrue( "should access relationship", relationship.next() );
+
+                relationship.properties( property );
+
+                while ( property.next() )
+                {
+                    if ( property.propertyKey() == prop1 )
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "hello" ) );
+                    }
+                    else if ( property.propertyKey() == prop2 )
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "world" ) );
+                    }
+                    else
+                    {
+                        fail( property.propertyKey() + " was not the property key you were looking for" );
+                    }
+                }
+
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldSeeAddedPropertyFromExistingRelationshipWithoutPropertiesInTransaction() throws Exception
+    {
+        // Given
+        long relationshipId;
+        String propKey = "prop1";
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationshipId = write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
+
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleRelationship( relationshipId, relationship );
+                assertTrue( "should access relationship", relationship.next() );
+
+                relationship.properties( property );
+                assertTrue( property.next() );
+                assertEquals( propToken, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "hello" ) );
+
+                assertFalse( "should only find one properties", property.next() );
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertThat(
+                    graphDb.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "hello" ) );
+        }
+    }
+
+    @Test
+    public void shouldSeeAddedPropertyFromExistingRelationshipWithPropertiesInTransaction() throws Exception
+    {
+        // Given
+        long relationshipId;
+        String propKey1 = "prop1";
+        String propKey2 = "prop2";
+        int propToken1;
+        int propToken2;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationshipId = write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
+            propToken1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken1, stringValue( "hello" ) ),
+                    NO_VALUE );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            propToken2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
+            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken2, stringValue( "world" ) ),
+                    NO_VALUE );
+
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleRelationship( relationshipId, relationship );
+                assertTrue( "should access relationship", relationship.next() );
+
+                relationship.properties( property );
+
+                while ( property.next() )
+                {
+                    if ( property.propertyKey() == propToken1 )//from disk
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "hello" ) );
+
+                    }
+                    else if ( property.propertyKey() == propToken2 )//from tx state
+                    {
+                        assertEquals( property.propertyValue(), stringValue( "world" ) );
+                    }
+                    else
+                    {
+                        fail( property.propertyKey() + " was not the property you were looking for" );
+                    }
+                }
+
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            Relationship relationship = graphDb.getRelationshipById( relationshipId );
+            assertThat( relationship.getProperty( propKey1 ), equalTo( "hello" ) );
+            assertThat( relationship.getProperty( propKey2 ), equalTo( "world" ) );
+        }
+    }
+
+    @Test
+    public void shouldSeeUpdatedPropertyFromExistingRelationshipWithPropertiesInTransaction() throws Exception
+    {
+        // Given
+        long relationshipId;
+        String propKey = "prop1";
+        int propToken;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationshipId = write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
+            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ),
+                    stringValue( "hello" ) );
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleRelationship( relationshipId, relationship );
+                assertTrue( "should access relationship", relationship.next() );
+
+                relationship.properties( property );
+
+                assertTrue( property.next() );
+                assertEquals( propToken, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "world" ) );
+
+                assertFalse( "should only find one property", property.next() );
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertThat(
+                    graphDb.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
+        }
+    }
+
+    @Test
+    public void shouldNotSeeRemovedPropertyInTransaction() throws Exception
+    {
+        // Given
+        long relationshipId;
+        String propKey = "prop1";
+        int propToken;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationshipId = write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
+            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ),
+                    stringValue( "hello" ) );
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleRelationship( relationshipId, relationship );
+                assertTrue( "should access relationship", relationship.next() );
+
+                relationship.properties( property );
+                assertFalse( "should not find any properties", property.next() );
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertFalse(
+                    graphDb.getRelationshipById( relationshipId ).hasProperty( propKey ) );
+        }
+    }
+
+    @Test
+    public void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
+    {
+        // Given
+        long relationshipId;
+        String propKey = "prop1";
+        int propToken;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            relationshipId = write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
+            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
+                    NO_VALUE );
+            tx.success();
+        }
+
+        // When/Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ),
+                    stringValue( "hello" ) );
+            assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ),
+                    NO_VALUE );
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleRelationship( relationshipId, relationship );
+                assertTrue( "should access relationship", relationship.next() );
+
+                relationship.properties( property );
+                assertTrue( property.next() );
+                assertEquals( propToken, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "world" ) );
+
+                assertFalse( "should not find any properties", property.next() );
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        {
+            assertThat(
+                    graphDb.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
+        }
     }
 
     private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
@@ -414,7 +725,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     private Map<String,Integer> modifyStartNodeRelationships( RelationshipTestSupport.StartNode start, Transaction tx )
             throws KernelException
     {
-        Map<String, Integer> expectedCounts = new HashMap<>();
+        Map<String,Integer> expectedCounts = new HashMap<>();
         for ( Map.Entry<String,List<RelationshipTestSupport.StartRelationship>> kv : start.relationships.entrySet() )
         {
             List<RelationshipTestSupport.StartRelationship> rs = kv.getValue();

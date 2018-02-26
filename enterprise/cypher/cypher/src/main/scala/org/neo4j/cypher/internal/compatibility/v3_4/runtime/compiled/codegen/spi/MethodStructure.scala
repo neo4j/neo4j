@@ -172,8 +172,8 @@ trait MethodStructure[E] {
   def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
   def nodeIdSeek(nodeIdVar: String, expression: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
-  def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
-  def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
+  def relationshipGetPropertyById(relIdVar: String, relVarType: CodeGenType, propId: Int, propValueVar: String): Unit
+  def relationshipGetPropertyForVar(relIdVar: String, relVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
   def indexSeek(iterVar: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
   def relType(relIdVar: String, typeVar: String): Unit

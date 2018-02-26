@@ -90,9 +90,10 @@ public class BooleanArray extends ArrayValue
         return value;
     }
 
-    public int compareTo( BooleanArray other )
+    @Override
+    int unsafeCompareTo( Value otherValue )
     {
-        return NumberValues.compareBooleanArrays( this, other );
+        return NumberValues.compareBooleanArrays( this, (BooleanArray) otherValue );
     }
 
     @Override

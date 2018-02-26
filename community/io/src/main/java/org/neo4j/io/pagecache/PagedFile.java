@@ -150,6 +150,11 @@ public interface PagedFile extends AutoCloseable
     long fileSize() throws IOException;
 
     /**
+     * Get the filename that is mapped by this {@code PagedFile}.
+     */
+    File file();
+
+    /**
      * Flush all dirty pages into the file channel, and force the file channel to disk.
      */
     void flushAndForce() throws IOException;

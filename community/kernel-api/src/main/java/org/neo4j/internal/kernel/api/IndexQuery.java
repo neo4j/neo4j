@@ -514,6 +514,11 @@ public abstract class IndexQuery
             return (String)from.asObject();
         }
 
+        public Value fromAsValue()
+        {
+            return from;
+        }
+
         public boolean fromInclusive()
         {
             return fromInclusive;
@@ -522,6 +527,11 @@ public abstract class IndexQuery
         public String to()
         {
             return (String)to.asObject();
+        }
+
+        public Value toAsValue()
+        {
+            return to;
         }
 
         public boolean toInclusive()

@@ -50,7 +50,7 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
       case (key, r: RelationshipValue) if !boundRels.contains(key) && variablesInClause.contains(key) => r
     }.toIndexedSeq
 
-    new InitialHistory(source, relationshipsInContextButNotInPattern)
+    new InitialHistory(source, relationshipsInContextButNotInPattern, state.executionContextFactory)
   }
 
   protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],

@@ -55,7 +55,7 @@ public class InstalledProtocolsProcedureTest
                 new InstalledProtocolsProcedure( Stream::empty, Stream::empty );
 
         // when
-        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null );
+        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null, null );
 
         // then
         assertFalse( result.hasNext() );
@@ -69,7 +69,7 @@ public class InstalledProtocolsProcedureTest
                 new InstalledProtocolsProcedure( () -> Stream.of( outbound1, outbound2 ), Stream::empty );
 
         // when
-        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null );
+        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null, null );
 
         // then
         assertThat( result.next(), arrayContaining( "outbound", "host1:1", "raft", 1L ) );
@@ -85,7 +85,7 @@ public class InstalledProtocolsProcedureTest
                 new InstalledProtocolsProcedure( Stream::empty, () -> Stream.of( inbound1, inbound2 ) );
 
         // when
-        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null );
+        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null, null );
 
         // then
         assertThat( result.next(), arrayContaining( "inbound", "host3:3", "raft", 3L ) );
@@ -101,7 +101,7 @@ public class InstalledProtocolsProcedureTest
                 new InstalledProtocolsProcedure( () -> Stream.of( outbound1, outbound2 ), () -> Stream.of( inbound1, inbound2 ) );
 
         // when
-        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null );
+        RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null, null );
 
         // then
         assertThat( result.next(), arrayContaining( "outbound", "host1:1", "raft", 1L ) );

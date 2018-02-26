@@ -98,7 +98,7 @@ public class StateMachinesTest
                 mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), Runnable::run, me
         );
 
-        // The state machine, which has a TestMessage message type and simply adds a TO header to the messages it
+        // The state machine, which has a TestMessage message type and simply adds a HEADER_TO header to the messages it
         // is handed to handle.
         StateMachine machine = mock( StateMachine.class );
         when( machine.getMessageType() ).then( (Answer<Object>) invocation -> TestMessage.class );
@@ -106,7 +106,7 @@ public class StateMachinesTest
         {
             Message message = invocation.getArgument( 0 );
             MessageHolder holder = invocation.getArgument( 1 );
-            message.setHeader( Message.TO, "to://neverland" );
+            message.setHeader( Message.HEADER_TO, "to://neverland" );
             holder.offer( message );
             return null;
         } ).when( machine ).handle( any( Message.class ), any( MessageHolder.class ) );
@@ -118,9 +118,9 @@ public class StateMachinesTest
         // Then
         assertEquals( "StateMachines should not make up messages from thin air", 1, sentOut.size() );
         Message sent = sentOut.get( 0 );
-        assertTrue( "StateMachines should add the instance-id header", sent.hasHeader( Message.INSTANCE_ID ) );
+        assertTrue( "StateMachines should add the instance-id header", sent.hasHeader( Message.HEADER_INSTANCE_ID ) );
         assertEquals( "StateMachines should add instance-id header that has the correct value",
-                me.toString(), sent.getHeader( Message.INSTANCE_ID ) );
+                me.toString(), sent.getHeader( Message.HEADER_INSTANCE_ID ) );
     }
 
     public enum TestMessage

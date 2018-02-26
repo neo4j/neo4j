@@ -21,7 +21,7 @@ package cypher.features
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTBoolean, CTFloat, CTInteger, CTMap, CTNode, CTNumber, CTPath, CTRelationship, CTString, CypherType, ListType}
-import org.neo4j.kernel.api.InwardKernel
+import org.neo4j.kernel.api.{InwardKernel, ResourceTracker}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
@@ -74,7 +74,9 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
       )
     val kernelSignature = asKernelSignature(parsedSignature)
     val kernelProcedure = new BasicProcedure(kernelSignature) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+      override def apply(ctx: Context,
+                         input: Array[AnyRef],
+                         resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
         // For example of usage see ProcedureCallAcceptance.feature e.g. "Standalone call to procedure with explicit arguments"
         val rowsWithMatchingInput = neo4jValues.rows.filter { row =>
           row.startsWith(input)

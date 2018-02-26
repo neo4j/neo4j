@@ -61,7 +61,7 @@ public abstract class AnnotationProcessor extends AbstractProcessor
                         catch ( Exception e )
                         {
                             e.printStackTrace();
-                            processingEnv.getMessager().printMessage( Kind.ERROR, "Internal error: " + e.toString(),
+                            processingEnv.getMessager().printMessage( Kind.ERROR, "Internal error: " + e,
                                     annotated, mirror );
                         }
                     }

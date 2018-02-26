@@ -180,13 +180,13 @@ public enum ClusterState implements State<ClusterContext, ClusterMessage>
                                 else
                                 {
                                     outgoing.offer( to( ProposerMessage.propose, new URI( message.getHeader(
-                                            Message.FROM ) ), newState ) );
+                                            Message.HEADER_FROM ) ), newState ) );
                                 }
 
                                 context.getLog( ClusterState.class ).debug( "Setup join timeout for " + message
-                                        .getHeader( Message.CONVERSATION_ID ) );
+                                        .getHeader( Message.HEADER_CONVERSATION_ID ) );
                                 context.setTimeout( "join", timeout( ClusterMessage.joiningTimeout, message,
-                                        new URI( message.getHeader( Message.FROM ) ) ) );
+                                        new URI( message.getHeader( Message.HEADER_FROM ) ) ) );
 
                                 return joining;
                             }
@@ -309,7 +309,7 @@ public enum ClusterState implements State<ClusterContext, ClusterMessage>
                             ClusterMessage.ConfigurationRequestState configurationRequested = message.getPayload();
                             configurationRequested = new ClusterMessage.ConfigurationRequestState(
                                     configurationRequested.getJoiningId(),
-                                    URI.create( message.getHeader( Message.FROM ) ) );
+                                    URI.create( message.getHeader( Message.HEADER_FROM ) ) );
                             // Make a note that this instance contacted us.
                             context.addContactingInstance( configurationRequested, message.getHeader( DISCOVERED, "" ) );
                             context.getLog( getClass() ).info( format( "Received configuration request %s and " +
@@ -406,7 +406,7 @@ public enum ClusterState implements State<ClusterContext, ClusterMessage>
                         case joiningTimeout:
                         {
                             context.getLog( ClusterState.class ).info( "Join timeout for " + message.getHeader(
-                                    Message.CONVERSATION_ID ) );
+                                    Message.HEADER_CONVERSATION_ID ) );
 
                             if ( context.hasJoinBeenDenied() )
                             {
@@ -471,7 +471,7 @@ public enum ClusterState implements State<ClusterContext, ClusterMessage>
                         {
                             ClusterMessage.ConfigurationRequestState request = message.getPayload();
                             request = new ClusterMessage.ConfigurationRequestState( request.getJoiningId(),
-                                    URI.create( message.getHeader( Message.FROM ) ) );
+                                    URI.create( message.getHeader( Message.HEADER_FROM ) ) );
 
                             InstanceId joiningId = request.getJoiningId();
                             URI joiningUri = request.getJoiningUri();

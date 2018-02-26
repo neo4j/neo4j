@@ -42,8 +42,7 @@ import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, 
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
 import org.neo4j.graphdb.Result
-import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}
-import org.neo4j.kernel.api.query.PlannerInfo
+import org.neo4j.kernel.api.query.{ExplicitIndexUsage, PlannerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -142,10 +141,10 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
 
     override val plannerInfo: PlannerInfo = {
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
-        case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => schemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-        case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => schemaIndexUsage(identifier, labelId, label, propertyKey)
-        case ExplicitNodeIndexUsage(identifier, index) => explicitIndexUsage(identifier, "NODE", index)
-        case ExplicitRelationshipIndexUsage(identifier, index) => explicitIndexUsage(identifier, "RELATIONSHIP", index)
+        case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+        case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => new SchemaIndexUsage(identifier, labelId, label, propertyKey)
+        case ExplicitNodeIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "NODE", index)
+        case ExplicitRelationshipIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "RELATIONSHIP", index)
       }.asJava)
     }
   }

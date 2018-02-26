@@ -30,7 +30,7 @@ import static java.lang.String.format;
 public abstract class BooleanValue extends ScalarValue
 {
 
-    private BooleanValue( )
+    private BooleanValue()
     {
     }
 
@@ -52,8 +52,6 @@ public abstract class BooleanValue extends ScalarValue
     }
 
     public abstract boolean booleanValue();
-
-    public abstract int compareTo( BooleanValue other );
 
     @Override
     public NumberType numberType()
@@ -87,8 +85,10 @@ public abstract class BooleanValue extends ScalarValue
             return true;
         }
 
-        public int compareTo( BooleanValue other )
+        @Override
+        int unsafeCompareTo( Value otherValue )
         {
+            BooleanValue other = (BooleanValue) otherValue;
             return other.booleanValue() ? 0 : 1;
         }
 
@@ -115,7 +115,6 @@ public abstract class BooleanValue extends ScalarValue
         {
             return format( "Boolean('%s')", Boolean.toString( true ) );
         }
-
     };
 
     public static final BooleanValue FALSE = new BooleanValue()
@@ -144,8 +143,10 @@ public abstract class BooleanValue extends ScalarValue
             return false;
         }
 
-        public int compareTo( BooleanValue other )
+        @Override
+        int unsafeCompareTo( Value otherValue )
         {
+            BooleanValue other = (BooleanValue) otherValue;
             return !other.booleanValue() ? 0 : -1;
         }
 
@@ -172,6 +173,5 @@ public abstract class BooleanValue extends ScalarValue
         {
             return format( "Boolean('%s')", Boolean.toString( false ) );
         }
-
     };
 }

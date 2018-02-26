@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  */
 final class StringWrappingStringValue extends StringValue
 {
-    final String value;
+    private final String value;
 
     StringWrappingStringValue( String value )
     {

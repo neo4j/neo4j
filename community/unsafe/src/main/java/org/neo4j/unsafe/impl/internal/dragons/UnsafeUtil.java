@@ -55,8 +55,9 @@ public final class UnsafeUtil
 {
     /**
      * Whether or not to explicitly dirty the allocated memory. This is off by default.
-     * The {@link UnsafeUtil#allocateMemory(long, MemoryAllocationTracker)} method is not guaranteed to allocate zeroed out memory, but might
-     * often do so by pure chance.
+     * The {@link UnsafeUtil#allocateMemory(long, MemoryAllocationTracker)} method is not guaranteed to allocate
+     * zeroed out memory, but might often do so by pure chance.
+     * <p>
      * Enabling this feature will make sure that the allocated memory is full of random data, such that we can test
      * and verify that our code does not assume that memory is clean when allocated.
      */
@@ -70,7 +71,7 @@ public final class UnsafeUtil
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
 
-    private static final Class<?> directByteBufferClass;
+    public static final Class<?> directByteBufferClass;
     private static final Constructor<?> directByteBufferCtor;
     private static final long directByteBufferMarkOffset;
     private static final long directByteBufferPositionOffset;
@@ -137,8 +138,8 @@ public final class UnsafeUtil
         // See java.nio.Bits.unaligned() and its uses.
         String alignmentProperty = System.getProperty( allowUnalignedMemoryAccessProperty );
         if ( alignmentProperty != null &&
-                (alignmentProperty.equalsIgnoreCase( "true" )
-                        || alignmentProperty.equalsIgnoreCase( "false" )) )
+             (alignmentProperty.equalsIgnoreCase( "true" )
+              || alignmentProperty.equalsIgnoreCase( "false" )) )
         {
             allowUnalignedMemoryAccess = Boolean.parseBoolean( alignmentProperty );
         }
@@ -402,7 +403,7 @@ public final class UnsafeUtil
      * The given pointer should be allocated with at least the requested size + {@code alignBy - 1},
      * where the additional bytes will serve as padding for the worst case where the start of the usable
      * area of the allocated memory will need to be shifted at most {@code alignBy - 1} bytes to the right.
-     *
+     * <p>
      * <pre><code>
      * 0   4   8   12  16  20        ; 4-byte alignments
      * |---|---|---|---|---|         ; memory
@@ -467,7 +468,7 @@ public final class UnsafeUtil
         }
     }
 
-    private static final ConcurrentSkipListMap<Long, Long> pointers = new ConcurrentSkipListMap<>();
+    private static final ConcurrentSkipListMap<Long,Long> pointers = new ConcurrentSkipListMap<>();
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeTraceCounter = new AtomicLong();
 
@@ -974,6 +975,19 @@ public final class UnsafeUtil
     }
 
     /**
+     * Read the value of the address field in the (assumed to be) DirectByteBuffer.
+     * <p>
+     * <strong>NOTE:</strong> calling this method on a non-direct ByteBuffer is undefined behaviour.
+     *
+     * @param dbb The direct byte buffer to read the address field from.
+     * @return The native memory address in the given direct byte buffer.
+     */
+    public static long getDirectByteBufferAddress( ByteBuffer dbb )
+    {
+        return unsafe.getLong( dbb, directByteBufferAddressOffset );
+    }
+
+    /**
      * Change if native access checking is enabled by setting it to the given new setting, and returning the old
      * setting.
      * <p>
@@ -1006,7 +1020,7 @@ public final class UnsafeUtil
      */
     public static short getShortByteWiseLittleEndian( long p )
     {
-        short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
+        short a = (short) (UnsafeUtil.getByte( p ) & 0xFF);
         short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
         return (short) ((b << 8) | a);
     }
@@ -1022,7 +1036,7 @@ public final class UnsafeUtil
      */
     public static int getIntByteWiseLittleEndian( long p )
     {
-        int a = UnsafeUtil.getByte( p     ) & 0xFF;
+        int a = UnsafeUtil.getByte( p ) & 0xFF;
         int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
         int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
@@ -1040,7 +1054,7 @@ public final class UnsafeUtil
      */
     public static long getLongByteWiseLittleEndian( long p )
     {
-        long a = UnsafeUtil.getByte( p     ) & 0xFF;
+        long a = UnsafeUtil.getByte( p ) & 0xFF;
         long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
         long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
@@ -1078,9 +1092,9 @@ public final class UnsafeUtil
     public static void putIntByteWiseLittleEndian( long p, int value )
     {
         UnsafeUtil.putByte( p, (byte) value );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
+        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+        UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
+        UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
     }
 
     /**
@@ -1095,12 +1109,12 @@ public final class UnsafeUtil
     public static void putLongByteWiseLittleEndian( long p, long value )
     {
         UnsafeUtil.putByte( p, (byte) value );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 4, (byte)( value >> 32 ) );
-        UnsafeUtil.putByte( p + 5, (byte)( value >> 40 ) );
-        UnsafeUtil.putByte( p + 6, (byte)( value >> 48 ) );
-        UnsafeUtil.putByte( p + 7, (byte)( value >> 56 ) );
+        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+        UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
+        UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
+        UnsafeUtil.putByte( p + 4, (byte) (value >> 32) );
+        UnsafeUtil.putByte( p + 5, (byte) (value >> 40) );
+        UnsafeUtil.putByte( p + 6, (byte) (value >> 48) );
+        UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
     }
 }

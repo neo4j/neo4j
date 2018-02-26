@@ -26,11 +26,11 @@ import org.hamcrest.TypeSafeMatcher;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -41,65 +41,53 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.responseMessage;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 
-@SuppressWarnings( "unchecked" )
 public class TransportTestUtil
 {
-    private TransportTestUtil()
+    private final Neo4jPack neo4jPack;
+
+    public TransportTestUtil( Neo4jPack neo4jPack )
     {
+        this.neo4jPack = neo4jPack;
     }
 
-    public static byte[] dechunk( byte[] chunked ) throws IOException
+    public Neo4jPack getNeo4jPack()
     {
-        ByteBuffer in = ByteBuffer.wrap( chunked );
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ( in.hasRemaining() )
-        {
-            int chunkSize = in.getShort();
-            if ( chunkSize == 0 )
-            {
-                continue;
-            }
-
-            byte[] chunk = new byte[chunkSize];
-            in.get( chunk );
-            out.write( chunk );
-        }
-        return out.toByteArray();
+        return neo4jPack;
     }
 
-    public static byte[] chunk( RequestMessage... messages ) throws IOException
+    public byte[] chunk( RequestMessage... messages ) throws IOException
     {
         return chunk( 32, messages );
     }
 
-    public static byte[] chunk( ResponseMessage... messages ) throws IOException
+    public byte[] chunk( ResponseMessage... messages ) throws IOException
     {
         return chunk( 32, messages );
     }
 
-    public static byte[] chunk( int chunkSize, RequestMessage... messages ) throws IOException
+    public byte[] chunk( int chunkSize, RequestMessage... messages ) throws IOException
     {
         byte[][] serializedMessages = new byte[messages.length][];
         for ( int i = 0; i < messages.length; i++ )
         {
-            serializedMessages[i] = serialize( messages[i] );
+            serializedMessages[i] = serialize( neo4jPack, messages[i] );
         }
         return chunk( chunkSize, serializedMessages );
     }
 
-    public static byte[] chunk( int chunkSize, ResponseMessage... messages ) throws IOException
+    public byte[] chunk( int chunkSize, ResponseMessage... messages ) throws IOException
     {
         byte[][] serializedMessages = new byte[messages.length][];
         for ( int i = 0; i < messages.length; i++ )
         {
-            serializedMessages[i] = serialize( messages[i] );
+            serializedMessages[i] = serialize( neo4jPack, messages[i] );
         }
         return chunk( chunkSize, serializedMessages );
     }
 
-    public static byte[] chunk( int chunkSize, byte[] ... messages )
+    public byte[] chunk( int chunkSize, byte[]... messages )
     {
-        ByteBuffer output = ByteBuffer.allocate( 10000 ).order( ByteOrder.BIG_ENDIAN );
+        ByteBuffer output = ByteBuffer.allocate( 10000 ).order( BIG_ENDIAN );
 
         for ( byte[] wholeMessage : messages )
         {
@@ -124,7 +112,12 @@ public class TransportTestUtil
         return arrayOutput;
     }
 
-    public static byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
+    public byte[] defaultAcceptedVersions()
+    {
+        return acceptedVersions( neo4jPack.version(), 0, 0, 0 );
+    }
+
+    public byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
     {
         ByteBuffer bb = ByteBuffer.allocate( 5 * Integer.BYTES ).order( BIG_ENDIAN );
         bb.putInt( 0x6060B017 );
@@ -135,7 +128,8 @@ public class TransportTestUtil
         return bb.array();
     }
 
-    public static Matcher<TransportConnection> eventuallyReceives( final Matcher<ResponseMessage>... messages )
+    @SafeVarargs
+    public final Matcher<TransportConnection> eventuallyReceives( final Matcher<ResponseMessage>... messages )
     {
         return new TypeSafeMatcher<TransportConnection>()
         {
@@ -165,7 +159,7 @@ public class TransportTestUtil
         };
     }
 
-    public static ResponseMessage receiveOneResponseMessage( TransportConnection conn ) throws IOException,
+    public ResponseMessage receiveOneResponseMessage( TransportConnection conn ) throws IOException,
             InterruptedException
     {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -180,27 +174,35 @@ public class TransportTestUtil
             }
             else
             {
-                return responseMessage( bytes.toByteArray() );
+                return responseMessage( neo4jPack, bytes.toByteArray() );
             }
         }
     }
 
-    public static int receiveChunkHeader( TransportConnection conn ) throws IOException, InterruptedException
+    public int receiveChunkHeader( TransportConnection conn ) throws IOException, InterruptedException
     {
         byte[] raw = conn.recv( 2 );
         return ((raw[0] & 0xff) << 8 | (raw[1] & 0xff)) & 0xffff;
+    }
+
+    public Matcher<TransportConnection> eventuallyReceivesSelectedProtocolVersion()
+    {
+        return eventuallyReceives( new byte[]{0, 0, 0, (byte) neo4jPack.version()} );
     }
 
     public static Matcher<TransportConnection> eventuallyReceives( final byte[] expected )
     {
         return new TypeSafeMatcher<TransportConnection>()
         {
+            byte[] received;
+
             @Override
             protected boolean matchesSafely( TransportConnection item )
             {
                 try
                 {
-                    return Arrays.equals( item.recv( expected.length ), expected );
+                    received = item.recv( expected.length );
+                    return Arrays.equals( received, expected );
                 }
                 catch ( Exception e )
                 {
@@ -211,7 +213,20 @@ public class TransportTestUtil
             @Override
             public void describeTo( Description description )
             {
-                description.appendValueList( "RawBytes[", ",", "]", expected );
+                description.appendText( "to receive " );
+                appendBytes( description, expected );
+            }
+
+            @Override
+            protected void describeMismatchSafely( TransportConnection item, Description mismatchDescription )
+            {
+                mismatchDescription.appendText( "received " );
+                appendBytes( mismatchDescription, received );
+            }
+
+            void appendBytes( Description description, byte[] bytes )
+            {
+                description.appendValueList( "RawBytes[", ",", "]", bytes );
             }
         };
     }

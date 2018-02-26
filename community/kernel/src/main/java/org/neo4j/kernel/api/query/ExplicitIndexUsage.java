@@ -22,12 +22,12 @@ package org.neo4j.kernel.api.query;
 import java.util.HashMap;
 import java.util.Map;
 
-class ExplicitIndexUsage extends IndexUsage
+public class ExplicitIndexUsage extends IndexUsage
 {
     private final String index;
     private final String entityType;
 
-    ExplicitIndexUsage( String identifier, String index, String entityType )
+    public ExplicitIndexUsage( String identifier, String index, String entityType )
     {
         super( identifier );
         this.index = index;

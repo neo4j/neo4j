@@ -37,6 +37,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
@@ -79,6 +80,7 @@ public class BoltThrottleMaxDurationIT
 
     private HostnamePort address;
     private TransportConnection client;
+    private TransportTestUtil util;
 
     @Parameterized.Parameters
     public static Collection<Factory<TransportConnection>> transports()
@@ -112,6 +114,7 @@ public class BoltThrottleMaxDurationIT
     {
         client = cf.newInstance();
         address = server.lookupDefaultConnector();
+        util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -130,18 +133,18 @@ public class BoltThrottleMaxDurationIT
         String largeString = StringUtils.repeat( " ", 8 * 1024  );
 
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         Future sender = otherThread.execute( state ->
         {
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {
-                client.send( TransportTestUtil.chunk(
+                client.send( util.chunk(
                         run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
                         pullAll()
                 ) );

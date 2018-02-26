@@ -559,6 +559,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def nodeCursor: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[NodeCursor], "nodeCursor"))
 
+  private def relationshipScanCursor: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[RelationshipScanCursor], "relationshipScanCursor"))
+
   private def propertyCursor: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[PropertyCursor], "propertyCursor"))
 
@@ -1444,26 +1447,36 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def relationshipGetPropertyForVar(relIdVar: String, propIdVar: String, propValueVar: String) = {
+  override def relationshipGetPropertyForVar(relIdVar: String, relVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                   invoke(
                     reboxValue,
-                    invoke(readOperations, relationshipGetProperty, body.load(relIdVar), body.load(propIdVar))
+                    invoke(
+                      methodReference(typeRef[CompiledCursorUtils],
+                                      typeRef[Value], "relationshipGetProperty",
+                                      typeRef[Read], typeRef[RelationshipScanCursor], typeRef[Long],
+                                      typeRef[PropertyCursor], typeRef[Int]),
+                      dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType), propertyCursor, body.load(propIdVar))
                   ))
-    }{ fail =>
+    } { fail =>
       fail.assign(local, constant(null))
     }
   }
 
-  override def relationshipGetPropertyById(relIdVar: String, propId: Int, propValueVar: String) = {
+  override def relationshipGetPropertyById(relIdVar: String, relVarType: CodeGenType, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                   invoke(
                     reboxValue,
-                    invoke(readOperations, relationshipGetProperty, body.load(relIdVar), constant(propId))
+                    invoke(
+                      methodReference(typeRef[CompiledCursorUtils],
+                                      typeRef[Value], "relationshipGetProperty",
+                                      typeRef[Read], typeRef[RelationshipScanCursor], typeRef[Long],
+                                      typeRef[PropertyCursor], typeRef[Int]),
+                      dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType),  propertyCursor, constant(propId))
                   ))
     }{ fail =>
       fail.assign(local, constant(null))

@@ -143,7 +143,12 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency( createSessionTracker() );
     }
 
-    static Predicate<String> fileWatcherFileNameFilter()
+    protected Predicate<String> fileWatcherFileNameFilter()
+    {
+        return communityFileWatcherFileNameFilter();
+    }
+
+    static Predicate<String> communityFileWatcherFileNameFilter()
     {
         return Predicates.any(
                 fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),

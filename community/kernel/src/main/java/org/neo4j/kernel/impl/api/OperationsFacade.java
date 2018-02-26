@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -62,7 +63,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -1440,7 +1440,7 @@ public class OperationsFacade
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
             ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
-            procedureCall = procedures.callProcedure( ctx, name, input );
+            procedureCall = procedures.callProcedure( ctx, name, input, statement );
         }
         return new RawIterator<Object[],ProcedureException>()
         {

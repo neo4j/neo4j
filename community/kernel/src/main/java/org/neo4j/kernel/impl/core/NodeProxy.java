@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -53,9 +54,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -305,10 +305,6 @@ public class NodeProxy implements Node
         {
             throw new IllegalStateException( "Auto indexing encountered a failure while removing property: "
                                              + e.getMessage(), e );
-        }
-        catch ( KernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -616,10 +612,6 @@ public class NodeProxy implements Node
             {
                 transaction.dataWrite().nodeRemoveLabel( getId(), labelId );
             }
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            //just ignore
         }
         catch ( EntityNotFoundException e )
         {

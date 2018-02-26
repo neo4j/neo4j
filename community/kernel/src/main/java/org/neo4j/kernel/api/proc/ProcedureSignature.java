@@ -37,7 +37,7 @@ import static java.util.Collections.unmodifiableList;
  */
 public class ProcedureSignature
 {
-    public static List<FieldSignature> VOID = unmodifiableList( new ArrayList<>() );
+    public static final List<FieldSignature> VOID = unmodifiableList( new ArrayList<>() );
 
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;

@@ -23,7 +23,7 @@ import java.io.PrintWriter;
 
 public abstract class Indicator
 {
-    static final Indicator NONE = new Indicator( 1 )
+    public static final Indicator NONE = new Indicator( 1 )
     {
         @Override
         protected void progress( int from, int to )

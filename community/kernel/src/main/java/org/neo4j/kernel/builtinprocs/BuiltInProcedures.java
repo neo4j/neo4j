@@ -46,8 +46,8 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -144,7 +144,7 @@ public class BuiltInProcedures
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations operations = statement.readOperations();
-            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+            TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
             List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
@@ -233,7 +233,7 @@ public class BuiltInProcedures
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations operations = statement.readOperations();
-            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+            TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
             return asList( operations.constraintsGetAll() )
                     .stream()
@@ -557,7 +557,7 @@ public class BuiltInProcedures
     {
         graphDatabaseAPI.index().forNodes( explicitIndexName ).add( node, key, value );
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
     @Description( "Add a relationship to an explicit index based on a specified key and value" )
@@ -568,7 +568,7 @@ public class BuiltInProcedures
     {
         graphDatabaseAPI.index().forRelationships( explicitIndexName ).add( relationship, key, value );
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
     @Description( "Remove a node from an explicit index with an optional key" )
@@ -585,7 +585,7 @@ public class BuiltInProcedures
             graphDatabaseAPI.index().forNodes( explicitIndexName ).remove( node, key );
         }
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
     @Description( "Remove a relationship from an explicit index with an optional key" )
@@ -603,7 +603,7 @@ public class BuiltInProcedures
             graphDatabaseAPI.index().forRelationships( explicitIndexName ).remove( relationship, key );
         }
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
     private Map<String,String> indexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
@@ -616,7 +616,7 @@ public class BuiltInProcedures
     private List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();
-        List<String> propertyNames = new ArrayList<>();
+        List<String> propertyNames = new ArrayList<>( propertyIds.length );
         for ( int propertyId : propertyIds )
         {
             propertyNames.add( tokens.propertyKeyGetName( propertyId ) );
@@ -689,8 +689,7 @@ public class BuiltInProcedures
         return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
     }
 
-    @SuppressWarnings( "unused" )
-    public class LabelResult
+    public static class LabelResult
     {
         public final String label;
 
@@ -700,8 +699,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class PropertyKeyResult
+    public static class PropertyKeyResult
     {
         public final String propertyKey;
 
@@ -711,8 +709,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class RelationshipTypeResult
+    public static class RelationshipTypeResult
     {
         public final String relationshipType;
 
@@ -722,8 +719,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class BooleanResult
+    public static class BooleanResult
     {
         public BooleanResult( Boolean success )
         {
@@ -733,8 +729,7 @@ public class BuiltInProcedures
         public final Boolean success;
     }
 
-    @SuppressWarnings( "unused" )
-    public class IndexResult
+    public static class IndexResult
     {
         public final String description;
         public final String label;
@@ -768,8 +763,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class ConstraintResult
+    public static class ConstraintResult
     {
         public final String description;
 
@@ -779,8 +773,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class NodeResult
+    public static class NodeResult
     {
         public NodeResult( Node node )
         {
@@ -790,8 +783,7 @@ public class BuiltInProcedures
         public final Node node;
     }
 
-    @SuppressWarnings( "unused" )
-    public class WeightedNodeResult
+    public static class WeightedNodeResult
     {
         public final Node node;
         public final double weight;
@@ -803,8 +795,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class WeightedRelationshipResult
+    public static class WeightedRelationshipResult
     {
         public final Relationship relationship;
         public final double weight;
@@ -816,8 +807,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class RelationshipResult
+    public static class RelationshipResult
     {
         public RelationshipResult( Relationship relationship )
         {

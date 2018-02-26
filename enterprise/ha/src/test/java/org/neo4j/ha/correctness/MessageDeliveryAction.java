@@ -41,13 +41,13 @@ class MessageDeliveryAction implements ClusterAction
     @Override
     public Iterable<ClusterAction> perform( ClusterState state ) throws URISyntaxException
     {
-        String to = message.getHeader( Message.TO );
+        String to = message.getHeader( Message.HEADER_TO );
         return Iterables.map( MESSAGE_TO_ACTION, state.instance( to ).process( messageCopy() ) );
     }
 
     private Message<? extends MessageType> messageCopy() throws URISyntaxException
     {
-        URI to = new URI( message.getHeader( Message.TO ) );
+        URI to = new URI( message.getHeader( Message.HEADER_TO ) );
         Message<MessageType> copy = Message.to( message.getMessageType(), to, message.getPayload());
         return message.copyHeadersTo( copy );
     }
@@ -55,8 +55,8 @@ class MessageDeliveryAction implements ClusterAction
     @Override
     public String toString()
     {
-        return "(" + message.getHeader( Message.FROM ) + ")-[" + message.getMessageType().name() + "]->(" +
-                message.getHeader( Message.TO ) + ")";
+        return "(" + message.getHeader( Message.HEADER_FROM ) + ")-[" + message.getMessageType().name() + "]->(" +
+                message.getHeader( Message.HEADER_TO ) + ")";
     }
 
     @Override
@@ -82,12 +82,12 @@ class MessageDeliveryAction implements ClusterAction
             return false;
         }
 
-        if ( !first.getHeader( Message.FROM ).equals( other.getHeader( Message.FROM ) ) )
+        if ( !first.getHeader( Message.HEADER_FROM ).equals( other.getHeader( Message.HEADER_FROM ) ) )
         {
             return false;
         }
 
-        if ( !first.getHeader( Message.TO ).equals( other.getHeader( Message.TO ) ) )
+        if ( !first.getHeader( Message.HEADER_TO ).equals( other.getHeader( Message.HEADER_TO ) ) )
         {
             return false;
         }
@@ -114,8 +114,8 @@ class MessageDeliveryAction implements ClusterAction
     public int hashCode()
     {
         int result = message.getMessageType().hashCode();
-        result = 31 * result + message.getHeader( Message.FROM ).hashCode();
-        result = 31 * result + message.getHeader( Message.TO ).hashCode();
+        result = 31 * result + message.getHeader( Message.HEADER_FROM ).hashCode();
+        result = 31 * result + message.getHeader( Message.HEADER_TO ).hashCode();
         return result;
     }
 }

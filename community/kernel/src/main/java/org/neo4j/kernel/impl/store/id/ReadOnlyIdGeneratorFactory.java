@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
  */
 public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType,IdGenerator> idGenerators = new HashMap<>();
+    private final EnumMap<IdType,IdGenerator> idGenerators = new EnumMap<>( IdType.class );
     private final FileSystemAbstraction fileSystemAbstraction;
 
     public ReadOnlyIdGeneratorFactory()

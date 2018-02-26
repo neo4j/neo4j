@@ -502,9 +502,9 @@ public class DeferringLockClientTest
         }
 
         @Override
-        public Stream<? extends ActiveLock> activeLocks()
+        public Stream<ActiveLock> activeLocks()
         {
-            return actualLockUnits.stream();
+            return actualLockUnits.stream().map( ActiveLock.class::cast );
         }
 
         @Override
