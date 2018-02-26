@@ -21,13 +21,12 @@ package cypher.features
 
 import java.io.File
 import java.net.URI
-import java.util.Collection
 
-import cypher.features.ScenarioTestHelper._
-import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.{DynamicTest, Test, TestFactory}
+import org.junit.platform.runner.JUnitPlatform
+import org.junit.runner.RunWith
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
+@RunWith(classOf[JUnitPlatform])
 class AcceptanceTests extends BaseFeatureTest {
 
   // these two should be empty on commit!
