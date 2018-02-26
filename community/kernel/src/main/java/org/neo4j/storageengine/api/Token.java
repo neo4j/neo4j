@@ -19,7 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
-public class Token
+import org.neo4j.internal.kernel.api.NamedToken;
+
+public class Token implements NamedToken
 {
     private final String name;
     private final int id;

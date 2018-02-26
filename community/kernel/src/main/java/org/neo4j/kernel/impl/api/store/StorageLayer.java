@@ -33,6 +33,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -80,7 +81,6 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -348,20 +348,20 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<Token> propertyKeyGetAllTokens()
+    public Iterator<NamedToken> propertyKeyGetAllTokens()
     {
         return propertyKeyTokenHolder.getAllTokens().iterator();
     }
 
     @Override
-    public Iterator<Token> labelsGetAllTokens()
+    public Iterator<NamedToken> labelsGetAllTokens()
     {
         return labelTokenHolder.getAllTokens().iterator();
     }
 
     @SuppressWarnings( "unchecked" )
     @Override
-    public Iterator<Token> relationshipTypeGetAllTokens()
+    public Iterator<NamedToken> relationshipTypeGetAllTokens()
     {
         return (Iterator) relationshipTokenHolder.getAllTokens().iterator();
     }

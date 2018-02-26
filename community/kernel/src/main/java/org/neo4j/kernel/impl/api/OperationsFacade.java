@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -109,7 +110,6 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -687,7 +687,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<Token> propertyKeyGetAllTokens()
+    public Iterator<NamedToken> propertyKeyGetAllTokens()
     {
         statement.assertOpen();
         AccessMode mode = tx.securityContext().mode();
@@ -696,14 +696,14 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<Token> labelsGetAllTokens()
+    public Iterator<NamedToken> labelsGetAllTokens()
     {
         statement.assertOpen();
         return tokenRead().labelsGetAllTokens( statement );
     }
 
     @Override
-    public Iterator<Token> relationshipTypesGetAllTokens()
+    public Iterator<NamedToken> relationshipTypesGetAllTokens()
     {
         statement.assertOpen();
         return tokenRead().relationshipTypesGetAllTokens( statement );

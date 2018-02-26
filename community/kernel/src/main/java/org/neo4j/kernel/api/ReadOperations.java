@@ -32,6 +32,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -57,7 +58,6 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
@@ -82,8 +82,7 @@ public interface ReadOperations
     String labelGetName( int labelId ) throws LabelNotFoundKernelException;
 
     /** Returns the labels currently stored in the database * */
-    Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
-
+    Iterator<NamedToken> labelsGetAllTokens();
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
      * {@link StatementConstants#NO_SUCH_PROPERTY_KEY} will be returned.
@@ -94,14 +93,14 @@ public interface ReadOperations
     String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 
     /** Returns the property keys currently stored in the database */
-    Iterator<Token> propertyKeyGetAllTokens();
+    Iterator<NamedToken> propertyKeyGetAllTokens();
 
     int relationshipTypeGetForName( String relationshipTypeName );
 
     String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;
 
     /** Returns the relationship types currently stored in the database */
-    Iterator<Token> relationshipTypesGetAllTokens();
+    Iterator<NamedToken> relationshipTypesGetAllTokens();
 
     int labelCount();
 
