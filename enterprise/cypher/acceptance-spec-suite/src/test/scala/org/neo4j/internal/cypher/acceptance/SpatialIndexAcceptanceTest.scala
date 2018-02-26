@@ -222,13 +222,26 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
   }
 
   test("change crs") {
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point")
     graph.createIndex("Place", "location")
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-    graph.execute("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
 
+    // When changing to Cartesian
+    graph.execute("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78}) SET p.location = point({x: 1.0, y: 2.78})")
     testPointRead("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
+
+    // When changing to Cartesian-3D
+    graph.execute("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78}) SET p.location = point({x: 1.0, y: 2.78, z: 3.2})")
+    testPointRead("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, z: 3.2}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 3.2))
+
+    // When changing to WGS84-3D
+    graph.execute("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, z: 3.2}) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 123.0})")
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 123.0}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 123.0))
+
+    // When changing back to WGS84-3D
+    graph.execute("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 123.0}) SET p.location = point({latitude: 56.7, longitude: 12.78})")
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
   }
 
   private def testPointRead(query: String, expected: PointValue*): Unit = {
