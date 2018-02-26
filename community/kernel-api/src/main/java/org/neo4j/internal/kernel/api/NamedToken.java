@@ -22,17 +22,59 @@ package org.neo4j.internal.kernel.api;
 /**
  * A token with its associated name.
  */
-public interface NamedToken
+public final class NamedToken
 {
+    private final int id;
+    private final String name;
+
+    public NamedToken( int id, String name )
+    {
+        this.id = id;
+        this.name = name;
+    }
+
     /**
      * Id of token
+     *
      * @return the id of the token
      */
-    int id();
+    public int id()
+    {
+        return id;
+    }
 
     /**
      * The name associated with the token
+     *
      * @return The name corresponding to the token
      */
-    String name();
+    public String name()
+    {
+        return name;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        NamedToken that = (NamedToken) o;
+
+        return id == that.id && name.equals( that.name );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = id;
+        result = 31 * result + name.hashCode();
+        return result;
+    }
 }

@@ -87,7 +87,7 @@ public class BuiltInProcedures
         {
             // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
             // but we still want to eagerly consume the labels, so we can catch any exceptions,
-            List<LabelResult> labelResults = asList( TokenAccess.LABELS.inUse( statement ).map( LabelResult::new ) );
+            List<LabelResult> labelResults = asList( TokenAccess.LABELS.inUse( tx ).map( LabelResult::new ) );
             return labelResults.stream();
         }
         catch ( Throwable t )
@@ -107,7 +107,7 @@ public class BuiltInProcedures
             // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
             // but we still want to eagerly consume the labels, so we can catch any exceptions,
             List<PropertyKeyResult> propertyKeys =
-                    asList( TokenAccess.PROPERTY_KEYS.inUse( statement ).map( PropertyKeyResult::new ) );
+                    asList( TokenAccess.PROPERTY_KEYS.inUse( tx ).map( PropertyKeyResult::new ) );
             return propertyKeys.stream();
         }
         catch ( Throwable t )
@@ -127,7 +127,7 @@ public class BuiltInProcedures
             // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
             // but we still want to eagerly consume the labels, so we can catch any exceptions,
             List<RelationshipTypeResult> relationshipTypes =
-                    asList( TokenAccess.RELATIONSHIP_TYPES.inUse( statement ).map( RelationshipTypeResult::new ) );
+                    asList( TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).map( RelationshipTypeResult::new ) );
             return relationshipTypes.stream();
         }
         catch ( Throwable t )

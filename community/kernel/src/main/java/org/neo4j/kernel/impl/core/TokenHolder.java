@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.storageengine.api.Token;
 
-public interface TokenHolder<TOKEN extends NamedToken>
+public interface TokenHolder<TOKEN extends Token>
 {
     int NO_ID = -1;
 

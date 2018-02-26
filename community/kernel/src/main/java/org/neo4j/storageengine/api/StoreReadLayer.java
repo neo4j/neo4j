@@ -30,7 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -230,17 +229,17 @@ public interface StoreReadLayer
     /**
      * @return all stored property key tokens.
      */
-    Iterator<NamedToken> propertyKeyGetAllTokens();
+    Iterator<Token> propertyKeyGetAllTokens();
 
     /**
      * @return all stored label tokens.
      */
-    Iterator<NamedToken> labelsGetAllTokens();
+    Iterator<Token> labelsGetAllTokens();
 
     /**
      * @return all stored relationship type tokens.
      */
-    Iterator<NamedToken> relationshipTypeGetAllTokens();
+    Iterator<Token> relationshipTypeGetAllTokens();
 
     /**
      * @param relationshipTypeName name of relationship type.

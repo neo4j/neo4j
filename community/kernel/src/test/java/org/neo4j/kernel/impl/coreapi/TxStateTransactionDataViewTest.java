@@ -30,7 +30,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -346,7 +345,7 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldGetEmptyUsernameForAnonymousContext()
     {
-        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( mock( Token.class ) ) );
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( s -> -1 ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "", transactionDataSnapshot.username() );

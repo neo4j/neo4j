@@ -125,7 +125,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
                 return Collections.emptySet();
             }
 
-            SecurityContext inner = AnonymousContext.none().authorize( (s) -> -1  );
+            SecurityContext inner = AnonymousContext.none().authorize( s -> -1 );
 
             @Override
             public AuthSubject subject()

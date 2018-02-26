@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.storageengine.api.Token;
 
-public interface LabelTokenHolder extends TokenHolder<NamedToken>
+public interface LabelTokenHolder extends TokenHolder<Token>
 {
 }

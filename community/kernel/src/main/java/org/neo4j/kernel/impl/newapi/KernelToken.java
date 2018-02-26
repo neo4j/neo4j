@@ -110,7 +110,7 @@ public class KernelToken implements Token
     public Iterator<NamedToken> labelsGetAllTokens()
     {
         ktx.assertOpen();
-        return store.labelsGetAllTokens();
+        return Iterators.map( token -> new NamedToken( token.id(), token.name() ), store.labelsGetAllTokens());
     }
 
     @Override
@@ -118,15 +118,17 @@ public class KernelToken implements Token
     {
         ktx.assertOpen();
         AccessMode mode = ktx.securityContext().mode();
-        return Iterators.stream( store.propertyKeyGetAllTokens() ).
-                filter( propKey -> mode.allowsPropertyReads( propKey.id() ) ).iterator();
+        return Iterators.stream( store.propertyKeyGetAllTokens() )
+                .filter( propKey -> mode.allowsPropertyReads( propKey.id() ) )
+                .map( token -> new NamedToken( token.id(), token.name()  ) )
+                .iterator();
     }
 
     @Override
     public Iterator<NamedToken> relationshipTypesGetAllTokens()
     {
         ktx.assertOpen();
-        return store.relationshipTypeGetAllTokens();
+        return Iterators.map( token -> new NamedToken( token.id(), token.name() ), store.relationshipTypeGetAllTokens());
     }
 
     private String checkValidTokenName( String name ) throws IllegalTokenNameException

@@ -21,8 +21,8 @@ package org.neo4j.kernel.enterprise.api.security;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -49,7 +49,7 @@ public class EnterpriseSecurityContext extends SecurityContext
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Token token )
+    public EnterpriseSecurityContext authorize( Function<String, Integer> tokenLookup )
     {
         return this;
     }

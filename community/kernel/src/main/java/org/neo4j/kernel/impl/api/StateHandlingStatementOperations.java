@@ -32,7 +32,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -93,6 +92,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -1373,19 +1373,19 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<NamedToken> propertyKeyGetAllTokens( Statement state )
+    public Iterator<Token> propertyKeyGetAllTokens( Statement state )
     {
         return storeLayer.propertyKeyGetAllTokens();
     }
 
     @Override
-    public Iterator<NamedToken> labelsGetAllTokens( Statement state )
+    public Iterator<Token> labelsGetAllTokens( Statement state )
     {
         return storeLayer.labelsGetAllTokens();
     }
 
     @Override
-    public Iterator<NamedToken> relationshipTypesGetAllTokens( Statement state )
+    public Iterator<Token> relationshipTypesGetAllTokens( Statement state )
     {
         return storeLayer.relationshipTypeGetAllTokens();
     }
