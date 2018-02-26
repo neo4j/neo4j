@@ -38,6 +38,8 @@ public interface SchemaRead
      */
     CapableIndexReference index( int label, int... properties );
 
+    Iterator<CapableIndexReference> indexesGetForLabel( int labelId );
+
     /**
      * Finds all constraints for the given schema
      * @param descriptor The descriptor of the schema
@@ -64,4 +66,13 @@ public interface SchemaRead
      * @return An iterator of all the constraints in the database.
      */
     Iterator<ConstraintDescriptor> constraintsGetAll( );
+
+    /**
+     * Get all constraints applicable to relationship type.
+     * @param typeId the id of the relationship type
+     * @return An iterator of constraints associated with the given type.
+     */
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
+
+
 }
