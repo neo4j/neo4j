@@ -38,6 +38,11 @@ public interface SchemaRead
      */
     CapableIndexReference index( int label, int... properties );
 
+    /**
+     * Returns all indexes associated with the given label
+     * @param labelId The id of the label which associated indexes you are looking for
+     * @return The index associated with the given label
+     */
     Iterator<CapableIndexReference> indexesGetForLabel( int labelId );
 
     /**
@@ -73,6 +78,4 @@ public interface SchemaRead
      * @return An iterator of constraints associated with the given type.
      */
     Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
-
-
 }

@@ -197,7 +197,7 @@ public class TransactionEventsIT
             }
 
             @Override
-            public SecurityContext authorize(Function<String, Integer> tokenLookup )
+            public SecurityContext authorize( Function<String,Integer> tokenLookup )
             {
                 return new SecurityContext( subject, AccessMode.Static.WRITE );
             }
