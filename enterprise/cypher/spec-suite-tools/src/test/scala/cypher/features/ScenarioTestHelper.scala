@@ -113,7 +113,7 @@ object ScenarioTestHelper {
     It can be very useful when adding a new runtime for example.
    */
   def printComputedBlacklist(scenarios: Seq[Scenario],
-                             config: TestConfig): Set[String] = {
+                             config: TestConfig): Unit = {
     //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
     //TODO: Investigate this!
     println("Evaluating scenarios")
@@ -123,9 +123,8 @@ object ScenarioTestHelper {
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenario.toString) else None
-    }.toSet
+    }
     println()
     println(blacklist.mkString("\n"))
-    blacklist
   }
 }

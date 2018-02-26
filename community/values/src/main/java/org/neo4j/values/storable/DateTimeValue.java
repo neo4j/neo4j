@@ -30,18 +30,23 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
+import static java.time.Instant.ofEpochMilli;
 import static java.time.Instant.ofEpochSecond;
+import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
@@ -95,6 +100,21 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     public static DateTimeValue datetime( long epochSecondUTC, long nano, ZoneId zone )
     {
         return new DateTimeValue( ofInstant( ofEpochSecond( epochSecondUTC, nano ), zone ) );
+    }
+
+    public static DateTimeValue ofEpoch( IntegralValue epochSecondUTC, IntegralValue nano )
+    {
+        long ns = safeCastIntegral( "nanosecond", nano, 0 );
+        if ( ns < 0 || ns >=  1000_000_000 )
+        {
+            throw new IllegalArgumentException( "Invalid nanosecond: " + ns );
+        }
+        return new DateTimeValue( ofInstant( ofEpochSecond( epochSecondUTC.longValue(), ns ), UTC ) );
+    }
+
+    public static DateTimeValue ofEpochMillis( IntegralValue millisUTC )
+    {
+        return new DateTimeValue( ofInstant( ofEpochMilli( millisUTC.longValue() ), UTC ) );
     }
 
     public static DateTimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
@@ -187,13 +207,13 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             @Override
             protected DateTimeValue constructYear( AnyValue year )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructCalendarDateWithConstructedTime( year, null, null, null, null, null, null, null, null );
             }
 
             @Override
             protected DateTimeValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructCalendarDateWithConstructedTime( year, month, day, null, null, null, null, null, null );
             }
 
             @Override
@@ -215,6 +235,14 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( month, "month" ),
+                        Pair.of( day, "day" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
                 return datetime(
                         (int) safeCastIntegral( "year", year, 0 ),
                         (int) safeCastIntegral( "month", month, 1 ),
@@ -229,7 +257,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             @Override
             protected DateTimeValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructWeekDateWithConstructedTime( year, week, dayOfWeek, null, null, null, null, null, null );
             }
 
             @Override
@@ -251,13 +279,31 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( week, "week" ),
+                        Pair.of( dayOfWeek, "dayOfWeek" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return datetime(
+                        ZonedDateTime.now()
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, (int) safeCastIntegral( "week", week, 1 ) )
+                                .with( ChronoField.DAY_OF_WEEK, (int) safeCastIntegral( "dayOfWeek", dayOfWeek, 1 ) )
+                                .withHour( (int) safeCastIntegral( "hour", hour, 0 ) )
+                                .withMinute( (int) safeCastIntegral( "minute", minute, 0 ) )
+                                .withSecond( (int) safeCastIntegral( "second", second, 0 ) )
+                                .withNano( validNano( millisecond, microsecond, nanosecond ) )
+                                .withZoneSameLocal( timezone() )
+                );
             }
 
             @Override
             protected DateTimeValue constructQuarterDate( AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructQuarterDateWithConstructedTime( year, quarter, dayOfQuarter, null, null, null, null, null, null );
             }
 
             @Override
@@ -279,13 +325,31 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( quarter, "quarter" ),
+                        Pair.of( dayOfQuarter, "dayOfQuarter" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return datetime(
+                        ZonedDateTime.now()
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .with( IsoFields.QUARTER_OF_YEAR, (int) safeCastIntegral( "quarter", quarter, 1 ) )
+                                .with( IsoFields.DAY_OF_QUARTER, (int) safeCastIntegral( "dayOfQuarter", dayOfQuarter, 1 ) )
+                                .withHour( (int) safeCastIntegral( "hour", hour, 0 ) )
+                                .withMinute( (int) safeCastIntegral( "minute", minute, 0 ) )
+                                .withSecond( (int) safeCastIntegral( "second", second, 0 ) )
+                                .withNano( validNano( millisecond, microsecond, nanosecond ) )
+                                .withZoneSameLocal( timezone() )
+                );
             }
 
             @Override
             protected DateTimeValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructOrdinalDateWithConstructedTime( year, ordinalDay, null, null, null, null, null, null );
             }
 
             @Override
@@ -306,7 +370,23 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( ordinalDay, "ordinalDay" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return datetime(
+                        ZonedDateTime.now()
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .withDayOfYear( (int) safeCastIntegral( "ordinalDay", ordinalDay, 1 ) )
+                                .withHour( (int) safeCastIntegral( "hour", hour, 0 ) )
+                                .withMinute( (int) safeCastIntegral( "minute", minute, 0 ) )
+                                .withSecond( (int) safeCastIntegral( "second", second, 0 ) )
+                                .withNano( validNano( millisecond, microsecond, nanosecond ) )
+                                .withZoneSameLocal( timezone() )
+                );
             }
         };
     }
@@ -404,7 +484,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return value == datetime ? this : new DateTimeValue( datetime );
     }
 
-    private static final String ZONE_NAME = "(?<zoneName>[a-zA-Z0-9_ /+-]+)";
+    private static final String ZONE_NAME = "(?<zoneName>[a-zA-Z0-9~._ /+-]+)";
     private static final Pattern PATTERN = Pattern.compile(
             DATE_PATTERN + "(?<time>T" + TIME_PATTERN + "(?:\\[" + ZONE_NAME + "\\])?" + ")?",
             Pattern.CASE_INSENSITIVE );

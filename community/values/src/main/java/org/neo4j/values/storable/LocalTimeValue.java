@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -39,6 +40,8 @@ import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
+import static org.neo4j.values.storable.TimeValue.validNano;
 
 public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue>
 {
@@ -109,7 +112,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
             @Override
             protected LocalTimeValue selectTime( AnyValue temporal )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                // TODO other cases, e.g. DateTimeValue
+                if ( temporal instanceof LocalTimeValue )
+                {
+                    return (LocalTimeValue) temporal;
+                }
+                throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", temporal ) );
             }
 
             @Override
@@ -121,7 +129,13 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder( Pair.of( hour, "hour" ), Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ), Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond") );
+                return localTime(
+                        (int) safeCastIntegral( "hour", hour, 0 ),
+                        (int) safeCastIntegral( "minute", minute, 0 ),
+                        (int) safeCastIntegral( "second", second, 0 ),
+                        validNano( millisecond, microsecond, nanosecond ) );
             }
         };
     }
@@ -205,9 +219,9 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     static final String TIME_PATTERN = "(?:(?:(?<longHour>[0-9]{1,2})(?::(?<longMinute>[0-9]{1,2})"
-            + "(?::(?<longSecond>[0-9]{1,2})(?:.(?<longFraction>[0-9]{1,9}))?)?)?)|"
+            + "(?::(?<longSecond>[0-9]{1,2})(?:\\.(?<longFraction>[0-9]{1,9}))?)?)?)|"
             + "(?:(?<shortHour>[0-9]{2})(?:(?<shortMinute>[0-9]{2})"
-            + "(?:(?<shortSecond>[0-9]{2})(?:.(?<shortFraction>[0-9]{1,9}))?)?)?))";
+            + "(?:(?<shortSecond>[0-9]{2})(?:\\.(?<shortFraction>[0-9]{1,9}))?)?)?))";
     private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );
 
     private static LocalTimeValue parse( Matcher matcher )

@@ -39,6 +39,7 @@ import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
+import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.time.temporal.ChronoField.EPOCH_DAY;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
@@ -54,6 +55,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
+import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
 
 /**
  * We use our own implementation because neither {@link java.time.Duration} nor {@link java.time.Period} fits our needs.
@@ -171,17 +173,18 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                     AnyValue microseconds,
                     AnyValue nanoseconds )
             {
-                return duration(
-                        safeCastIntegral( "years", years, 0 ) * 12
-                                + safeCastIntegral( "months", months, 0 ),
-                        safeCastIntegral( "weeks", weeks, 0 ) * 7
-                                + safeCastIntegral( "days", days, 0 ),
-                        safeCastIntegral( "hours", hours, 0 ) * 3600
-                                + safeCastIntegral( "minutes", minutes, 0 ) * 60
-                                + safeCastIntegral( "seconds", seconds, 0 ),
-                        safeCastIntegral( "milliseconds", milliseconds, 0 ) * 1_000_000
-                                + safeCastIntegral( "microseconds", microseconds, 0 ) * 1_000
-                                + safeCastIntegral( "nanoseconds", nanoseconds, 0 ) );
+                return approximate(
+                        safeCastFloatingPoint( "years", years, 0 ) * 12 +
+                                safeCastFloatingPoint( "months", months, 0 ),
+                        safeCastFloatingPoint( "weeks", weeks, 0 ) * 7 +
+                                safeCastFloatingPoint( "days", days, 0 ),
+                        safeCastFloatingPoint( "hours", hours, 0 ) * 3600 +
+                                safeCastFloatingPoint( "minutes", minutes, 0 ) * 60 +
+                                safeCastFloatingPoint( "seconds", seconds, 0 ),
+                        safeCastFloatingPoint( "milliseconds", milliseconds, 0 ) * 1_000_000 +
+                                safeCastFloatingPoint( "microseconds", microseconds, 0 ) * 1_000 +
+                                safeCastFloatingPoint( "nanoseconds", nanoseconds, 0 )
+                );
             }
         };
     }
@@ -193,14 +196,14 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
     private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
     // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
-    private static final Comparator<DurationValue> COMPARATOR = Comparator.comparingLong(DurationValue::averageLengthInSeconds)
-            // nanos are guaranteed to be smaller than NANOS_PER_SECOND
-            .thenComparingLong( d -> d.nanos )
-            // At this point, the durations have the same length and we compare by the individual fields.
-            .thenComparingLong( d -> d.months )
-            .thenComparingLong( d -> d.days )
-            .thenComparingLong( d -> d.seconds );
-
+    private static final Comparator<DurationValue> COMPARATOR =
+            Comparator.comparingLong( DurationValue::averageLengthInSeconds )
+                    // nanos are guaranteed to be smaller than NANOS_PER_SECOND
+                    .thenComparingLong( d -> d.nanos )
+                    // At this point, the durations have the same length and we compare by the individual fields.
+                    .thenComparingLong( d -> d.months )
+                    .thenComparingLong( d -> d.days )
+                    .thenComparingLong( d -> d.seconds );
     static final int NANOS_PER_SECOND = 1_000_000_000;
     static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
     /** 30.4375 days = 30 days, 10 hours, 30 minutes */
@@ -214,7 +217,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     private static DurationValue newDuration( long months, long days, long seconds, int nanos )
     {
         return seconds == 0 && days == 0 && months == 0 && nanos == 0 // ordered by probability of non-zero
-               ? ZERO : new DurationValue( months, days, seconds, nanos );
+                ? ZERO : new DurationValue( months, days, seconds, nanos );
     }
 
     private DurationValue( long months, long days, long seconds, long nanos )
@@ -275,13 +278,13 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return days + (seconds / SECONDS_PER_DAY);
     }
 
-    private static final String UNIT_BASED_PATTERN = "(?:(?<years>[-+]?[0-9]+)Y)?"
-            + "(?:(?<months>[-+]?[0-9]+)M)?"
-            + "(?:(?<weeks>[-+]?[0-9]+)W)?"
-            + "(?:(?<days>[-+]?[0-9]+)D)?"
+    private static final String UNIT_BASED_PATTERN = "(?:(?<years>[-+]?[0-9]+(?:[.,][0-9]+)?)Y)?"
+            + "(?:(?<months>[-+]?[0-9]+(?:[.,][0-9]+)?)M)?"
+            + "(?:(?<weeks>[-+]?[0-9]+(?:[.,][0-9]+)?)W)?"
+            + "(?:(?<days>[-+]?[0-9]+(?:[.,][0-9]+)?)D)?"
             + "(?<T>T"
-            + "(?:(?<hours>[-+]?[0-9]+)H)?"
-            + "(?:(?<minutes>[-+]?[0-9]+)M)?"
+            + "(?:(?<hours>[-+]?[0-9]+(?:[.,][0-9]+)?)H)?"
+            + "(?:(?<minutes>[-+]?[0-9]+(?:[.,][0-9]+)?)M)?"
             + "(?:(?<seconds>[-+]?[0-9]+)(?:[.,](?<subseconds>[0-9]{1,9}))?S)?)?";
     private static final String DATE_BASED_PATTERN = "(?:"
             + "(?<year>[0-9]{4})(?:"
@@ -322,8 +325,43 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             return null;
         }
-        long months = optLong( y ) * 12 + optLong( m );
-        long days = optLong( w ) * 7 + optLong( d );
+        int pos;
+        if ( (pos = fractionPoint( y )) >= 0 )
+        {
+            if ( m != null || w != null || d != null || t != null )
+            {
+                return null;
+            }
+            return approximate( parseFractional( y, pos ) * 12, 0, 0, 0 );
+        }
+        long months = optLong( y ) * 12;
+        if ( (pos = fractionPoint( m )) >= 0 )
+        {
+            if ( w != null || d != null || t != null )
+            {
+                return null;
+            }
+            return approximate( months + parseFractional( m, pos ), 0, 0, 0 );
+        }
+        months += optLong( m );
+        if ( (pos = fractionPoint( w )) >= 0 )
+        {
+            if ( d != null || t != null )
+            {
+                return null;
+            }
+            return approximate( months, parseFractional( w, pos ) * 7, 0, 0 );
+        }
+        long days = optLong( w ) * 7;
+        if ( (pos = fractionPoint( d )) >= 0 )
+        {
+            if ( t != null )
+            {
+                return null;
+            }
+            return approximate( months, days + parseFractional( d, pos ), 0, 0 );
+        }
+        days += optLong( d );
         return parseDuration( sign, months, days, matcher, false, "hours", "minutes", "seconds", "subseconds" );
     }
 
@@ -380,27 +418,49 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             int sign, long months, long days, Matcher matcher, boolean strict,
             String hour, String min, String sec, String sub )
     {
-        long h = optLong( matcher.group( hour ) );
-        long m = optLong( matcher.group( min ) );
+        String h = matcher.group( hour );
+        String m = matcher.group( min );
         String s = matcher.group( sec );
         String n = matcher.group( sub );
+        if ( !strict )
+        {
+            int pos;
+            if ( (pos = fractionPoint( h )) >= 0 )
+            {
+                if ( m != null || s != null )
+                {
+                    return null;
+                }
+                return approximate( months, days, parseFractional( h, pos ) * 3600, 0 );
+            }
+            if ( (pos = fractionPoint( m )) >= 0 )
+            {
+                if ( s != null )
+                {
+                    return null;
+                }
+                return approximate( months, days, parseFractional( m, pos ) * 60, 0 );
+            }
+        }
+        long hours = optLong( h );
+        long minutes = optLong( m );
         long seconds = optLong( s );
         if ( strict )
         {
-            if ( h > 24 )
+            if ( hours > 24 )
             {
-                throw new IllegalArgumentException( "hours out of range: " + h );
+                throw new IllegalArgumentException( "hours out of range: " + hours );
             }
-            if ( m > 60 )
+            if ( minutes > 60 )
             {
-                throw new IllegalArgumentException( "minutes out of range: " + m );
+                throw new IllegalArgumentException( "minutes out of range: " + minutes );
             }
             if ( seconds > 60 )
             {
                 throw new IllegalArgumentException( "seconds out of range: " + seconds );
             }
         }
-        seconds += h * 3600 + m * 60;
+        seconds += hours * 3600 + minutes * 60;
         long nanos = optLong( n );
         if ( nanos != 0 )
         {
@@ -414,6 +474,26 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             }
         }
         return duration( sign * months, sign * days, sign * seconds, sign * nanos );
+    }
+
+    private static double parseFractional( String input, int pos )
+    {
+        return parseDouble( input.charAt( pos ) == '.' ? input :
+                (input.substring( 0, pos ) + "." + input.substring( pos + 1 )) );
+    }
+
+    private static int fractionPoint( String field )
+    {
+        if ( field == null )
+        {
+            return -1;
+        }
+        int fractionPoint = field.indexOf( '.' );
+        if ( fractionPoint < 0 )
+        {
+            fractionPoint = field.indexOf( ',' );
+        }
+        return fractionPoint;
     }
 
     private static long optLong( String value )

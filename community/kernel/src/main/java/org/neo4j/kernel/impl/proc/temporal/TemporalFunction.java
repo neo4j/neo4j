@@ -100,6 +100,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         procedures.register( new Now<>( base, "statement" ) );
         procedures.register( new Now<>( base, "realtime" ) );
         procedures.register( new Truncate<>( base ) );
+        base.registerMore( procedures );
     }
 
     private static String basename( Class<? extends TemporalFunction> function )
@@ -127,6 +128,11 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             return ((TextValue) value).stringValue();
         }
         throw new IllegalArgumentException( name + " should be a string, not: " + value );
+    }
+
+    void registerMore( Procedures procedures ) throws ProcedureException
+    {
+        // Empty by default
     }
 
     @Override

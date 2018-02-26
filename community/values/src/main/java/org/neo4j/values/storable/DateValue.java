@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -41,6 +42,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 
 public final class DateValue extends TemporalValue<LocalDate,DateValue>
 {
@@ -121,37 +123,61 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             @Override
             protected DateValue selectDate( AnyValue temporal )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                // TODO other cases, e.g. DateTimeValue
+                if ( temporal instanceof DateValue )
+                {
+                    return (DateValue) temporal;
+                }
+                throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
             }
 
             @Override
             protected DateValue constructYear( AnyValue year )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                int yearI = (int) safeCastIntegral( "year", year, 0 );
+                return date( yearI, 1, 1 );
             }
 
             @Override
             protected DateValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( month, "month" ), Pair.of( day, "day" ) );
+                return date(
+                        (int) safeCastIntegral( "year", year, 0 ),
+                        (int) safeCastIntegral( "month", month, 1 ),
+                        (int) safeCastIntegral( "day", day, 1 ) );
             }
 
             @Override
             protected DateValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( week, "week"), Pair.of( dayOfWeek, "dayOfWeek" ) );
+                return new DateValue(
+                        LocalDate.now()
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, (int) safeCastIntegral( "week", week, 1 ) )
+                                .with( ChronoField.DAY_OF_WEEK, (int) safeCastIntegral( "dayOfWeek", dayOfWeek, 1 ) ) );
             }
 
             @Override
             protected DateValue constructQuarterDate( AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( quarter, "quarter" ), Pair.of( dayOfQuarter, "dayOfQuarter" ) );
+                return new DateValue(
+                    LocalDate.now()
+                            .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                            .with( IsoFields.QUARTER_OF_YEAR, (int) safeCastIntegral( "quarter", quarter, 1 ) )
+                            .with( IsoFields.DAY_OF_QUARTER, (int) safeCastIntegral( "dayOfQuarter", dayOfQuarter, 1 ) ) );
             }
 
             @Override
             protected DateValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                if ( year instanceof LongValue && ordinalDay instanceof LongValue )
+                {
+                    return new DateValue( LocalDate.ofYearDay( (int) ((LongValue) year).value(), (int) ((LongValue) ordinalDay).value() ) );
+                }
+                throw new IllegalArgumentException( String.format( "Cannot construct date from: %s %s", year, ordinalDay ) );
             }
         };
     }

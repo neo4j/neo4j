@@ -22,15 +22,29 @@ package org.neo4j.kernel.impl.proc.temporal;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
+import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
+import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDateTime;
 
 @Description( "Create a DateTime instant." )
@@ -81,5 +95,88 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
     protected DateTimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
     {
         return DateTimeValue.truncate( unit, input, fields, defaultZone );
+    }
+
+    @Override
+    void registerMore( Procedures procedures ) throws ProcedureException
+    {
+        procedures.register( new FromEpoch() );
+        procedures.register( new FromEpochMillis() );
+    }
+
+    private static class FromEpoch implements CallableUserFunction
+    {
+        private static final String DESCRIPTION =
+                "Create a DateTime given the seconds and nanoseconds since the start of the epoch.";
+        private static final List<FieldSignature> SIGNATURE = Arrays.asList(
+                inputField( "seconds", Neo4jTypes.NTInteger ),
+                inputField( "nanoseconds", Neo4jTypes.NTInteger ) );
+        private final UserFunctionSignature signature;
+
+        private FromEpoch()
+        {
+            this.signature = new UserFunctionSignature(
+                    new QualifiedName( new String[] {"datetime"}, "fromepoch" ),
+                    SIGNATURE, Neo4jTypes.NTDateTime, Optional.empty(), new String[0],
+                    Optional.of( DESCRIPTION ) );
+        }
+
+        @Override
+        public UserFunctionSignature signature()
+        {
+            return signature;
+        }
+
+        @Override
+        public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
+        {
+            if ( input != null && input.length == 2 )
+            {
+                if ( input[0] instanceof IntegralValue && input[1] instanceof IntegralValue )
+                {
+                    IntegralValue seconds = (IntegralValue) input[0];
+                    IntegralValue nanoseconds = (IntegralValue) input[1];
+                    return DateTimeValue.ofEpoch(seconds, nanoseconds);
+                }
+            }
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+        }
+    }
+
+    private static class FromEpochMillis implements CallableUserFunction
+    {
+        private static final String DESCRIPTION =
+                "Create a DateTime given the milliseconds since the start of the epoch.";
+        private static final List<FieldSignature> SIGNATURE = Arrays.asList(
+                inputField( "milliseconds", Neo4jTypes.NTInteger ) );
+        private final UserFunctionSignature signature;
+
+        private FromEpochMillis()
+        {
+            this.signature = new UserFunctionSignature(
+                    new QualifiedName( new String[] {"datetime"}, "fromepochmillis" ),
+                    SIGNATURE, Neo4jTypes.NTDateTime, Optional.empty(), new String[0],
+                    Optional.of( DESCRIPTION ) );
+        }
+
+        @Override
+        public UserFunctionSignature signature()
+        {
+            return signature;
+        }
+
+        @Override
+        public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
+        {
+            if ( input != null && input.length == 1 )
+            {
+                if ( input[0] instanceof IntegralValue  )
+                {
+                    IntegralValue milliseconds = (IntegralValue) input[0];
+                    return DateTimeValue.ofEpochMillis( milliseconds );
+                }
+            }
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+        }
     }
 }

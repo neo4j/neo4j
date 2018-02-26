@@ -38,6 +38,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 
@@ -804,7 +805,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 Builder<Input,Result> builder,
                 Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
         {
-            throw new IllegalStateException( "Cannot specify time for a year." );
+            throw new IllegalArgumentException( "Cannot specify time for a year." );
         }
     }
 
@@ -1015,5 +1016,35 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             throw new IllegalArgumentException( "cannot re-assign " + field );
         }
         return newValue;
+    }
+
+    static void assertDefinedInOrder( Pair<AnyValue, String>... values )
+    {
+        if ( values[0].first() == null )
+        {
+            throw new IllegalArgumentException( values[0].other() + " must be specified" );
+        }
+
+        String firstNotAssigned = null;
+
+        for ( Pair<AnyValue,String> value : values )
+        {
+            if ( value.first() == null )
+            {
+                if ( firstNotAssigned == null )
+                {
+                    firstNotAssigned = value.other();
+                }
+            }
+            else if ( firstNotAssigned != null )
+            {
+                throw new IllegalArgumentException( value.other() + " cannot be specified without " + firstNotAssigned );
+            }
+        }
+    }
+
+    static AnyValue oneOf( AnyValue a, AnyValue b, AnyValue c )
+    {
+        return a != null ? a : b != null ? b : c;
     }
 }

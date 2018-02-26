@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandle;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -33,6 +34,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -61,10 +63,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.of( hour, minute, second, nanosOfSecond, offset ) );
+        return new TimeValue(
+                OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
-    public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
+    public static TimeValue time( long nanosOfDayUTC, ZoneId offset )
     {
         return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
     }
@@ -149,7 +152,14 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder( Pair.of( hour, "hour" ), Pair.of( minute, "minute" ),
+                        Pair.of( second, "second"), Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return time(
+                        (int) safeCastIntegral( "hour", hour, 0 ),
+                        (int) safeCastIntegral( "minute", minute, 0 ),
+                        (int) safeCastIntegral( "second", second, 0 ),
+                        validNano( millisecond, microsecond, nanosecond ),
+                        timezone().toString() );
             }
 
             private OffsetTime offsetTime( AnyValue value )
@@ -292,18 +302,18 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     private static TimeValue parse( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
         return new TimeValue( OffsetTime
-                .of( parseTime( matcher ), zoneOffset( parseOffset( matcher, defaultZone ) ) ) );
+                .of( parseTime( matcher ), parseOffset( matcher, defaultZone ) ) );
     }
 
-    private static ZoneId parseOffset( Matcher matcher, Supplier<ZoneId> defaultZone )
+    private static ZoneOffset parseOffset( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
         ZoneOffset offset = parseOffset( matcher );
-        return offset != null ? offset : defaultZone.get();
-    }
-
-    private static ZoneOffset zoneOffset( ZoneId zoneId )
-    {
-        return zoneId instanceof ZoneOffset ? (ZoneOffset) zoneId : zoneId.getRules().getOffset( Instant.now() );
+        if ( offset == null )
+        {
+            ZoneId zoneId = defaultZone.get();
+            offset = zoneId instanceof ZoneOffset ? (ZoneOffset) zoneId : zoneId.getRules().getOffset( Instant.now() );
+        }
+        return offset;
     }
 
     abstract static class TimeBuilder<Input, Result> extends Builder<Input,Result>
