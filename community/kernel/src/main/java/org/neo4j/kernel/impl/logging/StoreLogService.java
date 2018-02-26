@@ -101,9 +101,10 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
 
         public StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File logsDir ) throws IOException
         {
+            File debugLogFile = new File( logsDir, INTERNAL_LOG_NAME );
             return new StoreLogService(
                     userLogProvider,
-                    fileSystem, new File( logsDir, INTERNAL_LOG_NAME ), logLevels, defaultLevel,
+                    fileSystem, debugLogFile, logLevels, defaultLevel,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
         }
     }

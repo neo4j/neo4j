@@ -111,7 +111,7 @@ public class ExternallyManagedPageCache implements PageCache
      */
     public static GraphDatabaseFactoryWithPageCacheFactory graphDatabaseFactoryWithPageCache( final PageCache delegatePageCache )
     {
-        return new GraphDatabaseFactoryWithPageCacheFactory( delegatePageCache);
+        return new GraphDatabaseFactoryWithPageCacheFactory( delegatePageCache );
     }
 
     public static class GraphDatabaseFactoryWithPageCacheFactory extends GraphDatabaseFactory
