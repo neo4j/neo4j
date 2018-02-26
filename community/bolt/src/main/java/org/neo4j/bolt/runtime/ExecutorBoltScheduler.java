@@ -184,7 +184,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         private final String nameToAppend;
         private final ThreadFactory factory;
 
-        public NameAppendingThreadFactory( String nameToAppend, ThreadFactory factory )
+        private NameAppendingThreadFactory( String nameToAppend, ThreadFactory factory )
         {
             this.nameToAppend = nameToAppend;
             this.factory = factory;
