@@ -83,7 +83,10 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
 
     public void stop()
     {
-        executorFactory.destroy( threadPool );
+        if ( threadPool != null )
+        {
+            executorFactory.destroy( threadPool );
+        }
     }
 
     @Override

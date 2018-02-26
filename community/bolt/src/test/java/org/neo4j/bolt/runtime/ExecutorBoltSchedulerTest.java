@@ -84,21 +84,33 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void initShouldCreateBothThreadPools() throws Throwable
+    public void initShouldCreateThreadPool() throws Throwable
     {
-        boltScheduler.start();
+        ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
+        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
+        ExecutorBoltScheduler scheduler =
+                new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
+                        ForkJoinPool.commonPool() );
+
+        scheduler.start();
 
         verify( jobScheduler ).threadFactory( JobScheduler.Groups.boltWorker );
-        verify( executorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), any( ThreadFactory.class ) );
+        verify( mockExecutorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), any( ThreadFactory.class ) );
     }
 
     @Test
     public void shutdownShouldTerminateThreadPool() throws Throwable
     {
-        boltScheduler.start();
-        boltScheduler.stop();
+        ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
+        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
+        ExecutorBoltScheduler scheduler =
+                new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
+                        ForkJoinPool.commonPool() );
 
-        verify( executorFactory, times( 1 ) ).destroy( any() );
+        scheduler.start();
+        scheduler.stop();
+
+        verify( mockExecutorFactory, times( 1 ) ).destroy( any() );
     }
 
     @Test
