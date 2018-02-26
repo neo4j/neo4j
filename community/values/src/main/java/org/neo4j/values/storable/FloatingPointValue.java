@@ -134,12 +134,12 @@ public abstract class FloatingPointValue extends NumberValue
 
     public DoubleValue dividedBy( long b )
     {
-        return Values.doubleValue( doubleValue()/ b );
+        return Values.doubleValue( doubleValue() / b );
     }
 
     @Override
     public DoubleValue dividedBy( double b )
     {
-        return Values.doubleValue( doubleValue()/b );
+        return Values.doubleValue( doubleValue() / b );
     }
 }

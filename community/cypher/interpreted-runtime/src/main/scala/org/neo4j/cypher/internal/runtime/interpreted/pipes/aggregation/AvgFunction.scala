@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.TypeSafeMathSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.storable._
+import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
 /**
  * AVG computation is calculated using cumulative moving average approach:
@@ -32,33 +31,23 @@ import org.neo4j.values.storable._
  */
 class AvgFunction(val value: Expression)
   extends AggregationFunction
-  with TypeSafeMathSupport
   with NumericExpressionOnly {
 
   def name = "AVG"
 
   private var count: Long = 0L
-  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0)
+  private var sum: NumberValue = Values.ZERO_INT
 
   override def result(state: QueryState): Value =
-    if (count > 0) {
-      asNumberValue(sum.value)
-    } else {
-      Values.NO_VALUE
-    }
+    if (count > 0) sum
+    else Values.NO_VALUE
 
   override def apply(data: ExecutionContext, state: QueryState) {
     actOnNumber(value(data, state), (number) => {
       count += 1
-      val diff = minus(number, asNumberValue(sum.value)) match {
-        case v: NumberValue => v
-        case _ => throw new InternalException("cannot average non-numbers")
-      }
-      val next = divide(diff, Values.doubleValue(count.toDouble)) match {
-        case v: NumberValue => v
-        case _ => throw new InternalException("cannot average non-numbers")
-      }
-      sum = sum.add(next)
+      val diff = number.minus(sum)
+      val next = diff.dividedBy(count.toDouble)
+      sum = overflowSafeAdd(sum, next)
     })
   }
 }
