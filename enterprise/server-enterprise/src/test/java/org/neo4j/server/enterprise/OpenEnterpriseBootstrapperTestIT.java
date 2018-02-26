@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.BaseBootstrapperTestIT;
@@ -44,6 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_level;
@@ -66,7 +68,6 @@ public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
     {
         return new OpenEnterpriseBootstrapper();
     }
-
     @Test
     public void shouldBeAbleToStartInSingleMode() throws Exception
     {
@@ -77,8 +78,11 @@ public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
-                "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + PortAuthority.allocatePort() ),
+                "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:0" ),
+                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0",
+                "-c", "dbms.connector.https.listen_address=localhost:0",
                 "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.listen_address=localhost:0",
                 "-c", "dbms.connector.1.encryption=NONE",
                 "-c", "dbms.connector.1.enabled=true" );
 
@@ -101,9 +105,12 @@ public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
-                "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + PortAuthority.allocatePort() ),
+                "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:0" ),
+                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0",
+                "-c", "dbms.connector.https.listen_address=localhost:0",
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.encryption=NONE",
+                "-c", "dbms.connector.1.listen_address=localhost:0",
                 "-c", "dbms.connector.1.enabled=true" );
 
         // Then
@@ -119,10 +126,13 @@ public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
 
         Map<String, String> properties = stringMap();
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.https.listen_address", "localhost:0" );
         properties.put( "dbms.connector.1.type", "HTTP" );
         properties.put( "dbms.connector.1.encryption", "NONE" );
+        properties.put( "dbms.connector.1.listen_address", "localhost:0" );
         properties.put( "dbms.connector.1.enabled", "true" );
-        properties.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort() );
+        properties.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        properties.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:0" );
         store( properties, configFile );
 
         // When
@@ -146,10 +156,13 @@ public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
 
         Map<String, String> properties = stringMap( store_internal_log_level.name(), "DEBUG");
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.https.listen_address", "localhost:0" );
         properties.put( "dbms.connector.1.type", "HTTP" );
         properties.put( "dbms.connector.1.encryption", "NONE" );
+        properties.put( "dbms.connector.1.listen_address", "localhost:0" );
         properties.put( "dbms.connector.1.enabled", "true" );
-        properties.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort() );
+        properties.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        properties.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:0");
         store( properties, configFile );
 
         // When

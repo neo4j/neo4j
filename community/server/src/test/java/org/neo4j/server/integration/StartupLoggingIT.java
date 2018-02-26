@@ -46,10 +46,8 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import static java.util.Arrays.asList;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
@@ -58,14 +56,14 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
+    @Rule
+    public TestDirectory homeDir = TestDirectory.testDirectory();
+
     @Before
     public void setUp() throws IOException
     {
         FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( DatabaseManagementSystemSettings.data_directory ) );
     }
-
-    @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
 
     @Test
     public void shouldLogHelpfulStartupMessages() throws Throwable
@@ -97,18 +95,18 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
         relativeProperties.put( http.type.name(), "HTTP" );
-        relativeProperties.put( http.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( http.listen_address.name(), "localhost:0" );
         relativeProperties.put( http.enabled.name(), Settings.TRUE );
 
         HttpConnector https = new HttpConnector( "https", Encryption.TLS );
         relativeProperties.put( https.type.name(), "HTTP" );
-        relativeProperties.put( https.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( https.listen_address.name(), "localhost:0" );
         relativeProperties.put( https.enabled.name(), Settings.TRUE );
 
         BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
         relativeProperties.put( bolt.type.name(), "BOLT" );
         relativeProperties.put( bolt.enabled.name(), "true" );
-        relativeProperties.put( bolt.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( bolt.listen_address.name(), "localhost:0" );
 
         relativeProperties.put( DatabaseManagementSystemSettings.database_path.name(),
                 homeDir.absolutePath().getAbsolutePath() );
