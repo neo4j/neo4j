@@ -92,7 +92,7 @@ public class StubNodeCursor implements NodeCursor
     @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        ((StubGroupCursor) cursor).rewind();
     }
 
     @Override

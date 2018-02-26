@@ -24,8 +24,12 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,10 +41,13 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCount;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCounts;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.computeKey;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.count;
+import static org.neo4j.internal.kernel.api.RelationshipTestSupport.sparse;
+import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.IN;
+import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.LOOP;
+import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.OUT;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -274,7 +281,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
-        traverseWithoutGroups( RelationshipTestSupport.sparse( graphDb ), false );
+        traverseWithoutGroups( sparse( graphDb ), false );
     }
 
     @Test
@@ -286,7 +293,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
-        traverseWithoutGroups( RelationshipTestSupport.sparse( graphDb ), true );
+        traverseWithoutGroups( sparse( graphDb ), true );
     }
 
     @Test
@@ -298,7 +305,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( RelationshipTestSupport.sparse( graphDb ), false );
+        traverseViaGroups( sparse( graphDb ), false );
     }
 
     @Test
@@ -310,7 +317,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
     {
-        traverseViaGroups( RelationshipTestSupport.sparse( graphDb ), true );
+        traverseViaGroups( sparse( graphDb ), true );
     }
 
     @Test
@@ -623,6 +630,449 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
+    @Test
+    public void shouldCountFromTxState() throws Exception
+    {
+        //dense outgoing
+        assertCount( 100, OUT, group ->
+        {
+            assertEquals( 101, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
+            assertEquals( 101, group.totalCount() );
+        } );
+        //sparse outgoing
+        assertCount( 1, OUT, group ->
+        {
+            assertEquals( 2, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
+            assertEquals( 2, group.totalCount() );
+        } );
+        //dense incoming
+        assertCount( 100, IN, group ->
+        {
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 101, group.incomingCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 101, group.totalCount() );
+        } );
+        //sparse incoming
+        assertCount( 1, IN, group ->
+        {
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 2, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
+            assertEquals( 2, group.totalCount() );
+        } );
+
+        //dense loops
+        assertCount( 100, LOOP, group ->
+        {
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 101, group.loopCount() );
+            assertEquals( 101, group.totalCount() );
+        } );
+        //sparse loops
+        assertCount( 1, LOOP, group ->
+        {
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 2, group.loopCount() );
+            assertEquals( 2, group.totalCount() );
+        } );
+    }
+
+    @Test
+    public void groupCursorShouldSeeNewTypes() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            long start = write.nodeCreate();
+            int outgoing = tx.tokenWrite().relationshipTypeGetOrCreateForName( "OUT" );
+            int incoming = tx.tokenWrite().relationshipTypeGetOrCreateForName( "IN" );
+            int looping = tx.tokenWrite().relationshipTypeGetOrCreateForName( "LOOP" );
+            long out = write.relationshipCreate( start, outgoing, write.nodeCreate() );
+            long in1 = write.relationshipCreate( write.nodeCreate(), incoming, start );
+            long in2 = write.relationshipCreate( write.nodeCreate(), incoming, start );
+            long loop = write.relationshipCreate( start, looping, start );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                node.relationships( group );
+
+                while ( group.next() )
+                {
+                    int t = group.type();
+                    if ( t == outgoing )
+                    {
+                        assertEquals( 1, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                        assertRelationships( OUT, group, traversal, out );
+                        assertNoRelationships( IN, group, traversal );
+                        assertNoRelationships( LOOP, group, traversal );
+                    }
+                    else if ( t == incoming )
+                    {
+                        assertEquals( 0, group.outgoingCount() );
+                        assertEquals( 2, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                        assertRelationships( IN, group, traversal, in1, in2 );
+                        assertNoRelationships( OUT, group, traversal );
+                        assertNoRelationships( LOOP, group, traversal );
+                    }
+                    else if ( t == looping )
+                    {
+                        assertEquals( 0, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 1, group.loopCount() );
+                        assertRelationships( LOOP, group, traversal, loop );
+                        assertNoRelationships( OUT, group, traversal );
+                        assertNoRelationships( IN, group, traversal );
+                    }
+                    else
+                    {
+                        fail( t + "  is not the type you're looking for " );
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void groupCursorShouldAddToCountFromTxState() throws Exception
+    {
+        long start;
+        long existingRelationship;
+        int type;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            start = write.nodeCreate();
+            type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "OUT" );
+            existingRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            long newRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                node.relationships( group );
+
+                assertTrue( group.next() );
+                assertEquals( type, group.type() );
+                assertEquals( 2, group.outgoingCount() );
+                assertEquals( 0, group.incomingCount() );
+                assertEquals( 0, group.loopCount() );
+                assertRelationships( OUT, group, traversal, newRelationship, existingRelationship );
+
+                assertFalse( group.next() );
+            }
+        }
+    }
+
+    @Test
+    public void groupCursorShouldSeeBothOldAndNewRelationshipsFromSparseNode() throws Exception
+    {
+        long start;
+        long existingRelationship;
+        int one;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            start = write.nodeCreate();
+            one = tx.tokenWrite().relationshipTypeGetOrCreateForName( "ONE" );
+            existingRelationship = write.relationshipCreate( start, one, write.nodeCreate() );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            int two = tx.tokenWrite().relationshipTypeGetOrCreateForName( "TWO" );
+            long newRelationship = write.relationshipCreate( start, two, write.nodeCreate() );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                assertFalse( node.isDense() );
+                node.relationships( group );
+
+                while ( group.next() )
+                {
+                    int t = group.type();
+                    if ( t == one )
+                    {
+                        assertEquals( 1, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                        assertRelationships( OUT, group, traversal, existingRelationship );
+                    }
+                    else if ( t == two )
+                    {
+                        assertEquals( 1, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                        assertRelationships( OUT, group, traversal, newRelationship );
+
+                    }
+                    else
+                    {
+                        fail( t + "  is not the type you're looking for " );
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void groupCursorShouldSeeBothOldAndNewRelationshipsFromDenseNode() throws Exception
+    {
+        long start;
+        long existingRelationship;
+        int one, bulk;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            start = write.nodeCreate();
+            one = tx.tokenWrite().relationshipTypeGetOrCreateForName( "ONE" );
+            existingRelationship = write.relationshipCreate( start, one, write.nodeCreate() );
+            bulk = tx.tokenWrite().relationshipTypeGetOrCreateForName( "BULK" );
+            for ( int i = 0; i < 100; i++ )
+            {
+                write.relationshipCreate( start, bulk, write.nodeCreate() );
+            }
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            int two = tx.tokenWrite().relationshipTypeGetOrCreateForName( "TWO" );
+            long newRelationship = write.relationshipCreate( start, two, write.nodeCreate() );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                assertTrue( node.isDense() );
+                node.relationships( group );
+
+                while ( group.next() )
+                {
+                    int t = group.type();
+                    if ( t == one )
+                    {
+                        assertEquals( 1, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                        assertRelationships( OUT, group, traversal, existingRelationship );
+
+                    }
+                    else if ( t == two )
+                    {
+                        assertEquals( 1, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                        assertRelationships( OUT, group, traversal, newRelationship );
+                    }
+                    else if ( t == bulk )
+                    {
+                        assertEquals( 100, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                    }
+                    else
+                    {
+                        fail( t + "  is not the type you're looking for " );
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void groupCursorShouldNewRelationshipBetweenAlreadyConnectedSparseNodes() throws Exception
+    {
+        long start;
+        long end;
+        long existingRelationship;
+        int type;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            start = write.nodeCreate();
+            end = write.nodeCreate();
+            type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            existingRelationship = write.relationshipCreate( start, type, end );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            long newRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                assertFalse( node.isDense() );
+                node.relationships( group );
+
+                assertTrue( group.next() );
+                assertEquals( type, group.type() );
+                assertEquals( 2, group.outgoingCount() );
+                assertEquals( 0, group.incomingCount() );
+                assertEquals( 0, group.loopCount() );
+                assertRelationships( OUT, group, traversal, newRelationship, existingRelationship );
+
+                assertFalse( group.next() );
+            }
+        }
+    }
+
+    @Test
+    public void groupCursorShouldNewRelationshipBetweenAlreadyConnectedDenseNodes() throws Exception
+    {
+        long start;
+        long end;
+        long existingRelationship;
+        int type, bulk;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            start = write.nodeCreate();
+            end = write.nodeCreate();
+            type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            existingRelationship = write.relationshipCreate( start, type, end );
+            bulk = tx.tokenWrite().relationshipTypeGetOrCreateForName( "BULK" );
+            for ( int i = 0; i < 100; i++ )
+            {
+                write.relationshipCreate( start, bulk, write.nodeCreate() );
+            }
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            long newRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                assertTrue( node.isDense() );
+                node.relationships( group );
+
+                while ( group.next() )
+                {
+                    int t = group.type();
+                    if ( t == type )
+                    {
+                        assertEquals( 2, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                        assertRelationships( OUT, group, traversal, existingRelationship, newRelationship );
+
+                    }
+                    else if ( t == bulk )
+                    {
+                        assertEquals( bulk, group.type() );
+                        assertEquals( 100, group.outgoingCount() );
+                        assertEquals( 0, group.incomingCount() );
+                        assertEquals( 0, group.loopCount() );
+                    }
+                    else
+                    {
+                        fail( t + "  is not the type you're looking for " );
+                    }
+                }
+            }
+        }
+    }
+
+    private void assertRelationships( RelationshipDirection direction, RelationshipGroupCursor group,
+            RelationshipTraversalCursor traversal, long... relationships )
+    {
+        switch ( direction )
+        {
+        case OUT:
+            group.outgoing( traversal );
+            break;
+        case IN:
+            group.incoming( traversal );
+            break;
+        case LOOP:
+            group.loops( traversal );
+            break;
+        default:
+            throw new AssertionError( "Where is your god now!" );
+        }
+
+        PrimitiveLongSet set = PrimitiveLongCollections.asSet( relationships );
+        for ( int i = 0; i < relationships.length; i++ )
+        {
+            assertTrue( traversal.next() );
+            assertTrue( set.contains( traversal.relationshipReference() ) );
+            set.remove( traversal.relationshipReference() );
+        }
+        assertTrue( set.isEmpty() );
+        assertFalse( traversal.next() );
+    }
+
+    private void assertNoRelationships( RelationshipDirection direction, RelationshipGroupCursor group,
+            RelationshipTraversalCursor traversal )
+    {
+        switch ( direction )
+        {
+        case OUT:
+            group.outgoing( traversal );
+            assertFalse( traversal.next() );
+            break;
+        case IN:
+            group.incoming( traversal );
+            assertFalse( traversal.next() );
+            break;
+        case LOOP:
+            group.loops( traversal );
+            assertFalse( traversal.next() );
+            break;
+        default:
+            throw new AssertionError( "Where is your god now!" );
+        }
+    }
+
     private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
     {
         try ( Transaction tx = session.beginTransaction() )
@@ -692,7 +1142,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                         group.outgoing( relationship );
                     }
                     // then
-                    assertCount( session, relationship, expectedCounts, group.relationshipLabel(), OUTGOING );
+                    RelationshipTestSupport
+                            .assertCount( session, relationship, expectedCounts, group.type(), OUTGOING );
 
                     // incoming
                     if ( detached )
@@ -704,7 +1155,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                         group.incoming( relationship );
                     }
                     // then
-                    assertCount( session, relationship, expectedCounts, group.relationshipLabel(), INCOMING );
+                    RelationshipTestSupport
+                            .assertCount( session, relationship, expectedCounts, group.type(), INCOMING );
 
                     // loops
                     if ( detached )
@@ -716,7 +1168,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                         group.loops( relationship );
                     }
                     // then
-                    assertCount( session, relationship, expectedCounts, group.relationshipLabel(), BOTH );
+                    RelationshipTestSupport
+                            .assertCount( session, relationship, expectedCounts, group.type(), BOTH );
                 }
             }
         }
@@ -786,5 +1239,65 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             count++;
         }
         assertEquals( expectedCount, count );
+    }
+
+    enum RelationshipDirection
+    {
+        OUT,
+        IN,
+        LOOP
+    }
+
+    private void assertCount( int count, RelationshipDirection direction, Consumer<RelationshipGroupCursor> asserter )
+            throws Exception
+    {
+        long start;
+        int type;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            start = write.nodeCreate();
+            type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            for ( int i = 0; i < count; i++ )
+            {
+                createRelationship( direction, start, type, write );
+            }
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            createRelationship( direction, start, type, write );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                node.relationships( group );
+                assertTrue( group.next() );
+                asserter.accept( group );
+            }
+        }
+    }
+
+    private void createRelationship( RelationshipDirection direction, long start, int type, Write write )
+            throws EntityNotFoundException
+    {
+        switch ( direction )
+        {
+        case OUT:
+            write.relationshipCreate( start, type, write.nodeCreate() );
+            break;
+        case IN:
+            write.relationshipCreate( write.nodeCreate(), type, start );
+            break;
+        case LOOP:
+            write.relationshipCreate( start, type, start );
+            break;
+        default:
+            throw new IllegalStateException( "Checkstyle, you win again!" );
+        }
     }
 }

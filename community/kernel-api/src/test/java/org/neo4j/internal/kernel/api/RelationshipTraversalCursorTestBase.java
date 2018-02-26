@@ -121,7 +121,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     while ( relationship.next() )
                     {
                         assertEquals( "node #" + node.nodeReference() +
-                                        " relationship should have same label as group", group.relationshipLabel(),
+                                        " relationship should have same label as group", group.type(),
                                 relationship.label() );
                         degree.outgoing++;
                     }
@@ -129,7 +129,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     while ( relationship.next() )
                     {
                         assertEquals( "node #" + node.nodeReference() +
-                                        "relationship should have same label as group", group.relationshipLabel(),
+                                        "relationship should have same label as group", group.type(),
                                 relationship.label() );
                         degree.incoming++;
                     }
@@ -137,7 +137,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     while ( relationship.next() )
                     {
                         assertEquals( "node #" + node.nodeReference() +
-                                        "relationship should have same label as group", group.relationshipLabel(),
+                                        "relationship should have same label as group", group.type(),
                                 relationship.label() );
                         degree.loop++;
                     }
@@ -154,7 +154,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                             degree.incoming );
                     assertEquals( "node #" + node.nodeReference() + " loop", group.loopCount(), degree.loop );
                     assertEquals( "node #" + node.nodeReference() + " all = incoming + outgoing - loop",
-                            group.totalCount(), degree.incoming + degree.outgoing - degree.loop );
+                            group.totalCount(), degree.incoming + degree.outgoing + degree.loop );
                 }
                 if ( none )
                 {
@@ -190,7 +190,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( "node of origin", start, relationship.originNodeReference() );
             assertEquals( "neighbouring node", end, relationship.neighbourNodeReference() );
 
-            assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+            assertEquals( "relationship should have same label as group", group.type(),
                     relationship.label() );
 
             assertFalse( "only a single relationship", relationship.next() );
@@ -217,7 +217,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( "node of origin", end, relationship.originNodeReference() );
             assertEquals( "neighbouring node", start, relationship.neighbourNodeReference() );
 
-            assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+            assertEquals( "relationship should have same label as group", group.type(),
                     relationship.label() );
 
             assertFalse( "only a single relationship", relationship.next() );
@@ -332,7 +332,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     group.outgoing( relationship );
                 }
                 // then
-                assertCount( session, relationship, expectedCounts, group.relationshipLabel(), OUTGOING );
+                assertCount( session, relationship, expectedCounts, group.type(), OUTGOING );
 
                 // incoming
                 if ( detached )
@@ -344,7 +344,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     group.incoming( relationship );
                 }
                 // then
-                assertCount( session, relationship, expectedCounts, group.relationshipLabel(), INCOMING );
+                assertCount( session, relationship, expectedCounts, group.type(), INCOMING );
 
                 // loops
                 if ( detached )
@@ -356,7 +356,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     group.loops( relationship );
                 }
                 // then
-                assertCount( session, relationship, expectedCounts, group.relationshipLabel(), BOTH );
+                assertCount( session, relationship, expectedCounts, group.type(), BOTH );
             }
         }
     }

@@ -354,6 +354,36 @@ public class RelationshipChangesForNode
         return degree;
     }
 
+    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+    {
+        switch ( direction )
+        {
+        case INCOMING:
+            if ( incoming != null && incoming.containsKey( typeId ) )
+            {
+                return diffStrategy.augmentDegree( degree, incoming.get( typeId ).size() );
+            }
+            break;
+        case OUTGOING:
+            if ( outgoing != null && outgoing.containsKey( typeId ) )
+            {
+                return diffStrategy.augmentDegree( degree, outgoing.get( typeId ).size() );
+            }
+            break;
+        case LOOP:
+            if ( loops != null && loops.containsKey( typeId ) )
+            {
+                return diffStrategy.augmentDegree( degree, loops.get( typeId ).size() );
+            }
+            break;
+
+        default:
+            throw new IllegalArgumentException( "Unknown direction: " + direction );
+        }
+
+        return degree;
+    }
+
     public PrimitiveIntSet relationshipTypes()
     {
         PrimitiveIntSet types = Primitive.intSet();

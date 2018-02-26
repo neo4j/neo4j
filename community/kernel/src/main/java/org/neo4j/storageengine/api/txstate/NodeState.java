@@ -50,6 +50,12 @@ public interface NodeState extends PropertyContainerState
 
     int augmentDegree( Direction direction, int degree, int typeId );
 
+    /**
+     * This method counts all directions separately, i.e.
+     * total count = count(INCOMING) + count(OUTGOING) + count(LOOPS)
+     */
+    int augmentDegree( RelationshipDirection direction, int degree, int typeId );
+
     void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
 
     PrimitiveIntSet relationshipTypes();

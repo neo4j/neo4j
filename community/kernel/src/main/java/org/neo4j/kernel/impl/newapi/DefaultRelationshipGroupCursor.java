@@ -20,13 +20,19 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.newapi.DefaultRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
@@ -41,6 +47,9 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private BufferedGroup bufferedGroup;
     private PageCursor page;
     private PageCursor edgePage;
+    private boolean hasCheckedTxState;
+    private final PrimitiveIntSet txTypes = Primitive.intSet();
+    private PrimitiveIntIterator txTypeIterator;
 
     DefaultRelationshipGroupCursor()
     {
@@ -89,6 +98,9 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
                     throw new IllegalStateException( "not a part of the chain! TODO: better exception" );
                 }
             }
+            this.txTypes.clear();
+            this.txTypeIterator = null;
+            this.hasCheckedTxState = false;
             this.bufferedGroup = new BufferedGroup( edge, current ); // we need a dummy before the first to denote the initial pos
             this.read = read;
         }
@@ -96,9 +108,12 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
 
     void direct( long nodeReference, long reference, Read read )
     {
-        setOwningNode( nodeReference );
         bufferedGroup = null;
         clear();
+        txTypes.clear();
+        txTypeIterator = null;
+        hasCheckedTxState = false;
+        setOwningNode( nodeReference );
         setNext( reference );
         if ( page == null )
         {
@@ -122,30 +137,96 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public boolean next()
     {
+        //We need to check tx state if there are new types added
+        //on the first call of next
+        if ( !hasCheckedTxState )
+        {
+            checkTxStateForUpdates();
+            hasCheckedTxState = true;
+        }
+
         if ( isBuffered() )
         {
             bufferedGroup = bufferedGroup.next;
-            if ( bufferedGroup == null )
+            if ( bufferedGroup != null )
             {
-                return false; // we never have both types of traversal, so terminate early
+                loadFromBuffer();
+                return true;
             }
-            setType( bufferedGroup.label );
-            setFirstOut( bufferedGroup.outgoing() );
-            setFirstIn( bufferedGroup.incoming() );
-            setFirstLoop( bufferedGroup.loops() );
-            return true;
         }
 
         do
         {
             if ( getNext() == NO_ID )
             {
-                return false;
+                //We have now run out of groups from the store, however there may still
+                //be new types that was added in the transaction that we haven't visited yet.
+                return nextFromTxState();
             }
             read.group( this, getNext(), page );
         } while ( !inUse() );
 
+        markTypeAsSeen( type() );
         return true;
+    }
+
+    private void loadFromBuffer()
+    {
+        markTypeAsSeen( bufferedGroup.label );
+        setType( bufferedGroup.label );
+        setFirstOut( bufferedGroup.outgoing() );
+        setFirstIn( bufferedGroup.incoming() );
+        setFirstLoop( bufferedGroup.loops() );
+    }
+
+    private boolean nextFromTxState()
+    {
+        if ( txTypeIterator == null && !txTypes.isEmpty() )
+        {
+            txTypeIterator = txTypes.iterator();
+            //here it may be tempting to do txTypes.clear()
+            //however that will also clear the iterator
+        }
+        if ( txTypeIterator != null && txTypeIterator.hasNext() )
+        {
+            setType( txTypeIterator.next() );
+            setFirstOut( NO_ID );
+            setFirstIn( NO_ID );
+            setFirstLoop( NO_ID );
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Marks the given type as already seen
+     * @param type the type we have seen
+     */
+    private void markTypeAsSeen( int type )
+    {
+        if ( txTypes != null )
+        {
+            txTypes.remove( type );
+        }
+    }
+
+    /**
+     * Store all types that was added in the transaction for the current node
+     */
+    private void checkTxStateForUpdates()
+    {
+        if ( read.hasTxStateWithChanges() )
+        {
+            NodeState nodeState = read.txState().getNodeState( getOwningNode() );
+            PrimitiveLongIterator addedRelationships = nodeState.getAddedRelationships();
+            while ( addedRelationships.hasNext() )
+            {
+                RelationshipState relationshipState = read.txState().getRelationshipState( addedRelationships.next() );
+                relationshipState.accept(
+                        (RelationshipVisitor<RuntimeException>) ( relationshipId, typeId, startNodeId, endNodeId ) ->
+                                txTypes.add( typeId ) );
+            }
+        }
     }
 
     @Override
@@ -175,7 +256,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     }
 
     @Override
-    public int relationshipLabel()
+    public int type()
     {
         return getType();
     }
@@ -183,31 +264,55 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public int outgoingCount()
     {
+        int count;
         if ( isBuffered() )
         {
-            return bufferedGroup.outgoingCount;
+            count = bufferedGroup.outgoingCount;
         }
-        return count( outgoingRawId() );
+        else
+        {
+            count = count( outgoingRawId() );
+        }
+        return read.hasTxStateWithChanges()
+               ? read.txState().getNodeState( getOwningNode() )
+                       .augmentDegree( RelationshipDirection.OUTGOING, count, getType() ) : count;
     }
 
     @Override
     public int incomingCount()
     {
+        int count;
+
         if ( isBuffered() )
         {
-            return bufferedGroup.incomingCount;
+            count = bufferedGroup.incomingCount;
         }
-        return count( incomingRawId() );
+        else
+        {
+            count = count( incomingRawId() );
+        }
+        return read.hasTxStateWithChanges()
+               ? read.txState().getNodeState( getOwningNode() )
+                       .augmentDegree( RelationshipDirection.INCOMING, count, getType() ) : count;
     }
 
     @Override
     public int loopCount()
     {
+        int count;
         if ( isBuffered() )
         {
-            return bufferedGroup.loopsCount;
+            count = bufferedGroup.loopsCount;
         }
-        return count( loopsRawId() );
+        else
+        {
+            count = count( loopsRawId() );
+        }
+
+        return read.hasTxStateWithChanges()
+               ? read.txState().getNodeState( getOwningNode() )
+                       .augmentDegree( RelationshipDirection.LOOP, count, getType() ) : count;
+
     }
 
     private int count( long reference )

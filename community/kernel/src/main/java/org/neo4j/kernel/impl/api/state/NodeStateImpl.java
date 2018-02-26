@@ -98,6 +98,12 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
+        public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+        {
+            return degree;
+        }
+
+        @Override
         public void accept( NodeState.Visitor visitor )
         {
         }
@@ -268,6 +274,20 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 
     @Override
     public int augmentDegree( Direction direction, int degree, int typeId )
+    {
+        if ( hasAddedRelationships() )
+        {
+            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
+        }
+        if ( hasRemovedRelationships() )
+        {
+            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
+        }
+        return degree;
+    }
+
+    @Override
+    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
     {
         if ( hasAddedRelationships() )
         {

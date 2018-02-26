@@ -503,7 +503,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
                                        toNode: String, toNodeType: CodeGenType) = {
     generator.assign(typeRef[RelationshipSelectionCursor], iterVar, invoke(Methods.allConnectingRelationships,
-                                                                           readOperations, dataRead, cursors, nodeCursor,
+                                                                           dataRead, cursors, nodeCursor,
                                                                            forceLong(fromNode, fromNodeType),
                                                                            dir(direction),  forceLong(toNode, toNodeType)))
     _finalizers.append((_: Boolean) => (block) =>
@@ -515,7 +515,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
                                        typeVars: Seq[String], toNode: String, toNodeType: CodeGenType) = {
       generator.assign(typeRef[RelationshipSelectionCursor], iterVar, invoke(Methods.connectingRelationships,
-                                                                             readOperations, dataRead, cursors, nodeCursor,
+                                                                             dataRead, cursors, nodeCursor,
                                                                              forceLong(fromNode, fromNodeType),
                                                                              dir(direction),  forceLong(toNode, toNodeType),
                                                                              newArray(typeRef[Int], typeVars.map(generator.load): _*)))

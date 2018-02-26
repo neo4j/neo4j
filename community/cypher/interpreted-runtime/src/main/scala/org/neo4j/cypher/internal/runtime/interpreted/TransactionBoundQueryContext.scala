@@ -499,13 +499,44 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
-    transactionalContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
+  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = {
+    val cursor = nodeCursor
+    val group = transactionalContext.cursors.allocateRelationshipGroupCursor()
+    try {
+      reads().singleNode(node, cursor)
+      if (!cursor.next()) 0
+      else {
+        dir match {
+          case OUTGOING => Nodes.countOutgoing(cursor, group)
+          case INCOMING => Nodes.countIncoming(cursor, group)
+          case BOTH => Nodes.countAll(cursor, group)
+        }
+      }
+    }
+    finally group.close()
+  }
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int =
-    transactionalContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir), relTypeId)
+  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = {
+    val cursor = nodeCursor
+    val group = transactionalContext.cursors.allocateRelationshipGroupCursor()
+    try {
+      reads().singleNode(node, cursor)
+      if (!cursor.next()) 0
+      else {
+        dir match {
+          case OUTGOING => Nodes.countOutgoing(cursor, group, relTypeId)
+          case INCOMING => Nodes.countIncoming(cursor, group, relTypeId)
+          case BOTH => Nodes.countAll(cursor, group, relTypeId)
+        }
+      }
+    } finally group.close()
+  }
 
-  override def nodeIsDense(node: Long): Boolean = transactionalContext.statement.readOperations().nodeIsDense(node)
+  override def nodeIsDense(node: Long): Boolean = {
+    val cursor = nodeCursor
+    reads().singleNode(node, cursor)
+    cursor.isDense
+  }
 
   override def asObject(value: AnyValue): Any = {
     value match {
