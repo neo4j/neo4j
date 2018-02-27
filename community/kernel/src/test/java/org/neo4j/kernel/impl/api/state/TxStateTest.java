@@ -925,7 +925,7 @@ public class TxStateTest
         state.nodeDoDelete( nodeId );
 
         // Then
-        assertThat( state.addedAndRemovedNodes().getRemoved() , equalTo( setOf( nodeId ) ) );
+        assertThat( toSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
 
     @Test

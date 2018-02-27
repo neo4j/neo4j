@@ -27,8 +27,8 @@ public class VersionedPrimitiveLongDiffSets<I extends PrimitiveLongIterator, O e
 {
     private final VersionedPrimitiveLongSet added = new VersionedPrimitiveLongSet();
     private final VersionedPrimitiveLongSet removed = new VersionedPrimitiveLongSet();
-    private PrimitiveLongDiffSets<I, O> currentView =
-            new PrimitiveLongDiffSets<>( added.currentView(), removed.currentView() );
+    private final PrimitiveLongDiffSets<I, O> currentView = new PrimitiveLongDiffSets<>( added.currentView(), removed.currentView() );
+    private final PrimitiveLongDiffSets<I, O> stableView = new PrimitiveLongDiffSets<>( added.currentView(), removed.currentView() );
 
     public PrimitiveLongDiffSets<I, O> currentView()
     {
@@ -37,7 +37,7 @@ public class VersionedPrimitiveLongDiffSets<I extends PrimitiveLongIterator, O e
 
     public PrimitiveLongDiffSets<I, O> stableView()
     {
-        return new PrimitiveLongDiffSets<>( added.stableView(), removed.stableView() );
+        return stableView;
     }
 
     public void markStable()

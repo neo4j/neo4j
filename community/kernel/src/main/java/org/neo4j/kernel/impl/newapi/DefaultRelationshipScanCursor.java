@@ -180,6 +180,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         return highMark == NO_ID;
     }
 
+    @Override
     protected void collectAddedTxStateSnapshot()
     {
         if ( !isSingle() )

@@ -35,6 +35,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -110,7 +111,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
-    private RemovalsCountingDiffSets nodes;
+    private VersionedRemovalsCountingDiffSets nodes;
     private RemovalsCountingRelationshipsDiffSets relationships;
 
     private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
@@ -125,6 +126,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private boolean hasChanges;
     private boolean hasDataChanges;
+    private TransactionState stableState = new StableState();
 
     public TxState()
     {
@@ -160,7 +162,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 return new TxSingleRelationshipCursor( TxState.this, this );
             }
         };
-
         iteratorRelationshipCursor = new InstanceCache<TxIteratorRelationshipCursor>()
         {
             @Override
@@ -178,7 +179,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         // Created nodes
         if ( nodes != null )
         {
-            nodes.visit( createdNodesVisitor( visitor ) );
+            nodesView().visit( createdNodesVisitor( visitor ) );
         }
 
         if ( relationships != null )
@@ -193,7 +194,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         // Deleted nodes
         if ( nodes != null )
         {
-            nodes.visit( deletedNodesVisitor( visitor ) );
+            nodesView().visit( deletedNodesVisitor( visitor ) );
         }
 
         for ( NodeState node : modifiedNodes() )
@@ -395,7 +396,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
-        return nodes != null && nodes.isAdded( nodeId );
+        return nodes != null && nodesView().isAdded( nodeId );
     }
 
     @Override
@@ -418,14 +419,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void nodeDoCreate( long id )
     {
-        nodes().add( id );
+        nodes().currentView().add( id );
         dataChanged();
     }
 
     @Override
     public void nodeDoDelete( long nodeId )
     {
-        nodes().remove( nodeId );
+        nodes().currentView().remove( nodeId );
 
         if ( nodeStatesMap != null )
         {
@@ -469,7 +470,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
-        return nodes != null && nodes.wasRemoved( nodeId );
+        return nodes != null && nodes.removedInCurrentView( nodeId );
+    }
+
+    protected PrimitiveLongDiffSets nodesView()
+    {
+        return nodes.currentView();
     }
 
     @Override
@@ -819,14 +825,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public PrimitiveLongReadableDiffSets addedAndRemovedNodes()
     {
-        return nodes != null ? nodes : EmptyPrimitiveLongReadableDiffSets.INSTANCE;
+        return nodes != null ? nodesView() : EmptyPrimitiveLongReadableDiffSets.INSTANCE;
     }
 
-    private RemovalsCountingDiffSets nodes()
+    private VersionedRemovalsCountingDiffSets nodes()
     {
         if ( nodes == null )
         {
-            nodes = new RemovalsCountingDiffSets();
+            nodes = new VersionedRemovalsCountingDiffSets();
         }
         return nodes;
     }
@@ -1179,6 +1185,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return diffs;
     }
 
+    @Override
+    public TransactionState getStableState()
+    {
+        return stableState;
+    }
+
     // Ensure sorted index updates for a given index. This is needed for range query support and
     // may involve converting the existing hash map first
     //
@@ -1241,6 +1253,16 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 nodeState.removeIndexDiff( after );
             }
         }
+    }
+
+    @Override
+    public void markStable()
+    {
+        if ( nodes != null )
+        {
+            nodes.markStable();
+        }
+        // todo mark moar
     }
 
     private PrimitiveLongDiffSets getIndexUpdatesForSeek(
@@ -1404,28 +1426,155 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
      * whereas we need to know total number of explicit removals.
      */
-    private static class RemovalsCountingDiffSets extends PrimitiveLongDiffSets
+    static class VersionedRemovalsCountingDiffSets extends VersionedPrimitiveLongDiffSets
     {
-        private PrimitiveLongSet removedFromAdded;
+        private final RemovalsCountingDiffSetsDecorator currentView;
+
+        VersionedRemovalsCountingDiffSets()
+        {
+            this.currentView = new RemovalsCountingDiffSetsDecorator( currentView() );
+        }
 
         @Override
-        public boolean remove( long elem )
+        public RemovalsCountingDiffSetsDecorator currentView()
         {
-            if ( getAdded().remove( elem ) )
+            return currentView;
+        }
+
+        boolean removedInStableView( long id )
+        {
+            return currentView.removedFromAdded != null && currentView.removedFromAdded.stableView().contains( id );
+        }
+
+        boolean removedInCurrentView( long id )
+        {
+            return (currentView.removedFromAdded != null && currentView.removedFromAdded.currentView().contains( id )) || currentView().isRemoved( id );
+        }
+
+        @Override
+        public void markStable()
+        {
+            super.markStable();
+            if ( currentView.removedFromAdded != null )
+            {
+                currentView.removedFromAdded.markStable();
+            }
+        }
+    }
+
+    static class RemovalsCountingDiffSetsDecorator extends PrimitiveLongDiffSets
+    {
+        private final PrimitiveLongDiffSets delegate;
+        private VersionedPrimitiveLongSet removedFromAdded;
+
+        RemovalsCountingDiffSetsDecorator( PrimitiveLongDiffSets delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public boolean isAdded( long element )
+        {
+            return super.isAdded( element );
+        }
+
+        @Override
+        public boolean isRemoved( long element )
+        {
+            return super.isRemoved( element );
+        }
+
+        @Override
+        public void removeAll( PrimitiveLongIterator elementsToRemove )
+        {
+            super.removeAll( elementsToRemove );
+        }
+
+        @Override
+        public void addAll( PrimitiveLongIterator elementsToAdd )
+        {
+            super.addAll( elementsToAdd );
+        }
+
+        @Override
+        public void add( long element )
+        {
+            super.add( element );
+        }
+
+        @Override
+        public boolean remove( long element )
+        {
+            if ( getAdded().remove( element ) )
             {
                 if ( removedFromAdded == null )
                 {
-                    removedFromAdded = Primitive.longSet();
+                    removedFromAdded = new VersionedPrimitiveLongSet();
                 }
-                removedFromAdded.add( elem );
+                removedFromAdded.currentView().add( element );
                 return true;
             }
-            return super.remove( elem );
+            return super.remove( element );
         }
 
-        private boolean wasRemoved( long id )
+        @Override
+        public void visit( PrimitiveLongDiffSetsVisitor visitor ) throws ConstraintValidationException
         {
-            return (removedFromAdded != null && removedFromAdded.contains( id )) || super.isRemoved( id );
+            super.visit( visitor );
+        }
+
+        @Override
+        public int delta()
+        {
+            return super.delta();
+        }
+
+        @Override
+        public PrimitiveLongResourceIterator augment( PrimitiveLongIterator source )
+        {
+            return super.augment( source );
+        }
+
+        @Override
+        public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongIterator source )
+        {
+            return super.augmentWithRemovals( source );
+        }
+
+        @Override
+        public PrimitiveLongSet getAdded()
+        {
+            return super.getAdded();
+        }
+
+        @Override
+        public PrimitiveLongSet getRemoved()
+        {
+            return super.getRemoved();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return super.isEmpty();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            return super.equals( o );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return super.hashCode();
+        }
+
+        @Override
+        public void clear()
+        {
+            super.clear();
         }
     }
 
@@ -1460,6 +1609,493 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         private boolean wasRemoved( long id )
         {
             return (removedFromAdded != null && removedFromAdded.contains( id )) || super.isRemoved( id );
+        }
+    }
+
+    class StableState implements TransactionState
+    {
+
+        final TxState impl = TxState.this;
+
+        @Override
+        public void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException
+        {
+            impl.accept( visitor );
+        }
+
+        @Override
+        public boolean hasChanges()
+        {
+            return impl.hasChanges();
+        }
+
+        @Override
+        public Iterable<NodeState> modifiedNodes()
+        {
+            return impl.modifiedNodes();
+        }
+
+        public PrimitiveLongDiffSets getOrCreateLabelStateNodeDiffSets( int labelId )
+        {
+            return impl.getOrCreateLabelStateNodeDiffSets( labelId );
+        }
+
+        public PrimitiveLongDiffSets getLabelStateNodeDiffSets( int labelId )
+        {
+            return impl.getLabelStateNodeDiffSets( labelId );
+        }
+
+        @Override
+        public PrimitiveLongDiffSets nodeStateLabelDiffSets( long nodeId )
+        {
+            return impl.nodeStateLabelDiffSets( nodeId );
+        }
+
+        public PrimitiveLongDiffSets getOrCreateNodeStateLabelDiffSets( long nodeId )
+        {
+            return impl.getOrCreateNodeStateLabelDiffSets( nodeId );
+        }
+
+        @Override
+        public Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original )
+        {
+            return impl.augmentGraphProperties( original );
+        }
+
+        @Override
+        public boolean nodeIsAddedInThisTx( long nodeId )
+        {
+            return impl.nodeIsAddedInThisTx( nodeId );
+        }
+
+        @Override
+        public boolean relationshipIsAddedInThisTx( long relationshipId )
+        {
+            return impl.relationshipIsAddedInThisTx( relationshipId );
+        }
+
+        public void changed()
+        {
+            impl.changed();
+        }
+
+        public void dataChanged()
+        {
+            impl.dataChanged();
+        }
+
+        @Override
+        public void nodeDoCreate( long id )
+        {
+            impl.nodeDoCreate( id );
+        }
+
+        @Override
+        public void nodeDoDelete( long nodeId )
+        {
+            impl.nodeDoDelete( nodeId );
+        }
+
+        @Override
+        public void relationshipDoCreate( long id, int relationshipTypeId, long startNodeId, long endNodeId )
+        {
+            impl.relationshipDoCreate( id, relationshipTypeId, startNodeId, endNodeId );
+        }
+
+        @Override
+        public boolean nodeIsDeletedInThisTx( long nodeId )
+        {
+            return impl.nodes != null && impl.nodes.removedInStableView( nodeId );
+        }
+
+        @Override
+        public boolean nodeModifiedInThisTx( long nodeId )
+        {
+            return impl.nodeModifiedInThisTx( nodeId );
+        }
+
+        @Override
+        public void relationshipDoDelete( long id, int type, long startNodeId, long endNodeId )
+        {
+            impl.relationshipDoDelete( id, type, startNodeId, endNodeId );
+        }
+
+        @Override
+        public void relationshipDoDeleteAddedInThisTx( long relationshipId )
+        {
+            impl.relationshipDoDeleteAddedInThisTx( relationshipId );
+        }
+
+        @Override
+        public boolean relationshipIsDeletedInThisTx( long relationshipId )
+        {
+            return impl.relationshipIsDeletedInThisTx( relationshipId );
+        }
+
+        @Override
+        public void nodeDoAddProperty( long nodeId, int newPropertyKeyId, Value value )
+        {
+            impl.nodeDoAddProperty( nodeId, newPropertyKeyId, value );
+        }
+
+        @Override
+        public void nodeDoChangeProperty( long nodeId, int propertyKeyId, Value replacedValue, Value newValue )
+        {
+            impl.nodeDoChangeProperty( nodeId, propertyKeyId, replacedValue, newValue );
+        }
+
+        @Override
+        public void relationshipDoReplaceProperty( long relationshipId, int propertyKeyId, Value replacedValue, Value newValue )
+        {
+            impl.relationshipDoReplaceProperty( relationshipId, propertyKeyId, replacedValue, newValue );
+        }
+
+        @Override
+        public void graphDoReplaceProperty( int propertyKeyId, Value replacedValue, Value newValue )
+        {
+            impl.graphDoReplaceProperty( propertyKeyId, replacedValue, newValue );
+        }
+
+        @Override
+        public void nodeDoRemoveProperty( long nodeId, int propertyKeyId, Value removedValue )
+        {
+            impl.nodeDoRemoveProperty( nodeId, propertyKeyId, removedValue );
+        }
+
+        @Override
+        public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId, Value removedValue )
+        {
+            impl.relationshipDoRemoveProperty( relationshipId, propertyKeyId, removedValue );
+        }
+
+        @Override
+        public void graphDoRemoveProperty( int propertyKeyId, Value removedValue )
+        {
+            impl.graphDoRemoveProperty( propertyKeyId, removedValue );
+        }
+
+        @Override
+        public void nodeDoAddLabel( int labelId, long nodeId )
+        {
+            impl.nodeDoAddLabel( labelId, nodeId );
+        }
+
+        @Override
+        public void nodeDoRemoveLabel( int labelId, long nodeId )
+        {
+            impl.nodeDoRemoveLabel( labelId, nodeId );
+        }
+
+        @Override
+        public void labelDoCreateForName( String labelName, int id )
+        {
+            impl.labelDoCreateForName( labelName, id );
+        }
+
+        @Override
+        public void propertyKeyDoCreateForName( String propertyKeyName, int id )
+        {
+            impl.propertyKeyDoCreateForName( propertyKeyName, id );
+        }
+
+        @Override
+        public void relationshipTypeDoCreateForName( String labelName, int id )
+        {
+            impl.relationshipTypeDoCreateForName( labelName, id );
+        }
+
+        @Override
+        public NodeState getNodeState( long id )
+        {
+            return impl.getNodeState( id );
+        }
+
+        @Override
+        public RelationshipState getRelationshipState( long id )
+        {
+            return impl.getRelationshipState( id );
+        }
+
+        @Override
+        public Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId )
+        {
+            return impl.augmentSingleNodeCursor( cursor, nodeId );
+        }
+
+        @Override
+        public Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
+                PropertyContainerState propertyContainerState )
+        {
+            return impl.augmentPropertyCursor( cursor, propertyContainerState );
+        }
+
+        @Override
+        public Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
+                PropertyContainerState propertyContainerState, int propertyKeyId )
+        {
+            return impl.augmentSinglePropertyCursor( cursor, propertyContainerState, propertyKeyId );
+        }
+
+        @Override
+        public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels, NodeState nodeState )
+        {
+            return impl.augmentLabels( labels, nodeState );
+        }
+
+        @Override
+        public Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId )
+        {
+            return impl.augmentSingleRelationshipCursor( cursor, relationshipId );
+        }
+
+        @Override
+        public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
+                Direction direction )
+        {
+            return impl.augmentNodeRelationshipCursor( cursor, nodeState, direction );
+        }
+
+        @Override
+        public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
+                Direction direction, int[] relTypes )
+        {
+            return impl.augmentNodeRelationshipCursor( cursor, nodeState, direction, relTypes );
+        }
+
+        @Override
+        public Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor )
+        {
+            return impl.augmentRelationshipsGetAllCursor( cursor );
+        }
+
+        @Override
+        public PrimitiveLongDiffSets nodesWithLabelChanged( int label )
+        {
+            return impl.nodesWithLabelChanged( label );
+        }
+
+        @Override
+        public PrimitiveLongDiffSets nodesWithAnyOfLabelsChanged( int... labels )
+        {
+            return impl.nodesWithAnyOfLabelsChanged( labels );
+        }
+
+        @Override
+        public PrimitiveLongDiffSets nodesWithAllLabelsChanged( int... labels )
+        {
+            return impl.nodesWithAllLabelsChanged( labels );
+        }
+
+        @Override
+        public void indexRuleDoAdd( IndexDescriptor descriptor )
+        {
+            impl.indexRuleDoAdd( descriptor );
+        }
+
+        @Override
+        public void indexDoDrop( IndexDescriptor descriptor )
+        {
+            impl.indexDoDrop( descriptor );
+        }
+
+        @Override
+        public boolean indexDoUnRemove( IndexDescriptor descriptor )
+        {
+            return impl.indexDoUnRemove( descriptor );
+        }
+
+        @Override
+        public ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
+        {
+            return impl.indexDiffSetsByLabel( labelId );
+        }
+
+        @Override
+        public ReadableDiffSets<IndexDescriptor> indexChanges()
+        {
+            return impl.indexChanges();
+        }
+
+        public DiffSets<IndexDescriptor> indexChangesDiffSets()
+        {
+            return impl.indexChangesDiffSets();
+        }
+
+        @Override
+        public PrimitiveLongReadableDiffSets addedAndRemovedNodes()
+        {
+            return nodes != null ? nodes.stableView() : EmptyPrimitiveLongReadableDiffSets.INSTANCE;
+        }
+
+        @Override
+        public int augmentNodeDegree( long nodeId, int degree, Direction direction )
+        {
+            return impl.augmentNodeDegree( nodeId, degree, direction );
+        }
+
+        @Override
+        public int augmentNodeDegree( long nodeId, int degree, Direction direction, int typeId )
+        {
+            return impl.augmentNodeDegree( nodeId, degree, direction, typeId );
+        }
+
+        @Override
+        public PrimitiveIntSet nodeRelationshipTypes( long nodeId )
+        {
+            return impl.nodeRelationshipTypes( nodeId );
+        }
+
+        @Override
+        public PrimitiveRelationshipDiffSets addedAndRemovedRelationships()
+        {
+            return impl.addedAndRemovedRelationships();
+        }
+
+        @Override
+        public Iterable<RelationshipState> modifiedRelationships()
+        {
+            return impl.modifiedRelationships();
+        }
+
+        @Override
+        public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId )
+        {
+            impl.constraintDoAdd( constraint, indexId );
+        }
+
+        @Override
+        public void constraintDoAdd( ConstraintDescriptor constraint )
+        {
+            impl.constraintDoAdd( constraint );
+        }
+
+        @Override
+        public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId )
+        {
+            return impl.constraintsChangesForLabel( labelId );
+        }
+
+        @Override
+        public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor )
+        {
+            return impl.constraintsChangesForSchema( descriptor );
+        }
+
+        @Override
+        public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId )
+        {
+            return impl.constraintsChangesForRelationshipType( relTypeId );
+        }
+
+        @Override
+        public ReadableDiffSets<ConstraintDescriptor> constraintsChanges()
+        {
+            return impl.constraintsChanges();
+        }
+
+        @Override
+        public void constraintDoDrop( ConstraintDescriptor constraint )
+        {
+            impl.constraintDoDrop( constraint );
+        }
+
+        @Override
+        public boolean constraintDoUnRemove( ConstraintDescriptor constraint )
+        {
+            return impl.constraintDoUnRemove( constraint );
+        }
+
+        @Override
+        public TransactionState getStableState()
+        {
+            return this;
+        }
+
+        @Override
+        public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
+        {
+            return impl.constraintIndexesCreatedInTx();
+        }
+
+        @Override
+        public Long indexCreatedForConstraint( ConstraintDescriptor constraint )
+        {
+            return impl.indexCreatedForConstraint( constraint );
+        }
+
+        @Override
+        public PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor descriptor )
+        {
+            return impl.indexUpdatesForScan( descriptor );
+        }
+
+        @Override
+        public PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor descriptor, ValueTuple values )
+        {
+            return impl.indexUpdatesForSeek( descriptor, values );
+        }
+
+        @Override
+        public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor descriptor, Number lower, boolean includeLower, Number upper,
+                boolean includeUpper )
+        {
+            return impl.indexUpdatesForRangeSeekByNumber( descriptor, lower, includeLower, upper, includeUpper );
+        }
+
+        @Override
+        public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor descriptor, PointValue lower, boolean includeLower,
+                PointValue upper, boolean includeUpper )
+        {
+            return impl.indexUpdatesForRangeSeekByGeometry( descriptor, lower, includeLower, upper, includeUpper );
+        }
+
+        @Override
+        public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor descriptor, String lower, boolean includeLower, String upper,
+                boolean includeUpper )
+        {
+            return impl.indexUpdatesForRangeSeekByString( descriptor, lower, includeLower, upper, includeUpper );
+        }
+
+        @Override
+        public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
+        {
+            return impl.indexUpdatesForRangeSeekByPrefix( descriptor, prefix );
+        }
+
+        @Override
+        public void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, ValueTuple propertiesBefore, ValueTuple propertiesAfter )
+        {
+            impl.indexDoUpdateEntry( descriptor, nodeId, propertiesBefore, propertiesAfter );
+        }
+
+        @Override
+        public void markStable()
+        {
+            impl.markStable();
+        }
+
+        @Override
+        public PrimitiveLongResourceIterator augmentNodesGetAll( PrimitiveLongIterator committed )
+        {
+            return impl.augmentNodesGetAll( committed );
+        }
+
+        @Override
+        public RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed )
+        {
+            return impl.augmentRelationshipsGetAll( committed );
+        }
+
+        @Override
+        public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX
+        {
+            return impl.relationshipVisit( relId, visitor );
+        }
+
+        @Override
+        public boolean hasDataChanges()
+        {
+            return impl.hasDataChanges();
         }
     }
 }
