@@ -27,6 +27,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -107,6 +111,34 @@ public class TimeZoneMappingTest
         }
         String s = builder.toString();
         assertThat( "Please append the following to the end of `TZIDS`: \n" + s, s, isEmptyString() );
+    }
+
+    /**
+     * If this test fails, you have changed something in TZIDS. This is fine, as long as you only append lines to the end,
+     * or add a mapping to a deleted timezone. You are not allowed to change the order of lines or remove a line.
+     * <p>
+     * If your changes were legit, please change the expected byte[] below.
+     */
+    @Test
+    public void tzidsOrderMustNotChange() throws IOException
+    {
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZoneMapping.class.getResourceAsStream( "/TZIDS" ) ) ) )
+        {
+            String text = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
+            MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
+            byte[] hash = digest.digest( text.getBytes( StandardCharsets.UTF_8 ) );
+            assertThat( hash, equalTo(
+                    new byte[]{111, -66, -51, 110, -47, -67, -23, 32, -112, -49, -111, -83, -81, 67, 58, 89, -19, -50, 49, 21, -12, -12, 120, -38, 36, -102, 28,
+                            51, 95, -16, 90, 109} ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Failed to read time zone id file.", e );
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            throw new RuntimeException( "SHA-256 unsupported.", e );
+        }
     }
 
     private void upgradeIANATo( String release, Set<String> upgradedAlready, StringBuilder builder ) throws IOException
