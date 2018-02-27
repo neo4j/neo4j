@@ -495,11 +495,12 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value graphSetProperty( int propertyKey, Value value )
     {
-        ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        ktx.locks().optimistic()
+                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
 
         Value existingValue = readGraphProperty( propertyKey );
-        if ( !existingValue.equals( value ))
+        if ( !existingValue.equals( value ) )
         {
             ktx.txState().graphDoReplaceProperty( propertyKey, existingValue, value );
         }
@@ -509,7 +510,8 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value graphRemoveProperty( int propertyKey )
     {
-        ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        ktx.locks().optimistic()
+                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
         Value existingValue = readGraphProperty( propertyKey );
         if ( existingValue != Values.NO_VALUE )
