@@ -65,6 +65,7 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     @Override
     public void receive( MemberId notification )
     {
+        //TODO: Create LeaderListener interface implementing Listener<MemberId>
         //Don't like this pattern as its not clear form the api that receive() is called from raftMachine.
         //  TODO: Change Raft listener callback api to pass ExposedRaftState
         coreTopologyService.setLeader( notification, dbName, raftMachine.term() );

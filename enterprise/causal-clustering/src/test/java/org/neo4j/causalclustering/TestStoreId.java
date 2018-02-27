@@ -21,6 +21,7 @@ package org.neo4j.causalclustering;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,6 +47,12 @@ public class TestStoreId
     public static void assertAllStoresHaveTheSameStoreId( List<File> coreStoreDirs, FileSystemAbstraction fs )
             throws IOException
     {
+        Set<StoreId> storeIds = getStoreIds( coreStoreDirs, fs );
+        assertEquals( "Store Ids " + storeIds, 1, storeIds.size() );
+    }
+
+    public static Set<StoreId> getStoreIds( List<File> coreStoreDirs, FileSystemAbstraction fs ) throws IOException
+    {
         Set<StoreId> storeIds = new HashSet<>();
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
@@ -54,7 +61,8 @@ public class TestStoreId
                 storeIds.add( doReadStoreId( coreStoreDir, pageCache ) );
             }
         }
-        assertEquals( "Store Ids " + storeIds, 1, storeIds.size() );
+
+        return storeIds;
     }
 
     private static StoreId doReadStoreId( File coreStoreDir, PageCache pageCache ) throws IOException

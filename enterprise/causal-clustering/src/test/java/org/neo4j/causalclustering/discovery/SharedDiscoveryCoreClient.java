@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import com.hazelcast.mapreduce.Job;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -34,46 +37,50 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
-class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopologyService
+class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreTopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final MemberId member;
     private final CoreServerInfo coreServerInfo;
-    private final Set<Listener> listeners = new LinkedHashSet<>();
+    private final CoreTopologyListenerService listenerService;
     private final Log log;
     private final boolean refusesToBeLeader;
-    private final String dbName;
-    private final Map<String, MemberId> leaderMap;
+    private final String localDBName;
+
+    private MemberId localLeader;
     private long term;
+
 
     private CoreTopology coreTopology;
     private ReadReplicaTopology readReplicaTopology;
 
-    SharedDiscoveryCoreClient( SharedDiscoveryService sharedDiscoveryService, MemberId member, LogProvider logProvider, Config config )
+    SharedDiscoveryCoreClient( SharedDiscoveryService sharedDiscoveryService,
+            MemberId member, LogProvider logProvider, Config config )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
+        this.listenerService = new CoreTopologyListenerService();
         this.member = member;
         this.coreServerInfo = extractCoreServerInfo( config );
         this.log = logProvider.getLog( getClass() );
         this.refusesToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
-        this.leaderMap = new HashMap<>();
         this.term = -1L;
-        this.dbName = config.get( CausalClusteringSettings.database );
+        this.localDBName = config.get( CausalClusteringSettings.database );
     }
 
     @Override
     public synchronized void addCoreTopologyListener( Listener listener )
     {
-        listeners.add( listener );
-        listener.onCoreTopologyChange( coreTopology );
+        listenerService.addCoreTopologyListener( listener );
+        listener.onCoreTopologyChange( localCoreServers() );
     }
 
     @Override
     //TODO: Update logic here to account for dbName in the clusterIds
     public boolean setClusterId( ClusterId clusterId, String dbName )
     {
-        return sharedDiscoveryService.casClusterId( clusterId );
+        return sharedDiscoveryService.casClusterId( clusterId, dbName );
     }
 
     @Override
@@ -85,40 +92,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void setLeader( MemberId memberId, String dbName, long term )
     {
-
-        //TODO: Actually do more than just dump the existing implementation from hz into here.
-        //  need to think about how SharedDiscoveryService implements the ClusterOfCluster concept in its
-        // own limited way - because the interfaces are forcing pollution and are making the current features
-        // hard to write tests for
-        MemberId previousLeaderId = leaderMap.get( dbName );
-
-        //Only want a node to update Hazelcast if it suspects it is the new leader, in order to cut down on
-        // potential for issues with erroneous overwrites. Also completely override the entire role map each
-        // update, to avoid stale information.
-        boolean suspectAmLeader = member.equals( memberId );
-        boolean isUpdate = !Optional.ofNullable( previousLeaderId ).equals( Optional.ofNullable( memberId ) );
-
-        if ( suspectAmLeader && isUpdate )
+        if ( this.term < term )
         {
-            leaderMap.put( dbName, memberId );
-
-            Set<MemberId> allLeaders = new HashSet<>( leaderMap.values() );
-            Map<MemberId,RoleInfo> roleMap = new HashMap<>();
-
-            CoreTopology t = coreTopology;
-            for ( MemberId m : t.members().keySet() )
-            {
-                if ( allLeaders.contains( m ) )
-                {
-                    roleMap.put( m, RoleInfo.LEADER );
-                }
-                else
-                {
-                    roleMap.put( m, RoleInfo.FOLLOWER );
-                }
-            }
-
-            sharedDiscoveryService.refreshRoles( roleMap );
+            localLeader = memberId;
+            this.term = term;
         }
     }
 
@@ -129,6 +106,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         log.info( "Registered core server %s", member );
         sharedDiscoveryService.waitForClusterFormation();
         log.info( "Cluster formed" );
+    }
+
+    @Override
+    public CoreTopology localCoreServers()
+    {
+        return super.localCoreServers();
     }
 
     @Override
@@ -145,15 +128,9 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public ReadReplicaTopology localReadReplicas()
-    {
-        return readReplicaTopology.filterTopologyByDb( dbName );
-    }
-
-    @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
     {
-        return coreTopology.find( upstream )
+        return localCoreServers().find( upstream )
                 .map( info -> Optional.of( info.getCatchupServer() ) )
                 .orElseGet( () -> readReplicaTopology.find( upstream )
                         .map( ReadReplicaInfo::getCatchupServer ) );
@@ -166,31 +143,28 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public CoreTopology localCoreServers()
-    {
-        return coreTopology.filterTopologyByDb( dbName );
-    }
-
-    @Override
     public String localDBName()
     {
-        return null;
+        return localDBName;
     }
+
 
     synchronized void onCoreTopologyChange( CoreTopology coreTopology )
     {
         log.info( "Notified of core topology change " + coreTopology );
         this.coreTopology = coreTopology;
-        for ( Listener listener : listeners )
-        {
-            listener.onCoreTopologyChange( coreTopology );
-        }
+        listenerService.notifyListeners( coreTopology );
     }
 
     synchronized void onReadReplicaTopologyChange( ReadReplicaTopology readReplicaTopology )
     {
         log.info( "Notified of read replica topology change " + readReplicaTopology );
         this.readReplicaTopology = readReplicaTopology;
+    }
+
+    private void updateLeader()
+    {
+        sharedDiscoveryService.casLeaders( localLeader, term, localDBName );
     }
 
     private static CoreServerInfo extractCoreServerInfo( Config config )

@@ -1,0 +1,230 @@
+/*
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.causalclustering.scenarios;
+
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.neo4j.causalclustering.core.consensus.roles.Role;
+import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
+import org.neo4j.causalclustering.helpers.DataCreator;
+import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.graphdb.Node;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.causalclustering.ClusterRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.causalclustering.TestStoreId.getStoreIds;
+import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
+import static org.neo4j.graphdb.Label.label;
+
+@RunWith( Parameterized.class )
+public class MultiClusteringIT
+{
+    private static Set<String> DB_NAMES_1 = Stream.of( "foo", "bar" ).collect( Collectors.toSet() );
+    private static Set<String> DB_NAMES_2 = Collections.singleton( "default" );
+    private static Set<String> DB_NAMES_3 = Stream.of( "foo", "bar", "baz" ).collect( Collectors.toSet() );
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data()
+    {
+        return Arrays.asList( new Object[][]
+                {
+//                        { 6, 0, DB_NAMES_1, new SharedDiscoveryService() },
+//                        { 6, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
+                        { 5, 0, DB_NAMES_2, new SharedDiscoveryService() },
+//                        { 5, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
+//                        { 9, 3, DB_NAMES_3, new SharedDiscoveryService() },
+//                        { 9, 3, DB_NAMES_3, new HazelcastDiscoveryServiceFactory() },
+//                        { 8, 2, DB_NAMES_3, new SharedDiscoveryService() }
+                }
+        );
+    }
+
+    private final Set<String> dbNames;
+    private final ClusterRule clusterRule;
+    private final DefaultFileSystemRule fileSystemRule;
+
+    @Rule
+    public final RuleChain ruleChain;
+    private Cluster cluster;
+    private FileSystemAbstraction fs;
+
+    public MultiClusteringIT(int numCores, int numReplicas, Set<String> dbNames, DiscoveryServiceFactory discovery )
+    {
+        this.dbNames = dbNames;
+
+        this.clusterRule = new ClusterRule()
+            .withDiscoveryServiceFactory( discovery )
+            .withNumberOfCoreMembers( numCores )
+            .withNumberOfReadReplicas( numReplicas )
+            .withDatabaseNames( dbNames );
+        this.fileSystemRule = new DefaultFileSystemRule();
+
+        this.ruleChain = RuleChain.outerRule( fileSystemRule ).around( clusterRule );
+    }
+
+    @Before
+    public void setup() throws Exception
+    {
+        fs = fileSystemRule.get();
+        cluster = clusterRule.startCluster();
+    }
+
+    @Test
+    public void shouldRunDistinctTransactionsAndDiverge() throws Exception
+    {
+        int numNodes = 1;
+        Map<CoreClusterMember, List<CoreClusterMember>> leaderMap = new HashMap<>();
+        for ( String dbName : dbNames )
+        {
+            int i = 0;
+            CoreClusterMember leader;
+
+            do
+            {
+                leader = cluster.coreTx( dbName, ( db, tx ) ->
+                {
+                    Node node = db.createNode( label("database") );
+                    node.setProperty( "name" , dbName );
+                    tx.success();
+                } );
+                i++;
+            }
+            while ( i < numNodes );
+
+            int leaderId = leader.serverId();
+            List<CoreClusterMember> notLeaders = cluster.coreMembers().stream()
+                    .filter( m -> m.dbName().equals( dbName ) && m.serverId() != leaderId )
+                    .collect( Collectors.toList());
+
+            leaderMap.put( leader, notLeaders );
+            numNodes++;
+        }
+
+        Set<Long> nodesPerDb = leaderMap.keySet().stream()
+                .map( DataCreator::countNodes ).collect( Collectors.toSet() );
+        assertEquals("Each logical database in the multicluster should have a unique number of nodes.", nodesPerDb.size(), dbNames.size() );
+        for ( Map.Entry<CoreClusterMember, List<CoreClusterMember>> subCluster : leaderMap.entrySet() )
+        {
+            dataMatchesEventually( subCluster.getKey(), subCluster.getValue() );
+        }
+
+    }
+
+    @Test
+    public void distinctDatabasesShouldHaveDistinctStoreIds() throws Exception
+    {
+        for ( String dbName : dbNames )
+        {
+            cluster.coreTx( dbName, ( db, tx ) ->
+            {
+                Node node = db.createNode( label("database") );
+                node.setProperty( "name" , dbName );
+                tx.success();
+            } );
+        }
+
+        List<File> storeDirs = cluster.coreMembers().stream()
+                .map( CoreClusterMember::storeDir )
+                .collect( Collectors.toList() );
+
+        cluster.shutdown();
+
+        Set<StoreId> storeIds = getStoreIds( storeDirs, fs );
+        int expectedNumStoreIds = dbNames.size();
+        assertEquals( "Expected distinct store ids for distinct sub clusters.", expectedNumStoreIds, storeIds.size());
+    }
+
+    @Test
+    public void rejoiningFollowerShouldDownloadSnapshotFromCorrectDatabase() throws Exception
+    {
+        String dbName = dbNames.stream()
+                .findFirst()
+                .orElseThrow( () -> new IllegalArgumentException( "The dbNames parameter must not be empty." ) );
+
+        int followerId = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER ).serverId();
+
+        cluster.removeCoreMemberWithMemberId( followerId );
+
+        for( int  i = 0; i < 100; i++ )
+        {
+            cluster.coreTx( dbName, ( db, tx ) ->
+            {
+                Node node = db.createNode( label( dbName + "Node" ) );
+                node.setProperty( "name", dbName );
+                tx.success();
+            } );
+        }
+
+        for ( CoreClusterMember m : cluster.coreMembers() )
+        {
+            m.raftLogPruner().prune();
+        }
+
+        cluster.addCoreMemberWithId( followerId ).start();
+
+        CoreClusterMember dbLeader = cluster.awaitLeader( dbName );
+
+        boolean followerIsHealthy = cluster.healthyCoreMembers().stream()
+                .anyMatch( m -> m.serverId() == followerId );
+
+        assertTrue( "Rejoining / lagging follower is expected to be healthy.", followerIsHealthy );
+
+        CoreClusterMember follower = cluster.getCoreMemberById( followerId );
+
+        dataMatchesEventually( dbLeader, Collections.singleton(follower) );
+
+        List<File> storeDirs = cluster.coreMembers().stream()
+                .filter( m -> dbName.equals( m.dbName() ) )
+                .map( CoreClusterMember::storeDir )
+                .collect( Collectors.toList() );
+
+        cluster.shutdown();
+
+        Set<StoreId> storeIds = getStoreIds( storeDirs, fs );
+        String message = "All members of a sub-cluster should have the same store Id after downloading a snapshot.";
+        assertEquals( message, 1, storeIds.size() );
+    }
+
+
+}

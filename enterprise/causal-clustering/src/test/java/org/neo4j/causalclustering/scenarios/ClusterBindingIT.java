@@ -173,6 +173,7 @@ public class ClusterBindingIT
             tx.success();
         } );
 
+        //TODO: Why won't this potentially remove a leader?
         cluster.removeCoreMemberWithMemberId( 0 );
 
         SampleData.createSomeData( 100, cluster );

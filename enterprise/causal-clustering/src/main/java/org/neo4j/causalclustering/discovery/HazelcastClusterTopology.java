@@ -65,13 +65,13 @@ public class HazelcastClusterTopology
     private static final String REFUSE_TO_BE_LEADER_KEY = "refuseToBeLeader";
 
     // cluster-wide attributes
-    private static final String CLUSTER_UUID_DB_NAME_MAP = "cluster_uuid";
-    private static final String SERVER_GROUPS_MULTIMAP = "groups";
+    static final String CLUSTER_UUID_DB_NAME_MAP = "cluster_uuid";
+    static final String SERVER_GROUPS_MULTIMAP = "groups";
     static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP = "read-replica-transaction-servers";
     static final String READ_REPLICA_BOLT_ADDRESS_MAP = "read_replicas"; // hz client uuid string -> boltAddress string
     static final String READ_REPLICA_MEMBER_ID_MAP = "read-replica-member-ids";
     static final String READ_REPLICAS_DB_NAME_MAP = "read_replicas_database_names";
-    private static final String DB_NAME_LEADER_TERM_PREFIX = "leader_term_for_database_name_";
+    static final String DB_NAME_LEADER_TERM_PREFIX = "leader_term_for_database_name_";
 
     private HazelcastClusterTopology()
     {

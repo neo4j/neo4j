@@ -130,8 +130,10 @@ public class TopologyTest
         @Override
         public Topology<ReadReplicaInfo> filterTopologyByDb( String dbName )
         {
-            //TODO: Is a no-op for now, but should be changed to actually filter the topology
-            return this;
+            Map<MemberId, ReadReplicaInfo> newMembers = this.members.entrySet().stream()
+                    .filter( e -> e.getValue().getDatabaseName().equals( dbName ) )
+                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+            return new TestTopology( newMembers );
         }
     }
 

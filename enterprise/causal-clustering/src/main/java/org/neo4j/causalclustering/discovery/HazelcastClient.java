@@ -145,7 +145,7 @@ class HazelcastClient extends AbstractTopologyService
     {
         coreTopology = hzInstance.apply( hz -> getCoreTopology( hz, config, log ) );
         rrTopology = hzInstance.apply( hz -> getReadReplicaTopology( hz, log ) );
-        catchupAddressMap = extractCatchupAddressesMap( coreTopology, rrTopology );
+        catchupAddressMap = extractCatchupAddressesMap( localCoreServers(), localReadReplicas() );
     }
 
     @Override

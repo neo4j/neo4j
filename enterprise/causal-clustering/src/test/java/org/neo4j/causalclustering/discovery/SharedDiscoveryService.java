@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -41,12 +43,13 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     private final Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
     private final Map<MemberId,ReadReplicaInfo> readReplicaInfoMap = new HashMap<>();
     private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
+    private final Map<String,ClusterId> clusterIdDbNames = new HashMap<>();
+    private final Map<String,RaftLeader> leaderMap = new HashMap<>();
 
     private Map<MemberId,RoleInfo> roleMap = new HashMap<>();
 
     private final Lock lock = new ReentrantLock();
     private final Condition enoughMembers = lock.newCondition();
-    private ClusterId clusterId;
 
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
@@ -55,7 +58,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     {
         SharedDiscoveryCoreClient sharedDiscoveryCoreClient =
                 new SharedDiscoveryCoreClient( this, myself, logProvider, config );
-        sharedDiscoveryCoreClient.onCoreTopologyChange( coreTopology( sharedDiscoveryCoreClient ) );
+        sharedDiscoveryCoreClient.onCoreTopologyChange( coreTopology( sharedDiscoveryCoreClient, sharedDiscoveryCoreClient.localDBName() ) );
         sharedDiscoveryCoreClient.onReadReplicaTopologyChange( readReplicaTopology() );
         return sharedDiscoveryCoreClient;
     }
@@ -70,7 +73,6 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     void waitForClusterFormation() throws InterruptedException
     {
-
         lock.lock();
         try
         {
@@ -85,12 +87,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    CoreTopology coreTopology( SharedDiscoveryCoreClient client )
+    CoreTopology coreTopology( SharedDiscoveryCoreClient client, String dbName )
     {
         lock.lock();
         try
         {
-            return new CoreTopology( clusterId, canBeBootstrapped( client ), unmodifiableMap( coreMembers ) );
+            return new CoreTopology(clusterIdDbNames.get( dbName ), canBeBootstrapped( client ), unmodifiableMap( coreMembers ) );
         }
         finally
         {
@@ -100,9 +102,11 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     private boolean canBeBootstrapped( SharedDiscoveryCoreClient client )
     {
+
         return client != null && coreClients.size() > 0 &&
                 coreClients.stream()
                         .filter( core -> !core.refusesToBeLeader() )
+                        .filter(c -> client.localDBName().equals( c.localDBName() ) )
                         .findFirst()
                         .map( client::equals )
                         .orElse( false );
@@ -157,7 +161,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     {
         for ( SharedDiscoveryCoreClient coreClient : coreClients )
         {
-            coreClient.onCoreTopologyChange( coreTopology( coreClient ) );
+            //TODO: Check this its not good ...
+            coreClient.onCoreTopologyChange( coreTopology( coreClient, coreClient.localDBName() ) );
             coreClient.onReadReplicaTopologyChange( readReplicaTopology() );
         }
     }
@@ -190,24 +195,45 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    boolean casClusterId( ClusterId clusterId )
+    boolean casLeaders( MemberId leader, long term, String dbName )
     {
         boolean success;
         lock.lock();
         try
         {
-            if ( this.clusterId == null )
+            Optional<RaftLeader> current = Optional.ofNullable( leaderMap.get( dbName ) );
+
+            boolean noUpdate = current.map( RaftLeader::memberId ).equals( Optional.ofNullable( leader ) );
+
+            boolean greaterOrEqualTermExists =  current.map(l -> l.term() >= term ).orElse( false );
+
+            success = !( greaterOrEqualTermExists || noUpdate );
+
+            if( success )
             {
-                success = true;
-                this.clusterId = clusterId;
+                leaderMap.put( dbName, new RaftLeader( leader, term ) );
             }
-            else
-            {
-                success = this.clusterId.equals( clusterId );
-            }
+        }
+        finally
+        {
+            lock.unlock();
+        }
+        return success;
+    }
+
+    boolean casClusterId( ClusterId clusterId, String dbName )
+    {
+        boolean success;
+        lock.lock();
+        try
+        {
+            ClusterId previousId = clusterIdDbNames.putIfAbsent( dbName, clusterId );
+
+            success = previousId == null || previousId.equals( clusterId );
 
             if ( success )
             {
+
                 notifyCoreClients();
             }
         }
@@ -217,13 +243,6 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
 
         return success;
-    }
-
-    void refreshRoles( Map<MemberId,RoleInfo> roleMap )
-    {
-        //TODO: Check if this also needs locking. Seems like no? Is anything actually done with this in another thread?
-        //TODO: Update to include the concept of terms a la hazelcast impl
-        this.roleMap = roleMap;
     }
 
     Map<MemberId,RoleInfo> getRoleMap()

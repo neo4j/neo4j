@@ -20,7 +20,10 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.client.impl.MemberImpl;
+import com.hazelcast.concurrent.atomicreference.AtomicReferenceProxy;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.nio.Address;
@@ -30,6 +33,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +43,7 @@ import java.util.UUID;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
@@ -49,6 +54,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLUSTER_UUID_DB_NAME_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.DB_NAME_LEADER_TERM_PREFIX;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -69,7 +78,7 @@ public class HazelcastClusterTopologyTest
 {
     private static final Set<String> GROUPS = asSet( "group1", "group2", "group3" );
 
-    private static final List<String> DB_NAMES = Arrays.asList( "foo", "bar", "baz" );
+    private static final Set<String> DB_NAMES = Stream.of( "foo", "bar", "baz" ).collect( Collectors.toSet() );
     private static final String DEFAULT_DB_NAME = "default";
 
     private static final IntFunction<HashMap<String, String>> DEFAULT_SETTINGS_GENERATOR = i -> {
@@ -226,4 +235,32 @@ public class HazelcastClusterTopologyTest
                         CoreMatchers.instanceOf( IllegalArgumentException.class )) );
 
     }
+
+    @Test
+    public void shouldCorrectlyReturnCoreMemberRoles()
+    {
+        //given
+        int numMembers = 3;
+
+        List<MemberId> members = IntStream.range(0, numMembers)
+                .mapToObj( ignored -> new MemberId( UUID.randomUUID() ) ).collect( Collectors.toList() );
+
+        @SuppressWarnings( "unchecked" )
+        IAtomicReference<RaftLeader> leaderRef = mock( IAtomicReference.class );
+        MemberId chosenLeaderId = members.get( 0 );
+        when( leaderRef.get() ).thenReturn( new RaftLeader( chosenLeaderId, 0L ) );
+
+        @SuppressWarnings( "unchecked" )
+        IMap<String, UUID> uuidDBMap = mock( IMap.class );
+        when( uuidDBMap.keySet() ).thenReturn( Collections.singleton( DEFAULT_DB_NAME ) );
+        when( hzInstance.<RaftLeader>getAtomicReference( startsWith( DB_NAME_LEADER_TERM_PREFIX ) ) ).thenReturn( leaderRef );
+        when( hzInstance.<String, UUID>getMap( eq( CLUSTER_UUID_DB_NAME_MAP ) ) ).thenReturn( uuidDBMap );
+
+        // when
+        Map<MemberId, RoleInfo> roleMap = HazelcastClusterTopology.getCoreRoles( hzInstance, new HashSet<>( members ) );
+
+        // then
+        assertEquals( "First member was expected to be leader.", RoleInfo.LEADER, roleMap.get( chosenLeaderId ) );
+    }
+
 }

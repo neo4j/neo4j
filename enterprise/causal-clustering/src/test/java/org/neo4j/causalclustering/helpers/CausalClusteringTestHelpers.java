@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.helpers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -41,7 +42,7 @@ public class CausalClusteringTestHelpers
         return String.format( "%s:%s", hostnamePort.getHostname(), hostnamePort.getPort() );
     }
 
-    public static Map<Integer, String> distributeDatabaseNamesToHostNums( int nHosts, List<String> databaseNames )
+    public static Map<Integer, String> distributeDatabaseNamesToHostNums( int nHosts, Set<String> databaseNames )
     {
         //Max number of hosts per database is (nHosts / nDatabases) or (nHosts / nDatabases) + 1
         int nDatabases = databaseNames.size();

@@ -116,7 +116,6 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     @Override
     public void addCoreTopologyListener( Listener listener )
     {
-        //TODO: Should be synchronised?
         listenerService.addCoreTopologyListener( listener );
         listener.onCoreTopologyChange( localCoreServers() );
     }
@@ -373,7 +372,7 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
         refreshCoreTopology();
         refreshReadReplicaTopology();
         refreshRoles();
-        catchupAddressMap = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
+        catchupAddressMap = extractCatchupAddressesMap( localCoreServers(), localReadReplicas() );
     }
 
     private void refreshCoreTopology() throws InterruptedException

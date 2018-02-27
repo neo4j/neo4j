@@ -69,13 +69,13 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     @Override
     public CoreTopology allCoreServers()
     {
-        return sharedDiscoveryService.coreTopology( null );
+        return sharedDiscoveryService.coreTopology( null, dbName );
     }
 
     @Override
     public CoreTopology localCoreServers()
     {
-        CoreTopology topology = sharedDiscoveryService.coreTopology( null );
+        CoreTopology topology = sharedDiscoveryService.coreTopology( null, dbName );
         log.info( "Core topology is %s", topology );
 
         Map<MemberId,CoreServerInfo> filteredCores = filterToplogyByDb( topology, dbName );
@@ -107,7 +107,7 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
     {
-        return sharedDiscoveryService.coreTopology( null )
+        return sharedDiscoveryService.coreTopology( null, dbName )
                 .find( upstream )
                 .map( info -> Optional.of( info.getCatchupServer() ) )
                 .orElseGet( () -> sharedDiscoveryService.readReplicaTopology()
