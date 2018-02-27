@@ -356,21 +356,21 @@ public class RelationshipChangesForNode
         switch ( direction )
         {
         case INCOMING:
-            if ( incoming != null && incoming.containsKey( typeId ) )
+            if ( incoming != null && incoming.currentView().containsKey( typeId ) )
             {
-                return diffStrategy.augmentDegree( degree, incoming.get( typeId ).size() );
+                return diffStrategy.augmentDegree( degree, incoming.currentView().get( typeId ).size() );
             }
             break;
         case OUTGOING:
-            if ( outgoing != null && outgoing.containsKey( typeId ) )
+            if ( outgoing != null && outgoing.currentView().containsKey( typeId ) )
             {
-                return diffStrategy.augmentDegree( degree, outgoing.get( typeId ).size() );
+                return diffStrategy.augmentDegree( degree, outgoing.currentView().get( typeId ).size() );
             }
             break;
         case LOOP:
-            if ( loops != null && loops.containsKey( typeId ) )
+            if ( loops != null && loops.currentView().containsKey( typeId ) )
             {
-                return diffStrategy.augmentDegree( degree, loops.get( typeId ).size() );
+                return diffStrategy.augmentDegree( degree, loops.currentView().get( typeId ).size() );
             }
             break;
 
