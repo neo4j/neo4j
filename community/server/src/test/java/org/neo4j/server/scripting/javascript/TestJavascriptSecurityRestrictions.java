@@ -19,15 +19,17 @@
  */
 package org.neo4j.server.scripting.javascript;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.server.rest.domain.EvaluationException;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
+import org.neo4j.server.scripting.ScriptExecutor;
+
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.graphdb.traversal.Evaluation;
-import org.neo4j.server.rest.domain.EvaluationException;
-import org.neo4j.server.scripting.ScriptExecutor;
 
 public class TestJavascriptSecurityRestrictions
 {
@@ -40,7 +42,7 @@ public class TestJavascriptSecurityRestrictions
     @BeforeClass
     public static void doBullshitGlobalStateCrap()
     {
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
     }
 
     @Test

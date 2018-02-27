@@ -30,11 +30,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -46,6 +44,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.configuration.ServerSettings.script_enabled;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
@@ -80,6 +79,9 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
+                // The `script_enabled=true` setting is needed because the global javascript context must be
+                // initialised in sandboxed mode to allow testing traversal endpoint scripting:
+                "-c", configOption( script_enabled, Settings.TRUE ),
                 "-c", "dbms.connector.http.type=HTTP",
                 "-c", "dbms.connector.http.enabled=true"
         );

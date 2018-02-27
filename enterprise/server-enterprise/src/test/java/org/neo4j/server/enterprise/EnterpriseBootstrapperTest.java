@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.BaseBootstrapperTest;
 import org.neo4j.server.NeoServer;
@@ -51,6 +52,7 @@ import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.certificates_directory;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.configuration.ServerSettings.script_enabled;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
@@ -80,6 +82,9 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
+                // The `script_enabled=true` setting is needed because the global javascript context must be
+                // initialised in sandboxed mode to allow testing traversal endpoint scripting:
+                "-c", configOption( script_enabled, Settings.TRUE ),
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.encryption=NONE",
                 "-c", "dbms.connector.1.enabled=true" );
@@ -101,6 +106,9 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
+                // The `script_enabled=true` setting is needed because the global javascript context must be
+                // initialised in sandboxed mode to allow testing traversal endpoint scripting:
+                "-c", configOption( script_enabled, Settings.TRUE ),
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.encryption=NONE",
                 "-c", "dbms.connector.1.enabled=true" );
