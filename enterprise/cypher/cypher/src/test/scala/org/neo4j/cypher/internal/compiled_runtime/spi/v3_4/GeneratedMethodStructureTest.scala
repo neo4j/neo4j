@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read, _}
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
 /**
@@ -230,7 +229,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
     val clazz = using(codeGen.generateClass(packageName, "Test")) { body =>
       val fields = Fields(
         closer = body.field(typeRef[TaskCloser], "closer"),
-        ro = body.field(typeRef[ReadOperations], "ro"),
         entityAccessor = body.field(typeRef[EmbeddedProxySPI], "proxySpi"),
         executionMode = body.field(typeRef[ExecutionMode], "executionMode"),
         description = body.field(typeRef[Provider[InternalPlanDescription]], "description"),
@@ -253,7 +251,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         block(new GeneratedMethodStructure(fields, methodBody, new AuxGenerator(packageName, codeGen)))
       }
       Templates.getOrLoadDataRead(body, fields)
-      Templates.getOrLoadReadOperations(body, fields)
       Templates.getOrLoadCursors(body, fields)
       Templates.getOrLoadTokenRead(body, fields)
       Templates.getOrLoadSchemaRead(body, fields)

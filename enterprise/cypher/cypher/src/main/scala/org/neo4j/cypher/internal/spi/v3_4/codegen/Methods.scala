@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{Read, TokenRead, _}
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy, RelationshipProxy}
@@ -98,8 +97,8 @@ object Methods {
   val relationshipTypeGetForName: MethodReference = method[TokenRead, Int]("relationshipType", typeRef[String])
   val relationshipTypeGetName: MethodReference = method[TokenRead, String]("relationshipTypeName", typeRef[Int])
   val nodeExists: MethodReference = method[Read, Boolean]("nodeExists", typeRef[Long])
-  val countsForNode: MethodReference = method[ReadOperations, Long]("countsForNode", typeRef[Int])
-  val countsForRel: MethodReference = method[ReadOperations, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
+  val countsForNode: MethodReference = method[Read, Long]("countsForNode", typeRef[Int])
+  val countsForRel: MethodReference = method[Read, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
   val nextLong: MethodReference = method[PrimitiveLongIterator, Long]("next")
   val fetchNextRelationship: MethodReference = method[RelationshipIterator, Long]("next")
   val newNodeProxyById: MethodReference = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])

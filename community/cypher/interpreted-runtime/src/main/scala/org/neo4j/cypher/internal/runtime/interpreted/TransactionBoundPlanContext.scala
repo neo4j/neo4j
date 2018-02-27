@@ -40,7 +40,8 @@ import scala.collection.JavaConverters._
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper, logger: InternalNotificationLogger) =
-    new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations),
+    new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.dataRead,
+                                                                                                            tc.readOperations),
       new MutableGraphStatisticsSnapshot()))
 }
 
