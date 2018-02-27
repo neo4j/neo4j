@@ -63,7 +63,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
     @Override
     public long maxCount()
     {
-        return -1;
+        return UNKNOWN_MAX_COUNT;
     }
 
     @Override

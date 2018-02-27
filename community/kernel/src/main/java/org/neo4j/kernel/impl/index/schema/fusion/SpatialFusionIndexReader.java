@@ -90,7 +90,7 @@ class SpatialFusionIndexReader implements IndexReader
     @Override
     public IndexSampler createSampler()
     {
-        return new SpatialFusionIndexSampler( readerMap.values().stream().map( IndexReader::createSampler ).toArray( IndexSampler[]::new ) );
+        return new FusionIndexSampler( readerMap.values().stream().map( IndexReader::createSampler ).toArray( IndexSampler[]::new ) );
     }
 
     @Override

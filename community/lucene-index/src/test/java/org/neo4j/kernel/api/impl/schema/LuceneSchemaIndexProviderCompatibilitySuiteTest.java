@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -43,5 +44,11 @@ public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.FALSE ) );
         OperationalMode mode = OperationalMode.single;
         return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, monitor, config, mode );
+    }
+
+    @Override
+    public Iterable<Value> getSupportedValues()
+    {
+        return commonValues;
     }
 }
