@@ -159,6 +159,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     {
         return new DateTimeBuilder<DateTimeValue>( defaultZone )
         {
+            @Override
+            protected boolean supportsTimeZone()
+            {
+                return true;
+            }
+
             private final ZonedDateTime defaulZonedDateTime =
                     ZonedDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
                             Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue, timezone() );

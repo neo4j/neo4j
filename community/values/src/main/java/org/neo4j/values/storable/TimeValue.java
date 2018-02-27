@@ -119,6 +119,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     {
         return new TimeBuilder<TimeValue>( defaultZone )
         {
+            @Override
+            protected boolean supportsTimeZone()
+            {
+                return true;
+            }
 
             @Override
             public TimeValue buildInternal()

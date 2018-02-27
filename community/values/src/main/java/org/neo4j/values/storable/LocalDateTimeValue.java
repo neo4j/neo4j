@@ -128,6 +128,12 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         return new DateTimeValue.DateTimeBuilder<LocalDateTimeValue>( defaultZone )
         {
             @Override
+            protected boolean supportsTimeZone()
+            {
+                return false;
+            }
+
+            @Override
             public LocalDateTimeValue buildInternal()
             {
                 boolean selectingDate = fields.containsKey( Field.date );

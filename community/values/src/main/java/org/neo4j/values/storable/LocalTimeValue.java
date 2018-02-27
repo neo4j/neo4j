@@ -112,6 +112,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         return new TimeValue.TimeBuilder<LocalTimeValue>( defaultZone )
         {
             @Override
+            protected boolean supportsTimeZone()
+            {
+                return false;
+            }
+
+            @Override
             public LocalTimeValue buildInternal()
             {
                 LocalTime result;

@@ -376,6 +376,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         protected abstract boolean supportsTime();
 
+        protected abstract boolean supportsTimeZone();
+
         protected ZoneId timezone( AnyValue timezone )
         {
             return timezone == null ? defaultZone.get() : timezoneOf( timezone );
@@ -405,6 +407,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             throw new UnsupportedOperationException( "Cannot convert to ZoneId: " + timezone );
         }
+
     }
 
     protected enum Field
@@ -429,6 +432,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             @Override
             void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsTimeZone() )
+                {
+                    throw new IllegalArgumentException( "Cannot assign time zone if also assigning other fields." );
+                }
                 if ( builder.timezone != null )
                 {
                     throw new IllegalArgumentException( "Cannot assign timezone twice." );

@@ -25,7 +25,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   // Getting current value of a temporal
 
-  ignore("should return something for current time/date/etc") {
+  test("should return something for current time/date/etc") {
     for (s <- Seq("date", "localtime", "time", "localdatetime", "datetime")) {
       shouldReturnSomething(s"$s()")
       shouldReturnSomething(s"$s.transaction()")
@@ -34,6 +34,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       shouldReturnSomething(s"$s.transaction('America/Los_Angeles')")
       shouldReturnSomething(s"$s.statement('America/Los_Angeles')")
       shouldReturnSomething(s"$s.realtime('America/Los_Angeles')")
+      shouldReturnSomething(s"$s({timezone: '+01:00'})")
     }
     shouldReturnSomething("datetime({epoch:timestamp()})")
   }
@@ -115,49 +116,49 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   // Failing when selecting a wrong group
 
-  ignore("should not select time from date") {
+  test("should not select time from date") {
     shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
       Seq("localtime", "time", "localdatetime", "datetime"), Seq("{time:x}", "x"))
   }
 
-  ignore("should not select date from time") {
+  test("should not select date from time") {
     shouldNotSelectWithArg[IllegalArgumentException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("date", "localdatetime", "datetime"), Seq("{date:x}", "x"))
   }
 
-  ignore("should not select date from local time") {
+  test("should not select date from local time") {
     shouldNotSelectWithArg[IllegalArgumentException]("localtime({hour: 12, minute: 30, second: 40})",
       Seq("date", "localdatetime", "datetime"), Seq("{date:x}", "x"))
   }
 
-  ignore("should not select datetime from date") {
+  test("should not select datetime from date") {
     shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
       Seq("localdatetime", "datetime"), Seq("{datetime:x}", "x"))
   }
 
-  ignore("should not select datetime from time") {
+  test("should not select datetime from time") {
     shouldNotSelectWithArg[IllegalArgumentException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("localdatetime", "datetime"), Seq("{datetime:x}", "x"))
   }
 
-  ignore("should not select datetime from local time") {
+  test("should not select datetime from local time") {
     shouldNotSelectWithArg[IllegalArgumentException]("localtime({hour: 12, minute: 30, second: 40})",
       Seq("localdatetime", "datetime"), Seq("{datetime:x}", "x"))
   }
 
-  ignore("should not select time into date") {
+  test("should not select time into date") {
     shouldNotSelectWithArg[IllegalArgumentException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-      Seq("date"), Seq("{time:x}", "{hour: x.hour}", "{minute: x.minute}", "{second: x.second}", "{timezone: x.timezone}"))
+      Seq("date"), Seq("{time:x}", "{hour: 12}", "{minute: 30}", "{second: 40}", "{year:1984, month: 2, day:11, timezone: '+1:00'}"))
   }
 
-  ignore("should not select date into time") {
+  test("should not select date into time") {
     shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
-      Seq("time"), Seq("{date:x}", "{year: x.year}", "{month: x.month}", "{day: x.day}"))
+      Seq("time"), Seq("{date:x}", "{year: 1984}", "{month: 2}", "{day: 11}"))
   }
 
-  ignore("should not select date into local time") {
+  test("should not select date into local time") {
     shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
-      Seq("localtime"), Seq("{date:x}", "{year: x.year}", "{month: x.month}", "{day: x.day}"))
+      Seq("localtime"), Seq("{date:x}", "{year: 1984}", "{month: 2}", "{day: 11}"))
   }
 
   test("should not select datetime into date") {
@@ -423,8 +424,10 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   private def shouldNotTruncate(receivers: Seq[String], truncationUnit: String, args: Seq[String]): Unit = {
     for (receiver <- receivers; arg <- args) {
       val query = s"RETURN $receiver.truncate('$truncationUnit', $arg)"
-      an[IllegalArgumentException] shouldBe thrownBy {
-        println(graph.execute(query).next())
+      withClue(s"Executing $query") {
+        an[IllegalArgumentException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
       }
     }
   }
@@ -432,8 +435,10 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   private def shouldNotSelectWithArg[E : Manifest](withX: String, returnFuncs: Seq[String], args: Seq[String]): Unit = {
     for (func <- returnFuncs; arg <- args) {
       val query = s"WITH $withX as x RETURN $func($arg)"
-      an[E] shouldBe thrownBy {
-        println(graph.execute(query).next())
+      withClue(s"Executing $query") {
+        an[E] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
       }
     }
   }

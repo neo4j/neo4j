@@ -393,6 +393,12 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
 
     private static class DateBuilder extends Builder<DateValue>
     {
+        @Override
+        protected boolean supportsTimeZone()
+        {
+            return false;
+        }
+
         DateBuilder( Supplier<ZoneId> defaultZone )
         {
             super( defaultZone );
