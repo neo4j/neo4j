@@ -134,20 +134,14 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     {
         started = false;
 
-        // Cancel jobs which hasn't been cancelled already, this to avoid having to wait the full
-        // max wait time and then just leave them.
-        InterruptedException exception = pools.shutDownAll();
+        // First shut down the scheduler, so no new tasks are queued up in the pools.
+        InterruptedException exception = shutDownScheduler();
 
-        scheduler.stop();
-        try
-        {
-            schedulerThread.join();
-        }
-        catch ( InterruptedException e )
-        {
-            exception = Exceptions.chain( exception, e );
-        }
+        // Then shut down the thread pools. This involves cancelling jobs which hasn't been cancelled already,
+        // so we avoid having to wait the full maximum wait time on the executor service shut-downs.
+        exception = Exceptions.chain( exception, pools.shutDownAll() );
 
+        // Finally, we shut the work-stealing executors down.
         for ( ExecutorService workStealingExecutor : workStealingExecutors.values() )
         {
             exception = shutdownPool( workStealingExecutor, exception );
@@ -158,6 +152,20 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         {
             throw new RuntimeException( "Unable to shut down job scheduler properly.", exception );
         }
+    }
+
+    private InterruptedException shutDownScheduler()
+    {
+        scheduler.stop();
+        try
+        {
+            schedulerThread.join();
+        }
+        catch ( InterruptedException e )
+        {
+            return e;
+        }
+        return null;
     }
 
     private InterruptedException shutdownPool( ExecutorService pool, InterruptedException exception )

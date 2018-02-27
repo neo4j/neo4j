@@ -70,7 +70,7 @@ public class CentralJobSchedulerTest
     public void shouldRunRecurringJob() throws Throwable
     {
         // Given
-        long period = 100;
+        long period = 10;
         int count = 5;
         life.start();
 
@@ -81,7 +81,7 @@ public class CentralJobSchedulerTest
 
         // Then assert that the recurring job was stopped (when the scheduler was shut down)
         int actualInvocations = invocations.get();
-        sleep( period * 2 );
+        sleep( period * 5 );
         assertThat( invocations.get(), equalTo( actualInvocations ) );
     }
 

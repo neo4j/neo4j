@@ -61,7 +61,9 @@ final class TimeBasedTaskScheduler implements Runnable
     {
         long now = clock.nanos();
         sortInbox();
-        return scheduleDueTasks( now );
+        long timeToNextDeadlineSinceStart = scheduleDueTasks( now );
+        long processingTime = clock.nanos() - now;
+        return timeToNextDeadlineSinceStart - processingTime;
     }
 
     private void sortInbox()
@@ -164,7 +166,11 @@ final class TimeBasedTaskScheduler implements Runnable
         while ( !stopped )
         {
             long timeToNextTickNanos = tick();
-            LockSupport.parkNanos( this, timeToNextTickNanos );
+            if ( inbox.get() == END_SENTINEL )
+            {
+                // Only park if nothing has been posted to our inbox while we were processing the last tick.
+                LockSupport.parkNanos( this, timeToNextTickNanos );
+            }
         }
     }
 

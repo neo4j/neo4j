@@ -222,4 +222,36 @@ public class TimeBasedTaskSchedulerTest
         assertThat( counter.get(), is( 2 ) );
         assertThat( cancelListener, contains( Boolean.TRUE ) );
     }
+
+    @Test
+    public void overdueRecurringTasksMustStartAsSoonAsPossible() throws Exception
+    {
+        Runnable recurring = () ->
+        {
+            counter.incrementAndGet();
+            semaphore.acquireUninterruptibly();
+        };
+        JobHandle handle = scheduler.submit( group, recurring, 100, 100 );
+        clock.forward( 100, TimeUnit.NANOSECONDS );
+        scheduler.tick();
+        while ( counter.get() < 1 )
+        {
+            // Spin.
+            Thread.yield();
+        }
+        clock.forward( 100, TimeUnit.NANOSECONDS );
+        scheduler.tick();
+        clock.forward( 100, TimeUnit.NANOSECONDS );
+        semaphore.release();
+        scheduler.tick();
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos( 10 );
+        while ( counter.get() < 2 && System.nanoTime() < deadline )
+        {
+            scheduler.tick();
+            Thread.yield();
+        }
+        assertThat( counter.get(), is( 2 ) );
+        semaphore.release( Integer.MAX_VALUE );
+        handle.cancel( false );
+    }
 }
