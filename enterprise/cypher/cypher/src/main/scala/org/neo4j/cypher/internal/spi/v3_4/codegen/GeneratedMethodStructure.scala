@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -503,7 +502,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
                                        toNode: String, toNodeType: CodeGenType) = {
     generator.assign(typeRef[RelationshipSelectionCursor], iterVar, invoke(Methods.allConnectingRelationships,
-                                                                           readOperations, dataRead, cursors, nodeCursor,
+                                                                           dataRead, cursors, nodeCursor,
                                                                            forceLong(fromNode, fromNodeType),
                                                                            dir(direction),  forceLong(toNode, toNodeType)))
     _finalizers.append((_: Boolean) => (block) =>
@@ -515,7 +514,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
                                        typeVars: Seq[String], toNode: String, toNodeType: CodeGenType) = {
       generator.assign(typeRef[RelationshipSelectionCursor], iterVar, invoke(Methods.connectingRelationships,
-                                                                             readOperations, dataRead, cursors, nodeCursor,
+                                                                             dataRead, cursors, nodeCursor,
                                                                              forceLong(fromNode, fromNodeType),
                                                                              dir(direction),  forceLong(toNode, toNodeType),
                                                                              newArray(typeRef[Int], typeVars.map(generator.load): _*)))
@@ -541,9 +540,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
 
-  private def getOrLoadReadOperations: MethodReference =
-    methodReference(generator.owner(), typeRef[ReadOperations], "getOrLoadReadOperations")
-
   private def dataRead: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead"))
 
@@ -564,9 +560,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def propertyCursor: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[PropertyCursor], "propertyCursor"))
-
-  private def readOperations: Expression =
-    invoke(generator.self(), getOrLoadReadOperations)
 
   private def nodeManager = get(generator.self(), fields.entityAccessor)
 
@@ -1522,11 +1515,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   def wildCardToken = Expression.constant(-1)
 
   override def nodeCountFromCountStore(expression: Expression): Expression =
-    invoke(readOperations, countsForNode, expression )
+    invoke(dataRead, countsForNode, expression )
 
   override def relCountFromCountStore(start: Expression, end: Expression, types: Expression*): Expression =
-    if (types.isEmpty) invoke(readOperations, Methods.countsForRel, start, wildCardToken, end )
-    else types.map(invoke(readOperations, Methods.countsForRel, start, _, end )).reduceLeft(Expression.add)
+    if (types.isEmpty) invoke(dataRead, Methods.countsForRel, start, wildCardToken, end )
+    else types.map(invoke(dataRead, Methods.countsForRel, start, _, end )).reduceLeft(Expression.add)
 
   override def coerceToBoolean(propertyExpression: Expression): Expression =
     invoke(coerceToPredicate, propertyExpression)

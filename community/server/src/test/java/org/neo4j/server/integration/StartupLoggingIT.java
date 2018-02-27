@@ -90,18 +90,18 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
         properties.put( http.type.name(), "HTTP" );
-        properties.put( http.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( http.listen_address.name(), "localhost:0" );
         properties.put( http.enabled.name(), Settings.TRUE );
 
         HttpConnector https = new HttpConnector( "https", Encryption.TLS );
         properties.put( https.type.name(), "HTTP" );
-        properties.put( https.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( https.listen_address.name(), "localhost:0" );
         properties.put( https.enabled.name(), Settings.TRUE );
 
         BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
         properties.put( bolt.type.name(), "BOLT" );
         properties.put( bolt.enabled.name(), "true" );
-        properties.put( bolt.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( bolt.listen_address.name(), "localhost:0" );
 
         properties.put( GraphDatabaseSettings.database_path.name(), testDir.absolutePath().getAbsolutePath() );
         return properties;

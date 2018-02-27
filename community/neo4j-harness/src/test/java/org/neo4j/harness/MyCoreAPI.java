@@ -66,10 +66,10 @@ public class MyCoreAPI
     public long countNodes()
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() );
-                Statement statement = this.txBridge.get() )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
         {
-            result = statement.readOperations().countsForNode( -1 );
+            KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true );
+            result = kernelTransaction.dataRead().countsForNode( -1 );
             tx.success();
         }
         return result;

@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 public class StubRead implements Read
 {
@@ -92,6 +91,30 @@ public class StubRead implements Read
 
     @Override
     public boolean nodeExists( long id )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countsForNode( int labelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countsForNodeWithoutTxState( int labelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
     {
         throw new UnsupportedOperationException();
     }

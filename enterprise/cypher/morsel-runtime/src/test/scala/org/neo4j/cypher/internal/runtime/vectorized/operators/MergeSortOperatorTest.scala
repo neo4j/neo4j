@@ -40,7 +40,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val out = new Morsel(new Array[Long](longs.length), Array[AnyValue](), longs.length)
 
     val operator = new MergeSortOperator(columnOrdering, info)
-    val continuation = operator.operate(StartLoopWithEagerData(Seq(in), new Iteration(None)), out, null, null )
+    val continuation = operator.operate(StartLoopWithEagerData(Array(in), new Iteration(None)), out, null, null )
 
     continuation shouldBe an[EndOfLoop]
     out.longs should equal(longs)
@@ -59,7 +59,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
 
     val operator = new MergeSortOperator(columnOrdering, info)
 
-    val continuation1 = operator.operate(StartLoopWithEagerData(Seq(in1, in2), new Iteration(None)), out, null, null )
+    val continuation1 = operator.operate(StartLoopWithEagerData(Array(in1, in2), new Iteration(None)), out, null, null )
     continuation1 shouldBe a[ContinueWithSource[_]]
     out.longs should equal(Array(1, 2, 3, 4, 5))
 
@@ -84,7 +84,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val out = new Morsel(new Array[Long](9), Array[AnyValue](), 9)
 
     val operator = new MergeSortOperator(columnOrdering, info)
-    val continuation = operator.operate(StartLoopWithEagerData(Seq(in1, in2), new Iteration(None)), out, null, null )
+    val continuation = operator.operate(StartLoopWithEagerData(Array(in1, in2), new Iteration(None)), out, null, null )
 
     continuation shouldBe an[EndOfLoop]
     out.longs should equal(long1)
@@ -100,7 +100,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val out = new Morsel(new Array[Long](longs.length + 5), Array[AnyValue](), longs.length + 5)
 
     val operator = new MergeSortOperator(columnOrdering, info)
-    val continuation = operator.operate(StartLoopWithEagerData(Seq(in), new Iteration(None)), out, null, null )
+    val continuation = operator.operate(StartLoopWithEagerData(Array(in), new Iteration(None)), out, null, null )
 
     continuation shouldBe an[EndOfLoop]
     out.longs should equal(Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0))

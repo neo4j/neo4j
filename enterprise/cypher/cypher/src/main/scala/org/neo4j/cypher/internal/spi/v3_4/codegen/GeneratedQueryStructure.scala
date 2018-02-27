@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.internal.kernel.api._
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.virtual.MapValue
 
@@ -178,7 +177,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   private def addSimpleMethods(clazz: ClassGenerator, fields: Fields) = {
     clazz.generate(Templates.constructor(clazz.handle()))
-    Templates.getOrLoadReadOperations(clazz, fields)
     Templates.getOrLoadDataRead(clazz, fields)
     Templates.getOrLoadTokenRead(clazz, fields)
     Templates.getOrLoadSchemaRead(clazz, fields)
@@ -205,7 +203,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
     Fields(
       closer = clazz.field(typeRef[TaskCloser], "closer"),
-      ro = clazz.field(typeRef[ReadOperations], "ro"),
       entityAccessor = clazz.field(typeRef[EmbeddedProxySPI], "proxySpi"),
       executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
       description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),

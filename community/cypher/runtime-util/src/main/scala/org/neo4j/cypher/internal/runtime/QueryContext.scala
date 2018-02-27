@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -77,6 +79,8 @@ trait QueryContext extends TokenContext {
   def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue]
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator
+
+  def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor
 
   def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue
 

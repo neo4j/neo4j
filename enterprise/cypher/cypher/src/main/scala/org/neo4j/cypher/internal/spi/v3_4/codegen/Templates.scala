@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.{EntityNotFoundException, KernelException}
-import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
+import org.neo4j.kernel.api.SilentTokenNameLookup
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.storable.{Value, Values}
@@ -124,10 +124,10 @@ object Templates {
           Expression
             .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
                     Expression.invoke(
-                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                      Expression.newInstance(typeRef[SilentTokenNameLookup]),
                       MethodReference
-                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                      Expression.get(handle.self(), fields.ro))), handle.load("e")
+                        .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
+                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
         ))
       }
     }, param[KernelException]("e"))
@@ -151,10 +151,10 @@ object Templates {
           Expression
             .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
                     Expression.invoke(
-                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                      Expression.newInstance(typeRef[SilentTokenNameLookup]),
                       MethodReference
-                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                      Expression.get(handle.self(), fields.ro))), handle.load("e")
+                        .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
+                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
         ))
       }
     }, param[KernelException]("e"))
@@ -200,21 +200,6 @@ object Templates {
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, EmbeddedProxySPI]("entityAccessor"))).
     put(self(classHandle), typeRef[Boolean], "skip", Expression.constant(false)).
     build()
-
-  def getOrLoadReadOperations(clazz: ClassGenerator, fields: Fields) = {
-    val methodBuilder: Builder = MethodDeclaration.method(typeRef[ReadOperations], "getOrLoadReadOperations")
-    using(clazz.generate(methodBuilder)) { generate =>
-      val ro = Expression.get(generate.self(), fields.ro)
-      using(generate.ifStatement(Expression.isNull(ro))) { block =>
-        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
-        val readOperations: MethodReference = method[QueryTransactionalContext, ReadOperations]("readOperations")
-        val queryContext = Expression.get(block.self(), fields.queryContext)
-        block.put(block.self(), fields.ro,
-            Expression.invoke(Expression.invoke(queryContext, transactionalContext), readOperations))
-      }
-      generate.returns(ro)
-    }
-  }
 
   def getOrLoadCursors(clazz: ClassGenerator, fields: Fields) = {
     val methodBuilder: Builder = MethodDeclaration.method(typeRef[CursorFactory], "getOrLoadCursors")

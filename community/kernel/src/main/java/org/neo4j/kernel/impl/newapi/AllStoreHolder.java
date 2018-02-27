@@ -31,17 +31,21 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -65,6 +69,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
 {
@@ -113,6 +119,69 @@ public class AllStoreHolder extends Read
             }
         }
         return storeReadLayer.nodeExists( reference );
+    }
+
+    @Override
+    public long countsForNode( int labelId )
+    {
+        long count = countsForNodeWithoutTxState( labelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            CountsRecordState counts = new CountsRecordState();
+            try
+            {
+                TransactionState txState = ktx.txState();
+                txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
+                        statement, txState, counts ) );
+                if ( counts.hasChanges() )
+                {
+                    count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
+                }
+            }
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public long countsForNodeWithoutTxState( int labelId )
+    {
+        return storeReadLayer.countsForNode( labelId );
+    }
+
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            CountsRecordState counts = new CountsRecordState();
+            try
+            {
+                TransactionState txState = ktx.txState();
+                txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
+                       statement, txState, counts ) );
+                if ( counts.hasChanges() )
+                {
+                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
+                            .readSecond();
+                }
+            }
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        return storeReadLayer.countsForRelationship( startLabelId, typeId, endLabelId );
     }
 
     @Override

@@ -247,7 +247,7 @@ abstract class RelationshipDenseSelection
 
     private boolean correctRelationshipType()
     {
-        return types == null || ArrayUtils.contains( types, groupCursor.relationshipLabel() );
+        return types == null || ArrayUtils.contains( types, groupCursor.type() );
     }
 
     public void close()

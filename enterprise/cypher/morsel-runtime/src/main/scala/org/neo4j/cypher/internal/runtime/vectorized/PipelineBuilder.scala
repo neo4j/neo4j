@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.RefSlot
-import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, LazyTypes}
+import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
+import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationExpressionOperator
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans
@@ -49,11 +50,25 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.numberOfReferences,
           slots.getLongOffsetFor(column))
 
+      case plans.NodeByLabelScan(column, label, _) =>
+        new LabelScanOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          slots.getLongOffsetFor(column),
+          LazyLabel(label)(SemanticTable()))
+
+      case plans.NodeIndexSeek(column, label, propertyKeys, SingleQueryExpression(valueExpr),  _) if propertyKeys.size == 1 =>
+        new NodeIndexSeekOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          slots.getLongOffsetFor(column),
+          label, propertyKeys.head, converters.toCommandExpression(valueExpr))
+
       case plans.Argument(_) =>
         new ArgumentOperator
     }
 
-    Pipeline(thisOp, Seq.empty, slots, NoDependencies)()
+    Pipeline(thisOp, IndexedSeq.empty, slots, NoDependencies)()
   }
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
@@ -88,6 +103,45 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           source = source.addOperator(preSorting)
           new MergeSortOperator(ordering, slots)
 
+        case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
+          val aggregations = aggregationExpression.map {
+            case (key, expression) =>
+              val currentSlot = slots.get(key).get
+              //we need to make room for storing aggregation value in
+              //source slot
+              source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
+              AggregationOffsets(source.slots.getReferenceOffsetFor(key), currentSlot.offset,
+                                 converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator])
+          }.toArray
+
+          //add mapper to source
+          source = source.addOperator(new AggregationMapperOperatorNoGrouping(source.slots, aggregations))
+          new AggregationReduceOperatorNoGrouping(slots, aggregations)
+
+        case plans.Aggregation(_, groupingExpressions, aggregationExpression) =>
+          val grouping = groupingExpressions.map {
+            case (key, expression) =>
+              val currentSlot = slots(key)
+              //we need to make room for storing grouping value in source slot
+              if (currentSlot.isLongSlot) source.slots.newLong(key, currentSlot.nullable, currentSlot.typ)
+              else source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
+              GroupingOffsets(source.slots(key), currentSlot, converters.toCommandExpression(expression))
+          }.toArray
+
+          val aggregations = aggregationExpression.map {
+            case (key, expression) =>
+              val currentSlot = slots.get(key).get
+              //we need to make room for storing aggregation value in
+              //source slot
+              source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
+              AggregationOffsets(source.slots.getReferenceOffsetFor(key), currentSlot.offset,
+                                 converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator])
+          }.toArray
+
+          //add mapper to source
+          source = source.addOperator(new AggregationMapperOperator(source.slots, aggregations, grouping))
+          new AggregationReduceOperator(slots, aggregations, grouping)
+
         case plans.UnwindCollection(src, variable, collection) =>
           val offset = slots.get(variable) match {
             case Some(RefSlot(idx, _, _)) => idx
@@ -102,7 +156,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
 
     thisOp match {
       case o: Operator =>
-        Pipeline(o, Seq.empty, slots, o.addDependency(source))()
+        Pipeline(o, IndexedSeq.empty, slots, o.addDependency(source))()
       case mo: MiddleOperator =>
         source.addOperator(mo)
     }

@@ -23,25 +23,30 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
-import org.neo4j.kernel.api.ReadOperations;
+
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoing;
 
 public abstract class CompiledExpandUtils
 {
-    public static RelationshipSelectionCursor connectingRelationships(  ReadOperations readOperations,
-            Read read, CursorFactory cursors, NodeCursor nodeCursor,
+    public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
+            NodeCursor nodeCursor,
             long fromNode, Direction direction, long toNode )
     {
-        try
+
+        try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
         {
-            int fromDegree = readOperations.nodeGetDegree( fromNode, direction );
+            int fromDegree = nodeGetDegree( read, fromNode, nodeCursor, group, direction );
             if ( fromDegree == 0 )
             {
                 return RelationshipSelectionCursor.EMPTY;
             }
 
-            int toDegree = readOperations.nodeGetDegree( toNode, direction.reverse() );
+            int toDegree = nodeGetDegree( read, toNode, nodeCursor, group, direction.reverse() );
             if ( toDegree == 0 )
             {
                 return RelationshipSelectionCursor.EMPTY;
@@ -68,24 +73,20 @@ public abstract class CompiledExpandUtils
 
             return connectingRelationshipsIterator( selectionCursor, endNode );
         }
-        catch ( EntityNotFoundException ignore )
-        {
-            return RelationshipSelectionCursor.EMPTY;
-        }
     }
 
-    public static RelationshipSelectionCursor connectingRelationships( ReadOperations readOperations, Read read, CursorFactory cursors, NodeCursor nodeCursor,
-            long fromNode, Direction direction, long toNode, int[] relTypes )
+    public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
+            NodeCursor nodeCursor, long fromNode, Direction direction, long toNode, int[] relTypes )
     {
         try
         {
-            int fromDegree = calculateTotalDegree( readOperations, fromNode, direction, relTypes );
+            int fromDegree = calculateTotalDegree( read, fromNode, nodeCursor, direction, relTypes, cursors );
             if ( fromDegree == 0 )
             {
                 return RelationshipSelectionCursor.EMPTY;
             }
 
-            int toDegree = calculateTotalDegree( readOperations, toNode, direction.reverse(), relTypes );
+            int toDegree = calculateTotalDegree( read, toNode, nodeCursor, direction.reverse(), relTypes, cursors );
             if ( toDegree == 0 )
             {
                 return RelationshipSelectionCursor.EMPTY;
@@ -118,19 +119,65 @@ public abstract class CompiledExpandUtils
         }
     }
 
-    private static int calculateTotalDegree( ReadOperations readOperations, long fromNode, Direction direction,
-            int[] relTypes ) throws EntityNotFoundException
+    static int nodeGetDegree( Read read, long node, NodeCursor nodeCursor, RelationshipGroupCursor group,
+            Direction direction )
     {
-        int degree = 0;
-        for ( int relType : relTypes )
-        {
-            degree += readOperations.nodeGetDegree( fromNode, direction, relType );
-        }
-
-        return degree;
+            read.singleNode( node, nodeCursor );
+            if ( !nodeCursor.next() )
+            {
+                return 0;
+            }
+            switch ( direction )
+            {
+            case OUTGOING:
+                return countOutgoing( nodeCursor, group );
+            case INCOMING:
+                return countIncoming( nodeCursor, group );
+            case BOTH:
+                return countAll( nodeCursor, group );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
     }
 
-    private static RelationshipSelectionCursor connectingRelationshipsIterator( final RelationshipSelectionCursor allRelationships, final long toNode )
+    static int nodeGetDegree( Read read, long node, NodeCursor nodeCursor, RelationshipGroupCursor group,
+            Direction direction, int type )
+    {
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            return 0;
+            }
+            switch ( direction )
+            {
+            case OUTGOING:
+                return countOutgoing( nodeCursor, group, type );
+            case INCOMING:
+                return countIncoming( nodeCursor, group, type );
+            case BOTH:
+                return countAll( nodeCursor, group, type );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
+    }
+
+    private static int calculateTotalDegree( Read read, long fromNode, NodeCursor nodeCursor, Direction direction,
+            int[] relTypes, CursorFactory cursors ) throws EntityNotFoundException
+    {
+        try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+        {
+            int degree = 0;
+            for ( int relType : relTypes )
+            {
+                degree += nodeGetDegree( read, fromNode, nodeCursor, group, direction, relType );
+            }
+
+            return degree;
+        }
+    }
+
+    private static RelationshipSelectionCursor connectingRelationshipsIterator(
+            final RelationshipSelectionCursor allRelationships, final long toNode )
     {
         return new RelationshipSelectionCursor()
         {
