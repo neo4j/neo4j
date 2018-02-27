@@ -39,6 +39,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -49,7 +50,8 @@ public class DeleteUserStressIT
     @Rule
     public Neo4jRule db = new Neo4jRule()
             .withConfig( GraphDatabaseSettings.auth_enabled, "true" )
-            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+            .withConfig( ServerSettings.script_enabled.name(), Settings.TRUE );
     private Driver adminDriver;
     private final Set<Throwable> errors = ConcurrentHashMap.newKeySet();
 

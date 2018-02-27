@@ -19,14 +19,12 @@
  */
 package org.neo4j.harness;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -192,6 +190,7 @@ public class CausalClusterInProcessRunner
                 String homePath = Paths.get( clusterPath.toString(), homeDir ).toAbsolutePath().toString();
                 builder.withConfig( GraphDatabaseSettings.neo4j_home.name(), homePath );
                 builder.withConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+                builder.withConfig( ServerSettings.script_enabled.name(), Settings.TRUE );
 
                 builder.withConfig( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
                 builder.withConfig( CausalClusteringSettings.multi_dc_license.name(), "true" );
