@@ -495,8 +495,15 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value graphSetProperty( int propertyKey, Value value )
     {
+        ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        //TODO check value before writing
+        Value existingValue = NO_VALUE;
+        if ( !existingValue.equals( value ))
+        {
+            ktx.txState().graphDoReplaceProperty( propertyKey, existingValue, value );
+        }
+        return existingValue;
     }
 
     @Override
