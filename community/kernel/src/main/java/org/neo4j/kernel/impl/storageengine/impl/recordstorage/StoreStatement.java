@@ -308,4 +308,10 @@ public class StoreStatement implements StorageStatement
     {
         return propertyStore;
     }
+
+    @Override
+    public long nextGraphPropertyReference()
+    {
+        return neoStores.getMetaDataStore().getGraphNextProp();
+    }
 }

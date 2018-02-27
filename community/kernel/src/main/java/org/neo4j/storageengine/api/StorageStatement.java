@@ -196,6 +196,8 @@ public interface StorageStatement extends AutoCloseable
 
     Properties properties();
 
+    long nextGraphPropertyReference();
+
     interface RecordReads<RECORD>
     {
         /**
