@@ -53,7 +53,7 @@ import org.neo4j.values.storable.Values;
 public class DefaultPropertyCursor extends PropertyRecord implements PropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
-    public static final int INITIAL_POSITION = -1;
+    private static final int INITIAL_POSITION = -1;
     private Read read;
     private long next;
     private int block;
@@ -106,8 +106,11 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         // Transaction state
         if ( read.hasTxStateWithChanges() )
         {
-            throw new UnsupportedOperationException(
-                    "Tx state has no method for accessing graph property state, please add when needed" );
+            this.propertiesState = read.txState().getGraphState( );
+            if ( this.propertiesState != null )
+            {
+                this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
+            }
         }
     }
 

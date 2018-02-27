@@ -109,5 +109,46 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
+    @Test
+    public void shouldSeeNewGraphPropertyInTransaction() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction();
+              PropertyCursor cursor = cursors.allocatePropertyCursor() )
+        {
+            int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+
+            tx.dataRead().graphProperties( cursor );
+            assertTrue( cursor.next() );
+            assertThat( cursor.propertyKey(), equalTo( prop ) );
+            assertThat( cursor.propertyValue(), equalTo( stringValue( "hello" ) ) );
+        }
+    }
+
+    @Test
+    public void shouldSeeUpdatedGraphPropertyInTransaction() throws Exception
+    {
+        int prop;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction();
+              PropertyCursor cursor = cursors.allocatePropertyCursor() )
+        {
+            assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "good bye" ) ),
+                    equalTo( stringValue( "hello" ) ) );
+
+            tx.dataRead().graphProperties( cursor );
+            assertTrue( cursor.next() );
+            assertThat( cursor.propertyKey(), equalTo( prop ) );
+            assertThat( cursor.propertyValue(), equalTo( stringValue( "good bye" ) ) );
+            assertFalse( cursor.next() );
+        }
+    }
+
     protected abstract PropertyContainer graphProperties();
 }
