@@ -217,7 +217,6 @@ class BackupService
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), "1 txs" );
-        tempDbConfig.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
         return tempDbConfig;
     }
 

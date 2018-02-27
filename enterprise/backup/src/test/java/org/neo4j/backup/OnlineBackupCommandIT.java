@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
 import org.neo4j.commandline.admin.AdminTool;
@@ -47,6 +48,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
@@ -54,12 +56,10 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
-import static org.mockito.Mockito.mock;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandIT
@@ -70,7 +70,7 @@ public class OnlineBackupCommandIT
     private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
+    public final RuleChain ruleChain = RuleChain.outerRule( db );
 
     private static final String ip = "127.0.0.1";
     private final File backupDir = testDirectory.directory( "backups" );
@@ -84,7 +84,7 @@ public class OnlineBackupCommandIT
         return Arrays.asList( StandardV3_0.NAME, HighLimit.NAME );
     }
 
-    public static DbRepresentation createSomeData( GraphDatabaseService db, long iterations )
+    public static Supplier<DbRepresentation> createSomeData( GraphDatabaseService db, long iterations )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -96,10 +96,10 @@ public class OnlineBackupCommandIT
             }
             tx.success();
         }
-        return DbRepresentation.of( db );
+        return () -> DbRepresentation.of( db );
     }
 
-    public static DbRepresentation createSomeData( GraphDatabaseService db )
+    public static Supplier<DbRepresentation> createSomeData( GraphDatabaseService db )
     {
         return createSomeData( db, 1 );
     }
@@ -161,11 +161,7 @@ public class OnlineBackupCommandIT
     @Test
     public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
     {
-        // given database should rotate tx files after each transaction
-        db.withSetting( GraphDatabaseSettings.keep_logical_logs, "1 txs" )
-                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
-
-        // and database exists with data
+        // given database exists with data
         int port =  4446;
         startDb( "" + port );
         createSomeData( db );
@@ -183,10 +179,9 @@ public class OnlineBackupCommandIT
                         "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        long megabytes = 1024 * 1024;
+        long aMegabyte = ByteUnit.mebiBytes( 1 );
         long numberOfBytesInTx = 100;
-        long defaultLogRotationPolicyM = 250; // TODO fine tune
-        LongStream.range( 0, defaultLogRotationPolicyM ).forEach( number -> createSomeData( db, megabytes / numberOfBytesInTx ) );
+        LongStream.range( 0, 205 ).forEach( number -> createSomeData( db, aMegabyte / numberOfBytesInTx ) );
         assertEquals( "Server should have 3 tx log files", 3, transactionFiles( db.getStoreDirFile() ).size() ); // with multiple tx files
 
         // when we perform an incremental backup
@@ -202,7 +197,6 @@ public class OnlineBackupCommandIT
         Collection<File> txLogFiles = transactionFiles( backupLocation );
         File expectedTxLogFile1 = new File( backupLocation, "neostore.transaction.db.1" );
         File expectedTxLogFile2 = new File( backupLocation, "neostore.transaction.db.2" );
-        assertEquals( "Backup client retains latest incomplete tx log and previous complete log: " + txLogFiles.toString(), 2, txLogFiles.size() );
         assertEquals( new HashSet<>( Arrays.asList( expectedTxLogFile1, expectedTxLogFile2 ) ), new HashSet<>( txLogFiles ) );
     }
 
@@ -211,6 +205,7 @@ public class OnlineBackupCommandIT
         Collection<File> txFiles = new ArrayList<>();
         DirectoryStream<Path> dirStream = Files.newDirectoryStream( dbLocation.toPath(), "neostore.transaction.db.*" );
         dirStream.forEach( path -> txFiles.add( path.toFile() ) );
+        dirStream.close();
         return txFiles;
     }
 

@@ -236,7 +236,8 @@ public class SwitchToSlaveCopyThenBranchTest
         } ).when( storeCopyClient ).copyStore(
                 any( StoreCopyClient.StoreCopyRequester.class ),
                 any( CancellationRequest.class ),
-                any( MoveAfterCopy.class ), any() );
+                any( MoveAfterCopy.class ),
+                anyBoolean() );
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
