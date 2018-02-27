@@ -21,15 +21,13 @@ package cypher.features
 
 import java.io.File
 import java.net.URI
-import java.util
+import java.util.Collection
 
 import cypher.features.ScenarioTestHelper._
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.{DynamicTest, Test, TestFactory}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
-@RunWith(classOf[JUnitPlatform])
 class AcceptanceTests extends BaseFeatureTest {
 
   // these two should be empty on commit!
@@ -42,15 +40,5 @@ class AcceptanceTests extends BaseFeatureTest {
   override val scenarios: Seq[Scenario] = {
     val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
     filterScenarios(all)
-  }
-
-  @TestFactory
-  override def runCompatibility23(): util.Collection[DynamicTest] = {
-    //TODO: Investigate flakiness, it should not work in 2.3
-    def isFlakyOn23(scenario: Scenario): Boolean = {
-      scenario.name.equals("STARTS WITH should handle null prefix") && scenario.featureName.equals("IndexAcceptance")
-    }
-
-    createTests(scenarios.filterNot(isFlakyOn23), Compatibility23TestConfig)
   }
 }
