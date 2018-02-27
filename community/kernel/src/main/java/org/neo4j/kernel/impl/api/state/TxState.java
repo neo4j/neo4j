@@ -34,7 +34,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -751,12 +750,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             }
             else
             {
-                removed.visitKeys( (PrimitiveLongVisitor) value -> {
+                removed.forEach( value -> {
                     if ( !nodeDiffSets.getRemoved().contains( value ) )
                     {
                         removed.remove( value );
                     }
-                    return false;
                 } );
             }
             added.addAll( nodeDiffSets.getAdded().iterator() );
@@ -1262,7 +1260,15 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             nodes.markStable();
         }
-        // todo mark moar
+        if ( nodeStatesMap != null )
+        {
+            nodeStatesMap.values().forEach( PropertyContainerStateImpl::markStable );
+        }
+        if ( relationshipStatesMap != null )
+        {
+            relationshipStatesMap.values().forEach( PropertyContainerStateImpl::markStable );
+        }
+        // TODO:
     }
 
     private PrimitiveLongDiffSets getIndexUpdatesForSeek(
@@ -1432,7 +1438,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         VersionedRemovalsCountingDiffSets()
         {
-            this.currentView = new RemovalsCountingDiffSetsDecorator( currentView() );
+            this.currentView = new RemovalsCountingDiffSetsDecorator( super.currentView() );
         }
 
         @Override
@@ -1469,37 +1475,38 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         RemovalsCountingDiffSetsDecorator( PrimitiveLongDiffSets delegate )
         {
+            super( delegate.getAdded(), delegate.getRemoved() );
             this.delegate = delegate;
         }
 
         @Override
         public boolean isAdded( long element )
         {
-            return super.isAdded( element );
+            return delegate.isAdded( element );
         }
 
         @Override
         public boolean isRemoved( long element )
         {
-            return super.isRemoved( element );
+            return delegate.isRemoved( element );
         }
 
         @Override
         public void removeAll( PrimitiveLongIterator elementsToRemove )
         {
-            super.removeAll( elementsToRemove );
+            delegate.removeAll( elementsToRemove );
         }
 
         @Override
         public void addAll( PrimitiveLongIterator elementsToAdd )
         {
-            super.addAll( elementsToAdd );
+            delegate.addAll( elementsToAdd );
         }
 
         @Override
         public void add( long element )
         {
-            super.add( element );
+            delegate.add( element );
         }
 
         @Override
@@ -1514,67 +1521,83 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 removedFromAdded.currentView().add( element );
                 return true;
             }
-            return super.remove( element );
+            return delegate.remove( element );
         }
 
         @Override
         public void visit( PrimitiveLongDiffSetsVisitor visitor ) throws ConstraintValidationException
         {
-            super.visit( visitor );
+            delegate.visit( visitor );
         }
 
         @Override
         public int delta()
         {
-            return super.delta();
+            return delegate.delta();
         }
 
         @Override
         public PrimitiveLongResourceIterator augment( PrimitiveLongIterator source )
         {
-            return super.augment( source );
+            return delegate.augment( source );
         }
 
         @Override
         public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongIterator source )
         {
-            return super.augmentWithRemovals( source );
+            return delegate.augmentWithRemovals( source );
         }
 
         @Override
         public PrimitiveLongSet getAdded()
         {
-            return super.getAdded();
+            return delegate.getAdded();
         }
 
         @Override
         public PrimitiveLongSet getRemoved()
         {
-            return super.getRemoved();
+            return delegate.getRemoved();
         }
 
         @Override
         public boolean isEmpty()
         {
-            return super.isEmpty();
+            return delegate.isEmpty();
         }
 
         @Override
         public boolean equals( Object o )
         {
-            return super.equals( o );
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            RemovalsCountingDiffSetsDecorator decorator = (RemovalsCountingDiffSetsDecorator) o;
+            if ( removedFromAdded != null )
+            {
+                if ( !removedFromAdded.equals( decorator.removedFromAdded ) )
+                {
+                    return false;
+                }
+            }
+            return delegate.equals( o );
         }
 
         @Override
         public int hashCode()
         {
-            return super.hashCode();
+            return delegate.hashCode();
         }
 
         @Override
         public void clear()
         {
-            super.clear();
+            delegate.clear();
         }
     }
 
@@ -1665,7 +1688,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         @Override
         public boolean nodeIsAddedInThisTx( long nodeId )
         {
-            return impl.nodeIsAddedInThisTx( nodeId );
+            return impl.nodes != null && impl.nodes().stableView().isAdded( nodeId );
         }
 
         @Override
@@ -1807,7 +1830,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         @Override
         public NodeState getNodeState( long id )
         {
-            return impl.getNodeState( id );
+            if ( nodeStatesMap == null )
+            {
+                return NodeStateImpl.EMPTY;
+            }
+            final NodeState nodeState = nodeStatesMap.get( id );
+            return nodeState == null ? NodeStateImpl.EMPTY : nodeState;
         }
 
         @Override

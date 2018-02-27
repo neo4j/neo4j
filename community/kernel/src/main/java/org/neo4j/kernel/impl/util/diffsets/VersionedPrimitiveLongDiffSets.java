@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongSet;
 
 public class VersionedPrimitiveLongDiffSets<I extends PrimitiveLongIterator, O extends PrimitiveLongResourceIterator>
@@ -28,7 +29,15 @@ public class VersionedPrimitiveLongDiffSets<I extends PrimitiveLongIterator, O e
     private final VersionedPrimitiveLongSet added = new VersionedPrimitiveLongSet();
     private final VersionedPrimitiveLongSet removed = new VersionedPrimitiveLongSet();
     private final PrimitiveLongDiffSets<I, O> currentView = new PrimitiveLongDiffSets<>( added.currentView(), removed.currentView() );
-    private final PrimitiveLongDiffSets<I, O> stableView = new PrimitiveLongDiffSets<>( added.currentView(), removed.currentView() );
+    private final PrimitiveLongDiffSets<I,O> stableView =
+            new PrimitiveLongDiffSets<I,O>( added.stableView(), removed.stableView() )
+            {
+                @Override
+                public PrimitiveLongSet getAddedSnapshot()
+                {
+                    return getAdded();
+                }
+            };
 
     public PrimitiveLongDiffSets<I, O> currentView()
     {

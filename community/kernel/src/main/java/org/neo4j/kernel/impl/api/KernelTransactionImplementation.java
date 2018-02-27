@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
+import org.neo4j.kernel.impl.newapi.StableAllStoreHolder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -209,9 +210,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
+        StableAllStoreHolder stableAllStoreHolder =
+                new StableAllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
         this.operations =
                 new Operations(
-                        allStoreHolder,
+                        allStoreHolder, stableAllStoreHolder,
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
                         storageStatement,
                         this, token, cursors, autoIndexing );
@@ -717,13 +720,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Read stableDataRead()
     {
         currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
-        return operations.dataRead();
+        return operations.stableDataRead();
     }
 
     @Override
     public void markAsStable()
     {
-        // ignored until 2-layer tx-state is supported
+        txState().markStable();
     }
 
     @Override

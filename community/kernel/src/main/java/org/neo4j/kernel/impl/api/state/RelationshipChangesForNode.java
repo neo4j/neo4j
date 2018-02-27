@@ -190,6 +190,22 @@ public class RelationshipChangesForNode
         this.relationshipHome = relationshipHome;
     }
 
+    void markStable()
+    {
+        if ( outgoing != null )
+        {
+            outgoing.markStable();
+        }
+        if ( incoming != null )
+        {
+            incoming.markStable();
+        }
+        if ( loops != null )
+        {
+            loops.markStable();
+        }
+    }
+
     public void addRelationship( long relId, int typeId, Direction direction )
     {
         VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );

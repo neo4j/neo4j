@@ -195,9 +195,32 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     }
 
     @Override
+    void markStable()
+    {
+        super.markStable();
+        if ( labelDiffSets != null )
+        {
+            labelDiffSets.markStable();
+        }
+        if ( relationshipsAdded != null )
+        {
+            relationshipsAdded.markStable();
+        }
+        if ( relationshipsRemoved != null )
+        {
+            relationshipsRemoved.markStable();
+        }
+    }
+
+    @Override
     public PrimitiveLongDiffSets labelDiffSets()
     {
-        return labelDiffSets == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE : labelDiffSets.currentView();
+        return labelDiffSets == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE : labelView();
+    }
+
+    PrimitiveLongDiffSets labelView()
+    {
+        return labelDiffSets.currentView();
     }
 
     PrimitiveLongDiffSets getOrCreateLabelDiffSets()
@@ -206,7 +229,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         {
             labelDiffSets = new VersionedPrimitiveLongDiffSets();
         }
-        return labelDiffSets.currentView();
+        return labelView();
     }
 
     public void addRelationship( long relId, int typeId, Direction direction )
@@ -302,7 +325,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         super.accept( visitor );
         if ( labelDiffSets != null )
         {
-            visitor.visitLabelChanges( getId(), labelDiffSets.currentView().getAdded(), labelDiffSets.currentView().getRemoved() );
+            visitor.visitLabelChanges( getId(), labelView().getAdded(), labelView().getRemoved() );
         }
     }
 

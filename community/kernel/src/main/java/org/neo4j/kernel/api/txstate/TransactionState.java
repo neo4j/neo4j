@@ -91,9 +91,9 @@ public interface TransactionState extends ReadableTransactionState
 
     boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
-    TransactionState getStableState();
-
     void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
+
+    TransactionState getStableState();
 
     void markStable();
 }

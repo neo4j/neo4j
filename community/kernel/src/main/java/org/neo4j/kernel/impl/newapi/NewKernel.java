@@ -91,6 +91,6 @@ public class NewKernel implements Kernel, Modes
     @Override
     public boolean twoLayerTransactionState()
     {
-        return false;
+        return true;
     }
 }

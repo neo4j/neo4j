@@ -80,6 +80,7 @@ public class Operations implements Write, ExplicitIndexWrite
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final StableAllStoreHolder stableAllStoreHolder;
     private final KernelToken token;
     private final StorageStatement statement;
     private final AutoIndexing autoIndexing;
@@ -89,15 +90,11 @@ public class Operations implements Write, ExplicitIndexWrite
     private DefaultRelationshipScanCursor relationshipCursor;
     private final DefaultCursors cursors;
 
-    public Operations(
-            AllStoreHolder allStoreHolder,
-            IndexTxStateUpdater updater,
-            StorageStatement statement,
-            KernelTransactionImplementation ktx,
-            KernelToken token,
-            DefaultCursors cursors,
+    public Operations( AllStoreHolder allStoreHolder, StableAllStoreHolder stableAllStoreHolder, IndexTxStateUpdater updater,
+            StorageStatement statement, KernelTransactionImplementation ktx, KernelToken token, DefaultCursors cursors,
             AutoIndexing autoIndexing )
     {
+        this.stableAllStoreHolder = stableAllStoreHolder;
         this.token = token;
         this.autoIndexing = autoIndexing;
         this.allStoreHolder = allStoreHolder;
@@ -736,6 +733,11 @@ public class Operations implements Write, ExplicitIndexWrite
     public Read dataRead()
     {
         return allStoreHolder;
+    }
+
+    public Read stableDataRead()
+    {
+        return stableAllStoreHolder;
     }
 
     public DefaultNodeCursor nodeCursor()
