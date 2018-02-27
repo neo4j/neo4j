@@ -191,10 +191,10 @@ public class ServerSettings implements LoadableConfig
 
     @Deprecated
     @Description( "Whether to allow executing scripts inside the server, from external sources, e.g. via traversal " +
-                  "endpoints. This setting is in the 'unsupported' namespace, because the scripting feature might be " +
+                  "endpoints. This setting is in the 'unsupported' namespace, because the scripting feature will be " +
                   "removed entirely in a future release." )
     public static final Setting<Boolean> script_enabled =
-            setting("unsupported.dbms.security.script_enabled", BOOLEAN, FALSE );
+            setting( "unsupported.dbms.security.script_enabled", BOOLEAN, FALSE );
 
     @Deprecated
     @Internal
