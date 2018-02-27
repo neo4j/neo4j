@@ -497,8 +497,8 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
-        //TODO check value before writing
-        Value existingValue = NO_VALUE;
+
+        Value existingValue = readGraphProperty( propertyKey );
         if ( !existingValue.equals( value ))
         {
             ktx.txState().graphDoReplaceProperty( propertyKey, existingValue, value );
@@ -632,6 +632,23 @@ public class Operations implements Write, ExplicitIndexWrite
     private Value readRelationshipProperty( int propertyKey )
     {
         relationshipCursor.properties( propertyCursor );
+
+        //Find out if the property had a value
+        Value existingValue = NO_VALUE;
+        while ( propertyCursor.next() )
+        {
+            if ( propertyCursor.propertyKey() == propertyKey )
+            {
+                existingValue = propertyCursor.propertyValue();
+                break;
+            }
+        }
+        return existingValue;
+    }
+
+    private Value readGraphProperty( int propertyKey )
+    {
+        allStoreHolder.graphProperties( propertyCursor );
 
         //Find out if the property had a value
         Value existingValue = NO_VALUE;

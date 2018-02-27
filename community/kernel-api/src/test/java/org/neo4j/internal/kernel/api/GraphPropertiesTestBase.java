@@ -51,6 +51,29 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    public void shouldBeAbleToReplaceExistingGraphProperty() throws Exception
+    {
+        int prop;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "good bye" ) ), equalTo( stringValue("hello") ) );
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertThat( graphProperties().getProperty( "prop" ), equalTo( "good bye" ) );
+        }
+    }
+
+    @Test
     public void shouldBeAbleToReadExistingGraphProperties() throws Exception
     {
         int prop1, prop2, prop3;
