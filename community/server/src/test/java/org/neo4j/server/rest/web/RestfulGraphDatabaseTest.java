@@ -99,12 +99,14 @@ public class RestfulGraphDatabaseTest
         database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
+        DatabaseActions databaseActions = new DatabaseActions(
+                new LeaseManager( Clocks.fakeClock() ), ScriptExecutionMode.SANDBOXED, database.getGraph() );
         service = new TransactionWrappingRestfulGraphDatabase(
                 graph,
                 new RestfulGraphDatabase(
                         new JsonFormat(),
                         output,
-                        new DatabaseActions( new LeaseManager( Clocks.fakeClock() ), true, database.getGraph() ),
+                        databaseActions,
                         new ConfigAdapter( Config.defaults() )
                 )
         );

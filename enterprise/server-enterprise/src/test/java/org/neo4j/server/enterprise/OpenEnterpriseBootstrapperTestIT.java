@@ -34,6 +34,7 @@ import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.BaseBootstrapperTestIT;
 import org.neo4j.server.NeoServer;
@@ -53,6 +54,7 @@ import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.certificates_directory;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.configuration.ServerSettings.script_enabled;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
@@ -78,6 +80,9 @@ public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
+                // The `script_enabled=true` setting is needed because the global javascript context must be
+                // initialised in sandboxed mode to allow testing traversal endpoint scripting:
+                "-c", configOption( script_enabled, Settings.TRUE ),
                 "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:0" ),
                 "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0",
                 "-c", "dbms.connector.https.listen_address=localhost:0",
@@ -105,6 +110,9 @@ public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
+                // The `script_enabled=true` setting is needed because the global javascript context must be
+                // initialised in sandboxed mode to allow testing traversal endpoint scripting:
+                "-c", configOption( script_enabled, Settings.TRUE ),
                 "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:0" ),
                 "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0",
                 "-c", "dbms.connector.https.listen_address=localhost:0",

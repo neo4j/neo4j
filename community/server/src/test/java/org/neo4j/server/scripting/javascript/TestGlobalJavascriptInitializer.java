@@ -21,6 +21,8 @@ package org.neo4j.server.scripting.javascript;
 
 import org.junit.Test;
 
+import org.neo4j.server.rest.web.ScriptExecutionMode;
+
 public class TestGlobalJavascriptInitializer
 {
 
@@ -28,20 +30,20 @@ public class TestGlobalJavascriptInitializer
     public void shouldNotAllowChangingMode() throws Exception
     {
         // Given
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         // When
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.UNSAFE );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.UNRESTRICTED );
     }
 
     @Test
     public void initializingTheSameModeTwiceIsFine() throws Exception
     {
         // Given
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         // When
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         // Then
         // no exception should have been thrown.

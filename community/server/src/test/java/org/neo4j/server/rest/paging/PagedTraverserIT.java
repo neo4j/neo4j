@@ -47,6 +47,7 @@ import org.neo4j.server.rest.RESTRequestGenerator;
 import org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -294,7 +295,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     @Test
     public void shouldRespondWith400OnScriptErrors()
     {
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         theStartNode = createLinkedList( 1, server.getDatabase() );
 

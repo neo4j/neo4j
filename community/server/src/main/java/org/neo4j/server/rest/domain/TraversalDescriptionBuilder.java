@@ -31,6 +31,7 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 
@@ -38,9 +39,9 @@ public class TraversalDescriptionBuilder
 {
     private final EvaluatorFactory evaluatorFactory;
 
-    public TraversalDescriptionBuilder( boolean enableSandboxing )
+    public TraversalDescriptionBuilder( ScriptExecutionMode executionMode )
     {
-        this.evaluatorFactory = new EvaluatorFactory( enableSandboxing );
+        this.evaluatorFactory = new EvaluatorFactory( executionMode );
     }
 
     public TraversalDescription from( Map<String, Object> description )
