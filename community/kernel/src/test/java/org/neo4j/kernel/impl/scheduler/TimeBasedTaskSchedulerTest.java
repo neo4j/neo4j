@@ -38,7 +38,6 @@ import org.neo4j.time.FakeClock;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TimeBasedTaskSchedulerTest
@@ -73,7 +72,21 @@ public class TimeBasedTaskSchedulerTest
 
     private void assertSemaphoreAcquire() throws InterruptedException
     {
-        assertTrue( "Semaphore acquire timeout", semaphore.tryAcquire( 10, TimeUnit.SECONDS ) );
+        // We do this in a loop, while calling tick after each iteration, because the task might have a previously
+        // start run that hasn't yet finished. And in that case, tick() won't start another. So we have to loop
+        // and call tick() until the task gets scheduled and releases our semaphore.
+        long timeoutMillis = TimeUnit.SECONDS.toMillis( 10 );
+        long sleepIntervalMillis = 10;
+        long iterations = timeoutMillis / sleepIntervalMillis;
+        for ( int i = 0; i < iterations; i++ )
+        {
+            if ( semaphore.tryAcquire( sleepIntervalMillis, TimeUnit.MILLISECONDS ) )
+            {
+                return; // All good.
+            }
+            scheduler.tick();
+        }
+        fail( "Semaphore acquire timeout" );
     }
 
     @Test
