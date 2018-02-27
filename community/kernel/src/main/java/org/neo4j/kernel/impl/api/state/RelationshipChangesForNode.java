@@ -34,6 +34,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongSet;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
@@ -174,9 +176,9 @@ public class RelationshipChangesForNode
     private final DiffStrategy diffStrategy;
     private final Home relationshipHome;
 
-    private VersionedPrimitiveLongObjectMap<PrimitiveLongSet> outgoing;
-    private VersionedPrimitiveLongObjectMap<PrimitiveLongSet> incoming;
-    private VersionedPrimitiveLongObjectMap<PrimitiveLongSet> loops;
+    private VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> outgoing;
+    private VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> incoming;
+    private VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> loops;
 
     private int totalOutgoing;
     private int totalIncoming;
@@ -190,10 +192,10 @@ public class RelationshipChangesForNode
 
     public void addRelationship( long relId, int typeId, Direction direction )
     {
-        VersionedPrimitiveLongObjectMap<PrimitiveLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        PrimitiveLongSet rels = relTypeToRelsMap.currentView().computeIfAbsent( typeId, k -> Primitive.longSet() );
+        VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
+        VersionedPrimitiveLongSet rels = relTypeToRelsMap.currentView().computeIfAbsent( typeId, k -> new VersionedPrimitiveLongSet() );
 
-        rels.add( relId );
+        rels.currentView().add( relId );
 
         switch ( direction )
         {
@@ -213,13 +215,13 @@ public class RelationshipChangesForNode
 
     public boolean removeRelationship( long relId, int typeId, Direction direction )
     {
-        VersionedPrimitiveLongObjectMap<PrimitiveLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        PrimitiveLongSet rels = relTypeToRelsMap.currentView().get( typeId );
+        VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
+        VersionedPrimitiveLongSet rels = relTypeToRelsMap.currentView().get( typeId );
         if ( rels != null )
         {
-            if ( rels.remove( relId ) )
+            if ( rels.currentView().remove( relId ) )
             {
-                if ( rels.isEmpty() )
+                if ( rels.currentView().isEmpty() )
                 {
                     relTypeToRelsMap.currentView().remove( typeId );
                 }
@@ -254,8 +256,8 @@ public class RelationshipChangesForNode
         return augmentRelationships( direction, rels, typeFilter( types ) );
     }
 
-    public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels,
-            Function<VersionedPrimitiveLongObjectMap<PrimitiveLongSet>, Iterator<PrimitiveLongSet>> typeFilter )
+    private RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels,
+            Function<VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet>, Iterator<PrimitiveLongSet>> typeFilter )
     {
         switch ( direction )
         {
@@ -319,23 +321,23 @@ public class RelationshipChangesForNode
             case INCOMING:
                 if ( incoming != null && incoming.currentView().containsKey( typeId ) )
                 {
-                    degree = diffStrategy.augmentDegree( degree, incoming.currentView().get( typeId ).size() );
+                    degree = diffStrategy.augmentDegree( degree, incoming.currentView().get( typeId ).currentView().size() );
                 }
                 break;
             case OUTGOING:
                 if ( outgoing != null && outgoing.currentView().containsKey( typeId ) )
                 {
-                    degree = diffStrategy.augmentDegree( degree, outgoing.currentView().get( typeId ).size() );
+                    degree = diffStrategy.augmentDegree( degree, outgoing.currentView().get( typeId ).currentView().size() );
                 }
                 break;
             case BOTH:
                 if ( outgoing != null && outgoing.currentView().containsKey( typeId ) )
                 {
-                    degree = diffStrategy.augmentDegree( degree, outgoing.currentView().get( typeId ).size() );
+                    degree = diffStrategy.augmentDegree( degree, outgoing.currentView().get( typeId ).currentView().size() );
                 }
                 if ( incoming != null && incoming.currentView().containsKey( typeId ) )
                 {
-                    degree = diffStrategy.augmentDegree( degree, incoming.currentView().get( typeId ).size() );
+                    degree = diffStrategy.augmentDegree( degree, incoming.currentView().get( typeId ).currentView().size() );
                 }
                 break;
 
@@ -346,7 +348,7 @@ public class RelationshipChangesForNode
         // Loops are always included
         if ( loops != null && loops.currentView().containsKey( typeId ) )
         {
-            degree = diffStrategy.augmentDegree( degree, loops.currentView().get( typeId ).size() );
+            degree = diffStrategy.augmentDegree( degree, loops.currentView().get( typeId ).currentView().size() );
         }
         return degree;
     }
@@ -358,19 +360,19 @@ public class RelationshipChangesForNode
         case INCOMING:
             if ( incoming != null && incoming.currentView().containsKey( typeId ) )
             {
-                return diffStrategy.augmentDegree( degree, incoming.currentView().get( typeId ).size() );
+                return diffStrategy.augmentDegree( degree, incoming.currentView().get( typeId ).currentView().size() );
             }
             break;
         case OUTGOING:
             if ( outgoing != null && outgoing.currentView().containsKey( typeId ) )
             {
-                return diffStrategy.augmentDegree( degree, outgoing.currentView().get( typeId ).size() );
+                return diffStrategy.augmentDegree( degree, outgoing.currentView().get( typeId ).currentView().size() );
             }
             break;
         case LOOP:
             if ( loops != null && loops.currentView().containsKey( typeId ) )
             {
-                return diffStrategy.augmentDegree( degree, loops.currentView().get( typeId ).size() );
+                return diffStrategy.augmentDegree( degree, loops.currentView().get( typeId ).currentView().size() );
             }
             break;
 
@@ -416,7 +418,7 @@ public class RelationshipChangesForNode
         }
     }
 
-    private VersionedPrimitiveLongObjectMap<PrimitiveLongSet> outgoing()
+    private VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> outgoing()
     {
         if ( outgoing == null )
         {
@@ -425,7 +427,7 @@ public class RelationshipChangesForNode
         return outgoing;
     }
 
-    private VersionedPrimitiveLongObjectMap<PrimitiveLongSet> incoming()
+    private VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> incoming()
     {
         if ( incoming == null )
         {
@@ -434,7 +436,7 @@ public class RelationshipChangesForNode
         return incoming;
     }
 
-    private VersionedPrimitiveLongObjectMap<PrimitiveLongSet> loops()
+    private VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> loops()
     {
         if ( loops == null )
         {
@@ -443,9 +445,9 @@ public class RelationshipChangesForNode
         return loops;
     }
 
-    private VersionedPrimitiveLongObjectMap<PrimitiveLongSet> getTypeToRelMapForDirection( Direction direction )
+    private VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> getTypeToRelMapForDirection( Direction direction )
     {
-        VersionedPrimitiveLongObjectMap<PrimitiveLongSet> relTypeToRelsMap;
+        VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> relTypeToRelsMap;
         switch ( direction )
         {
             case INCOMING:
@@ -463,7 +465,7 @@ public class RelationshipChangesForNode
         return relTypeToRelsMap;
     }
 
-    private Function<VersionedPrimitiveLongObjectMap<PrimitiveLongSet>, Iterator<PrimitiveLongSet>> typeFilter( int[] types )
+    private Function<VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet>, Iterator<PrimitiveLongSet>> typeFilter( int[] types )
     {
         return relationshipsByType -> new PrefetchingIterator<PrimitiveLongSet>()
         {
@@ -474,10 +476,10 @@ public class RelationshipChangesForNode
             {
                 while ( iterTypes.hasNext() )
                 {
-                    PrimitiveLongSet relsByType = relationshipsByType.currentView().get( iterTypes.next() );
+                    VersionedPrimitiveLongSet relsByType = relationshipsByType.currentView().get( iterTypes.next() );
                     if ( relsByType != null )
                     {
-                        return relsByType;
+                        return relsByType.currentView();
                     }
                 }
                 return null;
@@ -485,15 +487,15 @@ public class RelationshipChangesForNode
         };
     }
 
-    private static final Function<VersionedPrimitiveLongObjectMap<PrimitiveLongSet>, Iterator<PrimitiveLongSet>> ALL_TYPES =
-            integerSetMap -> integerSetMap.currentView().values().iterator();
+    private static final Function<VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet>, Iterator<PrimitiveLongSet>> ALL_TYPES =
+            integerSetMap -> Iterators.map( VersionedPrimitiveLongSet::currentView, integerSetMap.currentView().values().iterator() );
 
     private Iterator<PrimitiveLongSet> diffs(
-            Function<VersionedPrimitiveLongObjectMap<PrimitiveLongSet>, Iterator<PrimitiveLongSet>> filter,
-            VersionedPrimitiveLongObjectMap<PrimitiveLongSet>... maps )
+            Function<VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet>, Iterator<PrimitiveLongSet>> filter,
+            VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet>... maps )
     {
         Collection<PrimitiveLongSet> result = new ArrayList<>();
-        for ( VersionedPrimitiveLongObjectMap<PrimitiveLongSet> map : maps )
+        for ( VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> map : maps )
         {
             if ( map != null )
             {
@@ -545,32 +547,32 @@ public class RelationshipChangesForNode
         }
     }
 
-    private PrimitiveLongIterator primitiveIds( VersionedPrimitiveLongObjectMap<PrimitiveLongSet> map )
+    private PrimitiveLongIterator primitiveIds( VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> map )
     {
         if ( map == null )
         {
             return emptyIterator();
         }
-        PrimitiveLongObjectMap<PrimitiveLongSet> view = map.currentView();
-        Iterable<PrimitiveLongSet> values = view.values();
+        PrimitiveLongObjectMap<VersionedPrimitiveLongSet> view = map.currentView();
+        Iterable<VersionedPrimitiveLongSet> values = view.values();
         int size = view.size();
         PrimitiveLongIterator[] iterators = new PrimitiveLongIterator[size];
         int i = 0;
-        for ( PrimitiveLongSet value : values )
+        for ( VersionedPrimitiveLongSet value : values )
         {
-            iterators[i++] = value.iterator();
+            iterators[i++] = value.currentView().iterator();
         }
         return PrimitiveLongCollections.concat( iterators );
     }
 
-    private PrimitiveLongIterator primitiveIdsByType( VersionedPrimitiveLongObjectMap<PrimitiveLongSet> map, int type )
+    private PrimitiveLongIterator primitiveIdsByType( VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet> map, int type )
     {
-        PrimitiveLongSet relationships = map.currentView().get( type );
-        return relationships == null ? emptyIterator() : relationships.iterator();
+        VersionedPrimitiveLongSet relationships = map.currentView().get( type );
+        return relationships == null ? emptyIterator() : relationships.currentView().iterator();
     }
 
     private PrimitiveLongIterator getRelationships( Direction direction,
-            Function<VersionedPrimitiveLongObjectMap<PrimitiveLongSet>, Iterator<PrimitiveLongSet>> types )
+            Function<VersionedPrimitiveLongObjectMap<VersionedPrimitiveLongSet>, Iterator<PrimitiveLongSet>> types )
     {
         switch ( direction )
         {

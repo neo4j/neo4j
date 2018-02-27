@@ -239,7 +239,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     @Override
     public void clear()
     {
-        // todo call close() instead
         super.clear();
         if ( relationshipsAdded != null )
         {
@@ -248,10 +247,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         if ( relationshipsRemoved != null )
         {
             relationshipsRemoved.clear();
-        }
-        if ( labelDiffSets != null )
-        {
-            //labelDiffSets.clear();
         }
         if ( indexDiffs != null )
         {
