@@ -51,6 +51,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -1019,12 +1020,12 @@ public class IndexingServiceTest
                 return indexMap;
             } );
             throw new RuntimeException( "Index deleted." );
-        } ).when( deletedIndexProxy ).force();
+        } ).when( deletedIndexProxy ).force( any( IOLimiter.class ) );
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll();
-        verify( validIndex, times( 4 ) ).force();
+        indexingService.forceAll( IOLimiter.unlimited() );
+        verify( validIndex, times( 4 ) ).force( IOLimiter.unlimited() );
     }
 
     @Test
@@ -1040,7 +1041,7 @@ public class IndexingServiceTest
             indexMap.putIndexProxy( 3, strangeIndexProxy );
             indexMap.putIndexProxy( 4, validIndex );
             indexMap.putIndexProxy( 5, validIndex );
-            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force();
+            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
             return indexMap;
         } );
 
@@ -1048,7 +1049,7 @@ public class IndexingServiceTest
 
         expectedException.expectMessage( "Unable to force" );
         expectedException.expect( UnderlyingStorageException.class );
-        indexingService.forceAll();
+        indexingService.forceAll( IOLimiter.unlimited() );
     }
 
     @Test

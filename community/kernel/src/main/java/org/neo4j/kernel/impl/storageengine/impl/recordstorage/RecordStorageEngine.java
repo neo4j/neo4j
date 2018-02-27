@@ -459,7 +459,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void flushAndForce( IOLimiter limiter )
     {
-        indexingService.forceAll();
+        indexingService.forceAll( limiter );
         labelScanStore.force( limiter );
         for ( IndexImplementation index : explicitIndexProviderLookup.all() )
         {

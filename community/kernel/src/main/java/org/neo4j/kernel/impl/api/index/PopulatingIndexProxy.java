@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -117,7 +118,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force()
+    public void force( IOLimiter ioLimiter )
     {
         // Ignored... this isn't called from the outside while we're populating the index.
     }

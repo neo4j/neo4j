@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -583,7 +584,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         processAll( data );
 
         // when
-        accessor.force();
+        accessor.force( IOLimiter.unlimited() );
         accessor.close();
 
         // then
@@ -875,7 +876,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
 
     private void forceAndCloseAccessor() throws IOException
     {
-        accessor.force();
+        accessor.force( IOLimiter.unlimited() );
         closeAccessor();
     }
 

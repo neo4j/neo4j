@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -61,7 +62,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public void force()
+    public void force( IOLimiter ioLimiter )
     {
     }
 
