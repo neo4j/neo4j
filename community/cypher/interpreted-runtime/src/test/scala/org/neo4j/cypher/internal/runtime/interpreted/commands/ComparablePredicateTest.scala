@@ -50,7 +50,7 @@ class ComparablePredicateTest extends CypherFunSuite {
     null
   ).flatMap {
     case null => Seq(null)
-    case v: Number if v.doubleValue().isNaN => Seq(v.doubleValue(), v.floatValue(), v)
+    case v: Number if v.doubleValue().isNaN => Seq[Number](v.doubleValue(), v.floatValue(), v)
     case v: Number =>
       Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
   }
