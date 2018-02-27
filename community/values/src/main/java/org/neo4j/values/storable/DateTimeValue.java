@@ -35,14 +35,18 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.TemporalUnit;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.time.Instant.ofEpochMilli;
 import static java.time.Instant.ofEpochSecond;
@@ -152,7 +156,58 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( unit.isTimeBased() && !(input instanceof DateTimeValue || input instanceof LocalDateTimeValue) )
+        {
+            throw new IllegalArgumentException( "Cannot truncate " + input + " to date time with a time based unit." );
+        }
+        LocalDate localDate = input.getDatePart();
+        LocalTime localTime = input.hasTime() ? input.getLocalTimePart() : LocalTimeValue.DEFAULT_LOCAL_TIME;
+        ZoneId zoneId = input.hasTimeZone() ? input.getZoneId( defaultZone ) : defaultZone.get();
+
+        LocalTime truncatedTime;
+        LocalDate truncatedDate;
+        if ( unit.isDateBased() )
+        {
+            truncatedDate = DateValue.truncateTo( localDate, unit );
+            truncatedTime = LocalTimeValue.DEFAULT_LOCAL_TIME;
+        }
+        else
+        {
+            truncatedDate = localDate;
+            truncatedTime = localTime.truncatedTo( unit );
+        }
+
+        ZonedDateTime truncatedZDT = ZonedDateTime.of( truncatedDate, truncatedTime, zoneId );
+
+        if ( fields.size() == 0 )
+        {
+            return datetime( truncatedZDT );
+        }
+        else
+        {
+            // Timezone needs some special handling, since the builder will shift keeping the instant instead of the local time
+            Map<String, AnyValue> updatedFields = new HashMap<>( fields.size() + 1 );
+            for ( Map.Entry<String,AnyValue> entry : fields.entrySet() )
+            {
+                if ( "timezone".equals( entry.getKey() ) )
+                {
+                    truncatedZDT = truncatedZDT.withZoneSameLocal( timezoneOf( entry.getValue() ) );
+                }
+                else
+                {
+                    updatedFields.put( entry.getKey(), entry.getValue() );
+                }
+            }
+
+            truncatedZDT = updateFieldMapWithConflictingSubseconds( updatedFields, unit, truncatedZDT );
+
+            if ( updatedFields.size() == 0 )
+            {
+                return datetime( truncatedZDT );
+            }
+            updatedFields.put( "datetime", datetime( truncatedZDT ) );
+            return build( VirtualValues.map( updatedFields ), defaultZone );
+        }
     }
 
     static DateTimeBuilder<DateTimeValue> builder( Supplier<ZoneId> defaultZone )
@@ -340,6 +395,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     @Override
     public boolean hasTimeZone()
+    {
+        return true;
+    }
+
+    @Override
+    boolean hasTime()
     {
         return true;
     }

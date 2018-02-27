@@ -26,7 +26,7 @@ public abstract class IntegralValue extends NumberValue
 {
     public static long safeCastIntegral( String name, AnyValue value, long defaultValue )
     {
-        if ( value == null )
+        if ( value == null || value == Values.NO_VALUE )
         {
             return defaultValue;
         }
