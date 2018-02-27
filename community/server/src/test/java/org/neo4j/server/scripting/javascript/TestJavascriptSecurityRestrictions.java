@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.server.rest.domain.EvaluationException;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.scripting.ScriptExecutor;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -41,7 +42,7 @@ public class TestJavascriptSecurityRestrictions
     @BeforeClass
     public static void doBullshitGlobalStateCrap()
     {
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
     }
 
     @Test

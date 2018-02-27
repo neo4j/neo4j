@@ -31,6 +31,7 @@ import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -208,7 +209,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     {
         // NOTE: This has to be initialized to sandboxed, because it can only be initialized once per JVM session,
         // and all other tests depend on it being sandboxed.
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         server = serverOnRandomPorts().withProperty( ServerSettings.script_sandboxing_enabled.name(), "false" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )

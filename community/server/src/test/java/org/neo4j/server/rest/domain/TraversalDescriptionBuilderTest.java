@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.web.ScriptExecutionMode.SANDBOXED;
 
 public class TraversalDescriptionBuilderTest
 {
@@ -33,7 +34,7 @@ public class TraversalDescriptionBuilderTest
     public void throwsIllegalArgumentOnUnknownExpanderType()
     {
         // Given
-        TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
+        TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( SANDBOXED );
         Collection<Map<String,Object>> rels = new ArrayList<>();
         rels.add( map( "type", "blah" ) );
 
@@ -47,7 +48,7 @@ public class TraversalDescriptionBuilderTest
     public void throwsIllegalArgumentOnNonStringExpanderType()
     {
         // Given
-        TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
+        TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( SANDBOXED );
         Collection<Map<String,Object>> rels = new ArrayList<>();
         rels.add( map( "type", "blah" ) );
 

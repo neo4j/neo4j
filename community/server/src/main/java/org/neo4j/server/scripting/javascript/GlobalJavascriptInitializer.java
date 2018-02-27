@@ -23,6 +23,7 @@ import org.mozilla.javascript.ClassShutter;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
 
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.scripting.UserScriptClassWhiteList;
 
 /**
@@ -41,74 +42,58 @@ import org.neo4j.server.scripting.UserScriptClassWhiteList;
  */
 public class GlobalJavascriptInitializer
 {
-
-    private static Mode initializationMode;
-
-    public enum Mode
-    {
-        SANDBOXED,
-        UNSAFE
-    }
+    private static ScriptExecutionMode initializationMode;
 
     private GlobalJavascriptInitializer()
     {
     }
 
-    public static synchronized void initialize( Mode requestedMode )
+    public static synchronized void initialize( ScriptExecutionMode executionMode )
     {
         if ( initializationMode != null )
         {
-            if ( initializationMode == requestedMode )
+            if ( initializationMode == executionMode )
             {
                 return;
             }
             else
             {
                 throw new RuntimeException(
-                        "Cannot initialize javascript context twice, " + "system is currently initialized as: '" +
+                        "Cannot initialize javascript context twice, system is currently initialized as: '" +
                                 initializationMode.name() + "'." );
             }
         }
+        initializationMode = executionMode;
 
-        initializationMode = requestedMode;
-
-        ContextFactory contextFactory;
-        switch ( requestedMode )
+        if ( executionMode == ScriptExecutionMode.UNRESTRICTED )
         {
-            case UNSAFE:
-                contextFactory = new ContextFactory()
+            ContextFactory.initGlobal( new ContextFactory()
+            {
+                protected Context makeContext()
                 {
-                    protected Context makeContext()
-                    {
-                        Context cx = super.makeContext();
-                        cx.setLanguageVersion( Context.VERSION_1_7 );
-                        // TODO: This goes up to 9, do performance tests to determine appropriate level of optimization
-                        cx.setOptimizationLevel( 4 );
-                        return cx;
-                    }
-                };
-                break;
-            default:
-                contextFactory = new ContextFactory()
-                {
-                    protected Context makeContext()
-                    {
-                        Context cx = super.makeContext();
-
-                        ClassShutter shutter = new WhiteListClassShutter( UserScriptClassWhiteList.getWhiteList() );
-
-                        cx.setLanguageVersion( Context.VERSION_1_7 );
-                        // TODO: This goes up to 9, do performance tests to determine appropriate level of optimization
-                        cx.setOptimizationLevel( 4 );
-                        cx.setClassShutter( shutter );
-                        cx.setWrapFactory( new WhiteListJavaWrapper( shutter ) );
-                        return cx;
-                    }
-                };
-                break;
+                    Context cx = super.makeContext();
+                    cx.setLanguageVersion( Context.VERSION_1_7 );
+                    cx.setOptimizationLevel( 4 );
+                    return cx;
+                }
+            } );
         }
-
-        ContextFactory.initGlobal( contextFactory );
+        else if ( executionMode == ScriptExecutionMode.SANDBOXED )
+        {
+            ContextFactory.initGlobal( new ContextFactory()
+            {
+                protected Context makeContext()
+                {
+                    Context cx = super.makeContext();
+                    cx.setLanguageVersion( Context.VERSION_1_7 );
+                    cx.setOptimizationLevel( 4 );
+                    ClassShutter shutter = new WhiteListClassShutter( UserScriptClassWhiteList.getWhiteList() );
+                    cx.setClassShutter( shutter );
+                    cx.setWrapFactory( new WhiteListJavaWrapper( shutter ) );
+                    return cx;
+                }
+            } );
+        }
     }
 
 }
