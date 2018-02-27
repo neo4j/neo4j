@@ -310,12 +310,6 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     @Override
-    public String toString()
-    {
-        return prettyPrint();
-    }
-
-    @Override
     protected int computeHash()
     {
         return value.toInstant( UTC ).hashCode();

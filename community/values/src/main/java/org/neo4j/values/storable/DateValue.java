@@ -194,12 +194,6 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     }
 
     @Override
-    public String toString()
-    {
-        return prettyPrint();
-    }
-
-    @Override
     protected int computeHash()
     {
         return Long.hashCode( value.toEpochDay() );

@@ -231,12 +231,6 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
-    public String toString()
-    {
-        return prettyPrint();
-    }
-
-    @Override
     protected int computeHash()
     {
         return value.hashCode();

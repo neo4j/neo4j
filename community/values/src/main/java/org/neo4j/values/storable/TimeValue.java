@@ -270,12 +270,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     @Override
-    public String toString()
-    {
-        return prettyPrint();
-    }
-
-    @Override
     protected int computeHash()
     {
         return Long.hashCode( value.toLocalTime().toNanoOfDay() - value.getOffset().getTotalSeconds() * 1000_000_000L );
