@@ -272,10 +272,12 @@ public class BuiltInProceduresTest
                         "(success :: BOOLEAN?)",
                         "Add a relationship to an explicit index based on a specified key and value"),
                 record( "db.index.explicit.removeNode",
-                        "db.index.explicit.removeNode(indexName :: STRING?, node :: NODE?, key :: STRING?) :: (success :: BOOLEAN?)",
+                        "db.index.explicit.removeNode(indexName :: STRING?, node :: NODE?, " +
+                        "key =  <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]>  :: STRING?) :: (success :: BOOLEAN?)",
                         "Remove a node from an explicit index with an optional key"),
                 record( "db.index.explicit.removeRelationship",
-                        "db.index.explicit.removeRelationship(indexName :: STRING?, relationship :: RELATIONSHIP?, key :: STRING?) :: " +
+                        "db.index.explicit.removeRelationship(indexName :: STRING?, relationship :: RELATIONSHIP?, " +
+                        "key =  <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]>  :: STRING?) :: " +
                         "(success :: BOOLEAN?)",
                         "Remove a relationship from an explicit index with an optional key"),
                 record( "db.index.explicit.drop",
