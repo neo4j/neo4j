@@ -158,25 +158,25 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
 
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
     graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
-    //graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
-    //graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
 
     val query1 = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location AS point"
     val query2 = "MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'}) RETURN p.location AS point"
-    //val query3 = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'}) RETURN p.location AS point"
-    //val query4 = "MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'}) RETURN p.location AS point"
+    val query3 = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'}) RETURN p.location AS point"
+    val query4 = "MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'}) RETURN p.location AS point"
 
     testPointRead(query1, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     testPointRead(query2, Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
-    //testPointRead(query3, Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
-    //testPointRead(query4, Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
+    testPointRead(query3, Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
+    testPointRead(query4, Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
 
     restartGraphDatabase()
 
     testPointRead(query1, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     testPointRead(query2, Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
-    //testPointRead(query3, Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
-    //testPointRead(query4, Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
+    testPointRead(query3, Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
+    testPointRead(query4, Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
   }
 
   test("overwriting indexed property should work") {
