@@ -105,7 +105,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     {
         try
         {
-            String failureMessage = readPopulationFailure( indexId, descriptor );
+            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ) );
             if ( failureMessage == null )
             {
                 throw new IllegalStateException( "Index " + indexId + " isn't failed" );
@@ -123,19 +123,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     {
         try
         {
-            NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-            GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ), headerReader );
-            switch ( headerReader.state )
-            {
-            case BYTE_FAILED:
-                return InternalIndexState.FAILED;
-            case BYTE_ONLINE:
-                return InternalIndexState.ONLINE;
-            case BYTE_POPULATING:
-                return InternalIndexState.POPULATING;
-            default:
-                throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
-            }
+            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ) );
         }
         catch ( IOException e )
         {
@@ -150,13 +138,6 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
         // Since this native provider is a new one, there's no need for migration on this level.
         // Migration should happen in the combined layer for the time being.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
-    }
-
-    private String readPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IOException
-    {
-        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ), headerReader );
-        return headerReader.failureMessage;
     }
 
     private Layout<KEY,VALUE> layout( IndexDescriptor descriptor )

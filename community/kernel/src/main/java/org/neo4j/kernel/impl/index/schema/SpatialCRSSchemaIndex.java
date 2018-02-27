@@ -57,7 +57,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
 
@@ -329,26 +328,12 @@ public class SpatialCRSSchemaIndex
 
     public String readPopulationFailure( IndexDescriptor descriptor ) throws IOException
     {
-        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
-        return headerReader.failureMessage;
+        return NativeSchemaIndexes.readFailureMessage( pageCache, indexFile, layout( descriptor ) );
     }
 
     public InternalIndexState readState( IndexDescriptor descriptor ) throws IOException
     {
-        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
-        switch ( headerReader.state )
-        {
-        case BYTE_FAILED:
-            return InternalIndexState.FAILED;
-        case BYTE_ONLINE:
-            return InternalIndexState.ONLINE;
-        case BYTE_POPULATING:
-            return InternalIndexState.POPULATING;
-        default:
-            throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
-        }
+        return NativeSchemaIndexes.readState( pageCache, indexFile, layout( descriptor ) );
     }
 
     private synchronized void create() throws IOException
