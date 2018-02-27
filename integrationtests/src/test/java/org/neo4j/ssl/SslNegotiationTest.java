@@ -184,7 +184,7 @@ public class SslNegotiationTest
         {
             assertNull( client.sslHandshakeFuture().cause() );
             assertEquals( setup.expectedProtocol, client.protocol() );
-            assertEquals( setup.expectedCipher, client.ciphers() );
+            assertEquals( setup.expectedCipher.substring( 4 ), client.ciphers().substring( 4 ) ); // cut away SSL_ or TLS_
         }
         else
         {
