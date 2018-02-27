@@ -35,7 +35,7 @@ import org.neo4j.values.virtual.MapValue;
  * This class is responsible for routing incoming request messages to a worker
  * as well as handling outgoing response messages via appropriate handlers.
  */
-public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeException>
+public class BoltMessageRouter implements BoltRequestMessageHandler
 {
     private final BoltMessageLogger messageLogger;
 
@@ -63,22 +63,21 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     }
 
     @Override
-    public void onInit( String userAgent, Map<String,Object> authToken ) throws RuntimeException
+    public void onInit( String userAgent, Map<String,Object> authToken )
     {
-        // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
         messageLogger.logInit(userAgent );
         worker.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
     }
 
     @Override
-    public void onAckFailure() throws RuntimeException
+    public void onAckFailure()
     {
         messageLogger.logAckFailure();
         worker.enqueue( session -> session.ackFailure( defaultHandler ) );
     }
 
     @Override
-    public void onReset() throws RuntimeException
+    public void onReset()
     {
         messageLogger.clientEvent("INTERRUPT");
         messageLogger.logReset();

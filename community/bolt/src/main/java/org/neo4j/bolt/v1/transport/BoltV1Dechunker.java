@@ -31,7 +31,7 @@ public class BoltV1Dechunker
 {
     private final ChunkedInput input;
     private final BoltRequestMessageReader unpacker;
-    private final BoltRequestMessageHandler<RuntimeException> onMessage;
+    private final BoltRequestMessageHandler onMessage;
     private final Runnable onMessageStarted;
 
     public enum State
@@ -45,8 +45,7 @@ public class BoltV1Dechunker
     private State state = State.AWAITING_CHUNK;
     private int chunkSize;
 
-    public BoltV1Dechunker( Neo4jPack neo4jPack, BoltRequestMessageHandler<RuntimeException> messageHandler,
-            Runnable onMessageStarted )
+    public BoltV1Dechunker( Neo4jPack neo4jPack, BoltRequestMessageHandler messageHandler, Runnable onMessageStarted )
     {
         this.onMessage = messageHandler;
         this.onMessageStarted = onMessageStarted;
