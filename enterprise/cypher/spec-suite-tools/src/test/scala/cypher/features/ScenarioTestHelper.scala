@@ -56,7 +56,7 @@ object ScenarioTestHelper {
             scenario(Neo4jAdapter(config.executionPrefix)).execute()
           } match {
             case Success(_) => throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
-            case Failure(e) => // failed as expected
+            case Failure(e) => println("Failed as expected with\n  " + e.getMessage)
           }
         }
       }
