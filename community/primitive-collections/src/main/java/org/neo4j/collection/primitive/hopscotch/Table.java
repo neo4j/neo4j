@@ -34,10 +34,6 @@ package org.neo4j.collection.primitive.hopscotch;
  * implementations of this. The only restriction is that keys must be decimal type numbers, f.ex. {@code short},
  * {@code int} or {@code long}. Where the key "carrier" between the algorithm and the table is always going to be
  * {@code long} since it can carry all the others.
- *
- * {@link #version() versioning} is added to the table interface, but implementations can disable versioning
- * by always returning the same and constant number in both {@link #version()} and {@link #version(int)}.
- * Versioning helps iterating over a constant set of entries at the same time as modifying the table.
  */
 public interface Table<VALUE> extends AutoCloseable
 {

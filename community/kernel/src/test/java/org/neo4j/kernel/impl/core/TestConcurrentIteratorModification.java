@@ -59,12 +59,13 @@ public class TestConcurrentIteratorModification
 
         // when
         Set<Node> result = new HashSet<>();
+        Node node4;
         try ( Transaction tx = graph.beginTx() )
         {
             node3 = graph.createNode( label );
             ResourceIterator<Node> iterator = graph.findNodes( label );
             node3.removeLabel( label );
-            graph.createNode( label );
+            node4 = graph.createNode( label );
             while ( iterator.hasNext() )
             {
                 result.add( iterator.next() );
@@ -72,7 +73,6 @@ public class TestConcurrentIteratorModification
             tx.success();
         }
 
-        // then does not throw and retains view from iterator creation time
-        assertEquals(asSet(node1, node2), result);
+        assertEquals( asSet( node1, node2, node4 ), result );
     }
 }

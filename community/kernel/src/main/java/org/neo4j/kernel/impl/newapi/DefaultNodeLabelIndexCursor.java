@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
@@ -41,7 +40,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private long node;
     private LabelSet labels;
     private PrimitiveLongIterator added;
-    private Set<Long> removed;
+    private PrimitiveLongSet removed;
 
     DefaultNodeLabelIndexCursor()
     {
@@ -54,11 +53,11 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> changes =
+            PrimitiveLongDiffSets changes =
                     read.txState().nodesWithLabelChanged( label );
-            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
-            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
-            removed.addAll( changes.getRemoved() );
+            added = changes.augment( PrimitiveLongResourceCollections.emptyIterator() );
+            removed = PrimitiveLongCollections.asSet( read.txState().addedAndRemovedNodes().getRemoved() );
+            removed.addAll( changes.getRemoved().iterator() );
         }
     }
 

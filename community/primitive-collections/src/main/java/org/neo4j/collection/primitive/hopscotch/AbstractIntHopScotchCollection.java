@@ -35,7 +35,7 @@ public abstract class AbstractIntHopScotchCollection<VALUE> extends AbstractHopS
     @Override
     public PrimitiveIntIterator iterator()
     {
-        final TableKeyIterator<VALUE> longIterator = new TableKeyIterator<>( table, this );
+        final TableKeyIterator<VALUE> longIterator = new TableKeyIterator<>( table );
         return new PrimitiveIntBaseIterator()
         {
             @Override

@@ -17,30 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.collection.primitive.hopscotch;
 
-public class LongKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+
+public class MapValueIterator<V> implements Iterator<V>
 {
-    public LongKeyTable( int capacity, VALUE singleValue )
+    private final PrimitiveLongIterator iterator;
+    private final PrimitiveLongObjectMap<V> map;
+
+    public MapValueIterator( PrimitiveLongObjectMap<V> map )
     {
-        super( capacity, 3, 32, singleValue );
+        this.map = map;
+        this.iterator = map.iterator();
     }
 
     @Override
-    public long key( int index )
+    public boolean hasNext()
     {
-        return getLong( address( index ) );
+        return iterator.hasNext();
     }
 
     @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
+    public V next()
     {
-        putLong( actualIndex, key );
-    }
-
-    @Override
-    protected LongKeyTable<VALUE> newInstance( int newCapacity )
-    {
-        return new LongKeyTable<>( newCapacity, singleValue );
+        if ( !hasNext() )
+        {
+            throw new NoSuchElementException( "Iterator exhausted" );
+        }
+        return map.get( iterator.next() );
     }
 }

@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -480,7 +481,7 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetAll( KernelStatement state )
     {
         PrimitiveLongIterator iterator = storeLayer.nodesGetAll();
-        return state.hasTxStateWithChanges() ? state.txState().augmentNodesGetAll( iterator ) : iterator;
+        return state.hasTxStateWithChanges() ? state.txState().augmentNodesGetAll( resourceIterator( iterator, Resource.EMPTY ) ) : iterator;
     }
 
     @Override
@@ -948,7 +949,7 @@ public class StateHandlingStatementOperations implements
         {
             PrimitiveLongReadableDiffSets labelPropertyChanges =
                     state.txState().indexUpdatesForScan( index );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            PrimitiveLongReadableDiffSets nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChanges.augment( nodeIds ) );
@@ -964,7 +965,7 @@ public class StateHandlingStatementOperations implements
         {
             PrimitiveLongReadableDiffSets labelPropertyChanges =
                     state.txState().indexUpdatesForSeek( index, propertyValues );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            PrimitiveLongReadableDiffSets nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChanges.augment( nodeIds ) );
@@ -983,7 +984,7 @@ public class StateHandlingStatementOperations implements
             TransactionState txState = state.txState();
             PrimitiveLongReadableDiffSets labelPropertyChangesForNumber =
                     txState.indexUpdatesForRangeSeekByNumber( index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
+            PrimitiveLongReadableDiffSets nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForNumber.augment( nodeIds ) );
@@ -1002,7 +1003,7 @@ public class StateHandlingStatementOperations implements
             TransactionState txState = state.txState();
             PrimitiveLongReadableDiffSets labelPropertyChangesForGeometry =
                     txState.indexUpdatesForRangeSeekByGeometry( index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
+            PrimitiveLongReadableDiffSets nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForGeometry.augment( nodeIds ) );
@@ -1021,7 +1022,7 @@ public class StateHandlingStatementOperations implements
             TransactionState txState = state.txState();
             PrimitiveLongReadableDiffSets labelPropertyChangesForString = txState.indexUpdatesForRangeSeekByString(
                             index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
+            PrimitiveLongReadableDiffSets nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForString.augment( nodeIds ) );
@@ -1039,7 +1040,7 @@ public class StateHandlingStatementOperations implements
             TransactionState txState = state.txState();
             PrimitiveLongReadableDiffSets labelPropertyChangesForPrefix =
                     txState.indexUpdatesForRangeSeekByPrefix( index, prefix );
-            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
+            PrimitiveLongReadableDiffSets nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForPrefix.augment( nodeIds ) );

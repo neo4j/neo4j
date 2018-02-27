@@ -140,7 +140,6 @@ abstract class SuperDiffSets<T,LONGITERATOR_OUT extends PrimitiveLongIterator, L
         {
             return Collections.emptySet();
         }
-        //TODO VersionedHashMap can probably do this more efficiently, but it is hidden behind layers
         return new HashSet<>( addedElements );
     }
 

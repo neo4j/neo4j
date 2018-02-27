@@ -70,12 +70,12 @@ public class PrimitiveLongResourceCollections
         };
     }
 
-    private abstract static class PrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+    public abstract static class PrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
             implements PrimitiveLongResourceIterator
     {
         private Resource resource;
 
-        private PrimitiveLongBaseResourceIterator( Resource resource )
+        public PrimitiveLongBaseResourceIterator( Resource resource )
         {
             this.resource = resource;
         }

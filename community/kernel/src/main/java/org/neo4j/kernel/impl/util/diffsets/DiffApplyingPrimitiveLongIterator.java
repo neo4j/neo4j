@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 
@@ -28,7 +29,7 @@ import org.neo4j.graphdb.Resource;
  * Applies a diffset to the provided {@link PrimitiveLongIterator}.
  * If the given source is a {@link Resource}, it will be closed on {@link #close()}.
  */
-public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements Resource
+public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     protected enum Phase
     {

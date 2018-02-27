@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import java.util.Set;
-
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -34,6 +33,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -107,27 +107,21 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     }
 
     @Override
-    public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
+    public void visitNodeLabelChanges( long id, final PrimitiveLongSet added, final PrimitiveLongSet removed )
             throws ConstraintValidationException
     {
         // update counts
         if ( !(added.isEmpty() && removed.isEmpty()) )
         {
-            for ( Integer label : added )
-            {
-                counts.incrementNodeCount( label, 1 );
-            }
-            for ( Integer label : removed )
-            {
-                counts.incrementNodeCount( label, -1 );
-            }
+            added.forEach( v -> counts.incrementNodeCount( toIntExact( v ), 1 ) );
+            removed.forEach( v -> counts.incrementNodeCount( toIntExact( v ), -1 ) );
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
             statement.acquireSingleNodeCursor( id )
                     .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
                     {
-                        added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
-                        removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
+                        added.forEach( label -> updateRelationshipsCountsFromDegrees( type, toIntExact( label ), out, in ) );
+                        removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, toIntExact( label ), -out, -in ) );
                     } ) );
         }
         super.visitNodeLabelChanges( id, added, removed );

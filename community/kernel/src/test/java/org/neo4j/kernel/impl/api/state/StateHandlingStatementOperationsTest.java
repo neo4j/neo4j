@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,7 +49,6 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -128,7 +126,7 @@ public class StateHandlingStatementOperationsTest
         // given
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         TransactionState txState = mock( TransactionState.class );
-        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets<>() );
+        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new PrimitiveLongDiffSets() );
         when( txState.hasChanges() ).thenReturn( true );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForSchema( any() ) ).thenReturn( iterator( constraint ) );
@@ -225,7 +223,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForScan( index ) ).thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
         when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+                new PrimitiveLongDiffSets( PrimitiveLongCollections.setOf( 45L ), PrimitiveLongCollections.setOf( 46L ) )
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
@@ -255,7 +253,7 @@ public class StateHandlingStatementOperationsTest
         when( txState.indexUpdatesForSeek( index, ValueTuple.of( "value" ) ) )
                 .thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
         when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+                new PrimitiveLongDiffSets( PrimitiveLongCollections.setOf( 45L ), PrimitiveLongCollections.setOf( 46L ) )
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
@@ -285,7 +283,7 @@ public class StateHandlingStatementOperationsTest
                 new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+                new PrimitiveLongDiffSets( PrimitiveLongCollections.setOf( 45L ), PrimitiveLongCollections.setOf( 46L ) )
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
@@ -315,7 +313,7 @@ public class StateHandlingStatementOperationsTest
                 new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+                new PrimitiveLongDiffSets( PrimitiveLongCollections.setOf( 45L ), PrimitiveLongCollections.setOf( 46L ) )
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
@@ -345,7 +343,7 @@ public class StateHandlingStatementOperationsTest
                 new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+                new PrimitiveLongDiffSets( PrimitiveLongCollections.setOf( 45L ), PrimitiveLongCollections.setOf( 46L ) )
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
@@ -383,7 +381,7 @@ public class StateHandlingStatementOperationsTest
                 new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+                new PrimitiveLongDiffSets( PrimitiveLongCollections.setOf( 45L ), PrimitiveLongCollections.setOf( 46L ) )
         );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( txState.augmentSingleNodeCursor( any( Cursor.class ), anyLong() ) ).thenAnswer( invocationOnMock ->
@@ -430,7 +428,7 @@ public class StateHandlingStatementOperationsTest
         when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) )
                 .thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
         when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+                new PrimitiveLongDiffSets( PrimitiveLongCollections.setOf( 45L ), PrimitiveLongCollections.setOf( 46L ) )
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );

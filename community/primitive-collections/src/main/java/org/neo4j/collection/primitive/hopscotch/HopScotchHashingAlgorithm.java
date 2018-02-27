@@ -386,7 +386,7 @@ public class HopScotchHashingAlgorithm
      * statistics.
      * @see org.neo4j.hashing.HashFunction#xorShift32()
      */
-    static final HashFunction DEFAULT_HASHING = HashFunction.xorShift32();
+    public static final HashFunction DEFAULT_HASHING = HashFunction.xorShift32();
 
     public interface ResizeMonitor<VALUE>
     {

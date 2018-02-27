@@ -29,6 +29,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongList;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
@@ -68,14 +72,14 @@ public class TxStateVisitorTest
     }
 
     private GatheringVisitor.PropertyChange propChange( long relId, Collection<StorageProperty> added,
-            List<StorageProperty> changed, Collection<Integer> removed )
+            List<StorageProperty> changed, PrimitiveLongList removed )
     {
         return new GatheringVisitor.PropertyChange( relId, added, changed, removed );
     }
 
     private TransactionState state;
     private final Collection<StorageProperty> noProperty = Collections.emptySet();
-    private final Collection<Integer> noRemoved = Collections.emptySet();
+    private final PrimitiveLongList noRemoved = Primitive.longList();
 
     @Before
     public void before()
@@ -90,24 +94,24 @@ public class TxStateVisitorTest
             final long entityId;
             final List<StorageProperty> added;
             final List<StorageProperty> changed;
-            final List<Integer> removed;
+            final PrimitiveLongList removed;
 
             PropertyChange( long entityId, Collection<StorageProperty> added, Collection<StorageProperty> changed,
-                    Collection<Integer> removed )
+                    PrimitiveLongList removed )
             {
                 this.entityId = entityId;
                 this.added = Iterables.asList(added);
                 this.changed = Iterables.asList(changed);
-                this.removed = Iterables.asList(removed);
+                this.removed = removed;
             }
 
             PropertyChange( long entityId, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                    Iterator<Integer> removed )
+                    PrimitiveLongIterator removed )
             {
                 this.entityId = entityId;
                 this.added = Iterators.asList(added);
                 this.changed = Iterators.asList(changed);
-                this.removed = Iterators.asList(removed);
+                this.removed = PrimitiveLongCollections.asPrimitiveList(removed);
             }
 
             @Override
@@ -167,21 +171,21 @@ public class TxStateVisitorTest
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>
-                changed, Iterator<Integer> removed )
+                changed, PrimitiveLongIterator removed )
         {
             nodePropertyChanges.add( new PropertyChange( id, added, changed, removed ) );
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>
-                changed, Iterator<Integer> removed )
+                changed, PrimitiveLongIterator removed )
         {
             relPropertyChanges.add( new PropertyChange( id, added, changed, removed ) );
         }
 
         @Override
         public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                               Iterator<Integer> removed )
+                PrimitiveLongIterator removed )
         {
             graphPropertyChanges.add( new PropertyChange( -1, added, changed, removed ) );
         }

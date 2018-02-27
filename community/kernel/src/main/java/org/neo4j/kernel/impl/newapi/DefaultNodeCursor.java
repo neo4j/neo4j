@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Set;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static java.util.Collections.emptySet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
@@ -45,7 +44,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     private long next;
     private long highMark;
     private HasChanges hasChanges = HasChanges.MAYBE;
-    private Set<Long> addedNodes;
+    private PrimitiveLongSet addedNodes;
 
     DefaultNodeCursor()
     {

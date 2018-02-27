@@ -23,32 +23,32 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
-
-import static java.util.Collections.emptyIterator;
 
 public class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
 
-    private VersionedHashMap<Integer, Value> addedProperties;
-    private VersionedHashMap<Integer, Value> changedProperties;
-    private VersionedHashMap<Integer, Value> removedProperties;
+    private VersionedPrimitiveLongObjectMap<Value> addedProperties;
+    private VersionedPrimitiveLongObjectMap<Value> changedProperties;
+    private VersionedPrimitiveLongObjectMap<Value> removedProperties;
 
     private final Predicate<StorageProperty> excludePropertiesWeKnowAbout = new Predicate<StorageProperty>()
     {
         @Override
         public boolean test( StorageProperty item )
         {
-            return (removedProperties == null || !removedProperties.containsKey( item.propertyKeyId() ))
-                    && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
-                    && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
+            return (removedProperties == null || !removedProperties.currentView().containsKey( item.propertyKeyId() ))
+                    && (addedProperties == null || !addedProperties.currentView().containsKey( item.propertyKeyId() ))
+                    && (changedProperties == null || !changedProperties.currentView().containsKey( item.propertyKeyId() ));
         }
     };
 
@@ -82,22 +82,22 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     {
         if ( addedProperties != null )
         {
-            if ( addedProperties.containsKey( propertyKeyId ) )
+            if ( addedProperties.currentView().containsKey( propertyKeyId ) )
             {
-                addedProperties.put( propertyKeyId, value );
+                addedProperties.currentView().put( propertyKeyId, value );
                 return;
             }
         }
 
         if ( changedProperties == null )
         {
-            changedProperties = new VersionedHashMap<>();
+            changedProperties = new VersionedPrimitiveLongObjectMap<>();
         }
-        changedProperties.put( propertyKeyId, value );
+        changedProperties.currentView().put( propertyKeyId, value );
 
         if ( removedProperties != null )
         {
-            removedProperties.remove( propertyKeyId );
+            removedProperties.currentView().remove( propertyKeyId );
         }
     }
 
@@ -105,7 +105,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     {
         if ( removedProperties != null )
         {
-            Value removed = removedProperties.remove( propertyKeyId );
+            Value removed = removedProperties.currentView().remove( propertyKeyId );
             if ( removed != null )
             {
                 // This indicates the user did remove+add as two discrete steps, which should be translated to
@@ -116,28 +116,28 @@ public class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( addedProperties == null )
         {
-            addedProperties = new VersionedHashMap<>();
+            addedProperties = new VersionedPrimitiveLongObjectMap<>();
         }
-        addedProperties.put( propertyKeyId, value );
+        addedProperties.currentView().put( propertyKeyId, value );
     }
 
     public void removeProperty( int propertyKeyId, Value value )
     {
         if ( addedProperties != null )
         {
-            if ( addedProperties.remove( propertyKeyId ) != null )
+            if ( addedProperties.currentView().remove( propertyKeyId ) != null )
             {
                 return;
             }
         }
         if ( removedProperties == null )
         {
-            removedProperties = new VersionedHashMap<>();
+            removedProperties = new VersionedPrimitiveLongObjectMap<>();
         }
-        removedProperties.put( propertyKeyId, value );
+        removedProperties.currentView().put( propertyKeyId, value );
         if ( changedProperties != null )
         {
-            changedProperties.remove( propertyKeyId );
+            changedProperties.currentView().remove( propertyKeyId );
         }
     }
 
@@ -154,9 +154,9 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
-    public Iterator<Integer> removedProperties()
+    public PrimitiveLongIterator removedProperties()
     {
-        return removedProperties != null ? removedProperties.keySet().iterator() : emptyIterator();
+        return removedProperties != null ? removedProperties.currentView().iterator() : PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
@@ -180,11 +180,11 @@ public class PropertyContainerStateImpl implements PropertyContainerState
         {
             iterator = Iterators.filter( excludePropertiesWeKnowAbout, iterator );
 
-            if ( addedProperties != null && !addedProperties.isEmpty() )
+            if ( addedProperties != null && !addedProperties.currentView().isEmpty() )
             {
                 iterator = Iterators.concat( iterator, toPropertyIterator( addedProperties ) );
             }
-            if ( changedProperties != null && !changedProperties.isEmpty() )
+            if ( changedProperties != null && !changedProperties.currentView().isEmpty() )
             {
                 iterator = Iterators.concat( iterator, toPropertyIterator( changedProperties ) );
             }
@@ -223,28 +223,27 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     @Override
     public boolean isPropertyChangedOrRemoved( int propertyKey )
     {
-        return (removedProperties != null && removedProperties.containsKey( propertyKey ))
-               || (changedProperties != null && changedProperties.containsKey( propertyKey ));
+        return isPropertyRemoved( propertyKey ) || (changedProperties != null && changedProperties.currentView().containsKey( propertyKey ));
     }
 
     @Override
     public boolean isPropertyRemoved( int propertyKeyId )
     {
-        return removedProperties != null && removedProperties.containsKey( propertyKeyId );
+        return removedProperties != null && removedProperties.currentView().containsKey( propertyKeyId );
     }
 
-    private Iterator<StorageProperty> toPropertyIterator( VersionedHashMap<Integer,Value> propertyMap )
+    private Iterator<StorageProperty> toPropertyIterator( VersionedPrimitiveLongObjectMap<Value> propertyMap )
     {
         return propertyMap == null ? Collections.emptyIterator() :
                 Iterators.map(
-                    entry -> new PropertyKeyValue( entry.getKey(), entry.getValue() ),
-                    propertyMap.entrySet().iterator()
+                        entry -> new PropertyKeyValue( Math.toIntExact( entry ), propertyMap.currentView().get( entry ) ),
+                        PrimitiveLongCollections.toIterator( propertyMap.currentView().iterator() )
                 );
     }
 
-    private PropertyKeyValue getPropertyOrNull( VersionedHashMap<Integer,Value> propertyMap, int propertyKeyId )
+    private PropertyKeyValue getPropertyOrNull( VersionedPrimitiveLongObjectMap<Value> propertyMap, int propertyKeyId )
     {
-        Value value = propertyMap.get( propertyKeyId );
+        Value value = propertyMap.currentView().get( propertyKeyId );
         return value == null ? null : new PropertyKeyValue( propertyKeyId, value );
     }
 }

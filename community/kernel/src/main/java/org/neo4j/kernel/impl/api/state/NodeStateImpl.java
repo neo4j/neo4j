@@ -29,13 +29,13 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.EmptyPrimitiveLongReadableDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.VersionedPrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.Primitive.intSet;
@@ -57,9 +57,9 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public PrimitiveLongIterator removedProperties()
         {
-            return emptyIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
@@ -80,9 +80,9 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public ReadableDiffSets<Integer> labelDiffSets()
+        public PrimitiveLongDiffSets labelDiffSets()
         {
-            return ReadableDiffSets.Empty.instance();
+            return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
         }
 
         @Override
@@ -181,7 +181,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
     };
 
-    private DiffSets<Integer> labelDiffSets;
+    private VersionedPrimitiveLongDiffSets labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
 
@@ -195,18 +195,18 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     }
 
     @Override
-    public ReadableDiffSets<Integer> labelDiffSets()
+    public PrimitiveLongDiffSets labelDiffSets()
     {
-        return ReadableDiffSets.Empty.ifNull( labelDiffSets );
+        return labelDiffSets == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE : labelDiffSets.currentView();
     }
 
-    DiffSets<Integer> getOrCreateLabelDiffSets()
+    PrimitiveLongDiffSets getOrCreateLabelDiffSets()
     {
-        if ( null == labelDiffSets )
+        if ( labelDiffSets == null )
         {
-            labelDiffSets = new DiffSets<>();
+            labelDiffSets = new VersionedPrimitiveLongDiffSets();
         }
-        return labelDiffSets;
+        return labelDiffSets.currentView();
     }
 
     public void addRelationship( long relId, int typeId, Direction direction )
@@ -247,10 +247,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         if ( relationshipsRemoved != null )
         {
             relationshipsRemoved.clear();
-        }
-        if ( labelDiffSets != null )
-        {
-            labelDiffSets.clear();
         }
         if ( indexDiffs != null )
         {
@@ -306,7 +302,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         super.accept( visitor );
         if ( labelDiffSets != null )
         {
-            visitor.visitLabelChanges( getId(), labelDiffSets.getAdded(), labelDiffSets.getRemoved() );
+            visitor.visitLabelChanges( getId(), labelDiffSets.currentView().getAdded(), labelDiffSets.currentView().getRemoved() );
         }
     }
 

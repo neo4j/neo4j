@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Set;
-
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
-import static java.util.Collections.emptySet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
+
 
 class DefaultRelationshipScanCursor extends RelationshipCursor implements RelationshipScanCursor
 {
@@ -33,7 +33,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     private long next;
     private long highMark;
     private PageCursor pageCursor;
-    Set<Long> addedRelationships;
+    PrimitiveLongSet addedRelationships;
 
     void scan( int label, Read read )
     {
@@ -180,6 +180,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         return highMark == NO_ID;
     }
 
+    @Override
     protected void collectAddedTxStateSnapshot()
     {
         if ( !isSingle() )
