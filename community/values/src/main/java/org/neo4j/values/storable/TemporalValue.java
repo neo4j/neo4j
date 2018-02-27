@@ -74,6 +74,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
     abstract OffsetTime getTimePart( Supplier<ZoneId> defaultZone );
 
+    abstract ZoneId getZoneId( Supplier<ZoneId> defaultZone );
+
+    abstract boolean hasTimeZone();
+
     abstract V replacement( T temporal );
 
     @Override

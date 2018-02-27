@@ -262,6 +262,18 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     @Override
+    ZoneId getZoneId( Supplier<ZoneId> defaultZone )
+    {
+        return defaultZone.get();
+    }
+
+    @Override
+    public boolean hasTimeZone()
+    {
+        return false;
+    }
+
+    @Override
     public boolean equals( Value other )
     {
         return other instanceof LocalDateTimeValue && value.equals( ((LocalDateTimeValue) other).value );

@@ -169,6 +169,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 boolean selectingDate = fields.containsKey( Field.date );
                 boolean selectingTime = fields.containsKey( Field.time );
                 boolean selectingDateTime = fields.containsKey( Field.datetime );
+                boolean selectingTimeZone;
                 ZonedDateTime result;
                 if ( selectingDateTime )
                 {
@@ -178,12 +179,16 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                         throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", dtField ) );
                     }
                     TemporalValue dt = (TemporalValue) dtField;
-                    OffsetTime timePart = dt.getTimePart( defaultZone );
-                    result = ZonedDateTime.of( dt.getDatePart(), timePart.toLocalTime(), timePart.getOffset() );
+                    LocalTime timePart = dt.getTimePart( defaultZone ).toLocalTime();
+                    ZoneId zoneId = dt.getZoneId( defaultZone );
+                    result = ZonedDateTime.of( dt.getDatePart(), timePart, zoneId );
+                    selectingTimeZone = dt.hasTimeZone();
                 }
                 else if ( selectingTime || selectingDate )
                 {
-                    OffsetTime time;
+
+                    LocalTime time;
+                    ZoneId zoneId;
                     if ( selectingTime )
                     {
                         AnyValue timeField = fields.get( Field.time );
@@ -192,11 +197,15 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                             throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
                         }
                         TemporalValue t = (TemporalValue) timeField;
-                        time = t.getTimePart( defaultZone );
+                        time = t.getTimePart( defaultZone ).toLocalTime();
+                        zoneId = t.getZoneId( defaultZone );
+                        selectingTimeZone = t.hasTimeZone();
                     }
                     else
                     {
-                        time = TimeValue.defaultTime( timezone() );
+                        time = LocalTimeValue.DEFAULT_LOCAL_TIME;
+                        zoneId = timezone();
+                        selectingTimeZone = false;
                     }
                     LocalDate date;
                     if ( selectingDate )
@@ -213,11 +222,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     {
                         date = DateValue.DEFAULT_CALENDER_DATE;
                     }
-                    result = ZonedDateTime.of( date, time.toLocalTime(), time.getOffset() );
+                    result = ZonedDateTime.of( date, time, zoneId );
                 }
                 else
                 {
                     result = defaulZonedDateTime;
+                    selectingTimeZone = false;
                 }
 
                 if ( fields.containsKey( Field.week ) && !selectingDate && !selectingDateTime )
@@ -233,7 +243,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 result = assignAllFields( result );
                 if ( timezone != null )
                 {
-                    if ( selectingTime || selectingDateTime )
+                    if ( (selectingTime || selectingDateTime) && selectingTimeZone )
                     {
                         result = result.withZoneSameInstant( timezone() );
                     }
@@ -296,6 +306,18 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         ZoneOffset offset = value.getOffset();
         LocalTime localTime = value.toLocalTime();
         return OffsetTime.of( localTime, offset );
+    }
+
+    @Override
+    ZoneId getZoneId( Supplier<ZoneId> defaultZone )
+    {
+        return value.getZone();
+    }
+
+    @Override
+    public boolean hasTimeZone()
+    {
+        return true;
     }
 
     @Override

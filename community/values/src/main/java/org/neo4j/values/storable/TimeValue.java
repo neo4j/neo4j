@@ -123,27 +123,31 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             @Override
             public TimeValue buildInternal()
             {
-                boolean selecting = fields.containsKey( Field.time );
+                boolean selectingTime = fields.containsKey( Field.time );
+                boolean selectingTimeZone;
                 OffsetTime result;
-                if ( selecting )
+                if ( selectingTime )
                 {
                     AnyValue time = fields.get( Field.time );
                     if ( !(time instanceof TemporalValue) )
                     {
                         throw new IllegalArgumentException( String.format( "Cannot construct time from: %s", time ) );
                     }
-                    result = ((TemporalValue) time).getTimePart( defaultZone );
+                    TemporalValue t = (TemporalValue) time;
+                    result = t.getTimePart( defaultZone );
+                    selectingTimeZone = t.hasTimeZone();
                 }
                 else
                 {
                     result = defaultTime( timezone() );
+                    selectingTimeZone = false;
                 }
 
                 result = assignAllFields( result );
                 if ( timezone != null )
                 {
                     ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezone() ).getOffset();
-                    if ( selecting )
+                    if ( selectingTime && selectingTimeZone )
                     {
                         result = result.withOffsetSameInstant( currentOffset );
                     }
@@ -169,7 +173,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 }
 
                 TemporalValue v = (TemporalValue) temporal;
-                OffsetTime time = v.getTimePart(defaultZone);
+                OffsetTime time = v.getTimePart( defaultZone );
                 if ( timezone != null )
                 {
                     ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezone() ).getOffset();
@@ -216,6 +220,18 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
     {
         return value;
+    }
+
+    @Override
+    ZoneId getZoneId( Supplier<ZoneId> defaultZone )
+    {
+        return value.getOffset();
+    }
+
+    @Override
+    public boolean hasTimeZone()
+    {
+        return true;
     }
 
     @Override
