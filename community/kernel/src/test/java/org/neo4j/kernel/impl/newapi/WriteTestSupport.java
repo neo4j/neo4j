@@ -20,15 +20,16 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.KernelAPIWriteTestSupport;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -58,8 +59,23 @@ class WriteTestSupport implements KernelAPIWriteTestSupport
                 node.delete();
             }
 
+            PropertyContainer graphProperties = graphProperties();
+            for ( String key : graphProperties.getPropertyKeys() )
+            {
+                graphProperties.removeProperty( key );
+            }
+
             tx.success();
         }
+    }
+
+    @Override
+    public PropertyContainer graphProperties()
+    {
+        return ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency( EmbeddedProxySPI.class )
+                .newGraphPropertiesProxy();
     }
 
     @Override

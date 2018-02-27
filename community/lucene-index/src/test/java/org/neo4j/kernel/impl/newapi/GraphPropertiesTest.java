@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.internal.kernel.api.GraphPropertiesTestBase;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class GraphPropertiesTest extends GraphPropertiesTestBase<WriteTestSupport>
 {
@@ -32,12 +29,4 @@ public class GraphPropertiesTest extends GraphPropertiesTestBase<WriteTestSuppor
         return new WriteTestSupport();
     }
 
-    @Override
-    protected PropertyContainer graphProperties()
-    {
-        return ((GraphDatabaseAPI) graphDb)
-                .getDependencyResolver()
-                .resolveDependency( EmbeddedProxySPI.class )
-                .newGraphPropertiesProxy();
-    }
 }

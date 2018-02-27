@@ -21,8 +21,6 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.PropertyContainer;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
@@ -33,6 +31,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @SuppressWarnings( "Duplicates" )
 public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
+
     @Test
     public void shouldBeAbleToWriteNewGraphProperty() throws Exception
     {
@@ -46,7 +45,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
-            assertThat( graphProperties().getProperty( "prop" ), equalTo( "hello" ) );
+            assertThat( testSupport.graphProperties().getProperty( "prop" ), equalTo( "hello" ) );
         }
     }
 
@@ -69,7 +68,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
-            assertThat( graphProperties().getProperty( "prop" ), equalTo( "good bye" ) );
+            assertThat( testSupport.graphProperties().getProperty( "prop" ), equalTo( "good bye" ) );
         }
     }
 
@@ -92,7 +91,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
-            assertFalse( graphProperties().hasProperty( "prop" ) );
+            assertFalse( testSupport.graphProperties().hasProperty( "prop" ) );
         }
     }
 
@@ -193,6 +192,4 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
             assertFalse( cursor.next() );
         }
     }
-
-    protected abstract PropertyContainer graphProperties();
 }
