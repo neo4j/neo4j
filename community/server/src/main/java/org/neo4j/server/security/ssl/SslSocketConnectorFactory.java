@@ -74,10 +74,10 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
             sslContextFactory.setIncludeCipherSuites( ciphers.toArray( new String[ciphers.size()] ) );
         }
 
-        List<String> protocols = sslPolicy.getTlsVersions();
+        String[] protocols = sslPolicy.getTlsVersions();
         if ( protocols != null )
         {
-            sslContextFactory.setIncludeProtocols( protocols.toArray( new String[protocols.size()] ) );
+            sslContextFactory.setIncludeProtocols( protocols );
         }
 
         switch ( sslPolicy.getClientAuth() )
