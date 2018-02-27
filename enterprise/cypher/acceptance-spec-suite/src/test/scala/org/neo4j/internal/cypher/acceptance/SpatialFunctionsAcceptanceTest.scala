@@ -48,6 +48,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5))))
   }
 
+  test("point function should work with literal map and 3D cartesian coordinates") {
+    val result = executeWith(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners,
+      "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian-3D'}) as point",
+      expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 2.3, 4.5, 6.7))))
+  }
+
   test("point function should work with literal map and geographic coordinates") {
     val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
@@ -61,9 +71,31 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       "Unknown coordinate reference system: cart"))
   }
 
+  test("point function should not work with literal map of 2 coordinates and incorrect cartesian-3D crs") {
+    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian-3D'}) as point", List(
+      "'cartesian-3D' is not a supported coordinate reference system for points",
+      "Cannot create 3D point with 2 coordinates"))
+  }
+
+  test("point function should not work with literal map of 3 coordinates and incorrect cartesian crs") {
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point", List(
+      "Cannot create 2D point with 3 coordinates"))
+  }
+
   test("point function should not work with literal map and incorrect geographic CRS") {
     failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point", List("'WGS84' is not a supported coordinate reference system for points",
       "Unknown coordinate reference system: WGS84"))
+  }
+
+  test("point function should not work with literal map of 2 coordinates and incorrect WGS84-3D crs") {
+    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84-3D'}) as point", List(
+      "'WGS-84-3D' is not a supported coordinate reference system for points",
+      "Cannot create 3D point with 2 coordinates"))
+  }
+
+  test("point function should not work with literal map of 3 coordinates and incorrect WGS84 crs") {
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'wgs-84'}) as point", List(
+      "Cannot create 2D point with 3 coordinates"))
   }
 
   test("point function should work with integer arguments") {
@@ -220,13 +252,45 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
+    result.toList.length should be(1)
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
 
-  // TODO add 3D here too
+  test("3D point should be assignable to node property") {
+    // Given
+    createLabeledNode("Place")
+
+    // When
+    val config = pointConfig - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
+    val result = executeWith(config, "MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))))
+  }
+
+  test("3D point should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    result.toList.length should be(1)
+    val point = result.columnAs("point").toList.head.asInstanceOf[Point]
+    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))
+    // And CRS names should equal
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/9157/")
+  }
+
   test("inequality on cartesian points") {
     // case same point
     shouldCompareLike("point({x: 0, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = false)
@@ -240,17 +304,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // case bottom right quadrant
     shouldCompareLike("point({x: 1, y: -1})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
 
-    // case staight top
+    // case straight top
     shouldCompareLike("point({x: 0, y: 1})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight right
+    // case straight right
     shouldCompareLike("point({x: 1, y: 0})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight bottom
+    // case straight bottom
     shouldCompareLike("point({x: 0, y: -1})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
-    // case staight left
+    // case straight left
     shouldCompareLike("point({x: -1, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
   }
 
-  // TODO what about the poles!?
   test("inequality on geographic points") {
     // case same point
     shouldCompareLike("point({longitude: 0, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = false)
@@ -264,14 +327,43 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // case bottom right quadrant
     shouldCompareLike("point({longitude: 1, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = null, aSmallerB = null)
 
-    // case staight top
+    // case straight top
     shouldCompareLike("point({longitude: 0, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight right
+    // case straight right
     shouldCompareLike("point({longitude: 1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
-    // case staight bottom
+    // case straight bottom
     shouldCompareLike("point({longitude: 0, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
-    // case staight left
+    // case straight left
     shouldCompareLike("point({longitude: -1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+
+    // the poles might be the same point, but in the effective projection onto 2D plane, they are not the same
+    shouldCompareLike("point({longitude: -1, latitude: 90})", "point({longitude: 1, latitude: 90})", aBiggerB = false, aSmallerB = true)
+    shouldCompareLike("point({longitude: 1, latitude: 90})", "point({longitude: -1, latitude: 90})", aBiggerB = true, aSmallerB = false)
+    shouldCompareLike("point({longitude: -1, latitude: -90})", "point({longitude: 1, latitude: -90})", aBiggerB = false, aSmallerB = true)
+    shouldCompareLike("point({longitude: 1, latitude: -90})", "point({longitude: -1, latitude: -90})", aBiggerB = true, aSmallerB = false)
+  }
+
+  test("inequality on 3D points") {
+    Seq("cartesian-3D","WGS-84-3D").foreach { crsName =>
+      (-1 to 1).foreach { x =>
+        (-1 to 1).foreach { y =>
+          (-1 to 1).foreach { z =>
+            val same = x == 0 && y == 0 && z == 0
+            val smaller = x <= 0 && y <= 0 && z <= 0
+            val larger = x >= 0 && y >= 0 && z >= 0
+            if (same) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = false, aSmallerB = false)
+            } else if (smaller) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = false, aSmallerB = true)
+            } else if (larger) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = true, aSmallerB = false)
+            } else {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = null, aSmallerB = null)
+            }
+          }
+        }
+      }
+    }
   }
 
   test("inequality on mixed points") {
@@ -281,12 +373,14 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   private def shouldCompareLike(a: String, b: String, aBiggerB: Any, aSmallerB: Any) = {
     val query =
       s"""WITH $a as a, $b as b
-        |RETURN a > b, a < b
+         |RETURN a > b, a < b
       """.stripMargin
 
     val pointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
     val result = executeWith(pointConfig, query).toList
-    result should equal(List(Map("a > b" -> aBiggerB, "a < b" -> aSmallerB)))
+    withClue(s"Comparing '$a' to '$b'") {
+      result should equal(List(Map("a > b" -> aBiggerB, "a < b" -> aSmallerB)))
+    }
   }
 
   test("array of points should be assignable to node property") {
@@ -337,6 +431,58 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 1.0),
       Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.0, 2.0),
       Values.pointValue(CoordinateReferenceSystem.Cartesian, 3.0, 3.0)
+    ))
+  }
+
+  test("array of 3D cartesian points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({x: num, y: num, z: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 2.0, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 3.0, 3.0, 3.0)
+    ))
+  }
+
+  test("array of 3D WGS84 points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({longitude: num, latitude: num, height: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 1.0, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 2.0, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 3.0, 3.0, 3.0)
     ))
   }
 

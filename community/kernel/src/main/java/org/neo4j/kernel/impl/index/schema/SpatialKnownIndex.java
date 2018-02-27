@@ -31,9 +31,11 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
+import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -111,7 +113,18 @@ public class SpatialKnownIndex
         IndexDirectoryStructure indexDir =
                 IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), "index-" + indexId );
-        curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 8 );
+        if ( crs.getDimension() == 2 )
+        {
+            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 8 );
+        }
+        else if ( crs.getDimension() == 3 )
+        {
+            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), 8 );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + crs );
+        }
         state = State.NONE;
     }
 
@@ -547,18 +560,7 @@ public class SpatialKnownIndex
 
     static Envelope envelopeFromCRS( CoordinateReferenceSystem crs )
     {
-        Envelope curveEnvelope;
-        //TODO: Support more CRS
-        if ( crs.equals( WGS84 ) )
-        {
-            curveEnvelope = new Envelope( -180, 180, -90, 90 );
-        }
-        else
-        {
-            // TODO: support user configurable default envelope ranges (neo4j.conf or other)
-            curveEnvelope = new Envelope( -1000000, 1000000, -1000000, 1000000 );
-        }
-        //TODO: support 3D
-        return curveEnvelope;
+        Pair<double[],double[]> indexEnvelope = crs.getIndexEnvelope();
+        return new Envelope( indexEnvelope.first(), indexEnvelope.other() );
     }
 }

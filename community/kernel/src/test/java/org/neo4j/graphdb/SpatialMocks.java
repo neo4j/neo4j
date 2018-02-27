@@ -34,6 +34,11 @@ public class SpatialMocks
         return new MockPoint( x, y, crs );
     }
 
+    public static MockPoint3D mockPoint( double x, double y, double z, CRS crs )
+    {
+        return new MockPoint3D( x, y, z, crs );
+    }
+
     public static MockGeometry mockGeometry( String geometryType, List<Coordinate> coordinates, CRS crs )
     {
         return new MockGeometry( geometryType, coordinates, crs );
@@ -47,6 +52,16 @@ public class SpatialMocks
     public static CRS mockCartesian()
     {
         return mockCRS( 7203, "cartesian", "http://spatialreference.org/ref/sr-org/7203/" );
+    }
+
+    public static CRS mockWGS84_3D()
+    {
+        return mockCRS( 4979, "WGS-84-3D", "http://spatialreference.org/ref/epsg/4979/" );
+    }
+
+    public static CRS mockCartesian_3D()
+    {
+        return mockCRS( 9157, "cartesian-3D", "http://spatialreference.org/ref/sr-org/9157/" );
     }
 
     private static CRS mockCRS( final int code, final String type, final String href )
@@ -78,6 +93,18 @@ public class SpatialMocks
         {
             super( "Point", new ArrayList<>(), crs );
             this.coordinate = new Coordinate( x, y );
+            this.coordinates.add( this.coordinate );
+        }
+    }
+
+    private static class MockPoint3D extends MockGeometry implements Point
+    {
+        private final Coordinate coordinate;
+
+        private MockPoint3D( final double x, final double y, double z, final CRS crs )
+        {
+            super( "Point", new ArrayList<>(), crs );
+            this.coordinate = new Coordinate( x, y, z );
             this.coordinates.add( this.coordinate );
         }
     }

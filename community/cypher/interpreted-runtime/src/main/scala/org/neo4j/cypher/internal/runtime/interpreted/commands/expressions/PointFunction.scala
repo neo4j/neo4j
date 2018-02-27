@@ -35,7 +35,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
     case IsMap(mapCreator) =>
       val map = mapCreator(state.query)
       if (containsNull(map)) Values.NO_VALUE
-      else ValueUtils.fromMap(map)
+      else ValueUtils.pointFromMap(map)
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
 

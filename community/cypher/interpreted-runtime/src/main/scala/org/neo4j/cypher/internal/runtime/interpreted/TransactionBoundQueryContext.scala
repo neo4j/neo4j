@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.CypherOrdering.{BY_NUMBER, BY_POINT, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{CartesianCalculator, HaversinCalculator, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException, NonEmptyList}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
@@ -268,15 +268,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           return Iterator.empty
       }
 
-      val (from, to) = range.point match {
-        case p:PointValue if p.getCoordinateReferenceSystem == Cartesian =>
-          CartesianCalculator.boundingBox(p, distance)
-        case p:PointValue if p.getCoordinateReferenceSystem == WGS84 =>
-          HaversinCalculator.boundingBox(p, distance)
+      val bbox = range.point match {
+        case p: PointValue => p.getCoordinateReferenceSystem.getCalculator.boundingBox(p, distance)
         case _ =>
           // when it tries to evaluate the distance on something that is not a point
           return Iterator.empty
       }
+      val (from, to) = (bbox.first(), bbox.other())
 
       val (fromBounds, toBounds) =
         if (range.inclusive)

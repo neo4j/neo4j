@@ -254,56 +254,68 @@ public final class ValueUtils
         return map( mapValues( map ) );
     }
 
-    public static PointValue fromMap( MapValue map )
+    public static PointValue pointFromMap( MapValue map )
     {
-        if ( map.containsKey( "x" ) && map.containsKey( "y" ) )
+        CoordinateReferenceSystem crs;
+        double[] coordinates;
+        if ( map.containsKey( "crs" ) )
         {
-            double x = ((NumberValue) map.get( "x" )).doubleValue();
-            double y = ((NumberValue) map.get( "y" )).doubleValue();
-            if ( !map.containsKey( "crs" ) )
+            TextValue crsName = (TextValue) map.get( "crs" );
+            crs = CoordinateReferenceSystem.byName( crsName.stringValue() );
+            if ( crs == null )
             {
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
-            }
-
-            TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
-            }
-            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.WGS84, x, y );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crs.stringValue() );
-            }
-        }
-        else if ( map.containsKey( "latitude" ) && map.containsKey( "longitude" ) )
-        {
-            double latitude = ((NumberValue) map.get( "latitude" )).doubleValue();
-            double longitude = ((NumberValue) map.get( "longitude" )).doubleValue();
-            if ( !map.containsKey( "crs" ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
-            }
-
-            TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
-            }
-            else
-            {
-                throw new IllegalArgumentException(
-                        "Geographic points does not support coordinate reference system: " + crs.stringValue() );
+                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crsName.stringValue() );
             }
         }
         else
         {
-            throw new IllegalArgumentException(
-                    "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
+            crs = null;
         }
+        if ( map.containsKey( "x" ) && map.containsKey( "y" ) )
+        {
+            double x = ((NumberValue) map.get( "x" )).doubleValue();
+            double y = ((NumberValue) map.get( "y" )).doubleValue();
+            coordinates = map.containsKey( "z" ) ? new double[]{x, y, ((NumberValue) map.get( "z" )).doubleValue()} : new double[]{x, y};
+            if ( crs == null )
+            {
+                crs = coordinates.length == 3 ? CoordinateReferenceSystem.Cartesian_3D : CoordinateReferenceSystem.Cartesian;
+            }
+        }
+        else if ( map.containsKey( "latitude" ) && map.containsKey( "longitude" ) )
+        {
+            double x = ((NumberValue) map.get( "longitude" )).doubleValue();
+            double y = ((NumberValue) map.get( "latitude" )).doubleValue();
+            // TODO Consider supporting key 'height'
+            if ( map.containsKey( "z" ) )
+            {
+                coordinates = new double[]{x, y, ((NumberValue) map.get( "z" )).doubleValue()};
+            }
+            else if ( map.containsKey( "height" ) )
+            {
+                coordinates = new double[]{x, y, ((NumberValue) map.get( "height" )).doubleValue()};
+            }
+            else
+            {
+                coordinates = new double[]{x, y};
+            }
+            if ( crs == null )
+            {
+                crs = coordinates.length == 3 ? CoordinateReferenceSystem.WGS84_3D : CoordinateReferenceSystem.WGS84;
+            }
+            if ( !crs.isGeographic() )
+            {
+                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs );
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
+        }
+        if ( crs.getDimension() != coordinates.length )
+        {
+            throw new IllegalArgumentException( "Cannot create " + crs.getDimension() + "D point with " + coordinates.length + " coordinates" );
+        }
+        return Values.pointValue( crs, coordinates );
     }
 
     private static Map<String,AnyValue> mapValues( Map<String,Object> map )

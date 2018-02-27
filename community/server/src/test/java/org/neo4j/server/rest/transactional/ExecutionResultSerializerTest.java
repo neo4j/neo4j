@@ -74,7 +74,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
+import static org.neo4j.graphdb.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
+import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
@@ -410,6 +412,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         Result executionResult = mockExecutionResult(
                 map( "geom", SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() ) ),
                 map( "geom", SpatialMocks.mockPoint( 123, 456, mockCartesian() ) ),
+                map( "geom", SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() ) ),
+                map( "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) ),
                 map( "geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) ) );
 
         // when
@@ -426,6 +430,14 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
                       "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":" +
                         "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
                           "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6,78.9],\"crs\":" +
+                        "{\"name\":\"WGS-84-3D\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/epsg/4979/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0,789.0],\"crs\":" +
+                        "{\"name\":\"cartesian-3D\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/sr-org/9157/ogcwkt/\",\"type\":\"ogcwkt\"}" +
                         "}}],\"meta\":[null]}," +
                       "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
                         "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +

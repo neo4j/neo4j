@@ -104,8 +104,7 @@ class SpatialSchemaKey implements NativeSchemaKey
     @Override
     public void initAsLowest()
     {
-        //TODO: Get dimension
-        double[] limit = new double[2];
+        double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
         writePoint( limit );
         entityId = Long.MIN_VALUE;
@@ -115,9 +114,10 @@ class SpatialSchemaKey implements NativeSchemaKey
     @Override
     public void initAsHighest()
     {
-        //TODO: Get dimension
         // These coords will generate the largest value on the spacial curve
-        double[] limit = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
+        double[] limit = new double[crs.getDimension()];
+        Arrays.fill(limit, Double.NEGATIVE_INFINITY);
+        limit[0] = Double.POSITIVE_INFINITY;
         writePoint( limit );
         entityId = Long.MAX_VALUE;
         compareId = true;
