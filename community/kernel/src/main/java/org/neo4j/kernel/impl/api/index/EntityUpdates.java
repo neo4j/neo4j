@@ -33,15 +33,14 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static java.util.Arrays.binarySearch;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.SCHEMA_ALL;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.NoValue;
+import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.UnChanged;
 
 /**
  * Subclasses of this represent events related to property changes due to node addition, deletion or update.
@@ -231,7 +230,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             }
             else if ( relevantBefore )
             {
-                if ( valuesChanged( propertyIds ) )
+                if ( valuesChanged( propertyIds, schema.propertySchemaType() ) )
                 {
                     indexUpdates.add( IndexEntryUpdate.change( entityId, indexKey, valuesBefore( propertyIds ), valuesAfter( propertyIds ) ) );
                 }
@@ -357,17 +356,30 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         return values;
     }
 
-    private boolean valuesChanged( int[] propertyIds )
+    private boolean valuesChanged( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
     {
-        for ( int propertyId : propertyIds )
+        if ( propertySchemaType == SCHEMA_ALL )
         {
-            //TODO depends on schema type?
-            if ( knownProperties.get( propertyId ).type == Changed )
+            for ( int propertyId : propertyIds )
             {
-                return true;
+                if ( knownProperties.get( propertyId ).type == Changed )
+                {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
+        else
+        {
+            for ( int propertyId : propertyIds )
+            {
+                if ( knownProperties.get( propertyId ).type != UnChanged )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     @Override

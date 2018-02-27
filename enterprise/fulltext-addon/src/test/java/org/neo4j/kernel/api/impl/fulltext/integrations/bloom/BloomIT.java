@@ -134,7 +134,59 @@ public class BloomIT
         assertFalse( result.hasNext() );
     }
 
-    //TODO add tests that add properties to existing nodes and rels
+    @Test
+    public void shouldPopulateWithPropertiesAddedLater() throws Exception
+    {
+        db = getDb();
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"relprop\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"prop\", \"relprop\"" ) );
+        Node node1;
+        Node node2;
+        Relationship relationship;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            node1 = db.createNode();
+            node1.setProperty( "prop", "This is a integration test." );
+            node2 = db.createNode();
+            node2.setProperty( "prop", "This is a related integration test" );
+            relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "type" ) );
+            relationship.setProperty( "relprop", "They relate" );
+            transaction.success();
+        }
+        db.execute( AWAIT_POPULATION ).close();
+
+        try ( Transaction transaction = db.beginTx() )
+        {
+            node1.setProperty( "relprop", "different stuff" );
+            node2.setProperty( "relprop", "unique" );
+            relationship.setProperty( "prop", "propiprop" );
+            transaction.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "\"integration\"") );
+        assertTrue( result.hasNext() );
+        assertEquals( 0L, result.next().get( ENTITYID ) );
+        assertTrue( result.hasNext() );
+        assertEquals( 1L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+        result = db.execute( String.format( RELS, "\"relate\"") );
+        assertTrue( result.hasNext() );
+        assertEquals( 0L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+
+        result = db.execute( String.format( NODES, "\"different\"") );
+        assertTrue( result.hasNext() );
+        assertEquals( 0L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+        result = db.execute( String.format( NODES, "\"unique\"") );
+        assertTrue( result.hasNext() );
+        assertEquals( 1L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+        result = db.execute( String.format( RELS, "\"propiprop\"") );
+        assertTrue( result.hasNext() );
+        assertEquals( 0L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+    }
 
     @Test
     public void exactQueryShouldBeExact() throws Exception
