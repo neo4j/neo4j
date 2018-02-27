@@ -74,6 +74,29 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    public void shouldBeAbleToRemoveExistingGraphProperty() throws Exception
+    {
+        int prop;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertThat( tx.dataWrite().graphRemoveProperty( prop ), equalTo( stringValue("hello") ) );
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertFalse( graphProperties().hasProperty( "prop" ) );
+        }
+    }
+
+    @Test
     public void shouldBeAbleToReadExistingGraphProperties() throws Exception
     {
         int prop1, prop2, prop3;
@@ -146,6 +169,27 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
             assertTrue( cursor.next() );
             assertThat( cursor.propertyKey(), equalTo( prop ) );
             assertThat( cursor.propertyValue(), equalTo( stringValue( "good bye" ) ) );
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotSeeURemovedGraphPropertyInTransaction() throws Exception
+    {
+        int prop;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction();
+              PropertyCursor cursor = cursors.allocatePropertyCursor() )
+        {
+            assertThat( tx.dataWrite().graphRemoveProperty( prop ), equalTo( stringValue( "hello" ) ) );
+
+            tx.dataRead().graphProperties( cursor );
             assertFalse( cursor.next() );
         }
     }

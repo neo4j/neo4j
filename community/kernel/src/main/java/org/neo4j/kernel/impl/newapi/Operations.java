@@ -509,8 +509,14 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value graphRemoveProperty( int propertyKey )
     {
+        ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        Value existingValue = readGraphProperty( propertyKey );
+        if ( existingValue != Values.NO_VALUE )
+        {
+            ktx.txState().graphDoRemoveProperty( propertyKey, existingValue );
+        }
+        return existingValue;
     }
 
     @Override
