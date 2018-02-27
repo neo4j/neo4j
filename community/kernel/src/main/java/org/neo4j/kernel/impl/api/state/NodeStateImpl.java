@@ -187,11 +187,35 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 
     private Set<PrimitiveLongDiffSets> indexDiffs;
     private final TxState state;
+    private NodeStateImpl stableView;
 
     NodeStateImpl( long id, TxState state )
     {
-        super( id );
+        super( id, StateSelector.CURRENT_STATE );
         this.state = state;
+    }
+
+    private NodeStateImpl( NodeStateImpl nodeState, StateSelector stableStateSelector )
+    {
+        super( nodeState.getId(), stableStateSelector );
+        this.state = nodeState.state;
+        this.labelDiffSets = nodeState.labelDiffSets;
+        this.relationshipsAdded = nodeState.relationshipsAdded;
+        this.relationshipsRemoved = nodeState.relationshipsRemoved;
+        this.indexDiffs = nodeState.indexDiffs;
+        this.addedProperties  = nodeState.addedProperties;
+        this.changedProperties  = nodeState.changedProperties;
+        this.removedProperties  = nodeState.removedProperties;
+        stableView = this;
+    }
+
+    NodeStateImpl stableView()
+    {
+        if ( stableView == null )
+        {
+            stableView = new NodeStateImpl( this, StateSelector.STABLE_STATE );
+        }
+        return stableView;
     }
 
     @Override
@@ -215,12 +239,8 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     @Override
     public PrimitiveLongDiffSets labelDiffSets()
     {
-        return labelDiffSets == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE : labelView();
-    }
-
-    PrimitiveLongDiffSets labelView()
-    {
-        return labelDiffSets.currentView();
+        return labelDiffSets == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE :
+               stateSelector.getView( labelDiffSets );
     }
 
     PrimitiveLongDiffSets getOrCreateLabelDiffSets()
@@ -229,7 +249,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         {
             labelDiffSets = new VersionedPrimitiveLongDiffSets();
         }
-        return labelView();
+        return stateSelector.getView(labelDiffSets);
     }
 
     public void addRelationship( long relId, int typeId, Direction direction )
@@ -263,6 +283,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     public void clear()
     {
         super.clear();
+        this.stableView = null;
         if ( relationshipsAdded != null )
         {
             relationshipsAdded.clear();
@@ -325,7 +346,8 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         super.accept( visitor );
         if ( labelDiffSets != null )
         {
-            visitor.visitLabelChanges( getId(), labelView().getAdded(), labelView().getRemoved() );
+            PrimitiveLongDiffSets labelView = stateSelector.getView( labelDiffSets );
+            visitor.visitLabelChanges( getId(), labelView.getAdded(), labelView.getRemoved() );
         }
     }
 

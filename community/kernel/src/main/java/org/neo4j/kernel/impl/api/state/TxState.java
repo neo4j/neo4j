@@ -1835,7 +1835,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 return NodeStateImpl.EMPTY;
             }
             final NodeState nodeState = nodeStatesMap.get( id );
-            return nodeState == null ? NodeStateImpl.EMPTY : nodeState;
+            return nodeState == null ? NodeStateImpl.EMPTY : ((NodeStateImpl) nodeState).stableView();
         }
 
         @Override

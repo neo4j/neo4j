@@ -117,7 +117,7 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
 
     RelationshipStateImpl( long id )
     {
-        super( id );
+        super( id, StateSelector.CURRENT_STATE );
     }
 
     void setMetaData( long startNode, long endNode, int type )

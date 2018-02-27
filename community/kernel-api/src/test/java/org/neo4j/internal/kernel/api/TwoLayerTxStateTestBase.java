@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 
 import org.neo4j.values.storable.Value;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -166,9 +166,9 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
         final int prop1 = 0;
         final int prop2 = 1;
         final int prop3 = 2;
-        final int prop4 = 2;
-        final int prop5 = 2;
-        final int prop6 = 2;
+        final int prop4 = 3;
+        final int prop5 = 4;
+        final int prop6 = 5;
         long n1;
 
         // given
