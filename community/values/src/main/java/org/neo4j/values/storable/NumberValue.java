@@ -139,7 +139,7 @@ public abstract class NumberValue extends ScalarValue
         }
         else
         {
-            throw new IllegalArgumentException( "Cannot add " + numberValue );
+            throw new IllegalArgumentException( "Cannot multiply with " + numberValue );
         }
     }
 
@@ -155,7 +155,7 @@ public abstract class NumberValue extends ScalarValue
         }
         else
         {
-            throw new IllegalArgumentException( "Cannot add " + numberValue );
+            throw new IllegalArgumentException( "Cannot divide by " + numberValue );
         }
     }
 }
