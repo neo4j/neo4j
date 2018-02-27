@@ -378,6 +378,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         protected abstract boolean supportsTimeZone();
 
+        protected abstract boolean supportsEpoch();
+
         protected ZoneId timezone( AnyValue timezone )
         {
             return timezone == null ? defaultZone.get() : timezoneOf( timezone );
@@ -512,6 +514,29 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 return true;
             }
+        },
+        epoch//<pre>
+        { //<pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                if ( !builder.supportsEpoch() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
+                if ( builder.state == null )
+                {
+                    builder.state = new DateTimeBuilder( );
+                }
+                builder.state = builder.state.assign( this, value );
+            }
+
+            @Override
+            boolean isGroupSelector()
+            {
+                return true;
+            }
         };
         private static final Map<String,Field> fields = new HashMap<>();
 
@@ -601,7 +626,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         DateTimeBuilder assign( Field field, AnyValue value )
         {
-            if ( field == Field.datetime )
+            if ( field == Field.datetime || field == Field.epoch )
             {
                 return new SelectDateTimeDTBuilder( date, time );
             }

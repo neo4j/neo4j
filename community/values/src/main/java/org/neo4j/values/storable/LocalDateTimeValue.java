@@ -134,6 +134,12 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
             }
 
             @Override
+            protected boolean supportsEpoch()
+            {
+                return false;
+            }
+
+            @Override
             public LocalDateTimeValue buildInternal()
             {
                 boolean selectingDate = fields.containsKey( Field.date );

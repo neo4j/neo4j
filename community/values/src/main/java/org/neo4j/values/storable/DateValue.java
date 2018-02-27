@@ -399,6 +399,12 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             return false;
         }
 
+        @Override
+        protected boolean supportsEpoch()
+        {
+            return false;
+        }
+
         DateBuilder( Supplier<ZoneId> defaultZone )
         {
             super( defaultZone );

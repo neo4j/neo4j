@@ -165,6 +165,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 return true;
             }
 
+            @Override
+            protected boolean supportsEpoch()
+            {
+                return true;
+            }
+
             private final ZonedDateTime defaulZonedDateTime =
                     ZonedDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
                             Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue, timezone() );
@@ -175,6 +181,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 boolean selectingDate = fields.containsKey( Field.date );
                 boolean selectingTime = fields.containsKey( Field.time );
                 boolean selectingDateTime = fields.containsKey( Field.datetime );
+                boolean selectingEpoch = fields.containsKey( Field.epoch );
                 boolean selectingTimeZone;
                 ZonedDateTime result;
                 if ( selectingDateTime )
@@ -189,6 +196,17 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     ZoneId zoneId = dt.getZoneId( defaultZone );
                     result = ZonedDateTime.of( dt.getDatePart(), timePart, zoneId );
                     selectingTimeZone = dt.hasTimeZone();
+                }
+                else if ( selectingEpoch )
+                {
+                    AnyValue epochField = fields.get( Field.epoch );
+                    if ( !(epochField instanceof IntegralValue) )
+                    {
+                        throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", epochField ) );
+                    }
+                    IntegralValue epoch = (IntegralValue) epochField;
+                    result = ZonedDateTime.ofInstant( Instant.ofEpochMilli( epoch.longValue() ), timezone() );
+                    selectingTimeZone = false;
                 }
                 else if ( selectingTime || selectingDate )
                 {
@@ -236,7 +254,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     selectingTimeZone = false;
                 }
 
-                if ( fields.containsKey( Field.week ) && !selectingDate && !selectingDateTime )
+                if ( fields.containsKey( Field.week ) && !selectingDate && !selectingDateTime && !selectingEpoch )
                 {
                     // Be sure to be in the start of the week based year (which can be later than 1st Jan)
                     result = result
@@ -249,7 +267,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 result = assignAllFields( result );
                 if ( timezone != null )
                 {
-                    if ( (selectingTime || selectingDateTime) && selectingTimeZone )
+                    if ( ((selectingTime || selectingDateTime) && selectingTimeZone) || selectingEpoch )
                     {
                         result = result.withZoneSameInstant( timezone() );
                     }

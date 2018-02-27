@@ -367,6 +367,12 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             return true;
         }
 
+        @Override
+        protected boolean supportsEpoch()
+        {
+            return false;
+        }
+
         protected abstract Result selectTime( AnyValue time );
     }
 }
