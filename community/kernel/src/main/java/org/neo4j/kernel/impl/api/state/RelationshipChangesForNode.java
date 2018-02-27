@@ -512,6 +512,7 @@ public class RelationshipChangesForNode
         return getRelationships( direction, ALL_TYPES );
     }
 
+    // todo remove this if it's not used by previous cypher versions
     public PrimitiveLongIterator getRelationships( Direction direction, int[] types )
     {
         return getRelationships( direction, typeFilter( types ) );
@@ -519,18 +520,6 @@ public class RelationshipChangesForNode
 
     public PrimitiveLongIterator getRelationships()
     {
-        if ( incoming != null )
-        {
-            incoming.markStable();
-        }
-        if ( outgoing != null )
-        {
-            outgoing.markStable();
-        }
-        if ( loops != null )
-        {
-            loops.markStable();
-        }
         PrimitiveLongIterator longIterator = PrimitiveLongCollections.concat( primitiveIds( incoming ),
                 primitiveIds( outgoing ), primitiveIds( loops ) );
         PrimitiveLongSet longSet = Primitive.longSet();
@@ -562,7 +551,7 @@ public class RelationshipChangesForNode
         {
             return emptyIterator();
         }
-        PrimitiveLongObjectMap<PrimitiveLongSet> view = map.stableView();
+        PrimitiveLongObjectMap<PrimitiveLongSet> view = map.currentView();
         Iterable<PrimitiveLongSet> values = view.values();
         int size = view.size();
         PrimitiveLongIterator[] iterators = new PrimitiveLongIterator[size];

@@ -191,5 +191,4 @@ public interface ReadableTransactionState
      * The same applies to schema changes, such as creating and dropping indexes and constraints.
      */
     boolean hasDataChanges();
-
 }
