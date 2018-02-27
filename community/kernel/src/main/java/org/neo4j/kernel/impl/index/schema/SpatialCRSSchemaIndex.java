@@ -267,9 +267,9 @@ public class SpatialCRSSchemaIndex
         applyWithWorkSync( updates );
     }
 
-    private IndexUpdater newPopulatingUpdater()
+    private NativePopulatingUpdater newPopulatingUpdater()
     {
-        return new IndexUpdater()
+        return new NativePopulatingUpdater()
         {
             private boolean closed;
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();

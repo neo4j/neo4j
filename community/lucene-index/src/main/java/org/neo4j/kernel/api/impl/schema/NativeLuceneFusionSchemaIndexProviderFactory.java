@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.index.schema.NumberSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionSchemaIndexProvider;
-import org.neo4j.kernel.impl.index.schema.temporal.TemporalSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TemporalSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
