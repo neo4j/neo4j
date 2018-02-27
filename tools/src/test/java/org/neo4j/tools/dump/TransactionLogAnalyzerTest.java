@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
@@ -75,9 +76,11 @@ public class TransactionLogAnalyzerTest
     private final TestDirectory directory = TestDirectory.testDirectory( fs );
     private final LifeRule life = new LifeRule( true );
     private final RandomRule random = new RandomRule();
+    private final ExpectedException expectedException = ExpectedException.none();
 
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( fs ).around( directory ).around( life );
+    public final RuleChain rules = RuleChain.outerRule( random ).around( fs ).around( directory ).around( life )
+            .around( expectedException );
 
     private LogFile logFile;
     private FlushablePositionAwareChannel writer;
@@ -121,6 +124,15 @@ public class TransactionLogAnalyzerTest
         // then
         assertEquals( 1, monitor.logFiles );
         assertEquals( 5, monitor.transactions );
+    }
+
+    @Test
+    public void throwExceptionWithErrorMessageIfLogFilesNotFound() throws Exception
+    {
+        File emptyDirectory = directory.directory( "empty" );
+        expectedException.expect( IllegalStateException.class );
+        expectedException.expectMessage( "not found." );
+        TransactionLogAnalyzer.analyze( fs, emptyDirectory, STRICT, monitor );
     }
 
     @Test
