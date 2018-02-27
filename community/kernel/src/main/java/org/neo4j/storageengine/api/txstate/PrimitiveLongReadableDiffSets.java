@@ -83,6 +83,12 @@ public interface PrimitiveLongReadableDiffSets<ITERATOR_IN extends PrimitiveLong
      */
     ITERATOR_OUT augment( ITERATOR_IN elements );
 
-    //TODO
-    ITERATOR_OUT augmentWithRemovals( ITERATOR_IN changes );
+    /**
+     * Augment current diff sets with elements. Provided element will be augmented if diffset
+     * does not remove that specific element.
+     *
+     * @param elements elements to augment with
+     * @return iterator that will iterate over augmented elements as well as over diff set
+     */
+    ITERATOR_OUT augmentWithRemovals( ITERATOR_IN elements );
 }

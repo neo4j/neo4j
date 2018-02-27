@@ -46,31 +46,6 @@ public class PrimitiveIntCollections
     {
     }
 
-    //TODO:to delete
-    public static Iterator<Integer> toIterator( final PrimitiveLongIterator primIterator )
-    {
-        return new Iterator<Integer>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return primIterator.hasNext();
-            }
-
-            @Override
-            public Integer next()
-            {
-                return (int) primIterator.next();
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException(  );
-            }
-        };
-    }
-
     /**
      * Base iterator for simpler implementations of {@link PrimitiveIntIterator}s.
      */

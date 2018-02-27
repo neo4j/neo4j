@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -40,7 +41,6 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private LabelSet labels;
     private PrimitiveLongIterator added;
     private PrimitiveLongSet removed;
-    private PrimitiveLongSet txStateRemoved;
 
     DefaultNodeLabelIndexCursor()
     {
@@ -55,10 +55,9 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
         {
             PrimitiveLongDiffSets changes =
                     read.txState().nodesWithLabelChanged( label );
-            // TODO: what is going on here?
             added = changes.augment( PrimitiveLongResourceCollections.emptyIterator() );
-            removed = read.txState().addedAndRemovedNodes().getRemoved();
-            txStateRemoved = changes.getRemoved();
+            removed = PrimitiveLongCollections.asSet( read.txState().addedAndRemovedNodes().getRemoved() );
+            removed.addAll( changes.getRemoved().iterator() );
         }
     }
 
@@ -145,7 +144,6 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
         labels = null;
         read = null;
         removed = null;
-        txStateRemoved = null;
     }
 
     @Override
@@ -170,7 +168,6 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
 
     private boolean isRemoved( long reference )
     {
-        return ((removed != null) && removed.contains( reference )) ||
-                ((txStateRemoved != null) && txStateRemoved.contains( reference ));
+        return removed != null && removed.contains( reference );
     }
 }
