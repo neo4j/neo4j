@@ -88,8 +88,8 @@ class DynamicSizeUtil
 
     private static final int FLAG_FIRST_BYTE_TOMBSTONE = 0x80;
     private static final long FLAG_READ_TOMBSTONE = 0x80000000_00000000L;
-    private static final int MASK_ONE_BYTE_KEY_SIZE = 0x1F;
-    private static final int MASK_ONE_BYTE_VALUE_SIZE = 0x7F;
+    static final int MASK_ONE_BYTE_KEY_SIZE = 0x1F;
+    static final int MASK_ONE_BYTE_VALUE_SIZE = 0x7F;
     private static final int FLAG_HAS_VALUE_SIZE = 0x20;
     private static final int FLAG_ADDITIONAL_KEY_SIZE = 0x40;
     private static final int FLAG_ADDITIONAL_VALUE_SIZE = 0x80;
@@ -207,6 +207,11 @@ class DynamicSizeUtil
     static int extractKeySize( long keyValueSize )
     {
         return (int) ((keyValueSize & ~FLAG_READ_TOMBSTONE) >>> Integer.SIZE);
+    }
+
+    static int getOverhead( int keySize, int valueSize )
+    {
+        return 1 + (keySize > MASK_ONE_BYTE_KEY_SIZE ? 1 : 0) + (valueSize > 0 ? 1 : 0) + (valueSize > MASK_ONE_BYTE_VALUE_SIZE ? 1 : 0);
     }
 
     static boolean extractTombstone( long keyValueSize )
