@@ -77,6 +77,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -229,7 +230,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return new DatabaseActions(
                 new LeaseManager( Clocks.systemClock() ),
-                config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
+                ScriptExecutionMode.getConfiguredMode( config ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()

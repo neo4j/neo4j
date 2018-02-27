@@ -17,27 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.features
+package org.neo4j.causalclustering.scenarios;
 
-import java.nio.file.FileSystems
+import java.util.function.Supplier;
 
-import org.junit.jupiter.api.AfterEach
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 
-class TCKTests extends BaseFeatureTest {
+public enum DiscoveryServiceType
+{
+    SHARED( SharedDiscoveryService::new ),
+    HAZELCAST( HazelcastDiscoveryServiceFactory::new );
 
-  // these two should be empty on commit!
-  override val featureToRun = ""
-  override val scenarioToRun = ""
+    private final Supplier<DiscoveryServiceFactory> factory;
 
-  override val scenarios: Seq[Scenario] = {
-    val allScenarios: Seq[Scenario] = CypherTCK.allTckScenarios
-    filterScenarios(allScenarios)
-  }
+    DiscoveryServiceType( Supplier<DiscoveryServiceFactory> factory )
+    {
+        this.factory = factory;
+    }
 
-  @AfterEach
-  def tearDown(): Unit = {
-    //TODO: This method can be removed with new release of TCK (1.0.0-M10)
-    FileSystems.getFileSystem(CypherTCK.getClass.getResource(CypherTCK.featuresPath).toURI).close()
-  }
+    public DiscoveryServiceFactory create()
+    {
+        return factory.get();
+    }
+
 }

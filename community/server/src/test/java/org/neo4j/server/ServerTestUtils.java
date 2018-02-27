@@ -35,7 +35,9 @@ import java.util.Random;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.server.configuration.ServerSettings;
 
 public class ServerTestUtils
 {
@@ -86,6 +88,9 @@ public class ServerTestUtils
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
         addRelativeProperty( temporaryFolder, properties, LegacySslPolicyConfig.certificates_directory );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        // Needed to allow testing traversal endpoint scripting, which needs the JVM-wide "global" javascript context
+        // to be initialised to sandboxed mode:
+        properties.put( ServerSettings.script_enabled.name(), Settings.TRUE );
     }
 
     private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,

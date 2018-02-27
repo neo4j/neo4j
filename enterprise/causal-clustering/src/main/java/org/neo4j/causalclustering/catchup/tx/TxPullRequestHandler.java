@@ -40,6 +40,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_INVALID_REQUEST;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
@@ -85,12 +86,25 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         StoreId localStoreId = storeIdSupplier.get();
         StoreId expectedStoreId = msg.expectedStoreId();
 
-        IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, msg.previousTxId() + 1, localStoreId, expectedStoreId );
+        long firstTxId = msg.previousTxId() + 1;
+        IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, firstTxId, localStoreId, expectedStoreId );
 
         if ( txCursor != null )
         {
-            ctx.writeAndFlush( new ChunkedTransactionStream( localStoreId, txCursor, protocol ) );
+            ChunkedTransactionStream txStream = new ChunkedTransactionStream( localStoreId, firstTxId, txCursor, protocol );
             // chunked transaction stream ends the interaction internally and closes the cursor
+            ctx.writeAndFlush( txStream ).addListener( f ->
+            {
+                String message = format( "Streamed transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() );
+                if ( f.isSuccess() )
+                {
+                    log.info( message );
+                }
+                else
+                {
+                    log.warn( message, f.cause() );
+                }
+            } );
         }
     }
 

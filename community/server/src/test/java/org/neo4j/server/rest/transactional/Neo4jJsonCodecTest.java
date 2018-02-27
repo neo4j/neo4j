@@ -48,7 +48,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
+import static org.neo4j.graphdb.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
+import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 
 public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
 {
@@ -241,10 +243,36 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
+    public void testGeographic3DPointWriting() throws IOException
+    {
+        //Given
+        Point value = SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() );
+
+        //When
+        jsonCodec.writeValue( jsonGenerator, value );
+
+        //Then
+        verify( jsonGenerator, times( 3 ) ).writeEndObject();
+    }
+
+    @Test
     public void testCartesianPointWriting() throws IOException
     {
         //Given
         Point value = SpatialMocks.mockPoint( 123.0, 456.0, mockCartesian() );
+
+        //When
+        jsonCodec.writeValue( jsonGenerator, value );
+
+        //Then
+        verify( jsonGenerator, times( 3 ) ).writeEndObject();
+    }
+
+    @Test
+    public void testCartesian3DPointWriting() throws IOException
+    {
+        //Given
+        Point value = SpatialMocks.mockPoint( 123.0, 456.0, 789.0, mockCartesian_3D() );
 
         //When
         jsonCodec.writeValue( jsonGenerator, value );

@@ -39,6 +39,7 @@ public interface CoreTopologyService extends TopologyService
      */
     boolean setClusterId( ClusterId clusterId ) throws InterruptedException;
 
+    @FunctionalInterface
     interface Listener
     {
         void onCoreTopologyChange( CoreTopology coreTopology );

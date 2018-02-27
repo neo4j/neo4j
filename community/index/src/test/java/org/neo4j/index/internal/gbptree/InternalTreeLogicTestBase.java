@@ -1168,7 +1168,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         long middle = i / 2;
         KEY middleKey = key( middle ); // Should be located in middle leaf
         VALUE oldValue = value( middle );
-        VALUE newValue = value( middle * 100 );
+        VALUE newValue = value( middle * 11 );
         insert( middleKey, newValue );
 
         // THEN

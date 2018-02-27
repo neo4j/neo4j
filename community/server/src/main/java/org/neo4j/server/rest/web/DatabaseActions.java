@@ -140,18 +140,21 @@ public class DatabaseActions
     private final Function<ConstraintDefinition,Representation> CONSTRAINT_DEF_TO_REPRESENTATION =
             ConstraintDefinitionRepresentation::new;
 
-    public DatabaseActions( LeaseManager leaseManager, boolean enableScriptSandboxing,
+    public DatabaseActions( LeaseManager leaseManager, ScriptExecutionMode executionMode,
             GraphDatabaseAPI graphDatabaseAPI )
     {
         this.leases = leaseManager;
         this.graphDb = graphDatabaseAPI;
-        this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( enableScriptSandboxing );
+        this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( executionMode );
         this.propertySetter = new PropertySettingStrategy( graphDb );
     }
 
+    /**
+     * This method is only meant for testing.
+     */
     public DatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graphDatabaseAPI )
     {
-        this( leaseManager, true, graphDatabaseAPI );
+        this( leaseManager, ScriptExecutionMode.SANDBOXED, graphDatabaseAPI );
     }
 
     private Node node( long id ) throws NodeNotFoundException
