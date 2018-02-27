@@ -8,12 +8,6 @@ Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure 
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with empty db"
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with hits"
 
-Feature "TemporalToStringAcceptance": Scenario "Should serialize date"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize local time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize local date time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize date time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize duration"
 Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date"
 Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local time"
 Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for time"

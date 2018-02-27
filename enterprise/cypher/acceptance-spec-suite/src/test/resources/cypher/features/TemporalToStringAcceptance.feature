@@ -28,7 +28,8 @@ Feature: TemporalToStringAcceptance
       RETURN toString(d) as ts, date(toString(d)) = d as b
       """
     Then the result should be, in order:
-      | d            |
+      | ts            | b    |
+      | '1984-10-11'  | true |
     And no side effects
 
   Scenario: Should serialize local time
@@ -36,10 +37,11 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH localtime({hour:12, minute:31, second:14, nanosecond: 645876123}) as d
-      RETURN toString(d) as ts, date(toString(d)) = d as b
+      RETURN toString(d) as ts, localtime(toString(d)) = d as b
       """
     Then the result should be, in order:
-      | d            |
+      | ts                   | b    |
+      | '12:31:14.645876123' | true |
     And no side effects
 
   Scenario: Should serialize time
@@ -47,10 +49,11 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}) as d
-      RETURN toString(d) as ts, date(toString(d)) = d as b
+      RETURN toString(d) as ts, time(toString(d)) = d as b
       """
     Then the result should be, in order:
-      | d            |
+      | ts                         | b    |
+      | '12:31:14.645876123+01:00' | true |
     And no side effects
 
   Scenario: Should serialize local date time
@@ -58,10 +61,11 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}) as d
-      RETURN toString(d) as ts, date(toString(d)) = d as b
+      RETURN toString(d) as ts, localdatetime(toString(d)) = d as b
       """
     Then the result should be, in order:
-      | d            |
+      | ts                              | b    |
+      | '1984-10-11T12:31:14.645876123' | true |
     And no side effects
 
   Scenario: Should serialize date time
@@ -69,10 +73,11 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}) as d
-      RETURN toString(d) as ts, date(toString(d)) = d as b
+      RETURN toString(d) as ts, datetime(toString(d)) = d as b
       """
     Then the result should be, in order:
-      | d            |
+      | ts                                    | b    |
+      | '1984-10-11T12:31:14.645876123+01:00' | true |
     And no side effects
 
   Scenario: Should serialize duration
@@ -80,8 +85,9 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70, nanoseconds: 1}) as d
-      RETURN toString(d) as ts, date(toString(d)) = d as b
+      RETURN toString(d) as ts, duration(toString(d)) = d as b
       """
     Then the result should be, in order:
-      | d            |
+      | ts                              | b    |
+      | 'P12Y5M14DT16H13M10.000000001S' | true |
     And no side effects

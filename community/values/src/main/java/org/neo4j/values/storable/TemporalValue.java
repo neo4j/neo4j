@@ -177,12 +177,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     }
 
     @Override
-    public final String toString()
-    {
-        return getClass().getSimpleName() + "<" + prettyPrint() + ">";
-    }
-
-    @Override
     public final boolean equals( boolean x )
     {
         return false;

@@ -391,6 +391,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
+    public String toString()
+    {
+        return prettyPrint();
+    }
+
+    @Override
     protected int computeHash()
     {
         return value.toInstant().hashCode();
