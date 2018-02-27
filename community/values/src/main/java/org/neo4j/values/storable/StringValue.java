@@ -83,12 +83,23 @@ public abstract class StringValue extends TextValue
         {
             return EMPTY_SPLIT;
         }
+        else if ( separator.isEmpty() )
+        {
+            return VirtualValues.fromArray( Values.charArray( asString.toCharArray() ) );
+        }
 
         List<AnyValue> split = splitNonRegex( asString, separator );
         return VirtualValues.fromList( split );
     }
 
-    static List<AnyValue> splitNonRegex( String input, String delim )
+    /**
+     * Splits a string.
+     *
+     * @param input String to be split
+     * @param delim delimiter, must not be not empty
+     * @return the split string as a List of TextValues
+     */
+    private static List<AnyValue> splitNonRegex( String input, String delim )
     {
         List<AnyValue> l = new ArrayList<>();
         int offset = 0;
