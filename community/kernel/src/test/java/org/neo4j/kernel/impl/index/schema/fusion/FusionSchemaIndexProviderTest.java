@@ -28,7 +28,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.rule.RandomRule;
@@ -53,6 +52,7 @@ public class FusionSchemaIndexProviderTest
 
     private SchemaIndexProvider nativeProvider;
     private SchemaIndexProvider spatialProvider;
+    private SchemaIndexProvider temporalProvider;
     private SchemaIndexProvider luceneProvider;
 
     @Before
@@ -60,9 +60,11 @@ public class FusionSchemaIndexProviderTest
     {
         nativeProvider = mock( SchemaIndexProvider.class );
         spatialProvider = mock( SchemaIndexProvider.class );
+        temporalProvider = mock( SchemaIndexProvider.class );
         luceneProvider = mock( SchemaIndexProvider.class );
         when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
         when( spatialProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "spatial", "1" ) );
+        when( temporalProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "temporal", "1" ) );
         when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
     }
 
@@ -79,11 +81,11 @@ public class FusionSchemaIndexProviderTest
         Value[] allValues = FusionIndexTestHelp.allValues();
 
         // Number values should go to native provider
-        Selector selector = new NativeSelector();
+        Selector selector = new FusionSelector();
         for ( Value numberValue : numberValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, numberValue );
+            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, numberValue );
 
             // then
             assertSame( nativeProvider, selected );
@@ -93,7 +95,7 @@ public class FusionSchemaIndexProviderTest
         for ( Value spatialValue : spatialValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, spatialValue );
+            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, spatialValue );
 
             // then
             assertSame( spatialProvider, selected );
@@ -103,7 +105,7 @@ public class FusionSchemaIndexProviderTest
         for ( Value otherValue : otherValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, otherValue );
+            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, otherValue );
 
             // then
             assertSame( luceneProvider, selected );
@@ -115,7 +117,7 @@ public class FusionSchemaIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, firstValue, secondValue );
+                SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, firstValue, secondValue );
 
                 // then
                 assertSame( luceneProvider, selected );
@@ -332,7 +334,7 @@ public class FusionSchemaIndexProviderTest
 
     private FusionSchemaIndexProvider fusionProvider()
     {
-        return new FusionSchemaIndexProvider( nativeProvider, spatialProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10, NONE,
+        return new FusionSchemaIndexProvider( nativeProvider, spatialProvider, temporalProvider, luceneProvider, new FusionSelector(), DESCRIPTOR, 10, NONE,
                 mock( FileSystemAbstraction.class ) );
     }
 

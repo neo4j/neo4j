@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -91,9 +92,12 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        forAll( NativeSchemaIndexAccessor::force, this );
+        for ( NativeSchemaIndexAccessor part : this )
+        {
+            part.force( ioLimiter );
+        }
     }
 
     @Override

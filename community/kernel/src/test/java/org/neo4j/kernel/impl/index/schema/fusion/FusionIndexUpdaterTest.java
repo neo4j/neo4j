@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
@@ -43,6 +42,7 @@ public class FusionIndexUpdaterTest
 {
     private IndexUpdater nativeUpdater;
     private IndexUpdater spatialUpdater;
+    private IndexUpdater temporalUpdater;
     private IndexUpdater luceneUpdater;
     private IndexUpdater[] allUpdaters;
     private FusionIndexUpdater fusionIndexUpdater;
@@ -52,9 +52,10 @@ public class FusionIndexUpdaterTest
     {
         nativeUpdater = mock( IndexUpdater.class );
         spatialUpdater = mock( IndexUpdater.class );
+        temporalUpdater = mock( IndexUpdater.class );
         luceneUpdater = mock( IndexUpdater.class );
-        allUpdaters = new IndexUpdater[]{nativeUpdater, spatialUpdater, luceneUpdater};
-        fusionIndexUpdater = new FusionIndexUpdater( nativeUpdater, spatialUpdater, luceneUpdater, new NativeSelector() );
+        allUpdaters = new IndexUpdater[]{nativeUpdater, spatialUpdater, temporalUpdater, luceneUpdater};
+        fusionIndexUpdater = new FusionIndexUpdater( nativeUpdater, spatialUpdater, temporalUpdater, luceneUpdater, new FusionSelector() );
     }
 
     /* process */

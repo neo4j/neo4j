@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 import org.neo4j.values.storable.Value;
 
@@ -53,6 +52,7 @@ public class FusionIndexPopulatorTest
 {
     private IndexPopulator numberPopulator;
     private IndexPopulator spatialPopulator;
+    private IndexPopulator temporalPopulator;
     private IndexPopulator lucenePopulator;
     private IndexPopulator[] allPopulators;
     private FusionIndexPopulator fusionIndexPopulator;
@@ -64,9 +64,11 @@ public class FusionIndexPopulatorTest
     {
         numberPopulator = mock( IndexPopulator.class );
         spatialPopulator = mock( IndexPopulator.class );
+        temporalPopulator = mock( IndexPopulator.class );
         lucenePopulator = mock( IndexPopulator.class );
-        allPopulators = new IndexPopulator[]{numberPopulator, spatialPopulator, lucenePopulator};
-        fusionIndexPopulator = new FusionIndexPopulator( numberPopulator, spatialPopulator, lucenePopulator, new NativeSelector(), indexId, dropAction );
+        allPopulators = new IndexPopulator[]{numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator};
+        fusionIndexPopulator =
+                new FusionIndexPopulator( numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator, new FusionSelector(), indexId, dropAction );
     }
 
     /* create */

@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -56,6 +55,7 @@ public class FusionIndexReaderTest
     private IndexReader nativeReader;
     private IndexReader spatialReader;
     private IndexReader luceneReader;
+    private IndexReader temporalReader;
     private IndexReader[] allReaders;
     private FusionIndexReader fusionIndexReader;
     private static final int PROP_KEY = 1;
@@ -66,9 +66,10 @@ public class FusionIndexReaderTest
     {
         nativeReader = mock( IndexReader.class );
         spatialReader = mock( IndexReader.class );
+        temporalReader = mock( IndexReader.class );
         luceneReader = mock( IndexReader.class );
-        allReaders = new IndexReader[]{nativeReader, spatialReader, luceneReader};
-        fusionIndexReader = new FusionIndexReader( nativeReader, spatialReader, luceneReader, new NativeSelector(),
+        allReaders = new IndexReader[]{nativeReader, spatialReader, temporalReader, luceneReader};
+        fusionIndexReader = new FusionIndexReader( nativeReader, spatialReader, temporalReader, luceneReader, new FusionSelector(),
                 IndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
