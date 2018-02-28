@@ -271,11 +271,6 @@ public class RelationshipChangesForNode
         return false;
     }
 
-    public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels, StateSelector stateSelector )
-    {
-        return augmentRelationships( direction, rels, ALL_TYPES, stateSelector );
-    }
-
     public RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels,
             StateSelector stateSelector )
     {
