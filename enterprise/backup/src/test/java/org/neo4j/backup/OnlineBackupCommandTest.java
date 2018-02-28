@@ -104,7 +104,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldNotRequestForensics() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void shouldNotRequestForensics() throws CommandFailed, IncorrectUsage
     {
         execute( backupDir(), "--name=mybackup" );
 
@@ -113,7 +113,7 @@ public class OnlineBackupCommandTest
 
     @Test
     public void shouldDefaultFromToDefaultBackupAddress()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+            throws CommandFailed, IncorrectUsage
     {
         execute( backupDir(), "--name=mybackup" );
 
@@ -122,7 +122,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldDefaultPortAndPassHost() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void shouldDefaultPortAndPassHost() throws CommandFailed, IncorrectUsage
     {
         execute( "--from=foo.bar.server", backupDir(), "--name=mybackup" );
 
@@ -132,7 +132,7 @@ public class OnlineBackupCommandTest
 
     @Test
     public void shouldAcceptAHostWithATrailingColon()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+            throws CommandFailed, IncorrectUsage
     {
         execute( "--from=foo.bar.server:", backupDir(), "--name=mybackup" );
 
@@ -141,7 +141,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldDefaultHostAndPassPort() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void shouldDefaultHostAndPassPort() throws CommandFailed, IncorrectUsage
     {
         execute( "--from=:1234", backupDir(), "--name=mybackup" );
 
@@ -150,7 +150,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldPassHostAndPort() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void shouldPassHostAndPort() throws CommandFailed, IncorrectUsage
     {
         execute( "--from=foo.bar.server:1234", backupDir(), "--name=mybackup" );
 
@@ -159,7 +159,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldPassDestination() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void shouldPassDestination() throws CommandFailed, IncorrectUsage
     {
         final Path dest = Paths.get( "/" );
         execute( backupDir( path( dest.toString() ) ), "--name=mybackup" );
@@ -170,7 +170,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void nonExistingBackupDirThrows() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void nonExistingBackupDirThrows() throws CommandFailed, IncorrectUsage
     {
         final String path = path( "/Idontexist/sasdfasdfa" );
         expected.expect( CommandFailed.class );
@@ -197,7 +197,7 @@ public class OnlineBackupCommandTest
 
     @Test
     public void shouldNotAskForConsistencyCheckIfNotSpecified()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+            throws CommandFailed, IncorrectUsage
     {
         execute( "--check-consistency=false", backupDir(), "--name=mybackup" );
 
@@ -542,9 +542,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldReadStandardConfig() throws IOException, CommandFailed, IncorrectUsage, BackupTool
-            .ToolFailureException
-
+    public void shouldReadStandardConfig() throws IOException, CommandFailed, IncorrectUsage
     {
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( cypher_planner.name() + "=RULE" ) );
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
@@ -558,7 +556,7 @@ public class OnlineBackupCommandTest
 
     @Test
     public void shouldAugmentConfig()
-            throws IOException, CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+            throws IOException, CommandFailed, IncorrectUsage
     {
         Path extraConf = testDirectory.directory( "someOtherDir" ).toPath().resolve( "extra.conf" );
         Files.write( extraConf, singletonList( cypher_planner.name() + "=RULE" ) );
@@ -572,8 +570,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldDefaultTimeoutToTwentyMinutes()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
+    public void shouldDefaultTimeoutToTwentyMinutes() throws CommandFailed, IncorrectUsage
     {
         execute( backupDir(), "--name=mybackup" );
 
@@ -583,8 +580,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldInterpretAUnitlessTimeoutAsSeconds()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
+    public void shouldInterpretAUnitlessTimeoutAsSeconds() throws CommandFailed, IncorrectUsage
     {
         execute( "--timeout=10", backupDir(), "--name=mybackup" );
 
@@ -594,8 +590,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldParseATimeoutWithUnits()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
+    public void shouldParseATimeoutWithUnits() throws CommandFailed, IncorrectUsage
     {
         execute( "--timeout=10h", backupDir(), "--name=mybackup" );
 
@@ -625,6 +620,7 @@ public class OnlineBackupCommandTest
                             "                          [--cc-indexes[=<true|false>]]%n" +
                             "                          [--cc-label-scan-store[=<true|false>]]%n" +
                             "                          [--cc-property-owners[=<true|false>]]%n" +
+                            "                          [--backup-log=<backup-log-file-path>]%n" +
                             "%n" +
                             "environment variables:%n" +
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
@@ -676,7 +672,10 @@ public class OnlineBackupCommandTest
                             "  --cc-property-owners=<true|false>        Perform additional consistency checks%n" +
                             "                                           on property ownership. This check is%n" +
                             "                                           *very* expensive in time and memory.%n" +
-                            "                                           [default:false]%n" ),
+                            "                                           [default:false]%n" +
+                            "  --backup-log=<backup-log-file-path>      Enable backup client logging and%n" +
+                            "                                           direct log entries to the specified%n" +
+                            "                                           file. [default:disabled]%n" ),
                     baos.toString() );
         }
     }
@@ -691,7 +690,7 @@ public class OnlineBackupCommandTest
      * @param path to transform to platform independent absolute path
      * @return platform independent absolute path
      */
-    static String path( String path )
+    private static String path( String path )
     {
         return Paths.get( path ).toFile().getAbsolutePath();
     }
@@ -699,7 +698,7 @@ public class OnlineBackupCommandTest
     /**
      * @return a backup-dir argument with a path suitable for each platform
      */
-    static String backupDir()
+    private static String backupDir()
     {
         return backupDir( "/" );
     }
@@ -707,7 +706,7 @@ public class OnlineBackupCommandTest
     /**
      * @return the backup-dir argument with a path suitable for each platform
      */
-    static String backupDir( String path )
+    private static String backupDir( String path )
     {
         return "--backup-dir=" + path( path );
     }

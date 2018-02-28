@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -79,8 +81,9 @@ public class OnlineBackupCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "cc-label-scan-store", true,
                     "Perform consistency checks on the label scan store." ) )
             .withArgument( new OptionalBooleanArg( "cc-property-owners", false,
-                    "Perform additional consistency checks on property ownership. This check is *very* expensive in " +
-                            "time and memory." ) );
+                    "Perform additional consistency checks on property ownership. This check is *very* expensive in time and memory." ) )
+            .withArgument( new OptionalCanonicalPath( "backup-log", "backup-log-file-path",
+                    "disabled", "Enable backup client logging and direct log entries to the specified file." ) );
 
     public static Arguments arguments()
     {
@@ -96,9 +99,7 @@ public class OnlineBackupCommand implements AdminCommand
     private ConsistencyCheckService consistencyCheckService;
     private final OutsideWorld outsideWorld;
 
-    public OnlineBackupCommand( BackupService backupService, Path homeDir, Path configDir,
-            ConsistencyCheckService consistencyCheckService,
-            OutsideWorld outsideWorld )
+    OnlineBackupCommand( BackupService backupService, Path homeDir, Path configDir, ConsistencyCheckService consistencyCheckService, OutsideWorld outsideWorld )
     {
         this.backupService = backupService;
         this.homeDir = homeDir;
@@ -123,6 +124,7 @@ public class OnlineBackupCommand implements AdminCommand
         final boolean checkIndexes;
         final boolean checkLabelScanStore;
         final boolean checkPropertyOwners;
+        final Optional<Path> backupLogFile;
 
         try
         {
@@ -137,6 +139,7 @@ public class OnlineBackupCommand implements AdminCommand
             additionalConfig = arguments.getOptionalPath( "additional-config" );
             reportDir = arguments.getOptionalPath( "cc-report-dir" ).orElseThrow( () ->
                     new IllegalArgumentException( "cc-report-dir must be a path" ) );
+            backupLogFile = arguments().getOptionalPath( "backup-log" );
         }
         catch ( IllegalArgumentException e )
         {
@@ -193,6 +196,22 @@ public class OnlineBackupCommand implements AdminCommand
             else
             {
                 checkPropertyOwners = config.get( ConsistencyCheckSettings.consistency_check_property_owners );
+            }
+            if ( backupLogFile.isPresent() )
+            {
+                config.augment( "backup-log", backupLogFile.get().toAbsolutePath().toString() );
+            }
+            else
+            {
+                // Write backup log output to null file
+                if ( SystemUtils.IS_OS_WINDOWS )
+                {
+                    config.augment( GraphDatabaseSettings.store_internal_log_path.name(), System.getProperty( "java.io.tmpdir" ) + File.separatorChar + "nul" );
+                }
+                else
+                {
+                    config.augment( GraphDatabaseSettings.store_internal_log_path.name(), "/dev/null" );
+                }
             }
         }
         catch ( IllegalArgumentException e )

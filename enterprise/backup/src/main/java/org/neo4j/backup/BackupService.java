@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -267,6 +269,7 @@ class BackupService
     {
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+
         // In case someone deleted the logical log from a full backup
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
         return tempDbConfig;
