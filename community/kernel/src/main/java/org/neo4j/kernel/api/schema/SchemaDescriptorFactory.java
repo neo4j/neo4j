@@ -90,6 +90,6 @@ public class SchemaDescriptorFactory
         {
             validator.accept( entityToken );
         }
-        return new NonSchemaSchemaDescriptor( entityTokens, entityType, propertyIds );
+        return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
     }
 }

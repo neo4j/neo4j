@@ -654,6 +654,12 @@ public class QueryExecutionLocksIT
         }
 
         @Override
+        public IndexDescriptor indexGetForName( String name ) throws SchemaRuleNotFoundException
+        {
+            return readOperations.indexGetForName( name );
+        }
+
+        @Override
         public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
         {
             return readOperations.indexesGetForLabel( labelId );

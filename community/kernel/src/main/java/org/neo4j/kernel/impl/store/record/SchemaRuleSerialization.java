@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -124,7 +124,7 @@ public class SchemaRuleSerialization
         }
 
         @Override
-        public Integer computeSpecific( NonSchemaSchemaDescriptor schema )
+        public Integer computeSpecific( MultiTokenSchemaDescriptor schema )
         {
             return 1 // schema descriptor type
                     + 2 // entity token count
@@ -248,7 +248,7 @@ public class SchemaRuleSerialization
 
         case NON_SCHEMA_INDEX:
             //TODO typing is ugly here
-            NonSchemaSchemaDescriptor nonSchema = readNonSchemaSchema( source );
+            MultiTokenSchemaDescriptor nonSchema = readNonSchemaSchema( source );
             name = readRuleName( id, IndexRule.class, source );
             String metadata = readMetaData( source );
             IndexDescriptor indexDescriptor = indexProviderMap.apply( indexProvider ).indexDescriptorFor( nonSchema, name, metadata );
@@ -270,15 +270,15 @@ public class SchemaRuleSerialization
         return (LabelSchemaDescriptor)schemaDescriptor;
     }
 
-    private static NonSchemaSchemaDescriptor readNonSchemaSchema( ByteBuffer source ) throws MalformedSchemaRuleException
+    private static MultiTokenSchemaDescriptor readNonSchemaSchema( ByteBuffer source ) throws MalformedSchemaRuleException
     {
         SchemaDescriptor schemaDescriptor = readNonSchema( source );
-        if ( !(schemaDescriptor instanceof NonSchemaSchemaDescriptor) )
+        if ( !(schemaDescriptor instanceof MultiTokenSchemaDescriptor) )
         {
             throw new MalformedSchemaRuleException(
-                    "Non schema IndexRules must have NonSchemaSchemaDescriptor, got " + schemaDescriptor.getClass().getSimpleName() );
+                    "Non schema IndexRules must have MultiTokenSchemaDescriptor, got " + schemaDescriptor.getClass().getSimpleName() );
         }
-        return (NonSchemaSchemaDescriptor) schemaDescriptor;
+        return (MultiTokenSchemaDescriptor) schemaDescriptor;
     }
 
     private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer source )
@@ -384,7 +384,7 @@ public class SchemaRuleSerialization
         }
         int[] entityTokenIds = readTokenIdList( source );
         int[] propertyIds = readTokenIdList( source );
-        return new org.neo4j.kernel.api.schema.NonSchemaSchemaDescriptor( entityTokenIds, type, propertyIds );
+        return new org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor( entityTokenIds, type, propertyIds );
     }
 
     private static int[] readTokenIdList( ByteBuffer source )
@@ -441,6 +441,7 @@ public class SchemaRuleSerialization
 
         indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
         UTF8.putEncodedStringInto( indexRule.getName(), target );
+        UTF8.putEncodedStringInto( indexDescriptor.metadata(), target );
         return target.array();
     }
 
@@ -484,7 +485,7 @@ public class SchemaRuleSerialization
         }
 
         @Override
-        public void processSpecific( NonSchemaSchemaDescriptor schema )
+        public void processSpecific( MultiTokenSchemaDescriptor schema )
         {
             if ( schema.entityType() == EntityType.NODE )
             {

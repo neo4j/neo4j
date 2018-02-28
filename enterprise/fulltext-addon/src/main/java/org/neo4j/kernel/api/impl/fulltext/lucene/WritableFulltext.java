@@ -56,7 +56,7 @@ public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFullte
     }
 
 
-    public void markAsOnline()
+    public void markAsOnline() throws IOException
     {
         luceneIndex.markAsOnline();
     }
@@ -66,19 +66,14 @@ public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFullte
         return indexWriter;
     }
 
-    public void setFailed( String failure )
+    public void setFailed( String failure ) throws IOException
     {
         // TODO how to handle that string?
-        luceneIndex.setFailed();
+        luceneIndex.markAsFailed( failure );
     }
 
     public ReadOnlyFulltext getIndexReader() throws IOException
     {
         return luceneIndex.getIndexReader();
-    }
-
-    InternalIndexState getState()
-    {
-        return luceneIndex.getState();
     }
 }

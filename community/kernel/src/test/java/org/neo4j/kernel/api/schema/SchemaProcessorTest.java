@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 
@@ -55,9 +55,9 @@ public class SchemaProcessorTest
             }
 
             @Override
-            public void processSpecific( NonSchemaSchemaDescriptor nonSchemaSchemaDescriptor )
+            public void processSpecific( MultiTokenSchemaDescriptor nonSchemaSchemaDescriptor )
             {
-                callHistory.add( "NonSchemaSchemaDescriptor" );
+                callHistory.add( "MultiTokenSchemaDescriptor" );
             }
         };
 

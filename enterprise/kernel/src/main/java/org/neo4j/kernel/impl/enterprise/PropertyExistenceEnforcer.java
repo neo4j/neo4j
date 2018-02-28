@@ -33,7 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -139,9 +139,9 @@ class PropertyExistenceEnforcer
                     }
 
                     @Override
-                    public void processSpecific( NonSchemaSchemaDescriptor nonSchemaSchemaDescriptor )
+                    public void processSpecific( MultiTokenSchemaDescriptor multiTokenSchemaDescriptor )
                     {
-                        throw new IllegalStateException( "NonSchemaSchemaDescriptor cannot support constraints" );
+                        throw new IllegalStateException( "MultiTokenSchemaDescriptor cannot support constraints" );
                     }
                 } );
             }

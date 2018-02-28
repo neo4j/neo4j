@@ -20,6 +20,9 @@
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -27,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -38,14 +42,17 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
+import static java.util.Collections.singletonMap;
+
 public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
 {
     private final Analyzer analyzer;
     private final String identifier;
     private final FulltextIndexType type;
     private Set<String> properties;
-    private volatile InternalIndexState state;
-
+    private static final String KEY_STATUS = "status";
+    private static final String ONLINE = "online";
+    private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
             String identifier, FulltextIndexType type )
     {
@@ -54,7 +61,6 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
         this.analyzer = analyzer;
         this.identifier = identifier;
         this.type = type;
-        state = InternalIndexState.POPULATING;
     }
 
     @Override
@@ -110,23 +116,46 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
         return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
     }
 
-    InternalIndexState getState()
+    /**
+     * Check if this index is marked as online.
+     *
+     * @return <code>true</code> if index is online, <code>false</code> otherwise
+     * @throws IOException
+     */
+    public boolean isOnline() throws IOException
     {
-        return state;
+        ensureOpen();
+        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
+        Directory directory = partition.getDirectory();
+        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
+        {
+            Map<String,String> userData = reader.getIndexCommit().getUserData();
+            return ONLINE.equals( userData.get( KEY_STATUS ) );
+        }
     }
 
-    public void markAsOnline()
+    /**
+     * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
+     *
+     * @throws IOException
+     */
+    public void markAsOnline() throws IOException
     {
-        state = InternalIndexState.ONLINE;
+        ensureOpen();
+        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
+        IndexWriter indexWriter = partition.getIndexWriter();
+        indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
+        flush( false );
     }
 
-    void setFailed()
+    /**
+     * Writes the given failure message to the failure storage.
+     *
+     * @param failure the failure message.
+     * @throws IOException
+     */
+    public void markAsFailed( String failure ) throws IOException
     {
-        state = InternalIndexState.FAILED;
-    }
-
-    public boolean isOnline()
-    {
-        return state == InternalIndexState.ONLINE;
+        indexStorage.storeIndexFailure( failure );
     }
 }

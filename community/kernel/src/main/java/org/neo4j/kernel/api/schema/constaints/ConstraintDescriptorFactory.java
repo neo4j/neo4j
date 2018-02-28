@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.schema.constaints;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -96,7 +96,7 @@ public class ConstraintDescriptorFactory
                 }
 
                 @Override
-                public ConstraintDescriptor computeSpecific( NonSchemaSchemaDescriptor schema )
+                public ConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
                 {
                     throw new IllegalStateException( "NonSchema schema rules cannot support constraints" );
                 }
@@ -122,7 +122,7 @@ public class ConstraintDescriptorFactory
                 }
 
                 @Override
-                public UniquenessConstraintDescriptor computeSpecific( NonSchemaSchemaDescriptor schema )
+                public UniquenessConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
                 {
                     throw new IllegalStateException( "NonSchema schema rules cannot support constraints" );
                 }
@@ -148,7 +148,7 @@ public class ConstraintDescriptorFactory
                 }
 
                 @Override
-                public NodeKeyConstraintDescriptor computeSpecific( NonSchemaSchemaDescriptor schema )
+                public NodeKeyConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
                 {
                     throw new IllegalStateException( "NonSchema schema rules cannot support constraints" );
                 }

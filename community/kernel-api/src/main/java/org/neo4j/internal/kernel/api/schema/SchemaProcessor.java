@@ -32,5 +32,5 @@ public interface SchemaProcessor
      */
     void processSpecific( LabelSchemaDescriptor schema );
     void processSpecific( RelationTypeSchemaDescriptor schema );
-    void processSpecific( NonSchemaSchemaDescriptor nonSchemaSchemaDescriptor );
+    void processSpecific( MultiTokenSchemaDescriptor multiTokenSchemaDescriptor );
 }

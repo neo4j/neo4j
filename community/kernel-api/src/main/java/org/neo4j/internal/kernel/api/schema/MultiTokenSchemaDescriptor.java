@@ -19,6 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
-public interface NonSchemaSchemaDescriptor extends SchemaDescriptor
+public interface MultiTokenSchemaDescriptor extends SchemaDescriptor
 {
 }

@@ -91,7 +91,7 @@ public class SchemaDescriptorPredicates
         }
 
         @Override
-        public Optional<Integer> computeSpecific( NonSchemaSchemaDescriptor schema )
+        public Optional<Integer> computeSpecific( MultiTokenSchemaDescriptor schema )
         {
             //TODO not implemented
             throw new UnsupportedOperationException( "Not implemented" );
@@ -114,7 +114,7 @@ public class SchemaDescriptorPredicates
         }
 
         @Override
-        public Optional<Integer> computeSpecific( NonSchemaSchemaDescriptor schema )
+        public Optional<Integer> computeSpecific( MultiTokenSchemaDescriptor schema )
         {
             //TODO not implemented
             throw new UnsupportedOperationException( "Not implemented" );

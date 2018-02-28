@@ -26,7 +26,7 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -268,7 +268,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
 
         @Override
-        public void processSpecific( NonSchemaSchemaDescriptor schema )
+        public void processSpecific( MultiTokenSchemaDescriptor schema )
         {
             if ( schema.entityType() == EntityType.NODE )
             {

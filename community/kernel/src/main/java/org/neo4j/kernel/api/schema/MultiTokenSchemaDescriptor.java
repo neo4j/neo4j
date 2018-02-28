@@ -34,13 +34,13 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import static java.util.Arrays.binarySearch;
 import static java.util.stream.Collectors.joining;
 
-public class NonSchemaSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor
+public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor
 {
     private final int[] entityTokens;
     private final EntityType entityType;
     private final int[] propertyIds;
 
-    public NonSchemaSchemaDescriptor( int[] entityTokens, EntityType entityType, int[] propertyIds )
+    public MultiTokenSchemaDescriptor( int[] entityTokens, EntityType entityType, int[] propertyIds )
     {
         this.entityTokens = entityTokens;
         Arrays.sort( this.entityTokens );
@@ -140,7 +140,7 @@ public class NonSchemaSchemaDescriptor implements org.neo4j.internal.kernel.api.
         {
             return false;
         }
-        NonSchemaSchemaDescriptor that = (NonSchemaSchemaDescriptor) o;
+        MultiTokenSchemaDescriptor that = (MultiTokenSchemaDescriptor) o;
         return Arrays.equals( entityTokens, that.entityTokens ) && entityType == that.entityType && Arrays.equals( propertyIds, that.propertyIds );
     }
 

@@ -21,5 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 public interface FulltextProvider extends AutoCloseable
 {
+    //TODO move this and remove the interface
     String FIELD_ENTITY_ID = "__lucene__fulltext__addon__internal__id__";
 }

@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
@@ -43,7 +44,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.NonSchemaSchemaDescriptor;
+import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -138,7 +139,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         {
             return InternalIndexState.FAILED;
         }
-        if ( descriptor.analyzer() != analyzerClassName )
+        if ( !descriptor.analyzer().equals( analyzerClassName ) )
         {
             return InternalIndexState.POPULATING;
         }
@@ -198,6 +199,10 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties )
     {
+        if ( Arrays.stream( properties ).anyMatch( prop -> prop.equals( FulltextProvider.FIELD_ENTITY_ID ) ) )
+        {
+            throw new BadSchemaException( "Unable to index the property " + FulltextProvider.FIELD_ENTITY_ID );
+        }
         int[] entityTokenIds;
         if ( type== EntityType.NODE )
         {
@@ -207,7 +212,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
             entityTokenIds = Arrays.stream( entityTokens ).mapToInt( relationshipTypeTokenHolder::getOrCreateId ).toArray();
         }
         int[] propertyIds = Arrays.stream(properties).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
-        return indexDescriptorFor( new NonSchemaSchemaDescriptor( entityTokenIds, type, propertyIds), name, analyzerClassName );
+        return indexDescriptorFor( new MultiTokenSchemaDescriptor( entityTokenIds, type, propertyIds ), name, analyzerClassName );
     }
 
     @Override
@@ -219,5 +224,13 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
             throw new IndexNotFoundKernelException( "The requested fulltext index could not be accessed. Perhaps population has not completed yet?" );
         }
         return fulltextIndexAccessor.query( queryString );
+    }
+
+    private class BadSchemaException extends IllegalArgumentException
+    {
+        public BadSchemaException( String message )
+        {
+            super(message);
+        }
     }
 }
