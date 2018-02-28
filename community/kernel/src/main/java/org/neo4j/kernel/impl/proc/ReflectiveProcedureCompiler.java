@@ -101,31 +101,31 @@ class ReflectiveProcedureCompiler
     {
         try
         {
-            List<Method> procedureMethods = Arrays.stream( fcnDefinition.getDeclaredMethods() )
+            List<Method> functionMethods = Arrays.stream( fcnDefinition.getDeclaredMethods() )
                     .filter( m -> m.isAnnotationPresent( UserFunction.class ) )
                     .collect( Collectors.toList() );
 
-            if ( procedureMethods.isEmpty() )
+            if ( functionMethods.isEmpty() )
             {
                 return emptyList();
             }
 
             MethodHandle constructor = constructor( fcnDefinition );
 
-            ArrayList<CallableUserFunction> out = new ArrayList<>( procedureMethods.size() );
-            for ( Method method : procedureMethods )
+            ArrayList<CallableUserFunction> out = new ArrayList<>( functionMethods.size() );
+            for ( Method method : functionMethods )
             {
                 String valueName = method.getAnnotation( UserFunction.class ).value();
                 String definedName = method.getAnnotation( UserFunction.class ).name();
-                QualifiedName procName = extractName( fcnDefinition, method, valueName, definedName );
-                if ( config.isWhitelisted( procName.toString() ) )
+                QualifiedName funcName = extractName( fcnDefinition, method, valueName, definedName );
+                if ( config.isWhitelisted( funcName.toString() ) )
                 {
-                    out.add( compileFunction( fcnDefinition, constructor, method,procName ) );
+                    out.add( compileFunction( fcnDefinition, constructor, method, funcName ) );
                 }
                 else
                 {
                     log.warn( String.format( "The function '%s' is not on the whitelist and won't be loaded.",
-                            procName.toString() ) );
+                            funcName.toString() ) );
                 }
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
