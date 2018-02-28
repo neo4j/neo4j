@@ -240,8 +240,6 @@ class ReflectiveProcedureCompiler
             Optional<String> warning, boolean fullAccess, QualifiedName procName  )
             throws ProcedureException, IllegalAccessException
     {
-        MethodHandle procedureMethod = lookup.unreflect( method );
-
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
 
@@ -284,7 +282,7 @@ class ReflectiveProcedureCompiler
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
                         config.rolesFor( procName.toString() ), description, warning );
-        return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
+        return new ReflectiveProcedure( signature, constructor, method, outputMapper, setters );
     }
 
     private Optional<String> describeAndLogLoadFailure( QualifiedName name )
@@ -555,10 +553,10 @@ class ReflectiveProcedureCompiler
         private final ProcedureSignature signature;
         private final OutputMapper outputMapper;
         private final MethodHandle constructor;
-        private final MethodHandle procedureMethod;
+        private final Method procedureMethod;
 
         ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
-                MethodHandle procedureMethod, OutputMapper outputMapper,
+                Method procedureMethod, OutputMapper outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
             super( fieldSetters );
@@ -596,9 +594,7 @@ class ReflectiveProcedureCompiler
                 inject( ctx, cls );
 
                 // Call the method
-                Object[] args = args( numberOfDeclaredArguments, cls, input );
-
-                Object rs = procedureMethod.invokeWithArguments( args );
+                Object rs = procedureMethod.invoke( cls, input );
 
                 // This also handles VOID
                 if ( rs == null )
@@ -702,10 +698,18 @@ class ReflectiveProcedureCompiler
 
         private ProcedureException newProcedureException( Throwable throwable )
         {
-            return throwable instanceof Status.HasStatus ?
-                   new ProcedureException( ((Status.HasStatus) throwable).status(), throwable, throwable.getMessage() ) :
-                   new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                           "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
+            if (throwable instanceof Status.HasStatus )
+            {
+                return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable, throwable.getMessage() );
+            }
+            else
+            {
+                Throwable cause = ExceptionUtils.getRootCause( throwable );
+                return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                        "Failed to invoke procedure `%s`: %s", signature.name(),
+                        "Caused by: " + (cause != null ? cause : throwable) );
+            }
+
         }
     }
 
