@@ -131,4 +131,15 @@ public abstract class FloatingPointValue extends NumberValue
     {
         return ValueMath.multiply( doubleValue(), b );
     }
+
+    public DoubleValue dividedBy( long b )
+    {
+        return Values.doubleValue( doubleValue() / b );
+    }
+
+    @Override
+    public DoubleValue dividedBy( double b )
+    {
+        return Values.doubleValue( doubleValue() / b );
+    }
 }

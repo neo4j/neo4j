@@ -143,6 +143,40 @@ public class NumberValueMathTest
     }
 
     @Test
+    public void shouldDivideSimpleIntegers()
+    {
+        NumberValue[] integers =
+                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
+
+        for ( NumberValue a : integers )
+        {
+            for ( NumberValue b : integers )
+            {
+                assertThat( a.divideBy( b ), equalTo( longValue( 1 ) ) );
+                assertThat( b.divideBy( a ), equalTo( longValue( 1 ) ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldDivideSimpleFloats()
+    {
+        NumberValue[] integers =
+                new NumberValue[]{byteValue( (byte) 42 ), shortValue( (short) 42 ), intValue( 42 ), longValue( 42 )};
+        NumberValue[] floats =
+                new NumberValue[]{floatValue( 42 ), doubleValue( 42 )};
+
+        for ( NumberValue a : integers )
+        {
+            for ( NumberValue b : floats )
+            {
+                assertThat( a.divideBy( b ), equalTo( doubleValue( 1.0 ) ) );
+                assertThat( b.divideBy( a ), equalTo( doubleValue( 1.0 ) ) );
+            }
+        }
+    }
+
+    @Test
     public void shouldFailOnOverflowingAdd()
     {
         //Expect

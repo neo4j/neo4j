@@ -23,7 +23,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 
 case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  def calc(a: NumberValue, b: NumberValue): AnyValue = multiply(a, b)
+  def calc(a: NumberValue, b: NumberValue): AnyValue = a.times(b)
 
   def rewrite(f: (Expression) => Expression) = f(Multiply(a.rewrite(f), b.rewrite(f)))
 

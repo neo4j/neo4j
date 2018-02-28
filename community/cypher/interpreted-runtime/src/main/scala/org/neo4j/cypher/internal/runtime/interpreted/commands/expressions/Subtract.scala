@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.values.storable.NumberValue
 
 case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  def calc(a: NumberValue, b: NumberValue) = minus(a, b)
+  def calc(a: NumberValue, b: NumberValue) = a.minus(b)
 
   def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
 

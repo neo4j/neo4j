@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{AstNode, TypeSafeMathSupport}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 
@@ -89,8 +89,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }
 
-abstract class Arithmetics(left: Expression, right: Expression)
-  extends Expression with TypeSafeMathSupport {
+abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
   def throwTypeError(bVal: Any, aVal: Any): Nothing = {
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
