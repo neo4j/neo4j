@@ -86,6 +86,7 @@ Feature: TemporalArithmeticAcceptance
       | '1997-03-26T04:44:24.000000003' | '1972-04-26T20:18:03.999999999' |
       | '1984-10-29T04:20:24.000000001' | '1984-09-24T20:42:04.000000001' |
       | '1997-10-11T22:29:27.500000004' | '1971-10-12T02:33:00.499999998' |
+    And no side effects
 
   Scenario: Should add or subtract duration to or from date time
     Given an empty graph
@@ -102,6 +103,7 @@ Feature: TemporalArithmeticAcceptance
       | '1997-03-26T04:44:24.000000003+01:00' | '1972-04-26T20:18:03.999999999+01:00' |
       | '1984-10-29T04:20:24.000000001+01:00' | '1984-09-24T20:42:04.000000001+01:00' |
       | '1997-10-11T22:29:27.500000004+01:00' | '1971-10-12T02:33:00.499999998+01:00' |
+    And no side effects
 
   Scenario: Should add or subtract durations
     Given an empty graph
@@ -125,6 +127,7 @@ Feature: TemporalArithmeticAcceptance
       | 'P25Y4M43DT50H11M23.500000004S'  | 'P6M15DT17H45M3.500000002S'          |
       | 'P13Y15DT49H47M23.500000003S'    | 'P12Y10M43DT18H9M3.500000003S'       |
       | 'P25Y10M58DT67H56M27.000000006S' | 'PT0S'                               |
+    And no side effects
 
   Scenario: Should multiply or divide durations by numbers
     Given an empty graph
@@ -139,3 +142,4 @@ Feature: TemporalArithmeticAcceptance
       | 'P12Y5M14DT16H13M10.000000001S'  | 'P12Y5M14DT16H13M10.000000001S'  |
       | 'P24Y10M28DT32H26M20.000000002S' | 'P6Y2M22DT13H21M8S'              |
       | 'P6Y2M22DT13H21M8S'              | 'P24Y10M28DT32H26M20.000000002S' |
+    And no side effects
