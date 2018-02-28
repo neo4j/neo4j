@@ -79,8 +79,6 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
     {
         Config getConfig();
 
-        GraphDatabaseService db();
-
         FileSystemAbstraction fileSystem();
 
         PropertyKeyTokenHolder propertyKeyTokenHolder();

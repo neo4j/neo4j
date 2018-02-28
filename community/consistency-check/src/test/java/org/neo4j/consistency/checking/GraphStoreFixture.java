@@ -53,6 +53,13 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
+import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -215,8 +222,12 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Config config, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
+        ReadOnlyTokenCreator tokenCreator = new ReadOnlyTokenCreator();
+        PropertyKeyTokenHolder propkeyTokenHolder = life.add( new DelegatingPropertyKeyTokenHolder( tokenCreator ) );
+        LabelTokenHolder labelTokenHolder = life.add( new DelegatingLabelTokenHolder( tokenCreator ) );
+        RelationshipTypeTokenHolder relationshipTypeTokenHolder = life.add( new DelegatingRelationshipTypeTokenHolder( tokenCreator ) );
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
-                pageCache, RECOVERY_PREVENTING_COLLECTOR, DatabaseInfo.COMMUNITY, monitors ) );
+                pageCache, RECOVERY_PREVENTING_COLLECTOR, DatabaseInfo.COMMUNITY, monitors, propkeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder ) );
         return loadSchemaIndexProviders( extensions );
     }
 

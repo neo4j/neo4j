@@ -42,8 +42,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.tools.dump.log.TransactionLogEntryCursor;
 
+import static org.neo4j.kernel.api.index.IndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.tools.util.TransactionLogUtils.openVersionedChannel;
@@ -148,8 +150,9 @@ public class TransactionLogAnalyzer
         }
 
         channel = new ReadAheadLogChannel( openVersionedChannel( fileSystem, firstFile ), bridge );
-        entryReader =
-                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
+        //TODO put the proper index provider map here.
+        entryReader = new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory( new DefaultIndexProviderMap( NO_INDEX_PROVIDER ) ),
+                invalidLogEntryHandler );
         positionMarker = new LogPositionMarker();
         try ( TransactionLogEntryCursor cursor = new TransactionLogEntryCursor( new LogEntryCursor( entryReader, channel ) ) )
         {

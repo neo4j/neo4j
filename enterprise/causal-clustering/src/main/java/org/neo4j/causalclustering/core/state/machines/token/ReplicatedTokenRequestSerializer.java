@@ -31,6 +31,7 @@ import java.util.List;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
@@ -120,8 +121,9 @@ public class ReplicatedTokenRequestSerializer
         ByteBuf txBuffer = Unpooled.wrappedBuffer( commandBytes );
         NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
 
+        //TODO empty index provider map
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), InvalidLogEntryHandler.STRICT );
 
         LogEntryCommand entryRead;
         List<StorageCommand> commands = new LinkedList<>();

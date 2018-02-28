@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -248,7 +249,7 @@ public class UniquenessConstraintCreationIT
         commit();
 
         // then
-        SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore() );
+        SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore(), IndexProviderMap.EMPTY );
         IndexRule indexRule = schema.indexGetForSchema( SchemaIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         ConstraintRule constraintRule = schema.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );

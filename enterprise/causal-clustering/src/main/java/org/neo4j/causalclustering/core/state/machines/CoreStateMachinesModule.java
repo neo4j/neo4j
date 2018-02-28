@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.Replicator;
+import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
 import org.neo4j.causalclustering.core.state.machines.id.IdReusabilityCondition;
@@ -39,7 +40,6 @@ import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdRangeAcquir
 import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
-import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedLabelTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedRelationshipTypeTokenHolder;
@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
@@ -175,8 +176,8 @@ public class CoreStateMachinesModule
 
         PageCursorTracerSupplier cursorTracerSupplier = platformModule.tracers.pageCursorTracerSupplier;
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
-                new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine,
-                        config.get( state_machine_apply_max_batch_size ), logProvider, cursorTracerSupplier );
+                new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine, config.get( state_machine_apply_max_batch_size ),
+                        logProvider, cursorTracerSupplier, dependencies.provideDependency( RecordStorageEngine.class ).get().commandReaderFactory() );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 

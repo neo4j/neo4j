@@ -30,7 +30,6 @@ import java.util.List;
 import org.neo4j.causalclustering.messaging.MessageTooBigException;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.io.ByteUnit.gibiBytes;
@@ -82,14 +82,15 @@ public class ReplicatedTransactionFactory
         return new ReplicatedTransaction( txBytes );
     }
 
-    public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction transactionCommand, byte[] extraHeader )
+    public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction transactionCommand, byte[] extraHeader,
+            CommandReaderFactory commandReaderFactory )
     {
         ByteBuf txBuffer = Unpooled.wrappedBuffer( transactionCommand.getTxBytes() );
         NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
 
         try
         {
-            return read( channel, extraHeader );
+            return read( channel, extraHeader, commandReaderFactory );
         }
         catch ( IOException e )
         {
@@ -126,10 +127,10 @@ public class ReplicatedTransactionFactory
         }
     }
 
-    public static TransactionRepresentation read( NetworkReadableClosableChannelNetty4 channel, byte[] extraHeader ) throws IOException
+    public static TransactionRepresentation read( NetworkReadableClosableChannelNetty4 channel, byte[] extraHeader, CommandReaderFactory commandReaderFactory )
+            throws IOException
     {
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>( commandReaderFactory, InvalidLogEntryHandler.STRICT );
 
         int authorId = channel.getInt();
         int masterId = channel.getInt();

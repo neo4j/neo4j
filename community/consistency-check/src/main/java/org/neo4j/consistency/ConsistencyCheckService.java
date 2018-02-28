@@ -25,8 +25,8 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.AccessStatistics;
@@ -49,6 +49,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -228,16 +235,21 @@ public class ConsistencyCheckService
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
+        ReadOnlyTokenCreator tokenCreator = new ReadOnlyTokenCreator();
+        PropertyKeyTokenHolder propkeyTokenHolder = life.add( new DelegatingPropertyKeyTokenHolder( tokenCreator ) );
+        LabelTokenHolder labelTokenHolder = life.add( new DelegatingLabelTokenHolder( tokenCreator ) );
+        RelationshipTypeTokenHolder relationshipTypeTokenHolder = life.add( new DelegatingRelationshipTypeTokenHolder( tokenCreator ) );
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
                 RECOVERY_PREVENTING_COLLECTOR,
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
                 COMMUNITY,
-                monitors ) );
+                monitors, propkeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder ) );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             life.start();
+            propkeyTokenHolder.setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
 
             IndexProviderMap indexes = loadSchemaIndexProviders( extensions );
 

@@ -32,6 +32,8 @@ import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
@@ -78,7 +80,8 @@ public class ReplayRaftLog
                 if ( content instanceof ReplicatedTransaction )
                 {
                     ReplicatedTransaction tx = (ReplicatedTransaction) content;
-                    ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0] ).accept( element ->
+                    ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0],
+                            new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) ).accept( element ->
                     {
                         System.out.println( element );
                         return false;

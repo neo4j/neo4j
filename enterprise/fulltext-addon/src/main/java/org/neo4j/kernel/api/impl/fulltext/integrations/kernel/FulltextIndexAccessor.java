@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
+import org.apache.lucene.document.Document;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
@@ -38,6 +41,8 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
+
+import static java.util.Collections.emptyIterator;
 
 public class FulltextIndexAccessor implements IndexAccessor
 {
@@ -95,7 +100,27 @@ public class FulltextIndexAccessor implements IndexAccessor
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        return new LuceneAllEntriesIndexAccessorReader( luceneFulltext.allDocumentsReader() );
+        //TODO support consistency check at some point
+        BoundedIterable<Document> empty = new BoundedIterable<Document>()
+        {
+            @Override
+            public long maxCount()
+            {
+                return 0;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+
+            @Override
+            public Iterator<Document> iterator()
+            {
+                return emptyIterator();
+            }
+        };
+        return new LuceneAllEntriesIndexAccessorReader( empty );
     }
 
     @Override

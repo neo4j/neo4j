@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.lang.String.format;
@@ -52,17 +53,17 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
 
     private TransactionQueue queue;
     private long lastCommittedIndex = -1;
+    private CommandReaderFactory commandReaderFactory;
 
-    public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker,
-                                              ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize,
-                                              LogProvider logProvider,
-                                              PageCursorTracerSupplier pageCursorTracerSupplier )
+    public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker, ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize,
+            LogProvider logProvider, PageCursorTracerSupplier pageCursorTracerSupplier, CommandReaderFactory commandReaderFactory )
     {
         this.commandIndexTracker = commandIndexTracker;
         this.lockTokenStateMachine = lockStateMachine;
         this.maxBatchSize = maxBatchSize;
         this.log = logProvider.getLog( getClass() );
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.commandReaderFactory = commandReaderFactory;
     }
 
     public synchronized void installCommitProcess( TransactionCommitProcess commitProcess, long lastCommittedIndex )
@@ -88,7 +89,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
         TransactionRepresentation tx;
 
         byte[] extraHeader = encodeLogIndexAsTxHeader( commandIndex );
-        tx = ReplicatedTransactionFactory.extractTransactionRepresentation( replicatedTx, extraHeader );
+        tx = ReplicatedTransactionFactory.extractTransactionRepresentation( replicatedTx, extraHeader, commandReaderFactory );
 
         int currentTokenId = lockTokenStateMachine.currentToken().id();
         int txLockSessionId = tx.getLockSessionId();

@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -493,6 +494,12 @@ public class SchemaIndexHaIT
     {
         private final IndexProvider delegate;
         private final DoubleLatch latch = new DoubleLatch();
+
+        @Override
+        public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+        {
+            return delegate.indexDescriptorFor( schema, name, metadata );
+        }
 
         ControlledIndexProvider( IndexProvider delegate )
         {
