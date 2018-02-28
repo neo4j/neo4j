@@ -19,10 +19,11 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.invoke.MethodHandle;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
@@ -30,6 +31,8 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
@@ -41,7 +44,9 @@ import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
+import static java.time.Instant.ofEpochMilli;
 import static java.time.Instant.ofEpochSecond;
+import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
@@ -50,7 +55,6 @@ import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalDateTimeValue.optTime;
 import static org.neo4j.values.storable.TimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.TimeValue.parseOffset;
-import static org.neo4j.values.storable.TimeValue.validNano;
 
 public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeValue>
 {
@@ -97,6 +101,21 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return new DateTimeValue( ofInstant( ofEpochSecond( epochSecondUTC, nano ), zone ) );
     }
 
+    public static DateTimeValue ofEpoch( IntegralValue epochSecondUTC, IntegralValue nano )
+    {
+        long ns = safeCastIntegral( "nanosecond", nano, 0 );
+        if ( ns < 0 || ns >=  1000_000_000 )
+        {
+            throw new IllegalArgumentException( "Invalid nanosecond: " + ns );
+        }
+        return new DateTimeValue( ofInstant( ofEpochSecond( epochSecondUTC.longValue(), ns ), UTC ) );
+    }
+
+    public static DateTimeValue ofEpochMillis( IntegralValue millisUTC )
+    {
+        return new DateTimeValue( ofInstant( ofEpochMilli( millisUTC.longValue() ), UTC ) );
+    }
+
     public static DateTimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
     {
         return parse( DateTimeValue.class, PATTERN, DateTimeValue::parse, text, defaultZone );
@@ -122,6 +141,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return StructureBuilder.build( builder( defaultZone ), map );
     }
 
+    public static DateTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return builder( defaultZone ).selectDateTime( from );
+    }
+
     public static DateTimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -131,188 +155,148 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static StructureBuilder<AnyValue,DateTimeValue> builder( Supplier<ZoneId> defaultZone )
+    static DateTimeBuilder<DateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new DateTimeBuilder<AnyValue,DateTimeValue>()
+        return new DateTimeBuilder<DateTimeValue>( defaultZone )
         {
             @Override
-            protected ZoneId timezone( AnyValue timezone )
+            protected boolean supportsTimeZone()
             {
-                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
+                return true;
             }
 
             @Override
-            protected DateTimeValue selectDateTime( AnyValue temporal )
+            protected boolean supportsEpoch()
             {
-                if ( temporal instanceof DateTimeValue )
+                return true;
+            }
+
+            private final ZonedDateTime defaulZonedDateTime =
+                    ZonedDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
+                            Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue, timezone() );
+
+            @Override
+            public DateTimeValue buildInternal()
+            {
+                boolean selectingDate = fields.containsKey( Field.date );
+                boolean selectingTime = fields.containsKey( Field.time );
+                boolean selectingDateTime = fields.containsKey( Field.datetime );
+                boolean selectingEpoch = fields.containsKey( Field.epoch );
+                boolean selectingTimeZone;
+                ZonedDateTime result;
+                if ( selectingDateTime )
                 {
-                    DateTimeValue value = (DateTimeValue) temporal;
+                    AnyValue dtField = fields.get( Field.datetime );
+                    if ( !(dtField instanceof TemporalValue) )
+                    {
+                        throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", dtField ) );
+                    }
+                    TemporalValue dt = (TemporalValue) dtField;
+                    LocalTime timePart = dt.getTimePart( defaultZone ).toLocalTime();
+                    ZoneId zoneId = dt.getZoneId( defaultZone );
+                    result = ZonedDateTime.of( dt.getDatePart(), timePart, zoneId );
+                    selectingTimeZone = dt.hasTimeZone();
+                }
+                else if ( selectingEpoch )
+                {
+                    AnyValue epochField = fields.get( Field.epoch );
+                    if ( !(epochField instanceof IntegralValue) )
+                    {
+                        throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", epochField ) );
+                    }
+                    IntegralValue epoch = (IntegralValue) epochField;
+                    result = ZonedDateTime.ofInstant( Instant.ofEpochMilli( epoch.longValue() ), timezone() );
+                    selectingTimeZone = false;
+                }
+                else if ( selectingTime || selectingDate )
+                {
+
+                    LocalTime time;
+                    ZoneId zoneId;
+                    if ( selectingTime )
+                    {
+                        AnyValue timeField = fields.get( Field.time );
+                        if ( !(timeField instanceof TemporalValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
+                        }
+                        TemporalValue t = (TemporalValue) timeField;
+                        time = t.getTimePart( defaultZone ).toLocalTime();
+                        zoneId = t.getZoneId( defaultZone );
+                        selectingTimeZone = t.hasTimeZone();
+                    }
+                    else
+                    {
+                        time = LocalTimeValue.DEFAULT_LOCAL_TIME;
+                        zoneId = timezone();
+                        selectingTimeZone = false;
+                    }
+                    LocalDate date;
+                    if ( selectingDate )
+                    {
+                        AnyValue dateField = fields.get( Field.date );
+                        if ( !(dateField instanceof TemporalValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
+                        }
+                        TemporalValue t = (TemporalValue) dateField;
+                        date = t.getDatePart();
+                    }
+                    else
+                    {
+                        date = DateValue.DEFAULT_CALENDER_DATE;
+                    }
+                    result = ZonedDateTime.of( date, time, zoneId );
+                }
+                else
+                {
+                    result = defaulZonedDateTime;
+                    selectingTimeZone = false;
+                }
+
+                if ( fields.containsKey( Field.week ) && !selectingDate && !selectingDateTime && !selectingEpoch )
+                {
+                    // Be sure to be in the start of the week based year (which can be later than 1st Jan)
+                    result = result
+                            .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( Field.year.name(), fields.get( Field.year ),
+                                    Field.year.defaultValue ) )
+                            .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
+                            .with( ChronoField.DAY_OF_WEEK, 1 );
+                }
+
+                result = assignAllFields( result );
+                if ( timezone != null )
+                {
+                    if ( ((selectingTime || selectingDateTime) && selectingTimeZone) || selectingEpoch )
+                    {
+                        result = result.withZoneSameInstant( timezone() );
+                    }
+                    else
+                    {
+                        result = result.withZoneSameLocal( timezone() );
+                    }
+                }
+                return datetime( result );
+            }
+
+            @Override
+            protected DateTimeValue selectDateTime( AnyValue datetime )
+            {
+                if ( datetime instanceof DateTimeValue )
+                {
+                    DateTimeValue value = (DateTimeValue) datetime;
                     ZoneId zone = optionalTimezone();
                     return zone == null ? value : new DateTimeValue(
                             ZonedDateTime.of( value.temporal().toLocalDateTime(), zone ) );
                 }
-                if ( temporal instanceof LocalDateTimeValue )
+                if ( datetime instanceof LocalDateTimeValue )
                 {
                     return new DateTimeValue( ZonedDateTime.of(
-                            ((LocalDateTimeValue) temporal).temporal(), timezone() ) );
+                            ((LocalDateTimeValue) datetime).temporal(), timezone() ) );
                 }
-                throw new IllegalArgumentException( "Cannot select datetime from: " + temporal );
-            }
-
-            @Override
-            protected DateTimeValue selectDateAndTime( AnyValue date, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue selectDateWithConstructedTime(
-                    AnyValue date,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue selectDate( AnyValue temporal )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructYear( AnyValue year )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructCalendarDateWithSelectedTime(
-                    AnyValue year, AnyValue month, AnyValue day, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructCalendarDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue month,
-                    AnyValue day,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                return datetime(
-                        (int) safeCastIntegral( "year", year, 0 ),
-                        (int) safeCastIntegral( "month", month, 1 ),
-                        (int) safeCastIntegral( "day", day, 1 ),
-                        (int) safeCastIntegral( "hour", hour, 0 ),
-                        (int) safeCastIntegral( "minute", minute, 0 ),
-                        (int) safeCastIntegral( "second", second, 0 ),
-                        validNano( millisecond, microsecond, nanosecond ),
-                        timezone() );
-            }
-
-            @Override
-            protected DateTimeValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructWeekDateWithSelectedTime(
-                    AnyValue year, AnyValue week, AnyValue dayOfWeek, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructWeekDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue week,
-                    AnyValue dayOfWeek,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructQuarterDate( AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructQuarterDateWithSelectedTime(
-                    AnyValue year, AnyValue quarter, AnyValue dayOfQuarter, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructQuarterDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue quarter,
-                    AnyValue dayOfQuarter,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructOrdinalDateWithSelectedTime(
-                    AnyValue year, AnyValue ordinalDay, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateTimeValue constructOrdinalDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue ordinalDay,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
+                throw new IllegalArgumentException( "Cannot select datetime from: " + datetime );
             }
         };
-    }
-
-    public abstract static class Compiler<Input> extends DateTimeBuilder<Input,MethodHandle>
-    {
     }
 
     private final ZonedDateTime value;
@@ -326,6 +310,38 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     ZonedDateTime temporal()
     {
         return value;
+    }
+
+    @Override
+    LocalDate getDatePart()
+    {
+        return value.toLocalDate();
+    }
+
+    @Override
+    LocalTime getLocalTimePart()
+    {
+        return value.toLocalTime();
+    }
+
+    @Override
+    OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
+    {
+        ZoneOffset offset = value.getOffset();
+        LocalTime localTime = value.toLocalTime();
+        return OffsetTime.of( localTime, offset );
+    }
+
+    @Override
+    ZoneId getZoneId( Supplier<ZoneId> defaultZone )
+    {
+        return value.getZone();
+    }
+
+    @Override
+    public boolean hasTimeZone()
+    {
+        return true;
     }
 
     @Override
@@ -404,7 +420,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return value == datetime ? this : new DateTimeValue( datetime );
     }
 
-    private static final String ZONE_NAME = "(?<zoneName>[a-zA-Z0-9_ /+-]+)";
+    private static final String ZONE_NAME = "(?<zoneName>[a-zA-Z0-9~._ /+-]+)";
     private static final Pattern PATTERN = Pattern.compile(
             DATE_PATTERN + "(?<time>T" + TIME_PATTERN + "(?:\\[" + ZONE_NAME + "\\])?" + ")?",
             Pattern.CASE_INSENSITIVE );
@@ -447,8 +463,13 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return ZONE_NAME_PARSER.parse( zoneName.replace( ' ', '_' ) ).query( TemporalQueries.zoneId() );
     }
 
-    abstract static class DateTimeBuilder<Input, Result> extends Builder<Input,Result>
+    abstract static class DateTimeBuilder<Result> extends Builder<Result>
     {
+        DateTimeBuilder( Supplier<ZoneId> defaultZone )
+        {
+            super( defaultZone );
+        }
+
         @Override
         protected final boolean supportsDate()
         {
@@ -461,17 +482,6 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             return true;
         }
 
-        @Override
-        protected final Result selectTime( Input temporal )
-        {
-            throw new IllegalStateException( "Cannot select time without date for datetime." );
-        }
-
-        @Override
-        protected final Result constructTime(
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            throw new IllegalStateException( "Cannot construct time without date for datetime." );
-        }
+        protected abstract Result selectDateTime( AnyValue date );
     }
 }

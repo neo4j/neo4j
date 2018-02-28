@@ -60,6 +60,12 @@ class DateFunction extends TemporalFunction<DateValue>
     }
 
     @Override
+    protected DateValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return DateValue.select( from, defaultZone );
+    }
+
+    @Override
     protected DateValue positionalCreate( AnyValue[] input )
     {
         if ( input.length != 3 )

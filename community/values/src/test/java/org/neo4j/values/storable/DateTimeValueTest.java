@@ -81,7 +81,7 @@ public class DateTimeValueTest
     }
 
     @Ignore
-    public void shouldSupportLeadSeconds()
+    public void shouldSupportLeapSeconds()
     {
         // Leap second according to https://www.timeanddate.com/time/leap-seconds-future.html
         assertEquals( datetime( 2016, 12, 31, 23, 59, 60, 0, UTC ), parse( "2016-12-31T23:59:60Z", orFail ) );
@@ -318,14 +318,6 @@ public class DateTimeValueTest
                 .add( "month", 12 )
                 .add( "dayOfWeek", 5 )
                 .assertThrows( IllegalArgumentException.class, "Cannot assign dayOfWeek to calendar date." );
-        asserting( fromValues( builder( clock ) ) )
-                .add( "datetime", localDateTime( LocalDateTime.now( clock ) ) )
-                .add( "day", 12 )
-                .assertThrows( IllegalArgumentException.class, "Cannot assign day when selecting datetime." );
-        asserting( fromValues( builder( clock ) ) )
-                .add( "datetime", localDateTime( LocalDateTime.now( clock ) ) )
-                .add( "hour", 12 )
-                .assertThrows( IllegalArgumentException.class, "Cannot assign hour when selecting datetime." );
         asserting( fromValues( builder( clock ) ) )
                 .add( "year", 2018 )
                 .add( "week", 12 )

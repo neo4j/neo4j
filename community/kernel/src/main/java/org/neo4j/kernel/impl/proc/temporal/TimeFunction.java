@@ -60,6 +60,12 @@ class TimeFunction extends TemporalFunction<TimeValue>
     }
 
     @Override
+    protected TimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return TimeValue.select( from, defaultZone );
+    }
+
+    @Override
     protected TimeValue positionalCreate( AnyValue[] input )
     {
         if ( input.length != 5 )

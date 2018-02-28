@@ -60,6 +60,12 @@ class LocalDateTimeFunction extends TemporalFunction<LocalDateTimeValue>
     }
 
     @Override
+    protected LocalDateTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return LocalDateTimeValue.select( from, defaultZone );
+    }
+
+    @Override
     protected LocalDateTimeValue positionalCreate( AnyValue[] input )
     {
         if ( input.length != 7 )

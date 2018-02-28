@@ -19,10 +19,14 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.invoke.MethodHandle;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalUnit;
@@ -87,6 +91,11 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         return StructureBuilder.build( builder( defaultZone ), map );
     }
 
+    public static LocalTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return builder( defaultZone ).selectTime( from );
+    }
+
     public static LocalTimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -96,38 +105,54 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static StructureBuilder<AnyValue,LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
+    static final LocalTime DEFAULT_LOCAL_TIME = LocalTime.of( Field.hour.defaultValue, Field.minute.defaultValue );
+
+    static TimeValue.TimeBuilder<LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new TimeValue.TimeBuilder<AnyValue,LocalTimeValue>()
+        return new TimeValue.TimeBuilder<LocalTimeValue>( defaultZone )
         {
             @Override
-            protected ZoneId timezone( AnyValue timezone )
+            protected boolean supportsTimeZone()
             {
-                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
+                return false;
             }
 
             @Override
-            protected LocalTimeValue selectTime( AnyValue temporal )
+            public LocalTimeValue buildInternal()
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                LocalTime result;
+                if ( fields.containsKey( Field.time ) )
+                {
+                    AnyValue time = fields.get( Field.time );
+                    if ( !(time instanceof TemporalValue) )
+                    {
+                        throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                    }
+                    result = ((TemporalValue) time).getLocalTimePart();
+                }
+                else
+                {
+                    result = DEFAULT_LOCAL_TIME;
+                }
+
+                result = assignAllFields( result );
+                return localTime( result );
             }
 
             @Override
-            protected LocalTimeValue constructTime(
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
+            protected LocalTimeValue selectTime(
+                    AnyValue time )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+
+                if ( !(time instanceof TemporalValue) )
+                {
+                    throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                }
+                TemporalValue v = (TemporalValue) time;
+                LocalTime lt = v.getLocalTimePart();
+                return localTime( lt );
             }
         };
-    }
-
-    public abstract static class Compiler<Input> extends TimeValue.TimeBuilder<Input,MethodHandle>
-    {
     }
 
     private final LocalTime value;
@@ -148,6 +173,37 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     LocalTime temporal()
     {
         return value;
+    }
+
+    @Override
+    LocalDate getDatePart()
+    {
+        throw new IllegalArgumentException( String.format( "Cannot get the date of: %s", this ) );
+    }
+
+    @Override
+    LocalTime getLocalTimePart()
+    {
+        return value;
+    }
+
+    @Override
+    OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
+    {
+        ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), defaultZone.get() ).getOffset();
+        return OffsetTime.of( value, currentOffset );
+    }
+
+    @Override
+    ZoneId getZoneId( Supplier<ZoneId> defaultZone )
+    {
+        return defaultZone.get();
+    }
+
+    @Override
+    public boolean hasTimeZone()
+    {
+        return false;
     }
 
     @Override
@@ -205,9 +261,9 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     static final String TIME_PATTERN = "(?:(?:(?<longHour>[0-9]{1,2})(?::(?<longMinute>[0-9]{1,2})"
-            + "(?::(?<longSecond>[0-9]{1,2})(?:.(?<longFraction>[0-9]{1,9}))?)?)?)|"
+            + "(?::(?<longSecond>[0-9]{1,2})(?:\\.(?<longFraction>[0-9]{1,9}))?)?)?)|"
             + "(?:(?<shortHour>[0-9]{2})(?:(?<shortMinute>[0-9]{2})"
-            + "(?:(?<shortSecond>[0-9]{2})(?:.(?<shortFraction>[0-9]{1,9}))?)?)?))";
+            + "(?:(?<shortSecond>[0-9]{2})(?:\\.(?<shortFraction>[0-9]{1,9}))?)?)?))";
     private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );
 
     private static LocalTimeValue parse( Matcher matcher )

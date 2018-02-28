@@ -19,10 +19,11 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.invoke.MethodHandle;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
@@ -32,7 +33,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
@@ -41,6 +41,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 
 public final class DateValue extends TemporalValue<LocalDate,DateValue>
 {
@@ -99,6 +100,11 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         return StructureBuilder.build( builder( defaultZone ), map );
     }
 
+    public static DateValue select( org.neo4j.values.AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return builder( defaultZone ).selectDate( from );
+    }
+
     public static DateValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -108,56 +114,9 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static StructureBuilder<AnyValue,DateValue> builder( Supplier<ZoneId> defaultZone )
+    static DateBuilder builder( Supplier<ZoneId> defaultZone )
     {
-        return new DateBuilder<AnyValue,DateValue>()
-        {
-            @Override
-            protected ZoneId timezone( AnyValue timezone )
-            {
-                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
-            }
-
-            @Override
-            protected DateValue selectDate( AnyValue temporal )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateValue constructYear( AnyValue year )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateValue constructQuarterDate( AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected DateValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-        };
-    }
-
-    public abstract static class Compiler<Input> extends DateBuilder<Input,MethodHandle>
-    {
+        return new DateBuilder( defaultZone );
     }
 
     private final LocalDate value;
@@ -178,6 +137,36 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     LocalDate temporal()
     {
         return value;
+    }
+
+    @Override
+    LocalDate getDatePart()
+    {
+        return value;
+    }
+
+    @Override
+    LocalTime getLocalTimePart()
+    {
+        throw new IllegalArgumentException( String.format( "Cannot get the time of: %s", this ) );
+    }
+
+    @Override
+    OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
+    {
+        throw new IllegalArgumentException( String.format( "Cannot get the time of: %s", this ) );
+    }
+
+    @Override
+    ZoneId getZoneId( Supplier<ZoneId> defaultZone )
+    {
+        throw new IllegalArgumentException( String.format( "Cannot get the time zone of: %s", this ) );
+    }
+
+    @Override
+    public boolean hasTimeZone()
+    {
+        return false;
     }
 
     @Override
@@ -400,8 +389,27 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
                 .with( IsoFields.DAY_OF_QUARTER, dayOfQuarter );
     }
 
-    private abstract static class DateBuilder<Input, Result> extends Builder<Input,Result>
+    static final LocalDate DEFAULT_CALENDER_DATE = LocalDate.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue );
+
+    private static class DateBuilder extends Builder<DateValue>
     {
+        @Override
+        protected boolean supportsTimeZone()
+        {
+            return false;
+        }
+
+        @Override
+        protected boolean supportsEpoch()
+        {
+            return false;
+        }
+
+        DateBuilder( Supplier<ZoneId> defaultZone )
+        {
+            super( defaultZone );
+        }
+
         @Override
         protected final boolean supportsDate()
         {
@@ -414,129 +422,48 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             return false;
         }
 
-        @Override
-        protected final Result selectDateTime( Input temporal )
+        private LocalDate getDateOf( org.neo4j.values.AnyValue temporal )
         {
-            throw new IllegalStateException( "time not supported" );
+            if ( temporal instanceof TemporalValue )
+            {
+                TemporalValue v = (TemporalValue) temporal;
+                return v.getDatePart();
+            }
+            throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
         }
 
         @Override
-        protected final Result selectDateAndTime( Input date, Input time )
+        public DateValue buildInternal()
         {
-            throw new IllegalStateException( "time not supported" );
+            LocalDate result;
+            if ( fields.containsKey( Field.date ) )
+            {
+                result = getDateOf( fields.get( Field.date ) );
+            }
+            else if ( fields.containsKey( Field.week ) )
+            {
+                // Be sure to be in the start of the week based year (which can be later than 1st Jan)
+                result = DEFAULT_CALENDER_DATE
+                        .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( Field.year.name(), fields.get( Field.year ),
+                                Field.year.defaultValue ) )
+                        .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
+                        .with( ChronoField.DAY_OF_WEEK, 1 );
+            }
+            else
+            {
+                result = DEFAULT_CALENDER_DATE;
+            }
+            result = assignAllFields( result );
+            return date( result );
         }
 
-        @Override
-        protected final Result selectDateWithConstructedTime(
-                Input date,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
+        DateValue selectDate( org.neo4j.values.AnyValue date )
         {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result selectTime( Input temporal )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructCalendarDateWithSelectedTime( Input year, Input month, Input day, Input time )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructCalendarDateWithConstructedTime(
-                Input year,
-                Input month,
-                Input day,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructWeekDateWithSelectedTime( Input year, Input week, Input dayOfWeek, Input time )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructWeekDateWithConstructedTime(
-                Input year,
-                Input week,
-                Input dayOfWeek,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructQuarterDateWithSelectedTime(
-                Input year,
-                Input quarter,
-                Input dayOfQuarter,
-                Input time )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructQuarterDateWithConstructedTime(
-                Input year,
-                Input quarter,
-                Input dayOfQuarter,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructOrdinalDateWithSelectedTime( Input year, Input ordinalDay, Input time )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructOrdinalDateWithConstructedTime(
-                Input year,
-                Input ordinalDay,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "time not supported" );
-        }
-
-        @Override
-        protected final Result constructTime(
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            throw new IllegalStateException( "time not supported" );
+            if ( date instanceof DateValue )
+            {
+                return (DateValue) date;
+            }
+            return date( getDateOf( date ) );
         }
     }
 }

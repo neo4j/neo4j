@@ -19,6 +19,9 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
@@ -30,6 +33,7 @@ import java.time.temporal.TemporalField;
 import java.time.temporal.TemporalQuery;
 import java.time.temporal.TemporalUnit;
 import java.time.temporal.ValueRange;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -38,10 +42,12 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 
 public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<T,V>>
@@ -61,6 +67,16 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     public abstract TemporalValue sub( DurationValue duration );
 
     abstract T temporal();
+
+    abstract LocalDate getDatePart();
+
+    abstract LocalTime getLocalTimePart();
+
+    abstract OffsetTime getTimePart( Supplier<ZoneId> defaultZone );
+
+    abstract ZoneId getZoneId( Supplier<ZoneId> defaultZone );
+
+    abstract boolean hasTimeZone();
 
     abstract V replacement( T temporal );
 
@@ -260,10 +276,18 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return name.substring( 0, name.length() - /*"Value" is*/5/*characters*/ );
     }
 
-    abstract static class Builder<Input, Result> implements StructureBuilder<Input,Result>
+    abstract static class Builder<Result> implements StructureBuilder<AnyValue,Result>
     {
-        private BuilderState<Input> state;
-        private Input timezone;
+        private final Supplier<ZoneId> defaultZone;
+        private DateTimeBuilder state;
+        protected AnyValue timezone;
+
+        protected Map<Field,AnyValue> fields = new EnumMap<>( Field.class );
+
+        Builder( Supplier<ZoneId> defaultZone )
+        {
+            this.defaultZone = defaultZone;
+        }
 
         @Override
         public final Result build()
@@ -272,18 +296,65 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 throw new IllegalArgumentException( "Builder state empty" );
             }
-            return state.build( this );
+            state.checkAssignments( this.supportsDate() );
+            return buildInternal();
+        }
+
+        <Temp extends Temporal> Temp assignAllFields( Temp temp )
+        {
+            Temp result = temp;
+            for ( Map.Entry<Field,AnyValue> entry : fields.entrySet() )
+            {
+                Field f = entry.getKey();
+                if ( !f.isGroupSelector() && f != Field.timezone && f != Field.millisecond && f != Field.microsecond && f != Field.nanosecond )
+                {
+                    TemporalField temporalField = f.field;
+                    result = (Temp) result.with( temporalField, safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
+                }
+            }
+            // Assign all sub-second parts in one step
+            if ( supportsTime() &&
+                    (fields.containsKey( Field.millisecond ) || fields.containsKey( Field.microsecond ) || fields.containsKey( Field.nanosecond )) )
+            {
+                result = (Temp) result.with( Field.nanosecond.field,
+                        validNano( fields.get( Field.millisecond ), fields.get( Field.microsecond ), fields.get( Field.nanosecond ) ) );
+            }
+            return result;
+        }
+
+        static int validNano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
+        {
+            long ms = safeCastIntegral( "millisecond", millisecond, Field.millisecond.defaultValue );
+            long us = safeCastIntegral( "microsecond", microsecond, Field.microsecond.defaultValue );
+            long ns = safeCastIntegral( "nanosecond", nanosecond, Field.nanosecond.defaultValue );
+            if ( ms < 0 || ms >= 1000 )
+            {
+                throw new IllegalArgumentException( "Invalid millisecond: " + ms );
+            }
+            if ( us < 0 || us >= (millisecond != null || nanosecond != null ? 1000 : 1000_000) )
+            {
+                throw new IllegalArgumentException( "Invalid microsecond: " + us );
+            }
+            if ( ns < 0 || ns >= ((millisecond != null || microsecond != null) ? 1000 : 1000_000_000) )
+            {
+                throw new IllegalArgumentException( "Invalid nanosecond: " + ns );
+            }
+            return (int) (ms * 1000_000 + us * 1000 + ns);
         }
 
         @Override
-        public final StructureBuilder<Input,Result> add( String fieldName, Input value )
+        public final StructureBuilder<AnyValue,Result> add( String fieldName, AnyValue value )
         {
             Field field = Field.fields.get( fieldName.toLowerCase() );
             if ( field == null )
             {
                 throw new IllegalArgumentException( "No such field: " + fieldName );
             }
+            // Change state
             field.assign( this, value );
+
+            // Set field for this builder
+            fields.put( field, value );
             return this;
         }
 
@@ -305,71 +376,20 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         protected abstract boolean supportsTime();
 
-        protected abstract ZoneId timezone( Input timezone );
+        protected abstract boolean supportsTimeZone();
 
-        // Selection
+        protected abstract boolean supportsEpoch();
 
-        protected abstract Result selectDateTime( Input temporal );
-
-        protected abstract Result selectDateAndTime( Input date, Input time );
-
-        protected abstract Result selectDateWithConstructedTime(
-                Input date,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond );
-
-        protected abstract Result selectDate( Input temporal );
-
-        protected abstract Result selectTime( Input temporal );
+        protected ZoneId timezone( AnyValue timezone )
+        {
+            return timezone == null ? defaultZone.get() : timezoneOf( timezone );
+        }
 
         // Construction
 
-        protected abstract Result constructYear( Input year );
+        protected abstract Result buildInternal();
 
-        protected abstract Result constructTime(
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond );
-
-        // - by calendar date
-
-        protected abstract Result constructCalendarDate( Input year, Input month, Input day );
-
-        protected abstract Result constructCalendarDateWithSelectedTime(
-                Input year, Input month, Input day, Input time );
-
-        protected abstract Result constructCalendarDateWithConstructedTime(
-                Input year, Input month, Input day,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond );
-
-        // - by week date
-
-        protected abstract Result constructWeekDate( Input year, Input week, Input dayOfWeek );
-
-        protected abstract Result constructWeekDateWithSelectedTime(
-                Input year, Input week, Input dayOfWeek, Input time );
-
-        protected abstract Result constructWeekDateWithConstructedTime(
-                Input year, Input week, Input dayOfWeek,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond );
-
-        // - by quarter date
-
-        protected abstract Result constructQuarterDate( Input year, Input quarter, Input dayOfQuarter );
-
-        protected abstract Result constructQuarterDateWithSelectedTime(
-                Input year, Input quarter, Input dayOfQuarter, Input time );
-
-        protected abstract Result constructQuarterDateWithConstructedTime(
-                Input year, Input quarter, Input dayOfQuarter,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond );
-
-        // - by ordinal date
-
-        protected abstract Result constructOrdinalDate( Input year, Input ordinalDay );
-
-        protected abstract Result constructOrdinalDateWithSelectedTime( Input year, Input ordinalDay, Input time );
-
-        protected abstract Result constructOrdinalDateWithConstructedTime(
-                Input year, Input ordinalDay,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond );
+        // Timezone utilities
 
         protected final ZoneId optionalTimezone()
         {
@@ -389,30 +409,35 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             throw new UnsupportedOperationException( "Cannot convert to ZoneId: " + timezone );
         }
+
     }
 
-    private enum Field
+    protected enum Field
     {
-        year( ChronoField.YEAR ),
-        quarter( IsoFields.QUARTER_OF_YEAR ),
-        month( ChronoField.MONTH_OF_YEAR ),
-        week( IsoFields.WEEK_OF_WEEK_BASED_YEAR ),
-        ordinalDay( ChronoField.DAY_OF_YEAR ),
-        dayOfQuarter( IsoFields.DAY_OF_QUARTER ),
-        dayOfWeek( ChronoField.DAY_OF_WEEK ),
-        day( ChronoField.DAY_OF_MONTH ),
-        hour( ChronoField.HOUR_OF_DAY ),
-        minute( ChronoField.MINUTE_OF_HOUR ),
-        second( ChronoField.SECOND_OF_MINUTE ),
-        millisecond( ChronoField.MILLI_OF_SECOND ),
-        microsecond( ChronoField.MICRO_OF_SECOND ),
-        nanosecond( ChronoField.NANO_OF_SECOND ),
+        year( ChronoField.YEAR, 0 ),
+        quarter( IsoFields.QUARTER_OF_YEAR, 1 ),
+        month( ChronoField.MONTH_OF_YEAR, 1 ),
+        week( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 ),
+        ordinalDay( ChronoField.DAY_OF_YEAR, 1 ),
+        dayOfQuarter( IsoFields.DAY_OF_QUARTER, 1 ),
+        dayOfWeek( ChronoField.DAY_OF_WEEK, 1 ),
+        day( ChronoField.DAY_OF_MONTH, 1 ),
+        hour( ChronoField.HOUR_OF_DAY, 0 ),
+        minute( ChronoField.MINUTE_OF_HOUR, 0 ),
+        second( ChronoField.SECOND_OF_MINUTE, 0 ),
+        millisecond( ChronoField.MILLI_OF_SECOND, 0 ),
+        microsecond( ChronoField.MICRO_OF_SECOND, 0 ),
+        nanosecond( ChronoField.NANO_OF_SECOND, 0 ),
         timezone//<pre>
         { //</pre>
 
             @Override
-            <Input> void assign( Builder<Input,?> builder, Input value )
+            void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsTimeZone() )
+                {
+                    throw new IllegalArgumentException( "Cannot assign time zone if also assigning other fields." );
+                }
                 if ( builder.timezone != null )
                 {
                     throw new IllegalArgumentException( "Cannot assign timezone twice." );
@@ -425,42 +450,92 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         { //</pre>
 
             @Override
-            <Input> void assign( Builder<Input,?> builder, Input value )
+            void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsDate() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
                 if ( builder.state == null )
                 {
-                    builder.state = new DateTimeBuilder<>();
+                    builder.state = new DateTimeBuilder();
                 }
-                builder.state = builder.state.date( value );
+                builder.state = builder.state.assign( this, value );
+            }
+
+            @Override
+            boolean isGroupSelector()
+            {
+                return true;
             }
         },
         time//<pre>
         { //</pre>
 
             @Override
-            <Input> void assign( Builder<Input,?> builder, Input value )
+            void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsTime() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
                 if ( builder.state == null )
                 {
-                    builder.state = new DateTimeBuilder<>();
+                    builder.state = new DateTimeBuilder();
                 }
-                builder.state = builder.state.time( value );
+                builder.state = builder.state.assign( this, value );
+            }
+
+            @Override
+            boolean isGroupSelector()
+            {
+                return true;
             }
         },
         datetime//<pre>
         { //</pre>
 
             @Override
-            <Input> void assign( Builder<Input,?> builder, Input value )
+            void assign( Builder<?> builder, AnyValue value )
             {
+                if ( !builder.supportsDate() || !builder.supportsTime() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
                 if ( builder.state == null )
                 {
-                    builder.state = new SelectDateTime<>( value );
+                    builder.state = new DateTimeBuilder( );
                 }
-                else
+                builder.state = builder.state.assign( this, value );
+            }
+
+            @Override
+            boolean isGroupSelector()
+            {
+                return true;
+            }
+        },
+        epoch//<pre>
+        { //<pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                if ( !builder.supportsEpoch() )
                 {
-                    throw new IllegalArgumentException( "Cannot select datetime when assigning other fields." );
+                    throw new IllegalArgumentException( "Not supported: " + name() );
                 }
+                if ( builder.state == null )
+                {
+                    builder.state = new DateTimeBuilder( );
+                }
+                builder.state = builder.state.assign( this, value );
+            }
+
+            @Override
+            boolean isGroupSelector()
+            {
+                return true;
             }
         };
         private static final Map<String,Field> fields = new HashMap<>();
@@ -476,19 +551,27 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             fields.put( "quarterday", dayOfQuarter );
         }
 
-        private final TemporalField field;
+        final TemporalField field;
+        final int defaultValue;
 
-        Field( TemporalField field )
+        Field( TemporalField field, int defaultValue )
         {
             this.field = field;
+            this.defaultValue = defaultValue;
         }
 
         Field()
         {
             this.field = null;
+            this.defaultValue = -1;
         }
 
-        <Input> void assign( Builder<Input,?> builder, Input value )
+        boolean isGroupSelector()
+        {
+            return false;
+        }
+
+        void assign( Builder<?> builder, AnyValue value )
         {
             assert field != null : "method should have been overridden";
             if ( !builder.supports( field ) )
@@ -497,70 +580,65 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             if ( builder.state == null )
             {
-                builder.state = new DateTimeBuilder<>();
+                builder.state = new DateTimeBuilder();
             }
             builder.state = builder.state.assign( this, value );
         }
     }
 
-    private abstract static class BuilderState<Input>
+    private static class DateTimeBuilder
     {
-        abstract BuilderState<Input> assign( Field field, Input value );
+        protected DateBuilder date;
+        protected ConstructTime time;
 
-        abstract BuilderState<Input> date( Input date );
-
-        abstract BuilderState<Input> time( Input time );
-
-        abstract <Result> Result build( Builder<Input,Result> builder );
-    }
-
-    private static final class SelectDateTime<Input> extends BuilderState<Input>
-    {
-        private final Input datetime;
-
-        SelectDateTime( Input temporal )
+        DateTimeBuilder()
         {
-            this.datetime = temporal;
         }
 
-        @Override
-        BuilderState<Input> assign( Field field, Input value )
+        DateTimeBuilder( DateBuilder date, ConstructTime time )
         {
-            throw new IllegalArgumentException( "Cannot assign " + field + " when selecting datetime." );
+            this.date = date;
+            this.time = time;
         }
 
-        @Override
-        BuilderState<Input> date( Input date )
+        void checkAssignments( boolean requiresDate )
         {
-            throw new IllegalArgumentException( "Cannot select date when selecting datetime." );
+            if ( date != null )
+            {
+                date.checkAssignments();
+            }
+            if ( time != null )
+            {
+                if ( requiresDate )
+                {
+                    if ( date != null )
+                    {
+                        date.assertFullyAssigned();
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException( Field.year.name() + " must be specified" );
+                    }
+                }
+                time.checkAssignments();
+            }
         }
 
-        @Override
-        BuilderState<Input> time( Input time )
+        DateTimeBuilder assign( Field field, AnyValue value )
         {
-            throw new IllegalArgumentException( "Cannot select time when selecting datetime." );
-        }
-
-        @Override
-        <Result> Result build( Builder<Input,Result> builder )
-        {
-            return builder.selectDateTime( datetime );
-        }
-    }
-
-    private static final class DateTimeBuilder<Input> extends BuilderState<Input>
-    {
-        private DateBuilder<Input> date;
-        private TimeBuilder<Input> time;
-
-        @Override
-        BuilderState<Input> assign( Field field, Input value )
-        {
-            if ( field.field.isDateBased() )
+            if ( field == Field.datetime || field == Field.epoch )
+            {
+                return new SelectDateTimeDTBuilder( date, time );
+            }
+            else if ( field == Field.time || field == Field.date )
+            {
+                return new SelectDateOrTimeDTBuilder( date, time ).assign( field, value );
+            }
+            else if ( field.field.isDateBased() )
             {
                 if ( date == null )
                 {
-                    date = new ConstructDate<>();
+                    date = new ConstructDate();
                 }
                 date = date.assign( field, value );
             }
@@ -568,157 +646,116 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( time == null )
                 {
-                    time = new ConstructTime<>();
+                    time = new ConstructTime();
                 }
                 time.assign( field, value );
             }
             return this;
         }
+    }
 
-        @Override
-        BuilderState<Input> date( Input date )
+    private static class SelectDateTimeDTBuilder extends DateTimeBuilder
+    {
+        SelectDateTimeDTBuilder( DateBuilder date, ConstructTime time )
         {
-            if ( this.date != null )
-            {
-                throw new IllegalArgumentException( "cannot select date when also assigning date" );
-            }
-            this.date = new SelectDate<>( date );
-            return this;
+            super( date, time );
         }
 
         @Override
-        BuilderState<Input> time( Input time )
+        void checkAssignments( boolean requiresDate )
         {
-            if ( this.time != null )
-            {
-                throw new IllegalArgumentException( "cannot select time when also assigning time" );
-            }
-            this.time = new SelectTime<>( time );
-            return this;
+            // Nothing to do
         }
 
         @Override
-        <Result> Result build( Builder<Input,Result> builder )
+        DateTimeBuilder assign( Field field, AnyValue value )
         {
-            if ( time == null )
+            if ( field == Field.date || field == Field.time )
             {
-                return date.build( builder );
+                throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
             }
-            else if ( date == null )
+            else if ( field == Field.datetime )
             {
-                return time.build( builder );
+                throw new IllegalArgumentException( "cannot re-assign " + field );
+            }
+            else if ( field.field.isDateBased() )
+            {
+                if ( date == null )
+                {
+                    date = new ConstructDate();
+                }
+                date = date.assign( field, value );
             }
             else
             {
-                return time.build( builder, date );
+                if ( time == null )
+                {
+                    time = new ConstructTime();
+                }
+                time.assign( field, value );
             }
+            return this;
         }
     }
 
-    private abstract static class DateBuilder<Input>
+    private static class SelectDateOrTimeDTBuilder extends DateTimeBuilder
     {
-        abstract DateBuilder<Input> assign( Field field, Input value );
-
-        abstract <Result> Result build( Builder<Input,Result> builder );
-
-        abstract <Result> Result selectTime( Input time, Builder<Input,Result> builder );
-
-        abstract <Result> Result constructTime(
-                Builder<Input,Result> builder,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond );
-    }
-
-    private abstract static class TimeBuilder<Input>
-    {
-        abstract void assign( Field field, Input value );
-
-        abstract <Result> Result build( Builder<Input,Result> builder );
-
-        abstract <Result> Result build( Builder<Input,Result> builder, DateBuilder<Input> date );
-    }
-
-    private static final class SelectDate<Input> extends DateBuilder<Input>
-    {
-        private final Input temporal;
-
-        SelectDate( Input temporal )
+        SelectDateOrTimeDTBuilder( DateBuilder date, ConstructTime time )
         {
-            this.temporal = temporal;
+            super( date, time );
         }
 
         @Override
-        SelectDate<Input> assign( Field field, Input value )
+        DateTimeBuilder assign( Field field, AnyValue value )
         {
-            throw new IllegalArgumentException( "cannot assign " + field + " when selecting date" );
-        }
-
-        @Override
-        <Result> Result build( Builder<Input,Result> builder )
-        {
-            return builder.selectDate( temporal );
-        }
-
-        @Override
-        <Result> Result selectTime( Input time, Builder<Input,Result> builder )
-        {
-            return builder.selectDateAndTime( temporal, time );
-        }
-
-        @Override
-        <Result> Result constructTime(
-                Builder<Input,Result> builder,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            return builder.selectDateWithConstructedTime(
-                    temporal,
-                    hour,
-                    minute,
-                    second,
-                    millisecond,
-                    microsecond,
-                    nanosecond );
+            if ( field == Field.datetime )
+            {
+                throw new IllegalArgumentException( field.name() + " cannot be selected together with date or time." );
+            }
+            else if ( field != Field.time && (field == Field.date || field.field.isDateBased()) )
+            {
+                if ( date == null )
+                {
+                    date = new ConstructDate();
+                }
+                date = date.assign( field, value );
+            }
+            else
+            {
+                if ( time == null )
+                {
+                    time = new ConstructTime();
+                }
+                time.assign( field, value );
+            }
+            return this;
         }
     }
 
-    private static final class SelectTime<Input> extends TimeBuilder<Input>
+    private abstract static class DateBuilder
     {
-        private final Input temporal;
+        abstract DateBuilder assign( Field field, AnyValue value );
 
-        SelectTime( Input temporal )
-        {
-            this.temporal = temporal;
-        }
+        abstract void checkAssignments();
 
-        @Override
-        void assign( Field field, Input value )
-        {
-            throw new IllegalArgumentException( "cannot assign " + field + " when selecting time" );
-        }
-
-        @Override
-        <Result> Result build( Builder<Input,Result> builder )
-        {
-            return builder.selectTime( temporal );
-        }
-
-        @Override
-        <Result> Result build( Builder<Input,Result> builder, DateBuilder<Input> date )
-        {
-            return date.selectTime( temporal, builder );
-        }
+        abstract void assertFullyAssigned();
     }
 
-    private static final class ConstructTime<Input> extends TimeBuilder<Input>
+    private static final class ConstructTime
     {
-        private Input hour;
-        private Input minute;
-        private Input second;
-        private Input millisecond;
-        private Input microsecond;
-        private Input nanosecond;
+        private AnyValue hour;
+        private AnyValue minute;
+        private AnyValue second;
+        private AnyValue millisecond;
+        private AnyValue microsecond;
+        private AnyValue nanosecond;
+        private AnyValue time;
 
-        @Override
-        void assign( Field field, Input value )
+        ConstructTime()
+        {
+        }
+
+        void assign( Field field, AnyValue value )
         {
             switch ( field )
             {
@@ -740,31 +777,41 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             case nanosecond:
                 nanosecond = assignment( field, nanosecond, value );
                 break;
+            case time:
+            case datetime:
+                time = assignment( field, time, value );
+                break;
             default:
                 throw new IllegalStateException( "Not a time field: " + field );
             }
         }
 
-        @Override
-        <Result> Result build( Builder<Input,Result> builder )
+        void checkAssignments()
         {
-
-            return builder.constructTime( hour, minute, second, millisecond, microsecond, nanosecond );
-        }
-
-        @Override
-        <Result> Result build( Builder<Input,Result> builder, DateBuilder<Input> date )
-        {
-            return date.constructTime( builder, hour, minute, second, millisecond, microsecond, nanosecond );
+            if ( time == null )
+            {
+                assertDefinedInOrder( Pair.of( hour, "hour" ), Pair.of( minute, "minute" ), Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+            }
         }
     }
 
-    private static class ConstructDate<Input> extends DateBuilder<Input>
+    private static class ConstructDate extends DateBuilder
     {
-        Input year;
+        AnyValue year;
+        AnyValue date;
+
+        ConstructDate()
+        {
+        }
+
+        ConstructDate( AnyValue date )
+        {
+            this.date = date;
+        }
 
         @Override
-        ConstructDate<Input> assign( Field field, Input value )
+        ConstructDate assign( Field field, AnyValue value )
         {
             switch ( field )
             {
@@ -773,53 +820,53 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 return this;
             case quarter:
             case dayOfQuarter:
-                return new QuarterDate<>( year ).assign( field, value );
+                return new QuarterDate( year, date ).assign( field, value );
             case month:
             case day:
-                return new CalendarDate<>( year ).assign( field, value );
+                return new CalendarDate( year, date ).assign( field, value );
             case week:
             case dayOfWeek:
-                return new WeekDate<>( year ).assign( field, value );
+                return new WeekDate( year, date ).assign( field, value );
             case ordinalDay:
-                return new OrdinalDate<>( year ).assign( field, value );
+                return new OrdinalDate( year, date ).assign( field, value );
+            case date:
+            case datetime:
+                date = assignment( field, date, value );
+                return this;
             default:
                 throw new IllegalStateException( "Not a date field: " + field );
             }
         }
 
         @Override
-        <Result> Result build( Builder<Input,Result> builder )
+        void checkAssignments()
         {
-            return builder.constructYear( year );
+            // Nothing to do
         }
 
         @Override
-        <Result> Result selectTime( Input time, Builder<Input,Result> builder )
+        void assertFullyAssigned()
         {
-            throw new IllegalStateException( "Cannot specify time for a year." );
-        }
-
-        @Override
-        <Result> Result constructTime(
-                Builder<Input,Result> builder,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            throw new IllegalStateException( "Cannot specify time for a year." );
+            if ( date == null )
+            {
+                throw new IllegalArgumentException( Field.month.name() + " must be specified"  );
+            }
         }
     }
 
-    private static final class CalendarDate<Input> extends ConstructDate<Input>
+    private static final class CalendarDate extends ConstructDate
     {
-        private Input month;
-        private Input day;
+        private AnyValue month;
+        private AnyValue day;
 
-        CalendarDate( Input year )
+        CalendarDate( AnyValue year, AnyValue date )
         {
             this.year = year;
+            this.date = date;
         }
 
         @Override
-        ConstructDate<Input> assign( Field field, Input value )
+        ConstructDate assign( Field field, AnyValue value )
         {
             switch ( field )
             {
@@ -832,45 +879,47 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             case day:
                 day = assignment( field, day, value );
                 return this;
+            case date:
+            case datetime:
+                date = assignment( field, date, value );
+                return this;
             default:
                 throw new IllegalArgumentException( "Cannot assign " + field + " to calendar date." );
             }
         }
 
         @Override
-        <Result> Result build( Builder<Input,Result> builder )
+        void checkAssignments()
         {
-            return builder.constructCalendarDate( year, month, day );
+            if ( date == null )
+            {
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( month, "month" ), Pair.of( day, "day" ) );
+            }
         }
 
         @Override
-        <Result> Result selectTime( Input time, Builder<Input,Result> builder )
+        void assertFullyAssigned()
         {
-            return builder.constructCalendarDateWithSelectedTime( year, month, day, time );
-        }
-
-        @Override
-        <Result> Result constructTime(
-                Builder<Input,Result> builder,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            return builder.constructCalendarDateWithConstructedTime( year, month, day,
-                    hour, minute, second, millisecond, microsecond, nanosecond );
+            if ( date == null )
+            {
+                assertAllDefined( Pair.of( year, "year" ), Pair.of( month, "month" ), Pair.of( day, "day" ) );
+            }
         }
     }
 
-    private static final class WeekDate<Input> extends ConstructDate<Input>
+    private static final class WeekDate extends ConstructDate
     {
-        private Input week;
-        private Input dayOfWeek;
+        private AnyValue week;
+        private AnyValue dayOfWeek;
 
-        WeekDate( Input year )
+        WeekDate( AnyValue year, AnyValue date )
         {
             this.year = year;
+            this.date = date;
         }
 
         @Override
-        ConstructDate<Input> assign( Field field, Input value )
+        ConstructDate assign( Field field, AnyValue value )
         {
             switch ( field )
             {
@@ -883,45 +932,47 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             case dayOfWeek:
                 dayOfWeek = assignment( field, dayOfWeek, value );
                 return this;
+            case date:
+            case datetime:
+                date = assignment( field, date, value );
+                return this;
             default:
                 throw new IllegalArgumentException( "Cannot assign " + field + " to week date." );
             }
         }
 
         @Override
-        <Result> Result build( Builder<Input,Result> builder )
+        void checkAssignments()
         {
-            return builder.constructWeekDate( year, week, dayOfWeek );
+            if ( date == null )
+            {
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( week, "week" ), Pair.of( dayOfWeek, "dayOfWeek" ) );
+            }
         }
 
         @Override
-        <Result> Result selectTime( Input time, Builder<Input,Result> builder )
+        void assertFullyAssigned()
         {
-            return builder.constructWeekDateWithSelectedTime( year, week, dayOfWeek, time );
-        }
-
-        @Override
-        <Result> Result constructTime(
-                Builder<Input,Result> builder,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            return builder.constructWeekDateWithConstructedTime( year, week, dayOfWeek,
-                    hour, minute, second, millisecond, microsecond, nanosecond );
+            if ( date == null )
+            {
+                assertAllDefined( Pair.of( year, "year" ), Pair.of( week, "week" ), Pair.of( dayOfWeek, "dayOfWeek" ) );
+            }
         }
     }
 
-    private static final class QuarterDate<Input> extends ConstructDate<Input>
+    private static final class QuarterDate extends ConstructDate
     {
-        private Input quarter;
-        private Input dayOfQuarter;
+        private AnyValue quarter;
+        private AnyValue dayOfQuarter;
 
-        QuarterDate( Input year )
+        QuarterDate( AnyValue year, AnyValue date )
         {
             this.year = year;
+            this.date = date;
         }
 
         @Override
-        ConstructDate<Input> assign( Field field, Input value )
+        ConstructDate assign( Field field, AnyValue value )
         {
             switch ( field )
             {
@@ -934,44 +985,46 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             case dayOfQuarter:
                 dayOfQuarter = assignment( field, dayOfQuarter, value );
                 return this;
+            case date:
+            case datetime:
+                date = assignment( field, date, value );
+                return this;
             default:
                 throw new IllegalArgumentException( "Cannot assign " + field + " to quarter date." );
             }
         }
 
         @Override
-        <Result> Result build( Builder<Input,Result> builder )
+        void checkAssignments()
         {
-            return builder.constructQuarterDate( year, quarter, dayOfQuarter );
+            if ( date == null )
+            {
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( quarter, "quarter" ), Pair.of( dayOfQuarter, "dayOfQuarter" ) );
+            }
         }
 
         @Override
-        <Result> Result selectTime( Input time, Builder<Input,Result> builder )
+        void assertFullyAssigned()
         {
-            return builder.constructQuarterDateWithSelectedTime( year, quarter, dayOfQuarter, time );
-        }
-
-        @Override
-        <Result> Result constructTime(
-                Builder<Input,Result> builder,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            return builder.constructQuarterDateWithConstructedTime( year, quarter, dayOfQuarter,
-                    hour, minute, second, millisecond, microsecond, nanosecond );
+            if ( date == null )
+            {
+                assertAllDefined( Pair.of( year, "year" ), Pair.of( quarter, "quarter" ), Pair.of( dayOfQuarter, "dayOfQuarter" ) );
+            }
         }
     }
 
-    private static final class OrdinalDate<Input> extends ConstructDate<Input>
+    private static final class OrdinalDate extends ConstructDate
     {
-        private Input ordinalDay;
+        private AnyValue ordinalDay;
 
-        OrdinalDate( Input year )
+        OrdinalDate( AnyValue year, AnyValue date )
         {
             this.year = year;
+            this.date = date;
         }
 
         @Override
-        ConstructDate<Input> assign( Field field, Input value )
+        ConstructDate assign( Field field, AnyValue value )
         {
             switch ( field )
             {
@@ -981,39 +1034,74 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             case ordinalDay:
                 ordinalDay = assignment( field, ordinalDay, value );
                 return this;
+            case date:
+            case datetime:
+                date = assignment( field, date, value );
+                return this;
             default:
                 throw new IllegalArgumentException( "Cannot assign " + field + " to ordinal date." );
             }
         }
 
         @Override
-        <Result> Result build( Builder<Input,Result> builder )
+        void assertFullyAssigned()
         {
-            return builder.constructOrdinalDate( year, ordinalDay );
-        }
-
-        @Override
-        <Result> Result selectTime( Input time, Builder<Input,Result> builder )
-        {
-            return builder.constructOrdinalDateWithSelectedTime( year, ordinalDay, time );
-        }
-
-        @Override
-        <Result> Result constructTime(
-                Builder<Input,Result> builder,
-                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
-        {
-            return builder.constructOrdinalDateWithConstructedTime( year, ordinalDay,
-                    hour, minute, second, millisecond, microsecond, nanosecond );
+            if ( date == null )
+            {
+                assertAllDefined( Pair.of( year, "year" ), Pair.of( ordinalDay, "ordinalDay" ) );
+            }
         }
     }
 
-    private static <Input> Input assignment( Field field, Input oldValue, Input newValue )
+    private static AnyValue assignment( Field field, AnyValue oldValue, AnyValue newValue )
     {
         if ( oldValue != null )
         {
             throw new IllegalArgumentException( "cannot re-assign " + field );
         }
         return newValue;
+    }
+
+    @SafeVarargs
+    static void assertDefinedInOrder( Pair<org.neo4j.values.AnyValue, String>... values )
+    {
+        if ( values[0].first() == null )
+        {
+            throw new IllegalArgumentException( values[0].other() + " must be specified" );
+        }
+
+        String firstNotAssigned = null;
+
+        for ( Pair<org.neo4j.values.AnyValue,String> value : values )
+        {
+            if ( value.first() == null )
+            {
+                if ( firstNotAssigned == null )
+                {
+                    firstNotAssigned = value.other();
+                }
+            }
+            else if ( firstNotAssigned != null )
+            {
+                throw new IllegalArgumentException( value.other() + " cannot be specified without " + firstNotAssigned );
+            }
+        }
+    }
+
+    @SafeVarargs
+    static void assertAllDefined( Pair<org.neo4j.values.AnyValue, String>... values )
+    {
+        for ( Pair<org.neo4j.values.AnyValue,String> value : values )
+        {
+            if ( value.first() == null )
+            {
+                throw new IllegalArgumentException( value.other() + " must be specified" );
+            }
+        }
+    }
+
+    static org.neo4j.values.AnyValue oneOf( org.neo4j.values.AnyValue a, org.neo4j.values.AnyValue b, org.neo4j.values.AnyValue c )
+    {
+        return a != null ? a : b != null ? b : c;
     }
 }

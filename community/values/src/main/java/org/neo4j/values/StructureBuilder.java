@@ -38,7 +38,7 @@ public interface StructureBuilder<Input, Result>
     {
         for ( Map.Entry<String,AnyValue> entry : entries )
         {
-            builder.add( entry.getKey(), entry.getValue() );
+            builder = builder.add( entry.getKey(), entry.getValue() );
         }
         return builder.build();
     }
