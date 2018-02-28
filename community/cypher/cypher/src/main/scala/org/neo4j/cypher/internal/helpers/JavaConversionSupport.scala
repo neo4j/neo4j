@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.collection.primitive.{PrimitiveIntIterator, PrimitiveLongIterator}
-import org.neo4j.cypher.internal.frontend.v3_2.EntityNotFoundException
 
 import scala.collection.JavaConversions._
 
@@ -61,8 +60,11 @@ object JavaConversionSupport {
         try {
           _next = Some(f(more()))
         } catch {
+          case _: org.neo4j.graphdb.NotFoundException => // IGNORE
           case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => // IGNORE
-          case _: EntityNotFoundException => // IGNORE
+          case _: org.neo4j.cypher.internal.frontend.v3_2.EntityNotFoundException => // IGNORE
+          case _: org.neo4j.cypher.internal.frontend.v3_1.EntityNotFoundException => // IGNORE
+          case _: org.neo4j.cypher.internal.frontend.v2_3.EntityNotFoundException => // IGNORE
         }
       }
       _next
