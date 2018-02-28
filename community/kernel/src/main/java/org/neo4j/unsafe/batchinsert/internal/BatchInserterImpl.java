@@ -82,8 +82,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -303,7 +303,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
                 HighestSelectionStrategy.INSTANCE );
         schemaIndexProviders = new DefaultIndexProviderMap( provider );
-        schemaCache = new SchemaCache( new StandardConstraintSemantics(), new SchemaStorage(schemaStore, schemaIndexProviders).loadAllSchemaRules() );
+        schemaCache = new SchemaCache( new StandardConstraintSemantics(), new SchemaStorage( schemaStore, schemaIndexProviders ).loadAllSchemaRules() );
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );

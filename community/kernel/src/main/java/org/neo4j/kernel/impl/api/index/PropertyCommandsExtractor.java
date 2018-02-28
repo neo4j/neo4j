@@ -110,7 +110,8 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
                 group.add( command );
                 hasUpdates = true;
             }
-            else {
+            else
+            {
                 long relId = command.getAfter().getRelId();
                 List<PropertyCommand> group = propertyCommandsByRelationshipIds.get( relId );
                 if ( group == null )

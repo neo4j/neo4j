@@ -39,7 +39,8 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
     boolean isAffected( long[] entityIds );
 
-    enum PropertySchemaType{
+    enum PropertySchemaType
+    {
         SCHEMA_ALL,
         NON_SCHEMA_ANY
     }

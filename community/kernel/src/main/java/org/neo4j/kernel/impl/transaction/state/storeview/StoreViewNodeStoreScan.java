@@ -133,7 +133,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     private static boolean containsAnyLabel( int[] labelIdFilter, long[] labels )
     {
         //No labels is any label
-        if ( labelIdFilter.length ==0 )
+        if ( labelIdFilter.length == 0 )
         {
             return true;
         }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
 import java.io.File;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -67,9 +66,8 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
 
         FulltextIndexProvider provider =
-                new FulltextIndexProvider( DESCRIPTOR, PRIORITY, subProviderDirectoryStructure( context.storeDir() ), fileSystemAbstraction,
-                        config, dependencies.propertyKeyTokenHolder(), dependencies.labelTokenHolder(),
-                        dependencies.relationshipTypeTokenHolder(), directoryFactory );
+                new FulltextIndexProvider( DESCRIPTOR, PRIORITY, subProviderDirectoryStructure( context.storeDir() ), fileSystemAbstraction, config,
+                        dependencies.propertyKeyTokenHolder(), dependencies.labelTokenHolder(), dependencies.relationshipTypeTokenHolder(), directoryFactory );
         dependencies.procedures().registerComponent( FulltextAccessor.class, procContext -> provider, true );
 
         return provider;

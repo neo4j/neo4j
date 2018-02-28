@@ -88,7 +88,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
 
     public PrimitiveLongIterator query( IndexDescriptor descriptor, String query ) throws IOException
     {
-        return accessors.get( descriptor ).query(query);
+        return accessors.get( descriptor ).query( query );
     }
 
     @Override
@@ -107,14 +107,14 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        WritableFulltext fulltextIndex = new WritableFulltext(factory.createFulltextIndex( descriptor ));
+        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( descriptor ) );
         return new FulltextIndexPopulator( indexId, descriptor, samplingConfig, fulltextIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        WritableFulltext fulltextIndex = new WritableFulltext(factory.createFulltextIndex( descriptor ));
+        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( descriptor ) );
         fulltextIndex.open();
 
         FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex, descriptor );
@@ -204,14 +204,15 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
             throw new BadSchemaException( "Unable to index the property " + FulltextProvider.FIELD_ENTITY_ID );
         }
         int[] entityTokenIds;
-        if ( type== EntityType.NODE )
+        if ( type == EntityType.NODE )
         {
             entityTokenIds = Arrays.stream( entityTokens ).mapToInt( labelTokenHolder::getOrCreateId ).toArray();
         }
-        else {
+        else
+        {
             entityTokenIds = Arrays.stream( entityTokens ).mapToInt( relationshipTypeTokenHolder::getOrCreateId ).toArray();
         }
-        int[] propertyIds = Arrays.stream(properties).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
+        int[] propertyIds = Arrays.stream( properties ).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
         return indexDescriptorFor( new MultiTokenSchemaDescriptor( entityTokenIds, type, propertyIds ), name, analyzerClassName );
     }
 
@@ -228,9 +229,9 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
 
     private class BadSchemaException extends IllegalArgumentException
     {
-        public BadSchemaException( String message )
+        BadSchemaException( String message )
         {
-            super(message);
+            super( message );
         }
     }
 }

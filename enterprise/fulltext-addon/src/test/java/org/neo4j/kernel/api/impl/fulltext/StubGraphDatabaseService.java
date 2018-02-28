@@ -174,8 +174,7 @@ public class StubGraphDatabaseService implements GraphDatabaseService
     }
 
     @Override
-    public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit )
-            throws QueryExecutionException
+    public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws QueryExecutionException
     {
         return null;
     }

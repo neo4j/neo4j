@@ -20,12 +20,9 @@
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -35,6 +32,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class FulltextConfig implements LoadableConfig
 {
     @Description( "Define the analyzer to use for the fulltext index. Expects the fully qualified classname of the analyzer to use" )
-    public static final Setting<String> fulltext_default_analyzer = setting( "unsupported.dbms.fulltext_default_analyzer", STRING,
-            "org.apache.lucene.analysis.standard.StandardAnalyzer" );
+    public static final Setting<String> fulltext_default_analyzer =
+            setting( "unsupported.dbms.fulltext_default_analyzer", STRING, "org.apache.lucene.analysis.standard.StandardAnalyzer" );
 }

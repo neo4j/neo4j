@@ -98,8 +98,8 @@ public class NeoTransactionIndexApplierTest
     private IndexBatchTransactionApplier newIndexTransactionApplier()
     {
         PropertyStore propertyStore = mock( PropertyStore.class );
-        return new IndexBatchTransactionApplier( indexingService,
-                labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ) );
+        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
+                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ) );
     }
 
     @Test

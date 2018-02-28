@@ -35,7 +35,8 @@ public class FulltextIndexDescriptor extends IndexDescriptor
     private final String identifier;
     private final String analyzer;
 
-    public FulltextIndexDescriptor( SchemaDescriptor schema, String name, PropertyKeyTokenHolder propertyKeyTokenHolder, String analyzer ) throws TokenNotFoundException
+    public FulltextIndexDescriptor( SchemaDescriptor schema, String name, PropertyKeyTokenHolder propertyKeyTokenHolder, String analyzer )
+            throws TokenNotFoundException
     {
         super( schema, Type.NON_SCHEMA );
         this.analyzer = analyzer;

@@ -102,7 +102,8 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntCollection properties, EntityType entityType )
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntCollection properties,
+            EntityType entityType )
     {
         return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, properties, entityType );
     }

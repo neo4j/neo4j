@@ -35,16 +35,13 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
 
-
-@Ignore( "These are rudimentary benchmarks, but implemented via the jUnit framework to make them easy to run " +
-         "from an IDE." )
+@Ignore( "These are rudimentary benchmarks, but implemented via the jUnit framework to make them easy to run " + "from an IDE." )
 public class BloomFulltextIndexBenchmarks
 {
-    private static final String[] WORDS =
-            ("dui nunc mattis enim ut tellus elementum sagittis vitae et leo duis ut diam quam nulla porttitor " +
-             "massa id neque aliquam vestibulum morbi blandit cursus risus at ultrices mi tempus imperdiet nulla " +
-             "malesuada pellentesque elit eget gravida cum sociis natoque penatibus et magnis dis parturient " +
-             "montes nascetur ridiculus mus mauris").split( " " );
+    private static final String[] WORDS = ("dui nunc mattis enim ut tellus elementum sagittis vitae et leo duis ut diam quam nulla porttitor " +
+            "massa id neque aliquam vestibulum morbi blandit cursus risus at ultrices mi tempus imperdiet nulla " +
+            "malesuada pellentesque elit eget gravida cum sociis natoque penatibus et magnis dis parturient " + "montes nascetur ridiculus mus mauris").split(
+            " " );
 
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();

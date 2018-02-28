@@ -28,7 +28,8 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 public interface IndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
 {
-        IndexProviderMap EMPTY = new IndexProviderMap(){
+    IndexProviderMap EMPTY = new IndexProviderMap()
+    {
         @Override
         public IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
         {
@@ -53,6 +54,7 @@ public interface IndexProviderMap extends Function<IndexProvider.Descriptor,Inde
             //Sure
         }
     };
+
     @Override
     IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 

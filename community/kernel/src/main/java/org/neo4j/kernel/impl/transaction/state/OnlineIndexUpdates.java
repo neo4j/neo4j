@@ -65,7 +65,8 @@ public class OnlineIndexUpdates implements IndexUpdates
     private NodeRecord nodeRecord;
     private RelationshipRecord relationshipRecord;
 
-    public OnlineIndexUpdates( NodeStore nodeStore, RelationshipStore relationshipStore, IndexingUpdateService updateService, PropertyPhysicalToLogicalConverter converter )
+    public OnlineIndexUpdates( NodeStore nodeStore, RelationshipStore relationshipStore, IndexingUpdateService updateService,
+            PropertyPhysicalToLogicalConverter converter )
     {
         this.nodeStore = nodeStore;
         this.relationshipStore = relationshipStore;

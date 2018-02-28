@@ -93,8 +93,8 @@ public class FulltextIndexProviderTest
         IndexDescriptor fulltextIndexDescriptor;
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[0], EntityType.NODE, new int[]{2, 3, 4}), "fulltext",
-                    STANDARD );
+            fulltextIndexDescriptor =
+                    provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[0], EntityType.NODE, new int[]{2, 3, 4} ), "fulltext", STANDARD );
             assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
         }
         assertThat( indexProviderMap.getProviderFor( fulltextIndexDescriptor ), is( instanceOf( FulltextIndexProvider.class ) ) );
@@ -107,8 +107,9 @@ public class FulltextIndexProviderTest
         IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
-                    STANDARD );
+            fulltextIndexDescriptor =
+                    provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
+                            STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -127,8 +128,9 @@ public class FulltextIndexProviderTest
         IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
-                    STANDARD );
+            fulltextIndexDescriptor =
+                    provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
+                            STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -145,7 +147,6 @@ public class FulltextIndexProviderTest
         }
     }
 
-
     @Test
     public void createAndRetainRelationshipFulltextIndex() throws Exception
     {
@@ -153,8 +154,9 @@ public class FulltextIndexProviderTest
         IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels",
-                    STANDARD );
+            fulltextIndexDescriptor =
+                    provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels",
+                            STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -248,8 +250,8 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ), "fulltext",
-                            STANDARD );
+                    provider.indexDescriptorFor( new MultiTokenSchemaDescriptor( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ),
+                            "fulltext", STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -380,7 +382,7 @@ public class FulltextIndexProviderTest
         {
             while ( stmt.readOperations().indexGetState( fulltextIndexDescriptor ) != InternalIndexState.ONLINE )
             {
-                ;
+                continue;
             }
         }
     }

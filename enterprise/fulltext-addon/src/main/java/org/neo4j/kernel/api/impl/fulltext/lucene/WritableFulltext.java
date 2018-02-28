@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import java.io.IOException;
 
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
@@ -54,7 +53,6 @@ public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFullte
         super.drop();
         indexWriter = null;
     }
-
 
     public void markAsOnline() throws IOException
     {

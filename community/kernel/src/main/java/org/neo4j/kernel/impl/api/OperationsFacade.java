@@ -567,7 +567,7 @@ public class OperationsFacade
     }
 
     @Override
-    public IndexDescriptor indexGetForName( String name)
+    public IndexDescriptor indexGetForName( String name )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();

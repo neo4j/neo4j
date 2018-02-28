@@ -54,7 +54,6 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         this.analyzer = analyzer;
     }
 
-
     @Override
     public void close()
     {

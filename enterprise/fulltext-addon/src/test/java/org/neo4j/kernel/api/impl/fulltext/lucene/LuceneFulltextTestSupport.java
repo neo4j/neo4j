@@ -82,7 +82,7 @@ public class LuceneFulltextTestSupport
 
     public void applySetting( Setting<String> setting, String value ) throws IOException
     {
-        db.restartDatabase( setting.name(), value  );
+        db.restartDatabase( setting.name(), value );
         db.ensureStarted();
         fulltextAccessor = getAccessor();
     }
@@ -109,8 +109,7 @@ public class LuceneFulltextTestSupport
         return createRelationshipWithProperty( firstNodeId, secondNodeId, PROP, propertyValue );
     }
 
-    protected long createRelationshipWithProperty( long firstNodeId, long secondNodeId, String propertyKey,
-                                                 Object propertyValue )
+    protected long createRelationshipWithProperty( long firstNodeId, long secondNodeId, String propertyKey, Object propertyValue )
     {
         Node first = db.getNodeById( firstNodeId );
         Node second = db.getNodeById( secondNodeId );
@@ -127,7 +126,7 @@ public class LuceneFulltextTestSupport
     protected void assertExactQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery(query, false, matchAll);
+        String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
@@ -135,7 +134,7 @@ public class LuceneFulltextTestSupport
     protected void assertExactQueryFindsIdsInOrder( String indexName, Collection<String> query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery(query, false, matchAll);
+        String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
@@ -153,7 +152,7 @@ public class LuceneFulltextTestSupport
     protected void assertFuzzyQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery(query, true, matchAll);
+        String queryString = FulltextQueryHelper.createQuery( query, true, matchAll );
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
@@ -161,7 +160,7 @@ public class LuceneFulltextTestSupport
     protected void assertFuzzyQueryFindsIdsInOrder( String indexName, String query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery(Arrays.asList( query ), true, matchAll);
+        String queryString = FulltextQueryHelper.createQuery( Arrays.asList( query ), true, matchAll );
         PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
@@ -203,6 +202,7 @@ public class LuceneFulltextTestSupport
             tx.success();
         }
     }
+
     protected void await( IndexDescriptor fulltextIndexDescriptor ) throws IndexNotFoundKernelException
     {
         //TODO real await
@@ -211,7 +211,7 @@ public class LuceneFulltextTestSupport
             //noinspection StatementWithEmptyBody
             while ( stmt.readOperations().indexGetState( fulltextIndexDescriptor ) != InternalIndexState.ONLINE )
             {
-                ;
+                continue;
             }
         }
     }

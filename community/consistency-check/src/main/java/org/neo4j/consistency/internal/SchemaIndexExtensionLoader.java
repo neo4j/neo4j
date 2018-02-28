@@ -66,9 +66,9 @@ public class SchemaIndexExtensionLoader
     }
 
     @SuppressWarnings( "unchecked" )
-    public static KernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem, Config config, LogService logService, PageCache pageCache,
-            RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors, PropertyKeyTokenHolder propkeyTokenHolder,
-            LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder )
+    public static KernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem, Config config, LogService logService,
+            PageCache pageCache, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors,
+            PropertyKeyTokenHolder propkeyTokenHolder, LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         Dependencies deps = new Dependencies();
         //TODO figure out a way to not depend on procedures here, it is caused by the fulltext index.

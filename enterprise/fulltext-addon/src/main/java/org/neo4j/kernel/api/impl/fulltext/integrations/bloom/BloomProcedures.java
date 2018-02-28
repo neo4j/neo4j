@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextQueryHelper;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -175,9 +174,7 @@ public class BloomProcedures
 
     @Description( "Query the Bloom fulltext index for nodes" )
     @Procedure( name = "bloom.searchNodes", mode = READ )
-    public Stream<EntityOutput> bloomFulltextNodes(
-            @Name( "terms" ) List<String> terms,
-            @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
+    public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
             @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
         return queryAsStream( terms, BLOOM_NODES, fuzzy, matchAll );
@@ -185,9 +182,7 @@ public class BloomProcedures
 
     @Description( "Query the Bloom fulltext index for relationships" )
     @Procedure( name = "bloom.searchRelationships", mode = READ )
-    public Stream<EntityOutput> bloomFulltextRelationships(
-            @Name( "terms" ) List<String> terms,
-            @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
+    public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
             @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
         return queryAsStream( terms, BLOOM_RELATIONSHIPS, fuzzy, matchAll );

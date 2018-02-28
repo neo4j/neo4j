@@ -122,13 +122,13 @@ public class BloomIT
         }
         db.execute( AWAIT_POPULATION ).close();
 
-        Result result = db.execute( String.format( NODES, "\"integration\"") );
+        Result result = db.execute( String.format( NODES, "\"integration\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertTrue( result.hasNext() );
         assertEquals( 1L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
-        result = db.execute( String.format( RELS, "\"relate\"") );
+        result = db.execute( String.format( RELS, "\"relate\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
@@ -163,26 +163,26 @@ public class BloomIT
             transaction.success();
         }
 
-        Result result = db.execute( String.format( NODES, "\"integration\"") );
+        Result result = db.execute( String.format( NODES, "\"integration\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertTrue( result.hasNext() );
         assertEquals( 1L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
-        result = db.execute( String.format( RELS, "\"relate\"") );
+        result = db.execute( String.format( RELS, "\"relate\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
 
-        result = db.execute( String.format( NODES, "\"different\"") );
+        result = db.execute( String.format( NODES, "\"different\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
-        result = db.execute( String.format( NODES, "\"unique\"") );
+        result = db.execute( String.format( NODES, "\"unique\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 1L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
-        result = db.execute( String.format( RELS, "\"propiprop\"") );
+        result = db.execute( String.format( RELS, "\"propiprop\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
@@ -267,15 +267,15 @@ public class BloomIT
             transaction.success();
         }
 
-        Result result = db.execute( String.format( NODES, "\"is\"") );
+        Result result = db.execute( String.format( NODES, "\"is\"" ) );
         assertEquals( 1L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
-        result = db.execute( String.format( NODES, "\"a\"") );
+        result = db.execute( String.format( NODES, "\"a\"" ) );
         assertEquals( 1L, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
-        result = db.execute( String.format( NODES, "\"det\"") );
+        result = db.execute( String.format( NODES, "\"det\"" ) );
         assertFalse( result.hasNext() );
-        result = db.execute( String.format( NODES, "\"en\"") );
+        result = db.execute( String.format( NODES, "\"en\"" ) );
         assertFalse( result.hasNext() );
     }
 
@@ -295,7 +295,7 @@ public class BloomIT
         }
         db.execute( AWAIT_POPULATION ).close();
 
-        Result result = db.execute( String.format( NODES, "\"Roskildevej\"") );
+        Result result = db.execute( String.format( NODES, "\"Roskildevej\"" ) );
         assertFalse( result.hasNext() );
         db.shutdown();
 
@@ -305,7 +305,7 @@ public class BloomIT
 
         db.execute( AWAIT_POPULATION ).close();
 
-        result = db.execute( String.format( NODES, "\"Roskildevej\"") );
+        result = db.execute( String.format( NODES, "\"Roskildevej\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
@@ -328,7 +328,7 @@ public class BloomIT
 
         // Verify it's indexed exactly once
         db.execute( AWAIT_POPULATION ).close();
-        Result result = db.execute( String.format( NODES, "\"Jyllingevej\"") );
+        Result result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
@@ -338,7 +338,7 @@ public class BloomIT
 
         db.execute( AWAIT_POPULATION ).close();
         // Verify it's STILL indexed exactly once
-        result = db.execute( String.format( NODES, "\"Jyllingevej\"") );
+        result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
@@ -412,7 +412,7 @@ public class BloomIT
 
         // Verify that the node is no longer indexed
         db.execute( AWAIT_POPULATION ).close();
-        Result result = db.execute( String.format( NODES, "\"Esplanaden\"") );
+        Result result = db.execute( String.format( NODES, "\"Esplanaden\"" ) );
         assertFalse( result.hasNext() );
         result.close();
     }
@@ -449,7 +449,7 @@ public class BloomIT
 
         // Verify that the node is no longer indexed
         db.execute( AWAIT_POPULATION ).close();
-        Result result = db.execute( String.format( NODES, "\"Esplanaden\"") );
+        Result result = db.execute( String.format( NODES, "\"Esplanaden\"" ) );
         assertFalse( result.hasNext() );
         result.close();
     }
@@ -469,7 +469,7 @@ public class BloomIT
 
         try ( Transaction ignore = db.beginTx() )
         {
-            try ( Result result = db.execute( String.format( NODES, "\"Langelinie\"") ) )
+            try ( Result result = db.execute( String.format( NODES, "\"Langelinie\"" ) ) )
             {
                 assertThat( Iterators.count( result ), is( 1L ) );
             }
@@ -485,7 +485,7 @@ public class BloomIT
             th.start();
             th.join();
 
-            try ( Result result = db.execute( String.format( NODES, "\"Langelinie\"") ) )
+            try ( Result result = db.execute( String.format( NODES, "\"Langelinie\"" ) ) )
             {
                 assertThat( Iterators.count( result ), is( 2L ) );
             }
@@ -506,7 +506,6 @@ public class BloomIT
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
         db.execute( AWAIT_POPULATION ).close();
-
 
         try ( Transaction tx = db.beginTx() )
         {

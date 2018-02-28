@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -53,6 +52,7 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
+
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
             String identifier, FulltextIndexType type )
     {

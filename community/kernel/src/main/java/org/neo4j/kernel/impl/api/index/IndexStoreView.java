@@ -125,7 +125,8 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
 
         @SuppressWarnings( "unchecked" )
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+                Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
         {
             return EMPTY_SCAN;
         }
