@@ -275,6 +275,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             // Rebuild indexes by recreating and repopulating them
             if ( !rebuildingDescriptors.isEmpty() )
             {
+                //TODO why is this nodes only?
                 IndexPopulationJob populationJob = newIndexPopulationJob( EntityType.NODE );
                 rebuildingDescriptors.visitEntries(
                         (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->

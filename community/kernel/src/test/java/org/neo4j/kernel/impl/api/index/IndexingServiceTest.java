@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -719,7 +720,8 @@ public class IndexingServiceTest
 
             @Override
             public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
-                    PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+                    PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+                    PrimitiveLongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
             {
                 throw new UnsupportedOperationException();
             }

@@ -87,7 +87,8 @@ public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdates
 
             @Override
             public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
-                    PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+                    PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+                    PrimitiveLongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
             {
                 throw new UnsupportedOperationException();
             }

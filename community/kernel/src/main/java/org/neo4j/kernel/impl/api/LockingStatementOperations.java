@@ -533,12 +533,12 @@ public class LockingStatementOperations implements
         if ( schema.entityType() == EntityType.NODE )
         {
             locker = this::exclusiveLabelLock;
-            entityTokenHighId = state.readOperations()::labelCount;
+            entityTokenHighId = () -> state.readOperations().labelCount();
         }
         else
         {
             locker = this::exclusiveRelationshipTypeLock;
-            entityTokenHighId = state.readOperations()::relationshipTypeCount;
+            entityTokenHighId = () -> state.readOperations().relationshipTypeCount();
         }
         if ( schema.getEntityTokenIds().length == 0 )
         {
@@ -560,12 +560,12 @@ public class LockingStatementOperations implements
         if ( schema.entityType() == EntityType.NODE )
         {
             locker = this::sharedLabelLock;
-            entityTokenHighId = state.readOperations()::labelCount;
+            entityTokenHighId = () -> state.readOperations().labelCount();
         }
         else
         {
             locker = this::sharedRelationshipTypeLock;
-            entityTokenHighId = state.readOperations()::relationshipTypeCount;
+            entityTokenHighId = () -> state.readOperations().relationshipTypeCount();
         }
         if ( schema.getEntityTokenIds().length == 0 )
         {

@@ -150,7 +150,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 // Queue the index updates. When index updates from all transactions in this batch have been accumulated
                 // we'll feed them to the index updates work sync at the end of the batch
                 indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(), indexUpdatesExtractor.propertyCommandsByRelationshipIds(),
-                        indexUpdatesExtractor.nodeCommandsById() );
+                        indexUpdatesExtractor.nodeCommandsById(), indexUpdatesExtractor.relationshipCommandsById() );
                 indexUpdatesExtractor.close();
             }
 
@@ -197,6 +197,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
             // for indexes
             return indexUpdatesExtractor.visitNodeCommand( command );
+        }
+
+        @Override
+        public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+        {
+            return indexUpdatesExtractor.visitRelationshipCommand( command );
         }
 
         @Override

@@ -1256,7 +1256,8 @@ public class TransactionRecordStateTest
         CollectingIndexingUpdateService indexingUpdateService = new CollectingIndexingUpdateService();
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), neoStores.getRelationshipStore(), indexingUpdateService,
                 new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
-        onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.propertyCommandsByRelationshipIds(), extractor.nodeCommandsById() );
+        onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.propertyCommandsByRelationshipIds(), extractor.nodeCommandsById(),
+                extractor.relationshipCommandsById() );
         return indexingUpdateService.entityUpdatesList;
     }
 

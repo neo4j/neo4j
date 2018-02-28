@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.storageengine.api.EntityType;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -52,7 +53,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * in that case the properties for that node needs to be read from store since the commands in that transaction
  * cannot itself provide enough information.
  *
- * One instance can be {@link IndexUpdates#feed(PrimitiveLongObjectMap, PrimitiveLongObjectMap, PrimitiveLongObjectMap) fed} data about
+ * One instance can be {@link IndexUpdates#feed(PrimitiveLongObjectMap, PrimitiveLongObjectMap, PrimitiveLongObjectMap, PrimitiveLongObjectMap) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates
@@ -82,7 +83,8 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     @Override
     public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
-            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+            PrimitiveLongObjectMap<RelationshipCommand> relationshipCommands )
     {
         PrimitiveLongIterator nodeIds = allKeys( nodeCommands, propCommandsByNodeId ).iterator();
         while ( nodeIds.hasNext() )
@@ -90,11 +92,11 @@ public class OnlineIndexUpdates implements IndexUpdates
             long nodeId = nodeIds.next();
             gatherUpdatesFor( nodeId, nodeCommands.get( nodeId ), propCommandsByNodeId.get( nodeId ) );
         }
-        PrimitiveLongIterator relationshipIds = propertyCommandsByRelationshipId.iterator();
+        PrimitiveLongIterator relationshipIds = allKeys( relationshipCommands, propertyCommandsByRelationshipId ).iterator();
         while ( relationshipIds.hasNext() )
         {
             long relationshipId = relationshipIds.next();
-            gatherUpdatesFor( relationshipId, propertyCommandsByRelationshipId.get( relationshipId ) );
+            gatherUpdatesFor( relationshipId, relationshipCommands.get( relationshipId ), propertyCommandsByRelationshipId.get( relationshipId ) );
         }
     }
 
@@ -128,10 +130,9 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
     }
 
-    private void gatherUpdatesFor( long reltionshipId, List<PropertyCommand> propertyCommands )
+    private void gatherUpdatesFor( long reltionshipId, RelationshipCommand relationshipCommand, List<PropertyCommand> propertyCommands )
     {
-        EntityUpdates.Builder relationshipPropertyUpdate =
-                gatherUpdatesFromCommandsForRelationship( reltionshipId, propertyCommands );
+        EntityUpdates.Builder relationshipPropertyUpdate = gatherUpdatesFromCommandsForRelationship( reltionshipId, relationshipCommand, propertyCommands );
 
         EntityUpdates entityUpdates = relationshipPropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
@@ -186,13 +187,26 @@ public class OnlineIndexUpdates implements IndexUpdates
         return nodePropertyUpdates;
     }
 
-    private EntityUpdates.Builder gatherUpdatesFromCommandsForRelationship( long relationshipId, List<PropertyCommand> propertyCommands )
+    private EntityUpdates.Builder gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
+            List<PropertyCommand> propertyCommands )
     {
-        RelationshipRecord relationshipRecord = loadRelationship( relationshipId );
-        long reltype = relationshipRecord.getType();
-        EntityUpdates.Builder relationshipPropertyUpdates =
-                EntityUpdates.forEntity( relationshipId, new long[]{reltype} );
-        converter.convertPropertyRecord( relationshipId, Iterables.cast( propertyCommands ), relationshipPropertyUpdates );
+        long reltypeBefore;
+        long reltypeAfter;
+        if ( relationshipCommand != null )
+        {
+            reltypeBefore = relationshipCommand.getBefore().getType();
+            reltypeAfter = relationshipCommand.getAfter().getType();
+        }
+        else
+        {
+            RelationshipRecord relationshipRecord = loadRelationship( relationshipId );
+            reltypeBefore = reltypeAfter = relationshipRecord.getType();
+        }
+        EntityUpdates.Builder relationshipPropertyUpdates = EntityUpdates.forEntity( relationshipId, new long[]{reltypeBefore}, new long[]{reltypeAfter} );
+        if ( propertyCommands != null )
+        {
+            converter.convertPropertyRecord( relationshipId, Iterables.cast( propertyCommands ), relationshipPropertyUpdates );
+        }
         return relationshipPropertyUpdates;
     }
 

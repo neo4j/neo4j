@@ -77,17 +77,6 @@ public class SchemaStore extends AbstractDynamicStore// implements Iterable<Sche
         allocateRecordsFromBytes( records, rule.serialize(), recordAllocator );
         return records;
     }
-//
-//    public Iterator<SchemaRule> loadAllSchemaRules()
-//    {
-//        return new SchemaStorage( this ).loadAllSchemaRules();
-//    }
-//
-//    @Override
-//    public Iterator<SchemaRule> iterator()
-//    {
-//        return loadAllSchemaRules();
-//    }
 
     static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer, IndexProviderMap indexProviderMap )
             throws MalformedSchemaRuleException

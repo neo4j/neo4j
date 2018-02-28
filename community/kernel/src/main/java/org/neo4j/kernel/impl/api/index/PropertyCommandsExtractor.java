@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
@@ -42,6 +43,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
     private final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
+    private final PrimitiveLongObjectMap<RelationshipCommand> relationshipCommandsById = longObjectMap();
     private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
     private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds = longObjectMap();
     private boolean hasUpdates;
@@ -62,6 +64,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     public void close() throws Exception
     {
         nodeCommandsById.clear();
+        relationshipCommandsById.clear();
         propertyCommandsByNodeIds.clear();
         propertyCommandsByRelationshipIds.clear();
     }
@@ -77,7 +80,15 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         return false;
     }
 
-    public static boolean mayResultInIndexUpdates( NodeCommand command )
+    @Override
+    public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
+    {
+        relationshipCommandsById.put( command.getKey(), command );
+        hasUpdates = true;
+        return false;
+    }
+
+    private static boolean mayResultInIndexUpdates( NodeCommand command )
     {
         long before = command.getBefore().getLabelField();
         long after = command.getAfter().getLabelField();
@@ -85,42 +96,32 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
                 // Because we don't know here, there may have been changes to a dynamic label record
                 // even though it still points to the same one
                 fieldPointsToDynamicRecordOfLabels( before ) || fieldPointsToDynamicRecordOfLabels( after );
-
-    }
-
-    public static boolean mayResultInIndexUpdates( PropertyCommand command )
-    {
-        return true;
-//        return command.getAfter().isNodeSet();
     }
 
     @Override
     public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
     {
-        if ( mayResultInIndexUpdates( command ) )
+        if ( command.getAfter().isNodeSet() )
         {
-            if ( command.getAfter().isNodeSet() )
+            long nodeId = command.getAfter().getNodeId();
+            List<PropertyCommand> group = propertyCommandsByNodeIds.get( nodeId );
+            if ( group == null )
             {
-                long nodeId = command.getAfter().getNodeId();
-                List<PropertyCommand> group = propertyCommandsByNodeIds.get( nodeId );
-                if ( group == null )
-                {
-                    propertyCommandsByNodeIds.put( nodeId, group = new ArrayList<>() );
-                }
-                group.add( command );
-                hasUpdates = true;
+                propertyCommandsByNodeIds.put( nodeId, group = new ArrayList<>() );
             }
-            else
+            group.add( command );
+            hasUpdates = true;
+        }
+        else if ( command.getAfter().isRelSet() )
+        {
+            long relId = command.getAfter().getRelId();
+            List<PropertyCommand> group = propertyCommandsByRelationshipIds.get( relId );
+            if ( group == null )
             {
-                long relId = command.getAfter().getRelId();
-                List<PropertyCommand> group = propertyCommandsByRelationshipIds.get( relId );
-                if ( group == null )
-                {
-                    propertyCommandsByRelationshipIds.put( relId, group = new ArrayList<>() );
-                }
-                group.add( command );
-                hasUpdates = true;
+                propertyCommandsByRelationshipIds.put( relId, group = new ArrayList<>() );
             }
+            group.add( command );
+            hasUpdates = true;
         }
         return false;
     }
@@ -133,6 +134,11 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     public PrimitiveLongObjectMap<NodeCommand> nodeCommandsById()
     {
         return nodeCommandsById;
+    }
+
+    public PrimitiveLongObjectMap<RelationshipCommand> relationshipCommandsById()
+    {
+        return relationshipCommandsById;
     }
 
     public PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds()
