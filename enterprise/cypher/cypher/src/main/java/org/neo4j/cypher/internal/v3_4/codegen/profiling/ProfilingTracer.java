@@ -91,12 +91,13 @@ public class ProfilingTracer implements QueryExecutionTracer
     @Override
     public QueryExecutionEvent executeOperator( Id queryId )
     {
-        Data data = this.data.get( queryId );
-        if ( data == null && queryId != null )
+        Data queryData = this.data.get( queryId );
+        if ( queryData == null && queryId != null )
         {
-            this.data.put( queryId, data = new Data() );
+            queryData = new Data();
+            this.data.put( queryId, queryData );
         }
-        return new ExecutionEvent( clock, statisticProvider, data );
+        return new ExecutionEvent( clock, statisticProvider, queryData );
     }
 
     private static class ExecutionEvent implements QueryExecutionEvent

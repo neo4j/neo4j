@@ -126,7 +126,9 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
                 {
                     throw new NoSuchElementException();
                 }
-                return (T) array[--cursor];
+
+                int offset = --cursor;
+                return (T) array[offset];
             }
         };
     }

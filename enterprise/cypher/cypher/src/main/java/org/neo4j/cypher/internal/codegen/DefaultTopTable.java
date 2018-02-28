@@ -124,7 +124,8 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
                 {
                     throw new NoSuchElementException();
                 }
-                return (T) array[--cursor];
+                --cursor;
+                return (T) array[cursor];
             }
         };
     }
