@@ -206,9 +206,9 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "abs(a-b)/max(a,b). This means that a value of 0.75 requires the database to approximately " +
                   "quadruple in size. A value of 0 means replan as soon as possible, with the soonest being " +
                   "defined by the cypher.min_replan_interval which defaults to 10s. After this interval the " +
-                  "divergence threshold will slowly start to decline, reaching 10% after about 7h, so that " +
-                  "long running databases will still get query replanning on even modest changes, while not " +
-                  "replanning frequently unless the changes are very large." )
+                  "divergence threshold will slowly start to decline, reaching 10% after about 7h. This will " +
+                  "ensure that long running databases will still get query replanning on even modest changes, " +
+                  "while not replanning frequently unless the changes are very large." )
     public static Setting<Double> query_statistics_divergence_threshold =
             buildSetting( "cypher.statistics_divergence_threshold", DOUBLE, "0.75" ).constraint( range( 0.0, 1.0 ) ).build();
 
@@ -250,7 +250,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "not changed sufficiently, the same interval will need to pass before the statistics will be " +
                   "evaluated again. Each time they are evaluated, the divergence threshold will be reduced slightly " +
                   "until it reaches 10% after 7h, so that even moderately changing databases will see query replanning " +
-                  "after a sufficiently long time interval.")
+                  "after a sufficiently long time interval." )
     public static Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
 
     @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
