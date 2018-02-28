@@ -86,8 +86,6 @@ public class BuiltInProcedures
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
-        // but we still want to eagerly consume the labels, so we can catch any exceptions,
         List<LabelResult> labelResults = asList( TokenAccess.LABELS.inUse( tx ).map( LabelResult::new ) );
         return labelResults.stream();
     }
@@ -96,8 +94,6 @@ public class BuiltInProcedures
     @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
-        // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
-        // but we still want to eagerly consume the labels, so we can catch any exceptions,
         List<PropertyKeyResult> propertyKeys =
                 asList( TokenAccess.PROPERTY_KEYS.inUse( tx ).map( PropertyKeyResult::new ) );
         return propertyKeys.stream();
@@ -107,8 +103,6 @@ public class BuiltInProcedures
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
-        // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
-        // but we still want to eagerly consume the labels, so we can catch any exceptions,
         List<RelationshipTypeResult> relationshipTypes =
                 asList( TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).map( RelationshipTypeResult::new ) );
         return relationshipTypes.stream();
@@ -402,10 +396,8 @@ public class BuiltInProcedures
         }
     }
 
-    @Description(
-            "Get relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
-            "(key " +
-            "= 'A')`" )
+    @Description( "Get relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index(key " +
+                  "= 'A')`" )
     @Procedure( name = "db.index.explicit.auto.seekRelationships", mode = READ )
     public Stream<RelationshipResult> relationshipAutoIndexSeek( @Name( "key" ) String key,
             @Name( "value" ) Object value )
