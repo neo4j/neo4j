@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 public abstract class RelationshipSparseSelectionTestBase<Traverser extends RelationshipSparseSelection>
         extends RelationshipSelectionTestBase

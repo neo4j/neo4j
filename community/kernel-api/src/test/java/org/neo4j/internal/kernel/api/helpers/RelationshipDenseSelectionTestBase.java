@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 public abstract class RelationshipDenseSelectionTestBase<Traverser extends RelationshipDenseSelection>
         extends RelationshipSelectionTestBase

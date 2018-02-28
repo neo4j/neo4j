@@ -21,9 +21,9 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.graphdb.ResourceIterator;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 class RelationshipSelectionTestBase
 {

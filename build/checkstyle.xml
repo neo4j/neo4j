@@ -92,6 +92,10 @@
       <property name="max" value="160"/>
       <property name="ignorePattern" value="a href|href|http://|https://"/>
     </module>
+
+    <module name="IllegalImport">
+      <property name="illegalPkgs" value="junit.framework"/>
+    </module>
   </module>
 
 </module>
