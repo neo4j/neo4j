@@ -4,6 +4,16 @@ ${PACKAGE_NAME} (${VERSION}) ${DISTRIBUTION}; urgency=low
 
  -- Neo Technology <debian@neotechnology.com>  ${DATE}
 
+${PACKAGE_NAME} (1:3.2.9) ${DISTRIBUTION}; urgency=low
+
+  * Added an epoch (1:) to the version number. The motivation is to ensure
+    correct ordering between packages in /stable and in /testing without
+    having to remove older packages. Previously, pre-release versions would
+    have been considered greater than final releases due to the separator (. or -)
+    between the version number and the label (now ~).
+
+ -- Neo Technology <debian@neotechnology.com>  Mon, 28 Feb 2018 09:51:25 +0100
+
 ${PACKAGE_NAME} (3.2.0) ${DISTRIBUTION}; urgency=medium
 
   * Neo4j now ships a native systemd service. Options in

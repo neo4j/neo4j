@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -eu
+# Converts a version like 1.2.3-BETA1 to an RPM suitable full version: 1.2.3-0.BETA1.1
+
+if [ $# -ne 1 ]
+then
+  echo "Usage: ${0} <version from pom>"
+  exit 1
+fi
+
+version=${1}
+
+# Read in shared functions
+. "$(dirname ${0})/shared.sh"
+
+# Get version(s)
+parse_version "${version}"
+
+echo "${rpm_version}-${rpm_release}"

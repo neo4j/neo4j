@@ -5,7 +5,6 @@ Priority: optional
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.7.2
 Homepage: http://neo4j.org/
-Version: ${VERSION}
 
 Package: ${PACKAGE_NAME}
 Architecture: all
