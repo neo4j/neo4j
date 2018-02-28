@@ -17,6 +17,10 @@
   <description>Enterprise locks deferred to commit time</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <moduleName>org.neo4j.kernel.impl.locking.deferred</moduleName>
+  </properties>
+
   <scm>
     <url>https://github.com/neo4j/neo4j/tree/3.0/enterprise/deferred-locks</url>
   </scm>

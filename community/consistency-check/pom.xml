@@ -18,6 +18,7 @@
     <neo4j.version>${project.version}</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <moduleName>org.neo4j.consistency</moduleName>
   </properties>
 
   <scm>

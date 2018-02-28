@@ -21,6 +21,10 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <moduleName>org.neo4j.kernel.impl.query</moduleName>
+  </properties>
+
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>

@@ -68,13 +68,14 @@
     <lucene.version>5.5.5</lucene.version>
     <bouncycastle.version>1.59</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
+    <java9.exports/>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
       -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
-      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
+      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java9.exports} ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <jetty.version>9.4.8.v20171121</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
@@ -89,7 +90,9 @@
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>6.0</asm.version>
     <metrics.version>4.0.2</metrics.version>
+    <scala.target.vm>1.8</scala.target.vm>
     <scala.java9.arg/>
+    <jersey.version>1.19.3</jersey.version>
     <checkstyle.strict>true</checkstyle.strict>
   </properties>
 
@@ -417,6 +420,7 @@
                   </manifest>
                   <manifestEntries>
                     <Url>${project.organization.url}</Url>
+                    <Automatic-Module-Name>${moduleName}</Automatic-Module-Name>
                   </manifestEntries>
                 </archive>
               </configuration>
@@ -512,7 +516,7 @@
               <arg>-Xmax-classfile-name</arg>
               <arg>100</arg>
               <arg>-Xlint</arg>
-              <arg>-target:jvm-${maven.compiler.target}</arg>
+              <arg>-target:jvm-${scala.target.vm}</arg>
               <arg>${scala.java9.arg}</arg>
             </args>
             <jvmArgs>
@@ -568,11 +572,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.7.0</version>
           <configuration>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
+            <compilerArgument>${java9.exports}</compilerArgument>
           </configuration>
-          <version>3.7.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -905,6 +910,7 @@
         <jdk>9</jdk>
       </activation>
       <properties>
+        <java9.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</java9.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java9.arg>-nobootcp</scala.java9.arg>
       </properties>
@@ -1212,7 +1218,7 @@
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-client</artifactId>
-        <version>1.19</version>
+        <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
@@ -1223,7 +1229,7 @@
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-server</artifactId>
-        <version>1.19</version>
+        <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
@@ -1234,18 +1240,13 @@
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-servlet</artifactId>
-        <version>1.19</version>
+        <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
             <artifactId>jsr311-api</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>com.sun.jersey.contribs</groupId>
-        <artifactId>jersey-multipart</artifactId>
-        <version>1.19</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>

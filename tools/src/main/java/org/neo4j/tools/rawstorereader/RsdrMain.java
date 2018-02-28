@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.xml.bind.DatatypeConverter;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.string.HexString;
 import org.neo4j.tools.util.TransactionLogUtils;
 
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
@@ -227,7 +227,7 @@ public class RsdrMain
                 byte[] bytes = new byte[count];
                 buf.clear();
                 buf.get( bytes );
-                String hex = DatatypeConverter.printHexBinary( bytes );
+                String hex = HexString.encodeHexString( bytes );
                 int paddingNeeded = (recordSize * 2 - Math.max( count * 2, 0 )) + 1;
                 String format = "%s %6s 0x%08X %s%" + paddingNeeded + "s%s%n";
                 String str;

@@ -12,6 +12,10 @@
   <name>Neo4j - Communication Package</name>
   <packaging>jar</packaging>
 
+  <properties>
+    <moduleName>org.neo4j.com</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

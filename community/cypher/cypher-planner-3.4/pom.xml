@@ -15,6 +15,10 @@
   <description>Planner for Cypher 3.4</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+  <properties>
+    <moduleName>org.neo4j.cypher.internal.compiler.v3_4</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

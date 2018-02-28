@@ -17,6 +17,10 @@
   <description>A runtime for Neo4j's query language</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+  <properties>
+    <moduleName>org.neo4j.cypher.internal.compatibility.v3_4.runtime</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

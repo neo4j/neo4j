@@ -17,6 +17,10 @@
   <description>Fulltext index addon for neo4j</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <moduleName>org.neo4j.kernel.api.impl.fulltext</moduleName>
+  </properties>
+
   <scm>
     <url>https://github.com/neo4j/neo4j/tree/3.3/enterprise/fulltext-addon</url>
   </scm>

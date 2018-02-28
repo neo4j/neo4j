@@ -22,6 +22,10 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <moduleName>org.neo4j.cypher.internal.runtime.interpreted</moduleName>
+  </properties>
+
   <licenses>
     <license>
       <name>GNU General Public License, Version 3</name>
