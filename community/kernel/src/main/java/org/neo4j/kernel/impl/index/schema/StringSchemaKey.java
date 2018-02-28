@@ -37,6 +37,8 @@ class StringSchemaKey extends NativeSchemaKey
 {
     static final int ENTITY_ID_SIZE = Long.BYTES;
 
+    private boolean ignoreLength;
+
     // TODO something better or?
     // TODO this is UTF-8 bytes for now
     byte[] bytes;
@@ -75,6 +77,21 @@ class StringSchemaKey extends NativeSchemaKey
         bytes = null;
     }
 
+    void initAsPrefixLow( String prefix )
+    {
+        writeString( prefix );
+        setEntityId( Long.MIN_VALUE );
+        setCompareId( DEFAULT_COMPARE_ID );
+    }
+
+    void initAsPrefixHigh( String prefix )
+    {
+        writeString( prefix );
+        setEntityId( Long.MAX_VALUE );
+        setCompareId( DEFAULT_COMPARE_ID );
+        ignoreLength = true;
+    }
+
     private boolean isHighest()
     {
         return getCompareId() && getEntityId() == Long.MAX_VALUE && bytes == null;
@@ -109,7 +126,7 @@ class StringSchemaKey extends NativeSchemaKey
         try
         {
             // TODO change to not throw
-            return codePointByteArrayCompare( bytes, other.bytes );
+            return codePointByteArrayCompare( bytes, other.bytes, ignoreLength || other.ignoreLength );
         }
         catch ( Exception e )
         {
