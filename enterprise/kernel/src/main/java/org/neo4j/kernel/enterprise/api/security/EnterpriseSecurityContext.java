@@ -49,7 +49,7 @@ public class EnterpriseSecurityContext extends SecurityContext
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Function<String, Integer> tokenLookup )
+    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
     {
         return this;
     }

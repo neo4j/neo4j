@@ -36,10 +36,10 @@ public interface LoginContext
     /**
      * Authorize the user and return a SecurityContext.
      *
-     * @param tokenLookup token lookup, used to compile property level security verification
+     * @param propertyIdLookup token lookup, used to compile property level security verification
      * @return the security context
      */
-    SecurityContext authorize( Function<String, Integer> tokenLookup );
+    SecurityContext authorize( Function<String, Integer> propertyIdLookup );
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
@@ -50,7 +50,7 @@ public interface LoginContext
         }
 
         @Override
-        public SecurityContext authorize( Function<String, Integer> tokenLookup )
+        public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
         {
             return SecurityContext.AUTH_DISABLED;
         }

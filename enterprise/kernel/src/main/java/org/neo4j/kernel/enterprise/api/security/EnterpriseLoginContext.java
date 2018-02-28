@@ -30,7 +30,7 @@ public interface EnterpriseLoginContext extends LoginContext
 {
     Set<String> roles();
 
-    EnterpriseSecurityContext authorize( Function<String, Integer> tokenLookup );
+    EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup );
 
     EnterpriseLoginContext AUTH_DISABLED = new EnterpriseLoginContext()
     {
@@ -47,7 +47,7 @@ public interface EnterpriseLoginContext extends LoginContext
         }
 
         @Override
-        public EnterpriseSecurityContext authorize( Function<String, Integer> tokenLookup )
+        public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
         {
             return EnterpriseSecurityContext.AUTH_DISABLED;
         }

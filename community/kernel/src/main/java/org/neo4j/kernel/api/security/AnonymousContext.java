@@ -68,7 +68,7 @@ public class AnonymousContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Function<String, Integer> tokenLookup )
+    public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
     {
         return new SecurityContext( subject(), accessMode );
     }

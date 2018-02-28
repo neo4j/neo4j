@@ -114,7 +114,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         return new EnterpriseLoginContext()
         {
             @Override
-            public EnterpriseSecurityContext authorize( Function<String, Integer> tokenLookup )
+            public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
             {
                 return new EnterpriseSecurityContext( subject(), inner.mode(), Collections.emptySet(), false );
             }

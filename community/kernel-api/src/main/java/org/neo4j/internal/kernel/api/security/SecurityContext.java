@@ -62,7 +62,7 @@ public class SecurityContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Function<String, Integer> tokenLookup )
+    public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
     {
         return this;
     }
