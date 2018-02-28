@@ -159,31 +159,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         }
     }
 
-    private List<NodeAndValue> allValues( Iterable<Value> supportedValues )
-    {
-        long nodeIds = 0;
-        List<NodeAndValue> result = new ArrayList<>();
-        for ( Value value : supportedValues )
-        {
-            result.add( new NodeAndValue( nodeIds++, value ) );
-        }
-        return result;
-    }
-
-    private List<NodeAndValue> allValues = allValues( testSuite.getSupportedValues() );
-
-    static class NodeAndValue
-    {
-        final long nodeId;
-        final Value value;
-
-        NodeAndValue( long nodeId, Value value )
-        {
-            this.nodeId = nodeId;
-            this.value = value;
-        }
-    }
-
     @Test
     public void shouldPopulateWithAllValues() throws Exception
     {

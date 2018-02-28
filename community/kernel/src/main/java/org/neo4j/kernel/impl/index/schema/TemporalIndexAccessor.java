@@ -34,9 +34,8 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -76,19 +75,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return new IndexUpdater()
-        {
-            @Override
-            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
-            {
-                throw new UnsupportedOperationException( "Not yet" );
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-            }
-        };
+        return new TemporalIndexUpdater( this, mode );
     }
 
     @Override
@@ -243,7 +230,9 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         @Override
         public PartAccessor<?> newDate() throws IOException
         {
-            return new PartAccessor<>( pageCache, fs, temporalIndexFiles.date(),
+            TemporalIndexFiles.FileLayout<DateSchemaKey> fileLayout = temporalIndexFiles.date();
+            ensureIndexExists( fileLayout );
+            return new PartAccessor<>( pageCache, fs, fileLayout,
                     recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
         }
 
@@ -275,6 +264,21 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         public PartAccessor<?> newDuration() throws IOException
         {
             throw new UnsupportedOperationException( "no comprende" );
+        }
+
+        private <KEY extends NativeSchemaKey> void ensureIndexExists( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        {
+            if ( !fs.fileExists( fileLayout.indexFile ) )
+            {
+                createEmptyIndex( fileLayout );
+            }
+        }
+
+        private <KEY extends NativeSchemaKey> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        {
+            IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId );
+            populator.create();
+            populator.close( true );
         }
     }
 }

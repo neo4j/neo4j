@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -71,9 +72,10 @@ public abstract class IndexProviderCompatibilityTestSuite
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
-        protected final IndexProviderCompatibilityTestSuite testSuite;
         protected SchemaIndexProvider indexProvider;
         protected IndexDescriptor descriptor;
+        final IndexProviderCompatibilityTestSuite testSuite;
+        final List<NodeAndValue> allValues;
 
         @Before
         public void setup()
@@ -88,6 +90,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         {
             this.testSuite = testSuite;
             this.descriptor = descriptor;
+            this.allValues = allValues( testSuite.getSupportedValues() );
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
         }
 
@@ -113,6 +116,29 @@ public abstract class IndexProviderCompatibilityTestSuite
                 catch ( Exception e )
                 {   // ignore
                 }
+            }
+        }
+
+        private static List<NodeAndValue> allValues( Iterable<Value> supportedValues )
+        {
+            long nodeIds = 0;
+            List<NodeAndValue> result = new ArrayList<>();
+            for ( Value value : supportedValues )
+            {
+                result.add( new NodeAndValue( nodeIds++, value ) );
+            }
+            return result;
+        }
+
+        static class NodeAndValue
+        {
+            final long nodeId;
+            final Value value;
+
+            NodeAndValue( long nodeId, Value value )
+            {
+                this.nodeId = nodeId;
+                this.value = value;
             }
         }
     }

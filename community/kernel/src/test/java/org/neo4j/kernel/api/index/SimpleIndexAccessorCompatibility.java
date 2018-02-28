@@ -22,7 +22,9 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -119,6 +121,23 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 1L, descriptor.schema(), "a" ),
                 add( 2L, descriptor.schema(), 2L ) ) );
         assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( EMPTY_LIST ) );
+    }
+
+    @Test
+    public void shouldUpdateWithAllValues() throws Exception
+    {
+        // GIVEN
+        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        allValues.forEach( entry -> updates.add( IndexEntryUpdate.add( entry.nodeId, descriptor.schema(), entry.value ) ) );
+        updateAndCommit( updates );
+
+        // then
+        int propertyKeyId = descriptor.schema().getPropertyId();
+        for ( NodeAndValue entry : allValues )
+        {
+            List<Long> result = query( IndexQuery.exact( propertyKeyId, entry.value ) );
+            assertThat( result, equalTo( Collections.singletonList( entry.nodeId ) ) );
+        }
     }
 
     // This behaviour is expected by General indexes
