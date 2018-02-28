@@ -207,7 +207,7 @@ public class AllStoreHolder extends Read
     @Override
     long graphPropertiesReference()
     {
-        return statement.nextGraphPropertyReference();
+        return statement.getGraphPropertyReference();
     }
 
     @Override
