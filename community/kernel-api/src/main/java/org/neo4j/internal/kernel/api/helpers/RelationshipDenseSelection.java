@@ -236,7 +236,7 @@ abstract class RelationshipDenseSelection
             break;
 
         default:
-            throw new IllegalStateException( "Lorem ipsus, Brutus" );
+            throw new IllegalStateException( "Lorem ipsus, Brutus. (could not setup cursor for Dir='" + d + "')" );
         }
     }
 

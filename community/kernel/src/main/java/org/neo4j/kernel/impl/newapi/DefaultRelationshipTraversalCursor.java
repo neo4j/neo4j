@@ -43,6 +43,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     private enum FilterState
     {
+        // need filter, and need to read filter state from first store relationship
         NOT_INITIALIZED( RelationshipDirection.ERROR )
                 {
                     @Override
@@ -51,6 +52,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         throw new IllegalStateException( "Cannot call check on uninitialized filter" );
                     }
                 },
+        // allow only incoming relationships
         INCOMING( RelationshipDirection.INCOMING )
                 {
                     @Override
@@ -59,6 +61,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         return origin == target;
                     }
                 },
+        // allow only outgoing relationships
         OUTGOING( RelationshipDirection.OUTGOING )
                 {
                     @Override
@@ -67,6 +70,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         return origin == source;
                     }
                 },
+        // allow only loop relationships
         LOOP( RelationshipDirection.LOOP )
                 {
                     @Override
@@ -75,6 +79,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         return source == target;
                     }
                 },
+        // no filtering required
         NONE( RelationshipDirection.ERROR )
                 {
                     @Override
