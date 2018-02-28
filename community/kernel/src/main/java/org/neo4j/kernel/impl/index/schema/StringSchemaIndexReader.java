@@ -29,6 +29,9 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
+
+import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 
 class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,NativeSchemaValue>
 {
@@ -69,9 +72,30 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
+        case stringPrefix:
+            StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
+            initFromForPrefix( prefixPredicate, treeKeyFrom );
+            initToForPrefix( prefixPredicate, treeKeyTo );
+            break;
+//        case stringSuffix:
+//            break;
+//        case stringContains:
+//            break;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
+    }
+
+    private void initFromForPrefix( StringPrefixPredicate prefixPredicate, StringSchemaKey treeKeyFrom )
+    {
+        treeKeyFrom.from( Long.MIN_VALUE, Values.of( prefixPredicate.prefix() ) );
+        treeKeyFrom.setCompareId( true );
+    }
+
+    private void initToForPrefix( StringPrefixPredicate prefixPredicate, StringSchemaKey treeKeyTo )
+    {
+        treeKeyTo.from( Long.MAX_VALUE, Values.of( prefixPredicate.prefix() ) );
+        treeKeyTo.setCompareId( true );
     }
 
     private void initFromForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyFrom )

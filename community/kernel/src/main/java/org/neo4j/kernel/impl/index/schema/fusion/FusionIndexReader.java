@@ -43,6 +43,9 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterators.array;
+import static org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
+import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
+import static org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class FusionIndexReader implements IndexReader
@@ -174,7 +177,10 @@ class FusionIndexReader implements IndexReader
             return;
         }
 
-        if ( predicate instanceof StringRangePredicate )
+        if ( predicate instanceof StringRangePredicate ||
+             predicate instanceof StringPrefixPredicate ||
+             predicate instanceof StringSuffixPredicate ||
+             predicate instanceof StringContainsPredicate )
         {
             stringReader.query( cursor, indexOrder, predicate );
             return;
