@@ -29,7 +29,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -124,40 +123,13 @@ public class NativeSchemaNumberIndexProviderTest
     /* getOnlineAccessor */
 
     @Test
-    public void getOnlineAccessorMustCreateUniqueAccessorForTypeUnique() throws Exception
+    public void shouldNotCheckConflictsWhenApplyingUpdatesInOnlineAccessor() throws Exception
     {
         // given
         provider = newProvider();
 
         // when
         IndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            Value value = Values.intValue( 1 );
-            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), value ) );
-
-            // then
-            try
-            {
-                indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), value ) );
-                fail( "Should have failed" );
-            }
-            catch ( IndexEntryConflictException e )
-            {
-                // good
-            }
-        }
-    }
-
-    @Test
-    public void getOnlineAccessorMustCreateNonUniqueAccessorForTypeGeneral() throws Exception
-    {
-        // given
-        provider = newProvider();
-
-        // when
-        IndexDescriptor descriptor = descriptor();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

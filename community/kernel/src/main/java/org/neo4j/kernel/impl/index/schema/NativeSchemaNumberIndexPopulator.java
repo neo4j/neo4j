@@ -74,7 +74,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
-        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
+        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger.Check<>();
     }
 
     @Override
