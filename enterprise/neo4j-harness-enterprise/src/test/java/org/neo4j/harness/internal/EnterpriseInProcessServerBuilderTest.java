@@ -28,8 +28,10 @@ import java.util.Arrays;
 import org.neo4j.harness.EnterpriseTestServerBuilders;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
@@ -69,6 +71,7 @@ public class EnterpriseInProcessServerBuilderTest
         TestServerBuilder serverBuilder = EnterpriseTestServerBuilders.newInProcessBuilder( workDir );
         serverBuilder.withConfig( LegacySslPolicyConfig.certificates_directory.name(),
                 ServerTestUtils.getRelativePath( testDir.directory(), LegacySslPolicyConfig.certificates_directory ) );
+        serverBuilder.withConfig( ServerSettings.script_enabled, Settings.TRUE );
         return serverBuilder;
     }
 }
