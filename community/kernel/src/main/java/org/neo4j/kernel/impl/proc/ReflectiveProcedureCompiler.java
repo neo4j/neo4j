@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import java.io.Closeable;
-import java.io.IOException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
@@ -36,10 +36,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
@@ -313,7 +313,6 @@ class ReflectiveProcedureCompiler
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
-        MethodHandle procedureMethod = lookup.unreflect( method );
         Optional<String> description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
@@ -340,7 +339,7 @@ class ReflectiveProcedureCompiler
                 new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( procName.toString() ), description );
 
-        return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
+        return new ReflectiveUserFunction( signature, constructor, method, valueConverter, setters );
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
@@ -716,15 +715,15 @@ class ReflectiveProcedureCompiler
         private final TypeMappers.NeoValueConverter valueConverter;
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
-        private final MethodHandle udfMethod;
+        private final Method udfMethod;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
-                MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
+                Method udfMethod, TypeMappers.NeoValueConverter outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
             super( fieldSetters );
             this.constructor = constructor;
-            this.udfMethod = procedureMethod;
+            this.udfMethod = udfMethod;
             this.signature = signature;
             this.valueConverter = outputMapper;
         }
@@ -757,9 +756,7 @@ class ReflectiveProcedureCompiler
                 inject( ctx, cls );
 
                 // Call the method
-                Object[] args = args( numberOfDeclaredArguments, cls, input );
-
-                Object rs = udfMethod.invokeWithArguments( args );
+                Object rs = udfMethod.invoke( cls, input );
 
                 return valueConverter.toNeoValue( rs );
             }
@@ -768,12 +765,12 @@ class ReflectiveProcedureCompiler
                 if ( throwable instanceof Status.HasStatus )
                 {
                     throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                            throwable.getMessage() );
+                            throwable.getMessage(), throwable );
                 }
                 else
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                            "Failed to invoke function `%s`: %s", signature.name(), "Caused by: " + throwable );
+                            "Failed to invoke function `%s`: %s", signature.name(), "Caused by: " + ExceptionUtils.getRootCause( throwable ) );
                 }
             }
         }
