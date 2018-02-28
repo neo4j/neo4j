@@ -27,16 +27,7 @@ echo "Tarball: ${tarball}"
 echo "Distribution: ${distribution}"
 
 # Get version(s)
-parse_version ${tarball}
-
-# https://fedoraproject.org/wiki/Packaging:Versioning
-if [ -z ${version_label} ]; then
-  # Release version
-  rpm_release="1"
-else
-  # Pre-release version
-  rpm_release="0.${version_label}.1"
-fi
+parse_version_from_tarball "${tarball}"
 
 echo "RPM version: ${rpm_version}"
 echo "Release: ${rpm_release}"
