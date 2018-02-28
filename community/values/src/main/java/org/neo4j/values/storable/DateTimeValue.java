@@ -218,7 +218,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                         AnyValue timeField = fields.get( Field.time );
                         if ( !(timeField instanceof TemporalValue) )
                         {
-                            throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
+                            throw new IllegalArgumentException( String.format( "Cannot construct time from: %s", timeField ) );
                         }
                         TemporalValue t = (TemporalValue) timeField;
                         time = t.getTimePart( defaultZone ).toLocalTime();

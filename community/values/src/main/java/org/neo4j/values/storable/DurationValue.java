@@ -53,7 +53,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
-import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
 

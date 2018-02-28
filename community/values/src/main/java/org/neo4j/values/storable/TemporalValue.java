@@ -634,7 +634,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 return new SelectDateOrTimeDTBuilder( date, time ).assign( field, value );
             }
-            else if ( field.field.isDateBased() )
+            else
+            {
+                return assignNonComposite( field, value );
+            }
+        }
+
+        DateTimeBuilder assignNonComposite( Field field, AnyValue value )
+        {
+            if ( field.field.isDateBased() )
             {
                 if ( date == null )
                 {
@@ -678,23 +686,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 throw new IllegalArgumentException( "cannot re-assign " + field );
             }
-            else if ( field.field.isDateBased() )
-            {
-                if ( date == null )
-                {
-                    date = new ConstructDate();
-                }
-                date = date.assign( field, value );
-            }
             else
             {
-                if ( time == null )
-                {
-                    time = new ConstructTime();
-                }
-                time.assign( field, value );
+                return assignNonComposite( field, value );
             }
-            return this;
         }
     }
 
@@ -712,23 +707,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 throw new IllegalArgumentException( field.name() + " cannot be selected together with date or time." );
             }
-            else if ( field != Field.time && (field == Field.date || field.field.isDateBased()) )
-            {
-                if ( date == null )
-                {
-                    date = new ConstructDate();
-                }
-                date = date.assign( field, value );
-            }
             else
             {
-                if ( time == null )
-                {
-                    time = new ConstructTime();
-                }
-                time.assign( field, value );
+                return assignNonComposite( field, value );
             }
-            return this;
         }
     }
 
