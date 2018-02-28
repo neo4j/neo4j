@@ -58,7 +58,15 @@ abstract class DateLayout extends Layout.Adapter<DateSchemaKey,NativeSchemaValue
         public int compare( DateSchemaKey o1, DateSchemaKey o2 )
         {
             int comparison = o1.compareValueTo( o2 );
-            return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
+            if ( comparison == 0 )
+            {
+                // This is a special case where we need also compare entityId to support inclusive/exclusive
+                if ( o1.getCompareId() || o2.getCompareId() )
+                {
+                    return Long.compare( o1.getEntityId(), o2.getEntityId() );
+                }
+            }
+            return comparison;
         }
     };
 
@@ -87,15 +95,7 @@ abstract class DateLayout extends Layout.Adapter<DateSchemaKey,NativeSchemaValue
         public int compare( DateSchemaKey o1, DateSchemaKey o2 )
         {
             int comparison = o1.compareValueTo( o2 );
-            if ( comparison == 0 )
-            {
-                // This is a special case where we need also compare entityId to support inclusive/exclusive
-                if ( o1.getCompareId() || o2.getCompareId() )
-                {
-                    return Long.compare( o1.getEntityId(), o2.getEntityId() );
-                }
-            }
-            return comparison;
+            return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
         }
     };
 

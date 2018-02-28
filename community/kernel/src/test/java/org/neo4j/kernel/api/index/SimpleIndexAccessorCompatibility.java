@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -127,13 +126,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void shouldUpdateWithAllValues() throws Exception
     {
         // GIVEN
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-        allValues.forEach( entry -> updates.add( IndexEntryUpdate.add( entry.nodeId, descriptor.schema(), entry.value ) ) );
+        List<IndexEntryUpdate<?>> updates = updates( valueSet1 );
         updateAndCommit( updates );
 
         // then
         int propertyKeyId = descriptor.schema().getPropertyId();
-        for ( NodeAndValue entry : allValues )
+        for ( NodeAndValue entry : valueSet1 )
         {
             List<Long> result = query( IndexQuery.exact( propertyKeyId, entry.value ) );
             assertThat( result, equalTo( Collections.singletonList( entry.nodeId ) ) );

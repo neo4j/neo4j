@@ -57,13 +57,9 @@ public abstract class IndexProviderCompatibilityTestSuite
 {
     protected abstract SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
 
-    public abstract Iterable<Value> getSupportedValues();
+    public abstract boolean supportsSpatial();
 
-    protected List<Value> commonValues = Arrays.asList( Values.of( "string1" ), Values.of( 42 ) );
-    protected List<Value> temporalValues = Arrays.asList( DateValue.epochDate( 2 ), DateValue.epochDate( 5 ) );
-    protected List<Value> spatialValues = Arrays.asList(
-            Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
-            Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) );
+    public abstract boolean supportsTemporal();
 
     public abstract static class Compatibility
     {
@@ -75,7 +71,8 @@ public abstract class IndexProviderCompatibilityTestSuite
         protected SchemaIndexProvider indexProvider;
         protected IndexDescriptor descriptor;
         final IndexProviderCompatibilityTestSuite testSuite;
-        final List<NodeAndValue> allValues;
+        final List<NodeAndValue> valueSet1;
+        final List<NodeAndValue> valueSet2;
 
         @Before
         public void setup()
@@ -90,7 +87,22 @@ public abstract class IndexProviderCompatibilityTestSuite
         {
             this.testSuite = testSuite;
             this.descriptor = descriptor;
-            this.allValues = allValues( testSuite.getSupportedValues() );
+            this.valueSet1 = allValues(
+                    testSuite.supportsSpatial(),
+                    testSuite.supportsTemporal(),
+                    Arrays.asList( Values.of( "string1" ), Values.of( 42 ) ),
+                    Arrays.asList( DateValue.epochDate( 2 ), DateValue.epochDate( 5 ) ),
+                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
+                                   Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
+
+            this.valueSet2 = allValues(
+                    testSuite.supportsSpatial(),
+                    testSuite.supportsTemporal(),
+                    Arrays.asList( Values.of( "string2" ), Values.of( 1337 ) ),
+                    Arrays.asList( DateValue.epochDate( 42 ), DateValue.epochDate( 1337 ) ),
+                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 10 ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS84, 87.21, 7.65 ) ) );
+
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
         }
 
@@ -119,13 +131,43 @@ public abstract class IndexProviderCompatibilityTestSuite
             }
         }
 
-        private static List<NodeAndValue> allValues( Iterable<Value> supportedValues )
+        List<IndexEntryUpdate<?>> updates( List<NodeAndValue> values )
+        {
+            return updates( values, 0 );
+        }
+
+        List<IndexEntryUpdate<?>> updates( List<NodeAndValue> values, long nodeIdOffset )
+        {
+            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            values.forEach( entry -> updates.add( IndexEntryUpdate.add( nodeIdOffset + entry.nodeId, descriptor.schema(), entry.value ) ) );
+            return updates;
+        }
+
+        private static List<NodeAndValue> allValues( boolean supportsSpatial,
+                                                     boolean supportsTemporal,
+                                                     List<Value> common,
+                                                     List<Value> temporal,
+                                                     List<Value> spatial )
         {
             long nodeIds = 0;
             List<NodeAndValue> result = new ArrayList<>();
-            for ( Value value : supportedValues )
+            for ( Value value : common )
             {
                 result.add( new NodeAndValue( nodeIds++, value ) );
+            }
+            if ( supportsSpatial )
+            {
+                for ( Value value : spatial )
+                {
+                    result.add( new NodeAndValue( nodeIds++, value ) );
+                }
+            }
+            if ( supportsTemporal )
+            {
+                for ( Value value : temporal )
+                {
+                    result.add( new NodeAndValue( nodeIds++, value ) );
+                }
             }
             return result;
         }
