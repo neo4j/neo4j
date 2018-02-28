@@ -53,7 +53,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -98,7 +100,7 @@ public class InProcessBuilderTestIT
 
     private TestServerBuilder getTestServerBuilder( File workDir )
     {
-        return newInProcessBuilder( workDir );
+        return newInProcessBuilder( workDir ).withConfig( ServerSettings.script_enabled, Settings.TRUE );
     }
 
     @Test
@@ -245,7 +247,7 @@ public class InProcessBuilderTestIT
     public void shouldOpenBoltPort() throws Throwable
     {
         // given
-        try ( ServerControls controls = newInProcessBuilder().newServer() )
+        try ( ServerControls controls = getTestServerBuilder( testDir.graphDbDir() ).newServer() )
         {
             URI uri = controls.boltURI();
 
@@ -263,7 +265,8 @@ public class InProcessBuilderTestIT
         File notADirectory = File.createTempFile( "prefix", "suffix" );
         assertFalse( notADirectory.isDirectory() );
 
-        try ( ServerControls ignored = newInProcessBuilder().copyFrom( notADirectory ).newServer() )
+        try ( ServerControls ignored = getTestServerBuilder( testDir.graphDbDir() )
+                .copyFrom( notADirectory ).newServer() )
         {
             fail( "server should not start" );
         }

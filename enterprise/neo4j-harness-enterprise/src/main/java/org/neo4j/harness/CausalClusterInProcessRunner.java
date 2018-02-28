@@ -190,7 +190,7 @@ public class CausalClusterInProcessRunner
                 String homePath = Paths.get( clusterPath.toString(), homeDir ).toAbsolutePath().toString();
                 builder.withConfig( GraphDatabaseSettings.neo4j_home.name(), homePath );
                 builder.withConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-                builder.withConfig( ServerSettings.script_enabled.name(), Settings.TRUE );
+                builder.withConfig( ServerSettings.script_enabled, Settings.TRUE );
 
                 builder.withConfig( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
                 builder.withConfig( CausalClusteringSettings.multi_dc_license.name(), "true" );

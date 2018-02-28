@@ -42,6 +42,7 @@ public class EnterpriseNeo4jRuleTest
     public Neo4jRule neo4j = new EnterpriseNeo4jRule()
             .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
+            .withConfig( ServerSettings.script_enabled, Settings.TRUE )
             .withExtension( "/test", MyEnterpriseUnmanagedExtension.class )
             .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withConfig( ServerSettings.script_enabled, Settings.TRUE );
