@@ -419,7 +419,6 @@ class ReflectiveProcedureCompiler
         Class<?> returnType = result.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
         MethodHandle creator = lookup.unreflect( method );
-        MethodHandle updateMethod = lookup.unreflect( update );
         MethodHandle resultMethod = lookup.unreflect( result );
 
         Optional<String> description = description( method );
@@ -450,7 +449,7 @@ class ReflectiveProcedureCompiler
                 new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( funcName.toString() ), description );
 
-        return new ReflectiveUserAggregationFunction( signature, constructor, creator, updateMethod, resultMethod,
+        return new ReflectiveUserAggregationFunction( signature, constructor, creator, update, resultMethod,
                 valueConverter, setters );
     }
 
@@ -709,7 +708,6 @@ class ReflectiveProcedureCompiler
                         "Failed to invoke procedure `%s`: %s", signature.name(),
                         "Caused by: " + (cause != null ? cause : throwable) );
             }
-
         }
     }
 
@@ -773,8 +771,10 @@ class ReflectiveProcedureCompiler
                 }
                 else
                 {
+                    Throwable cause = ExceptionUtils.getRootCause( throwable );
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                            "Failed to invoke function `%s`: %s", signature.name(), "Caused by: " + ExceptionUtils.getRootCause( throwable ) );
+                            "Failed to invoke function `%s`: %s", signature.name(),
+                            "Caused by: " + (cause != null ? cause : throwable) );
                 }
             }
         }
@@ -788,11 +788,11 @@ class ReflectiveProcedureCompiler
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
         private final MethodHandle creator;
-        private final MethodHandle updateMethod;
+        private final Method updateMethod;
         private final MethodHandle resultMethod;
 
         ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
-                MethodHandle creator, MethodHandle updateMethod, MethodHandle resultMethod,
+                MethodHandle creator, Method updateMethod, MethodHandle resultMethod,
                 TypeMappers.NeoValueConverter outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
@@ -841,9 +841,7 @@ class ReflectiveProcedureCompiler
                                         numberOfDeclaredArguments, input.length );
                             }
                             // Call the method
-                            Object[] args = args( numberOfDeclaredArguments, aggregator, input );
-
-                            updateMethod.invokeWithArguments( args );
+                            updateMethod.invoke( aggregator, input );
                         }
                         catch ( Throwable throwable )
                         {
@@ -854,9 +852,10 @@ class ReflectiveProcedureCompiler
                             }
                             else
                             {
+                                Throwable cause = ExceptionUtils.getRootCause( throwable );
                                 throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                                         "Failed to invoke function `%s`: %s", signature.name(),
-                                        "Caused by: " + throwable );
+                                        "Caused by: " + (cause != null ? cause : throwable) );
                             }
                         }
                     }
@@ -877,9 +876,10 @@ class ReflectiveProcedureCompiler
                             }
                             else
                             {
+                                Throwable cause = ExceptionUtils.getRootCause( throwable );
                                 throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                                         "Failed to invoke function `%s`: %s", signature.name(),
-                                        "Caused by: " + throwable );
+                                        "Caused by: " + (cause != null ? cause : throwable) );
                             }
                         }
 
@@ -897,9 +897,10 @@ class ReflectiveProcedureCompiler
                 }
                 else
                 {
+                    Throwable cause = ExceptionUtils.getRootCause( throwable );
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                             "Failed to invoke function `%s`: %s", signature.name(),
-                            "Caused by: " + throwable );
+                            "Caused by: " + (cause != null ? cause : throwable ) );
                 }
             }
         }
