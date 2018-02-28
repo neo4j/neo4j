@@ -114,10 +114,29 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
     private long startNode = -1;
     private long endNode = -1;
     private int type = -1;
+    private RelationshipStateImpl stable;
 
     RelationshipStateImpl( long id )
     {
         super( id, StateSelector.CURRENT_STATE );
+    }
+
+    private RelationshipStateImpl( RelationshipStateImpl relationshipState, StateSelector stableState )
+    {
+        super( relationshipState, stableState );
+        this.startNode = relationshipState.startNode;
+        this.endNode = relationshipState.endNode;
+        this.type = relationshipState.type;
+        this.stable = this;
+    }
+
+    public RelationshipStateImpl stableView()
+    {
+        if ( stable == null )
+        {
+            stable = new RelationshipStateImpl( this, StateSelector.STABLE_STATE );
+        }
+        return stable;
     }
 
     void setMetaData( long startNode, long endNode, int type )

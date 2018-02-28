@@ -20,10 +20,11 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongSet;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.VersionedPrimitiveLongDiffSets;
-import org.neo4j.values.storable.Value;
 
 public interface StateSelector
 {
@@ -35,9 +36,21 @@ public interface StateSelector
             return diffSets.currentView();
         }
 
-        public PrimitiveLongObjectMap<Value> getView( VersionedPrimitiveLongObjectMap<Value> map )
+        public <T> PrimitiveLongObjectMap<T> getView( VersionedPrimitiveLongObjectMap<T> map )
         {
             return map.currentView();
+        }
+
+        @Override
+        public PrimitiveLongSet getView( VersionedPrimitiveLongSet set )
+        {
+            return set.currentView();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Current state selector";
         }
     };
 
@@ -48,14 +61,27 @@ public interface StateSelector
             return diffSets.stableView();
         }
 
-        public PrimitiveLongObjectMap<Value> getView( VersionedPrimitiveLongObjectMap<Value> map )
+        public <T> PrimitiveLongObjectMap<T> getView( VersionedPrimitiveLongObjectMap<T> map )
         {
             return map.stableView();
+        }
+
+        @Override
+        public PrimitiveLongSet getView( VersionedPrimitiveLongSet set )
+        {
+            return set.stableView();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Stable state selector";
         }
     };
 
     PrimitiveLongDiffSets getView( VersionedPrimitiveLongDiffSets diffSets );
 
-    PrimitiveLongObjectMap<Value> getView( VersionedPrimitiveLongObjectMap<Value> map );
+    <T> PrimitiveLongObjectMap<T> getView( VersionedPrimitiveLongObjectMap<T> map );
 
+    PrimitiveLongSet getView( VersionedPrimitiveLongSet versionedPrimitiveLongSet );
 }

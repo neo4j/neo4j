@@ -1262,11 +1262,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
         if ( nodeStatesMap != null )
         {
-            nodeStatesMap.values().forEach( PropertyContainerStateImpl::markStable );
+            nodeStatesMap.values().forEach( NodeStateImpl::markStable );
         }
         if ( relationshipStatesMap != null )
         {
-            relationshipStatesMap.values().forEach( PropertyContainerStateImpl::markStable );
+            relationshipStatesMap.values().forEach( RelationshipStateImpl::markStable );
         }
         // TODO:
     }
@@ -1841,7 +1841,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         @Override
         public RelationshipState getRelationshipState( long id )
         {
-            return impl.getRelationshipState( id );
+            if ( relationshipStatesMap == null )
+            {
+                return RelationshipStateImpl.EMPTY;
+            }
+            final RelationshipStateImpl relationshipState = relationshipStatesMap.get( id );
+            return relationshipState == null ? RelationshipStateImpl.EMPTY : relationshipState.stableView();
         }
 
         @Override
@@ -2117,7 +2122,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         @Override
         public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX
         {
-            return impl.relationshipVisit( relId, visitor );
+            return getRelationshipState( relId ).accept( visitor );
         }
 
         @Override

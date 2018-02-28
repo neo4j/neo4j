@@ -52,7 +52,8 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( REL_0, TYPE_SELF, BOTH );
         changes.addRelationship( REL_1, TYPE_DIR, OUTGOING );
 
-        RelationshipIterator iterator = changes.augmentRelationships( OUTGOING, new int[]{TYPE_DIR}, EMPTY );
+        RelationshipIterator iterator =
+                changes.augmentRelationships( OUTGOING, new int[]{TYPE_DIR}, EMPTY, StateSelector.CURRENT_STATE );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
         assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
@@ -66,7 +67,8 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( REL_0, TYPE_SELF, BOTH );
         changes.addRelationship( REL_1, TYPE_DIR, INCOMING );
 
-        RelationshipIterator iterator = changes.augmentRelationships( INCOMING, new int[]{TYPE_DIR}, EMPTY );
+        RelationshipIterator iterator =
+                changes.augmentRelationships( INCOMING, new int[]{TYPE_DIR}, EMPTY, StateSelector.CURRENT_STATE );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
         assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
@@ -87,7 +89,7 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( 5, TYPE, BOTH );
         changes.addRelationship( 6, TYPE, BOTH );
 
-        PrimitiveLongIterator rawRelationships = changes.getRelationships();
+        PrimitiveLongIterator rawRelationships = changes.getRelationships( StateSelector.CURRENT_STATE );
         assertThat( PrimitiveLongCollections.asArray( rawRelationships ), ids( 1, 2, 3, 4, 5, 6 ) );
     }
 
@@ -112,15 +114,15 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( 12, DECOY_TYPE, BOTH );
 
         PrimitiveLongIterator rawIncoming =
-                changes.getRelationships( RelationshipDirection.INCOMING, TYPE );
+                changes.getRelationships( RelationshipDirection.INCOMING, TYPE, StateSelector.CURRENT_STATE );
         assertThat( PrimitiveLongCollections.asArray( rawIncoming ), ids( 1 ) );
 
         PrimitiveLongIterator rawOutgoing =
-                changes.getRelationships( RelationshipDirection.OUTGOING, TYPE );
+                changes.getRelationships( RelationshipDirection.OUTGOING, TYPE, StateSelector.CURRENT_STATE );
         assertThat( PrimitiveLongCollections.asArray( rawOutgoing ), ids( 2, 3 ) );
 
         PrimitiveLongIterator rawLoops =
-                changes.getRelationships( RelationshipDirection.LOOP, TYPE );
+                changes.getRelationships( RelationshipDirection.LOOP, TYPE, StateSelector.CURRENT_STATE );
         assertThat( PrimitiveLongCollections.asArray( rawLoops ), ids( 4, 5, 6 ) );
     }
 

@@ -197,15 +197,12 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 
     private NodeStateImpl( NodeStateImpl nodeState, StateSelector stableStateSelector )
     {
-        super( nodeState.getId(), stableStateSelector );
+        super( nodeState, stableStateSelector );
         this.state = nodeState.state;
         this.labelDiffSets = nodeState.labelDiffSets;
         this.relationshipsAdded = nodeState.relationshipsAdded;
         this.relationshipsRemoved = nodeState.relationshipsRemoved;
         this.indexDiffs = nodeState.indexDiffs;
-        this.addedProperties  = nodeState.addedProperties;
-        this.changedProperties  = nodeState.changedProperties;
-        this.removedProperties  = nodeState.removedProperties;
         stableView = this;
     }
 
@@ -317,11 +314,11 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( hasAddedRelationships() )
         {
-            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
+            degree = relationshipsAdded.augmentDegree( direction, degree, typeId, stateSelector );
         }
         if ( hasRemovedRelationships() )
         {
-            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
+            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId, stateSelector );
         }
         return degree;
     }
@@ -331,11 +328,11 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( hasAddedRelationships() )
         {
-            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
+            degree = relationshipsAdded.augmentDegree( direction, degree, typeId, stateSelector );
         }
         if ( hasRemovedRelationships() )
         {
-            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
+            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId, stateSelector );
         }
         return degree;
     }
@@ -366,7 +363,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( hasAddedRelationships() )
         {
-            return relationshipsAdded.relationshipTypes();
+            return relationshipsAdded.relationshipTypes( stateSelector );
         }
         return intSet();
     }
@@ -415,28 +412,28 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     @Override
     public PrimitiveLongIterator getAddedRelationships( Direction direction )
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction ) :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, stateSelector ) :
             PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
     public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relTypes ) :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relTypes, stateSelector ) :
             PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
     public PrimitiveLongIterator getAddedRelationships()
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships() :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( stateSelector ) :
                PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
     public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType ) :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType, stateSelector ) :
                PrimitiveLongCollections.emptyIterator();
     }
 }

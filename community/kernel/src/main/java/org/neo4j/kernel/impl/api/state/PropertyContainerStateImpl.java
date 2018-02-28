@@ -66,6 +66,14 @@ public class PropertyContainerStateImpl implements PropertyContainerState
         this.stateSelector = stateSelector;
     }
 
+    PropertyContainerStateImpl( PropertyContainerStateImpl containerState, StateSelector stateSelector )
+    {
+        this( containerState.id, stateSelector );
+        this.addedProperties  = containerState.addedProperties;
+        this.changedProperties  = containerState.changedProperties;
+        this.removedProperties  = containerState.removedProperties;
+    }
+
     PrimitiveLongObjectMap<Value> changedPropertiesView()
     {
         return changedProperties != null ? stateSelector.getView( changedProperties ) : EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
