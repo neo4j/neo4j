@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.neo4j.helpers.collection.Iterators;
@@ -200,34 +200,8 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        T[] ts = Iterators.array( date, dateTime, dateTimeZoned, time, timeZoned, duration );
-        return new Iterator<T>()
-        {
-            private int current = -1;
-            private int next;
-
-            @Override
-            public boolean hasNext()
-            {
-                while ( next < ts.length && ts[next] == null )
-                {
-                    next++;
-                }
-                return next < ts.length;
-            }
-
-            @Override
-            public T next()
-            {
-                if ( !hasNext() )
-                {
-                    throw new NoSuchElementException();
-                }
-                current = next;
-                next++;
-                return ts[current];
-            }
-        };
+        return Iterators.filter(
+                Objects::nonNull, Iterators.iterator( date, dateTime, dateTimeZoned, time, timeZoned, duration ) );
     }
 
     /**
