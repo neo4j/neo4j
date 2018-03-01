@@ -28,12 +28,12 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 
-class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
+public class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
 {
     private final Log log;
     private final CatchupServerProtocol protocol;
 
-    ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
+    public ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );
@@ -50,10 +50,6 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
             {
                 protocol.expect( CatchupServerProtocol.State.TX_PULL );
             }
-            else if ( requestMessageType.equals( RequestMessageType.STORE ) )
-            {
-                protocol.expect( CatchupServerProtocol.State.GET_STORE );
-            }
             else if ( requestMessageType.equals( RequestMessageType.STORE_ID ) )
             {
                 protocol.expect( CatchupServerProtocol.State.GET_STORE_ID );
@@ -61,6 +57,18 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
             else if ( requestMessageType.equals( RequestMessageType.CORE_SNAPSHOT ) )
             {
                 protocol.expect( CatchupServerProtocol.State.GET_CORE_SNAPSHOT );
+            }
+            else if ( requestMessageType.equals( RequestMessageType.PREPARE_STORE_COPY ) )
+            {
+                protocol.expect( CatchupServerProtocol.State.PREPARE_STORE_COPY );
+            }
+            else if ( requestMessageType.equals( RequestMessageType.STORE_FILE ) )
+            {
+                protocol.expect( CatchupServerProtocol.State.GET_STORE_FILE );
+            }
+            else if ( requestMessageType.equals( RequestMessageType.INDEX_SNAPSHOT ) )
+            {
+                protocol.expect( CatchupServerProtocol.State.GET_INDEX_SNAPSHOT );
             }
             else
             {

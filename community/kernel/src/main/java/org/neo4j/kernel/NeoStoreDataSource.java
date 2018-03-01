@@ -127,6 +127,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransacti
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -828,7 +829,19 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        return kernelModule.fileListing().listStoreFiles( includeLogs );
+        if ( includeLogs )
+        {
+            return getNeoStoreFileListing().builder().build();
+        }
+        else
+        {
+            return getNeoStoreFileListing().builder().excludeLogFiles().build();
+        }
+    }
+
+    public NeoStoreFileListing getNeoStoreFileListing()
+    {
+        return kernelModule.fileListing();
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )

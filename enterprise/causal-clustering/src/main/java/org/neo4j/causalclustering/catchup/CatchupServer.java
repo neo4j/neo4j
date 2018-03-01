@@ -44,15 +44,19 @@ import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 import org.neo4j.causalclustering.catchup.storecopy.FileChunkEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderEncoder;
+import org.neo4j.causalclustering.catchup.storecopy.GetIndexFilesRequest;
+import org.neo4j.causalclustering.catchup.storecopy.GetIndexSnapshotRequestHandler;
+import org.neo4j.causalclustering.catchup.storecopy.GetStoreFileRequest;
+import org.neo4j.causalclustering.catchup.storecopy.GetStoreFileRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponseEncoder;
-import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestDecoder;
-import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestHandler;
+import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyFilesProvider;
+import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyRequestDecoder;
+import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyRequestHandler;
+import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponseEncoder;
-import org.neo4j.causalclustering.catchup.storecopy.StoreResourceStreamFactory;
-import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProtocol;
+import org.neo4j.causalclustering.catchup.storecopy.StoreFileStreamingProtocol;
 import org.neo4j.causalclustering.catchup.tx.TxPullRequestDecoder;
 import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
@@ -143,9 +147,11 @@ public class CatchupServer extends LifecycleAdapter
 
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
-        ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup ).channel( NioServerSocketChannel.class )
+        ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup )
+                .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, true )
-                .localAddress( listenAddress.socketAddress() ).childHandler( new ChannelInitializer<SocketChannel>()
+                .localAddress( listenAddress.socketAddress() )
+                .childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
                     protected void initChannel( SocketChannel ch ) throws Exception
@@ -175,6 +181,7 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new TxStreamFinishedResponseEncoder() );
                         pipeline.addLast( new FileChunkEncoder() );
                         pipeline.addLast( new FileHeaderEncoder() );
+                        pipeline.addLast( new PrepareStoreCopyResponse.Encoder() );
 
                         pipeline.addLast( new ServerMessageTypeHandler( protocol, logProvider ) );
 
@@ -182,13 +189,18 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( new ChunkedWriteHandler() );
 
-                        pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
-                                transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors, logProvider ) );
-                        pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
-                                new StoreStreamingProcess( new StoreStreamingProtocol(), checkPointerSupplier, storeCopyCheckPointMutex,
-                                        new StoreResourceStreamFactory( pageCache, fs, dataSourceSupplier ) ) ) );
+                        pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier, transactionIdStoreSupplier,
+                                logicalTransactionStoreSupplier, monitors, logProvider ) );
 
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
+                        pipeline.addLast(
+                                storeListingRequestHandler( protocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier, pageCache, fs ) );
+                        pipeline.addLast(
+                                new GetStoreFileRequestHandler( protocol, dataSourceSupplier, checkPointerSupplier, new StoreFileStreamingProtocol(), pageCache,
+                                        fs, logProvider ) );
+                        pipeline.addLast(
+                                new GetIndexSnapshotRequestHandler( protocol, dataSourceSupplier, checkPointerSupplier, new StoreFileStreamingProtocol(),
+                                        pageCache, fs ) );
 
                         if ( snapshotService != null )
                         {
@@ -196,9 +208,8 @@ public class CatchupServer extends LifecycleAdapter
                         }
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
-                        pipeline.addLast( new ExceptionMonitoringHandler(
-                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class,
-                                        CatchupServer.class ) ) );
+                        pipeline.addLast(
+                                new ExceptionMonitoringHandler( monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchupServer.class ) ) );
                         pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
@@ -214,24 +225,32 @@ public class CatchupServer extends LifecycleAdapter
             //noinspection ConstantConditions
             if ( e instanceof BindException )
             {
-                userLog.error(
-                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
-                                " with value: " + listenAddress );
-                log.error(
-                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
-                                " with value: " + listenAddress, e );
+                String message = String.format( "Address is already bound for setting: %s with value: %s", CausalClusteringSettings.transaction_listen_address,
+                        listenAddress );
+                userLog.error( message );
+                log.error( message, e );
                 throw e;
             }
         }
+    }
+
+    private PrepareStoreCopyRequestHandler storeListingRequestHandler( CatchupServerProtocol protocol, Supplier<CheckPointer> checkPointerSupplier,
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex, Supplier<NeoStoreDataSource> dataSourceSupplier, PageCache pageCache, FileSystemAbstraction fs )
+    {
+        PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider = new PrepareStoreCopyFilesProvider( pageCache, fs );
+        return new PrepareStoreCopyRequestHandler( protocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
+                prepareStoreCopyFilesProvider );
     }
 
     private ChannelInboundHandler decoders( CatchupServerProtocol protocol )
     {
         RequestDecoderDispatcher<State> decoderDispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
         decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
-        decoderDispatcher.register( State.GET_STORE, new GetStoreRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
         decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new ) );
+        decoderDispatcher.register( State.PREPARE_STORE_COPY, new PrepareStoreCopyRequestDecoder() );
+        decoderDispatcher.register( State.GET_STORE_FILE, new GetStoreFileRequest.Decoder() );
+        decoderDispatcher.register( State.GET_INDEX_SNAPSHOT, new GetIndexFilesRequest.Decoder() );
         return decoderDispatcher;
     }
 

@@ -23,8 +23,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
@@ -66,10 +68,11 @@ public class RemoteStoreTest
 
         // when
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
-        remoteStore.copy( localhost, storeId, new File( "destination" ) );
+        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( localhost );
+        remoteStore.copy( catchupAddressProvider, storeId, new File( "destination" ) );
 
         // then
-        verify( storeCopyClient ).copyStoreFiles( eq( localhost ), eq( storeId ), any( StoreFileStreams.class ) );
+        verify( storeCopyClient ).copyStoreFiles( eq( catchupAddressProvider ), eq( storeId ), any( StoreFileStreams.class ), any() );
         verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), anyLong(), isNull() );
     }
 
@@ -80,9 +83,10 @@ public class RemoteStoreTest
         long lastFlushedTxId = 12;
         StoreId wantedStoreId = new StoreId( 1, 2, 3, 4 );
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
+        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( localhost );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
-        when( storeCopyClient.copyStoreFiles( eq( localhost ), eq( wantedStoreId ), any( StoreFileStreams.class ) ) )
+        when( storeCopyClient.copyStoreFiles( eq( catchupAddressProvider ), eq( wantedStoreId ), any( StoreFileStreams.class ), any() ) )
                 .thenReturn( lastFlushedTxId );
 
         TxPullClient txPullClient = mock( TxPullClient.class );
@@ -95,7 +99,7 @@ public class RemoteStoreTest
                 null, storeCopyClient, txPullClient, factory( writer ), Config.defaults(), new Monitors() );
 
         // when
-        remoteStore.copy( localhost, wantedStoreId, new File( "destination" ) );
+        remoteStore.copy( catchupAddressProvider, wantedStoreId, new File( "destination" ) );
 
         // then
         long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
@@ -111,6 +115,7 @@ public class RemoteStoreTest
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
+        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( null );
 
         RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
                 null,
@@ -122,7 +127,7 @@ public class RemoteStoreTest
         // when
         try
         {
-            remoteStore.copy( null, storeId, null );
+            remoteStore.copy( catchupAddressProvider, storeId, null );
         }
         catch ( StoreCopyFailedException e )
         {

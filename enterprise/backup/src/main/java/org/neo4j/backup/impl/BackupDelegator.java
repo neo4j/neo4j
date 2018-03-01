@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
@@ -54,7 +55,7 @@ class BackupDelegator extends LifecycleAdapter
     {
         try
         {
-            remoteStore.copy( fromAddress, expectedStoreId, destDir.toFile() );
+            remoteStore.copy( new CatchupAddressProvider.SingleAddressProvider( fromAddress ), expectedStoreId, destDir.toFile() );
         }
         catch ( StreamingTransactionsFailedException e )
         {
