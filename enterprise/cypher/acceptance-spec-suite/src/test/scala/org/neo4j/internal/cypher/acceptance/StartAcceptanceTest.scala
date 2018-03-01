@@ -299,12 +299,31 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(node, createNode())
 
     graph.inTx {
-      graph.index.forNodes("nodes").add(node, "key", "A")
-      graph.index.forRelationships("rels").add(rel, "key", "B")
+      graph.index().forNodes("nodes").add(node, "key", "A")
+      graph.index().forRelationships("rels").add(rel, "key", "B")
     }
 
     val result = innerExecute("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b")
     result.toList should equal(List(Map("b" -> resultNode)))
   }
 
+  test("Should not return deleted nodes from explicit index") {
+    // setup: create index, add a node
+    val node = createNode()
+    graph.inTx {
+      graph.index().forNodes("index").add(node, "key", "value")
+    }
+
+    // check if we find the node
+    innerExecute("start n=node:index(key = 'value') return n").size should equal(1)
+
+    // when
+    graph.inTx {
+      node.delete()
+    }
+
+    // nothing found in the index after deletion
+    val result = executeWithAllPlannersAndCompatibilityMode("start n=node:index(key = 'value') return n")
+    result.size should equal(0)
+  }
 }
