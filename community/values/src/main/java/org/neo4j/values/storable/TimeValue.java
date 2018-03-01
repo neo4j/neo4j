@@ -29,8 +29,8 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
-import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -272,6 +272,18 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     @Override
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
+    {
+        return value.getOffset();
+    }
+
+    @Override
+    ZoneId getZoneId()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+    }
+
+    @Override
+    ZoneOffset getZoneOffset()
     {
         return value.getOffset();
     }

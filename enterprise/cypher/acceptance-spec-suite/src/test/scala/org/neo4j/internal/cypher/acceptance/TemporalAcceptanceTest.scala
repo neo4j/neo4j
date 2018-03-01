@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.time.temporal.UnsupportedTemporalTypeException
 import java.time.format.DateTimeParseException
+import java.time.temporal.UnsupportedTemporalTypeException
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
@@ -428,6 +429,40 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
   }
 
+  // Accessors
+
+  test("should not provide undefined accessors for date") {
+    shouldNotHaveAccessor("date", Seq("hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
+      "timezone", "offset", "epoch",
+      "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
+  }
+
+  test("should not provide undefined accessors for local time") {
+    shouldNotHaveAccessor("localtime", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
+      "timezone", "offset", "epoch",
+      "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
+  }
+
+  test("should not provide undefined accessors for time") {
+    shouldNotHaveAccessor("time", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
+      "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
+  }
+
+  test("should not provide undefined accessors for local date time") {
+    shouldNotHaveAccessor("localdatetime", Seq("timezone", "offset", "epoch",
+      "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
+  }
+
+  test("should not provide undefined accessors for date time") {
+    shouldNotHaveAccessor("datetime", Seq("years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
+  }
+
+  test("should not provide undefined accessors for duration") {
+    shouldNotHaveAccessor("duration", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
+      "hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
+      "timezone", "offset", "epoch"), "{days: 14, hours:16, minutes: 12}")
+  }
+
   private def shouldNotTruncate[E : Manifest](receivers: Seq[String], truncationUnit: String, args: Seq[String]): Unit = {
     for (receiver <- receivers; arg <- args) {
       val query = s"RETURN $receiver.truncate('$truncationUnit', $arg)"
@@ -444,6 +479,17 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val query = s"WITH $withX as x RETURN $func($arg)"
       withClue(s"Executing $query") {
         an[E] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
+  private def shouldNotHaveAccessor(typ: String, accecssors: Seq[String], args: String = ""): Unit = {
+    for (acc <- accecssors) {
+      val query = s"RETURN $typ($args).$acc"
+      withClue(s"Executing $query") {
+        an[UnsupportedTemporalTypeException] shouldBe thrownBy {
           println(graph.execute(query).next())
         }
       }

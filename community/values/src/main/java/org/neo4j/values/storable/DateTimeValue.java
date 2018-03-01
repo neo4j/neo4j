@@ -378,6 +378,18 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
+    ZoneId getZoneId()
+    {
+        return value.getZone();
+    }
+
+    @Override
+    ZoneOffset getZoneOffset()
+    {
+        return value.getOffset();
+    }
+
+    @Override
     public boolean hasTimeZone()
     {
         return true;

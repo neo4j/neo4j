@@ -28,6 +28,7 @@ import java.time.temporal.IsoFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -713,7 +714,51 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 break;
             }
         }
-        throw new UnsupportedOperationException( "Unsupported unit: " + unit );
+        throw new UnsupportedTemporalTypeException( "Unsupported unit: " + unit );
+    }
+
+    /**
+     * In contrast to {@link #get(TemporalUnit)}, this method never returns more than 12 months, 60 minutes, or 60 seconds.
+     *
+     * It supports more units, namely years, hours, minutes, milliseconds, and microseconds.
+     */
+    public LongValue get( String fieldName )
+    {
+        long val;
+        switch ( fieldName.toLowerCase() )
+        {
+        case "years":
+            val = months / 12;
+            break;
+        case "months":
+            val = months % 12;
+            break;
+        case "days":
+            val = days;
+            break;
+        case "hours":
+            val = seconds / 3600;
+            break;
+        case "minutes":
+            val = (seconds / 60) % 60;
+            break;
+        case "seconds":
+            val = seconds % 60;
+            break;
+        case "milliseconds":
+            val = nanos / 1000_000;
+            break;
+        case "microseconds":
+            val = nanos / 1000;
+            break;
+        case "nanoseconds":
+            val = nanos;
+            break;
+        default:
+            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+        }
+
+        return Values.longValue( val );
     }
 
     @Override

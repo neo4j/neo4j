@@ -23,6 +23,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.chrono.ChronoZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
@@ -33,6 +35,7 @@ import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalField;
 import java.time.temporal.TemporalQuery;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.time.temporal.ValueRange;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -69,13 +72,38 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
     abstract T temporal();
 
+    /**
+     * @return the date part of this temporal, if date is supported.
+     */
     abstract LocalDate getDatePart();
 
+    /**
+     * @return the local time part of this temporal, if time is supported.
+     */
     abstract LocalTime getLocalTimePart();
 
+    /**
+     * @return the time part of this temporal, if time is supported.
+     */
     abstract OffsetTime getTimePart( Supplier<ZoneId> defaultZone );
 
+    /**
+     * @return the zone id, if time is supported. If time is supported, but no timezone, the defaultZone will be used.
+     * @throws IllegalArgumentException if time is not supported
+     */
     abstract ZoneId getZoneId( Supplier<ZoneId> defaultZone );
+
+    /**
+     * @return the zone id, if this temporal has a timezone.
+     * @throws UnsupportedTemporalTypeException if this does not have a timezone
+     */
+    abstract ZoneId getZoneId();
+
+    /**
+     * @return the zone offset, if this temporal has a zone offset.
+     * @throws UnsupportedTemporalTypeException if this does not have a offset
+     */
+    abstract ZoneOffset getZoneOffset();
 
     abstract boolean hasTimeZone();
 
@@ -153,6 +181,37 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     public final int get( TemporalField field )
     {
         return temporal().get( field );
+    }
+
+    public final AnyValue get( String fieldName )
+    {
+        Field field = Field.fields.get( fieldName.toLowerCase() );
+        if ( field == Field.epoch )
+        {
+            T temp = temporal();
+            if ( temp instanceof ChronoZonedDateTime )
+            {
+                ChronoZonedDateTime zdt = (ChronoZonedDateTime) temp;
+                return Values.longValue( zdt.toInstant().toEpochMilli() );
+            }
+            else
+            {
+                throw new UnsupportedTemporalTypeException( "Epoch not supported." );
+            }
+        }
+        if ( field == Field.timezone )
+        {
+            return Values.stringValue( getZoneId().toString() );
+        }
+        if ( field == Field.offset )
+        {
+            return Values.stringValue( getZoneOffset().toString() );
+        }
+        if ( field == null || field.field == null )
+        {
+            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+        }
+        return Values.intValue( get( field.field ) );
     }
 
     @Override
@@ -402,6 +461,26 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         millisecond( ChronoField.MILLI_OF_SECOND, 0 ),
         microsecond( ChronoField.MICRO_OF_SECOND, 0 ),
         nanosecond( ChronoField.NANO_OF_SECOND, 0 ),
+        // Read only accessors (not assignable)
+        weekYear( IsoFields.WEEK_BASED_YEAR, 0 )//<pre>
+        { //</pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                throw new IllegalArgumentException( "Not supported: " + name() );
+            }
+        },
+        offset//<pre>
+        { //</pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                throw new IllegalArgumentException( "Not supported: " + name() );
+            }
+        },
+        // time zone
         timezone//<pre>
         { //</pre>
 

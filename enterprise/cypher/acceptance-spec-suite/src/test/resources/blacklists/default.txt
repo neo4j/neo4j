@@ -5,12 +5,6 @@ Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local date time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for duration"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in years"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in quarters"
