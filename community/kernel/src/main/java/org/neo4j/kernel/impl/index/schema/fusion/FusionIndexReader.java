@@ -122,7 +122,10 @@ class FusionIndexReader implements IndexReader
             return numberReader.query( predicates );
         }
 
-        if ( predicate instanceof StringRangePredicate )
+        if ( predicate instanceof StringRangePredicate ||
+             predicate instanceof StringPrefixPredicate ||
+             predicate instanceof StringSuffixPredicate ||
+             predicate instanceof StringContainsPredicate )
         {
             return stringReader.query( predicate );
         }

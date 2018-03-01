@@ -52,7 +52,7 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
     }
 
     @Override
-    void initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -60,26 +60,27 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
         case exists:
             treeKeyFrom.initAsLowest();
             treeKeyTo.initAsHighest();
-            break;
+            return false;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            break;
+            return false;
         case rangeString:
             StringRangePredicate rangePredicate = (StringRangePredicate)predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
-            break;
+            return false;
         case stringPrefix:
             StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
             treeKeyFrom.initAsPrefixLow( prefixPredicate.prefix() );
             treeKeyTo.initAsPrefixHigh( prefixPredicate.prefix() );
-            break;
-//        case stringSuffix:
-//            break;
-//        case stringContains:
-//            break;
+            return false;
+        case stringSuffix:
+        case stringContains:
+            treeKeyFrom.initAsLowest();
+            treeKeyTo.initAsHighest();
+            return true;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }

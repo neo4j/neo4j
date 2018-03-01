@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.values.storable.Value;
 
 /**
  * Wraps number key/value results in a {@link PrimitiveLongIterator}.
@@ -55,9 +56,12 @@ public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends Native
     {
         try
         {
-            if ( seeker.next() )
+            while ( seeker.next() )
             {
-                return next( seeker.get().key().getEntityId() );
+                if ( acceptValue( seeker.get().key().asValue() ) )
+                {
+                    return next( seeker.get().key().getEntityId() );
+                }
             }
             return false;
         }
@@ -65,6 +69,11 @@ public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends Native
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    boolean acceptValue( Value value )
+    {
+        return true;
     }
 
     private void ensureCursorClosed() throws IOException

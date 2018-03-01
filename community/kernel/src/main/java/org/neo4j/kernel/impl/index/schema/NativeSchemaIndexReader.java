@@ -113,7 +113,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
 
-        initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
+        boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
         if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
         {
             return PrimitiveLongResourceCollections.emptyIterator();
@@ -123,11 +123,23 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
             openSeekers.add( seeker );
-            return new NumberHitIterator<>( seeker, openSeekers );
+            return getNumberHitIterator( seeker, needFilter, predicates );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    private PrimitiveLongResourceIterator getNumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker, boolean needFilter, IndexQuery[] predicates )
+    {
+        if ( needFilter )
+        {
+            return new FilteringNumberHitIterator<>( seeker, openSeekers, predicates );
+        }
+        else
+        {
+            return new NumberHitIterator<>( seeker, openSeekers );
         }
     }
 
@@ -139,8 +151,8 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
 
-        initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
+        boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter );
     }
 
     @Override
@@ -148,9 +160,12 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
 
     abstract void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates );
 
-    abstract void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
+    /**
+     * @return true if query results from seek will need to be filtered through the predicates, else false
+     */
+    abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter )
     {
         if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
         {
@@ -160,7 +175,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         try
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
-            IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
+            IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
             client.initialize( descriptor, hitProgressor, query );
         }
         catch ( IOException e )
@@ -174,6 +189,19 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
         openSeekers.add( seeker );
         return seeker;
+    }
+
+    private IndexProgressor getIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, IndexProgressor.NodeValueClient client, boolean needFilter,
+            IndexQuery[] query )
+    {
+        if ( needFilter )
+        {
+            return new FilteringNativeHitIndexProgressor<>( seeker, client, openSeekers, query );
+        }
+        else
+        {
+            return new NativeHitIndexProgressor<>( seeker, client, openSeekers );
+        }
     }
 
     private boolean isBackwardsSeek( KEY treeKeyFrom, KEY treeKeyTo )
