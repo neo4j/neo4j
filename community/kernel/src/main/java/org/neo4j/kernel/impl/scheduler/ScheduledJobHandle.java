@@ -29,14 +29,32 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.CancelListener;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
 
-final class ScheduledTask implements JobHandle
+/**
+ * The JobHandle implementation for jobs scheduled with the {@link TimeBasedTaskScheduler}.
+ * <p>
+ * As the handle gets scheduled, it transitions through various states:
+ * <ul>
+ * <li>The handle is initially in the RUNNABLE state, which means that it is ready to be executed but isn't
+ * scheduled to do so yet.</li>
+ * <li>When it gets scheduled, it transitions into the SUBMITTED state, and remains there until it has finished
+ * executing.</li>
+ * <li>A handle that is in the SUBMITTED state cannot be submitted again, even if it comes due.</li>
+ * <li>A handle that is both due and SUBMITTED is <em>overdue</em>, and its execution will be delayed until it
+ * changes out of the SUBMITTED state.</li>
+ * <li>If a scheduled handle successfully finishes its execution, it will transition back to the RUNNABLE state.</li>
+ * <li>If an exception is thrown during the execution, then the handle transitions to the FAILED state, which is a
+ * terminal state.</li>
+ * <li>Failed handles will not be scheduled again.</li>
+ * </ul>
+ */
+final class ScheduledJobHandle implements JobHandle
 {
     static final int STATE_RUNNABLE = 0;
     static final int STATE_SUBMITTED = 1;
     static final int STATE_FAILED = 2;
 
     // Accessed and modified by the TimeBasedTaskScheduler:
-    volatile ScheduledTask next;
+    volatile ScheduledJobHandle next;
     long nextDeadlineNanos;
 
     private final JobScheduler.Group group;
@@ -48,7 +66,7 @@ final class ScheduledTask implements JobHandle
     private volatile JobHandle latestHandle;
     private volatile Throwable lastException;
 
-    ScheduledTask( JobScheduler.Group group, Runnable task, long nextDeadlineNanos, long reschedulingDelayNanos )
+    ScheduledJobHandle( JobScheduler.Group group, Runnable task, long nextDeadlineNanos, long reschedulingDelayNanos )
     {
         this.group = group;
         this.nextDeadlineNanos = nextDeadlineNanos;

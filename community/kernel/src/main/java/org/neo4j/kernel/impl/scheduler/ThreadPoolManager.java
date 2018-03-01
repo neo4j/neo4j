@@ -52,7 +52,8 @@ final class ThreadPoolManager
     {
         pools.forEach( ( group, pool ) -> pool.cancelAllJobs() );
         pools.forEach( ( group, pool ) -> pool.shutDown() );
-        return pools.values().stream().reduce( null,
-                ( e, p ) -> Exceptions.chain( e, p.getShutdownException() ), Exceptions::chain );
+        return pools.values().stream()
+                    .map( ThreadPool::getShutdownException )
+                    .reduce( null, Exceptions::chain );
     }
 }

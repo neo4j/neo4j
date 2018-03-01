@@ -40,8 +40,8 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger();
     private static final Group SCHEDULER_GROUP = new Group( "Scheduler" );
 
-    private TimeBasedTaskScheduler scheduler;
-    private Thread schedulerThread;
+    private final TimeBasedTaskScheduler scheduler;
+    private final Thread schedulerThread;
 
     // Contains workStealingExecutors for each group that have asked for one.
     // If threads need to be created, they need to be inside one of these pools.

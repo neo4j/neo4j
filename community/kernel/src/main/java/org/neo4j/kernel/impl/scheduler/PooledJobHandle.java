@@ -29,14 +29,14 @@ import org.neo4j.scheduler.JobScheduler;
 
 final class PooledJobHandle implements JobScheduler.JobHandle
 {
-    private final Future<?> job;
+    private final Future<?> future;
     private final Object registryKey;
     private final ConcurrentHashMap<Object,Future<?>> registry;
     private final List<JobScheduler.CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
-    PooledJobHandle( Future<?> job, Object registryKey, ConcurrentHashMap<Object,Future<?>> registry )
+    PooledJobHandle( Future<?> future, Object registryKey, ConcurrentHashMap<Object,Future<?>> registry )
     {
-        this.job = job;
+        this.future = future;
         this.registryKey = registryKey;
         this.registry = registry;
     }
@@ -44,7 +44,7 @@ final class PooledJobHandle implements JobScheduler.JobHandle
     @Override
     public void cancel( boolean mayInterruptIfRunning )
     {
-        job.cancel( mayInterruptIfRunning );
+        future.cancel( mayInterruptIfRunning );
         for ( JobScheduler.CancelListener cancelListener : cancelListeners )
         {
             cancelListener.cancelled( mayInterruptIfRunning );
@@ -55,7 +55,7 @@ final class PooledJobHandle implements JobScheduler.JobHandle
     @Override
     public void waitTermination() throws InterruptedException, ExecutionException
     {
-        job.get();
+        future.get();
     }
 
     @Override

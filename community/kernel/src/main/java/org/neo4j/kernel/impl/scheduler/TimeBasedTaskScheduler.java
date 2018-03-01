@@ -29,16 +29,16 @@ import org.neo4j.time.SystemNanoClock;
 
 final class TimeBasedTaskScheduler implements Runnable
 {
-    private static final ScheduledTask END_SENTINEL = new ScheduledTask( null, null, 0, 0 );
+    private static final ScheduledJobHandle END_SENTINEL = new ScheduledJobHandle( null, null, 0, 0 );
     private static final long NO_TASKS_PARK = TimeUnit.MINUTES.toNanos( 10 );
 
     private final SystemNanoClock clock;
     private final ThreadPoolManager pools;
-    private final AtomicReference<ScheduledTask> inbox;
+    private final AtomicReference<ScheduledJobHandle> inbox;
     private volatile Thread timeKeeper;
     private volatile boolean stopped;
     // This field is only access by the time keeper thread:
-    private ScheduledTask delayedTasks;
+    private ScheduledJobHandle delayedTasks;
 
     TimeBasedTaskScheduler( SystemNanoClock clock, ThreadPoolManager pools )
     {
@@ -51,7 +51,7 @@ final class TimeBasedTaskScheduler implements Runnable
     {
         long now = clock.nanos();
         long nextDeadlineNanos = now + initialDelayNanos;
-        ScheduledTask task = new ScheduledTask( group, job, nextDeadlineNanos, reschedulingDelayNanos );
+        ScheduledJobHandle task = new ScheduledJobHandle( group, job, nextDeadlineNanos, reschedulingDelayNanos );
         task.next = inbox.getAndSet( task );
         LockSupport.unpark( timeKeeper );
         return task;
@@ -68,11 +68,11 @@ final class TimeBasedTaskScheduler implements Runnable
 
     private void sortInbox()
     {
-        ScheduledTask newTasks = inbox.getAndSet( END_SENTINEL );
+        ScheduledJobHandle newTasks = inbox.getAndSet( END_SENTINEL );
         while ( newTasks != END_SENTINEL )
         {
             // Capture next chain link before enqueueing among delayed tasks.
-            ScheduledTask next;
+            ScheduledJobHandle next;
             do
             {
                 next = newTasks.next;
@@ -85,7 +85,7 @@ final class TimeBasedTaskScheduler implements Runnable
         }
     }
 
-    private void enqueueTask( ScheduledTask newTasks )
+    private void enqueueTask( ScheduledJobHandle newTasks )
     {
         if ( delayedTasks == null || newTasks.nextDeadlineNanos <= delayedTasks.nextDeadlineNanos )
         {
@@ -94,7 +94,7 @@ final class TimeBasedTaskScheduler implements Runnable
         }
         else
         {
-            ScheduledTask head = delayedTasks;
+            ScheduledJobHandle head = delayedTasks;
             while ( head.next != null && head.next.nextDeadlineNanos < newTasks.nextDeadlineNanos )
             {
                 head = head.next;
@@ -111,18 +111,18 @@ final class TimeBasedTaskScheduler implements Runnable
             // We have no tasks to run. Park until we're woken up by a submit().
             return NO_TASKS_PARK;
         }
-        ScheduledTask due = spliceOutDueTasks( now );
+        ScheduledJobHandle due = spliceOutDueTasks( now );
         submitAndEnqueueTasks( due, now );
         return delayedTasks == null ? NO_TASKS_PARK : delayedTasks.nextDeadlineNanos - now;
     }
 
-    private ScheduledTask spliceOutDueTasks( long now )
+    private ScheduledJobHandle spliceOutDueTasks( long now )
     {
-        ScheduledTask due = null;
-        ScheduledTask delayed = delayedTasks;
+        ScheduledJobHandle due = null;
+        ScheduledJobHandle delayed = delayedTasks;
         while ( delayed != null && delayed.nextDeadlineNanos <= now )
         {
-            ScheduledTask next = delayed.next;
+            ScheduledJobHandle next = delayed.next;
             delayed.next = due;
             due = delayed;
             delayed = next;
@@ -131,12 +131,12 @@ final class TimeBasedTaskScheduler implements Runnable
         return due;
     }
 
-    private void submitAndEnqueueTasks( ScheduledTask due, long now )
+    private void submitAndEnqueueTasks( ScheduledJobHandle due, long now )
     {
         while ( due != null )
         {
-            ScheduledTask next = due.next;
-            if ( due.compareAndSetState( ScheduledTask.STATE_RUNNABLE, ScheduledTask.STATE_SUBMITTED ) )
+            ScheduledJobHandle next = due.next;
+            if ( due.compareAndSetState( ScheduledJobHandle.STATE_RUNNABLE, ScheduledJobHandle.STATE_SUBMITTED ) )
             {
                 long reschedulingDelayNanos = due.getReschedulingDelayNanos();
                 due.nextDeadlineNanos = reschedulingDelayNanos + now;
@@ -148,7 +148,7 @@ final class TimeBasedTaskScheduler implements Runnable
                 // If the rescheduling delay is zero or less, then this wasn't a recurring task, but just a delayed one,
                 // which means we don't enqueue it again.
             }
-            else if ( due.getState() != ScheduledTask.STATE_FAILED )
+            else if ( due.getState() != ScheduledJobHandle.STATE_FAILED )
             {
                 // It's still running, so it's now overdue.
                 due.nextDeadlineNanos = now;
