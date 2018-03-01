@@ -526,7 +526,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( cachedIndex + 1 < cachedLength && !closed && !(concurrentWriteHappened = cursor.shouldRetry()) )
                 {   // FAST, key/value is readily available
                     cachedIndex++;
-                    if ( 0 <= pos && pos < keyCount && insideEndRange( exactMatch ) )
+                    if ( 0 <= pos && pos < keyCount )
                     {
                         if ( resultOnTrack || isResultKey() )
                         {
@@ -562,7 +562,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                             continue; // in the read loop above so that we can continue reading from next sibling
                         }
                     }
-                    else if ( 0 <= pos && pos < keyCount && insideEndRange( exactMatch ) )
+                    else if ( 0 <= pos && pos < keyCount && insideEndRange( exactMatch, 0 ) )
                     {
                         if ( isResultKey() )
                         {
@@ -631,7 +631,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 pointerId = readNextSibling();
                 pointerGeneration = readPointerGenerationOnSuccess( pointerId );
             }
-            for ( int readPos = pos; cachedLength < mutableKeys.length && 0 <= readPos && readPos < keyCount; readPos += stride, cachedLength++ )
+            for ( int readPos = pos; cachedLength < mutableKeys.length && 0 <= readPos && readPos < keyCount; readPos += stride )
             {
                 // Read the next value in this leaf
                 if ( mutableKeys[cachedLength] == null )
@@ -641,6 +641,17 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     mutableValues[cachedLength] = layout.newValue();
                 }
                 bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos );
+
+                if ( insideEndRange( exactMatch, cachedLength ) )
+                {
+                    // This seems to be a result that should be part of our result set
+                    cachedLength++;
+                }
+                else
+                {
+                    // OK so we read too far, abort this ahead-reading
+                    break;
+                }
             }
         }
         while ( concurrentWriteHappened = cursor.shouldRetry() );
@@ -703,7 +714,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @return whether or not the read key ({@link #mutableKeys}) is "before" the end of the key range
      * ({@link #toExclusive}) of this seek.
      */
-    private boolean insideEndRange( boolean exactMatch )
+    private boolean insideEndRange( boolean exactMatch, int cachedIndex )
     {
         if ( exactMatch )
         {
