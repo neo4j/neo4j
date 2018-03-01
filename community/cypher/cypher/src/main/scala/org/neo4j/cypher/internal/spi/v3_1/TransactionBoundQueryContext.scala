@@ -142,7 +142,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {
     indexSearchMonitor.indexSeek(index, value)
-    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, Values.of(value))))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, Values.of(value))))(nodeOps.getByIdIfExists)
   }
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
@@ -207,7 +207,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
     val indexedNodes = txContext.statement.readOperations().indexQuery(index, IndexQuery.stringPrefix(index.propertyId, prefix))
-    JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getByIdIfExists)
   }
 
   private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
@@ -231,7 +231,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
-    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getByIdIfExists)
   }
 
   private def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
@@ -256,20 +256,20 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
 
-    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getByIdIfExists)
   }
 
   override def indexScan(index: IndexDescriptor) =
     JavaConversionSupport.mapToScalaENFXSafe(
-      txContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
+      txContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getByIdIfExists)
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
     JavaConversionSupport.mapToScalaENFXSafe(
-      txContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.propertyId, value)))(nodeOps.getById)
+      txContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.propertyId, value)))(nodeOps.getByIdIfExists)
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
     JavaConversionSupport.mapToScalaENFXSafe(
-      txContext.statement.readOperations().indexQuery(index, IndexQuery.stringSuffix(index.propertyId, value)))(nodeOps.getById)
+      txContext.statement.readOperations().indexQuery(index, IndexQuery.stringSuffix(index.propertyId, value)))(nodeOps.getByIdIfExists)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
@@ -283,7 +283,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
-    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetForLabel(id))(nodeOps.getByIdIfExists)
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
     txContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
@@ -346,14 +346,20 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       else
         throw new EntityNotFoundException(s"Node with id $id")
 
+    def getByIdIfExists(id: Long): Option[Node] =
+      if (txContext.statement.readOperations().nodeExists(id))
+        Some(entityAccessor.newNodeProxy(id))
+      else
+        None
+
     override def all: Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetAll())(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetAll())(getByIdIfExists)
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getByIdIfExists)
 
     override def indexQuery(name: String, query: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodeExplicitIndexQuery(name, query))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodeExplicitIndexQuery(name, query))(getByIdIfExists)
 
     override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
 
@@ -424,15 +430,23 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
           throw new EntityNotFoundException(s"Relationship with id $id", e)
       }
 
+    def getByIdIfExists(id: Long): Option[Relationship] =
+      try {
+        txContext.statement.readOperations().relationshipCursorById(id)
+        Some(entityAccessor.newRelationshipProxy(id))
+      } catch {
+        case e: api.exceptions.EntityNotFoundException => None
+      }
+
     override def all: Iterator[Relationship] = {
-      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipsGetAll())(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipsGetAll())(getByIdIfExists)
     }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getByIdIfExists)
 
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getByIdIfExists)
 
     override def isDeletedInThisTx(r: Relationship): Boolean =
       isDeletedInThisTx(r.getId)

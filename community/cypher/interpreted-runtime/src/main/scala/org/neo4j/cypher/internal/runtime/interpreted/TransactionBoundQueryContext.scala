@@ -451,7 +451,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def indexScan(index: IndexReference): Iterator[NodeValue] =
-    JavaConversionSupport.mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getByIdIfExists)
 
   override def indexScanPrimitive(index: IndexReference): PrimitiveLongResourceIterator = scan(index)
 
@@ -644,13 +644,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def indexGet(name: String, key: String, value: Any): Iterator[NodeValue] =
       JavaConversionSupport
-        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexGet(name, key, value))(
-          getById)
+        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getByIdIfExists)
 
     override def indexQuery(name: String, query: Any): Iterator[NodeValue] =
       JavaConversionSupport
-        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexQuery(name, query))(
-          getById)
+        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexQuery(name, query))(getByIdIfExists)
 
     override def isDeletedInThisTx(id: Long): Boolean = transactionalContext.stateView
       .hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
@@ -785,11 +783,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def indexGet(name: String, key: String, value: Any): Iterator[RelationshipValue] =
       JavaConversionSupport.mapToScalaENFXSafe(
-        transactionalContext.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getById)
+        transactionalContext.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getByIdIfExists)
 
     override def indexQuery(name: String, query: Any): Iterator[RelationshipValue] =
       JavaConversionSupport.mapToScalaENFXSafe(
-        transactionalContext.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getById)
+        transactionalContext.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getByIdIfExists)
 
     override def isDeletedInThisTx(id: Long): Boolean =
       transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState()
