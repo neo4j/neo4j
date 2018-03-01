@@ -246,7 +246,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         {
             labelDiffSets = new VersionedPrimitiveLongDiffSets();
         }
-        return stateSelector.getView(labelDiffSets);
+        return stateSelector.getView( labelDiffSets );
     }
 
     public void addRelationship( long relId, int typeId, Direction direction )

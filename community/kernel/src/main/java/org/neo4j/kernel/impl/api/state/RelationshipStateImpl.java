@@ -130,7 +130,7 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
         this.stable = this;
     }
 
-    public RelationshipStateImpl stableView()
+    RelationshipStateImpl stableView()
     {
         if ( stable == null )
         {

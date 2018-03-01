@@ -31,11 +31,13 @@ public interface StateSelector
 
     StateSelector CURRENT_STATE = new StateSelector()
     {
+        @Override
         public PrimitiveLongDiffSets getView( VersionedPrimitiveLongDiffSets diffSets )
         {
             return diffSets.currentView();
         }
 
+        @Override
         public <T> PrimitiveLongObjectMap<T> getView( VersionedPrimitiveLongObjectMap<T> map )
         {
             return map.currentView();
@@ -48,6 +50,18 @@ public interface StateSelector
         }
 
         @Override
+        public NodeStateImpl getView( NodeStateImpl nodeState )
+        {
+            return nodeState;
+        }
+
+        @Override
+        public RelationshipStateImpl getView( RelationshipStateImpl relationshipState )
+        {
+            return relationshipState;
+        }
+
+        @Override
         public String toString()
         {
             return "Current state selector";
@@ -56,11 +70,13 @@ public interface StateSelector
 
     StateSelector STABLE_STATE = new StateSelector()
     {
+        @Override
         public PrimitiveLongDiffSets getView( VersionedPrimitiveLongDiffSets diffSets )
         {
             return diffSets.stableView();
         }
 
+        @Override
         public <T> PrimitiveLongObjectMap<T> getView( VersionedPrimitiveLongObjectMap<T> map )
         {
             return map.stableView();
@@ -70,6 +86,18 @@ public interface StateSelector
         public PrimitiveLongSet getView( VersionedPrimitiveLongSet set )
         {
             return set.stableView();
+        }
+
+        @Override
+        public NodeStateImpl getView( NodeStateImpl nodeState )
+        {
+            return nodeState.stableView();
+        }
+
+        @Override
+        public RelationshipStateImpl getView( RelationshipStateImpl relationshipState )
+        {
+            return relationshipState.stableView();
         }
 
         @Override
@@ -84,4 +112,8 @@ public interface StateSelector
     <T> PrimitiveLongObjectMap<T> getView( VersionedPrimitiveLongObjectMap<T> map );
 
     PrimitiveLongSet getView( VersionedPrimitiveLongSet versionedPrimitiveLongSet );
+
+    NodeStateImpl getView( NodeStateImpl nodeState );
+
+    RelationshipStateImpl getView( RelationshipStateImpl relationshipState );
 }
