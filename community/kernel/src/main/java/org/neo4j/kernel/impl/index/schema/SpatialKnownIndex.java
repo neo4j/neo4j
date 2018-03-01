@@ -63,7 +63,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 /**
  * An instance of this class represents a dynamically created sub-index specific to a particular coordinate reference system.
@@ -225,10 +224,9 @@ public class SpatialKnownIndex
         return asResourceIterator( iterator( indexFile ) );
     }
 
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        // TODO add IOLimiter arg
-        schemaIndex.tree.checkpoint( IOLimiter.unlimited() );
+        schemaIndex.tree.checkpoint( ioLimiter );
     }
 
     public boolean wasDirtyOnStartup()
