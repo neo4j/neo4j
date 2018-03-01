@@ -89,10 +89,9 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        // TODO add IOLimiter arg
-        tree.checkpoint( IOLimiter.unlimited() );
+        tree.checkpoint( ioLimiter );
     }
 
     @Override

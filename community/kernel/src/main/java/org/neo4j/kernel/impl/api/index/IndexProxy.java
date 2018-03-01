@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -94,7 +95,7 @@ public interface IndexProxy extends LabelSchemaSupplier
 
     PopulationProgress getIndexPopulationProgress();
 
-    void force() throws IOException;
+    void force( IOLimiter ioLimiter ) throws IOException;
 
     void refresh() throws IOException;
 

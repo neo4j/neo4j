@@ -26,6 +26,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -77,10 +78,10 @@ class FusionIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        nativeAccessor.force();
-        luceneAccessor.force();
+        nativeAccessor.force( ioLimiter );
+        luceneAccessor.force( ioLimiter );
     }
 
     @Override

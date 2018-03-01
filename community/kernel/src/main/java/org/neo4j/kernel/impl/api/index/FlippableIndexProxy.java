@@ -28,6 +28,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -127,12 +128,12 @@ public class FlippableIndexProxy implements IndexProxy
      * we don't care about waiting threads, only about whether the exclusive lock is held or not.
      */
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
         barge( lock.readLock() ); // see javadoc of this method (above) for rationale on why we use barge(...) here
         try
         {
-            delegate.force();
+            delegate.force( ioLimiter );
         }
         finally
         {

@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -105,7 +106,7 @@ public class LuceneSchemaIndexPopulationIT
             try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force();
+                indexAccessor.force( IOLimiter.unlimited() );
 
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );
