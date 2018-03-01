@@ -236,7 +236,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         @Override
         public PartAccessor<?> newDateTime()
         {
-            throw new UnsupportedOperationException( "no comprende" );
+            return createPartAccessor( temporalIndexFiles.dateTime() );
         }
 
         @Override

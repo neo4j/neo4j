@@ -98,7 +98,7 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
         @Override
         public IndexUpdater newDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.dateTime().newPopulatingUpdater( propertyAccessor );
         }
 
         @Override

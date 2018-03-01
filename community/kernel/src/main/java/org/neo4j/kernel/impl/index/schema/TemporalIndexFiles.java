@@ -33,9 +33,9 @@ class TemporalIndexFiles
 {
     private final FileSystemAbstraction fs;
     private FileLayout<DateSchemaKey> dateFileLayout;
-    private FileLayout dateTimeFileLayout;
+    private FileLayout<LocalDateTimeSchemaKey> dateTimeFileLayout;
     private FileLayout dateTimeZonedFileLayout;
-    private FileLayout timeFileLayout;
+    private FileLayout<LocalTimeSchemaKey> timeFileLayout;
     private FileLayout timeZonedFileLayout;
     private FileLayout durationFileLayout;
 
@@ -45,6 +45,7 @@ class TemporalIndexFiles
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
         dateFileLayout = new FileLayout<>( new File( indexDirectory, "date" ), DateLayout.of( descriptor ), ValueGroup.DATE );
         timeFileLayout = new FileLayout<>( new File( indexDirectory, "time" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
+        dateTimeFileLayout = new FileLayout<>( new File( indexDirectory, "datetime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
     }
 
     Iterable<FileLayout> existing()
@@ -85,9 +86,14 @@ class TemporalIndexFiles
         return dateFileLayout;
     }
 
-    public FileLayout<DateSchemaKey> time()
+    public FileLayout<LocalTimeSchemaKey> time()
     {
         return timeFileLayout;
+    }
+
+    public FileLayout<LocalDateTimeSchemaKey> dateTime()
+    {
+        return dateTimeFileLayout;
     }
 
     // .... we will add more explicit accessor methods later

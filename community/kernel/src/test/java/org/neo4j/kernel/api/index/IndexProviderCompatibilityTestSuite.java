@@ -38,6 +38,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -92,8 +93,10 @@ public abstract class IndexProviderCompatibilityTestSuite
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),
                     Arrays.asList( Values.of( "string1" ), Values.of( 42 ) ),
-                    Arrays.asList( DateValue.epochDate( 2 ),
-                                   LocalTimeValue.localTime( 100000 ) ),
+                    Arrays.asList(
+                            DateValue.epochDate( 2 ),
+                            LocalTimeValue.localTime( 100000 ),
+                            LocalDateTimeValue.localDateTime( 2018, 3, 1, 13, 50, 42, 1337 ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
                                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
 
@@ -103,7 +106,8 @@ public abstract class IndexProviderCompatibilityTestSuite
                     Arrays.asList( Values.of( "string2" ), Values.of( 1337 ) ),
                     Arrays.asList(
                             DateValue.epochDate( 42 ),
-                            LocalTimeValue.localTime( 2000 ) ),
+                            LocalTimeValue.localTime( 2000 ),
+                            LocalDateTimeValue.localDateTime( 2018, 2, 28, 11, 5, 1, 42 ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 10 ),
                             Values.pointValue( CoordinateReferenceSystem.WGS84, 87.21, 7.65 ) ) );
 

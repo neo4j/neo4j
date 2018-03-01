@@ -145,7 +145,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         @Override
         public TemporalIndexPartReader<?> newDateTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.LOCAL_DATE_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
