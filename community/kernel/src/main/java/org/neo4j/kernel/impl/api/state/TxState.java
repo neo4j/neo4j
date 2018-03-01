@@ -110,8 +110,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
-    private VersionedRemovalsCountingDiffSets nodes;
-    private RemovalsCountingRelationshipsDiffSets relationships;
+    private VersionedPrimitiveLongDiffSets nodes;
+    // TODO: shold be versioned?
+    private PrimitiveRelationshipDiffSets relationships;
+
+    private VersionedPrimitiveLongSet nodesDeletedInTx;
+    private VersionedPrimitiveLongSet relationshipsDeletedInTx;
 
     private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
 
@@ -184,10 +188,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( relationships != null )
         {
             // Created relationships
-            relationships.visit( createdRelationshipsVisitor( this, visitor ) );
+            relationships().visit( createdRelationshipsVisitor( this, visitor ) );
 
             // Deleted relationships
-            relationships.visit( deletedRelationshipsVisitor( visitor ) );
+            relationships().visit( deletedRelationshipsVisitor( visitor ) );
         }
 
         // Deleted nodes
@@ -425,7 +429,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void nodeDoDelete( long nodeId )
     {
-        nodes().currentView().remove( nodeId );
+        if ( nodes().currentView().remove( nodeId ) )
+        {
+            recordNodeDeleted( nodeId );
+        }
 
         if ( nodeStatesMap != null )
         {
@@ -469,7 +476,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
-        return nodes != null && nodes.removedInCurrentView( nodeId );
+        return nodesDeletedInTx != null && nodesDeletedInTx.currentView().contains( nodeId );
     }
 
     protected PrimitiveLongDiffSets nodesView()
@@ -486,7 +493,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoDelete( long id, int type, long startNodeId, long endNodeId )
     {
-        relationships().remove( id );
+        if ( relationships().remove( id ) )
+        {
+            recordRelationshipDeleted( id );
+        }
 
         if ( startNodeId == endNodeId )
         {
@@ -519,7 +529,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean relationshipIsDeletedInThisTx( long relationshipId )
     {
-        return relationships != null && relationships.wasRemoved( relationshipId );
+        return relationshipsDeletedInTx != null && relationshipsDeletedInTx.currentView().contains( relationshipId );
     }
 
     @Override
@@ -826,11 +836,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodes != null ? nodesView() : EmptyPrimitiveLongReadableDiffSets.INSTANCE;
     }
 
-    private VersionedRemovalsCountingDiffSets nodes()
+    private VersionedPrimitiveLongDiffSets nodes()
     {
         if ( nodes == null )
         {
-            nodes = new VersionedRemovalsCountingDiffSets();
+            nodes = new VersionedPrimitiveLongDiffSets();
         }
         return nodes;
     }
@@ -859,11 +869,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return relationships != null ? relationships : EmptyRelationshipPrimitiveLongDiffSets.INSTANCE;
     }
 
-    private RemovalsCountingRelationshipsDiffSets relationships()
+    private PrimitiveRelationshipDiffSets relationships()
     {
         if ( relationships == null )
         {
-            relationships = new RemovalsCountingRelationshipsDiffSets( this );
+            relationships = new PrimitiveRelationshipDiffSets( this );
         }
         return relationships;
     }
@@ -1253,12 +1263,39 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
+    private void recordNodeDeleted( long id )
+    {
+        if ( nodesDeletedInTx == null )
+        {
+            nodesDeletedInTx = new VersionedPrimitiveLongSet();
+        }
+        nodesDeletedInTx.currentView().add( id );
+    }
+
+    private void recordRelationshipDeleted( long id )
+    {
+        if ( relationshipsDeletedInTx == null )
+        {
+            relationshipsDeletedInTx = new VersionedPrimitiveLongSet();
+        }
+        relationshipsDeletedInTx.currentView().add( id );
+    }
+
     @Override
     public void markStable()
     {
         if ( nodes != null )
         {
             nodes.markStable();
+        }
+        if ( nodesDeletedInTx != null )
+        {
+            nodesDeletedInTx.markStable();
+        }
+        // TODO: relationships
+        if ( relationshipsDeletedInTx != null )
+        {
+            relationshipsDeletedInTx.markStable();
         }
         if ( nodeStatesMap != null )
         {
@@ -1268,7 +1305,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             relationshipStatesMap.values().forEach( RelationshipStateImpl::markStable );
         }
-        // TODO:
     }
 
     private PrimitiveLongDiffSets getIndexUpdatesForSeek(
@@ -1428,213 +1464,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    /**
-     * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
-     * whereas we need to know total number of explicit removals.
-     */
-    static class VersionedRemovalsCountingDiffSets extends VersionedPrimitiveLongDiffSets
-    {
-        private final RemovalsCountingDiffSetsDecorator currentView;
-
-        VersionedRemovalsCountingDiffSets()
-        {
-            this.currentView = new RemovalsCountingDiffSetsDecorator( super.currentView() );
-        }
-
-        @Override
-        public RemovalsCountingDiffSetsDecorator currentView()
-        {
-            return currentView;
-        }
-
-        boolean removedInStableView( long id )
-        {
-            return currentView.removedFromAdded != null && currentView.removedFromAdded.stableView().contains( id );
-        }
-
-        boolean removedInCurrentView( long id )
-        {
-            return (currentView.removedFromAdded != null && currentView.removedFromAdded.currentView().contains( id )) || currentView().isRemoved( id );
-        }
-
-        @Override
-        public void markStable()
-        {
-            super.markStable();
-            if ( currentView.removedFromAdded != null )
-            {
-                currentView.removedFromAdded.markStable();
-            }
-        }
-    }
-
-    static class RemovalsCountingDiffSetsDecorator extends PrimitiveLongDiffSets
-    {
-        private final PrimitiveLongDiffSets delegate;
-        private VersionedPrimitiveLongSet removedFromAdded;
-
-        RemovalsCountingDiffSetsDecorator( PrimitiveLongDiffSets delegate )
-        {
-            super( delegate.getAdded(), delegate.getRemoved() );
-            this.delegate = delegate;
-        }
-
-        @Override
-        public boolean isAdded( long element )
-        {
-            return delegate.isAdded( element );
-        }
-
-        @Override
-        public boolean isRemoved( long element )
-        {
-            return delegate.isRemoved( element );
-        }
-
-        @Override
-        public void removeAll( PrimitiveLongIterator elementsToRemove )
-        {
-            delegate.removeAll( elementsToRemove );
-        }
-
-        @Override
-        public void addAll( PrimitiveLongIterator elementsToAdd )
-        {
-            delegate.addAll( elementsToAdd );
-        }
-
-        @Override
-        public void add( long element )
-        {
-            delegate.add( element );
-        }
-
-        @Override
-        public boolean remove( long element )
-        {
-            if ( getAdded().remove( element ) )
-            {
-                if ( removedFromAdded == null )
-                {
-                    removedFromAdded = new VersionedPrimitiveLongSet();
-                }
-                removedFromAdded.currentView().add( element );
-                return true;
-            }
-            return delegate.remove( element );
-        }
-
-        @Override
-        public void visit( PrimitiveLongDiffSetsVisitor visitor ) throws ConstraintValidationException
-        {
-            delegate.visit( visitor );
-        }
-
-        @Override
-        public int delta()
-        {
-            return delegate.delta();
-        }
-
-        @Override
-        public PrimitiveLongResourceIterator augment( PrimitiveLongIterator source )
-        {
-            return delegate.augment( source );
-        }
-
-        @Override
-        public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongIterator source )
-        {
-            return delegate.augmentWithRemovals( source );
-        }
-
-        @Override
-        public PrimitiveLongSet getAdded()
-        {
-            return delegate.getAdded();
-        }
-
-        @Override
-        public PrimitiveLongSet getRemoved()
-        {
-            return delegate.getRemoved();
-        }
-
-        @Override
-        public boolean isEmpty()
-        {
-            return delegate.isEmpty();
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-            RemovalsCountingDiffSetsDecorator decorator = (RemovalsCountingDiffSetsDecorator) o;
-            if ( removedFromAdded != null )
-            {
-                if ( !removedFromAdded.equals( decorator.removedFromAdded ) )
-                {
-                    return false;
-                }
-            }
-            return delegate.equals( o );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return delegate.hashCode();
-        }
-
-        @Override
-        public void clear()
-        {
-            delegate.clear();
-        }
-    }
-
-    /**
-     * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
-     * whereas we need to know total number of explicit removals.
-     */
-    private static class RemovalsCountingRelationshipsDiffSets extends PrimitiveRelationshipDiffSets
-    {
-        private PrimitiveLongSet removedFromAdded;
-
-        private RemovalsCountingRelationshipsDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
-        {
-            super( txStateRelationshipHome );
-        }
-
-        @Override
-        public boolean remove( long elem )
-        {
-            if ( getAdded().remove( elem ) )
-            {
-                if ( removedFromAdded == null )
-                {
-                    removedFromAdded = Primitive.longSet();
-                }
-                removedFromAdded.add( elem );
-                return true;
-            }
-            return super.remove( elem );
-        }
-
-        private boolean wasRemoved( long id )
-        {
-            return (removedFromAdded != null && removedFromAdded.contains( id )) || super.isRemoved( id );
-        }
-    }
-
     class StableState implements TransactionState
     {
 
@@ -1728,7 +1557,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         @Override
         public boolean nodeIsDeletedInThisTx( long nodeId )
         {
-            return impl.nodes != null && impl.nodes.removedInStableView( nodeId );
+            return impl.nodesDeletedInTx != null && impl.nodesDeletedInTx.stableView().contains( nodeId );
         }
 
         @Override
@@ -1752,7 +1581,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         @Override
         public boolean relationshipIsDeletedInThisTx( long relationshipId )
         {
-            return impl.relationshipIsDeletedInThisTx( relationshipId );
+            return impl.relationshipsDeletedInTx != null && impl.relationshipsDeletedInTx.stableView().contains( relationshipId );
         }
 
         @Override
