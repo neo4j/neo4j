@@ -40,12 +40,12 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
 {
     private final Factory<T, E> factory;
 
-    private T date;
-    private T dateTime;
-    private T dateTimeZoned;
-    private T time;
-    private T timeZoned;
-    private T duration;
+    private volatile T date;
+    private volatile T dateTime;
+    private volatile T dateTimeZoned;
+    private volatile T time;
+    private volatile T timeZoned;
+    private volatile T duration;
 
     TemporalIndexCache( Factory<T, E> factory )
     {

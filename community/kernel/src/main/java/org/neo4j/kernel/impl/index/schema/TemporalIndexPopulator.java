@@ -58,13 +58,13 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     }
 
     @Override
-    public void create() throws IOException
+    public synchronized void create() throws IOException
     {
         forAll( NativeSchemaIndexPopulator::clear, this );
     }
 
     @Override
-    public void drop() throws IOException
+    public synchronized void drop() throws IOException
     {
         forAll( NativeSchemaIndexPopulator::drop, this );
     }
@@ -93,7 +93,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException
+    public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         for ( NativeSchemaIndexPopulator part : this )
         {
@@ -102,7 +102,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     }
 
     @Override
-    public void markAsFailed( String failure )
+    public synchronized void markAsFailed( String failure )
     {
         for ( NativeSchemaIndexPopulator part : this )
         {
