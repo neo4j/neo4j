@@ -23,6 +23,6 @@ class GraphState extends PropertyContainerStateImpl
 {
     GraphState()
     {
-        super( -1 );
+        super( -1, StateSelector.CURRENT_STATE );
     }
 }

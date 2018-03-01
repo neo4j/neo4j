@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -56,9 +58,9 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public PrimitiveLongIterator removedProperties()
         {
-            return emptyIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
@@ -112,10 +114,29 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
     private long startNode = -1;
     private long endNode = -1;
     private int type = -1;
+    private RelationshipStateImpl stable;
 
     RelationshipStateImpl( long id )
     {
-        super( id );
+        super( id, StateSelector.CURRENT_STATE );
+    }
+
+    private RelationshipStateImpl( RelationshipStateImpl relationshipState, StateSelector stableState )
+    {
+        super( relationshipState, stableState );
+        this.startNode = relationshipState.startNode;
+        this.endNode = relationshipState.endNode;
+        this.type = relationshipState.type;
+        this.stable = this;
+    }
+
+    RelationshipStateImpl stableView()
+    {
+        if ( stable == null )
+        {
+            stable = new RelationshipStateImpl( this, StateSelector.STABLE_STATE );
+        }
+        return stable;
     }
 
     void setMetaData( long startNode, long endNode, int type )

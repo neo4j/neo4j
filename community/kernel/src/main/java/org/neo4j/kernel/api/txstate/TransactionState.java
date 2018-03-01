@@ -93,4 +93,7 @@ public interface TransactionState extends ReadableTransactionState
 
     void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
 
+    TransactionState getStableState();
+
+    void markStable();
 }

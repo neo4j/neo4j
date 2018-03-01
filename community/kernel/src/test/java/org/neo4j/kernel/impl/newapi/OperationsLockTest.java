@@ -84,6 +84,7 @@ public class OperationsLockTest
     private DefaultRelationshipScanCursor relationshipCursor;
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
+    private StableAllStoreHolder stableAllStoreHolder;
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private StoreReadLayer storeReadLayer;
 
@@ -116,7 +117,9 @@ public class OperationsLockTest
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
+        stableAllStoreHolder = new StableAllStoreHolder( engine, store,  transaction, cursors, mock(
+                ExplicitIndexStore.class ) );
+        operations = new Operations( allStoreHolder, stableAllStoreHolder, mock( IndexTxStateUpdater.class ),
                 store, transaction, new KernelToken( storeReadLayer ), cursors, autoindexing );
         operations.initialize();
 

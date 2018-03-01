@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.function.LongConsumer;
 import java.util.function.LongPredicate;
 
 public interface PrimitiveLongSet extends PrimitiveLongCollection, LongPredicate
@@ -30,4 +31,13 @@ public interface PrimitiveLongSet extends PrimitiveLongCollection, LongPredicate
     boolean contains( long value );
 
     boolean remove( long value );
+
+    default void forEach( LongConsumer consumer )
+    {
+        final PrimitiveLongIterator iterator = iterator();
+        while ( iterator.hasNext() )
+        {
+            consumer.accept( iterator.next() );
+        }
+    }
 }

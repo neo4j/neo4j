@@ -25,7 +25,6 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -33,6 +32,8 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveRelationshipDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -56,27 +57,27 @@ public interface ReadableTransactionState
     /**
      * Returns all nodes that, in this tx, have had the labels changed.
      */
-    ReadableDiffSets<Long> nodesWithLabelChanged( int label );
+    PrimitiveLongDiffSets nodesWithLabelChanged( int label );
 
     /**
      * Returns all nodes that, in this tx, have had any of the labels changed.
      */
-    ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels );
+    PrimitiveLongDiffSets nodesWithAnyOfLabelsChanged( int... labels );
 
     /**
      * Returns all nodes that, in this tx, have had all the labels changed.
      */
-    ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels );
+    PrimitiveLongDiffSets nodesWithAllLabelsChanged( int... labels );
 
     /**
      * Returns nodes that have been added and removed in this tx.
      */
-    ReadableDiffSets<Long> addedAndRemovedNodes();
+    PrimitiveLongReadableDiffSets addedAndRemovedNodes();
 
     /**
      * Returns rels that have been added and removed in this tx.
      */
-    ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships();
+    PrimitiveRelationshipDiffSets addedAndRemovedRelationships();
 
     /**
      * Nodes that have had labels, relationships, or properties modified in this tx.
@@ -92,7 +93,7 @@ public interface ReadableTransactionState
 
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
-    ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
+    PrimitiveLongDiffSets nodeStateLabelDiffSets( long nodeId );
 
     Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original );
 
@@ -190,5 +191,4 @@ public interface ReadableTransactionState
      * The same applies to schema changes, such as creating and dropping indexes and constraints.
      */
     boolean hasDataChanges();
-
 }

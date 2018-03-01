@@ -19,9 +19,21 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.Objects;
+import java.util.function.LongConsumer;
+
 public interface PrimitiveLongIterator
 {
     boolean hasNext();
 
     long next();
+
+    default void forEachRemaining( LongConsumer consumer )
+    {
+        Objects.requireNonNull( consumer );
+        while ( hasNext() )
+        {
+            consumer.accept( next() );
+        }
+    }
 }

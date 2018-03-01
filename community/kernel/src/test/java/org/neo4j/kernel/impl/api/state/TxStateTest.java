@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
@@ -59,6 +61,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -67,6 +70,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
@@ -94,10 +98,10 @@ public class TxStateTest
         state.nodeDoAddLabel( 2, 1 );
 
         // WHEN
-        Set<Integer> addedLabels = state.nodeStateLabelDiffSets( 1 ).getAdded();
+        PrimitiveLongSet addedLabels = state.nodeStateLabelDiffSets( 1 ).getAdded();
 
         // THEN
-        assertEquals( asSet( 1, 2 ), addedLabels );
+        assertThat( toSet( addedLabels ), Matchers.contains( 1L, 2L ) );
     }
 
     @Test
@@ -109,10 +113,10 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 2, 1 );
 
         // WHEN
-        Set<Integer> removedLabels = state.nodeStateLabelDiffSets( 1 ).getRemoved();
+        PrimitiveLongSet removedLabels = state.nodeStateLabelDiffSets( 1 ).getRemoved();
 
         // THEN
-        assertEquals( asSet( 1, 2 ), removedLabels );
+        assertThat( toSet( removedLabels ), Matchers.contains( 1L, 2L ) );
     }
 
     @Test
@@ -127,7 +131,7 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getAdded() );
+        assertThat( toSet( state.nodeStateLabelDiffSets( 1 ).getAdded() ), Matchers.contains( 2L ) );
     }
 
     @Test
@@ -142,7 +146,7 @@ public class TxStateTest
         state.nodeDoAddLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getRemoved() );
+        assertThat( toSet( state.nodeStateLabelDiffSets( 1 ).getRemoved() ), Matchers.contains( 2L ) );
     }
 
     @Test
@@ -157,12 +161,12 @@ public class TxStateTest
         state.nodeDoAddLabel( 3, 5 );
 
         // WHEN
-        Set<Long> removed = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getRemoved();
-        Set<Long> added = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getAdded();
+        PrimitiveLongSet removed = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getRemoved();
+        PrimitiveLongSet added = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getAdded();
 
         // THEN
-        assertEquals( asSet( 0L, 1L, 2L ), Iterables.asSet( removed ) );
-        assertEquals( asSet( 3L, 4L, 5L ), Iterables.asSet( added ) );
+        assertEquals( setOf( 0L, 1L, 2L ), removed );
+        assertEquals( setOf( 3L, 4L, 5L ), added );
     }
 
     @Test
@@ -176,10 +180,10 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 2, 2 );
 
         // WHEN
-        Set<Long> nodes = state.nodesWithLabelChanged( 2 ).getRemoved();
+        PrimitiveLongSet nodes = state.nodesWithLabelChanged( 2 ).getRemoved();
 
         // THEN
-        assertEquals( asSet( 0L, 2L ), Iterables.asSet( nodes ) );
+        assertThat( toSet( nodes ), Matchers.contains( 0L, 2L ) );
     }
 
     //endregion
@@ -921,7 +925,7 @@ public class TxStateTest
         state.nodeDoDelete( nodeId );
 
         // Then
-        assertThat( Iterables.asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
+        assertThat( toSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
 
     @Test
@@ -1539,18 +1543,6 @@ public class TxStateTest
             }
         }
         return types;
-    }
-
-    private boolean contains( int[] array, int candidate )
-    {
-        for ( int i : array )
-        {
-            if ( i == candidate )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     //endregion

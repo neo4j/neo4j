@@ -23,13 +23,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -163,14 +164,14 @@ class PropertyExistenceEnforcer
         @Override
         public void visitNodePropertyChanges(
                 long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException
+                PrimitiveLongIterator removed ) throws ConstraintValidationException
         {
             validateNode( id );
             super.visitNodePropertyChanges( id, added, changed, removed );
         }
 
         @Override
-        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+        public void visitNodeLabelChanges( long id, PrimitiveLongSet added, PrimitiveLongSet removed )
                 throws ConstraintValidationException
         {
             validateNode( id );
@@ -188,7 +189,7 @@ class PropertyExistenceEnforcer
         @Override
         public void visitRelPropertyChanges(
                 long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException
+                PrimitiveLongIterator removed ) throws ConstraintValidationException
         {
             validateRelationship( id );
             super.visitRelPropertyChanges( id, added, changed, removed );

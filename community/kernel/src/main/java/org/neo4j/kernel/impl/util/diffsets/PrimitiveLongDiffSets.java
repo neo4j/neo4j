@@ -23,7 +23,9 @@ import java.util.Objects;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
@@ -36,7 +38,8 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
  * target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order.
  */
-public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
+public class PrimitiveLongDiffSets<IN extends PrimitiveLongIterator, OUT extends PrimitiveLongResourceIterator> implements
+        PrimitiveLongReadableDiffSets<IN, OUT>
 {
     private PrimitiveLongSet addedElements;
     private PrimitiveLongSet removedElements;
@@ -94,7 +97,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
         return removeElement( element );
     }
 
-    public void visit( PrimitiveLongDiffSetsVisitor visitor )
+    public void visit( PrimitiveLongDiffSetsVisitor visitor ) throws ConstraintValidationException
     {
         PrimitiveLongIterator addedItems = addedElements.iterator();
         while ( addedItems.hasNext() )
@@ -109,26 +112,34 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
     }
 
     @Override
-    public PrimitiveLongIterator augment( PrimitiveLongIterator source )
-    {
-        return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
-    }
-
-    @Override
     public int delta()
     {
         return addedElements.size() - removedElements.size();
     }
 
     @Override
+    public OUT augment( IN source )
+    {
+        return (OUT) new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
+    }
+
+    @Override
+    public OUT augmentWithRemovals( IN source )
+    {
+        return (OUT) new DiffApplyingPrimitiveLongIterator( source, emptySet(), removedElements );
+    }
+
+    @Override
     public PrimitiveLongSet getAdded()
     {
+        checkAddedElements();
         return addedElements;
     }
 
     @Override
     public PrimitiveLongSet getRemoved()
     {
+        checkRemovedElements();
         return removedElements;
     }
 
@@ -197,4 +208,9 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
         }
     }
 
+    public void clear()
+    {
+        addedElements = Primitive.longSet();
+        removedElements = Primitive.longSet();
+    }
 }

@@ -29,13 +29,13 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.EmptyPrimitiveLongReadableDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.VersionedPrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.Primitive.intSet;
@@ -57,9 +57,9 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public PrimitiveLongIterator removedProperties()
         {
-            return emptyIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
@@ -80,9 +80,9 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public ReadableDiffSets<Integer> labelDiffSets()
+        public PrimitiveLongDiffSets labelDiffSets()
         {
-            return ReadableDiffSets.Empty.instance();
+            return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
         }
 
         @Override
@@ -181,32 +181,72 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
     };
 
-    private DiffSets<Integer> labelDiffSets;
+    private VersionedPrimitiveLongDiffSets labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
 
     private Set<PrimitiveLongDiffSets> indexDiffs;
     private final TxState state;
+    private NodeStateImpl stableView;
 
     NodeStateImpl( long id, TxState state )
     {
-        super( id );
+        super( id, StateSelector.CURRENT_STATE );
         this.state = state;
     }
 
-    @Override
-    public ReadableDiffSets<Integer> labelDiffSets()
+    private NodeStateImpl( NodeStateImpl nodeState, StateSelector stableStateSelector )
     {
-        return ReadableDiffSets.Empty.ifNull( labelDiffSets );
+        super( nodeState, stableStateSelector );
+        this.state = nodeState.state;
+        this.labelDiffSets = nodeState.labelDiffSets;
+        this.relationshipsAdded = nodeState.relationshipsAdded;
+        this.relationshipsRemoved = nodeState.relationshipsRemoved;
+        this.indexDiffs = nodeState.indexDiffs;
+        stableView = this;
     }
 
-    DiffSets<Integer> getOrCreateLabelDiffSets()
+    NodeStateImpl stableView()
     {
-        if ( null == labelDiffSets )
+        if ( stableView == null )
         {
-            labelDiffSets = new DiffSets<>();
+            stableView = new NodeStateImpl( this, StateSelector.STABLE_STATE );
         }
-        return labelDiffSets;
+        return stableView;
+    }
+
+    @Override
+    void markStable()
+    {
+        super.markStable();
+        if ( labelDiffSets != null )
+        {
+            labelDiffSets.markStable();
+        }
+        if ( relationshipsAdded != null )
+        {
+            relationshipsAdded.markStable();
+        }
+        if ( relationshipsRemoved != null )
+        {
+            relationshipsRemoved.markStable();
+        }
+    }
+
+    @Override
+    public PrimitiveLongDiffSets labelDiffSets()
+    {
+        return labelDiffSets == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE :
+               stateSelector.getView( labelDiffSets );
+    }
+
+    PrimitiveLongDiffSets getOrCreateLabelDiffSets()
+    {
+        if ( labelDiffSets == null )
+        {
+            labelDiffSets = new VersionedPrimitiveLongDiffSets();
+        }
+        return stateSelector.getView( labelDiffSets );
     }
 
     public void addRelationship( long relId, int typeId, Direction direction )
@@ -240,6 +280,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     public void clear()
     {
         super.clear();
+        this.stableView = null;
         if ( relationshipsAdded != null )
         {
             relationshipsAdded.clear();
@@ -247,10 +288,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         if ( relationshipsRemoved != null )
         {
             relationshipsRemoved.clear();
-        }
-        if ( labelDiffSets != null )
-        {
-            labelDiffSets.clear();
         }
         if ( indexDiffs != null )
         {
@@ -277,11 +314,11 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( hasAddedRelationships() )
         {
-            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
+            degree = relationshipsAdded.augmentDegree( direction, degree, typeId, stateSelector );
         }
         if ( hasRemovedRelationships() )
         {
-            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
+            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId, stateSelector );
         }
         return degree;
     }
@@ -291,11 +328,11 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( hasAddedRelationships() )
         {
-            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
+            degree = relationshipsAdded.augmentDegree( direction, degree, typeId, stateSelector );
         }
         if ( hasRemovedRelationships() )
         {
-            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
+            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId, stateSelector );
         }
         return degree;
     }
@@ -306,7 +343,8 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         super.accept( visitor );
         if ( labelDiffSets != null )
         {
-            visitor.visitLabelChanges( getId(), labelDiffSets.getAdded(), labelDiffSets.getRemoved() );
+            PrimitiveLongDiffSets labelView = stateSelector.getView( labelDiffSets );
+            visitor.visitLabelChanges( getId(), labelView.getAdded(), labelView.getRemoved() );
         }
     }
 
@@ -325,7 +363,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( hasAddedRelationships() )
         {
-            return relationshipsAdded.relationshipTypes();
+            return relationshipsAdded.relationshipTypes( stateSelector );
         }
         return intSet();
     }
@@ -374,28 +412,28 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     @Override
     public PrimitiveLongIterator getAddedRelationships( Direction direction )
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction ) :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, stateSelector ) :
             PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
     public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relTypes ) :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relTypes, stateSelector ) :
             PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
     public PrimitiveLongIterator getAddedRelationships()
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships() :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( stateSelector ) :
                PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
     public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
     {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType ) :
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType, stateSelector ) :
                PrimitiveLongCollections.emptyIterator();
     }
 }

@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.function.Predicate;
-
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
@@ -36,20 +32,18 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
  * hypothetical target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order
  *
- * @param <T> type of elements
  */
-public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterator, RelationshipIterator>
-        implements ReadableRelationshipDiffSets<T>
+public class PrimitiveRelationshipDiffSets extends PrimitiveLongDiffSets<RelationshipIterator, RelationshipIterator>
 {
     private Home txStateRelationshipHome;
 
-    public RelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
+    public PrimitiveRelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
     {
-        this( txStateRelationshipHome, null, null );
+        this( txStateRelationshipHome, emptySet(), emptySet() );
     }
 
-    public RelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome,
-            Set<T> addedElements, Set<T> removedElements )
+    public PrimitiveRelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome,
+            PrimitiveLongSet addedElements, PrimitiveLongSet removedElements )
     {
         super( addedElements, removedElements );
         this.txStateRelationshipHome = txStateRelationshipHome;
@@ -58,26 +52,6 @@ public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterato
     @Override
     public RelationshipIterator augment( final RelationshipIterator source )
     {
-        return new DiffApplyingRelationshipIterator( source, added( false ), removed( false ), txStateRelationshipHome );
-    }
-
-    @Override
-    public PrimitiveIntIterator augment( final PrimitiveIntIterator source )
-    {
-        return new DiffApplyingIntIterator( source, added( false ), removed( false ) );
-    }
-
-    @Override
-    public RelationshipIterator augmentWithRemovals( final RelationshipIterator source )
-    {
-        return new DiffApplyingRelationshipIterator( source, Collections.emptySet(), removed( false ), txStateRelationshipHome );
-    }
-
-    @Override
-    public RelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
-    {
-        return new RelationshipDiffSets<>( txStateRelationshipHome,
-                Iterables.asSet( Iterables.filter( addedFilter, added( false ) ) ),
-                Iterables.asSet( removed( false ) ) );
+        return new DiffApplyingRelationshipIterator( source, getAdded(), getRemoved(), txStateRelationshipHome );
     }
 }

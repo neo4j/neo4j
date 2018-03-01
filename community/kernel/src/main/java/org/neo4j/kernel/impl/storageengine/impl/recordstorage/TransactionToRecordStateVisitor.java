@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.Iterator;
-import java.util.Set;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+
+import static java.lang.Math.toIntExact;
 
 public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 {
@@ -105,11 +107,11 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, Iterator<Integer> removed )
+            Iterator<StorageProperty> changed, PrimitiveLongIterator removed )
     {
         while ( removed.hasNext() )
         {
-            recordState.nodeRemoveProperty( id, removed.next() );
+            recordState.nodeRemoveProperty( id, toIntExact( removed.next() ) );
         }
         while ( changed.hasNext() )
         {
@@ -125,11 +127,11 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, Iterator<Integer> removed )
+            Iterator<StorageProperty> changed, PrimitiveLongIterator removed )
     {
         while ( removed.hasNext() )
         {
-            recordState.relRemoveProperty( id, removed.next() );
+            recordState.relRemoveProperty( id, toIntExact( removed.next() ) );
         }
         while ( changed.hasNext() )
         {
@@ -145,11 +147,11 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            Iterator<Integer> removed )
+            PrimitiveLongIterator removed )
     {
         while ( removed.hasNext() )
         {
-            recordState.graphRemoveProperty( removed.next() );
+            recordState.graphRemoveProperty( toIntExact( removed.next() ) );
         }
         while ( changed.hasNext() )
         {
@@ -164,16 +166,18 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
+    public void visitNodeLabelChanges( long id, final PrimitiveLongSet added, final PrimitiveLongSet removed )
     {
         // record the state changes to be made to the store
-        for ( Integer label : removed )
+        PrimitiveLongIterator addedIterator = added.iterator();
+        PrimitiveLongIterator removedIterator = removed.iterator();
+        while ( removedIterator.hasNext() )
         {
-            recordState.removeLabelFromNode( label, id );
+            recordState.removeLabelFromNode( toIntExact( removedIterator.next() ), id );
         }
-        for ( Integer label : added )
+        while ( addedIterator.hasNext() )
         {
-            recordState.addLabelToNode( label, id );
+            recordState.addLabelToNode( toIntExact( addedIterator.next() ), id );
         }
     }
 

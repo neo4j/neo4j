@@ -24,12 +24,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.Assert.assertEquals;
@@ -166,9 +165,9 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
         final int prop1 = 0;
         final int prop2 = 1;
         final int prop3 = 2;
-        final int prop4 = 2;
-        final int prop5 = 2;
-        final int prop6 = 2;
+        final int prop4 = 3;
+        final int prop5 = 4;
+        final int prop6 = 5;
         long n1;
 
         // given
@@ -214,7 +213,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
 
     private void assertAllNodes( Read read, long... nodes )
     {
-        Set<Long> expectedSet = Arrays.stream( nodes ).boxed().collect( Collectors.toSet() );
+        PrimitiveLongSet expectedSet = PrimitiveLongCollections.setOf( nodes );
         try ( NodeCursor node = cursors.allocateNodeCursor() )
         {
             int count = 0;
@@ -230,7 +229,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
 
     private void assertExpandNode( Read read, long nodeId, long... relationshipIds )
     {
-        Set<Long> expectedSet = Arrays.stream( relationshipIds ).boxed().collect( Collectors.toSet() );
+        PrimitiveLongSet expectedSet = PrimitiveLongCollections.setOf( relationshipIds );
         try ( NodeCursor node = cursors.allocateNodeCursor();
                 RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
         {

@@ -17,30 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.kernel.impl.newapi;
 
-public class LongKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
+
+public class StableAllStoreHolder extends AllStoreHolder
 {
-    public LongKeyTable( int capacity, VALUE singleValue )
+    public StableAllStoreHolder( StorageEngine engine, StorageStatement statement, KernelTransactionImplementation ktx,
+            DefaultCursors cursors, ExplicitIndexStore explicitIndexStore )
     {
-        super( capacity, 3, 32, singleValue );
+        super( engine, statement, ktx, cursors, explicitIndexStore );
     }
 
     @Override
-    public long key( int index )
+    public TransactionState txState()
     {
-        return getLong( address( index ) );
-    }
-
-    @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
-    {
-        putLong( actualIndex, key );
-    }
-
-    @Override
-    protected LongKeyTable<VALUE> newInstance( int newCapacity )
-    {
-        return new LongKeyTable<>( newCapacity, singleValue );
+        return super.txState().getStableState();
     }
 }

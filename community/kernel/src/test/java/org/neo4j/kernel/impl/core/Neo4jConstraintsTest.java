@@ -39,30 +39,27 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
     @Test
     public void testDeleteReferenceNodeOrLastNodeIsOk()
     {
-        Transaction tx = getTransaction();
-        for ( int i = 0; i < 10; i++ )
+        try ( Transaction tx = getTransaction() )
         {
-            getGraphDb().createNode();
-        }
-        // long numNodesPre = getNodeManager().getNumberOfIdsInUse( Node.class
-        // );
-        // empty the DB instance
-        for ( Node node : getGraphDb().getAllNodes() )
-        {
-            for ( Relationship rel : node.getRelationships() )
+            for ( int i = 0; i < 10; i++ )
             {
-                rel.delete();
+                getGraphDb().createNode();
             }
-            node.delete();
+            for ( Node node : getGraphDb().getAllNodes() )
+            {
+                for ( Relationship rel : node.getRelationships() )
+                {
+                    rel.delete();
+                }
+                node.delete();
+            }
+            tx.success();
         }
-        tx.success();
-        tx.close();
-        tx = getGraphDb().beginTx();
-        assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
-        // TODO: this should be valid, fails right now!
-        // assertEquals( 0, numNodesPost );
-        tx.success();
-        tx.close();
+        try ( Transaction tx = getGraphDb().beginTx() )
+        {
+            assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
+            tx.success();
+        }
     }
 
     @Test

@@ -23,38 +23,86 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyIterator;
+import static org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
 
 public class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
-
-    private VersionedHashMap<Integer, Value> addedProperties;
-    private VersionedHashMap<Integer, Value> changedProperties;
-    private VersionedHashMap<Integer, Value> removedProperties;
+    final StateSelector stateSelector;
+    VersionedPrimitiveLongObjectMap<Value> addedProperties;
+    VersionedPrimitiveLongObjectMap<Value> changedProperties;
+    VersionedPrimitiveLongObjectMap<Value> removedProperties;
 
     private final Predicate<StorageProperty> excludePropertiesWeKnowAbout = new Predicate<StorageProperty>()
     {
         @Override
         public boolean test( StorageProperty item )
         {
-            return (removedProperties == null || !removedProperties.containsKey( item.propertyKeyId() ))
-                    && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
-                    && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
+            return (removedProperties == null || !removedPropertiesView().containsKey( item.propertyKeyId() ))
+                    && (addedProperties == null || !addedPropertiesView().containsKey( item.propertyKeyId() ))
+                    && (changedProperties == null || !changedPropertiesView().containsKey( item.propertyKeyId() ));
         }
     };
 
     PropertyContainerStateImpl( long id )
     {
+        this( id, StateSelector.CURRENT_STATE );
+    }
+
+    PropertyContainerStateImpl( long id, StateSelector stateSelector )
+    {
         this.id = id;
+        this.stateSelector = stateSelector;
+    }
+
+    PropertyContainerStateImpl( PropertyContainerStateImpl containerState, StateSelector stateSelector )
+    {
+        this( containerState.id, stateSelector );
+        this.addedProperties  = containerState.addedProperties;
+        this.changedProperties  = containerState.changedProperties;
+        this.removedProperties  = containerState.removedProperties;
+    }
+
+    PrimitiveLongObjectMap<Value> changedPropertiesView()
+    {
+        return changedProperties != null ? stateSelector.getView( changedProperties ) : EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
+    }
+
+    PrimitiveLongObjectMap<Value> addedPropertiesView()
+    {
+        return addedProperties != null ?  stateSelector.getView( addedProperties ) : EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
+    }
+
+    PrimitiveLongObjectMap<Value> removedPropertiesView()
+    {
+        return removedProperties != null ? stateSelector.getView( removedProperties ) : EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
+    }
+
+    void markStable()
+    {
+        if ( addedProperties != null )
+        {
+            addedProperties.markStable();
+        }
+        if ( changedProperties != null )
+        {
+            changedProperties.markStable();
+        }
+        if ( removedProperties != null )
+        {
+            removedProperties.markStable();
+        }
     }
 
     public long getId()
@@ -82,22 +130,23 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     {
         if ( addedProperties != null )
         {
-            if ( addedProperties.containsKey( propertyKeyId ) )
+            PrimitiveLongObjectMap<Value> addedPropertiesView = addedProperties.currentView();
+            if ( addedPropertiesView.containsKey( propertyKeyId ) )
             {
-                addedProperties.put( propertyKeyId, value );
+                addedPropertiesView.put( propertyKeyId, value );
                 return;
             }
         }
 
         if ( changedProperties == null )
         {
-            changedProperties = new VersionedHashMap<>();
+            changedProperties = new VersionedPrimitiveLongObjectMap<>();
         }
-        changedProperties.put( propertyKeyId, value );
+        changedProperties.currentView().put( propertyKeyId, value );
 
         if ( removedProperties != null )
         {
-            removedProperties.remove( propertyKeyId );
+            removedProperties.currentView().remove( propertyKeyId );
         }
     }
 
@@ -105,7 +154,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     {
         if ( removedProperties != null )
         {
-            Value removed = removedProperties.remove( propertyKeyId );
+            Value removed = removedProperties.currentView().remove( propertyKeyId );
             if ( removed != null )
             {
                 // This indicates the user did remove+add as two discrete steps, which should be translated to
@@ -116,47 +165,47 @@ public class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( addedProperties == null )
         {
-            addedProperties = new VersionedHashMap<>();
+            addedProperties = new VersionedPrimitiveLongObjectMap<>();
         }
-        addedProperties.put( propertyKeyId, value );
+        addedProperties.currentView().put( propertyKeyId, value );
     }
 
     public void removeProperty( int propertyKeyId, Value value )
     {
         if ( addedProperties != null )
         {
-            if ( addedProperties.remove( propertyKeyId ) != null )
+            if ( addedProperties.currentView().remove( propertyKeyId ) != null )
             {
                 return;
             }
         }
         if ( removedProperties == null )
         {
-            removedProperties = new VersionedHashMap<>();
+            removedProperties = new VersionedPrimitiveLongObjectMap<>();
         }
-        removedProperties.put( propertyKeyId, value );
+        removedProperties.currentView().put( propertyKeyId, value );
         if ( changedProperties != null )
         {
-            changedProperties.remove( propertyKeyId );
+            changedProperties.currentView().remove( propertyKeyId );
         }
     }
 
     @Override
     public Iterator<StorageProperty> addedProperties()
     {
-        return toPropertyIterator( addedProperties );
+        return toPropertyIterator( addedPropertiesView() );
     }
 
     @Override
     public Iterator<StorageProperty> changedProperties()
     {
-        return toPropertyIterator( changedProperties );
+        return toPropertyIterator( changedPropertiesView() );
     }
 
     @Override
-    public Iterator<Integer> removedProperties()
+    public PrimitiveLongIterator removedProperties()
     {
-        return removedProperties != null ? removedProperties.keySet().iterator() : emptyIterator();
+        return removedPropertiesView().iterator();
     }
 
     @Override
@@ -164,13 +213,13 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     {
         if ( addedProperties == null )
         {
-            return toPropertyIterator( changedProperties );
+            return toPropertyIterator( changedPropertiesView() );
         }
         if ( changedProperties == null )
         {
-            return toPropertyIterator( addedProperties );
+            return toPropertyIterator( addedPropertiesView() );
         }
-        return Iterators.concat( toPropertyIterator( addedProperties ), toPropertyIterator( changedProperties ) );
+        return Iterators.concat( toPropertyIterator( addedPropertiesView() ), toPropertyIterator( changedPropertiesView() ) );
     }
 
     @Override
@@ -180,13 +229,13 @@ public class PropertyContainerStateImpl implements PropertyContainerState
         {
             iterator = Iterators.filter( excludePropertiesWeKnowAbout, iterator );
 
-            if ( addedProperties != null && !addedProperties.isEmpty() )
+            if ( addedProperties != null && !addedPropertiesView().isEmpty() )
             {
-                iterator = Iterators.concat( iterator, toPropertyIterator( addedProperties ) );
+                iterator = Iterators.concat( iterator, toPropertyIterator( addedPropertiesView() ) );
             }
-            if ( changedProperties != null && !changedProperties.isEmpty() )
+            if ( changedProperties != null && !changedPropertiesView().isEmpty() )
             {
-                iterator = Iterators.concat( iterator, toPropertyIterator( changedProperties ) );
+                iterator = Iterators.concat( iterator, toPropertyIterator( changedPropertiesView() ) );
             }
         }
 
@@ -211,40 +260,39 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     @Override
     public StorageProperty getChangedProperty( int propertyKeyId )
     {
-        return changedProperties == null ? null : getPropertyOrNull( changedProperties, propertyKeyId );
+        return changedProperties == null ? null : getPropertyOrNull( propertyKeyId, changedProperties.currentView() );
     }
 
     @Override
     public StorageProperty getAddedProperty( int propertyKeyId )
     {
-        return addedProperties == null ? null : getPropertyOrNull( addedProperties, propertyKeyId );
+        return addedProperties == null ? null : getPropertyOrNull( propertyKeyId, addedProperties.currentView() );
     }
 
     @Override
     public boolean isPropertyChangedOrRemoved( int propertyKey )
     {
-        return (removedProperties != null && removedProperties.containsKey( propertyKey ))
-               || (changedProperties != null && changedProperties.containsKey( propertyKey ));
+        return isPropertyRemoved( propertyKey ) || (changedProperties != null && changedPropertiesView().containsKey( propertyKey ));
     }
 
     @Override
     public boolean isPropertyRemoved( int propertyKeyId )
     {
-        return removedProperties != null && removedProperties.containsKey( propertyKeyId );
+        return removedProperties != null && removedPropertiesView().containsKey( propertyKeyId );
     }
 
-    private Iterator<StorageProperty> toPropertyIterator( VersionedHashMap<Integer,Value> propertyMap )
+    Iterator<StorageProperty> toPropertyIterator( PrimitiveLongObjectMap<Value> valuePrimitiveLongObjectMap )
     {
-        return propertyMap == null ? Collections.emptyIterator() :
+        return valuePrimitiveLongObjectMap.isEmpty() ? Collections.emptyIterator() :
                 Iterators.map(
-                    entry -> new PropertyKeyValue( entry.getKey(), entry.getValue() ),
-                    propertyMap.entrySet().iterator()
+                        entry -> new PropertyKeyValue( Math.toIntExact( entry ), valuePrimitiveLongObjectMap.get( entry ) ),
+                        PrimitiveLongCollections.toIterator( valuePrimitiveLongObjectMap.iterator() )
                 );
     }
 
-    private PropertyKeyValue getPropertyOrNull( VersionedHashMap<Integer,Value> propertyMap, int propertyKeyId )
+    private PropertyKeyValue getPropertyOrNull( int propertyKeyId, PrimitiveLongObjectMap<Value> valuePrimitiveLongObjectMap )
     {
-        Value value = propertyMap.get( propertyKeyId );
+        Value value = valuePrimitiveLongObjectMap.get( propertyKeyId );
         return value == null ? null : new PropertyKeyValue( propertyKeyId, value );
     }
 }
