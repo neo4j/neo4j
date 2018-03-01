@@ -82,13 +82,11 @@ public class CompiledExpandUtilsTest
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
-            try ( NodeCursor nodes = cursors.allocateNodeCursor();
-                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            try ( NodeCursor nodes = cursors.allocateNodeCursor() )
             {
-
-                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING ), equalTo( 3 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING ), equalTo( 2 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, BOTH ), equalTo( 4 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING ), equalTo( 3 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING ), equalTo( 2 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH ), equalTo( 4 ) );
             }
         }
     }
@@ -122,20 +120,19 @@ public class CompiledExpandUtilsTest
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
-            try ( NodeCursor nodes = cursors.allocateNodeCursor();
-                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            try ( NodeCursor nodes = cursors.allocateNodeCursor() )
             {
-                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING, out ), equalTo( 2 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING, in ), equalTo( 0 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING, in ), equalTo( 0 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING, loop ), equalTo( 1 ) );
 
-                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING, out ), equalTo( 0 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING, in ), equalTo( 1 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING, out ), equalTo( 0 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING, loop ), equalTo( 1 ) );
 
-                assertThat( nodeGetDegree( read, node, nodes, group, BOTH, out ), equalTo( 2 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, BOTH, in ), equalTo( 1 ) );
-                assertThat( nodeGetDegree( read, node, nodes, group, BOTH, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH, loop ), equalTo( 1 ) );
             }
         }
     }

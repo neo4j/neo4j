@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 /**
  * Helper methods for working with nodes
@@ -38,18 +40,40 @@ public final class Nodes
      * NOTE: The number of outgoing relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param group a group cursor
+     * @param cursors a factory for cursors
      * @return the number of outgoing - including loops - relationships from the node
      */
-    public static int countOutgoing( NodeCursor nodeCursor, RelationshipGroupCursor group )
+    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors )
     {
-        nodeCursor.relationships( group );
-        int count = 0;
-        while ( group.next() )
+        if ( nodeCursor.isDense() )
         {
-            count += group.outgoingCount() + group.loopCount();
+            try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                nodeCursor.relationships( group );
+                int count = 0;
+                while ( group.next() )
+                {
+                    count += group.outgoingCount() + group.loopCount();
+                }
+                return count;
+            }
         }
-        return count;
+        else
+        {
+            try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
+            {
+                int count = 0;
+                nodeCursor.allRelationships( traversal );
+                while ( traversal.next() )
+                {
+                    if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() )
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
     }
 
     /**
@@ -58,36 +82,77 @@ public final class Nodes
      * NOTE: The number of incoming relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param group a group cursor
+     * @param cursors a factory for cursors
      * @return the number of incoming - including loops - relationships from the node
      */
-    public static int countIncoming( NodeCursor nodeCursor, RelationshipGroupCursor group )
+    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors )
     {
-        nodeCursor.relationships( group );
-        int count = 0;
-        while ( group.next() )
+        if ( nodeCursor.isDense() )
         {
-            count += group.incomingCount() + group.loopCount();
+            try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                nodeCursor.relationships( group );
+                int count = 0;
+                while ( group.next() )
+                {
+                    count += group.incomingCount() + group.loopCount();
+                }
+                return count;
+            }
         }
-        return count;
+        else
+        {
+            try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
+            {
+                int count = 0;
+                nodeCursor.allRelationships( traversal );
+                while ( traversal.next() )
+                {
+                    if ( traversal.targetNodeReference() == nodeCursor.nodeReference() )
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
     }
 
     /**
      * Counts all the relationships from node where the cursor is positioned.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param group a group cursor
+     * @param cursors a factory for cursors
      * @return the number of relationships from the node
      */
-    public static int countAll( NodeCursor nodeCursor, RelationshipGroupCursor group )
+    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors )
     {
-        nodeCursor.relationships( group );
-        int count = 0;
-        while ( group.next() )
+        if ( nodeCursor.isDense() )
         {
-            count += group.totalCount();
+            try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                nodeCursor.relationships( group );
+                int count = 0;
+                while ( group.next() )
+                {
+                    count += group.totalCount();
+                }
+                return count;
+            }
         }
-        return count;
+        else
+        {
+            try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
+            {
+                int count = 0;
+                nodeCursor.allRelationships( traversal );
+                while ( traversal.next() )
+                {
+                    count++;
+                }
+                return count;
+            }
+        }
     }
 
     /**
@@ -96,21 +161,43 @@ public final class Nodes
      * NOTE: The number of outgoing relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param group a group cursor
+     * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
      * @return the number of outgoing - including loops - relationships from the node with the given type
      */
-    public static int countOutgoing( NodeCursor nodeCursor, RelationshipGroupCursor group, int type )
+    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors, int type )
     {
-        nodeCursor.relationships( group );
-        while ( group.next() )
+        if ( nodeCursor.isDense() )
         {
-            if ( group.type() == type )
+            try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                return group.outgoingCount() + group.loopCount();
+                nodeCursor.relationships( group );
+                while ( group.next() )
+                {
+                    if ( group.type() == type )
+                    {
+                        return group.outgoingCount() + group.loopCount();
+                    }
+                }
+                return 0;
             }
         }
-        return 0;
+        else
+        {
+            try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
+            {
+                int count = 0;
+                nodeCursor.allRelationships( traversal );
+                while ( traversal.next() )
+                {
+                    if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() && traversal.label() == type )
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
     }
 
     /**
@@ -119,43 +206,87 @@ public final class Nodes
      * NOTE: The number of incoming relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param group a group cursor
+     * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
      * @return the number of incoming - including loops - relationships from the node with the given type
      */
-    public static int countIncoming( NodeCursor nodeCursor, RelationshipGroupCursor group, int type )
+    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors, int type )
     {
-        nodeCursor.relationships( group );
-        int count = 0;
-        while ( group.next() )
+        if ( nodeCursor.isDense() )
         {
-            if ( group.type() == type )
+            try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                return group.incomingCount() + group.loopCount();
+                nodeCursor.relationships( group );
+                int count = 0;
+                while ( group.next() )
+                {
+                    if ( group.type() == type )
+                    {
+                        return group.incomingCount() + group.loopCount();
+                    }
+                }
+                return count;
             }
         }
-        return count;
+        else
+        {
+            try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
+            {
+                int count = 0;
+                nodeCursor.allRelationships( traversal );
+                while ( traversal.next() )
+                {
+                    if ( traversal.targetNodeReference() == nodeCursor.nodeReference() && traversal.label() == type )
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
     }
 
     /**
      * Counts all the relationships of the given type from node where the cursor is positioned.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param group a group cursor
+     * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
      * @return the number relationships from the node with the given type
      */
-    public static int countAll( NodeCursor nodeCursor, RelationshipGroupCursor group, int type )
+    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors, int type )
     {
-        nodeCursor.relationships( group );
-        int count = 0;
-        while ( group.next() )
+        if ( nodeCursor.isDense() )
         {
-            if ( group.type() == type )
+            try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
-                return group.totalCount();
+                nodeCursor.relationships( group );
+                int count = 0;
+                while ( group.next() )
+                {
+                    if ( group.type() == type )
+                    {
+                        return group.totalCount();
+                    }
+                }
+                return count;
             }
         }
-        return count;
+        else
+        {
+            try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor() )
+            {
+                int count = 0;
+                nodeCursor.allRelationships( traversal );
+                while ( traversal.next() )
+                {
+                    if ( traversal.label() == type )
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
     }
 }

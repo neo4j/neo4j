@@ -34,7 +34,18 @@ import org.neo4j.values.storable.Value;
 public class StubNodeCursor implements NodeCursor
 {
     private int offset = -1;
+    private boolean dense;
     private List<NodeData> nodes = new ArrayList<>();
+
+    public StubNodeCursor()
+    {
+        this( true );
+    }
+
+    public StubNodeCursor( boolean dense )
+    {
+        this.dense = dense;
+    }
 
     void single( long reference )
     {
@@ -136,7 +147,7 @@ public class StubNodeCursor implements NodeCursor
     @Override
     public boolean isDense()
     {
-        return false;
+        return dense;
     }
 
     @Override
