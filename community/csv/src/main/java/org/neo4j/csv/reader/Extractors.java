@@ -20,8 +20,13 @@
 package org.neo4j.csv.reader;
 
 import java.lang.reflect.Field;
+import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
@@ -85,6 +90,7 @@ public class Extractors
     private final Extractor<long[]> longArray;
     private final Extractor<float[]> floatArray;
     private final Extractor<double[]> doubleArray;
+    private final PointExtractor point_;
 
     public Extractors( char arrayDelimiter )
     {
@@ -135,6 +141,7 @@ public class Extractors
             add( longArray = new LongArrayExtractor( arrayDelimiter ) );
             add( floatArray = new FloatArrayExtractor( arrayDelimiter ) );
             add( doubleArray = new DoubleArrayExtractor( arrayDelimiter ) );
+            add( point_ = new PointExtractor() );
         }
         catch ( IllegalAccessException e )
         {
@@ -240,6 +247,11 @@ public class Extractors
     public Extractor<double[]> doubleArray()
     {
         return doubleArray;
+    }
+
+    public PointExtractor point_()
+    {
+        return point_;
     }
 
     private abstract static class AbstractExtractor<T> implements Extractor<T>
@@ -908,6 +920,35 @@ public class Extractors
                 value[arrayIndex] = extractBoolean( data, offset + charIndex, numberOfChars );
                 charIndex += numberOfChars;
             }
+        }
+    }
+
+    public static class PointExtractor extends AbstractSingleValueExtractor<AnyValue>
+    {
+        private AnyValue value;
+
+        PointExtractor()
+        {
+            super( "Point" );
+        }
+
+        @Override
+        protected void clear()
+        {
+            value = Values.NO_VALUE;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = PointValue.parse( CharBuffer.wrap( data, offset, length ) );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
         }
     }
 

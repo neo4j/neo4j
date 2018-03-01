@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,6 +67,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.values.storable.PointValue;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -170,6 +172,7 @@ public class CsvInputBatchImportIT
             InputEntity node = new InputEntity();
             node.id( UUID.randomUUID().toString(), Group.GLOBAL );
             node.property( "name", "Node " + i );
+            node.property( "point", "\"   { x : 3, y : " + i + ", crs: WGS-84 } \"");
             node.labels( randomLabels( random ) );
             nodes.add( node );
         }
@@ -227,14 +230,17 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
-            println( writer, "id:ID,name,some-labels:LABEL" );
+            println( writer, "id:ID,name,point:Point,some-labels:LABEL" );
 
             // Data
             for ( InputEntity node : nodeData )
             {
                 String csvLabels = csvLabels( node.labels() );
-                println( writer, node.id() + "," + node.properties()[1] + "," +
+                println( writer, node.id() + "," + node.properties()[1] + "," + node.properties()[3] + "," +
                         (csvLabels != null && csvLabels.length() > 0 ? csvLabels : "") );
+                // TODO: Remove me
+                //System.out.println( node.id() + "," + node.properties()[1] + "," + node.properties()[3] + "," +
+                //        (csvLabels != null && csvLabels.length() > 0 ? csvLabels : "") );
             }
         }
         return file;
@@ -283,12 +289,13 @@ public class CsvInputBatchImportIT
         // Build up expected data for the verification below
         Map<String/*id*/, InputEntity> expectedNodes = new HashMap<>();
         Map<String,String[]> expectedNodeNames = new HashMap<>();
+        Map<String, Map<String,Object>> expectedNodeProperties = new HashMap<>();
         Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>> expectedRelationships =
                 new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicInteger.class ) ) ) );
         Map<String, AtomicLong> expectedNodeCounts = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
         Map<String, Map<String, Map<String, AtomicLong>>> expectedRelationshipCounts =
                 new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicLong.class ) ) ) );
-        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedRelationships,
+        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedNodeProperties, expectedRelationships,
                 expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
@@ -301,6 +308,13 @@ public class CsvInputBatchImportIT
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
                 assertEquals( asSet( labels ), names( node.getLabels() ) );
+                Map<String,Object> expectedProperties = expectedNodeProperties.remove( name );
+                Map<String,Object> actualProperties = node.getAllProperties();
+                actualProperties.remove( "id" );
+                // TODO: Fix the expectations for the points
+                PointValue actualPoint = (PointValue) actualProperties.remove( "point" );
+                String expectedPoint = (String) expectedProperties.remove( "point" );
+                assertEquals( expectedProperties, actualProperties );
             }
             assertEquals( 0, expectedNodeNames.size() );
 
@@ -444,6 +458,7 @@ public class CsvInputBatchImportIT
             List<InputEntity> relationshipData,
             Map<String, InputEntity> expectedNodes,
             Map<String, String[]> expectedNodeNames,
+            Map<String, Map<String,Object>> expectedNodeProperties,
             Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships,
             Map<String, AtomicLong> nodeCounts,
             Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts )
@@ -452,6 +467,15 @@ public class CsvInputBatchImportIT
         {
             expectedNodes.put( (String) node.id(), node );
             expectedNodeNames.put( nameOf( node ), node.labels() );
+
+            assert node.hasIntPropertyKeyIds == false;
+            Map<String,Object> properties = new TreeMap<>();
+            for ( int i = 0; i < node.propertyCount(); i++ )
+            {
+                properties.put( (String) node.propertyKey( i ), node.propertyValue( i ) );
+            }
+            expectedNodeProperties.put( nameOf( node ), properties );
+
             countNodeLabels( nodeCounts, node.labels() );
         }
         for ( InputEntity relationship : relationshipData )

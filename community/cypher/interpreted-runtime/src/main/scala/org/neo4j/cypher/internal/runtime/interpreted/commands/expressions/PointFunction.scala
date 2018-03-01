@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import java.util.function.BiConsumer
 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.{PointValue, Values}
 import org.neo4j.values.virtual.MapValue
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
@@ -35,7 +34,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
     case IsMap(mapCreator) =>
       val map = mapCreator(state.query)
       if (containsNull(map)) Values.NO_VALUE
-      else ValueUtils.pointFromMap(map)
+      else PointValue.fromMap(map)
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
 
