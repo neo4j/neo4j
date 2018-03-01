@@ -23,21 +23,22 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.nodeGetDegree;
+import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.nodeGetDegreeIfDense;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -45,7 +46,8 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 public class CompiledExpandUtilsTest
 {
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+    public DatabaseRule db = new EmbeddedDatabaseRule()
+            .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
     private Session session()
     {
@@ -84,9 +86,9 @@ public class CompiledExpandUtilsTest
             CursorFactory cursors = tx.cursors();
             try ( NodeCursor nodes = cursors.allocateNodeCursor() )
             {
-                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING ), equalTo( 3 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING ), equalTo( 2 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH ), equalTo( 4 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING ), equalTo( 3 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING ), equalTo( 2 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH ), equalTo( 4 ) );
             }
         }
     }
@@ -122,17 +124,17 @@ public class CompiledExpandUtilsTest
             CursorFactory cursors = tx.cursors();
             try ( NodeCursor nodes = cursors.allocateNodeCursor() )
             {
-                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING, out ), equalTo( 2 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING, in ), equalTo( 0 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, OUTGOING, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, in ), equalTo( 0 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, loop ), equalTo( 1 ) );
 
-                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING, out ), equalTo( 0 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING, in ), equalTo( 1 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, INCOMING, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, out ), equalTo( 0 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, loop ), equalTo( 1 ) );
 
-                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH, out ), equalTo( 2 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH, in ), equalTo( 1 ) );
-                assertThat( nodeGetDegree( read, node, nodes, cursors, BOTH, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, loop ), equalTo( 1 ) );
             }
         }
     }
