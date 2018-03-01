@@ -30,9 +30,9 @@ import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoing;
 
+@SuppressWarnings( "unused" )
 public abstract class CompiledExpandUtils
 {
-
     private static final int NOT_DENSE_DEGREE = -1;
 
     public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
@@ -54,7 +54,6 @@ public abstract class CompiledExpandUtils
             return RelationshipSelectionCursor.EMPTY;
         }
         boolean toNodeIsDense = nodeCursor.isDense();
-
 
         //Both are dense, start with the one with the lesser degree
         if ( fromNodeIsDense && toNodeIsDense )
@@ -85,8 +84,8 @@ public abstract class CompiledExpandUtils
             return connectingRelationshipsIterator( CompiledCursorUtils
                     .nodeGetRelationships( read, cursors, nodeCursor, toNode, direction.reverse() ), fromNode );
         }
-        else//either only toNode is dense or none of them, just go with what we got
-        {
+        else
+        {   //either only toNode is dense or none of them, just go with what we got
             return connectingRelationshipsIterator( CompiledCursorUtils
                     .nodeGetRelationships( read, cursors, nodeCursor, fromNode, direction ), toNode );
         }
@@ -140,8 +139,8 @@ public abstract class CompiledExpandUtils
             return connectingRelationshipsIterator( CompiledCursorUtils
                     .nodeGetRelationships( read, cursors, nodeCursor, toNode, direction.reverse() ), fromNode );
         }
-        else//either only toNode is dense or none of them, just go with what we got
-        {
+        else
+        {   //either only toNode is dense or none of them, just go with what we got
             return connectingRelationshipsIterator( CompiledCursorUtils
                     .nodeGetRelationships( read, cursors, nodeCursor, fromNode, direction ), toNode );
         }
@@ -210,7 +209,6 @@ public abstract class CompiledExpandUtils
             throw new IllegalStateException( "Unknown direction " + direction );
         }
     }
-
 
     private static int calculateTotalDegreeIfDense( Read read, long node, NodeCursor nodeCursor, Direction direction,
             int[] relTypes, CursorFactory cursors )
