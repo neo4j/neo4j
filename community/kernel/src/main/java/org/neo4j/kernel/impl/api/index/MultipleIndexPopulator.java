@@ -170,13 +170,13 @@ public class MultipleIndexPopulator implements IndexPopulator
             propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
         }
 
-        if ( type == EntityType.NODE )
+        if ( type == EntityType.RELATIONSHIP )
         {
-            storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false );
+            storeScan = storeView.visitRelationships( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor() );
         }
         else
         {
-            storeScan = storeView.visitRelationships( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor() );
+            storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false );
         }
         return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
         {

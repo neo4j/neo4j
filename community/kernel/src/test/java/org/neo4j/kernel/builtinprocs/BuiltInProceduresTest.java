@@ -103,7 +103,7 @@ public class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ),
-                contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_label_property",
+                contains( record( "INDEX ON :User(name)", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property",
                         getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
     }
 
@@ -120,7 +120,7 @@ public class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ),
-                contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_unique_property",
+                contains( record( "INDEX ON :User(name)", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property",
                         getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
     }
 
@@ -208,7 +208,7 @@ public class BuiltInProceduresTest
                         "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." ),
                 record( "db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database." ),
-                record( "db.indexes", "db.indexes() :: (description :: STRING?, label :: STRING?, properties :: LIST? OF STRING?, " +
+                record( "db.indexes", "db.indexes() :: (description :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, " +
                                 "state :: STRING?, type :: STRING?, provider :: MAP?)",
                         "List all indexes in the database." ),
                 record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database." ),

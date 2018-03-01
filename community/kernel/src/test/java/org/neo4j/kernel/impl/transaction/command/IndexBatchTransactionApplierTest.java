@@ -43,6 +43,7 @@ import org.neo4j.storageengine.api.EntityType;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -57,7 +58,7 @@ public class IndexBatchTransactionApplierTest
     {
         // GIVEN
         IndexingService indexing = mock( IndexingService.class );
-        when( indexing.convertToIndexUpdates( any(), EntityType.NODE ) ).thenAnswer( o -> Iterables.empty() );
+        when( indexing.convertToIndexUpdates( any(), eq( EntityType.NODE ) ) ).thenAnswer( o -> Iterables.empty() );
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
                 spy( new WorkSync<>( singletonProvider( writer ) ) );

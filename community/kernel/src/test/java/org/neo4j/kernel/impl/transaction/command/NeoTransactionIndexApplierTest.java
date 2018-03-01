@@ -47,6 +47,7 @@ import org.neo4j.storageengine.api.EntityType;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -69,7 +70,7 @@ public class NeoTransactionIndexApplierTest
     public void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );
-        when( indexingService.convertToIndexUpdates( any(), EntityType.NODE ) ).thenAnswer( o -> Iterables.empty() );
+        when( indexingService.convertToIndexUpdates( any(), eq( EntityType.NODE ) ) ).thenAnswer( o -> Iterables.empty() );
     }
 
     @Test
