@@ -816,7 +816,7 @@ public class UserFunctionIT
         try ( BufferedReader reader = new BufferedReader(
                 new InputStreamReader( UserFunctionIT.class.getResourceAsStream( "/misc/userDefinedFunctions" ) ) ) )
         {
-            String expected = reader.lines().collect( Collectors.joining( "\n" ) );
+            String expected = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
             assertThat( res.resultAsString(), equalTo(expected) );
         }
         catch ( IOException e )
