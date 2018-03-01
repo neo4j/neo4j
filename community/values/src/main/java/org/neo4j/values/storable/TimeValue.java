@@ -183,7 +183,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     }
                     TemporalValue t = (TemporalValue) time;
                     result = t.getTimePart( defaultZone );
-                    selectingTimeZone = t.hasTimeZone();
+                    selectingTimeZone = t.supportsTimeZone();
                 }
                 else
                 {
@@ -289,7 +289,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     @Override
-    public boolean hasTimeZone()
+    public boolean supportsTimeZone()
     {
         return true;
     }

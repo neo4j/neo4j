@@ -233,7 +233,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
-    public boolean hasTimeZone()
+    public boolean supportsTimeZone()
     {
         return false;
     }

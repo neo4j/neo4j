@@ -2,13 +2,3 @@
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
-
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in years"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in quarters"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in months"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in weeks"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in days"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in hours"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in minutes"
-Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in seconds"

@@ -463,6 +463,20 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       "timezone", "offset", "epoch"), "{days: 14, hours:16, minutes: 12}")
   }
 
+  // Duration between
+
+  test("should not compute the duration in day units between two time values") {
+    val args = Seq("time()", "localtime()")
+    for (func <- Seq("years", "quarters", "months", "weeks", "days"); arg1 <- args; arg2 <- args) {
+      val query = s"RETURN duration.$func($arg1, $arg2)"
+      withClue(s"Executing $query") {
+        an[UnsupportedTemporalTypeException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
   private def shouldNotTruncate[E : Manifest](receivers: Seq[String], truncationUnit: String, args: Seq[String]): Unit = {
     for (receiver <- receivers; arg <- args) {
       val query = s"RETURN $receiver.truncate('$truncationUnit', $arg)"

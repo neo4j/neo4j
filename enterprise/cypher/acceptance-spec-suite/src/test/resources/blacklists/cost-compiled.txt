@@ -297,3 +297,7 @@ Feature "DurationBetweenAcceptance": Scenario "Should compute duration between t
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in hours"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in minutes"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in seconds"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between if they differ only by a fraction of a second and the first comes after the second."
+Feature "DurationBetweenAcceptance": Scenario "Should handle durations at daylight saving time day"
+Feature "DurationBetweenAcceptance": Scenario "Should handle large durations"
+
