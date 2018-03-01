@@ -82,9 +82,10 @@ public class FusionIndexReaderTest
         fusionIndexReader.close();
 
         // then
-        verify( nativeReader, times( 1 ) ).close();
-        verify( spatialReader, times( 1 ) ).close();
-        verify( luceneReader, times( 1 ) ).close();
+        for ( IndexReader reader : allReaders )
+        {
+            verify( reader, times( 1 ) ).close();
+        }
     }
 
     // close iterator
@@ -95,9 +96,11 @@ public class FusionIndexReaderTest
         // given
         PrimitiveLongResourceIterator nativeIter = mock( PrimitiveLongResourceIterator.class );
         PrimitiveLongResourceIterator spatialIter = mock( PrimitiveLongResourceIterator.class );
+        PrimitiveLongResourceIterator temporalIter = mock( PrimitiveLongResourceIterator.class );
         PrimitiveLongResourceIterator luceneIter = mock( PrimitiveLongResourceIterator.class );
         when( nativeReader.query( any( IndexQuery.class ) ) ).thenReturn( nativeIter );
         when( spatialReader.query( any( IndexQuery.class ) ) ).thenReturn( spatialIter );
+        when( temporalReader.query( any( IndexQuery.class ) ) ).thenReturn( temporalIter );
         when( luceneReader.query( any( IndexQuery.class ) ) ).thenReturn( luceneIter );
 
         // when
@@ -106,6 +109,7 @@ public class FusionIndexReaderTest
         // then
         verify( nativeIter, times( 1 ) ).close();
         verify( spatialIter, times( 1 ) ).close();
+        verify( temporalIter, times( 1 ) ).close();
         verify( luceneIter, times( 1 ) ).close();
     }
 
@@ -117,6 +121,7 @@ public class FusionIndexReaderTest
         // given
         Value[] nativeValues = FusionIndexTestHelp.valuesSupportedByNative();
         Value[] spatialValues = FusionIndexTestHelp.valuesSupportedBySpatial();
+        Value[] temporalValues = FusionIndexTestHelp.valuesSupportedByTemporal();
         Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
@@ -132,7 +137,13 @@ public class FusionIndexReaderTest
             verifyCountIndexedNodesWithCorrectReader( spatialReader, spatialValue );
         }
 
-        // when passing values not handled by native or spatial
+        // when passing temporal values
+        for ( Value temporalValue : temporalValues )
+        {
+            verifyCountIndexedNodesWithCorrectReader( temporalReader, temporalValue );
+        }
+
+        // when passing values not handled by others
         for ( Value otherValue : otherValues )
         {
             verifyCountIndexedNodesWithCorrectReader( luceneReader, otherValue );
@@ -197,7 +208,20 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectLuceneForExactPredicateWithNonNumberAndNonSpatialValue() throws Exception
+    public void mustSelectTemporalForExactPredicateWithTemporalValue() throws Exception
+    {
+        // given
+        for ( Object temporalValue : FusionIndexTestHelp.valuesSupportedByTemporal() )
+        {
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, temporalValue );
+
+            // then
+            verifyQueryWithCorrectReader( temporalReader, indexQuery );
+        }
+    }
+
+    @Test
+    public void mustSelectLuceneForExactPredicateWithOtherValue() throws Exception
     {
         // given
         for ( Object nonNumberOrSpatialValue : FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial() )
@@ -277,7 +301,8 @@ public class FusionIndexReaderTest
         // given
         IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
         when( nativeReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 0L, 1L, 4L, 7L ) );
-        when( spatialReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3L, 8L, 9L ) );
+        when( spatialReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3L, 9L, 10L ) );
+        when( temporalReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 8L, 11L, 12L ) );
         when( luceneReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2L, 5L, 6L ) );
 
         // when
