@@ -29,6 +29,7 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -327,11 +328,11 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
                 p.create();
-                p.add( Arrays.asList(
-                        IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
-                        IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
                 try
                 {
+                    p.add( Arrays.asList(
+                            IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
+                            IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
                     NodePropertyAccessor propertyAccessor =
                             new NodePropertyAccessor( nodeId1, descriptor.schema(), value );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
@@ -340,11 +341,20 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     fail( "expected exception" );
                 }
                 // then
-                catch ( IndexEntryConflictException conflict )
+                catch ( Exception e )
                 {
-                    assertEquals( nodeId1, conflict.getExistingNodeId() );
-                    assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
-                    assertEquals( nodeId2, conflict.getAddedNodeId() );
+                    Throwable root = Exceptions.rootCause( e );
+                    if ( root instanceof IndexEntryConflictException )
+                    {
+                        IndexEntryConflictException conflict = (IndexEntryConflictException)root;
+                        assertEquals( nodeId1, conflict.getExistingNodeId() );
+                        assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
+                        assertEquals( nodeId2, conflict.getAddedNodeId() );
+                    }
+                    else
+                    {
+                        throw e;
+                    }
                 }
             } );
         }
