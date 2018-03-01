@@ -131,7 +131,7 @@ public final class Nodes
         {
             if ( group.type() == type )
             {
-                count += group.incomingCount() + group.loopCount();
+                return group.incomingCount() + group.loopCount();
             }
         }
         return count;
@@ -153,7 +153,7 @@ public final class Nodes
         {
             if ( group.type() == type )
             {
-                count += group.totalCount();
+                return group.totalCount();
             }
         }
         return count;
