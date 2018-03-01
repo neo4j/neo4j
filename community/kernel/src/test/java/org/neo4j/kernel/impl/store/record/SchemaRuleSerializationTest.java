@@ -49,9 +49,24 @@ import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
-    private static final InMemoryIndexProvider inMemoryIndexProvider = new InMemoryIndexProvider();
-    private static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR = inMemoryIndexProvider.getProviderDescriptor();
-    private static final IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( inMemoryIndexProvider, Collections.EMPTY_LIST );
+    private static final InMemoryIndexProvider inMemoryIndexProvider = new InMemoryIndexProvider()
+    {
+        @Override
+        public Descriptor getProviderDescriptor()
+        {
+            return PROVIDER_DESCRIPTOR;
+        }
+    };
+    private static final IndexProvider SOME_INDEX_PROVIDER = new InMemoryIndexProvider()
+    {
+        @Override
+        public Descriptor getProviderDescriptor()
+        {
+            return new Descriptor( "index-provider", "25.0" );
+        }
+    };
+    private static final IndexProviderMap indexProviderMap =
+            new DefaultIndexProviderMap( inMemoryIndexProvider, Collections.singletonList( SOME_INDEX_PROVIDER ) );
     IndexRule indexRegular = IndexRule.indexRule( RULE_ID,
             forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
 
@@ -482,7 +497,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
-        assertThat( deserialized.getProviderDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
+        assertThat( deserialized.getProviderDescriptor(), equalTo( SOME_INDEX_PROVIDER.getProviderDescriptor() ) );
         assertThat( deserialized.getName(), is( name ) );
         assertException( deserialized::getOwningConstraint, IllegalStateException.class );
     }
@@ -502,7 +517,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
-        assertThat( deserialized.getProviderDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
+        assertThat( deserialized.getProviderDescriptor(), equalTo( SOME_INDEX_PROVIDER.getProviderDescriptor() ) );
         assertThat( deserialized.getOwningConstraint(), equalTo( constraintId ) );
         assertThat( deserialized.getName(), is( name ) );
     }

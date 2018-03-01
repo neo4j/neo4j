@@ -310,7 +310,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         //let indexes come online
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            db.schema().awaitIndexesOnline(20, SECONDS );
             tx.success();
         }
 
