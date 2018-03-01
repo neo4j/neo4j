@@ -30,6 +30,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -67,7 +68,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexesOnline( 60, SECONDS );
+            graphDb.schema().awaitIndexesOnline( 5, MINUTES );
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )
