@@ -43,7 +43,6 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -62,6 +61,7 @@ import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
@@ -104,7 +104,10 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 
 public abstract class ProcedureInteractionTestBase<S>
 {
-    static final String PROCEDURE_TIMEOUT_ERROR = "Procedure got: Transaction guard check failed";
+    static final String PROCEDURE_TIMEOUT_ERROR = "The transaction has been terminated. Retry your operation in a new " +
+                                                  "transaction, and you should see a successful result. The transaction " +
+                                                  "has not completed within the specified timeout. You may want to retry " +
+                                                  "with a longer timeout. ";
     protected boolean PWD_CHANGE_CHECK_FIRST;
     protected String CHANGE_PWD_ERR_MSG = AuthorizationViolationException.PERMISSION_DENIED;
     private static final String BOLT_PWD_ERR_MSG =
