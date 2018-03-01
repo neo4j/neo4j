@@ -113,7 +113,8 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       "{year:1984, month: 2, quarter:11}", "{year:1984, month: 2, dayOfQuarter:11}",
       "{year:1984, week: 2, day:11}", "{year:1984, week: 2, quarter:11}", "{year:1984, week: 2, dayOfQuarter:11}",
       "{year:1984, quarter: 2, day:11}", "{year:1984, quarter: 2, dayOfWeek:6}", "{datetime: datetime(), date: date()}",
-      "{datetime: datetime(), time: time()}")
+      "{datetime: datetime(), time: time()}", "{datetime: datetime(), epoch: timestamp()}", "{date: date(), epoch: timestamp()}",
+      "{time: time(), epoch: timestamp()}")
     shouldNotConstructWithArg("datetime", queries)
   }
 

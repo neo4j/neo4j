@@ -628,7 +628,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( field == Field.datetime || field == Field.epoch )
             {
-                return new SelectDateTimeDTBuilder( date, time );
+                return new SelectDateTimeDTBuilder( date, time ).assign( field, value );
             }
             else if ( field == Field.time || field == Field.date )
             {
@@ -636,13 +636,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             else
             {
-                return assignNonComposite( field, value );
+                return assignToSubBuilders( field, value );
             }
         }
 
-        DateTimeBuilder assignNonComposite( Field field, AnyValue value )
+        DateTimeBuilder assignToSubBuilders( Field field, AnyValue value )
         {
-            if ( field.field.isDateBased() )
+            if ( field == Field.date || field.field != null && field.field.isDateBased() )
             {
                 if ( date == null )
                 {
@@ -650,7 +650,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 }
                 date = date.assign( field, value );
             }
-            else
+            else if ( field == Field.time || field.field != null && field.field.isTimeBased() )
             {
                 if ( time == null )
                 {
@@ -658,12 +658,19 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 }
                 time.assign( field, value );
             }
+            else
+            {
+                throw new IllegalStateException( "This method should not be used for any fields the DateBuilder or TimeBuilder can't handle" );
+            }
             return this;
         }
     }
 
     private static class SelectDateTimeDTBuilder extends DateTimeBuilder
     {
+        private AnyValue datetime;
+        private AnyValue epoch;
+
         SelectDateTimeDTBuilder( DateBuilder date, ConstructTime time )
         {
             super( date, time );
@@ -680,16 +687,29 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( field == Field.date || field == Field.time )
             {
-                throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
+                throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime or epoch." );
             }
             else if ( field == Field.datetime )
             {
-                throw new IllegalArgumentException( "cannot re-assign " + field );
+                if ( epoch != null )
+                {
+                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epoch." );
+                }
+                datetime = assignment( Field.datetime, datetime, value );
+            }
+            else if ( field == Field.epoch )
+            {
+                if ( datetime != null )
+                {
+                    throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
+                }
+                epoch = assignment( Field.epoch, epoch, value );
             }
             else
             {
-                return assignNonComposite( field, value );
+                return assignToSubBuilders( field, value );
             }
+            return this;
         }
     }
 
@@ -703,13 +723,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         @Override
         DateTimeBuilder assign( Field field, AnyValue value )
         {
-            if ( field == Field.datetime )
+            if ( field == Field.datetime || field == Field.epoch )
             {
                 throw new IllegalArgumentException( field.name() + " cannot be selected together with date or time." );
             }
             else
             {
-                return assignNonComposite( field, value );
+                return assignToSubBuilders( field, value );
             }
         }
     }
