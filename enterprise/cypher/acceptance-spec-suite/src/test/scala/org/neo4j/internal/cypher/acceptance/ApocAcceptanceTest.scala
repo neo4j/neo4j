@@ -33,7 +33,6 @@ class ApocAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
 
     graph.execute(movies)
-//    graph.execute(bigbrother)
 
     graph.execute("MATCH (c:Person) WHERE c.name in ['Clint Eastwood', 'Gene Hackman'] SET c:Western")
 
@@ -49,11 +48,11 @@ class ApocAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   def testResult(db: GraphDatabaseService, call: String, onResult: Result => Unit): Unit = {
-      val tx: Transaction = db.beginTx
-      try {
-        onResult(db.execute(call, Collections.emptyMap[String, AnyRef]))
-        tx.success()
-      } finally if (tx != null) tx.close()
+    val tx: Transaction = db.beginTx
+    try {
+      onResult(db.execute(call, Collections.emptyMap[String, AnyRef]))
+      tx.success()
+    } finally if (tx != null) tx.close()
   }
 
   val movies = """
