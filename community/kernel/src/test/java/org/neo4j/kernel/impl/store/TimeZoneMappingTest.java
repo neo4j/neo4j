@@ -30,7 +30,6 @@ import java.net.URL;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -124,7 +123,7 @@ public class TimeZoneMappingTest
         } );
 
         // TODO assertion for removals
-        Collection<String> neo4jSupportedTzs = TimeZoneMapping.supportedTimeZones();
+        Set<String> neo4jSupportedTzs = TimeZoneMapping.supportedTimeZones();
         Set<String> removedTzs = new HashSet<>( neo4jSupportedTzs );
         removedTzs.removeAll( ianaSupportedTzs );
         //assertThat( "There were removals from the IANA database. Please upgrade manually.", removedTzs, empty() );
