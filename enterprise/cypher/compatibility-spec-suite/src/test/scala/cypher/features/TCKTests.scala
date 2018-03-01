@@ -21,9 +21,12 @@ package cypher.features
 
 import java.nio.file.FileSystems
 
+import org.junit.platform.runner.JUnitPlatform
+import org.junit.runner.RunWith
 import org.junit.jupiter.api.AfterEach
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
+@RunWith(classOf[JUnitPlatform])
 class TCKTests extends BaseFeatureTest {
 
   // these two should be empty on commit!
@@ -31,8 +34,15 @@ class TCKTests extends BaseFeatureTest {
   override val scenarioToRun = ""
 
   override val scenarios: Seq[Scenario] = {
-    val allScenarios: Seq[Scenario] = CypherTCK.allTckScenarios
+    val allScenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(testsWithEncodingProblems)
     filterScenarios(allScenarios)
+  }
+
+  // those tests run into some utf-8 encoding problems on some of our machines at the moment - fix for that is on the way on TCK side
+  // TODO: Remove this filter when new version of TCK (1.0.0-M10) is released
+  def testsWithEncodingProblems(scenario: Scenario): Boolean = {
+    (scenario.name.equals("Fail for invalid Unicode hyphen in subtraction") && scenario.featureName.equals("SemanticErrorAcceptance"))  ||
+      (scenario.name.equals("Accept valid Unicode literal") && scenario.featureName.equals("ReturnAcceptance2"))
   }
 
   @AfterEach
