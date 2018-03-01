@@ -27,15 +27,17 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 
 public class DynamicSizeUtilTest
 {
     private static final int KEY_ONE_BYTE_MAX = 0x1F;
     private static final int KEY_TWO_BYTE_MIN = KEY_ONE_BYTE_MAX + 1;
-    private static final int KEY_TWO_BYTE_MAX = 0x1FFF;
+    private static final int KEY_TWO_BYTE_MAX = 0xFFF;
     private static final int VAL_ONE_BYTE_MIN = 1;
     private static final int VAL_ONE_BYTE_MAX = 0x7F;
     private static final int VAL_TWO_BYTE_MIN = VAL_ONE_BYTE_MAX + 1;
@@ -92,6 +94,48 @@ public class DynamicSizeUtilTest
         shouldPutAndGetKeySize( KEY_TWO_BYTE_MAX, 2 );
     }
 
+    @Test
+    public void shouldPreventWritingKeyLargerThanMaxPossible() throws Exception
+    {
+        // given
+        int keySize = 0xFFF;
+
+        // when
+        try
+        {
+            putKeyValueSize( cursor, keySize + 1, 0 );
+            fail( "Expected failure" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+        }
+
+        // whereas when size is one less than that
+        shouldPutAndGetKeyValueSize( keySize, 0, 2 );
+    }
+
+    @Test
+    public void shouldPreventWritingValueLargerThanMaxPossible() throws Exception
+    {
+        // given
+        int valueSize = 0x7FFF;
+
+        // when
+        try
+        {
+            putKeyValueSize( cursor, 1, valueSize + 1 );
+            fail( "Expected failure" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+        }
+
+        // whereas when size is one less than that
+        shouldPutAndGetKeyValueSize( 1, valueSize, 3 );
+    }
+
     private void shouldPutAndGetKeySize( int keySize, int expectedBytes )
     {
         int size = putAndGetKey( keySize );
@@ -118,7 +162,7 @@ public class DynamicSizeUtilTest
     private int putAndGetKeyValue( int keySize, int valueSize )
     {
         int offsetBefore = cursor.getOffset();
-        DynamicSizeUtil.putKeyValueSize( cursor, keySize, valueSize );
+        putKeyValueSize( cursor, keySize, valueSize );
         int offsetAfter = cursor.getOffset();
         cursor.setOffset( offsetBefore );
         long readKeyValueSize = readKeyValueSize( cursor );
