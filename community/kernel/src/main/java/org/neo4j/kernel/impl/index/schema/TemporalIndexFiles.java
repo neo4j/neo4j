@@ -44,6 +44,7 @@ class TemporalIndexFiles
         this.fs = fs;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
         dateFileLayout = new FileLayout<>( new File( indexDirectory, "date" ), DateLayout.of( descriptor ), ValueGroup.DATE );
+        timeFileLayout = new FileLayout<>( new File( indexDirectory, "time" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
     }
 
     Iterable<FileLayout> existing()
@@ -82,6 +83,11 @@ class TemporalIndexFiles
     public FileLayout<DateSchemaKey> date()
     {
         return dateFileLayout;
+    }
+
+    public FileLayout<DateSchemaKey> time()
+    {
+        return timeFileLayout;
     }
 
     // .... we will add more explicit accessor methods later

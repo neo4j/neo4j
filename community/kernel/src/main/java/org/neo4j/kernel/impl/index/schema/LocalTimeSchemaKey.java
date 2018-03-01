@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
 /**
- * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateValue}.
+ * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link LocalTimeValue}.
  */
-class DateSchemaKey extends NativeSchemaKey
+class LocalTimeSchemaKey extends NativeSchemaKey
 {
     static final int SIZE =
-            Long.BYTES + /* epochDay */
+            Long.BYTES + /* nanoOfDay */
             Long.BYTES;  /* entityId */
 
-    long epochDay;
+    long nanoOfDay;
 
     @Override
-    void from( Value... values )
+    public void from( Value... values )
     {
         assertValidValue( values ).writeTo( this );
     }
 
-    private DateValue assertValidValue( Value... values )
+    private LocalTimeValue assertValidValue( Value... values )
     {
         if ( values.length > 1 )
         {
@@ -51,53 +51,53 @@ class DateSchemaKey extends NativeSchemaKey
         {
             throw new IllegalArgumentException( "Tried to create key without value" );
         }
-        if ( !(values[0] instanceof DateValue) )
+        if ( !(values[0] instanceof LocalTimeValue) )
         {
             throw new IllegalArgumentException(
-                    "Key layout does only support DateValue, tried to create key from " + values[0] );
+                    "Key layout does only support LocalTimeValue, tried to create key from " + values[0] );
         }
-        return (DateValue) values[0];
+        return (LocalTimeValue) values[0];
     }
 
     @Override
     public Value asValue()
     {
-        return DateValue.epochDate( epochDay );
+        return LocalTimeValue.localTime( nanoOfDay );
     }
 
     @Override
-    void initValueAsLowest()
+    public void initValueAsLowest()
     {
-        epochDay = Long.MIN_VALUE;
+        nanoOfDay = Long.MIN_VALUE;
     }
 
     @Override
-    void initValueAsHighest()
+    public void initValueAsHighest()
     {
-        epochDay = Long.MAX_VALUE;
+        nanoOfDay = Long.MAX_VALUE;
     }
 
     /**
      * Compares the value of this key to that of another key.
      * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
      *
-     * @param other the {@link DateSchemaKey} to compare to.
-     * @return comparison against the {@code other} {@link DateSchemaKey}.
+     * @param other the {@link LocalTimeSchemaKey} to compare to.
+     * @return comparison against the {@code other} {@link LocalTimeSchemaKey}.
      */
-    int compareValueTo( DateSchemaKey other )
+    int compareValueTo( LocalTimeSchemaKey other )
     {
-        return Long.compare( epochDay, other.epochDay );
+        return Long.compare( nanoOfDay, other.nanoOfDay );
     }
 
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,epochDay=%s", asValue(), getEntityId(), epochDay );
+        return format( "value=%s,entityId=%d,nanoOfDay=%s", asValue(), getEntityId(), nanoOfDay );
     }
 
     @Override
-    public void writeDate( long epochDay )
+    public void writeLocalTime( long nanoOfDay )
     {
-        this.epochDay = epochDay;
+        this.nanoOfDay = nanoOfDay;
     }
 }

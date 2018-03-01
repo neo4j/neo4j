@@ -23,6 +23,9 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
+/**
+ * {@link Layout} for dates.
+ */
 class DateLayout extends SchemaLayout<DateSchemaKey>
 {
     public static Layout<DateSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )

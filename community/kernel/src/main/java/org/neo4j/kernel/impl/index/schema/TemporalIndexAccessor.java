@@ -230,10 +230,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         @Override
         public PartAccessor<?> newDate() throws IOException
         {
-            TemporalIndexFiles.FileLayout<DateSchemaKey> fileLayout = temporalIndexFiles.date();
-            ensureIndexExists( fileLayout );
-            return new PartAccessor<>( pageCache, fs, fileLayout,
-                    recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+            return createPartAccessor( temporalIndexFiles.date() );
         }
 
         @Override
@@ -249,9 +246,10 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         }
 
         @Override
-        public PartAccessor<?> newTime()
+        public PartAccessor<?> newTime() throws IOException
         {
-            throw new UnsupportedOperationException( "no comprende" );
+            return createPartAccessor( temporalIndexFiles.time() );
+
         }
 
         @Override
@@ -266,12 +264,13 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             throw new UnsupportedOperationException( "no comprende" );
         }
 
-        private <KEY extends NativeSchemaKey> void ensureIndexExists( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeSchemaKey> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             if ( !fs.fileExists( fileLayout.indexFile ) )
             {
                 createEmptyIndex( fileLayout );
             }
+            return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
         }
 
         private <KEY extends NativeSchemaKey> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
