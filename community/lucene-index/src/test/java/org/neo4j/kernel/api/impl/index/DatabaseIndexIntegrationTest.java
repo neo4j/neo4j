@@ -49,7 +49,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
-import java.util.zip.ZipOutputStream;
 
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -275,11 +274,6 @@ public class DatabaseIndexIntegrationTest
 
         @Override
         public void close()
-        {
-        }
-
-        @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
         {
         }
 

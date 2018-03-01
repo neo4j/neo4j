@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
@@ -168,6 +169,11 @@ public class PageCacheRule extends ExternalResource
     public PageCacheRule( PageCacheConfig config )
     {
         this.baseConfig = config;
+    }
+
+    public PageCache getPageCache()
+    {
+        return getPageCache( new DefaultFileSystemAbstraction() );
     }
 
     public PageCache getPageCache( FileSystemAbstraction fs )

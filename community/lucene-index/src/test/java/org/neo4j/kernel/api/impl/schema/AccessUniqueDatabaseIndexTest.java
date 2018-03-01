@@ -21,13 +21,14 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.index.PagedDirectoryRule;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -43,17 +44,18 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
-import static org.junit.Assert.assertEquals;
-
 public class AccessUniqueDatabaseIndexTest
 {
-    @Rule
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
-    private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    public final PagedDirectoryRule directoryFactory = new PagedDirectoryRule( fileSystemRule );
+
+    @Rule
+    public final RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( directoryFactory );
+
     private final File storeDirectory = new File( "db" );
     private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
@@ -140,9 +142,7 @@ public class AccessUniqueDatabaseIndexTest
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( index, Config.defaults() )
-                .withIndexStorage( indexStorage )
-                .build();
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( index, Config.defaults(), directoryFactory ).withIndexStorage( indexStorage ).build();
         luceneIndex.open();
         return new LuceneIndexAccessor( luceneIndex, index );
     }
@@ -171,12 +171,10 @@ public class AccessUniqueDatabaseIndexTest
 
     private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
     {
-        return AllNodesCollector.getAllNodes( indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) ),
-                Values.stringValue( propertyValue ) );
+        return AllNodesCollector.getAllNodes( indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) ), Values.stringValue( propertyValue ) );
     }
 
-    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates )
-            throws IOException, IndexEntryConflictException
+    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

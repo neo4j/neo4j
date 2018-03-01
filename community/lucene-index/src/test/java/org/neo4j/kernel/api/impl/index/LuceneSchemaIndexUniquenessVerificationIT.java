@@ -27,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +51,9 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.Randoms;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
@@ -67,10 +70,15 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     private static final int PROPERTY_KEY_ID = 42;
     private static final IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( 0, PROPERTY_KEY_ID );
 
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
+    public final TestDirectory testDir = TestDirectory.testDirectory();
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public final RuleChain rules = RuleChain
+            .outerRule( testDir )
+            .around( fileSystemRule )
+            .around( pageCacheRule );
 
     private final int nodesToCreate = DOCS_PER_PARTITION * 2 + 1;
 
@@ -84,11 +92,13 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
         Factory<IndexWriterConfig> configFactory = new TestConfigFactory();
-        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
+        Config config = Config.defaults();
+        index = LuceneSchemaIndexBuilder.create( descriptor, config,
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule.get() ), config,
+                        NullLog.getInstance() ) )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( new File( testDir.directory( "uniquenessVerification" ), "index" ) )
                 .withWriterConfig( configFactory )
-                .withDirectoryFactory( DirectoryFactory.PERSISTENT )
                 .build();
 
         index.create();

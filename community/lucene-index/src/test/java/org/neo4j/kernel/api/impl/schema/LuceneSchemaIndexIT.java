@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,12 +40,15 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.logging.NullLog;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Values;
@@ -59,11 +63,15 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class LuceneSchemaIndexIT
 {
+    public final TestDirectory testDir = TestDirectory.testDirectory();
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final RuleChain rules = RuleChain
+            .outerRule( testDir )
+            .around( fileSystemRule )
+            .around( pageCacheRule );
 
     private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
     private final Config config = Config.defaults();
@@ -127,7 +135,9 @@ public class LuceneSchemaIndexIT
     @Test
     public void updateMultiplePartitionedIndex() throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config,
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                        NullLog.getInstance() ))
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "partitionedIndexForUpdates" ) )
                 .build() )
@@ -149,7 +159,9 @@ public class LuceneSchemaIndexIT
     public void createPopulateDropIndex() throws Exception
     {
         File crudOperation = testDir.directory( "indexCRUDOperation" );
-        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
+        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor, config,
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                        NullLog.getInstance() ))
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( new File( crudOperation, "crudIndex" ) )
                 .build() )
@@ -172,7 +184,9 @@ public class LuceneSchemaIndexIT
     @Test
     public void createFailPartitionedIndex() throws Exception
     {
-        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
+        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor, config,
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                        NullLog.getInstance() ))
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( new File( testDir.directory( "failedIndexFolder" ), "failedIndex" ) )
                 .build() )
@@ -196,7 +210,9 @@ public class LuceneSchemaIndexIT
         SchemaIndex reopenIndex = null;
         try
         {
-            reopenIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
+            reopenIndex = LuceneSchemaIndexBuilder.create( descriptor, config,
+                    DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                            NullLog.getInstance() ))
                     .withFileSystem( fileSystemRule.get() )
                     .withIndexRootFolder( new File( testDir.directory( "reopenIndexFolder" ), "reopenIndex" ) )
                     .build();
@@ -249,7 +265,9 @@ public class LuceneSchemaIndexIT
 
     private LuceneIndexAccessor createDefaultIndexAccessor() throws IOException
     {
-        SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
+        SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config,
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                        NullLog.getInstance() ))
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "testIndex" ) )
                 .build();

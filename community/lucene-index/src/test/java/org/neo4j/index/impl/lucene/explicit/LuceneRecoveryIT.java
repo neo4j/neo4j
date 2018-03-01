@@ -41,7 +41,6 @@ import static org.junit.Assert.fail;
 
 public class LuceneRecoveryIT
 {
-
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 

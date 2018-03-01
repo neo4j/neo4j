@@ -58,7 +58,7 @@ public class RecordCursorsTest
         }
         catch ( Exception e )
         {
-            assertSame( exception, e.getCause() );
+            assertSame( exception, e );
         }
 
         verifyAllCursorsClosed( cursors );

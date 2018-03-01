@@ -34,11 +34,11 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.index.PagedDirectoryRule;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.AllNodesCollector;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -76,14 +76,14 @@ public class UniqueDatabaseIndexPopulatorTest
     private final CleanupRule cleanup = new CleanupRule();
     private final TestDirectory testDir = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PagedDirectoryRule directoryFactory = new PagedDirectoryRule( fileSystemRule );
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDir ).around( cleanup ).around( fileSystemRule );
+    public final RuleChain ruleChain = RuleChain.outerRule( testDir ).around( cleanup ).around( fileSystemRule ).around( directoryFactory );
 
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
 
-    private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private static final IndexDescriptor descriptor = IndexDescriptorFactory
             .forLabel( LABEL_ID, PROPERTY_KEY_ID );
 
@@ -99,7 +99,7 @@ public class UniqueDatabaseIndexPopulatorTest
     {
         File folder = testDir.directory( "folder" );
         indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, false );
-        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
+        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults(), directoryFactory )
                 .withIndexStorage( indexStorage )
                 .build();
         schemaDescriptor = descriptor.schema();

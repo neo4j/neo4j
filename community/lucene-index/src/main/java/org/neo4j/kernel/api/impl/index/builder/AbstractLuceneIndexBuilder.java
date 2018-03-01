@@ -37,13 +37,14 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
  */
 public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>>
 {
-    protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
+    protected LuceneIndexStorageBuilder storageBuilder;
     private final Config config;
     private OperationalMode operationalMode = OperationalMode.single;
 
-    public AbstractLuceneIndexBuilder( Config config )
+    public AbstractLuceneIndexBuilder( Config config, DirectoryFactory defaultDirectoryFactory )
     {
         this.config = Objects.requireNonNull( config );
+        storageBuilder = LuceneIndexStorageBuilder.create( defaultDirectoryFactory );
     }
 
     /**
@@ -55,18 +56,6 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
     public T withIndexStorage( PartitionedIndexStorage indexStorage )
     {
         storageBuilder.withIndexStorage( indexStorage );
-        return (T) this;
-    }
-
-    /**
-     * Specify directory factory
-     *
-     * @param directoryFactory directory factory
-     * @return index builder
-     */
-    public T withDirectoryFactory( DirectoryFactory directoryFactory )
-    {
-        storageBuilder.withDirectoryFactory( directoryFactory );
         return (T) this;
     }
 

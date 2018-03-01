@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +45,9 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLog;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -56,10 +60,12 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class PartitionedIndexStorageTest
 {
-    @Rule
     public final DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
-    @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory( getClass(), fsRule.get() );
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public final RuleChain rules = RuleChain.outerRule( fsRule ).around( testDir ).around( pageCacheRule );
 
     private FileSystemAbstraction fs;
     private PartitionedIndexStorage storage;
@@ -68,7 +74,7 @@ public class PartitionedIndexStorageTest
     public void createIndexStorage()
     {
         fs = fsRule.get();
-        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir(), false );
+        storage = new PartitionedIndexStorage( directoryFactory( fs ), fs, testDir.graphDbDir(), false );
     }
 
     @Test
@@ -171,18 +177,17 @@ public class PartitionedIndexStorageTest
     {
         // GIVEN
         try ( FileSystemAbstraction scramblingFs = new DefaultFileSystemAbstraction()
-                {
-                    @Override
-                    public File[] listFiles( File directory )
-                    {
-                        List<File> files = asList( super.listFiles( directory ) );
-                        Collections.shuffle( files );
-                        return files.toArray( new File[files.size()] );
-                    }
-                } )
         {
-            PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
-                    scramblingFs, testDir.graphDbDir(), false );
+            @Override
+            public File[] listFiles( File directory )
+            {
+                List<File> files = asList( super.listFiles( directory ) );
+                Collections.shuffle( files );
+                return files.toArray( new File[files.size()] );
+            }
+        } )
+        {
+            PartitionedIndexStorage myStorage = new PartitionedIndexStorage( directoryFactory( scramblingFs ), scramblingFs, testDir.graphDbDir(), false );
             File parent = myStorage.getIndexFolder();
             int directoryCount = 10;
             for ( int i = 0; i < directoryCount; i++ )
@@ -199,8 +204,7 @@ public class PartitionedIndexStorageTest
             for ( Map.Entry<File,Directory> directory : directories.entrySet() )
             {
                 int current = parseInt( directory.getKey().getName() );
-                assertTrue( "Wanted directory " + current + " to have higher id than previous " + previous,
-                        current > previous );
+                assertTrue( "Wanted directory " + current + " to have higher id than previous " + previous, current > previous );
                 previous = current;
             }
         }
@@ -225,7 +229,7 @@ public class PartitionedIndexStorageTest
     private Directory createRandomLuceneDir( File rootFolder ) throws IOException
     {
         File folder = createRandomFolder( rootFolder );
-        DirectoryFactory directoryFactory = getOrCreateDirFactory( fs );
+        DirectoryFactory directoryFactory = directoryFactory( fs );
         Directory directory = directoryFactory.open( folder );
         try ( IndexWriter writer = new IndexWriter( directory, IndexWriterConfigs.standard() ) )
         {
@@ -258,9 +262,9 @@ public class PartitionedIndexStorageTest
         return doc;
     }
 
-    private static DirectoryFactory getOrCreateDirFactory( FileSystemAbstraction fs )
+    private DirectoryFactory directoryFactory( FileSystemAbstraction fs )
     {
-        return fs.getOrCreateThirdPartyFileSystem( DirectoryFactory.class,
-                clazz -> new DirectoryFactory.InMemoryDirectoryFactory() );
+        return DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fs ), Config.defaults(),
+                NullLog.getInstance() );
     }
 }

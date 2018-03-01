@@ -37,7 +37,7 @@ public class CustomIOConfigValidator
         }
     }
 
-    private static boolean customIOConfigUsed( Config config )
+    public static boolean customIOConfigUsed( Config config )
     {
         return config.get( GraphDatabaseSettings.pagecache_swapper ) != null;
     }

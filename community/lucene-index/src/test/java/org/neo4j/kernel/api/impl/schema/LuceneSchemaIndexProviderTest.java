@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,9 +40,12 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.logging.NullLog;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.newDirectoryFactory;
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
 
 /**
@@ -49,12 +53,14 @@ import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.default
  */
 public class LuceneSchemaIndexProviderTest
 {
-    @Rule
     public ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public RuleChain rules =
+            RuleChain.outerRule( expectedException ).around( testDir ).around( fileSystemRule ).around( pageCacheRule );
 
     private File graphDbDir;
     private FileSystemAbstraction fs;
@@ -72,22 +78,24 @@ public class LuceneSchemaIndexProviderTest
     {
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
-                new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
+                newDirectoryFactory( pageCacheRule.getPageCache( fs ), readOnlyConfig, NullLog.getInstance() ), fs,
+                graphDbDir );
         expectedException.expect( UnsupportedOperationException.class );
 
-        readOnlyIndexProvider.getPopulator( 1L, descriptor, new IndexSamplingConfig(
-                readOnlyConfig ) );
+        readOnlyIndexProvider.getPopulator( 1L, descriptor, new IndexSamplingConfig( readOnlyConfig ) );
     }
 
     @Test
     public void shouldCreateReadOnlyAccessorInReadOnlyMode() throws Exception
     {
-        DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
+        DirectoryFactory directoryFactory =
+                newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), readOnlyConfig,
+                        NullLog.getInstance() );
         createEmptySchemaIndex( directoryFactory );
 
-        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
-        LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
-                directoryFactory, fs, graphDbDir );
+        LuceneSchemaIndexProvider readOnlyIndexProvider =
+                getLuceneSchemaIndexProvider( readOnlyConfig, directoryFactory, fs, graphDbDir );
         IndexAccessor onlineAccessor = getIndexAccessor( readOnlyConfig, readOnlyIndexProvider );
 
         expectedException.expect( UnsupportedOperationException.class );
@@ -99,10 +107,11 @@ public class LuceneSchemaIndexProviderTest
     {
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
-                new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
+                newDirectoryFactory( pageCacheRule.getPageCache( fs ), readOnlyConfig, NullLog.getInstance() ), fs,
+                graphDbDir );
 
         expectedException.expect( UnsupportedOperationException.class );
-        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).newUpdater( IndexUpdateMode.ONLINE);
+        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).newUpdater( IndexUpdateMode.ONLINE );
     }
 
     @Test
@@ -112,7 +121,8 @@ public class LuceneSchemaIndexProviderTest
         // prevent backups from working.
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
-                new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
+                newDirectoryFactory( pageCacheRule.getPageCache( fs ), readOnlyConfig, NullLog.getInstance() ), fs,
+                graphDbDir );
 
         // We assert that 'force' does not throw an exception
         getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force();
@@ -121,8 +131,8 @@ public class LuceneSchemaIndexProviderTest
     private void createEmptySchemaIndex( DirectoryFactory directoryFactory ) throws IOException
     {
         Config config = Config.defaults();
-        LuceneSchemaIndexProvider indexProvider = getLuceneSchemaIndexProvider( config, directoryFactory, fs,
-                graphDbDir );
+        LuceneSchemaIndexProvider indexProvider =
+                getLuceneSchemaIndexProvider( config, directoryFactory, fs, graphDbDir );
         IndexAccessor onlineAccessor = getIndexAccessor( config, indexProvider );
         onlineAccessor.close();
     }
@@ -134,7 +144,7 @@ public class LuceneSchemaIndexProviderTest
     }
 
     private LuceneSchemaIndexProvider getLuceneSchemaIndexProvider( Config config, DirectoryFactory directoryFactory,
-                                                                    FileSystemAbstraction fs, File graphDbDir )
+            FileSystemAbstraction fs, File graphDbDir )
     {
         return new LuceneSchemaIndexProvider( fs, directoryFactory, defaultDirectoryStructure( graphDbDir ),
                 SchemaIndexProvider.Monitor.EMPTY, config, OperationalMode.single );

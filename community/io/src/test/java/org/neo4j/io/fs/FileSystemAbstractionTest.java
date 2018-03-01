@@ -43,7 +43,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -58,7 +57,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
@@ -240,22 +238,6 @@ public abstract class FileSystemAbstractionTest
         {
             assertNotNull( fileWatcher.watch( testDirectory.directory( "testDirectory" ) ) );
         }
-    }
-
-    @Test
-    public void closeThirdPartyFileSystemsOnClose() throws IOException
-    {
-        CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
-
-        CloseTrackingFileSystem fileSystem = fsa.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
-                thirdPartyFileSystemClass -> closeTrackingFileSystem );
-
-        assertSame( closeTrackingFileSystem, fileSystem );
-        assertFalse( closeTrackingFileSystem.isClosed() );
-
-        fsa.close();
-
-        assertTrue( closeTrackingFileSystem.isClosed() );
     }
 
     @Test

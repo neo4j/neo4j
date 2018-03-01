@@ -62,7 +62,7 @@ public class IOUtilsTest
         doThrow( new IOException( "Faulty closable" ) ).when( faultyClosable ).close();
 
         expectedException.expect( IOException.class );
-        expectedException.expectMessage( "Exception closing multiple resources" );
+        expectedException.expectMessage( "Faulty closable" );
         expectedException.expect( new NestedThrowableMatcher( IOException.class ) );
 
         IOUtils.closeAll( goodClosable1, faultyClosable, goodClosable2 );

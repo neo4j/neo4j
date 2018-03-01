@@ -33,14 +33,15 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
  */
 public class LuceneIndexStorageBuilder
 {
-    private DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
+    private DirectoryFactory directoryFactory;
     private FileSystemAbstraction fileSystem;
     private File indexRootFolder;
     private PartitionedIndexStorage indexStorage;
     private boolean archiveFailed;
 
-    private LuceneIndexStorageBuilder()
+    private LuceneIndexStorageBuilder( DirectoryFactory defaultDirectoryFactory )
     {
+        this.directoryFactory = defaultDirectoryFactory;
     }
 
     /**
@@ -48,9 +49,9 @@ public class LuceneIndexStorageBuilder
      *
      * @return index builder
      */
-    public static LuceneIndexStorageBuilder create()
+    public static LuceneIndexStorageBuilder create( DirectoryFactory defaultDirectoryFactory )
     {
-        return new LuceneIndexStorageBuilder();
+        return new LuceneIndexStorageBuilder( defaultDirectoryFactory );
     }
 
     /**

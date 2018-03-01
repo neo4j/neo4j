@@ -115,29 +115,73 @@ public final class IOUtils
         Throwable closeThrowable = null;
         for ( T closeable : closeables )
         {
-            if ( closeable != null )
+            closeThrowable = chainedClose( closeThrowable, closeable );
+        }
+        chainedCloseFinish( throwableClass, closeThrowable );
+    }
+
+    /**
+     * This can be used to do the same thing as {@link #closeAll(AutoCloseable[])}, without heap allocations.
+     * <p>
+     * Use like:
+     * <p>
+     * <code>
+     * Throwable t;
+     * t = chainedClose(t, resource1);
+     * t = chainedClose(t, resource2);
+     * chainedCloseFinish(IOException.class, t);
+     * </code>
+     *
+     * @param currentThrowable
+     * @param closeable
+     * @return
+     */
+    public static Throwable chainedClose( Throwable currentThrowable, AutoCloseable closeable )
+    {
+        if ( closeable != null )
+        {
+            try
             {
-                try
+                closeable.close();
+            }
+            catch ( Throwable t )
+            {
+                if ( currentThrowable == null )
                 {
-                    closeable.close();
+                    currentThrowable = t;
                 }
-                catch ( Throwable t )
+                else
                 {
-                    if ( closeThrowable == null )
-                    {
-                        closeThrowable = t;
-                    }
-                    else
-                    {
-                        closeThrowable.addSuppressed( t );
-                    }
+                    currentThrowable.addSuppressed( t );
                 }
             }
         }
-        if ( closeThrowable != null )
+        return currentThrowable;
+    }
+
+    /**
+     * Used to complete a {@link #chainedClose(Throwable, AutoCloseable) chained close}.  Throws the given exception
+     * type if the provided cause is non-null.
+     *
+     * @param throwableClass type to throw. If the cause is an instance of this, the cause will get thrown, otherwise
+     * it gets wrapped.
+     * @param cause exception from {@link #chainedClose(Throwable, AutoCloseable)}
+     * @param <E> the type to throw
+     * @throws E if cause in non-null
+     */
+    public static <E extends Throwable> void chainedCloseFinish( Class<E> throwableClass, Throwable cause ) throws E
+    {
+        if ( cause == null )
         {
-            throw newThrowable( throwableClass, "Exception closing multiple resources", closeThrowable );
+            return;
         }
+
+        if ( throwableClass.isInstance( cause ) )
+        {
+            throw (E) cause;
+        }
+
+        throw newThrowable( throwableClass, cause.getMessage(), cause );
     }
 
     private static <E extends Throwable> E newThrowable( Class<E> throwableClass, String message, Throwable cause )
@@ -149,8 +193,8 @@ public final class IOUtils
         }
         catch ( Throwable t )
         {
-            RuntimeException runtimeException = new RuntimeException(
-                    "Unable to create exception to throw. Original message: " + message, t );
+            RuntimeException runtimeException =
+                    new RuntimeException( "Unable to create exception to throw. Original message: " + message, t );
             runtimeException.addSuppressed( cause );
             throw runtimeException;
         }

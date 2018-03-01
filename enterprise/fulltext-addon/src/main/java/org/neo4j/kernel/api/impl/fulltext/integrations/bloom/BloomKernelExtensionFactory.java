@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -45,7 +46,6 @@ import org.neo4j.scheduler.JobScheduler;
 @Service.Implementation( KernelExtensionFactory.class )
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
 {
-
     public static final String SERVICE_NAME = "bloom";
     public static final String BLOOM_RELATIONSHIPS = "bloomRelationships";
     public static final String BLOOM_NODES = "bloomNodes";
@@ -57,6 +57,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         GraphDatabaseService db();
 
         FileSystemAbstraction fileSystem();
+
+        PageCache pageCache();
 
         Procedures procedures();
 
@@ -89,7 +91,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         JobScheduler scheduler = dependencies.scheduler();
         Supplier<TransactionIdStore> transactionIdStore = dependencies::transactionIdStore;
         Supplier<NeoStoreFileListing> fileListing = dependencies::fileListing;
-        return new BloomKernelExtension(
-                fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler, transactionIdStore, fileListing );
+        PageCache pageCache = dependencies.pageCache();
+        return new BloomKernelExtension( fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler,
+                transactionIdStore, pageCache, fileListing );
     }
 }

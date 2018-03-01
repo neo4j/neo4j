@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 
 public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshotFileIteratorTest
 {
-
     private IndexWriter indexWriter;
 
     @Override
