@@ -1127,7 +1127,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
         }
 
-        if( conflictingMilliSeconds )
+        if ( conflictingMilliSeconds )
         {
             AnyValue millis = Values.intValue( truncated.get( ChronoField.MILLI_OF_SECOND ) );
             AnyValue micros = fields.remove( "microsecond" );
