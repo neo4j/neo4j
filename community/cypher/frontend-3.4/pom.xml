@@ -8,12 +8,24 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+  <artifactId>openCypher-frontend-1</artifactId>
   <packaging>jar</packaging>
   <version>3.4.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Frontend 3.4</name>
+  <name>openCypher Frontend</name>
 
-  <description>Front end of the Cypher compiler</description>
+  <description>
+    Scala implementation of
+      - parser
+      - abstract syntax tree (AST)
+      - semantic analysis
+      - typing
+      - scoping
+
+    for openCypher queries, resulting in a normalised AST representation of the query string.
+
+    See https://www.opencypher.org for more information on the openCypher project and query language.
+  </description>
+
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
