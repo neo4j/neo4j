@@ -204,14 +204,18 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "statistics used to create the plan have changed more than this value, " +
                   "the plan will be considered stale and will be replanned. Change is calculated as " +
                   "abs(a-b)/max(a,b). This means that a value of 0.75 requires the database to approximately " +
-                  "quadruple in size. A value of 0 means always replan, and 1 means never replan." )
+                  "quadruple in size. A value of 0 means replan as soon as possible, with the soonest being " +
+                  "defined by the cypher.min_replan_interval which defaults to 10s. After this interval the " +
+                  "divergence threshold will slowly start to decline, reaching 10% after about 7h. This will " +
+                  "ensure that long running databases will still get query replanning on even modest changes, " +
+                  "while not replanning frequently unless the changes are very large." )
     public static Setting<Double> query_statistics_divergence_threshold =
             buildSetting( "cypher.statistics_divergence_threshold", DOUBLE, "0.75" ).constraint( range( 0.0, 1.0 ) ).build();
 
     @Description( "Large databases might change slowly, and so to prevent queries from never being replanned " +
                   "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
                   "shrink over time. " +
-                  "The algorithm used to manage this change is set by cypher.statistics_divergence_algorithm " +
+                  "The algorithm used to manage this change is set by unsupported.cypher.replan_algorithm " +
                   "and will cause the threshold to reach the value set here once the time since the previous " +
                   "replanning has reached unsupported.cypher.target_replan_interval. " +
                   "Setting this value to higher than the cypher.statistics_divergence_threshold will cause the " +
@@ -241,16 +245,18 @@ public class GraphDatabaseSettings implements LoadableConfig
             "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000" ).constraint( min( 10L ) ).build();
 
     @Description( "The minimum time between possible cypher query replanning events. After this time, the graph " +
-            "statistics will be evaluated, and if they have changed by more than the value set by " +
-            "cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have " +
-            "not changed sufficiently, the same interval will need to pass before the statistics will be " +
-            "evaluated again." )
+                  "statistics will be evaluated, and if they have changed by more than the value set by " +
+                  "cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have " +
+                  "not changed sufficiently, the same interval will need to pass before the statistics will be " +
+                  "evaluated again. Each time they are evaluated, the divergence threshold will be reduced slightly " +
+                  "until it reaches 10% after 7h, so that even moderately changing databases will see query replanning " +
+                  "after a sufficiently long time interval." )
     public static Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
 
     @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
                   "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
                   "shrink over time. The algorithm used to manage this change is set by " +
-                  "unsupported.cypher.statistics_divergence_algorithm and will cause the threshold to reach " +
+                  "unsupported.cypher.replan_algorithm and will cause the threshold to reach " +
                   "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
                   "previous replanning has reached the value set here. Setting this value to less than the " +
                   "value of cypher.min_replan_interval will cause the threshold to not decay over time." )
