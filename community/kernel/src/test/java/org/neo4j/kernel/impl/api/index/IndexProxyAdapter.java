@@ -26,6 +26,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -67,8 +68,7 @@ public class IndexProxyAdapter implements IndexProxy
         return null;
     }
 
-    @Override
-    public void force()
+    public void force( IOLimiter ioLimiter )
     {
     }
 

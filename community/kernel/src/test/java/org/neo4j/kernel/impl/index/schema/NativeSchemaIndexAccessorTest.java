@@ -43,6 +43,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -550,7 +551,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         processAll( data );
 
         // when
-        accessor.force();
+        accessor.force( IOLimiter.unlimited() );
         accessor.close();
 
         // then
@@ -886,7 +887,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
 
     private void forceAndCloseAccessor() throws IOException
     {
-        accessor.force();
+        accessor.force( IOLimiter.unlimited() );
         closeAccessor();
     }
 

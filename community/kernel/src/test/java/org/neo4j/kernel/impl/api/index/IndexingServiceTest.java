@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -1028,12 +1029,12 @@ public class IndexingServiceTest
                 return indexMap;
             } );
             throw new RuntimeException( "Index deleted." );
-        } ).when( deletedIndexProxy ).force();
+        } ).when( deletedIndexProxy ).force( any( IOLimiter.class ) );
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll();
-        verify( validIndex, times( 4 ) ).force();
+        indexingService.forceAll( IOLimiter.unlimited() );
+        verify( validIndex, times( 4 ) ).force( IOLimiter.unlimited() );
     }
 
     @Test
@@ -1049,7 +1050,7 @@ public class IndexingServiceTest
             indexMap.putIndexProxy( 3, strangeIndexProxy );
             indexMap.putIndexProxy( 4, validIndex );
             indexMap.putIndexProxy( 5, validIndex );
-            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force();
+            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
             return indexMap;
         } );
 
@@ -1057,7 +1058,7 @@ public class IndexingServiceTest
 
         expectedException.expectMessage( "Unable to force" );
         expectedException.expect( UnderlyingStorageException.class );
-        indexingService.forceAll();
+        indexingService.forceAll( IOLimiter.unlimited() );
     }
 
     @Test

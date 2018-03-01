@@ -59,6 +59,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -582,7 +583,7 @@ public class FullCheckIntegrationTest
                     }
                 }
             }
-            accessor.force();
+            accessor.force( IOLimiter.unlimited() );
             accessor.close();
         }
 
@@ -609,7 +610,7 @@ public class FullCheckIntegrationTest
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
             updater.close();
-            accessor.force();
+            accessor.force( IOLimiter.unlimited() );
             accessor.close();
         }
 

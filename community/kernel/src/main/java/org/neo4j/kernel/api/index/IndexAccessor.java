@@ -26,6 +26,7 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
@@ -62,9 +63,10 @@ public interface IndexAccessor extends Closeable
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
      *
+     * @param ioLimiter The {@link IOLimiter} to use for implementations living on top of {@link org.neo4j.io.pagecache.PageCache}.
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
-    void force() throws IOException;
+    void force( IOLimiter ioLimiter ) throws IOException;
 
     /**
      * Refreshes this index, so that {@link #newReader() readers} created after completion of this call
@@ -130,7 +132,7 @@ public interface IndexAccessor extends Closeable
         }
 
         @Override
-        public void force()
+        public void force( IOLimiter ioLimiter )
         {
         }
 
@@ -214,9 +216,9 @@ public interface IndexAccessor extends Closeable
         }
 
         @Override
-        public void force() throws IOException
+        public void force( IOLimiter ioLimiter ) throws IOException
         {
-            delegate.force();
+            delegate.force( ioLimiter );
         }
 
         @Override

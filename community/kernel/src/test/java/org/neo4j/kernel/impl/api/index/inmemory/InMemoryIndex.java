@@ -26,6 +26,7 @@ import java.util.Collection;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -183,7 +184,7 @@ class InMemoryIndex
     private class OnlineAccessor implements IndexAccessor
     {
         @Override
-        public void force()
+        public void force( IOLimiter ioLimiter )
         {
         }
 
