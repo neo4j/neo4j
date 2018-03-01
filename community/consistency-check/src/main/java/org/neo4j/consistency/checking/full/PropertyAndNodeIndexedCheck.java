@@ -38,6 +38,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -131,8 +132,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
             IndexReader reader )
     {
-        //TODO ugly as shit
-        IndexQuery[] query = seek( indexRule.getIndexDescriptor().asSchemaDescriptor().schema(), propertyValues );
+        IndexQuery[] query = seek( indexRule.getIndexDescriptor().schema(), propertyValues );
 
         PrimitiveLongIterator indexedNodeIds = queryIndexOrEmpty( reader, query );
 
@@ -221,7 +221,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return propertyIds;
     }
 
-    private IndexQuery[] seek( LabelSchemaDescriptor schema, Value[] propertyValues )
+    private IndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
     {
         assert schema.getPropertyIds().length == propertyValues.length;
         IndexQuery[] query = new IndexQuery[propertyValues.length];

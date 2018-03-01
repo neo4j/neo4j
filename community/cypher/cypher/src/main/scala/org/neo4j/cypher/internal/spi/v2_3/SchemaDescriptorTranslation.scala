@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes
 import org.neo4j.kernel.api.schema.constaints.{NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor}
-import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor, SchemaIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
-  implicit def cypherToKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
+  implicit def cypherToKernel(index: SchemaTypes.IndexDescriptor): SchemaIndexDescriptor =
     SchemaIndexDescriptorFactory.forLabel(index.labelId, index.propertyId)
 
   implicit def kernelToCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor =
     if (index.schema().getPropertyIds.length == 1)
-    //TODO zero index hack
+    //TODO zero index hack due to cypher index descriptor
       SchemaTypes.IndexDescriptor(index.schema().getEntityTokenIds.head, index.schema().getPropertyIds().head)
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite indexes")

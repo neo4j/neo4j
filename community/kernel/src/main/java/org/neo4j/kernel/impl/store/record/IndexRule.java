@@ -121,7 +121,8 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
         {
             throw new IllegalStateException( this + " is not a constraint index" );
         }
-        return constraintIndexRule( id, descriptor.asSchemaDescriptor(), providerDescriptor, constraintId );
+        //TODO we cast here since only SchemaIndexDescriptors have constraints
+        return constraintIndexRule( id, (SchemaIndexDescriptor) descriptor, providerDescriptor, constraintId );
     }
 
     @Override

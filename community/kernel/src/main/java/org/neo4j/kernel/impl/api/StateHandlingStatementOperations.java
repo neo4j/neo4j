@@ -747,10 +747,7 @@ public class StateHandlingStatementOperations implements
         Iterator<IndexDescriptor> rules = iterator( schemaIndexDescriptor );
         if ( state.hasTxStateWithChanges() )
         {
-            //TODO ugly zero index
-            rules = filter(
-                    SchemaDescriptor.equalTo( descriptor ),
-                    state.txState().indexDiffSetsByLabel( descriptor.getEntityTokenIds()[0] ).apply( rules ) );
+            rules = state.txState().indexDiffSetsBySchema( descriptor ).apply( rules );
         }
         return singleOrNull( rules );
     }
@@ -758,8 +755,8 @@ public class StateHandlingStatementOperations implements
     @Override
     public IndexDescriptor indexGetForName( KernelStatement state, String name )
     {
+        // This is only used for querying, and thus is is "fine" (at least for now) that it is not tx-state aware
         IndexDescriptor schemaIndexDescriptor = storeLayer.indexGetForName( name );
-        //TODO state?
         return schemaIndexDescriptor;
     }
 
@@ -770,9 +767,8 @@ public class StateHandlingStatementOperations implements
         // If index is in our state, then return populating
         if ( state.hasTxStateWithChanges() )
         {
-            //TODO ugly zero index
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getEntityTokenIds()[0] ) ) )
+                    state.txState().indexDiffSetsBySchema( descriptor.schema() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -786,9 +782,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            //TODO Invalid keyID
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
+                    state.txState().indexDiffSetsBySchema( descriptor.schema() ) ) )
             {
                 return IndexProvider.UNDECIDED;
             }
@@ -803,9 +798,8 @@ public class StateHandlingStatementOperations implements
         // If index is in our state, then return 0%
         if ( state.hasTxStateWithChanges() )
         {
-            //TODO zero index hack
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getEntityTokenIds()[0] ) ) )
+                    state.txState().indexDiffSetsBySchema( descriptor.schema() ) ) )
             {
                 return PopulationProgress.NONE;
             }

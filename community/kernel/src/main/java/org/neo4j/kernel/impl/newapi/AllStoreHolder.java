@@ -179,7 +179,7 @@ public class AllStoreHolder extends Read implements Token
         try
         {
             IndexCapability indexCapability = storeReadLayer.indexGetCapability( indexDescriptor );
-            //TODO ugly zero index
+            //TODO ugly zero index. Newapi stuff
             return new DefaultCapableIndexReference( unique, indexCapability, indexDescriptor.schema().getEntityTokenIds()[0],
                     indexDescriptor.schema().getPropertyIds() );
         }
@@ -194,9 +194,8 @@ public class AllStoreHolder extends Read implements Token
         // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
         {
-            //TODO ugly zero index
             if ( checkIndexState( descriptor,
-                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().getEntityTokenIds()[0] ) ) )
+                    ktx.txState().indexDiffSetsBySchema( descriptor.schema() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }

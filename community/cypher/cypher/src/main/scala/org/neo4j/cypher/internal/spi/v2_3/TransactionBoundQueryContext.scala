@@ -248,8 +248,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
 
   override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
-    //TODO cast hack
-    val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(cypherToKernel(index).asSchemaDescriptor(), IndexQuery.exact(index.propertyId, Values.of(value)))
+    val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(cypherToKernel(index), IndexQuery.exact(index.propertyId, Values.of(value)))
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 

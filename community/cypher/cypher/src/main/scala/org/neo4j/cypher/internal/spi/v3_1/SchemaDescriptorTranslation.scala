@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.spi.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor
 import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptorFactory, NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
-import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor, SchemaIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
-  implicit def toKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
+  implicit def toKernel(index: SchemaTypes.IndexDescriptor): SchemaIndexDescriptor =
     SchemaIndexDescriptorFactory.forLabel(index.labelId, index.propertyId)
 
   implicit def toCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor = {
     assertSingleProperty(index.schema())
-    //TODO zero index hack
+    //TODO zero index hack due to cypher index descriptor
     SchemaTypes.IndexDescriptor(index.schema().getEntityTokenIds.head, index.schema().getPropertyIds().head)
   }
 

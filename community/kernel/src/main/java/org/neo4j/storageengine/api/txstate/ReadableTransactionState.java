@@ -122,6 +122,8 @@ public interface ReadableTransactionState
 
     ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
+    ReadableDiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
+
     ReadableDiffSets<IndexDescriptor> indexChanges();
 
     Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx();

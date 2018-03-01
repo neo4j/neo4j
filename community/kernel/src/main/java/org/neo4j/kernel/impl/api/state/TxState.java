@@ -109,7 +109,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private GraphState graphState;
     private DiffSets<IndexDescriptor> indexChanges;
-    private DiffSets<SchemaIndexDescriptor> schemaIndexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
     private PropertyChanges propertyChangesForNodes;
@@ -793,6 +792,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
+    }
+
+    @Override
+    public ReadableDiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema )
+    {
+        return indexChangesDiffSets().filterAdded( (indexDescriptor) -> indexDescriptor.schema().equals( schema ) );
     }
 
     @Override

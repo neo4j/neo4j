@@ -92,7 +92,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
-        //TODO zero index hack?
+        //TODO zero index hack, due to cypher
       case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getEntityTokenIds.head, descriptor.schema().getPropertyIds))
       case _ => None
     }

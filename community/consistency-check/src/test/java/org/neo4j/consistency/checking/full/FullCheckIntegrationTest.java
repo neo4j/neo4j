@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -568,7 +569,7 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor().asSchemaDescriptor();
+            IndexDescriptor descriptor = indexRule.getIndexDescriptor();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
                             indexRule.getId(), descriptor, samplingConfig );

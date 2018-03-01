@@ -270,8 +270,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
-    //TODO cast hack
-    val nodeId: Long = txContext.statement.readOperations().nodeGetFromUniqueIndexSeek(toKernel(index).asSchemaDescriptor(), IndexQuery.exact(index.propertyId, Values.of(value)))
+    val nodeId: Long = txContext.statement.readOperations().nodeGetFromUniqueIndexSeek(toKernel(index), IndexQuery.exact(index.propertyId, Values.of(value)))
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 

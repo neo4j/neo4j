@@ -40,11 +40,6 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
  */
 public abstract class IndexDescriptor implements SchemaDescriptorSupplier
 {
-    public SchemaIndexDescriptor asSchemaDescriptor()
-    {
-        //TODO cast hack
-        return this instanceof SchemaIndexDescriptor ? (SchemaIndexDescriptor) this : null;
-    }
 
     public String metadata()
     {
