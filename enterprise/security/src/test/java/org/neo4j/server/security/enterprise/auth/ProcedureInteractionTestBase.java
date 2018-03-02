@@ -106,7 +106,10 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 
 public abstract class ProcedureInteractionTestBase<S>
 {
-    static final String PROCEDURE_TIMEOUT_ERROR = "Procedure got: Transaction guard check failed";
+    static final String PROCEDURE_TIMEOUT_ERROR = "The transaction has been terminated. Retry your operation in a new " +
+                                                  "transaction, and you should see a successful result. The transaction " +
+                                                  "has not completed within the specified timeout. You may want to retry " +
+                                                  "with a longer timeout. ";
     protected boolean PWD_CHANGE_CHECK_FIRST;
     protected String CHANGE_PWD_ERR_MSG = AuthorizationViolationException.PERMISSION_DENIED;
     private static final String BOLT_PWD_ERR_MSG =
