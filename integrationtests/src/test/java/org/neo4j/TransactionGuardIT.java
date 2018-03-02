@@ -76,6 +76,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -523,10 +524,11 @@ public class TransactionGuardIT
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
             BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
-                    .withProperty( boltConnector.enabled.name(), "true" )
+                    .withProperty( boltConnector.enabled.name(), Settings.TRUE )
+                    .withProperty( ServerSettings.script_enabled.name(), Settings.TRUE )
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
-                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
+                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE );
             serverBuilder.withProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
@@ -543,6 +545,7 @@ public class TransactionGuardIT
                 boltConnector.address, "localhost:0",
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
+                ServerSettings.script_enabled, Settings.TRUE,
                 boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
     }
