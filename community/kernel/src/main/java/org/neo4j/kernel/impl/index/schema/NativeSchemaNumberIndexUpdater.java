@@ -27,12 +27,14 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.values.storable.ValueTuple;
 
+import static org.neo4j.kernel.impl.index.schema.ConflictDetectingValueMerger.dontCheck;
+
 class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         implements IndexUpdater
 {
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
+    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger = dontCheck();
     private Writer<KEY,VALUE> writer;
 
     private boolean closed = true;
@@ -42,7 +44,6 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     {
         this.treeKey = treeKey;
         this.treeValue = treeValue;
-        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
     }
 
     NativeSchemaNumberIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
@@ -124,7 +125,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
-        assertNoConflict( update, conflictDetectingValueMerger );
+        conflictDetectingValueMerger.checkConflict( update.values() );
     }
 
     static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void processAdd( KEY treeKey, VALUE treeValue,
@@ -135,17 +136,6 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
-        assertNoConflict( update, conflictDetectingValueMerger );
-    }
-
-    private static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void assertNoConflict( IndexEntryUpdate<?> update,
-            ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger ) throws IndexEntryConflictException
-    {
-        if ( conflictDetectingValueMerger.wasConflict() )
-        {
-            long existingNodeId = conflictDetectingValueMerger.existingNodeId();
-            long addedNodeId = conflictDetectingValueMerger.addedNodeId();
-            throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( update.values() ) );
-        }
+        conflictDetectingValueMerger.checkConflict( update.values() );
     }
 }

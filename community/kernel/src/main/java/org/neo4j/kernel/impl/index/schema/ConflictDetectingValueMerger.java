@@ -20,54 +20,72 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.ValueMerger;
+import org.neo4j.index.internal.gbptree.ValueMergers;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 /**
  * {@link ValueMerger} which will merely detect conflict, not change any value if conflict, i.e. if the
  * key already exists. After this merge has been used in a call to {@link Writer#merge(Object, Object, ValueMerger)}
- * the {@link #wasConflict()} accessor can be called to check whether or not that call conflicted with
- * an existing key. A call to {@link #wasConflict()} will also clear the conflict flag.
+ * {@link #checkConflict(Value[])} can be called to check whether or not that call conflicted with
+ * an existing key. A call to {@link #checkConflict(Value[])} will also clear the conflict flag.
  *
  * @param <VALUE> type of values being merged.
  */
-class ConflictDetectingValueMerger<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> implements ValueMerger<KEY,VALUE>
+abstract class ConflictDetectingValueMerger<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> implements ValueMerger<KEY,VALUE>
 {
-    private boolean conflict;
-    private long existingNodeId;
-    private long addedNodeId;
-
-    @Override
-    public VALUE merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
-    {
-        if ( existingKey.entityId != newKey.entityId )
-        {
-            conflict = true;
-            existingNodeId = existingKey.entityId;
-            addedNodeId = newKey.entityId;
-        }
-        return null;
-    }
-
     /**
-     * @return whether or not merge conflicted with an existing key. This call also clears the conflict flag.
+     * @throw IndexEntryConflictException if merge conflicted with an existing key. This call also clears the conflict flag.
      */
-    boolean wasConflict()
+    abstract void checkConflict( Value[] values ) throws IndexEntryConflictException;
+
+    private static ConflictDetectingValueMerger DONT_CHECK = new ConflictDetectingValueMerger()
     {
-        boolean result = conflict;
-        if ( conflict )
+        @Override
+        public Object merge( Object existingKey, Object newKey, Object existingValue, Object newValue )
         {
-            conflict = false;
+            return null;
         }
-        return result;
+
+        @Override
+        void checkConflict( Value[] values )
+        {
+            // do nothing
+        }
+    };
+
+    static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> ConflictDetectingValueMerger<KEY, VALUE> dontCheck()
+    {
+        return DONT_CHECK;
     }
 
-    long existingNodeId()
+    static class Check<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> extends ConflictDetectingValueMerger<KEY, VALUE>
     {
-        return existingNodeId;
-    }
+        private boolean conflict;
+        private long existingNodeId;
+        private long addedNodeId;
 
-    long addedNodeId()
-    {
-        return addedNodeId;
+        @Override
+        public VALUE merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
+        {
+            if ( existingKey.entityId != newKey.entityId )
+            {
+                conflict = true;
+                existingNodeId = existingKey.entityId;
+                addedNodeId = newKey.entityId;
+            }
+            return null;
+        }
+
+        void checkConflict( Value[] values ) throws IndexEntryConflictException
+        {
+            if ( conflict )
+            {
+                conflict = false;
+                throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( values ) );
+            }
+        }
     }
 }
