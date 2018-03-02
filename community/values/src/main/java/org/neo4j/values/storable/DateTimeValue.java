@@ -156,27 +156,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
-        if ( unit.isTimeBased() && !(input instanceof DateTimeValue || input instanceof LocalDateTimeValue) )
-        {
-            throw new IllegalArgumentException( "Cannot truncate " + input + " to date time with a time based unit." );
-        }
-        LocalDate localDate = input.getDatePart();
-        LocalTime localTime = input.hasTime() ? input.getLocalTimePart() : LocalTimeValue.DEFAULT_LOCAL_TIME;
+        Pair<LocalDate,LocalTime> pair = getTruncatedDateAndTime( unit, input, "date time" );
+
+        LocalDate truncatedDate = pair.first();
+        LocalTime truncatedTime = pair.other();
+
         ZoneId zoneId = input.hasTimeZone() ? input.getZoneId( defaultZone ) : defaultZone.get();
-
-        LocalTime truncatedTime;
-        LocalDate truncatedDate;
-        if ( unit.isDateBased() )
-        {
-            truncatedDate = DateValue.truncateTo( localDate, unit );
-            truncatedTime = LocalTimeValue.DEFAULT_LOCAL_TIME;
-        }
-        else
-        {
-            truncatedDate = localDate;
-            truncatedTime = localTime.truncatedTo( unit );
-        }
-
         ZonedDateTime truncatedZDT = ZonedDateTime.of( truncatedDate, truncatedTime, zoneId );
 
         if ( fields.size() == 0 )
@@ -200,7 +185,6 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             }
 
             truncatedZDT = updateFieldMapWithConflictingSubseconds( updatedFields, unit, truncatedZDT );
-
             if ( updatedFields.size() == 0 )
             {
                 return datetime( truncatedZDT );

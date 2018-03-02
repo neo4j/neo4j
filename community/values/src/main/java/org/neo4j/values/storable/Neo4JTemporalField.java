@@ -35,9 +35,8 @@ import static java.time.temporal.ChronoUnit.DECADES;
 import static java.time.temporal.ChronoUnit.MILLENNIA;
 import static java.time.temporal.ChronoUnit.YEARS;
 
-public enum Neo4JTemporalField implements TemporalField
+enum Neo4JTemporalField implements TemporalField
 {
-
     YEAR_OF_DECADE( "Year of decade", YEARS, DECADES, 10 ),
     YEAR_OF_CENTURY( "Year of century", YEARS, CENTURIES, 100 ),
     YEAR_OF_MILLENNIUM( "Millennium", YEARS, MILLENNIA, 1000 );
@@ -109,7 +108,7 @@ public enum Neo4JTemporalField implements TemporalField
     @Override
     public long getFrom( TemporalAccessor temporal )
     {
-        throw new UnsupportedTemporalTypeException( "We don't support anything." );
+        throw new UnsupportedOperationException( "Getting a " + this.name + " from temporal values is not supported." );
     }
 
     @SuppressWarnings( "unchecked" )

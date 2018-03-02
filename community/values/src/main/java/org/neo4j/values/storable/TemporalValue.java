@@ -1144,4 +1144,28 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
         return truncated;
     }
+
+    static Pair<LocalDate,LocalTime> getTruncatedDateAndTime( TemporalUnit unit, TemporalValue input, String type )
+    {
+        if ( unit.isTimeBased() && !(input instanceof DateTimeValue || input instanceof LocalDateTimeValue) )
+        {
+            throw new IllegalArgumentException( String.format( "Cannot truncate %s to %s with a time based unit.", input, type ) );
+        }
+        LocalDate localDate = input.getDatePart();
+        LocalTime localTime = input.hasTime() ? input.getLocalTimePart() : LocalTimeValue.DEFAULT_LOCAL_TIME;
+
+        LocalTime truncatedTime;
+        LocalDate truncatedDate;
+        if ( unit.isDateBased() )
+        {
+            truncatedDate = DateValue.truncateTo( localDate, unit );
+            truncatedTime = LocalTimeValue.DEFAULT_LOCAL_TIME;
+        }
+        else
+        {
+            truncatedDate = localDate;
+            truncatedTime = localTime.truncatedTo( unit );
+        }
+        return Pair.of( truncatedDate, truncatedTime );
+    }
 }

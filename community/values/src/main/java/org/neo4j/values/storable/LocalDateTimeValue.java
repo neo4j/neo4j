@@ -119,27 +119,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
-        if ( unit.isTimeBased() && !(input instanceof DateTimeValue || input instanceof LocalDateTimeValue) )
-        {
-            throw new IllegalArgumentException( "Cannot truncate " + input + " to local date time with a time based unit." );
-        }
-        LocalTime localTime = input.hasTime() ? input.getLocalTimePart() : LocalTimeValue.DEFAULT_LOCAL_TIME;
-        LocalDate localDate = input.getDatePart();
+        Pair<LocalDate,LocalTime> pair = getTruncatedDateAndTime( unit, input, "local date time" );
 
-        LocalTime truncatedTime;
-        LocalDate truncatedDate;
-        if ( unit.isDateBased() )
-        {
-            truncatedDate = DateValue.truncateTo( localDate, unit );
-            truncatedTime = LocalTimeValue.DEFAULT_LOCAL_TIME;
-        }
-        else
-        {
-            truncatedDate = localDate;
-            truncatedTime = localTime.truncatedTo( unit );
-        }
+        LocalDate truncatedDate = pair.first();
+        LocalTime truncatedTime = pair.other();
 
         LocalDateTime truncatedLDT = LocalDateTime.of( truncatedDate, truncatedTime );
+
         if ( fields.size() == 0 )
         {
             return localDateTime( truncatedLDT );
