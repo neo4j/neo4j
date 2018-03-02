@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.Replicator;
+import org.neo4j.causalclustering.core.state.LateBoundCommandReaderFactory;
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
@@ -65,7 +66,6 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
@@ -183,7 +183,7 @@ public class CoreStateMachinesModule
                 new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine,
                         config.get( state_machine_apply_max_batch_size ), logProvider, cursorTracerSupplier,
                         versionContextSupplier,
-                        dependencies.provideDependency( RecordStorageEngine.class ).get().commandReaderFactory() );
+                        new LateBoundCommandReaderFactory( dependencies ) );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
