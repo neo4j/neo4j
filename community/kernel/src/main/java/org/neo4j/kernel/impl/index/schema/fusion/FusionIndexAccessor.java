@@ -40,9 +40,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
@@ -96,7 +94,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public IndexReader newReader()
     {
-        return new FusionIndexReader( instancesAs( IndexReader.class, accessor -> accessor.newReader() ), selector, descriptor );
+        return new FusionIndexReader( instancesAs( IndexReader.class, IndexAccessor::newReader ), selector, descriptor );
     }
 
     @Override

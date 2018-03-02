@@ -26,9 +26,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 
-import static org.neo4j.helpers.collection.Iterators.array;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
-
 class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexUpdater
 {
     FusionIndexUpdater( IndexUpdater[] updaters, Selector selector )

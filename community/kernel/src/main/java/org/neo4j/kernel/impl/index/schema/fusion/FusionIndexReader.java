@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -39,16 +38,13 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import static org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
 {

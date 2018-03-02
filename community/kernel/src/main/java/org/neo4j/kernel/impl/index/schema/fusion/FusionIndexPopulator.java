@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements IndexPopulator
 {
@@ -122,6 +121,6 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( instancesAs( IndexSample.class, populator -> populator.sampleResult() ) );
+        return combineSamples( instancesAs( IndexSample.class, IndexPopulator::sampleResult ) );
     }
 }

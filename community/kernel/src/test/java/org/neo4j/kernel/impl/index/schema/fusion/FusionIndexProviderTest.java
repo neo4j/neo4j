@@ -148,9 +148,9 @@ public class FusionIndexProviderTest
         // when
         // ... no failure
         IllegalStateException failure = new IllegalStateException( "not failed" );
-        for ( int i = 0; i < providers.length; i++ )
+        for ( IndexProvider provider : providers )
         {
-            when( providers[i].getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( failure );
+            when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( failure );
         }
 
         // then
@@ -194,24 +194,21 @@ public class FusionIndexProviderTest
     @Test
     public void getPopulationFailureMustReportFailureWhenMultipleFail()
     {
+        FusionIndexProvider fusionSchemaIndexProvider = fusionProvider();
+
+        // when
+        String[] failures = new String[providers.length];
         for ( int i = 0; i < providers.length; i++ )
         {
-            FusionIndexProvider fusionSchemaIndexProvider = fusionProvider();
+            failures[i] = "FAILURE[" + i + "]";
+            when( providers[i].getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failures[i] );
+        }
 
-            // when
-            String[] failures = new String[providers.length];
-            for ( int j = 0; j < providers.length; j++ )
-            {
-                failures[j] = "FAILURE[" + j + "]";
-                when( providers[j].getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failures[j] );
-            }
-
-            // then
-            String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
-            for ( String failure : failures )
-            {
-                assertThat( populationFailure, containsString( failure ) );
-            }
+        // then
+        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
+        for ( String failure : failures )
+        {
+            assertThat( populationFailure, containsString( failure ) );
         }
     }
 

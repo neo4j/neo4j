@@ -20,12 +20,9 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import javax.print.attribute.standard.MediaSize;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * Acting as a simplifier for the multiplexing that is going in inside a fusion index. A fusion index consists of multiple parts,
@@ -36,14 +33,14 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  */
 public abstract class FusionIndexBase<T>
 {
-    static final int INSTANCE_COUNT = 5;
+    private static final int INSTANCE_COUNT = 5;
+    private static final String[] NAMES = { "string", "number", "spatial", "temporal", "lucene" };
 
     static final int STRING = 0;
     static final int NUMBER = 1;
     static final int SPATIAL = 2;
     static final int TEMPORAL = 3;
     static final int LUCENE = 4;
-    static final String[] NAMES = { "string", "number", "spatial", "temporal", "lucene" };
 
     final T[] instances;
     final FusionIndexProvider.Selector selector;
@@ -95,6 +92,7 @@ public abstract class FusionIndexBase<T>
      * @param <E> the type of exception anticipated, inferred from the lambda
      * @throws E if consumption fails with this exception
      */
+    @SafeVarargs
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
     {
         E exception = null;
@@ -124,7 +122,7 @@ public abstract class FusionIndexBase<T>
     }
 
     /**
-     * See {@link #forAll(ThrowingConsumer, Iterable)}
+     * See {@link #forAll(ThrowingConsumer, Object[])}
      * NOTE: duplicate of {@link #forAll(ThrowingConsumer, Object[])} to avoid having to wrap subjects of one form into another.
      * There are some real use cases for passing in an Iterable instead of array out there...
      *

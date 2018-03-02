@@ -52,10 +52,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.veri
 
 public class FusionIndexPopulatorTest
 {
-    private IndexPopulator stringPopulator;
-    private IndexPopulator numberPopulator;
-    private IndexPopulator spatialPopulator;
-    private IndexPopulator temporalPopulator;
     private IndexPopulator lucenePopulator;
     private IndexPopulator[] allPopulators;
     private FusionIndexPopulator fusionIndexPopulator;
@@ -65,10 +61,10 @@ public class FusionIndexPopulatorTest
     @Before
     public void mockComponents()
     {
-        stringPopulator = mock( IndexPopulator.class );
-        numberPopulator = mock( IndexPopulator.class );
-        spatialPopulator = mock( IndexPopulator.class );
-        temporalPopulator = mock( IndexPopulator.class );
+        IndexPopulator stringPopulator = mock( IndexPopulator.class );
+        IndexPopulator numberPopulator = mock( IndexPopulator.class );
+        IndexPopulator spatialPopulator = mock( IndexPopulator.class );
+        IndexPopulator temporalPopulator = mock( IndexPopulator.class );
         lucenePopulator = mock( IndexPopulator.class );
         allPopulators = array( stringPopulator, numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
         fusionIndexPopulator = new FusionIndexPopulator( allPopulators, new FusionSelector(), indexId, dropAction );

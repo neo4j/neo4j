@@ -114,13 +114,6 @@ public class FusionIndexReaderTest
         }
     }
 
-    private PrimitiveLongResourceIterator mockReaderForQuery( IndexReader reader ) throws IndexNotApplicableKernelException
-    {
-        PrimitiveLongResourceIterator mockIterator = mock( PrimitiveLongResourceIterator.class );
-        when( reader.query( any( IndexQuery.class ) ) ).thenReturn( mockIterator );
-        return mockIterator;
-    }
-
     /* countIndexedNodes */
 
     @Test

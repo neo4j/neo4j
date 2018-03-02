@@ -24,11 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -48,10 +43,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remo
 
 public class FusionIndexUpdaterTest
 {
-    private IndexUpdater stringUpdater;
-    private IndexUpdater numberUpdater;
-    private IndexUpdater spatialUpdater;
-    private IndexUpdater temporalUpdater;
     private IndexUpdater luceneUpdater;
     private IndexUpdater[] allUpdaters;
     private FusionIndexUpdater fusionIndexUpdater;
@@ -62,10 +53,10 @@ public class FusionIndexUpdaterTest
     @Before
     public void mockComponents()
     {
-        stringUpdater = mock( IndexUpdater.class );
-        numberUpdater = mock( IndexUpdater.class );
-        spatialUpdater = mock( IndexUpdater.class );
-        temporalUpdater = mock( IndexUpdater.class );
+        IndexUpdater stringUpdater = mock( IndexUpdater.class );
+        IndexUpdater numberUpdater = mock( IndexUpdater.class );
+        IndexUpdater spatialUpdater = mock( IndexUpdater.class );
+        IndexUpdater temporalUpdater = mock( IndexUpdater.class );
         luceneUpdater = mock( IndexUpdater.class );
         allUpdaters = array( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater );
         fusionIndexUpdater = new FusionIndexUpdater( allUpdaters, new FusionSelector() );
@@ -262,7 +253,8 @@ public class FusionIndexUpdaterTest
     {
         for ( int i = 0; i < allUpdaters.length; i++ )
         {
-            FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( allUpdaters[i], fusionIndexUpdater );
+            IndexUpdater updater = allUpdaters[i];
+            FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updater, fusionIndexUpdater );
             mockComponents();
         }
     }

@@ -42,7 +42,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 class FusionIndexTestHelp
