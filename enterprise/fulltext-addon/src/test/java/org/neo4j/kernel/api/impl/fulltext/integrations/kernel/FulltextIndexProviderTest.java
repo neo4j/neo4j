@@ -201,19 +201,19 @@ public class FulltextIndexProviderTest
         {
             ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "villa" );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }
@@ -223,19 +223,19 @@ public class FulltextIndexProviderTest
         {
             ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "villa" );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }
@@ -269,19 +269,19 @@ public class FulltextIndexProviderTest
         {
             ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "villa" );
             assertTrue( result.hasNext() );
-            assertEquals( secondRelId, result.next() );
+            assertEquals( secondRelId, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertTrue( result.hasNext() );
-            assertEquals( secondRelId, result.next() );
+            assertEquals( secondRelId, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }
@@ -291,19 +291,19 @@ public class FulltextIndexProviderTest
         {
             ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "villa" );
             assertTrue( result.hasNext() );
-            assertEquals( secondRelId, result.next() );
+            assertEquals( secondRelId, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( secondRelId, result.next() );
+            assertEquals( secondRelId, result.next().entityId() );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }
@@ -336,19 +336,19 @@ public class FulltextIndexProviderTest
         {
             ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "villa" );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }
@@ -358,19 +358,19 @@ public class FulltextIndexProviderTest
         {
             ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "villa" );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next() );
+            assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }
