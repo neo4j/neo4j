@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
@@ -200,7 +201,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     protected void fail( IndexPopulation population, Throwable failure )
     {
-        if ( !populations.remove( population ) )
+        if ( !removeFromOngoingPopulations( population ) )
         {
             return;
         }
@@ -230,10 +231,11 @@ public class MultipleIndexPopulator implements IndexPopulator
         // The reason for having the flipper transition to the failed index context in the first
         // place is that we would otherwise introduce a race condition where updates could come
         // in to the old context, if something failed in the job we send to the flipper.
-        population.flipToFailed( failure );
+        IndexPopulationFailure indexPopulationFailure = failure( failure );
+        population.flipToFailed( indexPopulationFailure );
         try
         {
-            population.populator.markAsFailed( failure( failure ).asString() );
+            population.populator.markAsFailed( indexPopulationFailure.asString() );
             population.populator.close( false );
         }
         catch ( Throwable e )
@@ -285,10 +287,14 @@ public class MultipleIndexPopulator implements IndexPopulator
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
     }
 
-    public void replaceIndexCounts( long uniqueElements, long maxUniqueElements, long indexSize )
+    void resetIndexCounts()
     {
-        forEachPopulation( population ->
-                storeView.replaceIndexCounts( population.indexId, uniqueElements, maxUniqueElements, indexSize ) );
+        forEachPopulation( this::resetIndexCountsForPopulation );
+    }
+
+    private void resetIndexCountsForPopulation( IndexPopulation indexPopulation )
+    {
+        storeView.replaceIndexCounts( indexPopulation.indexId, 0, 0, 0 );
     }
 
     void flipAfterPopulation()
@@ -297,8 +303,11 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             try
             {
-                population.flip();
-                populations.remove( population );
+                if ( population.markCompleted() )
+                {
+                    population.flip();
+                    removeFromOngoingPopulations( population );
+                }
             }
             catch ( Throwable t )
             {
@@ -324,8 +333,29 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public void cancel()
     {
-        replaceIndexCounts( 0, 0, 0 );
-        close( false );
+        forEachPopulation( this::cancelIndexPopulation );
+    }
+
+    void cancelIndexPopulation( IndexPopulation indexPopulation )
+    {
+        if ( indexPopulation.markCompleted() )
+        {
+            try
+            {
+                resetIndexCountsForPopulation( indexPopulation );
+                indexPopulation.populator.close( false );
+                removeFromOngoingPopulations( indexPopulation );
+            }
+            catch ( IOException e )
+            {
+                fail( indexPopulation, e );
+            }
+        }
+    }
+
+    private boolean removeFromOngoingPopulations( IndexPopulation indexPopulation )
+    {
+        return populations.remove( indexPopulation );
     }
 
     void populateFromQueueBatched( long currentlyIndexedNodeId )
@@ -468,6 +498,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         private final IndexCountsRemover indexCountsRemover;
         private final FailedIndexProxyFactory failedIndexProxyFactory;
         private final String indexUserDescription;
+        private final AtomicBoolean completedPopulation = new AtomicBoolean();
 
         List<IndexEntryUpdate<?>> batchedUpdates;
 
@@ -489,10 +520,14 @@ public class MultipleIndexPopulator implements IndexPopulator
             this.batchedUpdates = new ArrayList<>( BATCH_SIZE );
         }
 
-        private void flipToFailed( Throwable t )
+        private void flipToFailed( IndexPopulationFailure failure )
         {
-            flipper.flipTo(
-                    new FailedIndexProxy( indexMeta, indexUserDescription, populator, failure( t ), indexCountsRemover, logProvider ) );
+            flipper.flipTo( new FailedIndexProxy( indexMeta, indexUserDescription, populator, failure, indexCountsRemover, logProvider ) );
+        }
+
+        boolean markCompleted()
+        {
+            return completedPopulation.compareAndSet( false, true );
         }
 
         private void onUpdate( IndexEntryUpdate<?> update )

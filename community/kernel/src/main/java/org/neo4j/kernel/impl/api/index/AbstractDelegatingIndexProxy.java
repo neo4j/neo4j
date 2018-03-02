@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -57,9 +56,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop() throws IOException
+    public void drop() throws IOException
     {
-        return getDelegate().drop();
+        getDelegate().drop();
     }
 
     @Override
@@ -105,9 +104,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> close() throws IOException
+    public void close() throws IOException
     {
-        return getDelegate().close();
+        getDelegate().close();
     }
 
     @Override

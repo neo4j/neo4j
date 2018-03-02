@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -31,14 +32,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelExcept
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.CleanupRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
@@ -60,7 +58,7 @@ public class FlippableIndexProxyTest
 
         // WHEN
         delegate.flip( noOp(), null );
-        delegate.drop().get();
+        delegate.drop();
 
         // THEN
         verify( other ).drop();
@@ -76,7 +74,7 @@ public class FlippableIndexProxyTest
         FlippableIndexProxy delegate = new FlippableIndexProxy( actual );
 
         //WHEN
-        delegate.close().get();
+        delegate.close();
 
         delegate.setFlipTarget( indexContextFactory );
 
@@ -98,7 +96,7 @@ public class FlippableIndexProxyTest
         delegate.setFlipTarget( indexContextFactory );
 
         //WHEN
-        delegate.drop().get();
+        delegate.drop();
 
         //THEN
         expectedException.expect( IndexProxyAlreadyClosedKernelException.class );
@@ -164,17 +162,18 @@ public class FlippableIndexProxyTest
         }
 
         // when
-        flipper.drop().get();
+        flipper.drop();
 
         // then the waiting should quickly be over
         waiting.get( 10, SECONDS );
     }
 
     private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
+            throws IOException
     {
         return state ->
         {
-            awaitFuture( flippable.drop() );
+            flippable.drop();
             return null;
         };
     }

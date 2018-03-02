@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -134,11 +133,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public Future<Void> drop() throws IOException
+    public void drop() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
         {
-            return super.drop();
+            super.drop();
+            return;
         }
 
         if ( State.STARTING == state.get() )
@@ -149,18 +149,20 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             waitOpenCallsToClose();
-            return super.drop();
+            super.drop();
+            return;
         }
 
         throw new IllegalStateException( "IndexProxy already closed" );
     }
 
     @Override
-    public Future<Void> close() throws IOException
+    public void close() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
         {
-            return super.close();
+            super.close();
+            return;
         }
 
         if ( state.compareAndSet( State.STARTING, State.CLOSED ) )
@@ -171,7 +173,8 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             waitOpenCallsToClose();
-            return super.close();
+            super.close();
+            return;
         }
 
         throw new IllegalStateException( "IndexProxy already closed" );

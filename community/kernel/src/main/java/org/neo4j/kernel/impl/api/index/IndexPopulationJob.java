@@ -58,15 +58,14 @@ public class IndexPopulationJob implements Runnable
     /**
      * Adds an {@link IndexPopulator} to be populated in this store scan. All participating populators must
      * be added before calling {@link #run()}.
-     *
-     * @param populator {@link IndexPopulator} to participate.
+     *  @param populator {@link IndexPopulator} to participate.
      * @param indexId id of index.
      * @param indexMeta {@link IndexMeta} meta information about index.
      * @param indexUserDescription user description of this index.
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
      * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
-    void addPopulator( IndexPopulator populator,
+    MultipleIndexPopulator.IndexPopulation addPopulator( IndexPopulator populator,
             long indexId,
             IndexMeta indexMeta,
             String indexUserDescription,
@@ -74,7 +73,8 @@ public class IndexPopulationJob implements Runnable
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        this.multiPopulator.addPopulator( populator, indexId, indexMeta, flipper, failedIndexProxyFactory, indexUserDescription );
+        return this.multiPopulator.addPopulator( populator, indexId, indexMeta, flipper, failedIndexProxyFactory,
+                indexUserDescription );
     }
 
     /**
@@ -96,7 +96,7 @@ public class IndexPopulationJob implements Runnable
             try
             {
                 multiPopulator.create();
-                multiPopulator.replaceIndexCounts( 0, 0, 0 );
+                multiPopulator.resetIndexCounts();
 
                 monitor.indexPopulationScanStarting();
                 indexAllNodes();
@@ -107,7 +107,6 @@ public class IndexPopulationJob implements Runnable
                     // We remain in POPULATING state
                     return;
                 }
-
                 multiPopulator.flipAfterPopulation();
 
                 schemaState.clear();
@@ -149,7 +148,12 @@ public class IndexPopulationJob implements Runnable
             storeScan.stop();
         }
 
-        return latchGuardedValue( Suppliers.<Void>singleton( null ), doneSignal, "Index population job cancel" );
+        return latchGuardedValue( Suppliers.singleton( null ), doneSignal, "Index population job cancel" );
+    }
+
+    void cancelPopulation( MultipleIndexPopulator.IndexPopulation population )
+    {
+        multiPopulator.cancelIndexPopulation( population );
     }
 
     /**

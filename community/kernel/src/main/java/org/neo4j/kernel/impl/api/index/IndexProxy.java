@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -68,17 +67,15 @@ public interface IndexProxy extends LabelSchemaSupplier
     IndexUpdater newUpdater( IndexUpdateMode mode );
 
     /**
-     * Initiates dropping this index context. The returned {@link Future} can be used to await
-     * its completion.
+     * Drop index.
      * Must close the context as well.
      */
-    Future<Void> drop() throws IOException;
+    void drop() throws IOException;
 
     /**
-     * Initiates a closing of this index context. The returned {@link Future} can be used to await
-     * its completion.
+     * Close this index context.
      */
-    Future<Void> close() throws IOException;
+    void close() throws IOException;
 
     IndexDescriptor getDescriptor();
 
