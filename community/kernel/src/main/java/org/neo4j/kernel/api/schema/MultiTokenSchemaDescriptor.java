@@ -73,14 +73,15 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     @Override
     public String toString()
     {
-        return "MultiTokenSchemaDescriptor[" + userDescription( SchemaUtil.idTokenNameLookup )+ "]";
+        return "MultiTokenSchemaDescriptor[" + userDescription( SchemaUtil.idTokenNameLookup ) + "]";
     }
 
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return String.format( entityType + ":%s(%s)",
-                Arrays.stream( tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ).collect( joining( ", " ) ),
+                Arrays.stream( tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) )
+                      .collect( joining( ", " ) ),
                 SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
     }
 
@@ -114,7 +115,8 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
         {
             return ResourceTypes.RELATIONSHIP_TYPE;
         }
-        throw new UnsupportedOperationException( "Keys for non-schema indexes of type " + entityType + " is not supported." );
+        throw new UnsupportedOperationException(
+                "Keys for non-schema indexes of type " + entityType + " is not supported." );
     }
 
     @Override
@@ -147,7 +149,8 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
             return false;
         }
         MultiTokenSchemaDescriptor that = (MultiTokenSchemaDescriptor) o;
-        return Arrays.equals( entityTokens, that.entityTokens ) && entityType == that.entityType && Arrays.equals( propertyIds, that.propertyIds );
+        return Arrays.equals( entityTokens, that.entityTokens ) && entityType == that.entityType &&
+               Arrays.equals( propertyIds, that.propertyIds );
     }
 
     @Override
