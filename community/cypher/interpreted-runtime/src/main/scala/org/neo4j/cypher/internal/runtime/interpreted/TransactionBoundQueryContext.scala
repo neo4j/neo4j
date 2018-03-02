@@ -524,7 +524,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeIsDense(node: Long): Boolean = {
     val cursor = nodeCursor
     reads().singleNode(node, cursor)
-    cursor.isDense
+    if (!cursor.next()) false
+    else cursor.isDense
   }
 
   override def asObject(value: AnyValue): Any = {
