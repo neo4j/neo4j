@@ -79,7 +79,7 @@ public enum TemporalType
                 @Override
                 public Value decodeForTemporal( long[] valueBlocks, int offset )
                 {
-                    long epochDay = valueIsInlined( valueBlocks[0] ) ? valueBlocks[offset] >>> 33 : valueBlocks[1 + offset];
+                    long epochDay = valueIsInlined( valueBlocks[offset] ) ? valueBlocks[offset] >>> 33 : valueBlocks[1 + offset];
                     return DateValue.epochDate( epochDay );
                 }
 
@@ -120,7 +120,7 @@ public enum TemporalType
                 @Override
                 public Value decodeForTemporal( long[] valueBlocks, int offset )
                 {
-                    long nanoOfDay = valueIsInlined( valueBlocks[0] ) ? valueBlocks[offset] >>> 33 : valueBlocks[1 + offset];
+                    long nanoOfDay = valueIsInlined( valueBlocks[offset] ) ? valueBlocks[offset] >>> 33 : valueBlocks[1 + offset];
                     return LocalTimeValue.localTime( nanoOfDay );
                 }
 
@@ -238,7 +238,7 @@ public enum TemporalType
                 @Override
                 public Value decodeForTemporal( long[] valueBlocks, int offset )
                 {
-                    if ( storingZoneOffset( valueBlocks[0] ) )
+                    if ( storingZoneOffset( valueBlocks[offset] ) )
                     {
                         int nanoOfSecond = (int) (valueBlocks[offset] >>> 33);
                         long epochSecond = valueBlocks[1 + offset];
