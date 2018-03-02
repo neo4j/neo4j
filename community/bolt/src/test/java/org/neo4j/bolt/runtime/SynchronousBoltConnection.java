@@ -65,12 +65,6 @@ public class SynchronousBoltConnection implements BoltConnection
     }
 
     @Override
-    public String principal()
-    {
-        return machine.owner();
-    }
-
-    @Override
     public boolean hasPendingJobs()
     {
         return false;

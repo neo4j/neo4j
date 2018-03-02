@@ -28,6 +28,4 @@ public interface ExecutorFactory
 
     ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, ThreadFactory threadFactory );
 
-    void destroy( ExecutorService executor );
-
 }

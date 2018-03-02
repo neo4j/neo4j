@@ -22,6 +22,7 @@ package org.neo4j.bolt.runtime;
 import io.netty.channel.Channel;
 
 import java.net.SocketAddress;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.neo4j.bolt.v1.runtime.Job;
 
@@ -57,13 +58,6 @@ public interface BoltConnection
     Channel channel();
 
     /**
-     * Returns the principal the client used to connect
-     *
-     * @return user name
-     */
-    String principal();
-
-    /**
      * Returns whether there's any pending Job waiting to be processed
      *
      * @return true when there's at least one job in the queue
@@ -89,6 +83,13 @@ public interface BoltConnection
      */
     boolean processNextBatch();
 
+    /**
+     * Invoked when an exception is caught during the scheduling of the pending jobs. The caught exception would mostly
+     * be {@link RejectedExecutionException} which is thrown by the thread pool executor when it fails to accept
+     * submitted jobs
+     *
+     * @param t the exception occurred during scheduling
+     */
     void handleSchedulingError( Throwable t );
 
     /**

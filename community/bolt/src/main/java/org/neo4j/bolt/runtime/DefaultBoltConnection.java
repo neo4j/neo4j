@@ -109,12 +109,6 @@ public class DefaultBoltConnection implements BoltConnection
     }
 
     @Override
-    public String principal()
-    {
-        return machine.owner();
-    }
-
-    @Override
     public boolean hasPendingJobs()
     {
         return !queue.isEmpty();
@@ -129,8 +123,7 @@ public class DefaultBoltConnection implements BoltConnection
     @Override
     public void enqueue( Job job )
     {
-        queue.offer( job );
-        notifyEnqueued( job );
+        enqueueInternal( job );
     }
 
     @Override
@@ -254,10 +247,11 @@ public class DefaultBoltConnection implements BoltConnection
         {
             machine.terminate();
 
-            if ( !hasPendingJobs() )
+            // Enqueue an empty job for close to be handled linearly
+            enqueueInternal( ignore ->
             {
-                processNextBatch( 0 );
-            }
+
+            } );
         }
     }
 
@@ -278,6 +272,12 @@ public class DefaultBoltConnection implements BoltConnection
                 notifyDestroyed();
             }
         }
+    }
+
+    private void enqueueInternal( Job job )
+    {
+        queue.offer( job );
+        notifyEnqueued( job );
     }
 
     private void notifyCreated()

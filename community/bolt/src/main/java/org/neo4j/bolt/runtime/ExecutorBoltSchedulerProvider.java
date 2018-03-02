@@ -27,6 +27,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
 public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements BoltSchedulerProvider
@@ -35,6 +36,7 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
     private final LogService logService;
+    private final Log internalLog;
     private final ConcurrentHashMap<String, BoltScheduler> boltSchedulers;
 
     private ExecutorService forkJoinThreadPool;
@@ -45,11 +47,12 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
         this.executorFactory = executorFactory;
         this.scheduler = scheduler;
         this.logService = logService;
+        this.internalLog = logService.getInternalLog( getClass() );
         this.boltSchedulers = new ConcurrentHashMap<>();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         forkJoinThreadPool = new ForkJoinPool();
         config.enabledBoltConnectors().forEach( connector ->
@@ -64,13 +67,25 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
-        boltSchedulers.values().forEach( s -> s.stop() );
+        boltSchedulers.values().forEach( this::stopScheduler );
         boltSchedulers.clear();
 
         forkJoinThreadPool.shutdown();
         forkJoinThreadPool = null;
+    }
+
+    private void stopScheduler( BoltScheduler scheduler )
+    {
+        try
+        {
+            scheduler.stop();
+        }
+        catch ( Throwable t )
+        {
+            internalLog.warn( String.format( "An unexpected error occurred while stopping BoltScheduler [%s]", scheduler.connector() ), t );
+        }
     }
 
     @Override

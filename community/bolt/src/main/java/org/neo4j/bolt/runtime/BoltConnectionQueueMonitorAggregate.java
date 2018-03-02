@@ -33,7 +33,7 @@ public class BoltConnectionQueueMonitorAggregate implements BoltConnectionQueueM
 
     public BoltConnectionQueueMonitorAggregate( BoltConnectionQueueMonitor... monitors )
     {
-        this.monitors = new ArrayList<>( Arrays.asList( monitors ) );
+        this.monitors = Arrays.asList( monitors );
     }
 
     @Override

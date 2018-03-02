@@ -125,7 +125,6 @@ public class ResetFuzzTest
         // given
         life.start();
         BoltConnection boltConnection = connectionFactory.newConnection( boltChannel );
-        boltConnection.start();
         boltConnection.enqueue( session -> session.init( "ResetFuzzTest/0.0", Collections.emptyMap(), nullResponseHandler() ) );
 
         NullBoltMessageLogger boltLogger = NullBoltMessageLogger.getInstance();

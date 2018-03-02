@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
@@ -101,8 +102,9 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void shutdownShouldTerminateThreadPool() throws Throwable
     {
+        ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
-        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
+        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( cachedThreadPool );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
                         ForkJoinPool.commonPool() );
@@ -110,7 +112,7 @@ public class ExecutorBoltSchedulerTest
         scheduler.start();
         scheduler.stop();
 
-        verify( mockExecutorFactory, times( 1 ) ).destroy( any() );
+        assertTrue( cachedThreadPool.isShutdown() );
     }
 
     @Test
@@ -202,16 +204,17 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void successfulJobsShouldTriggerSchedulingOfPendingJobs() throws Throwable
     {
+        AtomicInteger counter = new AtomicInteger();
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
-        when( connection.processNextBatch() ).thenReturn( true );
+        when( connection.processNextBatch() ).thenAnswer( inv -> counter.incrementAndGet() > 0 );
         when( connection.hasPendingJobs() ).thenReturn( true ).thenReturn( false );
 
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 
-        Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
+        Predicates.await( () -> counter.get() > 1, 1, MINUTES );
 
         verify( connection, times( 2 ) ).processNextBatch();
     }

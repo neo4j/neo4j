@@ -84,7 +84,7 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         if ( executorService != null && !executorService.isTerminated() )
         {
-            factory.destroy( executorService );
+            executorService.shutdown();
         }
     }
 
@@ -174,33 +174,6 @@ public class CachedThreadPoolExecutorFactoryTest
         try
         {
             factory.create( 10, 5, Duration.ZERO, 0, newThreadFactory() );
-            fail( "should throw exception" );
-        }
-        catch ( IllegalArgumentException ex )
-        {
-            // expected
-        }
-    }
-
-    @Test
-    public void destroyShouldShutdownExecutor()
-    {
-        executorService = factory.create( 0, 1, Duration.ZERO, 0, newThreadFactory() );
-
-        factory.destroy( executorService );
-
-        assertTrue( executorService.isShutdown() );
-        assertTrue( executorService.isTerminated() );
-    }
-
-    @Test
-    public void destroyShouldNotDestroyExecutorsCreatedElsewhere()
-    {
-        ExecutorService otherExecutorService = Executors.newSingleThreadExecutor();
-
-        try
-        {
-            factory.destroy( otherExecutorService );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )

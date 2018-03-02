@@ -22,6 +22,8 @@ package org.neo4j.bolt.runtime;
 public interface BoltScheduler extends BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
 {
 
+    String connector();
+
     void start();
 
     void stop();

@@ -114,17 +114,6 @@ public class DefaultBoltConnectionTest
     }
 
     @Test
-    public void principalShouldReturnBoltStateMachineOwner()
-    {
-        BoltConnection connection = newConnection();
-
-        String principal = connection.principal();
-
-        verify( stateMachine ).owner();
-        assertEquals( stateMachine.owner(), principal );
-    }
-
-    @Test
     public void hasPendingJobsShouldReportFalseWhenInitialised()
     {
         BoltConnection connection = newConnection();
@@ -257,6 +246,8 @@ public class DefaultBoltConnectionTest
         BoltConnection connection = newConnection();
 
         connection.stop();
+
+        connection.processNextBatch();
 
         verify( stateMachine ).terminate();
         verify( stateMachine ).close();

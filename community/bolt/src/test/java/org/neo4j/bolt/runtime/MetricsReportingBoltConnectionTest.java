@@ -59,6 +59,7 @@ public class MetricsReportingBoltConnectionTest
 
         connection.start();
         connection.stop();
+        connection.processNextBatch();
 
         verify( metricsMonitor ).connectionClosed();
     }

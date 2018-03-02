@@ -796,31 +796,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
             GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
 
-    @Description( "The number of threads that will be created upon initialisation to handle standard bolt requests." )
-    @Internal
-    public static final Setting<Integer> bolt_thread_pool_std_core_size =
-            buildSetting( "unsupported.dbms.bolt.thread_pool.std.core_size", INTEGER, "10" ).build();
-
-    @Description( "The maximum number of threads that can serve standard bolt requests. When this limit is reached, upcoming requests will be rejected." )
-    @Internal
-    public static final Setting<Integer> bolt_thread_pool_std_max_size =
-            buildSetting( "unsupported.dbms.bolt.thread_pool.std.max_size", INTEGER, "100" ).build();
-
-    @Description( "The number of threads that will be created upon initialisation to handle out-of-band bolt requests." )
-    @Internal
-    public static final Setting<Integer> bolt_thread_pool_oob_core_size =
-            buildSetting( "unsupported.dbms.bolt.thread_pool.oob.core_size", INTEGER, "1" ).build();
-
-    @Description( "The maximum number of threads that can serve out-of-band bolt requests. When this limit is reached, upcoming requests will be rejected." )
-    @Internal
-    public static final Setting<Integer> bolt_thread_pool_oob_max_size =
-            buildSetting( "unsupported.dbms.bolt.thread_pool.oob.max_size", INTEGER, "10" ).build();
-
-    @Description( "The duration after which an idle thread will be destroyed from the thread pools." )
-    @Internal
-    public static final Setting<Duration> bolt_thread_pool_keep_live =
-            buildSetting( "unsupported.dbms.bolt.thread_pool.keep_live", DURATION, "1m" ).build();
-
     @Description( "Whether to apply network level write throttling" )
     @Internal
     public static final Setting<Boolean> bolt_write_throttle = setting( "unsupported.dbms.bolt.write_throttle", BOOLEAN, TRUE );

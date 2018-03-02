@@ -61,48 +61,19 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
         return result;
     }
 
-    @Override
-    public void destroy( ExecutorService executor )
-    {
-        if ( !( executor instanceof ThreadPool ) )
-        {
-            throw new IllegalArgumentException(
-                    String.format( "The passed executor should already be created by '%s#create()'.", CachedThreadPoolExecutorFactory.class.getName() ) );
-        }
-
-        executor.shutdown();
-        try
-        {
-            if ( !executor.awaitTermination( 10, TimeUnit.SECONDS ) )
-            {
-                executor.shutdownNow();
-
-                if ( !executor.awaitTermination( 10, TimeUnit.SECONDS ) )
-                {
-                    log.error( "Thread pool did not terminate gracefully despite all efforts" );
-                }
-            }
-        }
-        catch ( InterruptedException ex )
-        {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private static BlockingQueue createTaskQueue( int queueSize )
+    private static BlockingQueue<Runnable> createTaskQueue( int queueSize )
     {
         if ( queueSize == UNBOUNDED_QUEUE )
         {
-            return new LinkedBlockingQueue();
+            return new LinkedBlockingQueue<>();
         }
         else if ( queueSize == SYNCHRONOUS_QUEUE )
         {
-            return new SynchronousQueue();
+            return new SynchronousQueue<>();
         }
         else if ( queueSize > 0 )
         {
-            return new ArrayBlockingQueue( queueSize );
+            return new ArrayBlockingQueue<>( queueSize );
         }
 
         throw new IllegalArgumentException( String.format( "Unsupported queue size %d for thread pool creation.", queueSize ) );

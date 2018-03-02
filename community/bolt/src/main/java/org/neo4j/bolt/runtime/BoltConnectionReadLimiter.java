@@ -75,13 +75,13 @@ public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
     @Override
     public void enqueued( BoltConnection to, Job job )
     {
-        checkLimitsOnEnqueue( to, counters.compute( to.id(), ( k, v ) -> v == null ? new AtomicInteger( 0 ) : v ).incrementAndGet() );
+        checkLimitsOnEnqueue( to, counters.computeIfAbsent( to.id(), k -> new AtomicInteger( 0 ) ).incrementAndGet() );
     }
 
     @Override
     public void drained( BoltConnection from, Collection<Job> batch )
     {
-        checkLimitsOnDequeue( from, counters.compute( from.id(), ( k, v ) -> v == null ? new AtomicInteger( 0 ) : v ).addAndGet( -batch.size() ) );
+        checkLimitsOnDequeue( from, counters.computeIfAbsent( from.id(), k -> new AtomicInteger( 0 ) ).addAndGet( -batch.size() ) );
     }
 
     private void checkLimitsOnEnqueue( BoltConnection connection, int currentSize )

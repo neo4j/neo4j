@@ -209,7 +209,7 @@ public class SocketTransportHandlerTest
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( stateMachine );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, logProvider, BOLT_LOGGING );
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, logProvider, BOLT_LOGGING );
 
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         EmbeddedChannel channel = new EmbeddedChannel();
