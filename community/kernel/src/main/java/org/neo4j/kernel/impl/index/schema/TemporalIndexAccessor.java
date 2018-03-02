@@ -1,0 +1,280 @@
+/*
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.index.schema;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.CombiningIterable;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexReader;
+
+import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+
+class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.PartAccessor<?>, IOException> implements IndexAccessor
+{
+    private final IndexDescriptor descriptor;
+
+    TemporalIndexAccessor( long indexId,
+                           IndexDescriptor descriptor,
+                           IndexSamplingConfig samplingConfig,
+                           PageCache pageCache,
+                           FileSystemAbstraction fs,
+                           RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                           SchemaIndexProvider.Monitor monitor,
+                           TemporalIndexFiles temporalIndexFiles ) throws IOException
+    {
+        super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig, temporalIndexFiles ) );
+        this.descriptor = descriptor;
+
+        temporalIndexFiles.loadExistingIndexes( this );
+    }
+
+    @Override
+    public void drop() throws IOException
+    {
+        forAll( NativeSchemaIndexAccessor::drop, this );
+    }
+
+    @Override
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    {
+        return new IndexUpdater()
+        {
+            @Override
+            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+            {
+                throw new UnsupportedOperationException( "Not yet" );
+            }
+
+            @Override
+            public void close() throws IOException, IndexEntryConflictException
+            {
+            }
+        };
+    }
+
+    @Override
+    public void force( IOLimiter ioLimiter ) throws IOException
+    {
+        for ( NativeSchemaIndexAccessor part : this )
+        {
+            part.force( ioLimiter );
+        }
+    }
+
+    @Override
+    public void refresh()
+    {
+        // not required in this implementation
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        forAll( NativeSchemaIndexAccessor::close, this );
+    }
+
+    @Override
+    public IndexReader newReader()
+    {
+        return new TemporalIndexReader( descriptor, this );
+    }
+
+    @Override
+    public BoundedIterable<Long> newAllEntriesReader()
+    {
+        ArrayList<BoundedIterable<Long>> allEntriesReader = new ArrayList<>();
+        for ( NativeSchemaIndexAccessor<?,?> part : this )
+        {
+            allEntriesReader.add( part.newAllEntriesReader() );
+        }
+
+        return new BoundedIterable<Long>()
+        {
+            @Override
+            public long maxCount()
+            {
+                long sum = 0L;
+                for ( BoundedIterable<Long> part : allEntriesReader )
+                {
+                    long partMaxCount = part.maxCount();
+                    if ( partMaxCount == UNKNOWN_MAX_COUNT )
+                    {
+                        return UNKNOWN_MAX_COUNT;
+                    }
+                    sum += partMaxCount;
+                }
+                return sum;
+            }
+
+            @Override
+            public void close() throws Exception
+            {
+                forAll( BoundedIterable::close, allEntriesReader );
+            }
+
+            @Override
+            public Iterator<Long> iterator()
+            {
+                return new CombiningIterable<>( allEntriesReader ).iterator();
+            }
+        };
+    }
+
+    @Override
+    public ResourceIterator<File> snapshotFiles()
+    {
+        List<ResourceIterator<File>> snapshotFiles = new ArrayList<>();
+        for ( NativeSchemaIndexAccessor<?,?> part : this )
+        {
+            snapshotFiles.add( part.snapshotFiles() );
+        }
+        return concatResourceIterators( snapshotFiles.iterator() );
+    }
+
+    @Override
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+    {
+        // Not needed since uniqueness is verified automatically w/o cost for every update.
+    }
+
+    @Override
+    public boolean isDirty()
+    {
+        return Iterators.stream( iterator() ).anyMatch( NativeSchemaIndexAccessor::isDirty );
+    }
+
+    static class PartAccessor<KEY extends NativeSchemaKey> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
+    {
+        private final Layout<KEY,NativeSchemaValue> layout;
+        private final IndexDescriptor descriptor;
+        private final IndexSamplingConfig samplingConfig;
+
+        PartAccessor( PageCache pageCache,
+                      FileSystemAbstraction fs,
+                      TemporalIndexFiles.FileLayout<KEY> fileLayout,
+                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                      SchemaIndexProvider.Monitor monitor,
+                      IndexDescriptor descriptor,
+                      long indexId,
+                      IndexSamplingConfig samplingConfig ) throws IOException
+        {
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+            this.layout = fileLayout.layout;
+            this.descriptor = descriptor;
+            this.samplingConfig = samplingConfig;
+        }
+
+        @Override
+        public TemporalIndexPartReader<KEY> newReader()
+        {
+            return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
+        }
+    }
+
+    static class PartFactory implements TemporalIndexCache.Factory<PartAccessor<?>, IOException>
+    {
+        private final PageCache pageCache;
+        private final FileSystemAbstraction fs;
+        private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+        private final SchemaIndexProvider.Monitor monitor;
+        private final IndexDescriptor descriptor;
+        private final long indexId;
+        private final IndexSamplingConfig samplingConfig;
+        private final TemporalIndexFiles temporalIndexFiles;
+
+        PartFactory( PageCache pageCache,
+                     FileSystemAbstraction fs,
+                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                     SchemaIndexProvider.Monitor monitor,
+                     IndexDescriptor descriptor,
+                     long indexId,
+                     IndexSamplingConfig samplingConfig,
+                     TemporalIndexFiles temporalIndexFiles )
+        {
+            this.pageCache = pageCache;
+            this.fs = fs;
+            this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+            this.monitor = monitor;
+            this.descriptor = descriptor;
+            this.indexId = indexId;
+            this.samplingConfig = samplingConfig;
+            this.temporalIndexFiles = temporalIndexFiles;
+        }
+
+        @Override
+        public PartAccessor<?> newDate() throws IOException
+        {
+            return new PartAccessor<>( pageCache, fs, temporalIndexFiles.date(),
+                    recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+        }
+
+        @Override
+        public PartAccessor<?> newDateTime() throws IOException
+        {
+            throw new UnsupportedOperationException( "no comprende" );
+        }
+
+        @Override
+        public PartAccessor<?> newDateTimeZoned() throws IOException
+        {
+            throw new UnsupportedOperationException( "no comprende" );
+        }
+
+        @Override
+        public PartAccessor<?> newTime() throws IOException
+        {
+            throw new UnsupportedOperationException( "no comprende" );
+        }
+
+        @Override
+        public PartAccessor<?> newTimeZoned() throws IOException
+        {
+            throw new UnsupportedOperationException( "no comprende" );
+        }
+
+        @Override
+        public PartAccessor<?> newDuration() throws IOException
+        {
+            throw new UnsupportedOperationException( "no comprende" );
+        }
+    }
+}

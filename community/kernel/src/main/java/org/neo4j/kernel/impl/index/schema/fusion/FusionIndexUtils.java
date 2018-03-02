@@ -47,7 +47,7 @@ public abstract class FusionIndexUtils
      * @param <E> the type of exception anticipated, inferred from the lambda
      * @throws E if consumption fails with this exception
      */
-    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, Collection<T> subjects ) throws E
+    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, Iterable<T> subjects ) throws E
     {
         E exception = null;
         for ( T subject : subjects )
@@ -76,7 +76,7 @@ public abstract class FusionIndexUtils
     }
 
     /**
-     * See {@link FusionIndexUtils#forAll(ThrowingConsumer, Collection)}
+     * See {@link FusionIndexUtils#forAll(ThrowingConsumer, Iterable)}
      */
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
     {

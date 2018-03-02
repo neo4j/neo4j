@@ -35,10 +35,8 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -74,6 +72,11 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
+    }
+
+    public void clear() throws IOException
+    {
+        gbpTreeFileUtil.deleteFileIfPresent( storeFile );
     }
 
     @Override
@@ -119,9 +122,9 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
+    public NativePopulatingUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        return new IndexUpdater()
+        return new NativePopulatingUpdater()
         {
             private boolean closed;
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();

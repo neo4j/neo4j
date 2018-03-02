@@ -17,28 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.inmemory;
+package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.values.storable.Value;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexUpdater;
 
-public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
+/**
+ * IndexUpdater which does not throw on process.
+ */
+public interface NativePopulatingUpdater extends IndexUpdater
 {
     @Override
-    protected SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
-    {
-        return new InMemoryIndexProvider();
-    }
+    void process( IndexEntryUpdate<?> update );
 
     @Override
-    public Iterable<Value> getSupportedValues()
-    {
-        return Iterables.concat( commonValues, spatialValues, temporalValues );
-    }
+    void close() throws IOException;
 }

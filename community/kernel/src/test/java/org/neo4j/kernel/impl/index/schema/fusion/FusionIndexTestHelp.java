@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -63,6 +64,11 @@ class FusionIndexTestHelp
                     Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0, 789.0 ),
                     Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 )
             };
+    private static final Value[] temporalValues = new Value[]
+            {
+                    DateValue.epochDate( 1 ),
+                    DateValue.epochDate( 10000 )
+            };
     private static final Value[] otherValues = new Value[]
             {
                     Values.booleanValue( true ),
@@ -91,9 +97,14 @@ class FusionIndexTestHelp
         return pointValues;
     }
 
+    static Value[] valuesSupportedByTemporal()
+    {
+        return temporalValues;
+    }
+
     private static Value[] valuesNotSupportedByNative()
     {
-        return ArrayUtils.addAll( pointValues, otherValues );
+        return ArrayUtils.addAll( temporalValues, ArrayUtils.addAll( pointValues, otherValues ) );
     }
 
     static Value[] valuesNotSupportedByNativeOrSpatial()

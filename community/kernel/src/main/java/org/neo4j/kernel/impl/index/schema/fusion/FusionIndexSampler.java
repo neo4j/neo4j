@@ -25,11 +25,11 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
-class FusionIndexSampler implements IndexSampler
+public class FusionIndexSampler implements IndexSampler
 {
     private final IndexSampler[] samplers;
 
-    FusionIndexSampler( IndexSampler... samplers )
+    public FusionIndexSampler( IndexSampler... samplers )
     {
         this.samplers = samplers;
     }

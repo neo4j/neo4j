@@ -22,16 +22,23 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -42,8 +49,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -58,6 +67,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         super( testSuite, descriptor );
     }
+
+    private final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
 
     @Test
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
@@ -122,15 +133,14 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         {
             p.create();
             long nodeId = 1;
-            PropertyAccessor propertyAccessor =
-                    ( nodeId1, propertyKeyId ) -> propertyValue;
 
-            // this update (using add())...
-            p.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor.schema(), propertyValue ) ) );
-            // ...is the same as this update (using update())
-            try ( IndexUpdater updater = p.newPopulatingUpdater( propertyAccessor ) )
+            // update using populator...
+            IndexEntryUpdate<LabelSchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
+            p.add( singletonList( update ) );
+            // ...is the same as update using updater
+            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId ) -> propertyValue ) )
             {
-                updater.process( add( nodeId, descriptor.schema(), propertyValue ) );
+                updater.process( update );
             }
 
             p.close( true );
@@ -144,6 +154,104 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
+            }
+            accessor.close();
+        }
+    }
+
+    private List<NodeAndValue> allValues( Iterable<Value> supportedValues )
+    {
+        long nodeIds = 0;
+        List<NodeAndValue> result = new ArrayList<>();
+        for ( Value value : supportedValues )
+        {
+            result.add( new NodeAndValue( nodeIds++, value ) );
+        }
+        return result;
+    }
+
+    private List<NodeAndValue> allValues = allValues( testSuite.getSupportedValues() );
+
+    static class NodeAndValue
+    {
+        final long nodeId;
+        final Value value;
+
+        NodeAndValue( long nodeId, Value value )
+        {
+            this.nodeId = nodeId;
+            this.value = value;
+        }
+    }
+
+    @Test
+    public void shouldPopulateWithAllValues() throws Exception
+    {
+        // GIVEN
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        {
+            p.create();
+
+            List<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new ArrayList<>();
+            allValues.forEach( entry -> updates.add( IndexEntryUpdate.add( entry.nodeId, descriptor.schema(), entry.value ) ) );
+
+            p.add( updates );
+
+            p.close( true );
+        } );
+
+        // then
+        assertHasAllValues();
+    }
+
+    @Test
+    public void shouldUpdateWithAllValuesDuringPopulation() throws Exception
+    {
+        // GIVEN
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        {
+            p.create();
+
+            try ( IndexUpdater updater = p.newPopulatingUpdater( this::allValueLookup ) )
+            {
+                for ( NodeAndValue entry : allValues )
+                {
+                    updater.process( IndexEntryUpdate.add( entry.nodeId, descriptor.schema(), entry.value ) );
+                }
+            }
+
+            p.close( true );
+        } );
+
+        // then
+        assertHasAllValues();
+    }
+
+    private Value allValueLookup( long nodeId, int propertyId )
+    {
+        for ( NodeAndValue x : allValues )
+        {
+            if ( x.nodeId == nodeId )
+            {
+                return x.value;
+            }
+        }
+        return Values.NO_VALUE;
+    }
+
+    private void assertHasAllValues() throws IOException, IndexNotApplicableKernelException
+    {
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+        {
+            try ( IndexReader reader = accessor.newReader() )
+            {
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                for ( NodeAndValue entry : allValues )
+                {
+                    NodeValueIterator nodes = new NodeValueIterator();
+                    reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
+                    assertEquals( entry.nodeId, single( nodes, NO_SUCH_NODE ) );
+                }
             }
             accessor.close();
         }

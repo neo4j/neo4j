@@ -43,19 +43,27 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class FusionIndexAccessor implements IndexAccessor
 {
-    private final IndexAccessor nativeAccessor;
+    private final IndexAccessor numberAccessor;
     private final IndexAccessor spatialAccessor;
+    private final IndexAccessor temporalAccessor;
     private final IndexAccessor luceneAccessor;
     private final Selector selector;
     private final long indexId;
     private final IndexDescriptor descriptor;
     private final DropAction dropAction;
 
-    FusionIndexAccessor( IndexAccessor nativeAccessor, IndexAccessor spatialAccessor, IndexAccessor luceneAccessor,
-            Selector selector, long indexId, IndexDescriptor descriptor, DropAction dropAction )
+    FusionIndexAccessor( IndexAccessor numberAccessor,
+            IndexAccessor spatialAccessor,
+            IndexAccessor temporalAccessor,
+            IndexAccessor luceneAccessor,
+            Selector selector,
+            long indexId,
+            IndexDescriptor descriptor,
+            DropAction dropAction )
     {
-        this.nativeAccessor = nativeAccessor;
+        this.numberAccessor = numberAccessor;
         this.spatialAccessor = spatialAccessor;
+        this.temporalAccessor = temporalAccessor;
         this.luceneAccessor = luceneAccessor;
         this.selector = selector;
         this.indexId = indexId;
@@ -66,71 +74,99 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexAccessor::drop, nativeAccessor, spatialAccessor, luceneAccessor );
+        forAll( IndexAccessor::drop, numberAccessor, spatialAccessor, temporalAccessor, luceneAccessor );
         dropAction.drop( indexId );
     }
 
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return new FusionIndexUpdater( nativeAccessor.newUpdater( mode ), spatialAccessor.newUpdater( mode ), luceneAccessor.newUpdater( mode ), selector );
+        return new FusionIndexUpdater(
+                numberAccessor.newUpdater( mode ),
+                spatialAccessor.newUpdater( mode ),
+                temporalAccessor.newUpdater( mode ),
+                luceneAccessor.newUpdater( mode ), selector );
     }
 
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        nativeAccessor.force( ioLimiter );
+        numberAccessor.force( ioLimiter );
         spatialAccessor.force( ioLimiter );
+        temporalAccessor.force( ioLimiter );
         luceneAccessor.force( ioLimiter );
     }
 
     @Override
     public void refresh() throws IOException
     {
-        nativeAccessor.refresh();
+        numberAccessor.refresh();
+        spatialAccessor.refresh();
+        temporalAccessor.refresh();
         luceneAccessor.refresh();
     }
 
     @Override
     public void close() throws IOException
     {
-        forAll( IndexAccessor::close, nativeAccessor, spatialAccessor, luceneAccessor );
+        forAll( IndexAccessor::close, numberAccessor, spatialAccessor, temporalAccessor, luceneAccessor );
     }
 
     @Override
     public IndexReader newReader()
     {
-        return new FusionIndexReader( nativeAccessor.newReader(), spatialAccessor.newReader(), luceneAccessor.newReader(), selector, descriptor );
+        return new FusionIndexReader(
+                numberAccessor.newReader(),
+                spatialAccessor.newReader(),
+                temporalAccessor.newReader(),
+                luceneAccessor.newReader(),
+                selector,
+                descriptor );
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        BoundedIterable<Long> nativeAllEntries = nativeAccessor.newAllEntriesReader();
+        BoundedIterable<Long> numberAllEntries = numberAccessor.newAllEntriesReader();
         BoundedIterable<Long> spatialAllEntries = spatialAccessor.newAllEntriesReader();
+        BoundedIterable<Long> temporalAllEntries = temporalAccessor.newAllEntriesReader();
         BoundedIterable<Long> luceneAllEntries = luceneAccessor.newAllEntriesReader();
         return new BoundedIterable<Long>()
         {
             @Override
             public long maxCount()
             {
-                long nativeMaxCount = nativeAllEntries.maxCount();
+                long numberMaxCount = numberAllEntries.maxCount();
                 long spatialMaxCount = spatialAllEntries.maxCount();
+                long temporalMaxCount = temporalAllEntries.maxCount();
                 long luceneMaxCount = luceneAllEntries.maxCount();
-                return nativeMaxCount == UNKNOWN_MAX_COUNT || spatialMaxCount == UNKNOWN_MAX_COUNT || luceneMaxCount == UNKNOWN_MAX_COUNT ?
-                       UNKNOWN_MAX_COUNT : nativeMaxCount + spatialMaxCount + luceneMaxCount;
+                return existsUnknownMaxCount( numberMaxCount, spatialMaxCount, temporalMaxCount, luceneMaxCount ) ?
+                       UNKNOWN_MAX_COUNT : numberMaxCount + spatialMaxCount + temporalMaxCount + luceneMaxCount;
             }
 
+            private boolean existsUnknownMaxCount( long... maxCounts )
+            {
+                for ( long maxCount : maxCounts )
+                {
+                    if ( maxCount == UNKNOWN_MAX_COUNT )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @SuppressWarnings( "unchecked" )
             @Override
             public void close() throws Exception
             {
-                forAll( BoundedIterable::close, nativeAllEntries, spatialAllEntries, luceneAllEntries );
+                forAll( BoundedIterable::close, numberAllEntries, spatialAllEntries, temporalAllEntries, luceneAllEntries );
             }
 
             @Override
             public Iterator<Long> iterator()
             {
-                return Iterables.concat( nativeAllEntries, spatialAllEntries, luceneAllEntries ).iterator();
+                return Iterables.concat( numberAllEntries, spatialAllEntries, temporalAllEntries, luceneAllEntries ).iterator();
             }
         };
     }
@@ -139,21 +175,25 @@ class FusionIndexAccessor implements IndexAccessor
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return concatResourceIterators(
-                asList( nativeAccessor.snapshotFiles(), spatialAccessor.snapshotFiles(), luceneAccessor.snapshotFiles() ).iterator() );
+                asList( numberAccessor.snapshotFiles(),
+                        spatialAccessor.snapshotFiles(),
+                        temporalAccessor.snapshotFiles(),
+                        luceneAccessor.snapshotFiles() ).iterator() );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        nativeAccessor.verifyDeferredConstraints( propertyAccessor );
+        numberAccessor.verifyDeferredConstraints( propertyAccessor );
         spatialAccessor.verifyDeferredConstraints( propertyAccessor );
+        temporalAccessor.verifyDeferredConstraints( propertyAccessor );
         luceneAccessor.verifyDeferredConstraints( propertyAccessor );
     }
 
     @Override
     public boolean isDirty()
     {
-        return nativeAccessor.isDirty();
+        return numberAccessor.isDirty() || spatialAccessor.isDirty() || temporalAccessor.isDirty() || luceneAccessor.isDirty();
     }
 }

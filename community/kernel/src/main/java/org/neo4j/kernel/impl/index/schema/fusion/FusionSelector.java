@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-public class NativeSelector implements FusionSchemaIndexProvider.Selector
+public class FusionSelector implements FusionSchemaIndexProvider.Selector
 {
     @Override
-    public <T> T select( T numberInstance, T spatialInstance, T luceneInstance, Value... values )
+    public <T> T select( T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values )
     {
         if ( values.length > 1 )
         {
@@ -45,6 +44,12 @@ public class NativeSelector implements FusionSchemaIndexProvider.Selector
         {
             // It's a geometry, the spatial index can handle this
             return spatialInstance;
+        }
+
+        // TODO this needs to check all temporal groups
+        if ( singleValue.valueGroup() == ValueGroup.DATE )
+        {
+            return temporalInstance;
         }
         return luceneInstance;
     }
