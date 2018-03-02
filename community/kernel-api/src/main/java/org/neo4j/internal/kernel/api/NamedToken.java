@@ -17,54 +17,64 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.internal.kernel.api;
 
-
-public class Token
+/**
+ * A token with its associated name.
+ */
+public final class NamedToken
 {
-    private final String name;
     private final int id;
+    private final String name;
 
-    public Token( String name, int id )
+    public NamedToken( String name, int id )
     {
-        this.name = name;
         this.id = id;
+        this.name = name;
     }
 
+    /**
+     * Id of token
+     *
+     * @return the id of the token
+     */
+    public int id()
+    {
+        return id;
+    }
+
+    /**
+     * The name associated with the token
+     *
+     * @return The name corresponding to the token
+     */
     public String name()
     {
         return name;
     }
 
-    public int id()
+    @Override
+    public boolean equals( Object o )
     {
-        return this.id;
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        NamedToken that = (NamedToken) o;
+
+        return id == that.id && name.equals( that.name );
     }
 
     @Override
     public int hashCode()
     {
-        return id;
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return obj instanceof Token && id == ((Token) obj).id;
-    }
-
-    @Override
-    public String toString()
-    {
-        return getClass().getSimpleName() + "[name:" + name + ", id:" + id + "]";
-    }
-
-    public static class Factory implements TokenFactory<Token>
-    {
-        @Override
-        public Token newToken( String name, int id )
-        {
-            return new Token( name, id );
-        }
+        int result = id;
+        result = 31 * result + name.hashCode();
+        return result;
     }
 }

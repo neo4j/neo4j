@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.newapi.DefaultCursors;
-import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -586,10 +585,11 @@ public class KernelTransactionsTest
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
             SystemNanoClock clock, AvailabilityGuard availabilityGuard )
     {
-        return new KernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
+        return new KernelTransactions( statementLocksFactory, null, statementOperations,
+                null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
                 mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), new CanWrite(),
-                new KernelToken( storageEngine.storeReadLayer() ), DefaultCursors::new, AutoIndexing.UNSUPPORTED,
+                DefaultCursors::new, AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY );
     }
 
@@ -602,7 +602,7 @@ public class KernelTransactionsTest
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite(), new KernelToken( storageEngine.storeReadLayer() ), DefaultCursors::new,
+                new CanWrite(), DefaultCursors::new,
                         AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY );
     }
 
@@ -652,13 +652,13 @@ public class KernelTransactionsTest
                 ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-                AccessCapability accessCapability, KernelToken token, Supplier<DefaultCursors> cursors,
+                AccessCapability accessCapability, Supplier<DefaultCursors> cursors,
                 AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier  )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
                     indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                    accessCapability, token, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier );
+                    accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier );
         }
 
         @Override

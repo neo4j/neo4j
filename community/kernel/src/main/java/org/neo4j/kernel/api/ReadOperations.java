@@ -82,8 +82,7 @@ public interface ReadOperations
     String labelGetName( int labelId ) throws LabelNotFoundKernelException;
 
     /** Returns the labels currently stored in the database * */
-    Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
-
+    Iterator<Token> labelsGetAllTokens();
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
      * {@link StatementConstants#NO_SUCH_PROPERTY_KEY} will be returned.

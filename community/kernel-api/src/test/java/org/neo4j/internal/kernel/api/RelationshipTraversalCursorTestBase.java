@@ -332,7 +332,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     group.outgoing( relationship );
                 }
                 // then
-                assertCount( session, relationship, expectedCounts, group.type(), OUTGOING );
+                assertCount( tx, relationship, expectedCounts, group.type(), OUTGOING );
 
                 // incoming
                 if ( detached )
@@ -344,7 +344,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     group.incoming( relationship );
                 }
                 // then
-                assertCount( session, relationship, expectedCounts, group.type(), INCOMING );
+                assertCount( tx, relationship, expectedCounts, group.type(), INCOMING );
 
                 // loops
                 if ( detached )
@@ -356,7 +356,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     group.loops( relationship );
                 }
                 // then
-                assertCount( session, relationship, expectedCounts, group.type(), BOTH );
+                assertCount( tx, relationship, expectedCounts, group.type(), BOTH );
             }
         }
     }
@@ -381,7 +381,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                 node.allRelationships( relationship );
             }
 
-            Map<String,Integer> counts = count( session, relationship );
+            Map<String,Integer> counts = count( tx, relationship );
 
             // then
             assertCounts( start.expectedCounts(), counts );

@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.StorageStatement;
 public class NewKernel implements Kernel, Modes
 {
     private final StorageEngine engine;
-    private final KernelToken token;
     private final InwardKernel kernel;
 
     private StorageStatement statement;
@@ -42,10 +41,9 @@ public class NewKernel implements Kernel, Modes
 
     private volatile boolean isRunning;
 
-    public NewKernel( StorageEngine engine, KernelToken token, InwardKernel kernel )
+    public NewKernel( StorageEngine engine, InwardKernel kernel )
     {
         this.engine = engine;
-        this.token = token;
         this.kernel = kernel;
         this.isRunning = false;
     }
@@ -61,7 +59,7 @@ public class NewKernel implements Kernel, Modes
     public KernelSession beginSession( LoginContext loginContext )
     {
         assert isRunning : "kernel is not running, so it is not possible to use it";
-        return new KernelSession( token, kernel, loginContext );
+        return new KernelSession( kernel, loginContext );
     }
 
     @Override

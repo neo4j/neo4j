@@ -33,13 +33,11 @@ class KernelSession implements Session
 {
     private final InwardKernel kernel;
     private final LoginContext loginContext;
-    private final KernelToken token;
 
-    KernelSession( KernelToken token, InwardKernel kernel, LoginContext loginContext )
+    KernelSession( InwardKernel kernel, LoginContext loginContext )
     {
         this.kernel = kernel;
         this.loginContext = loginContext;
-        this.token = token;
     }
 
     @Override
@@ -52,12 +50,6 @@ class KernelSession implements Session
     public Transaction beginTransaction( KernelTransaction.Type type ) throws KernelException
     {
         return kernel.newTransaction( type, loginContext );
-    }
-
-    @Override
-    public KernelToken token()
-    {
-        return token;
     }
 
     @Override

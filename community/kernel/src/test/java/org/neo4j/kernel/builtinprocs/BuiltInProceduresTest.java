@@ -38,6 +38,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -58,7 +61,6 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.Token;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -88,8 +90,10 @@ public class BuiltInProceduresTest
     private final Map<Integer,String> propKeys = new HashMap<>();
     private final Map<Integer,String> relTypes = new HashMap<>();
 
-    private final ReadOperations read = mock( ReadOperations.class );
+    private final Read read = mock( Read.class );
+    private final ReadOperations readOperations = mock( ReadOperations.class );
     private final TokenRead tokens = mock( TokenRead.class );
+    private final SchemaRead schemaRead = mock( SchemaRead.class );
     private final Statement statement = mock( Statement.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
@@ -335,7 +339,7 @@ public class BuiltInProceduresTest
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
-        when( read.labelsGetAllTokens() ).thenThrow( runtimeException );
+        when( tokens.labelsGetAllTokens() ).thenThrow( runtimeException );
 
         // When
         try
@@ -358,7 +362,7 @@ public class BuiltInProceduresTest
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
-        when( read.propertyKeyGetAllTokens() ).thenThrow( runtimeException );
+        when( tokens.propertyKeyGetAllTokens() ).thenThrow( runtimeException );
 
         // When
         try
@@ -381,7 +385,7 @@ public class BuiltInProceduresTest
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
-        when( read.relationshipTypesGetAllTokens() ).thenThrow( runtimeException );
+        when( tokens.relationshipTypesGetAllTokens() ).thenThrow( runtimeException );
 
         // When
         try
@@ -487,15 +491,17 @@ public class BuiltInProceduresTest
 
         when( tx.acquireStatement() ).thenReturn( statement );
         when( tx.tokenRead() ).thenReturn( tokens );
-        when( statement.readOperations() ).thenReturn( read );
+        when( tx.dataRead() ).thenReturn( read );
+        when( tx.schemaRead() ).thenReturn( schemaRead );
+        when( statement.readOperations() ).thenReturn( readOperations );
 
-        when( read.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
-        when( read.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
-        when( read.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
-        when( read.indexesGetAll() ).thenAnswer(
+        when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
+        when( tokens.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
+        when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
+        when( readOperations.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
-        when( read.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
-        when( read.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
+        when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
+        when( readOperations.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 
         when( tokens.propertyKeyName( anyInt() ) )
                 .thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
@@ -506,20 +512,20 @@ public class BuiltInProceduresTest
         // Make it appear that labels are in use
         // TODO: We really should just have `labelsInUse()` on the Kernel API directly,
         //       it'd make testing much easier.
-        when( read.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
-        when( read.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
-        when( read.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaRead.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaRead.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaRead.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
-        when( read.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
-        when( read.indexGetProviderDescriptor( any( IndexDescriptor.class ) ) )
+        when( readOperations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
+        when( readOperations.indexGetProviderDescriptor( any( IndexDescriptor.class ) ) )
                 .thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 
-    private Answer<Iterator<Token>> asTokens( Map<Integer,String> tokens )
+    private Answer<Iterator<NamedToken>> asTokens( Map<Integer,String> tokens )
     {
         return i -> tokens.entrySet().stream()
-                              .map( entry -> new Token( entry.getValue(), entry.getKey() ) )
+                              .map( entry -> new NamedToken( entry.getValue(), entry.getKey() ) )
                               .iterator();
     }
 

@@ -24,8 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Clock;
+import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
@@ -36,7 +36,6 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 
@@ -47,7 +46,7 @@ public class EnterpriseSecurityContextDescriptionTest
             new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ) );
 
     private EnterpriseUserManager manager;
-    private Token token;
+    private Function<String, Integer> token = s -> -1;
 
     @Before
     public void setUp() throws Throwable
@@ -55,7 +54,6 @@ public class EnterpriseSecurityContextDescriptionTest
         authManagerRule.getManager().start();
         manager = authManagerRule.getManager().getUserManager();
         manager.newUser( "mats", "foo", false );
-        token = mock( Token.class );
     }
 
     @Test

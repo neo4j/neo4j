@@ -31,7 +31,6 @@ import java.util.Set;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
@@ -48,7 +47,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
@@ -273,7 +271,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         {
             // When
             dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
-                    AnonymousContext.none().authorize( mock( Token.class ) ), resourceTracker );
+                    AnonymousContext.none().authorize( s -> -1 ), resourceTracker );
             fail( "This should never get here" );
         }
         catch ( Exception e )

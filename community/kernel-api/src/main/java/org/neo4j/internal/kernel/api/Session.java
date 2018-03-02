@@ -41,8 +41,6 @@ public interface Session extends AutoCloseable
      */
     Transaction beginTransaction( Transaction.Type type ) throws KernelException;
 
-    Token token();
-
     @Override
     void close();
 }

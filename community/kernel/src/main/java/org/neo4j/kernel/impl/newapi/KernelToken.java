@@ -19,21 +19,29 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Iterator;
+
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 public class KernelToken implements Token
 {
     private final StoreReadLayer store;
+    private final KernelTransactionImplementation ktx;
 
-    public KernelToken( StoreReadLayer store )
+    public KernelToken( StoreReadLayer store, KernelTransactionImplementation ktx )
     {
         this.store = store;
+        this.ktx = ktx;
     }
 
     @Override
@@ -45,49 +53,82 @@ public class KernelToken implements Token
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
+        ktx.assertOpen();
         return store.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
     }
 
     @Override
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
+        ktx.assertOpen();
         return store.relationshipTypeGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
     }
 
     @Override
     public String nodeLabelName( int labelId ) throws LabelNotFoundKernelException
     {
+        ktx.assertOpen();
         return store.labelGetName( labelId );
     }
 
     @Override
     public int nodeLabel( String name )
     {
+        ktx.assertOpen();
         return store.labelGetForName( name );
     }
 
     @Override
     public int relationshipType( String name )
     {
+        ktx.assertOpen();
         return store.relationshipTypeGetForName( name );
     }
 
     @Override
     public String relationshipTypeName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
     {
+        ktx.assertOpen();
         return store.relationshipTypeGetName( relationshipTypeId );
     }
 
     @Override
     public int propertyKey( String name )
     {
+        ktx.assertOpen();
         return store.propertyKeyGetForName( name );
     }
 
     @Override
     public String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
     {
+        ktx.assertOpen();
         return store.propertyKeyGetName( propertyKeyId );
+    }
+
+    @Override
+    public Iterator<NamedToken> labelsGetAllTokens()
+    {
+        ktx.assertOpen();
+        return Iterators.map( token -> new NamedToken( token.name(), token.id() ), store.labelsGetAllTokens());
+    }
+
+    @Override
+    public Iterator<NamedToken> propertyKeyGetAllTokens()
+    {
+        ktx.assertOpen();
+        AccessMode mode = ktx.securityContext().mode();
+        return Iterators.stream( store.propertyKeyGetAllTokens() )
+                .filter( propKey -> mode.allowsPropertyReads( propKey.id() ) )
+                .map( token -> new NamedToken( token.name(), token.id() ) )
+                .iterator();
+    }
+
+    @Override
+    public Iterator<NamedToken> relationshipTypesGetAllTokens()
+    {
+        ktx.assertOpen();
+        return Iterators.map( token -> new NamedToken( token.name(), token.id() ), store.relationshipTypeGetAllTokens());
     }
 
     private String checkValidTokenName( String name ) throws IllegalTokenNameException

@@ -35,9 +35,9 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.PasswordPolicy;
@@ -77,12 +77,11 @@ public class InternalFlatFileRealmTest
 
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
-    private Token token;
+    private Function<String, Integer> token = s -> -1;
 
     @Before
     public void setup() throws Throwable
     {
-        token = mock( Token.class );
         testRealm = new TestRealm(
                         new InMemoryUserRepository(),
                         new InMemoryRoleRepository(),

@@ -117,7 +117,7 @@ public class OperationsLockTest
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                store, transaction, new KernelToken( storeReadLayer ), cursors, autoindexing );
+                store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storeReadLayer );

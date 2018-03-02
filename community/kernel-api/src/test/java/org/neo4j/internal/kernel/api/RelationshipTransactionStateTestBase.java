@@ -337,8 +337,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             long n2 = tx.dataWrite().nodeCreate();
             int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
-            int prop1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
-            int prop2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
+            int prop1 = tx.token().propertyKeyGetOrCreateForName( propKey1 );
+            int prop2 = tx.token().propertyKeyGetOrCreateForName( propKey2 );
             assertEquals( tx.dataWrite().relationshipSetProperty( r, prop1, stringValue( "hello" ) ), NO_VALUE );
             assertEquals( tx.dataWrite().relationshipSetProperty( r, prop2, stringValue( "world" ) ), NO_VALUE );
 
@@ -393,7 +393,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // When/Then
         try ( Transaction tx = session.beginTransaction() )
         {
-            int propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            int propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
 
@@ -436,7 +436,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
-            propToken1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
+            propToken1 = tx.token().propertyKeyGetOrCreateForName( propKey1 );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken1, stringValue( "hello" ) ),
                     NO_VALUE );
             tx.success();
@@ -445,7 +445,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // When/Then
         try ( Transaction tx = session.beginTransaction() )
         {
-            propToken2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
+            propToken2 = tx.token().propertyKeyGetOrCreateForName( propKey2 );
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken2, stringValue( "world" ) ),
                     NO_VALUE );
 
@@ -499,7 +499,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
-            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
             tx.success();
@@ -548,7 +548,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
-            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
             tx.success();
@@ -592,7 +592,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
-            propToken = session.token().propertyKeyGetOrCreateForName( propKey );
+            propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
             tx.success();
@@ -1092,7 +1092,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
 
         PrimitiveLongSet set = PrimitiveLongCollections.asSet( relationships );
-        for ( int i = 0; i < relationships.length; i++ )
+        for ( long relationship : relationships )
         {
             assertTrue( traversal.next() );
             assertTrue( set.contains( traversal.relationshipReference() ) );
@@ -1147,7 +1147,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     node.allRelationships( relationship );
                 }
 
-                Map<String,Integer> counts = count( session, relationship );
+                Map<String,Integer> counts = count( tx, relationship );
 
                 // then
                 assertCounts( expectedCounts, counts );
@@ -1194,7 +1194,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                     // then
                     RelationshipTestSupport
-                            .assertCount( session, relationship, expectedCounts, group.type(), OUTGOING );
+                            .assertCount( tx, relationship, expectedCounts, group.type(), OUTGOING );
 
                     // incoming
                     if ( detached )
@@ -1207,7 +1207,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                     // then
                     RelationshipTestSupport
-                            .assertCount( session, relationship, expectedCounts, group.type(), INCOMING );
+                            .assertCount( tx, relationship, expectedCounts, group.type(), INCOMING );
 
                     // loops
                     if ( detached )
@@ -1220,7 +1220,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                     // then
                     RelationshipTestSupport
-                            .assertCount( session, relationship, expectedCounts, group.type(), BOTH );
+                            .assertCount( tx, relationship, expectedCounts, group.type(), BOTH );
                 }
             }
         }
@@ -1234,7 +1234,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             List<RelationshipTestSupport.StartRelationship> rs = kv.getValue();
             RelationshipTestSupport.StartRelationship head = rs.get( 0 );
-            int type = session.token().relationshipType( head.type.name() );
+            int type = tx.token().relationshipType( head.type.name() );
             switch ( head.direction )
             {
             case INCOMING:
@@ -1257,7 +1257,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
 
         String newTypeName = "NEW";
-        int newType = session.token().relationshipTypeGetOrCreateForName( newTypeName );
+        int newType = tx.token().relationshipTypeGetOrCreateForName( newTypeName );
         tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), newType, start.id );
         tx.dataWrite().relationshipCreate( start.id, newType, tx.dataWrite().nodeCreate() );
         tx.dataWrite().relationshipCreate( start.id, newType, start.id );
