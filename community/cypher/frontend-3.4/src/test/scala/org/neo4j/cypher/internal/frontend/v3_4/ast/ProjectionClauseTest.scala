@@ -133,7 +133,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
   test("RETURN * not allowed when no variables in scope") {
     // GIVEN CREATE () WITH * CREATE ()
-    val withObj = Return(distinct = false, ReturnItems(includeExisting = true, Seq())_, None, None, None, None)_
+    val withObj = Return(distinct = false, ReturnItems(includeExisting = true, Seq())_, None, None, None)_
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope

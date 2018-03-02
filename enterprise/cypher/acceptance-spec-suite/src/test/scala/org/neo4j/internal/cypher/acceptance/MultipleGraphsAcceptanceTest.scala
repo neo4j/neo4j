@@ -26,25 +26,20 @@ import scala.language.postfixOps
 
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   val configs = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
-  val expectedException = "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs."
+  val expectedException = "Selecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs."
 
-  test("from graph") {
-    val query = "FROM GRAPH AT 'graph://url' AS test MATCH (a)-->() RETURN a"
+  test("use graph") {
+    val query = "USE GRAPH foo.bar MATCH (a)-->() RETURN a"
     failWithError(configs, query, List(expectedException))
   }
 
-  test("into graph") {
-    val query = "MATCH (a)--() INTO GRAPH AT 'graph://url' AS test CREATE (a)-->(b:B) RETURN b"
+  test("return graph") {
+    val query = "WITH $param AS foo MATCH ()--() RETURN GRAPH"
     failWithError(configs, query, List(expectedException))
   }
 
-  test("return named graph") {
-    val query = "WITH $param AS foo MATCH ()--() RETURN 1 GRAPHS foo"
-    failWithError(configs, query, List(expectedException))
-  }
-
-  test("project a graph") {
-    val query = "WITH 1 AS a GRAPH foo RETURN 1"
+  test("construct graph") {
+    val query = "MATCH (a) CONSTRUCT { (~a)-[:T]->(:B) } RETURN 1 AS a"
     failWithError(configs, query, List(expectedException))
   }
 }

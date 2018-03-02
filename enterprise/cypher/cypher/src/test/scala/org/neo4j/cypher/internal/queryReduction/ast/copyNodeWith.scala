@@ -54,10 +54,9 @@ object copyNodeWith {
 
       case Variable(_) => node
 
-      case Return(distinct, returnItems, maybeGraphReturnItems, maybeOrderBy, maybeSkip, maybeLimit, excludedNames) =>
+      case Return(distinct, returnItems, maybeOrderBy, maybeSkip, maybeLimit, excludedNames) =>
         Return(distinct,
           nc.ofSingle(returnItems),
-          nc.ofOption(maybeGraphReturnItems),
           nc.ofOption(maybeOrderBy),
           nc.ofOption(maybeSkip),
           nc.ofOption(maybeLimit),
@@ -101,8 +100,8 @@ object copyNodeWith {
 
       case Namespace(_) => node
 
-      case With(distinct, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
-        With(distinct, nc.ofSingle(returnItems), nc.ofSingle(mandatoryGraphReturnItems), nc.ofOption(orderBy), nc.ofOption(skip), nc.ofOption(limit), nc.ofOption(where))(node.position)
+      case With(distinct, returnItems, orderBy, skip, limit, where) =>
+        With(distinct, nc.ofSingle(returnItems), nc.ofOption(orderBy), nc.ofOption(skip), nc.ofOption(limit), nc.ofOption(where))(node.position)
 
       case MapExpression(items) =>
         MapExpression(nc.ofTupledSeq(items))(node.position)

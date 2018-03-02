@@ -146,9 +146,8 @@ trait Clauses extends Parser
   )
 
   def Return: Rule1[ast.Return] = rule("RETURN")(
-    group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _, _))
-      | group(keyword("RETURN") ~~ GraphReturnItems) ~~>> (ast.Return(_))
-      | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _, _))
+    group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
+      | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
   def Pragma: Rule1[ast.Clause] = rule("") {
@@ -198,9 +197,8 @@ trait Clauses extends Parser
       optional(Limit)
   }
 
-  private def ReturnBody: Rule5[ast.ReturnItemsDef, Option[ast.GraphReturnItems], Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
+  private def ReturnBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
-      optional(GraphReturnItems) ~~
       optional(Order) ~~
       optional(Skip) ~~
       optional(Limit)

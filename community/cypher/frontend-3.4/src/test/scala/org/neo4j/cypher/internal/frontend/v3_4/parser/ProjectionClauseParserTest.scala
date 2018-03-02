@@ -49,15 +49,15 @@ class ProjectionClauseParserTest
   }
 
   test("RETURN *") {
-    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), None))
+    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
   }
 
   test("RETURN 1 AS a") {
-    yields(ast.Return(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), None))
+    yields(ast.Return(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)))
   }
 
   test("RETURN *, 1 AS a") {
-    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), None))
+    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)))
   }
 
   test("RETURN ") {
@@ -69,34 +69,23 @@ class ProjectionClauseParserTest
   }
 
   test("RETURN GRAPHS a, b") {
-    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = false, Seq(
-      ast.ReturnedGraph(ast.GraphAs(varFor("a"), None)(pos))(pos),
-      ast.ReturnedGraph(ast.GraphAs(varFor("b"), None)(pos))(pos)
-    ))(pos)
-    yields(ast.Return(graphs))
+    failsToParse
   }
 
   test("RETURN GRAPHS *, a, b") {
-    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq(
-      ast.ReturnedGraph(ast.GraphAs(varFor("a"), None)(pos))(pos),
-      ast.ReturnedGraph(ast.GraphAs(varFor("b"), None)(pos))(pos)
-    ))(pos)
-    yields(ast.Return(graphs))
+    failsToParse
   }
 
   test("RETURN 1 AS a GRAPHS *") {
-    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq.empty)(pos)
-    yields(ast.Return(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), Some(graphs)))
+    failsToParse
   }
 
   test("RETURN * GRAPHS *") {
-    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq.empty)(pos)
-    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), Some(graphs)))
+    failsToParse
   }
 
   test("RETURN * GRAPH foo AT 'url' ORDER BY 2 LIMIT 1") {
-    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graphAt("foo", "url"))(pos)))(pos)
-    yields(ast.Return(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), Some(graphs), Some(ast.OrderBy(Seq(ast.AscSortItem(literalInt(2))(pos)))(pos)), None, Some(ast.Limit(literalInt(1))(pos))))
+    failsToParse
   }
 
 }

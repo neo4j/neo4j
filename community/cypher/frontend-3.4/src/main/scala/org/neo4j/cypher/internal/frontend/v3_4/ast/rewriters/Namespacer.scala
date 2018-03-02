@@ -63,10 +63,9 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
         acc => (acc, Some(identity))
 
       // ignore variable in StartItem that represents index names and key names
-      case Return(_, ReturnItems(_, items), graphItems, _, _, _, _) =>
+      case Return(_, ReturnItems(_, items), _, _, _, _) =>
         val variables = items.map(_.alias.map(Ref[LogicalVariable]).get)
-        val gVars = graphItems.map(_.items).map(extractGraphVars).getOrElse(Seq.empty)
-        acc => (acc ++ variables ++ gVars, Some(identity))
+        acc => (acc ++ variables, Some(identity))
     }
 
   private def extractGraphVars(items: Seq[GraphReturnItem]): Seq[Ref[LogicalVariable]] = {

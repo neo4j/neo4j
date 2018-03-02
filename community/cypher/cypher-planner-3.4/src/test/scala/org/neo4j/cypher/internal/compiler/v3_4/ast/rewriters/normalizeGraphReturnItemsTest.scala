@@ -29,46 +29,46 @@ class normalizeGraphReturnItemsTest extends CypherFunSuite with AstConstructionT
 
   import parser.ParserFixture._
 
-  test("do not rename source graph") {
-    val original = parser.parse("FROM GRAPH foo AT 'url' WITH * SOURCE GRAPH RETURN 1")
-
-    val result = original.rewrite(normalizeGraphReturnItems)
-    assert(result === original)
-  }
-
-  test("do not rename TARGET graph") {
-    val original = parser.parse("INTO GRAPH foo AT 'url' WITH * TARGET GRAPH RETURN 1")
-
-    val result = original.rewrite(normalizeGraphReturnItems)
-    assert(result === original)
-  }
-
-  test("name named graphs") {
-    val original = parser.parse("FROM GRAPH foo RETURN 1")
-    val expected = parser.parse("FROM GRAPH foo AS foo RETURN 1")
-
-    val result = original.rewrite(normalizeGraphReturnItems)
-    assert(result === expected)
-  }
-
-  test("name load graph") {
-    // need to spell out ast here as there is no syntax for specifying generated symbols
-    val original = parser.parse("FROM GRAPH AT 'url' RETURN 1")
-    val expected = Query(None,
-      SingleQuery(List(
-        With(distinct = false,
-          ReturnItems(includeExisting = true, List())(pos),
-          GraphReturnItems(true,List(
-            NewContextGraphs(
-              GraphAtAs(
-                GraphUrl(Right(StringLiteral("url")(pos)))(pos),
-                Some(varFor("  FRESHID21")),
-                generated = true)(pos),None)(pos)))(pos),None,None,None,None)(pos),
-        Return(distinct = false,
-          ReturnItems(includeExisting = false,List(
-            UnaliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), "1")(pos)))(pos),None,None,None,None,Set())(pos)))(pos))(pos)
-
-    val result = original.rewrite(normalizeGraphReturnItems)
-    assert(result === expected)
-  }
+//  test("do not rename source graph") {
+//    val original = parser.parse("FROM GRAPH foo AT 'url' WITH * SOURCE GRAPH RETURN 1")
+//
+//    val result = original.rewrite(normalizeGraphReturnItems)
+//    assert(result === original)
+//  }
+//
+//  test("do not rename TARGET graph") {
+//    val original = parser.parse("INTO GRAPH foo AT 'url' WITH * TARGET GRAPH RETURN 1")
+//
+//    val result = original.rewrite(normalizeGraphReturnItems)
+//    assert(result === original)
+//  }
+//
+//  test("name named graphs") {
+//    val original = parser.parse("FROM GRAPH foo RETURN 1")
+//    val expected = parser.parse("FROM GRAPH foo AS foo RETURN 1")
+//
+//    val result = original.rewrite(normalizeGraphReturnItems)
+//    assert(result === expected)
+//  }
+//
+//  test("name load graph") {
+//    // need to spell out ast here as there is no syntax for specifying generated symbols
+//    val original = parser.parse("FROM GRAPH AT 'url' RETURN 1")
+//    val expected = Query(None,
+//      SingleQuery(List(
+//        With(distinct = false,
+//          ReturnItems(includeExisting = true, List())(pos),
+//          GraphReturnItems(true,List(
+//            NewContextGraphs(
+//              GraphAtAs(
+//                GraphUrl(Right(StringLiteral("url")(pos)))(pos),
+//                Some(varFor("  FRESHID21")),
+//                generated = true)(pos),None)(pos)))(pos),None,None,None,None)(pos),
+//        Return(distinct = false,
+//          ReturnItems(includeExisting = false,List(
+//            UnaliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), "1")(pos)))(pos),None,None,None,None,Set())(pos)))(pos))(pos)
+//
+//    val result = original.rewrite(normalizeGraphReturnItems)
+//    assert(result === expected)
+//  }
 }

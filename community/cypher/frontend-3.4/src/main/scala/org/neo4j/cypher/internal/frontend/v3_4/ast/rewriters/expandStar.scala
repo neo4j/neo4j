@@ -37,48 +37,15 @@ case class expandStar(state: SemanticState) extends Rewriter {
         returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
         orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
-    case clause@Return(_, values, graphs, _, _, _, excludedNames)
-      if values.includeExisting || graphs.exists(_.includeExisting) =>
+    case clause@Return(_, values, _, _, _, excludedNames) if values.includeExisting =>
       val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, excludedNames) else values
-      val newGraphItems = graphs match {
-        case Some(GraphReturnItems(true, graphItems)) if state.features(SemanticFeature.MultipleGraphs) =>
-          val newItems = graphReturnItems(clause, graphItems, excludedNames)
-          if (newItems.graphs.isEmpty) None else Some(newItems)
-        case _ =>
-          graphs
-      }
-
-      clause.copy(returnItems = newReturnItems, graphReturnItems = newGraphItems, excludedNames = Set.empty)(clause.position)
+      clause.copy(returnItems = newReturnItems, excludedNames = Set.empty)(clause.position)
 
     case expandedAstNode =>
       expandedAstNode
   }
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
-
-  private def graphReturnItems(clause: Clause, listedItems: Seq[GraphReturnItem], excludedNames: Set[String] = Set.empty)
-  : GraphReturnItems = {
-    val scope = state.scope(clause).getOrElse {
-      throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
-    }
-    val clausePos = clause.position
-    val symbolNames = scope.selectSymbolNames(_.graph) -- excludedNames
-    val filteredListedItems = listedItems.flatMap(_.filter(!_.isUnboundContextGraph))
-    val newGraphItems = symbolNames.toIndexedSeq.sorted.map { id =>
-      val symbol = scope.symbolTable(id)
-      val idPos = symbol.definition.position
-      val expr = Variable(id)(idPos)
-      val alias = expr.copyId
-      ReturnedGraph(
-        GraphAs(
-          expr,
-          Some(alias),
-          symbol.generated
-        )(clausePos)
-      )(clausePos)
-    }.toList ++ filteredListedItems
-    GraphReturnItems(includeExisting = false, newGraphItems)(clausePos)
-  }
 
   private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty)
   : ReturnItemsDef = {

@@ -587,16 +587,13 @@ case class With(distinct: Boolean,
 }
 
 object Return {
-  def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): Return =
-    Return(distinct = false, DiscardCardinality()(pos), Some(graphReturnItems), None, None, None)(pos)
 
-  def apply(returnItems: ReturnItemsDef, graphReturnItems: Option[GraphReturnItems])(pos: InputPosition): Return =
-    Return(distinct = false, returnItems, graphReturnItems, None, None, None)(pos)
+  def apply(returnItems: ReturnItemsDef)(pos: InputPosition): Return =
+    Return(distinct = false, returnItems, None, None, None)(pos)
 }
 
 case class Return(distinct: Boolean,
                   returnItems: ReturnItemsDef,
-                  graphReturnItems: Option[GraphReturnItems],
                   orderBy: Option[OrderBy],
                   skip: Option[Skip],
                   limit: Option[Limit],
