@@ -41,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.AWAIT_POPULATION;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.ENTITYID;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.RELS;
@@ -110,6 +111,7 @@ public class BloomBackupIT
             additionalRelId = relationship.getId();
             transaction.success();
         }
+        verifyStandardData( db );
 
         //Incremental backup
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );
@@ -150,6 +152,10 @@ public class BloomBackupIT
             Relationship relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "type" ) );
             relationship.setProperty( "relprop", "They relate" );
             transaction.success();
+        }
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( AWAIT_POPULATION ).close();
         }
     }
 

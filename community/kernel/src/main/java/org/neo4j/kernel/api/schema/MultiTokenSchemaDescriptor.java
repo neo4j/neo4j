@@ -71,6 +71,12 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     }
 
     @Override
+    public String toString()
+    {
+        return "MultiTokenSchemaDescriptor[" + userDescription( SchemaUtil.idTokenNameLookup )+ "]";
+    }
+
+    @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return String.format( entityType + ":%s(%s)",

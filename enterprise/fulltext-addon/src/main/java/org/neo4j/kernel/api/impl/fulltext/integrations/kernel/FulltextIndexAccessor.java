@@ -125,7 +125,7 @@ public class FulltextIndexAccessor implements IndexAccessor
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        throw new UnsupportedOperationException( "Not implemented" );
+        return luceneFulltext.snapshot();
     }
 
     @Override

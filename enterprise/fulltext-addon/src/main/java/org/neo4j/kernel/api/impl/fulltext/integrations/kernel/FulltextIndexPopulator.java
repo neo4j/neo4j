@@ -73,7 +73,6 @@ public class FulltextIndexPopulator implements IndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
-        System.out.println( "tried to get populating updater" );
         return new PopulatingFulltextIndexUpdater();
     }
 

@@ -40,12 +40,13 @@ public class FulltextIndexDescriptor extends IndexDescriptor
     {
         super( schema, Type.NON_SCHEMA );
         this.analyzer = analyzer;
-        propertyNames = new HashSet<>();
+        Set<String> names = new HashSet<>();
         this.identifier = name;
         for ( int propertyId : schema.getPropertyIds() )
         {
-            propertyNames.add( propertyKeyTokenHolder.getTokenById( propertyId ).name() );
+            names.add( propertyKeyTokenHolder.getTokenById( propertyId ).name() );
         }
+        propertyNames = Collections.unmodifiableSet( names );
     }
 
     @Override
@@ -62,7 +63,7 @@ public class FulltextIndexDescriptor extends IndexDescriptor
 
     public Collection<String> propertyNames()
     {
-        return Collections.unmodifiableSet( propertyNames );
+        return propertyNames;
     }
 
     public String analyzer()

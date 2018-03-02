@@ -55,7 +55,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     {
         this.indexUpdateMode = indexUpdateMode;
         this.indexMap = indexMap;
-        this.updaterMap = new HashMap<SchemaDescriptor,IndexUpdater>();
+        this.updaterMap = new HashMap<>();
     }
 
     IndexUpdater getUpdater( SchemaDescriptor descriptor )
