@@ -73,7 +73,8 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 
 public class Neo4jPackV2Test
 {
-    private static final String[] TIME_ZONE_NAMES = TimeZoneMapping.supportedTimeZones().toArray( new String[0] );
+    private static final String[] TIME_ZONE_NAMES =
+            TimeZoneMapping.supportedTimeZones().stream().filter( s -> ZoneId.getAvailableZoneIds().contains( s ) ).toArray( length -> new String[length] );
 
     private static final int RANDOM_VALUES_TO_TEST = 1_000;
     private static final int RANDOM_LISTS_TO_TEST = 1_000;
