@@ -77,6 +77,9 @@ public class PointTest
         assertTrue( pointValue( WGS84, 1, 2 ).valueGroup() != null );
     }
 
+    //-------------------------------------------------------------
+    // Parser tests
+
     @Test
     public void shouldBeAbleToParsePoints()
     {
@@ -127,10 +130,9 @@ public class PointTest
     @Test
     public void shouldNotBeAbleToParsePointsWithConflictingDuplicateFields()
     {
-        // TODO: Make this fail
-        assertEqual( pointValue( WGS84, 1.0, 3.0 ), PointValue.parse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ) );
-        assertEqual( pointValue( Cartesian, 1.0, 3.0 ), PointValue.parse( "{crs: 'cartesian', x: 2.0, x: 1.0, y: 3}" ) );
-        assertEqual( pointValue( Cartesian, 1.0, 3.0 ), PointValue.parse( "{crs: 'invalid crs', x: 1.0, y: 3, crs: 'cartesian'}" ) );
+        assertTrue( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage().contains( "Duplicate field" ) );
+        assertTrue( assertCannotParse( "{crs: 'cartesian', x: 2.0, x: 1.0, y: 3}" ).getMessage().contains( "Duplicate field" ) );
+        assertTrue( assertCannotParse( "{crs: 'invalid crs', x: 1.0, y: 3, crs: 'cartesian'}" ).getMessage().contains( "Duplicate field" ) );
     }
 
     @Test

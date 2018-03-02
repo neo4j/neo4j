@@ -276,9 +276,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return fromInputFields( fields );
     }
 
-//    private static Pattern keyValuePattern = Pattern.compile(
-//            "\\s*+((?<x>x)|(?<y>y)|(?<long>longitude)|(?<lat>latitude))\\s*+:\\s*+(?<dblVal>\\S+)|((?<crs>crs)\\s*+:\\s*+(?<crsVal>\\S+))" );
-//    private static Pattern keyValuePattern = Pattern.compile( "(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>\\S+)" );
     private static Pattern mapPattern = Pattern.compile( "\\{(.*)\\}" );
     private static Pattern keyValuePattern =
         Pattern.compile( "(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)" );
@@ -315,10 +312,26 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             String key = matcher.group( "k" );
             if ( key != null )
             {
+                PointValueField field = null;
                 try
                 {
                     // NOTE: We let the key be case-insensitive here
-                    PointValueField field = PointValueField.valueOf( PointValueField.class, key.toUpperCase() );
+                    field = PointValueField.valueOf( PointValueField.class, key.toUpperCase() );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    // Ignore unknown fields
+                }
+
+                if ( field != null )
+                {
+                    if ( fields[field.ordinal()] != null )
+                    {
+                        String errorMessage =
+                                format( "Failed to parse point value: '%s'. Duplicate field '%s' is not allowed.",
+                                        text, key );
+                        throw new IllegalArgumentException( errorMessage );
+                    }
 
                     String value = matcher.group( "v" );
                     if ( value != null )
@@ -344,10 +357,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                             // Just ignore unknown fields
                         }
                     }
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    // Ignore unknown fields
                 }
             }
         } while ( matcher.find() );
