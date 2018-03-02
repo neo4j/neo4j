@@ -632,6 +632,10 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             }
             else if ( nanos != 0 )
             {
+                if ( nanos < 0 )
+                {
+                    str.append( '-' );
+                }
                 str.append( '0' );
                 nanos( str );
                 str.append( 'S' );

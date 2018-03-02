@@ -84,10 +84,37 @@ Feature: TemporalToStringAcceptance
     Given an empty graph
     When executing query:
       """
-      WITH duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70, nanoseconds: 1}) as d
+      UNWIND [duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70, nanoseconds: 1}),
+              duration({years: 12, months:5, days: -14, hours:16}),
+              duration({minutes: 12, seconds: -60}),
+              duration({seconds: 2, milliseconds: -1}),
+              duration({seconds: -2, milliseconds: 1}),
+              duration({seconds: -2, milliseconds: -1}),
+              duration({days: 1, milliseconds: 1}),
+              duration({days: 1, milliseconds: -1})
+              ] as d
       RETURN toString(d) as ts, duration(toString(d)) = d as b
       """
     Then the result should be, in order:
       | ts                              | b    |
       | 'P12Y5M14DT16H13M10.000000001S' | true |
+      | 'P12Y5M-14DT16H'                | true |
+      | 'PT11M'                         | true |
+      | 'PT1.999S'                      | true |
+      | 'PT-1.999S'                     | true |
+      | 'PT-2.001S'                     | true |
+      | 'P1DT0.001S'                    | true |
+      | 'P1DT-0.001S'                   | true |
+    And no side effects
+
+  Scenario: Should serialize timezones correctly
+    Given an empty graph
+    When executing query:
+      """
+      WITH datetime({year: 2017, month: 8, day: 8, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: 'Europe/Stockholm'}) as d
+      RETURN toString(d) as ts
+      """
+    Then the result should be, in order:
+      | ts                                                      |
+      | '2017-08-08T12:31:14.645876123+02:00[Europe/Stockholm]' |
     And no side effects
