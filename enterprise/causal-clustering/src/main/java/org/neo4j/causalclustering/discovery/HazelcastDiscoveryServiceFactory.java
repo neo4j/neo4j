@@ -56,6 +56,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
         // tell hazelcast to not phone home
         GroupProperty.PHONE_HOME_ENABLED.setSystemProperty( "false" );
         GroupProperty.SOCKET_BIND_ANY.setSystemProperty( "false" );
+        GroupProperty.SHUTDOWNHOOK_ENABLED.setSystemProperty( "false" );
 
         String licenseKey = config.get( CausalClusteringSettings.hazelcast_license_key );
         if ( licenseKey != null )
