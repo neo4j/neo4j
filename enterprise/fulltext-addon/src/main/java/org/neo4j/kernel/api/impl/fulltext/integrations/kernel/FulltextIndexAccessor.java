@@ -93,7 +93,6 @@ public class FulltextIndexAccessor implements IndexAccessor
     @Override
     public IndexReader newReader()
     {
-        System.out.println( "Tried to get reader" );
         return IndexReader.EMPTY;
     }
 
