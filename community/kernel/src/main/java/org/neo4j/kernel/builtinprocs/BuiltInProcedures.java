@@ -571,12 +571,14 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
+    private static final String DEFAULT_KEY = " <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]> ";
+
     @Description( "Remove a node from an explicit index with an optional key" )
     @Procedure( name = "db.index.explicit.removeNode", mode = WRITE )
     public Stream<BooleanResult> nodeManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
-            @Name( "node" ) Node node, @Name( "key" ) String key )
+            @Name( "node" ) Node node, @Name( value = "key", defaultValue = DEFAULT_KEY ) String key )
     {
-        if ( key.equals( Name.DEFAULT_VALUE ) )
+        if ( key.equals( DEFAULT_KEY ) )
         {
             graphDatabaseAPI.index().forNodes( explicitIndexName ).remove( node );
         }
@@ -592,9 +594,9 @@ public class BuiltInProcedures
     @Procedure( name = "db.index.explicit.removeRelationship", mode = WRITE )
     public Stream<BooleanResult> relationshipManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
             @Name( "relationship" ) Relationship relationship,
-            @Name( "key" ) String key )
+            @Name( value = "key", defaultValue = DEFAULT_KEY ) String key )
     {
-        if ( key.equals( Name.DEFAULT_VALUE ) )
+        if ( key.equals( DEFAULT_KEY ) )
         {
             graphDatabaseAPI.index().forRelationships( explicitIndexName ).remove( relationship );
         }
