@@ -28,7 +28,6 @@ import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -44,6 +43,7 @@ public class BatchEndpointIT
             .withConfig( GraphDatabaseSettings.logs_directory,
                     getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.logs_directory ) )
             .withConfig( ServerSettings.http_logging_enabled, "true" )
+            .withConfig( ServerSettings.script_enabled, "true" )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" );
 
     @Test
