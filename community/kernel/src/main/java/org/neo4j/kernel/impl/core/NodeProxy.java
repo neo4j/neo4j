@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.helpers.Nodes;
+import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -75,7 +76,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
-public class NodeProxy implements Node
+public class NodeProxy implements Node, RelationshipFactory<Relationship>
 {
     private final EmbeddedProxySPI spi;
     private final long nodeId;
@@ -131,7 +132,8 @@ public class NodeProxy implements Node
     @Override
     public ResourceIterable<Relationship> getRelationships( final Direction direction )
     {
-        return innerGetRelationships( direction, null );
+        KernelTransaction transaction = safeAcquireTransaction();
+        return innerGetRelationships( transaction, direction, null );
     }
 
     @Override
@@ -149,30 +151,28 @@ public class NodeProxy implements Node
     @Override
     public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
     {
-        final int[] typeIds;
-        try ( Statement statement = spi.statement() )
-        {
-            typeIds = relTypeIds( types, statement );
-        }
-        return innerGetRelationships( direction, typeIds );
+        KernelTransaction transaction = safeAcquireTransaction();
+        int[] typeIds = relTypeIds( types, transaction.tokenRead() );
+        return innerGetRelationships( transaction, direction, typeIds );
     }
 
-    private ResourceIterable<Relationship> innerGetRelationships( final Direction direction, int[] typeIds )
+    private ResourceIterable<Relationship> innerGetRelationships(
+            KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
-        assertInUnterminatedTransaction();
-        return () -> getRelationshipSelectionIterator( direction, typeIds );
+        return () -> getRelationshipSelectionIterator( transaction, direction, typeIds );
     }
 
     @Override
     public boolean hasRelationship()
     {
-        return innerHasRelationships( Direction.BOTH, null );
+        return hasRelationship( Direction.BOTH );
     }
 
     @Override
     public boolean hasRelationship( Direction direction )
     {
-        return innerHasRelationships( direction, null );
+        KernelTransaction transaction = safeAcquireTransaction();
+        return innerHasRelationships( transaction, direction, null );
     }
 
     @Override
@@ -184,12 +184,9 @@ public class NodeProxy implements Node
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        final int[] typeIds;
-        try ( Statement statement = spi.statement() )
-        {
-            typeIds = relTypeIds( types, statement );
-        }
-        return innerHasRelationships( direction, typeIds );
+        KernelTransaction transaction = safeAcquireTransaction();
+        int[] typeIds = relTypeIds( types, transaction.tokenRead() );
+        return innerHasRelationships( transaction, direction, typeIds );
     }
 
     @Override
@@ -198,10 +195,13 @@ public class NodeProxy implements Node
         return hasRelationship( dir, type );
     }
 
-    private boolean innerHasRelationships( final Direction direction, int[] typeIds )
+    private boolean innerHasRelationships( final KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
-        assertInUnterminatedTransaction();
-        return getRelationshipSelectionIterator( direction, typeIds ).hasNext();
+        try ( ResourceIterator<Relationship> iterator =
+                getRelationshipSelectionIterator( transaction, direction, typeIds ) )
+        {
+            return iterator.hasNext();
+        }
     }
 
     @Override
@@ -226,11 +226,6 @@ public class NodeProxy implements Node
             }
             return rel;
         }
-    }
-
-    private void assertInUnterminatedTransaction()
-    {
-        spi.assertInUnterminatedTransaction();
     }
 
     @Override
@@ -766,35 +761,36 @@ public class NodeProxy implements Node
         }
     }
 
-    private ResourceIterator<Relationship> getRelationshipSelectionIterator( Direction direction, int[] typeIds )
+    private ResourceIterator<Relationship> getRelationshipSelectionIterator(
+            KernelTransaction transaction, Direction direction, int[] typeIds )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
         NodeCursor node = transaction.nodeCursor();
         transaction.dataRead().singleNode( getId(), node );
         if ( !node.next() )
         {
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
+
         switch ( direction )
         {
         case OUTGOING:
-            return outgoingIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+            return outgoingIterator( transaction.cursors(), node, typeIds, this );
         case INCOMING:
-            return incomingIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+            return incomingIterator( transaction.cursors(), node, typeIds, this );
         case BOTH:
-            return allIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+            return allIterator( transaction.cursors(), node, typeIds, this );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
     }
 
-    private int[] relTypeIds( RelationshipType[] types, Statement statement )
+    private int[] relTypeIds( RelationshipType[] types, TokenRead token )
     {
         int[] ids = new int[types.length];
         int outIndex = 0;
         for ( RelationshipType type : types )
         {
-            int id = statement.readOperations().relationshipTypeGetForName( type.name() );
+            int id = token.relationshipType( type.name() );
             if ( id != NO_SUCH_RELATIONSHIP_TYPE )
             {
                 ids[outIndex++] = id;
@@ -828,5 +824,11 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
         }
+    }
+
+    @Override
+    public Relationship relationship( long id, long startNodeId, int typeId, long endNodeId )
+    {
+        return spi.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
     }
 }

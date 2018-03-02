@@ -43,8 +43,11 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private PrimitiveLongIterator added;
     private Set<Long> removed;
 
-    DefaultNodeLabelIndexCursor()
+    private final DefaultCursors pool;
+
+    DefaultNodeLabelIndexCursor( DefaultCursors pool )
     {
+        this.pool = pool;
         node = NO_ID;
     }
 
@@ -140,11 +143,16 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     @Override
     public void close()
     {
-        super.close();
-        node = NO_ID;
-        labels = null;
-        read = null;
-        removed = null;
+        if ( !isClosed() )
+        {
+            super.close();
+            node = NO_ID;
+            labels = null;
+            read = null;
+            removed = null;
+
+            pool.accept( this );
+        }
     }
 
     @Override
@@ -170,5 +178,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private boolean isRemoved( long reference )
     {
         return removed != null && removed.contains( reference );
+    }
+
+    public void release()
+    {
+        // nothing to do
     }
 }

@@ -51,9 +51,11 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private PrimitiveLongIterator added = emptyIterator();
     private PrimitiveLongSet removed = emptySet();
     private boolean needsValues;
+    private final DefaultCursors pool;
 
-    DefaultNodeValueIndexCursor()
+    DefaultNodeValueIndexCursor( DefaultCursors pool )
     {
+        this.pool = pool;
         node = NO_ID;
     }
 
@@ -187,13 +189,18 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public void close()
     {
-        super.close();
-        this.node = NO_ID;
-        this.query = null;
-        this.values = null;
-        this.read = null;
-        this.added = emptyIterator();
-        this.removed = PrimitiveLongCollections.emptySet();
+        if ( !isClosed() )
+        {
+            super.close();
+            this.node = NO_ID;
+            this.query = null;
+            this.values = null;
+            this.read = null;
+            this.added = emptyIterator();
+            this.removed = PrimitiveLongCollections.emptySet();
+
+            pool.accept( this );
+        }
     }
 
     @Override
@@ -303,5 +310,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
         longSet.addAll( changes.getRemoved().iterator() );
         return longSet;
+    }
+
+    public void release()
+    {
+        // nothing to do
     }
 }

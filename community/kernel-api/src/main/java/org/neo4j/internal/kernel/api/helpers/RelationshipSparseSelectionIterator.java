@@ -31,25 +31,24 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSp
 {
 
     private final RelationshipFactory<R> factory;
-    private R _next;
-    private boolean initialized;
+    private long next;
 
-    public RelationshipSparseSelectionIterator( RelationshipFactory<R> factory )
+    RelationshipSparseSelectionIterator( RelationshipFactory<R> factory )
     {
         this.factory = factory;
-        this.initialized = false;
+        this.next = RelationshipSelections.UNINITIALIZED;
     }
 
     @Override
     public boolean hasNext()
     {
-        if ( !initialized )
+        if ( next == RelationshipSelections.UNINITIALIZED )
         {
             fetchNext();
-            initialized = true;
+            next = cursor.relationshipReference();
         }
 
-        if ( _next == null )
+        if ( next == RelationshipSelections.NO_ID )
         {
             close();
             return false;
@@ -64,17 +63,21 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSp
         {
             throw new NoSuchElementException();
         }
-        R current = _next;
+        R current = factory.relationship( next,
+                                          cursor.sourceNodeReference(),
+                                          cursor.label(),
+                                          cursor.targetNodeReference() );
+
         if ( !fetchNext() )
         {
-            _next = null;
+            close();
+            next = RelationshipSelections.NO_ID;
         }
-        return current;
-    }
+        else
+        {
+            next = cursor.relationshipReference();
+        }
 
-    @Override
-    protected void setRelationship( long id, long sourceNode, int type, long targetNode )
-    {
-        _next = factory.relationship( id, sourceNode, type, targetNode );
+        return current;
     }
 }

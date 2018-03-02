@@ -47,9 +47,12 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     private HasChanges hasChanges = HasChanges.MAYBE;
     private Set<Long> addedNodes;
 
-    DefaultNodeCursor()
+    private final DefaultCursors pool;
+
+    DefaultNodeCursor( DefaultCursors pool )
     {
         super( NO_ID );
+        this.pool = pool;
     }
 
     void scan( Read read )
@@ -242,27 +245,21 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     @Override
     public void close()
     {
-        if ( pageCursor != null )
+        if ( !isClosed() )
         {
-            pageCursor.close();
-            pageCursor = null;
-        }
-        read = null;
+            read = null;
+            hasChanges = HasChanges.MAYBE;
+            addedNodes = emptySet();
+            reset();
 
-        if ( labelCursor != null )
-        {
-            labelCursor.close();
-            labelCursor = null;
+            pool.accept( this );
         }
-        hasChanges = HasChanges.MAYBE;
-        addedNodes = emptySet();
-        reset();
     }
 
     @Override
     public boolean isClosed()
     {
-        return pageCursor == null;
+        return read == null;
     }
 
     /**
@@ -328,6 +325,21 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         else
         {
             return "NodeCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", underlying record=" + super.toString() + " ]";
+        }
+    }
+
+    void release()
+    {
+        if ( labelCursor != null )
+        {
+            labelCursor.close();
+            labelCursor = null;
+        }
+
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
         }
     }
 }

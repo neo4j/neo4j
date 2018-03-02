@@ -57,7 +57,7 @@ abstract class RelationshipDenseSelection
      * @param groupCursor Group cursor to use. Pre-initialized on node.
      * @param relationshipCursor Relationship traversal cursor to use.
      */
-    public void outgoing(
+    public final void outgoing(
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor relationshipCursor )
     {
@@ -71,7 +71,7 @@ abstract class RelationshipDenseSelection
      * @param relationshipCursor Relationship traversal cursor to use.
      * @param types Relationship types to traverse
      */
-    public void outgoing(
+    public final void outgoing(
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor relationshipCursor,
             int[] types )
@@ -94,7 +94,7 @@ abstract class RelationshipDenseSelection
      * @param groupCursor Group cursor to use. Pre-initialized on node.
      * @param relationshipCursor Relationship traversal cursor to use.
      */
-    public void incoming(
+    public final void incoming(
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor relationshipCursor )
     {
@@ -108,7 +108,7 @@ abstract class RelationshipDenseSelection
      * @param relationshipCursor Relationship traversal cursor to use.
      * @param types Relationship types to traverse
      */
-    public void incoming(
+    public final void incoming(
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor relationshipCursor,
             int[] types )
@@ -131,7 +131,7 @@ abstract class RelationshipDenseSelection
      * @param groupCursor Group cursor to use. Pre-initialized on node.
      * @param relationshipCursor Relationship traversal cursor to use.
      */
-    public void all(
+    public final void all(
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor relationshipCursor )
     {
@@ -145,7 +145,7 @@ abstract class RelationshipDenseSelection
      * @param relationshipCursor Relationship traversal cursor to use.
      * @param types Relationship types to traverse
      */
-    public void all(
+    public final void all(
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor relationshipCursor,
             int[] types )
@@ -164,8 +164,7 @@ abstract class RelationshipDenseSelection
     }
 
     /**
-     * Fetch the next valid relationship. If a valid relationship is found, will callback
-     * using {@link #setRelationship(long, long, int, long)}
+     * Fetch the next valid relationship.
      *
      * @return True is a valid relationship was found
      */
@@ -187,16 +186,7 @@ abstract class RelationshipDenseSelection
                     return false;
                 }
 
-                do
-                {
-                    onGroup = groupCursor.next();
-                } while ( onGroup && !correctRelationshipType() );
-
-                if ( onGroup )
-                {
-                    foundTypes++;
-                    currentDirection = 0;
-                }
+                loopOnRelationship();
             }
 
             if ( !onGroup )
@@ -204,46 +194,51 @@ abstract class RelationshipDenseSelection
                 return false;
             }
 
-            Dir d = directions[currentDirection];
-
-            switch ( d )
-            {
-            case OUT:
-                groupCursor.outgoing( relationshipCursor );
-                onRelationship = relationshipCursor.next();
-                break;
-
-            case IN:
-                groupCursor.incoming( relationshipCursor );
-                onRelationship = relationshipCursor.next();
-                break;
-
-            case LOOP:
-                groupCursor.loops( relationshipCursor );
-                onRelationship = relationshipCursor.next();
-                break;
-
-            default:
-                throw new IllegalStateException( "Lorem ipsus, Brutus" );
-            }
+            setupCursors();
         }
 
-        setRelationship(relationshipCursor.relationshipReference(),
-                        relationshipCursor.sourceNodeReference(),
-                        relationshipCursor.label(),
-                        relationshipCursor.targetNodeReference() );
         return true;
     }
 
-    /**
-     * Called when {@link #fetchNext()} finds a valid relationship.
-     *
-     * @param id relationship id
-     * @param sourceNode source node id
-     * @param type relationship type
-     * @param targetNode target node id
-     */
-    protected abstract void setRelationship( long id, long sourceNode, int type, long targetNode );
+    private void loopOnRelationship()
+    {
+        do
+        {
+            onGroup = groupCursor.next();
+        } while ( onGroup && !correctRelationshipType() );
+
+        if ( onGroup )
+        {
+            foundTypes++;
+            currentDirection = 0;
+        }
+    }
+
+    private void setupCursors()
+    {
+        Dir d = directions[currentDirection];
+
+        switch ( d )
+        {
+        case OUT:
+            groupCursor.outgoing( relationshipCursor );
+            onRelationship = relationshipCursor.next();
+            break;
+
+        case IN:
+            groupCursor.incoming( relationshipCursor );
+            onRelationship = relationshipCursor.next();
+            break;
+
+        case LOOP:
+            groupCursor.loops( relationshipCursor );
+            onRelationship = relationshipCursor.next();
+            break;
+
+        default:
+            throw new IllegalStateException( "Lorem ipsus, Brutus. (could not setup cursor for Dir='" + d + "')" );
+        }
+    }
 
     private boolean correctRelationshipType()
     {

@@ -43,6 +43,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     private enum FilterState
     {
+        // need filter, and need to read filter state from first store relationship
         NOT_INITIALIZED( RelationshipDirection.ERROR )
                 {
                     @Override
@@ -51,6 +52,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         throw new IllegalStateException( "Cannot call check on uninitialized filter" );
                     }
                 },
+        // allow only incoming relationships
         INCOMING( RelationshipDirection.INCOMING )
                 {
                     @Override
@@ -59,6 +61,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         return origin == target;
                     }
                 },
+        // allow only outgoing relationships
         OUTGOING( RelationshipDirection.OUTGOING )
                 {
                     @Override
@@ -67,6 +70,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         return origin == source;
                     }
                 },
+        // allow only loop relationships
         LOOP( RelationshipDirection.LOOP )
                 {
                     @Override
@@ -75,6 +79,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                         return source == target;
                     }
                 },
+        // no filtering required
         NONE( RelationshipDirection.ERROR )
                 {
                     @Override
@@ -117,6 +122,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     private Record buffer;
     private PageCursor pageCursor;
     private final DefaultRelationshipGroupCursor group;
+    private final DefaultCursors pool;
     private GroupState groupState;
     private FilterState filterState;
     private boolean filterStore;
@@ -124,9 +130,10 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     private PrimitiveLongIterator addedRelationships;
 
-    DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group )
+    DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, DefaultCursors pool )
     {
         this.group = group;
+        this.pool = pool;
     }
 
     /*
@@ -181,7 +188,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     /*
      * Grouped traversal of non-dense node. Same type and direction as first read relationship. Store relationships are
-     * all assumed to be of wanted relationship type and direction iff filterStore == true.
+     * all assumed to be of wanted relationship type and direction iff filterStore == false.
      */
     void filtered( long nodeReference, long reference, Read read, boolean filterStore )
     {
@@ -271,13 +278,16 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
             //  - Return first relationship if it's not deleted
             // Subsequent relationships need to have same type and direction
 
-            read.relationshipFull( this, next, pageCursor );
-            setupFilterState();
-
-            hasChanges = hasChanges();
+            hasChanges = hasChanges(); // <- will setup filter state if needed
             txs = hasChanges ? read.txState() : null;
 
-            if ( !hasChanges || !txs.relationshipIsDeletedInThisTx( getId() ) )
+            if ( filterState == FilterState.NOT_INITIALIZED && filterStore )
+            {
+                read.relationshipFull( this, next, pageCursor );
+                setupFilterState();
+            }
+
+            if ( filterState != FilterState.NOT_INITIALIZED && (!hasChanges || !txs.relationshipIsDeletedInThisTx( getId() ) ) )
             {
                 return true;
             }
@@ -478,13 +488,14 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     public void close()
     {
-        if ( pageCursor != null )
+        if ( !isClosed() )
         {
-            pageCursor.close();
-            pageCursor = null;
+            read = null;
+            buffer = null;
+            reset();
+
+            pool.accept( this );
         }
-        read = null;
-        reset();
     }
 
     private void reset()
@@ -500,6 +511,12 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     protected void collectAddedTxStateSnapshot()
     {
+        if ( filterState == FilterState.NOT_INITIALIZED )
+        {
+            read.relationshipFull( this, next, pageCursor );
+            setupFilterState();
+        }
+
         NodeState nodeState = read.txState().getNodeState( originNodeReference );
         addedRelationships = hasTxStateFilter() ?
                              nodeState.getAddedRelationships( filterState.direction, filterType ) :
@@ -514,7 +531,18 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean isClosed()
     {
-        return pageCursor == null && !hasBufferedData();
+        return read == null && !hasBufferedData();
+    }
+
+    public void release()
+    {
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
+        }
+
+        group.release();
     }
 
     @Override

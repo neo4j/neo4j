@@ -32,8 +32,11 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
     private long node;
     private float score;
 
-    DefaultNodeExplicitIndexCursor()
+    private final DefaultCursors pool;
+
+    DefaultNodeExplicitIndexCursor( DefaultCursors pool )
     {
+        this.pool = pool;
         node = NO_ID;
     }
 
@@ -90,11 +93,16 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
     @Override
     public void close()
     {
-        super.close();
-        node = NO_ID;
-        score = 0;
-        expectedSize = 0;
-        read = null;
+        if ( !isClosed() )
+        {
+            super.close();
+            node = NO_ID;
+            score = 0;
+            expectedSize = 0;
+            read = null;
+
+            pool.accept( this );
+        }
     }
 
     @Override
@@ -115,5 +123,10 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
             return "NodeExplicitIndexCursor[node=" + node + ", expectedSize=" + expectedSize + ", score=" + score +
                     ", underlying record=" + super.toString() + " ]";
         }
+    }
+
+    public void release()
+    {
+        // nothing to do
     }
 }

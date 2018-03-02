@@ -34,6 +34,13 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     private long relationship;
     private float score;
 
+    private final DefaultCursors pool;
+
+    DefaultRelationshipExplicitIndexCursor( DefaultCursors pool )
+    {
+        this.pool = pool;
+    }
+
     @Override
     public void initialize( ExplicitIndexProgressor progressor, int expectedSize )
     {
@@ -117,11 +124,16 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     @Override
     public void close()
     {
-        super.close();
-        relationship = NO_ID;
-        score = 0;
-        expectedSize = 0;
-        read = null;
+        if ( !isClosed() )
+        {
+            super.close();
+            relationship = NO_ID;
+            score = 0;
+            expectedSize = 0;
+            read = null;
+
+            pool.accept( this );
+        }
     }
 
     @Override
@@ -142,5 +154,10 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
             return "RelationshipExplicitIndexCursor[relationship=" + relationship + ", expectedSize=" + expectedSize + ", score=" + score +
                     " ,underlying record=" + super.toString() + " ]";
         }
+    }
+
+    public void release()
+    {
+        // nothing to do
     }
 }

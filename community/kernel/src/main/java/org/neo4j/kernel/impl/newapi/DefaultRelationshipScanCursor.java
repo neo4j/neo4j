@@ -33,7 +33,14 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     private long next;
     private long highMark;
     private PageCursor pageCursor;
-    Set<Long> addedRelationships;
+    private Set<Long> addedRelationships;
+
+    private final DefaultCursors pool;
+
+    DefaultRelationshipScanCursor( DefaultCursors pool )
+    {
+        this.pool = pool;
+    }
 
     void scan( int label, Read read )
     {
@@ -141,13 +148,13 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     @Override
     public void close()
     {
-        if ( pageCursor != null )
+        if ( !isClosed() )
         {
-            pageCursor.close();
-            pageCursor = null;
+            read = null;
+            reset();
+
+            pool.accept( this );
         }
-        read = null;
-        reset();
     }
 
     private void reset()
@@ -158,7 +165,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     @Override
     public boolean isClosed()
     {
-        return pageCursor == null;
+        return read == null;
     }
 
     @Override
@@ -185,6 +192,15 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         if ( !isSingle() )
         {
             addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
+        }
+    }
+
+    public void release()
+    {
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
         }
     }
 }

@@ -96,7 +96,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final VersionContextSupplier versionContextSupplier;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
-    private final DefaultCursors cursors;
+    private final Supplier<DefaultCursors> cursorsSupplier;
     private final KernelToken token;
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
@@ -138,7 +138,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore,
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
-            KernelToken token, DefaultCursors cursors,
+            KernelToken token, Supplier<DefaultCursors> cursorsSupplier,
             AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier )
     {
@@ -166,7 +166,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
         doBlockNewTransactions();
-        this.cursors = cursors;
+        this.cursorsSupplier = cursorsSupplier;
         this.token = token;
     }
 
@@ -362,7 +362,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, explicitIndexTxStateSupplier, localTxPool,
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
-                            tracers.pageCursorTracerSupplier, storageEngine, accessCapability, token, cursors, autoIndexing,
+                            tracers.pageCursorTracerSupplier, storageEngine, accessCapability, token,
+                            cursorsSupplier.get(), autoIndexing,
                             explicitIndexStore, versionContextSupplier );
             this.transactions.add( tx );
             return tx;

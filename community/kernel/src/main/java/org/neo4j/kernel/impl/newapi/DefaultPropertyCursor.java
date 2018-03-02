@@ -65,10 +65,12 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
+    private final DefaultCursors pool;
 
-    public DefaultPropertyCursor()
+    public DefaultPropertyCursor( DefaultCursors pool )
     {
         super( NO_ID );
+        this.pool = pool;
     }
 
     void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
@@ -230,26 +232,16 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public void close()
     {
-        if ( page != null )
+        if ( !isClosed() )
         {
-            page.close();
-            page = null;
+            propertiesState = null;
+            txStateChangedProperties = null;
+            txStateValue = null;
+            read = null;
+            clear();
+
+            pool.accept( this );
         }
-        if ( stringPage != null )
-        {
-            stringPage.close();
-            stringPage = null;
-        }
-        if ( arrayPage != null )
-        {
-            arrayPage.close();
-            arrayPage = null;
-        }
-        propertiesState = null;
-        txStateChangedProperties = null;
-        txStateValue = null;
-        read = null;
-        clear();
     }
 
     @Override
@@ -552,7 +544,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public boolean isClosed()
     {
-        return page == null;
+        return read == null;
     }
 
     @Override
@@ -566,6 +558,25 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         {
             return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next +
                    ", underlying record=" + super.toString() + " ]";
+        }
+    }
+
+    public void release()
+    {
+        if ( stringPage != null )
+        {
+            stringPage.close();
+            stringPage = null;
+        }
+        if ( arrayPage != null )
+        {
+            arrayPage.close();
+            arrayPage = null;
+        }
+        if ( page != null )
+        {
+            page.close();
+            page = null;
         }
     }
 }
