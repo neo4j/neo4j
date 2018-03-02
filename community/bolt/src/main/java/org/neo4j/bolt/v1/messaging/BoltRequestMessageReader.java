@@ -47,7 +47,7 @@ public class BoltRequestMessageReader
      *
      * @param handler handler for request messages
      */
-    public <E extends Exception> void read( BoltRequestMessageHandler<E> handler ) throws IOException, E
+    public void read( BoltRequestMessageHandler handler ) throws IOException
     {
         try
         {

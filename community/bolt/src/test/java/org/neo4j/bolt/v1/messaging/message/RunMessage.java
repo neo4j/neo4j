@@ -25,7 +25,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 public class RunMessage implements RequestMessage
 {
-    private static MapValue EMPTY_PARAMETERS = VirtualValues.EMPTY_MAP;
+    private static final MapValue EMPTY_PARAMETERS = VirtualValues.EMPTY_MAP;
 
     /**
      * Factory method for obtaining RUN messages.
@@ -64,7 +64,7 @@ public class RunMessage implements RequestMessage
     }
 
     @Override
-    public <E extends Exception> void dispatch( BoltRequestMessageHandler<E> consumer ) throws E
+    public void dispatch( BoltRequestMessageHandler consumer )
     {
         consumer.onRun( statement, params );
     }

@@ -23,7 +23,7 @@ import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public class AckFailureMessage implements RequestMessage
 {
-    private static AckFailureMessage INSTANCE = new AckFailureMessage();
+    private static final AckFailureMessage INSTANCE = new AckFailureMessage();
 
     /**
      * Factory method for obtaining ACK_FAILURE messages.
@@ -38,7 +38,7 @@ public class AckFailureMessage implements RequestMessage
     }
 
     @Override
-    public <E extends Exception> void dispatch( BoltRequestMessageHandler<E> consumer ) throws E
+    public void dispatch( BoltRequestMessageHandler consumer )
     {
         consumer.onAckFailure();
     }

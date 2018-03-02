@@ -23,7 +23,7 @@ import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public class PullAllMessage implements RequestMessage
 {
-    private static PullAllMessage INSTANCE = new PullAllMessage();
+    private static final PullAllMessage INSTANCE = new PullAllMessage();
 
     public static PullAllMessage pullAll()
     {
@@ -35,7 +35,7 @@ public class PullAllMessage implements RequestMessage
     }
 
     @Override
-    public <E extends Exception> void dispatch( BoltRequestMessageHandler<E> consumer ) throws E
+    public void dispatch( BoltRequestMessageHandler consumer )
     {
         consumer.onPullAll();
     }

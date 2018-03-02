@@ -25,25 +25,21 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.values.virtual.MapValue;
 
 /**
- * Interface defining simple handler methods for each defined
- * Bolt request message.
- *
- * @param <E> an exception that may be thrown by each handler method
+ * Interface defining simple handler methods for each defined Bolt request message.
  */
-public interface BoltRequestMessageHandler<E extends Exception>
+public interface BoltRequestMessageHandler
 {
-    void onInit( String userAgent, Map<String,Object> authToken ) throws E;
+    void onInit( String userAgent, Map<String,Object> authToken );
 
-    void onAckFailure() throws E;
+    void onAckFailure();
 
-    void onReset() throws E;
+    void onReset();
 
-    void onRun( String statement, MapValue params ) throws E;
+    void onRun( String statement, MapValue params );
 
-    void onDiscardAll() throws E;
+    void onDiscardAll();
 
-    void onPullAll() throws E;
+    void onPullAll();
 
-    void onExternalError( Neo4jError error ) throws E;
-
+    void onExternalError( Neo4jError error );
 }

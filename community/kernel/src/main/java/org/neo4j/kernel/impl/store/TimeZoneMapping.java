@@ -23,12 +23,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.util.Collections.unmodifiableSet;
 
 public class TimeZoneMapping
 {
@@ -61,9 +63,9 @@ public class TimeZoneMapping
         return TIME_ZONE_SHORT_TO_STRING.get( offset );
     }
 
-    static Collection<String> supportedTimeZones()
+    public static Set<String> supportedTimeZones()
     {
-        return TIME_ZONE_STRING_TO_SHORT.keySet();
+        return unmodifiableSet( TIME_ZONE_STRING_TO_SHORT.keySet() );
     }
 
     static
