@@ -330,8 +330,6 @@ class ReflectiveProcedureCompiler
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
         TypeMappers.TypeChecker typeChecker = typeMappers.checkerFor( returnType );
-        MethodHandle procedureMethod = lookup.unreflect( method );
-//        TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
         Optional<String> description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
@@ -358,7 +356,6 @@ class ReflectiveProcedureCompiler
                 new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
                         config.rolesFor( procName.toString() ), description );
 
-//        return new ReflectiveUserFunction( signature, constructor, procedureMethod, typeChecker, typeMappers, setters );
         return new ReflectiveUserFunction( signature, constructor, method, typeChecker, typeMappers, setters );
     }
 
@@ -573,21 +570,12 @@ class ReflectiveProcedureCompiler
             }
         }
 
-        protected Object[] args( int numberOfDeclaredArguments, Object cls, Object[] input )
+        protected Object[] mapToObjects( AnyValue[] input )
         {
-            Object[] args = new Object[numberOfDeclaredArguments + 1];
-            args[0] = cls;
-            System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
-            return args;
-        }
-
-        protected Object[] args( int numberOfDeclaredArguments, Object cls, AnyValue[] input )
-        {
-            Object[] args = new Object[numberOfDeclaredArguments + 1];
-            args[0] = cls;
+            Object[] args = new Object[input.length];
             for ( int i = 0; i < input.length; i++ )
             {
-                args[i + 1] = input[i].map( mapper );
+                args[i] = input[i].map( mapper );
             }
             return args;
         }
@@ -810,7 +798,7 @@ class ReflectiveProcedureCompiler
                 inject( ctx, cls );
 
                 // Call the method
-                Object rs = udfMethod.invoke( cls, input );
+                Object rs = udfMethod.invoke( cls, mapToObjects( input ) );
 
                 return typeChecker.toValue( rs );
             }
