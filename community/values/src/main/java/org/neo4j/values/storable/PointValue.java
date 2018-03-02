@@ -447,7 +447,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
             else if ( crs == CoordinateReferenceSystem.WGS84_3D )
             {
-                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.WGS84_3D.getName() + " point must contain 'latitude', 'longitude' and 'height'" );
+                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.WGS84_3D.getName() +
+                                                    " point must contain 'latitude', 'longitude' and 'height'" );
             }
             throw new IllegalArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
         }
@@ -459,22 +460,31 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return Values.pointValue( crs, coordinates );
     }
 
-    private static enum PointValueField
+    private enum PointValueField
     {
         X
                 {
                     @Override
-                    ValueGroup valueType() { return NUMBER; }
+                    ValueGroup valueType()
+                    {
+                        return NUMBER;
+                    }
                 },
         Y
                 {
                     @Override
-                    ValueGroup valueType() { return NUMBER; }
+                    ValueGroup valueType()
+                    {
+                        return NUMBER;
+                    }
                 },
         Z
                 {
                     @Override
-                    ValueGroup valueType() { return NUMBER; }
+                    ValueGroup valueType()
+                    {
+                        return NUMBER;
+                    }
                 },
         LATITUDE
                 {
@@ -495,15 +505,24 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         HEIGHT
                 {
                     @Override
-                    ValueGroup valueType() { return NUMBER; }
+                    ValueGroup valueType()
+                    {
+                        return NUMBER;
+                    }
                 },
         CRS
                 {
                     @Override
-                    ValueGroup valueType() { return TEXT; }
+                    ValueGroup valueType()
+                    {
+                        return TEXT;
+                    }
                 },
-        __MAX_VALUE__;
+        __MAX_VALUE__; // This is just used to define array boundaries
 
-        ValueGroup valueType() { return ValueGroup.NO_VALUE; }
+        ValueGroup valueType()
+        {
+            return ValueGroup.NO_VALUE;
+        }
     }
 }

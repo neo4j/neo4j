@@ -482,7 +482,7 @@ public class CsvInputBatchImportIT
             for ( int i = 0; i < node.propertyCount(); i++ )
             {
                 final Object expectedValue = node.propertyValue( i );
-                Consumer verify = (actualValue) ->
+                Consumer verify = actualValue ->
                 {
                     assertEquals( expectedValue, actualValue );
                 };
@@ -490,7 +490,7 @@ public class CsvInputBatchImportIT
             }
 
             // Special verifier for point property
-            Consumer verifyPoint = (actualValue) ->
+            Consumer verifyPoint = actualValue ->
             {
                 // The y-coordinate should match the node number
                 PointValue v = (PointValue) actualValue;
