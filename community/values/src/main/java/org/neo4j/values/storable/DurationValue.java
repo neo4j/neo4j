@@ -718,9 +718,10 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     /**
-     * In contrast to {@link #get(TemporalUnit)}, this method never returns more than 12 months, 60 minutes, or 60 seconds.
+     * In contrast to {@link #get(TemporalUnit)}, this method supports more units, namely:
      *
-     * It supports more units, namely years, hours, minutes, milliseconds, and microseconds.
+     * years, hours, minutes, milliseconds, microseconds,
+     * monthsOfYear, minutesOfHour, secondsOfMinute, millisecondsOfSecond, microsecondsOfSecond, nanosecondsOfSecond
      */
     public LongValue get( String fieldName )
     {
@@ -731,6 +732,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             val = months / 12;
             break;
         case "months":
+            val = months;
+            break;
+        case "monthsofyear":
             val = months % 12;
             break;
         case "days":
@@ -739,20 +743,35 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         case "hours":
             val = seconds / 3600;
             break;
-        case "minutes":
+        case "minutesofhour":
             val = (seconds / 60) % 60;
             break;
-        case "seconds":
+        case "minutes":
+            val = seconds / 60;
+            break;
+        case "secondsofminute":
             val = seconds % 60;
             break;
-        case "milliseconds":
+        case "seconds":
+            val = seconds;
+            break;
+        case "millisecondsofsecond":
             val = nanos / 1000_000;
             break;
-        case "microseconds":
+        case "milliseconds":
+            val = seconds * 1000 + nanos / 1000_000;
+            break;
+        case "microsecondsofsecond":
             val = nanos / 1000;
             break;
-        case "nanoseconds":
+        case "microseconds":
+            val = seconds * 1000_000 + nanos / 1000;
+            break;
+        case "nanosecondsofsecond":
             val = nanos;
+            break;
+        case "nanoseconds":
+            val = seconds * NANOS_PER_SECOND + nanos;
             break;
         default:
             throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );

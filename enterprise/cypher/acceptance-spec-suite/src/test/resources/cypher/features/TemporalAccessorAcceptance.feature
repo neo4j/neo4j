@@ -99,11 +99,12 @@ Feature: TemporalAccessorAcceptance
     Given an empty graph
     When executing query:
       """
-      WITH duration({years: 12, months:5, days: -14, hours:16, minutes: 12, seconds: 70, nanoseconds: 123456789}) as d
+      WITH duration({years: 1, months:1, days: 1, hours:1, minutes: 1, seconds: 1, nanoseconds: 111111111}) as d
       RETURN d.years, d.months, d.days,
-             d.hours, d.minutes, d.seconds, d.milliseconds, d.microseconds, d.nanoseconds
+             d.hours, d.minutes, d.seconds, d.milliseconds, d.microseconds, d.nanoseconds,
+             d.monthsOfYear, d.minutesOfHour, d.secondsOfMinute, d.millisecondsOfSecond, d.microsecondsOfSecond, d.nanosecondsOfSecond
       """
     Then the result should be, in order:
-      | d.years | d.months | d.days | d.hours | d.minutes | d.seconds | d.milliseconds | d.microseconds | d.nanoseconds |
-      | 12      | 5        | -14    | 16      | 13        | 10        |  123           | 123456         | 123456789     |
+      | d.years | d.months | d.days | d.hours | d.minutes | d.seconds | d.milliseconds | d.microseconds | d.nanoseconds | d.monthsOfYear | d.minutesOfHour | d.secondsOfMinute | d.millisecondsOfSecond | d.microsecondsOfSecond | d.nanosecondsOfSecond |
+      | 1       | 13       | 1      | 1       | 61        | 3661      |  3661111       | 3661111111     | 3661111111111 | 1              | 1               | 1                 | 111                    | 111111                 | 111111111             |
     And no side effects

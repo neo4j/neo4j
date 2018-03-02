@@ -201,7 +201,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
         if ( field == Field.timezone )
         {
-            return Values.stringValue( getZoneId().toString() );
+            return Values.stringValue( getZoneId(this::getZoneOffset).toString() );
         }
         if ( field == Field.offset )
         {
