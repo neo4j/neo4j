@@ -77,84 +77,18 @@ sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
     requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-sealed trait CreateGraphClause extends MultipleGraphClause with UpdateClause {
-  def snapshot: Boolean
-  def graph: Variable
-  def at: GraphUrl
-  def of: Option[Pattern]
 
-  override def name = "CREATE GRAPH"
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    declareGraph(graph) chain
-    of.fold(SemanticCheckResult.success)(SemanticPatternCheck.check(Pattern.SemanticContext.Create, _))
-}
-
-final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
-  extends CreateGraphClause {
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    SemanticState.recordCurrentScope(this)
-}
-
-final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
-  extends CreateGraphClause {
-
-  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
-
-}
-
-final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
-  extends CreateGraphClause {
-
-  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
-}
-
-final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause{
-
-  override def name = "DELETE GRAPHS"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    SemanticExpressionCheck.semanticCheckFold(graphs)(SemanticExpressionCheck.ensureGraphDefined) chain
-    SemanticState.recordCurrentScope(this)
-}
-
-final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause {
-
-  override def name = "PERSIST"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      graph.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause {
-
-  override def name = "SNAPSHOT"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      graph.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause {
-
-  override def name = "RELOCATE"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      graph.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
+//final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
+//  extends MultipleGraphClause with UpdateClause {
+//
+//  override def name = "RELOCATE"
+//
+//  override def semanticCheck: SemanticCheck =
+//    super.semanticCheck chain
+//      graph.semanticCheck chain
+//      SemanticState.recordCurrentScope(this)
+//}
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   override def name = "START"
