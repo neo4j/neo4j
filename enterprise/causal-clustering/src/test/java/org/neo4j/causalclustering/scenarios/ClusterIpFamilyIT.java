@@ -31,6 +31,7 @@ import java.util.Collection;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -64,7 +65,6 @@ public class ClusterIpFamilyIT
     public ClusterIpFamilyIT( DiscoveryServiceType discoveryServiceType, IpFamily ipFamily, boolean useWildcard )
     {
         clusterRule.withDiscoveryServiceFactory( discoveryServiceType.create() );
-
         clusterRule.withIpFamily( ipFamily ).useWildcard( useWildcard );
     }
 

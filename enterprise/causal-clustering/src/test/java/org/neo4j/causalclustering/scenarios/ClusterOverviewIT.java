@@ -45,7 +45,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.RoleInfo;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction.Type;

@@ -20,10 +20,10 @@
 package org.neo4j.causalclustering.scenarios;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -43,7 +43,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.Node;
@@ -64,18 +64,18 @@ public class MultiClusteringIT
     private static Set<String> DB_NAMES_2 = Collections.singleton( "default" );
     private static Set<String> DB_NAMES_3 = Stream.of( "foo", "bar", "baz" ).collect( Collectors.toSet() );
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]
                 {
-//                        { 6, 0, DB_NAMES_1, new SharedDiscoveryService() },
-//                        { 6, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
-                        { 5, 0, DB_NAMES_2, new SharedDiscoveryService() },
-//                        { 5, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
-//                        { 9, 3, DB_NAMES_3, new SharedDiscoveryService() },
-//                        { 9, 3, DB_NAMES_3, new HazelcastDiscoveryServiceFactory() },
-//                        { 8, 2, DB_NAMES_3, new SharedDiscoveryService() }
+                        //TODO: Introduce ClusterRule delay in startup in order to check that hazelcast is actually behaving
+                        { "[shared discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, new SharedDiscoveryServiceFactory() },
+                        { "[hazelcast discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
+                        { "[shared discovery, 5 core hosts, 1 database]", 5, 0, DB_NAMES_2, new SharedDiscoveryServiceFactory() },
+                        { "[hazelcast discovery, 5 core hosts, 2 databases]", 5, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
+                        { "[hazelcast discovery, 9 core hosts, 3 read replicas, 3 databases]", 9, 3, DB_NAMES_3, new HazelcastDiscoveryServiceFactory() },
+                        { "[shared discovery, 8 core hosts, 2 read replicas, 3 databases]", 8, 2, DB_NAMES_3, new SharedDiscoveryServiceFactory() }
                 }
         );
     }
@@ -88,8 +88,10 @@ public class MultiClusteringIT
     public final RuleChain ruleChain;
     private Cluster cluster;
     private FileSystemAbstraction fs;
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(120);
 
-    public MultiClusteringIT(int numCores, int numReplicas, Set<String> dbNames, DiscoveryServiceFactory discovery )
+    public MultiClusteringIT(String ignoredName, int numCores, int numReplicas, Set<String> dbNames, DiscoveryServiceFactory discovery )
     {
         this.dbNames = dbNames;
 
@@ -135,7 +137,7 @@ public class MultiClusteringIT
             int leaderId = leader.serverId();
             List<CoreClusterMember> notLeaders = cluster.coreMembers().stream()
                     .filter( m -> m.dbName().equals( dbName ) && m.serverId() != leaderId )
-                    .collect( Collectors.toList());
+                    .collect( Collectors.toList() );
 
             leaderMap.put( leader, notLeaders );
             numNodes++;

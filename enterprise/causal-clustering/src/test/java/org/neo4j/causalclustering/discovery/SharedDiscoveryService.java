@@ -19,234 +19,164 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.Collections.unmodifiableMap;
-
-public class SharedDiscoveryService implements DiscoveryServiceFactory
+public class SharedDiscoveryService
 {
-    private final Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-    private final Map<MemberId,ReadReplicaInfo> readReplicaInfoMap = new HashMap<>();
-    private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
-    private final Map<String,ClusterId> clusterIdDbNames = new HashMap<>();
-    private final Map<String,RaftLeader> leaderMap = new HashMap<>();
+    private final ConcurrentMap<MemberId,CoreServerInfo> coreMembers;
+    private final ConcurrentMap<MemberId,ReadReplicaInfo> readReplicas;
+    private final Set<SharedDiscoveryCoreClient> listeningClients;
+    private final ConcurrentMap<String,ClusterId> clusterIdDbNames;
+    private final ConcurrentMap<String,RaftLeader> leaderMap;
+    private final CountDownLatch enoughMembers;
+    private final int minimumFormationMembers;
 
-    private Map<MemberId,RoleInfo> roleMap = new HashMap<>();
-
-    private final Lock lock = new ReentrantLock();
-    private final Condition enoughMembers = lock.newCondition();
-
-    @Override
-    public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy )
+    SharedDiscoveryService( int expectedFormationMembers )
     {
-        SharedDiscoveryCoreClient sharedDiscoveryCoreClient =
-                new SharedDiscoveryCoreClient( this, myself, logProvider, config );
-        sharedDiscoveryCoreClient.onCoreTopologyChange( coreTopology( sharedDiscoveryCoreClient, sharedDiscoveryCoreClient.localDBName() ) );
-        sharedDiscoveryCoreClient.onReadReplicaTopologyChange( readReplicaTopology() );
-        return sharedDiscoveryCoreClient;
-    }
-
-    @Override
-    public TopologyService topologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy )
-    {
-        return new SharedDiscoveryReadReplicaClient( this, config, myself, logProvider );
+        coreMembers = new ConcurrentHashMap<>();
+        readReplicas = new ConcurrentHashMap<>();
+        listeningClients = new ConcurrentSkipListSet<>();
+        clusterIdDbNames = new ConcurrentHashMap<>();
+        leaderMap = new ConcurrentHashMap<>();
+        this.minimumFormationMembers = expectedFormationMembers - 1;
+        enoughMembers = new CountDownLatch( minimumFormationMembers );
     }
 
     void waitForClusterFormation() throws InterruptedException
     {
-        lock.lock();
-        try
-        {
-            while ( coreMembers.size() < 2 )
-            {
-                enoughMembers.await( 10, TimeUnit.SECONDS );
-            }
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        enoughMembers.await();
     }
 
-    CoreTopology coreTopology( SharedDiscoveryCoreClient client, String dbName )
+    boolean canBeBootstrapped( SharedDiscoveryCoreClient client )
     {
-        lock.lock();
-        try
-        {
-            return new CoreTopology(clusterIdDbNames.get( dbName ), canBeBootstrapped( client ), unmodifiableMap( coreMembers ) );
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        int numClients = listeningClients.size();
+
+        boolean haveAllMembers = numClients >= minimumFormationMembers;
+
+        boolean isFirstMatchingClient =  listeningClients.stream()
+                .filter( c -> !c.refusesToBeLeader() && c.localDBName().equals( client.localDBName() ) )
+                .findFirst().map(c -> c.equals( client ) ).orElse( false );
+
+        return haveAllMembers && isFirstMatchingClient;
     }
 
-    private boolean canBeBootstrapped( SharedDiscoveryCoreClient client )
+    CoreTopology getCoreTopology( SharedDiscoveryCoreClient client )
     {
-
-        return client != null && coreClients.size() > 0 &&
-                coreClients.stream()
-                        .filter( core -> !core.refusesToBeLeader() )
-                        .filter(c -> client.localDBName().equals( c.localDBName() ) )
-                        .findFirst()
-                        .map( client::equals )
-                        .orElse( false );
+        //Extract config from client
+        String dbName = client.localDBName();
+        boolean canBeBootstrapped = canBeBootstrapped( client );
+        return getCoreTopology( dbName, canBeBootstrapped );
     }
 
-    ReadReplicaTopology readReplicaTopology()
+    CoreTopology getCoreTopology( String dbName, boolean canBeBootstrapped  )
     {
-        lock.lock();
-        try
-        {
-            return new ReadReplicaTopology( unmodifiableMap( readReplicaInfoMap ) );
-
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        return new CoreTopology( clusterIdDbNames.get( dbName ),
+                canBeBootstrapped, Collections.unmodifiableMap( coreMembers )  );
     }
 
-    void registerCoreMember( MemberId memberId, CoreServerInfo coreServerInfo, SharedDiscoveryCoreClient client )
+    ReadReplicaTopology getReadReplicaTopology()
     {
-        lock.lock();
-        try
+        return new ReadReplicaTopology( Collections.unmodifiableMap( readReplicas ) );
+    }
+
+    void registerCoreMember( SharedDiscoveryCoreClient client )
+    {
+        CoreServerInfo previousMember = coreMembers.putIfAbsent( client.getMemberId(), client.getCoreServerInfo() );
+        if ( previousMember == null )
         {
-            coreMembers.put( memberId, coreServerInfo );
-            coreClients.add( client );
-            enoughMembers.signalAll();
+            listeningClients.add( client );
+            enoughMembers.countDown();
             notifyCoreClients();
         }
-        finally
-        {
-            lock.unlock();
-        }
     }
 
-    void unRegisterCoreMember( MemberId memberId, SharedDiscoveryCoreClient client )
+    void registerReadReplica( SharedDiscoveryReadReplicaClient client )
     {
-        lock.lock();
-        try
+        ReadReplicaInfo previousRR = readReplicas.putIfAbsent( client.getMemberId(), client.getReadReplicainfo() );
+        if ( previousRR == null )
         {
-            coreMembers.remove( memberId );
-            coreClients.remove( client );
             notifyCoreClients();
         }
-        finally
-        {
-            lock.unlock();
-        }
     }
 
-    private void notifyCoreClients()
+    void unRegisterCoreMember( SharedDiscoveryCoreClient client )
     {
-        for ( SharedDiscoveryCoreClient coreClient : coreClients )
+        synchronized ( this )
         {
-            //TODO: Check this its not good ...
-            coreClient.onCoreTopologyChange( coreTopology( coreClient, coreClient.localDBName() ) );
-            coreClient.onReadReplicaTopologyChange( readReplicaTopology() );
+            listeningClients.remove( client );
+            coreMembers.remove( client.getMemberId() );
         }
+        notifyCoreClients();
     }
 
-    void registerReadReplica( MemberId memberId, ReadReplicaInfo readReplicaInfo )
+    void unRegisterReadReplica( SharedDiscoveryReadReplicaClient client )
     {
-        lock.lock();
-        try
-        {
-            readReplicaInfoMap.put( memberId, readReplicaInfo );
-            notifyCoreClients();
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        readReplicas.remove( client.getMemberId() );
+        notifyCoreClients();
     }
 
-    void unRegisterReadReplica( MemberId memberId )
+    synchronized boolean casLeaders( MemberId leader, long term, String dbName )
     {
-        lock.lock();
-        try
+        Optional<RaftLeader> current = Optional.ofNullable( leaderMap.get( dbName ) );
+
+        boolean noUpdate = current.map( RaftLeader::memberId ).equals( Optional.ofNullable( leader ) );
+
+        boolean greaterOrEqualTermExists =  current.map(l -> l.term() >= term ).orElse( false );
+
+        boolean success = !( greaterOrEqualTermExists || noUpdate );
+
+        if( success )
         {
-            readReplicaInfoMap.remove( memberId );
-            notifyCoreClients();
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    boolean casLeaders( MemberId leader, long term, String dbName )
-    {
-        boolean success;
-        lock.lock();
-        try
-        {
-            Optional<RaftLeader> current = Optional.ofNullable( leaderMap.get( dbName ) );
-
-            boolean noUpdate = current.map( RaftLeader::memberId ).equals( Optional.ofNullable( leader ) );
-
-            boolean greaterOrEqualTermExists =  current.map(l -> l.term() >= term ).orElse( false );
-
-            success = !( greaterOrEqualTermExists || noUpdate );
-
-            if( success )
-            {
-                leaderMap.put( dbName, new RaftLeader( leader, term ) );
-            }
-        }
-        finally
-        {
-            lock.unlock();
+            leaderMap.put( dbName, new RaftLeader( leader, term ) );
         }
         return success;
     }
 
     boolean casClusterId( ClusterId clusterId, String dbName )
     {
-        boolean success;
-        lock.lock();
-        try
+        ClusterId previousId = clusterIdDbNames.putIfAbsent( dbName, clusterId );
+
+        boolean success = previousId == null || previousId.equals( clusterId );
+
+        if ( success )
         {
-            ClusterId previousId = clusterIdDbNames.putIfAbsent( dbName, clusterId );
-
-            success = previousId == null || previousId.equals( clusterId );
-
-            if ( success )
-            {
-
-                notifyCoreClients();
-            }
+            notifyCoreClients();
         }
-        finally
-        {
-            lock.unlock();
-        }
-
         return success;
     }
 
-    Map<MemberId,RoleInfo> getRoleMap()
+    Map<MemberId,RoleInfo> getCoreRoles()
     {
-        return roleMap;
+        Set<String> dbNames = clusterIdDbNames.keySet();
+        Set<MemberId> allLeaders = dbNames.stream()
+                .map( dbName -> Optional.ofNullable( leaderMap.get( dbName ) ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .map( RaftLeader::memberId )
+                .collect( Collectors.toSet());
+
+        Function<MemberId,RoleInfo> roleMapper = m -> allLeaders.contains( m ) ? RoleInfo.LEADER : RoleInfo.FOLLOWER;
+        return coreMembers.keySet().stream().collect( Collectors.toMap( Function.identity(), roleMapper ) );
     }
+
+    private void notifyCoreClients()
+    {
+        listeningClients.forEach( c -> {
+            c.onCoreTopologyChange( getCoreTopology( c ) );
+            c.onReadReplicaTopologyChange( getReadReplicaTopology() );
+        } );
+    }
+
 }

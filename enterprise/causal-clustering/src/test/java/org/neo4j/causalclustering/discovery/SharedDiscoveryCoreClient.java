@@ -19,30 +19,21 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import com.hazelcast.mapreduce.Job;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
 
-class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreTopologyService
+class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreTopologyService, Comparable<SharedDiscoveryCoreClient>
 {
     private final SharedDiscoveryService sharedDiscoveryService;
-    private final MemberId member;
+    private final MemberId myself;
     private final CoreServerInfo coreServerInfo;
     private final CoreTopologyListenerService listenerService;
     private final Log log;
@@ -52,7 +43,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     private MemberId localLeader;
     private long term;
 
-
     private CoreTopology coreTopology;
     private ReadReplicaTopology readReplicaTopology;
 
@@ -61,12 +51,19 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
         this.listenerService = new CoreTopologyListenerService();
-        this.member = member;
+        this.myself = member;
         this.coreServerInfo = extractCoreServerInfo( config );
         this.log = logProvider.getLog( getClass() );
         this.refusesToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
         this.term = -1L;
         this.localDBName = config.get( CausalClusteringSettings.database );
+    }
+
+
+    @Override
+    public int compareTo( SharedDiscoveryCoreClient o )
+    {
+        return Optional.ofNullable( o ).map( c -> c.myself.getUuid().compareTo( this.myself.getUuid() ) ).orElse( -1 );
     }
 
     @Override
@@ -77,7 +74,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
-    //TODO: Update logic here to account for dbName in the clusterIds
     public boolean setClusterId( ClusterId clusterId, String dbName )
     {
         return sharedDiscoveryService.casClusterId( clusterId, dbName );
@@ -86,26 +82,29 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     @Override
     public Map<MemberId,RoleInfo> allCoreRoles()
     {
-        return sharedDiscoveryService.getRoleMap();
+        return sharedDiscoveryService.getCoreRoles();
     }
 
     @Override
     public void setLeader( MemberId memberId, String dbName, long term )
     {
-        if ( this.term < term )
+        if ( this.term < term && memberId != null )
         {
             localLeader = memberId;
             this.term = term;
+            sharedDiscoveryService.casLeaders( localLeader, term, localDBName );
         }
     }
 
     @Override
     public void start() throws InterruptedException
     {
-        sharedDiscoveryService.registerCoreMember( member, coreServerInfo, this );
-        log.info( "Registered core server %s", member );
+        sharedDiscoveryService.registerCoreMember( this );
+        log.info( "Registered core server %s", myself );
         sharedDiscoveryService.waitForClusterFormation();
         log.info( "Cluster formed" );
+        coreTopology = sharedDiscoveryService.getCoreTopology( this );
+        readReplicaTopology = sharedDiscoveryService.getReadReplicaTopology();
     }
 
     @Override
@@ -117,8 +116,8 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     @Override
     public void stop()
     {
-        sharedDiscoveryService.unRegisterCoreMember( member, this );
-        log.info( "Unregistered core server %s", member );
+        sharedDiscoveryService.unRegisterCoreMember( this );
+        log.info( "Unregistered core server %s", myself );
     }
 
     @Override
@@ -139,6 +138,9 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     @Override
     public CoreTopology allCoreServers()
     {
+        // It is perhaps confusing (Or even error inducing) that this core Topology will always contain the cluster id
+        // for the database local to the host upon which this method is called.
+        // TODO: evaluate returning clusterId = null for global Topologies returned by allCoreServers()
         return this.coreTopology;
     }
 
@@ -148,6 +150,15 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         return localDBName;
     }
 
+    public MemberId getMemberId()
+    {
+        return myself;
+    }
+
+    public CoreServerInfo getCoreServerInfo()
+    {
+        return coreServerInfo;
+    }
 
     synchronized void onCoreTopologyChange( CoreTopology coreTopology )
     {
@@ -160,11 +171,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     {
         log.info( "Notified of read replica topology change " + readReplicaTopology );
         this.readReplicaTopology = readReplicaTopology;
-    }
-
-    private void updateLeader()
-    {
-        sharedDiscoveryService.casLeaders( localLeader, term, localDBName );
     }
 
     private static CoreServerInfo extractCoreServerInfo( Config config )

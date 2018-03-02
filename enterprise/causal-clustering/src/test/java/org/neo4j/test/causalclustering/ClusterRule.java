@@ -26,7 +26,6 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.Set;
@@ -36,7 +35,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -58,7 +57,7 @@ public class ClusterRule extends ExternalResource
 
     private int noCoreMembers = 3;
     private int noReadReplicas = 3;
-    private DiscoveryServiceFactory discoveryServiceFactory = new SharedDiscoveryService();
+    private DiscoveryServiceFactory discoveryServiceFactory = new SharedDiscoveryServiceFactory();
     private Map<String,String> coreParams = stringMap();
     private Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
     private Map<String,String> readReplicaParams = stringMap();

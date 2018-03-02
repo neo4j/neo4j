@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
@@ -129,7 +130,7 @@ public class ClusterOverviewProcedureTest
             this.boltPort = boltPort;
             this.role = role;
             this.groups = groups;
-            this.dbName = "default";
+            this.dbName = CausalClusteringSettings.database.getDefaultValue();
         }
 
         @Override
