@@ -71,7 +71,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
-        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
+        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger.Check<>();
     }
 
     public void clear() throws IOException

@@ -124,40 +124,13 @@ public abstract class NativeSchemaIndexProviderTest
     /* getOnlineAccessor */
 
     @Test
-    public void getOnlineAccessorMustCreateUniqueAccessorForTypeUnique() throws IOException, IndexEntryConflictException
+    public void shouldNotCheckConflictsWhenApplyingUpdatesInOnlineAccessor() throws IOException, IndexEntryConflictException
     {
         // given
         provider = newProvider();
 
         // when
         IndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            Value value = someValue();
-            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), value ) );
-
-            // then
-            try
-            {
-                indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), value ) );
-                fail( "Should have failed" );
-            }
-            catch ( IndexEntryConflictException e )
-            {
-                // good
-            }
-        }
-    }
-
-    @Test
-    public void getOnlineAccessorMustCreateNonUniqueAccessorForTypeGeneral() throws IOException, IndexEntryConflictException
-    {
-        // given
-        provider = newProvider();
-
-        // when
-        IndexDescriptor descriptor = descriptor();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

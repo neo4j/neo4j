@@ -342,7 +342,7 @@ public class SpatialCRSSchemaIndex
         schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile );
         schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
         instantiateWriter();
-        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger<>() ) );
+        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger.Check<>() ) );
         state = State.POPULATING;
     }
 
