@@ -31,32 +31,34 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.kernel.impl.index.schema.SamplingUtil;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
 class SpatialFusionIndexPopulator implements IndexPopulator
 {
     private final long indexId;
     private final IndexDescriptor descriptor;
-    private final IndexSamplingConfig samplingConfig;
-    private final SpatialKnownIndex.Factory indexFactory;
-    private final Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap;
+    private final SpatialCRSSchemaIndex.Supplier indexSupplier;
+    private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
+    private final IndexSamplerWrapper sampler;
 
-    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, SpatialKnownIndex.Factory indexFactory )
+    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Supplier indexSupplier )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
         this.descriptor = descriptor;
-        this.samplingConfig = samplingConfig;
-        this.indexFactory = indexFactory;
+        this.indexSupplier = indexSupplier;
+        this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
     }
 
     @Override
@@ -73,7 +75,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void drop() throws IOException
     {
-        forAll( SpatialKnownIndex::drop, indexMap.values() );
+        forAll( SpatialCRSSchemaIndex::drop, indexMap.values() );
         indexMap.clear();
     }
 
@@ -87,8 +89,8 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         }
         for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
-            SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-            index.startPopulation( descriptor, samplingConfig );
+            SpatialCRSSchemaIndex index = indexSupplier.get( descriptor, indexMap, indexId, crs );
+            index.startPopulation();
             index.add( batchMap.get( crs ) );
         }
     }
@@ -110,7 +112,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexFactory, descriptor, samplingConfig );
+        return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexSupplier, descriptor );
     }
 
     @Override
@@ -128,17 +130,59 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        Value[] values = update.values();
-        assert values.length == 1;
-        CoordinateReferenceSystem crs = ((PointValue) values[0]).getCoordinateReferenceSystem();
-        SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-        index.init( descriptor, samplingConfig );
-        index.includeSample( update );
+        sampler.includeSample( update.values() );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( indexMap.values().stream().map( SpatialKnownIndex::sampleResult ).toArray( IndexSample[]::new ) );
+        return sampler.sampleResult();
+    }
+
+    private static class IndexSamplerWrapper
+    {
+        private final DefaultNonUniqueIndexSampler generalSampler;
+        private final UniqueIndexSampler uniqueSampler;
+
+        IndexSamplerWrapper( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        {
+            switch ( descriptor.type() )
+            {
+            case GENERAL:
+                generalSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+                uniqueSampler = null;
+                break;
+            case UNIQUE:
+                generalSampler = null;
+                uniqueSampler = new UniqueIndexSampler();
+                break;
+            default:
+                throw new UnsupportedOperationException( "Unexpected index type " + descriptor.type() );
+            }
+        }
+
+        void includeSample( Value[] values )
+        {
+            if ( uniqueSampler != null )
+            {
+                uniqueSampler.increment( 1 );
+            }
+            else
+            {
+                generalSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) values ) );
+            }
+        }
+
+        IndexSample sampleResult()
+        {
+            if ( uniqueSampler != null )
+            {
+                return uniqueSampler.result();
+            }
+            else
+            {
+                return generalSampler.result();
+            }
+        }
     }
 }

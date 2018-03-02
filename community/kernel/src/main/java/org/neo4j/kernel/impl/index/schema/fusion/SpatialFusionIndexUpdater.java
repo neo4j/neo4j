@@ -27,8 +27,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
@@ -37,34 +36,35 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class SpatialFusionIndexUpdater implements IndexUpdater
 {
-    private final Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap;
+    private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
     private final Map<CoordinateReferenceSystem,IndexUpdater> currentUpdaters = new HashMap<>();
     private final long indexId;
-    private final SpatialKnownIndex.Factory indexFactory;
+    private final SpatialCRSSchemaIndex.Supplier indexSupplier;
     private final IndexDescriptor descriptor;
-    private final IndexSamplingConfig samplingConfig;
     private final boolean populating;
 
-    static SpatialFusionIndexUpdater updaterForAccessor( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
-            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    static SpatialFusionIndexUpdater updaterForAccessor( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
+            SpatialCRSSchemaIndex.Supplier indexFactory, IndexDescriptor descriptor )
     {
-        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, false );
+        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, false );
     }
 
-    static SpatialFusionIndexUpdater updaterForPopulator( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
-            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    static SpatialFusionIndexUpdater updaterForPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
+            SpatialCRSSchemaIndex.Supplier indexFactory, IndexDescriptor descriptor )
     {
-        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, true );
+        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, true );
     }
 
-    private SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, SpatialKnownIndex.Factory indexFactory,
-            IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populating )
+    private SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap,
+                                       long indexId,
+                                       SpatialCRSSchemaIndex.Supplier indexSupplier,
+                                       IndexDescriptor descriptor,
+                                       boolean populating )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
-        this.indexFactory = indexFactory;
+        this.indexSupplier = indexSupplier;
         this.descriptor = descriptor;
-        this.samplingConfig = samplingConfig;
         this.populating = populating;
     }
 
@@ -112,8 +112,8 @@ class SpatialFusionIndexUpdater implements IndexUpdater
         {
             return updater;
         }
-        SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-        IndexUpdater indexUpdater = index.updaterWithCreate( descriptor, samplingConfig, populating );
+        SpatialCRSSchemaIndex index = indexSupplier.get( descriptor, indexMap, indexId, crs );
+        IndexUpdater indexUpdater = index.updaterWithCreate( populating );
         return remember( crs, indexUpdater );
     }
 

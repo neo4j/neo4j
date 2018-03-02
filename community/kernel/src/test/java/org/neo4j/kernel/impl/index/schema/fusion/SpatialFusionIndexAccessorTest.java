@@ -35,7 +35,7 @@ import java.util.Set;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.util.Arrays.asList;
@@ -63,16 +63,16 @@ public class SpatialFusionIndexAccessorTest
 {
 
     private SpatialFusionIndexAccessor fusionIndexAccessor;
-    private Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap = new HashMap<>();
+    private Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap = new HashMap<>();
 
     @Before
     public void setup() throws Exception
     {
-        SpatialKnownIndex.Factory indexFactory = mock( SpatialKnownIndex.Factory.class );
+        SpatialCRSSchemaIndex.Supplier indexFactory = mock( SpatialCRSSchemaIndex.Supplier.class );
 
         for ( CoordinateReferenceSystem crs : asList( WGS84, Cartesian ) )
         {
-            indexMap.put( crs, mock( SpatialKnownIndex.class ) );
+            indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
         }
 
         fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( IndexDescriptor.class ), null, indexFactory );
@@ -83,7 +83,7 @@ public class SpatialFusionIndexAccessorTest
     {
         fusionIndexAccessor.drop();
 
-        for ( SpatialKnownIndex spatialKnownIndex : indexMap.values() )
+        for ( SpatialCRSSchemaIndex spatialKnownIndex : indexMap.values() )
         {
             verify( spatialKnownIndex, times( 1 ) ).drop();
         }
@@ -126,7 +126,7 @@ public class SpatialFusionIndexAccessorTest
     {
         fusionIndexAccessor.close();
 
-        for ( SpatialKnownIndex spatialKnownIndex : indexMap.values() )
+        for ( SpatialCRSSchemaIndex spatialKnownIndex : indexMap.values() )
         {
             verify( spatialKnownIndex, times( 1 ) ).close();
         }
@@ -135,7 +135,7 @@ public class SpatialFusionIndexAccessorTest
     @Test
     public void closeMustCloseOthersIfCloseOneFail() throws Exception
     {
-        for ( SpatialKnownIndex failingIndex : indexMap.values() )
+        for ( SpatialCRSSchemaIndex failingIndex : indexMap.values() )
         {
             IOException failure = new IOException( "fail" );
             doThrow( failure ).when( failingIndex ).close();
@@ -151,7 +151,7 @@ public class SpatialFusionIndexAccessorTest
             }
 
             // then
-            for ( SpatialKnownIndex successfulIndex : indexMap.values() )
+            for ( SpatialCRSSchemaIndex successfulIndex : indexMap.values() )
             {
                 if ( failingIndex != successfulIndex )
                 {
@@ -165,7 +165,7 @@ public class SpatialFusionIndexAccessorTest
     @Test
     public void closeMustThrowIfCloseOneFail() throws Exception
     {
-        for ( SpatialKnownIndex index : indexMap.values() )
+        for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
             IOException expectedFailure = new IOException( "fail" );
             doThrow( expectedFailure ).when( index ).close();
@@ -187,7 +187,7 @@ public class SpatialFusionIndexAccessorTest
     {
         // given
         List<IOException> failures = new ArrayList<>();
-        for ( SpatialKnownIndex index : indexMap.values() )
+        for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
             IOException exception = new IOException( "unknown" );
             failures.add( exception );
@@ -354,7 +354,7 @@ public class SpatialFusionIndexAccessorTest
         assertThat( fusionAllEntriesReader.maxCount(), is( 9L ) );
     }
 
-    private void verifyFailOnSingleDropFailure( SpatialKnownIndex spatialKnownIndex ) throws IOException
+    private void verifyFailOnSingleDropFailure( SpatialCRSSchemaIndex spatialKnownIndex ) throws IOException
     {
         IOException expectedFailure = new IOException( "fail" );
         doThrow( expectedFailure ).when( spatialKnownIndex ).drop();
@@ -369,14 +369,14 @@ public class SpatialFusionIndexAccessorTest
         }
     }
 
-    private BoundedIterable<Long> mockSingleAllEntriesReader( SpatialKnownIndex spatialKnownIndex, long[] entries )
+    private BoundedIterable<Long> mockSingleAllEntriesReader( SpatialCRSSchemaIndex spatialKnownIndex, long[] entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
         when( spatialKnownIndex.newAllEntriesReader() ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
-    private void mockSingleAllEntriesReaderWithUnknownMaxCount( SpatialKnownIndex spatialKnownIndex, long[] entries )
+    private void mockSingleAllEntriesReaderWithUnknownMaxCount( SpatialCRSSchemaIndex spatialKnownIndex, long[] entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
         when( spatialKnownIndex.newAllEntriesReader() ).thenReturn( allEntriesReader );

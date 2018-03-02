@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
@@ -51,30 +51,30 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remo
 public class SpatialFusionIndexUpdaterTest
 {
     private Map<CoordinateReferenceSystem,IndexUpdater> updaterMap = new HashMap<>();
-    private Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap = new HashMap<>();
+    private Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap = new HashMap<>();
     private SpatialFusionIndexUpdater fusionIndexAccessorUpdater;
     private SpatialFusionIndexUpdater fusionIndexPopulatorUpdater;
 
     @Before
     public void setup() throws Exception
     {
-        SpatialKnownIndex.Factory indexFactory = mock( SpatialKnownIndex.Factory.class );
+        SpatialCRSSchemaIndex.Supplier indexSupplier = mock( SpatialCRSSchemaIndex.Supplier.class );
         IndexDescriptor descriptor = mock( IndexDescriptor.class );
         IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
 
         for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
         {
             updaterMap.put( crs, mock( IndexUpdater.class ) );
-            indexMap.put( crs, mock( SpatialKnownIndex.class ) );
-            when( indexFactory.selectAndCreate( indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
-            when( indexMap.get( crs ).updaterWithCreate( descriptor, samplingConfig, true ) ).thenReturn( updaterMap.get( crs ) );
-            when( indexMap.get( crs ).updaterWithCreate( descriptor, samplingConfig, false ) ).thenReturn( updaterMap.get( crs ) );
+            indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
+            when( indexSupplier.get( descriptor, indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
+            when( indexMap.get( crs ).updaterWithCreate( true ) ).thenReturn( updaterMap.get( crs ) );
+            when( indexMap.get( crs ).updaterWithCreate( false ) ).thenReturn( updaterMap.get( crs ) );
         }
 
         fusionIndexAccessorUpdater = SpatialFusionIndexUpdater.updaterForAccessor(
-                indexMap, 0, indexFactory, descriptor, samplingConfig );
+                indexMap, 0, indexSupplier, descriptor );
         fusionIndexPopulatorUpdater = SpatialFusionIndexUpdater.updaterForPopulator(
-                indexMap, 0, indexFactory, descriptor, samplingConfig );
+                indexMap, 0, indexSupplier, descriptor );
     }
 
     @Test

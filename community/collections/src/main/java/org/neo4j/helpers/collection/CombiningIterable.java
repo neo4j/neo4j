@@ -32,9 +32,10 @@ public class CombiningIterable<T> implements Iterable<T>
 {
     private Iterable<Iterable<T>> iterables;
 
-    public CombiningIterable( Iterable<Iterable<T>> iterables )
+    @SuppressWarnings( "unchecked" )
+    public <INNER extends Iterable<T>> CombiningIterable( Iterable<INNER> iterables )
     {
-        this.iterables = iterables;
+        this.iterables = (Iterable) iterables;
     }
 
     @Override

@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -51,7 +51,7 @@ public class SpatialFusionSchemaIndexProviderTest
     @Rule
     public RandomRule random = new RandomRule();
 
-    private Map<CoordinateReferenceSystem, SpatialKnownIndex> indexMap;
+    private Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
     private SpatialFusionSchemaIndexProvider provider;
     private IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
@@ -66,8 +66,8 @@ public class SpatialFusionSchemaIndexProviderTest
                 null,
                 false );
         indexMap = provider.indexesFor( 0 );
-        indexMap.put( CoordinateReferenceSystem.WGS84, mock( SpatialKnownIndex.class ) );
-        indexMap.put( CoordinateReferenceSystem.Cartesian, mock( SpatialKnownIndex.class ) );
+        indexMap.put( CoordinateReferenceSystem.WGS84, mock( SpatialCRSSchemaIndex.class ) );
+        indexMap.put( CoordinateReferenceSystem.Cartesian, mock( SpatialCRSSchemaIndex.class ) );
     }
 
     @Test
@@ -76,12 +76,12 @@ public class SpatialFusionSchemaIndexProviderTest
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {
             // when
-            for ( SpatialKnownIndex index : indexMap.values() )
+            for ( SpatialCRSSchemaIndex index : indexMap.values() )
             {
                 setInitialState( index, state );
             }
 
-            for ( SpatialKnownIndex index : indexMap.values() )
+            for ( SpatialCRSSchemaIndex index : indexMap.values() )
             {
                 setInitialState( index, InternalIndexState.POPULATING );
                 // then
@@ -96,7 +96,7 @@ public class SpatialFusionSchemaIndexProviderTest
     {
         // when
         // ... no failure
-        for ( SpatialKnownIndex index : indexMap.values() )
+        for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
             when( index.readPopulationFailure( descriptor ) ).thenReturn( null );
         }
@@ -118,14 +118,14 @@ public class SpatialFusionSchemaIndexProviderTest
         {
             PointValue point = (PointValue) spatialValue;
             CoordinateReferenceSystem crs = point.getCoordinateReferenceSystem();
-            SpatialKnownIndex index = provider.selectAndCreate( indexMap, 0, point.getCoordinateReferenceSystem() );
+            SpatialCRSSchemaIndex index = provider.get( descriptor, indexMap, 0, point.getCoordinateReferenceSystem() );
             assertSame( indexMap.get( crs ), index );
-            index = provider.selectAndCreate( indexMap, 0, crs );
+            index = provider.get( descriptor, indexMap, 0, crs );
             assertSame( indexMap.get( crs ), index );
         }
     }
 
-    private void setInitialState( SpatialKnownIndex mockedIndex, InternalIndexState state ) throws IOException
+    private void setInitialState( SpatialCRSSchemaIndex mockedIndex, InternalIndexState state ) throws IOException
     {
         when( mockedIndex.indexExists() ).thenReturn( true );
         when( mockedIndex.readState( descriptor ) ).thenReturn( state );

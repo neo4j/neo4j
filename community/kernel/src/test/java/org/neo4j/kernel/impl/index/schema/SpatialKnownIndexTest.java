@@ -63,7 +63,7 @@ public class SpatialKnownIndexTest
     @Rule
     public final RuleChain rules = outerRule( fsRule ).around( directory ).around( pageCacheRule ).around( random );
 
-    private SpatialKnownIndex index;
+    private SpatialCRSSchemaIndex index;
     private IndexDescriptor descriptor;
     private IndexSamplingConfig samplingConfig;
     private FileSystemAbstraction fs;
@@ -82,23 +82,10 @@ public class SpatialKnownIndexTest
         String crsDir = String.format("%s-%s", crs.getTable().getTableId(), crs.getCode() );
         indexDir = new File( new File( new File( new File( new File( storeDir, "schema" ), "index" ), "spatial-1.0" ), "1" ), crsDir );
         IndexDirectoryStructure dirStructure = IndexDirectoryStructure.directoriesByProvider( storeDir ).forProvider( SPATIAL_PROVIDER_DESCRIPTOR );
-        index = new SpatialKnownIndex( dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
-                SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE );
         descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
+        index = new SpatialCRSSchemaIndex( descriptor, dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
+                SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE );
         samplingConfig = mock( IndexSamplingConfig.class );
-    }
-
-    @Test
-    public void shouldNotCreateFileOnInit()
-    {
-        // given
-        assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-
-        // when
-        index.init( descriptor, samplingConfig );
-
-        // then
-        assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
     }
 
     @Test
@@ -108,7 +95,7 @@ public class SpatialKnownIndexTest
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 
         // when
-        index.startPopulation( descriptor, samplingConfig );
+        index.startPopulation();
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
@@ -123,7 +110,7 @@ public class SpatialKnownIndexTest
         try
         {
             // when
-            index.takeOnline( descriptor, samplingConfig );
+            index.takeOnline();
             fail("should have thrown exception");
         }
         catch ( IOException e )
@@ -139,12 +126,12 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.startPopulation( descriptor, samplingConfig );
+        index.startPopulation();
 
         // when
         try
         {
-            index.takeOnline( descriptor, samplingConfig );
+            index.takeOnline();
             fail( "Should have thrown exception." );
         }
         catch ( IllegalStateException e )
@@ -160,11 +147,11 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.startPopulation( descriptor, samplingConfig );
+        index.startPopulation();
         index.finishPopulation( true );
 
         // when
-        index.takeOnline( descriptor, samplingConfig );
+        index.takeOnline();
         index.close();
     }
 
@@ -174,7 +161,7 @@ public class SpatialKnownIndexTest
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 
         // when
-        IndexUpdater updater = index.updaterWithCreate( descriptor, samplingConfig, false );
+        IndexUpdater updater = index.updaterWithCreate( false );
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
@@ -189,7 +176,7 @@ public class SpatialKnownIndexTest
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 
         // when
-        IndexUpdater updater = index.updaterWithCreate( descriptor, samplingConfig, true );
+        IndexUpdater updater = index.updaterWithCreate( true );
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
@@ -203,7 +190,7 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.startPopulation( descriptor, samplingConfig );
+        index.startPopulation();
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
 
         // when

@@ -19,10 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
