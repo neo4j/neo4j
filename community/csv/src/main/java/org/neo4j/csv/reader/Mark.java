@@ -28,7 +28,7 @@ import static java.lang.String.format;
  */
 public class Mark
 {
-    public static int END_OF_LINE_CHARACTER = -1;
+    public static final int END_OF_LINE_CHARACTER = -1;
 
     private int startPosition;
     private int position;

@@ -106,7 +106,7 @@ public class Predicates
 
     public static <T> Predicate<T> instanceOf( @Nonnull final Class<?> clazz )
     {
-        return item -> item != null && clazz.isInstance( item );
+        return clazz::isInstance;
     }
 
     public static <T> Predicate<T> instanceOfAny( final Class<?>... classes )
@@ -262,7 +262,7 @@ public class Predicates
         };
     }
 
-    public static IntPredicate ALWAYS_TRUE_INT = v -> true;
+    public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
 
     public static IntPredicate any( int[] values )
     {

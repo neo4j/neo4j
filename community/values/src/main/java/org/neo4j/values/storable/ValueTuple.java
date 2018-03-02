@@ -135,7 +135,7 @@ public class ValueTuple
         return true;
     }
 
-    public static Comparator<ValueTuple> COMPARATOR = ( left, right ) ->
+    public static final Comparator<ValueTuple> COMPARATOR = ( left, right ) ->
     {
         if ( left.values.length != right.values.length )
         {
