@@ -29,55 +29,52 @@ class MultipleGraphsParserTest
   implicit val parser: Rule1[ast.Query] = Query
 
   test("WITH *") {
-    yields(ast.Query(None, ast.SingleQuery(Seq(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), PassAllGraphReturnItems(pos))(pos)))(pos)))
+    yields(ast.Query(None, ast.SingleQuery(Seq(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos))(pos)))(pos)))
   }
 
-  test("WITH 1 AS a WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
-    yields(ast.Query(None, ast.SingleQuery(Seq(
-      ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos),
-        PassAllGraphReturnItems(pos)
-      )(pos), ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
-      )(pos), ast.Return(
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("bar"))(pos), ast.ReturnedGraph(graph("foo"))(pos)))(pos)
-      )(pos)
-    ))(pos)))
-  }
-
-  test("WITH 1 AS a WITH a GRAPH AT 'url' AS foo >> foo WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
-    yields(ast.Query(None, ast.SingleQuery(Seq(
-      ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos),
-        PassAllGraphReturnItems(pos)
-      )(pos), ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.NewContextGraphs(graphAt("foo", "url"), Some(graph("foo")))(pos)))(pos)
-      )(pos), ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
-      )(pos), ast.Return(
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("bar"))(pos), ast.ReturnedGraph(graph("foo"))(pos)))(pos)
-      )(pos)
-    ))(pos)))
-  }
-
-  test("WITH 1 AS a WITH a GRAPH AT 'url' AS foo >> WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
-    yields(ast.Query(None, ast.SingleQuery(Seq(
-      ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos),
-        PassAllGraphReturnItems(pos)
-      )(pos), ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.NewContextGraphs(graphAt("foo", "url"))(pos)))(pos)
-      )(pos), ast.With(
-        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
-      )(pos), ast.Return(
-        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("bar"))(pos), ast.ReturnedGraph(graph("foo"))(pos)))(pos)
-      )(pos)
-    ))(pos)))
-  }
+//  test("WITH 1 AS a WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
+//    yields(ast.Query(None, ast.SingleQuery(Seq(
+//      ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)
+//      )(pos), ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
+//      )(pos), ast.Return(
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("bar"))(pos), ast.ReturnedGraph(graph("foo"))(pos)))(pos)
+//      )(pos)
+//    ))(pos)))
+//  }
+//
+//  test("WITH 1 AS a WITH a GRAPH AT 'url' AS foo >> foo WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
+//    yields(ast.Query(None, ast.SingleQuery(Seq(
+//      ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)
+//      )(pos), ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.NewContextGraphs(graphAt("foo", "url"), Some(graph("foo")))(pos)))(pos)
+//      )(pos), ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
+//      )(pos), ast.Return(
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("bar"))(pos), ast.ReturnedGraph(graph("foo"))(pos)))(pos)
+//      )(pos)
+//    ))(pos)))
+//  }
+//
+//  test("WITH 1 AS a WITH a GRAPH AT 'url' AS foo >> WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
+//    yields(ast.Query(None, ast.SingleQuery(Seq(
+//      ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)
+//      )(pos), ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.NewContextGraphs(graphAt("foo", "url"))(pos)))(pos)
+//      )(pos), ast.With(
+//        ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
+//      )(pos), ast.Return(
+//        ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("bar"))(pos), ast.ReturnedGraph(graph("foo"))(pos)))(pos)
+//      )(pos)
+//    ))(pos)))
+//  }
 
 }

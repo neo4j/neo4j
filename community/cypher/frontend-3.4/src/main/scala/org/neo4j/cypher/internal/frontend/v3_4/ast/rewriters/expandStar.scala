@@ -26,23 +26,15 @@ case class expandStar(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case clause@With(_, values, graphs, _, _, _, _)
-      if values.includeExisting || graphs.includeExisting =>
+    case clause@With(_, values, _, _, _, _)
+      if values.includeExisting =>
       val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
-      val newGraphItems = graphs match {
-        case GraphReturnItems(true, graphItems) if state.features(SemanticFeature.MultipleGraphs) => graphReturnItems(clause, graphItems)
-        case _ => graphs
-      }
-      clause.copy(returnItems = newReturnItems, mandatoryGraphReturnItems = newGraphItems)(clause.position)
+      clause.copy(returnItems = newReturnItems)(clause.position)
 
     case clause: PragmaWithout =>
-      val items = if (state.features(SemanticFeature.MultipleGraphs))
-        graphReturnItems(clause, List.empty, clause.excludedNames)
-      else GraphReturnItems(includeExisting = true, Seq.empty)(clause.position)
       With(
         distinct = false,
         returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
-        mandatoryGraphReturnItems = items,
         orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
     case clause@Return(_, values, graphs, _, _, _, excludedNames)

@@ -493,7 +493,6 @@ sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
 sealed trait ProjectionClause extends HorizonClause {
   def distinct: Boolean
   def returnItems: ReturnItemsDef
-  def graphReturnItems: Option[GraphReturnItems]
   def orderBy: Option[OrderBy]
   def skip: Option[Skip]
   def limit: Option[Limit]
@@ -503,8 +502,7 @@ sealed trait ProjectionClause extends HorizonClause {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    returnItems.semanticCheck chain
-    graphReturnItems.semanticCheck
+    returnItems.semanticCheck
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
     val declareAllTheThings = (s: SemanticState) => {
@@ -524,12 +522,8 @@ sealed trait ProjectionClause extends HorizonClause {
         case _ =>
           orderByResult
       }
-      val tabularState = fixedOrderByResult.state
-      val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, isReturn))(tabularState)
-      graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
+      fixedOrderByResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors)
     }
-    val variableStar = returnItems.isStarOnly
-    val graphsStar = graphReturnItems.forall(_.isGraphsStarOnly)
     declareAllTheThings
   }
 
@@ -563,29 +557,13 @@ sealed trait ProjectionClause extends HorizonClause {
   }
 }
 
-object From {
-  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph)(position)))(position))(position)
-  }
-}
-
-object Into {
-  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(graph)(position)))(position))(position)
-  }
-}
-
 object With {
-  def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
-    With(distinct = false, DiscardCardinality()(pos), graphReturnItems, None, None, None, None)(pos)
-
-  def apply(returnItems: ReturnItemsDef, graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
-    With(distinct = false, returnItems, graphReturnItems, None, None, None, None)(pos)
+  def apply(returnItems: ReturnItemsDef)(pos: InputPosition): With =
+    With(distinct = false, returnItems, None, None, None, None)(pos)
 }
 
 case class With(distinct: Boolean,
                 returnItems: ReturnItemsDef,
-                mandatoryGraphReturnItems: GraphReturnItems,
                 orderBy: Option[OrderBy],
                 skip: Option[Skip],
                 limit: Option[Limit],
@@ -593,8 +571,6 @@ case class With(distinct: Boolean,
 )(val position: InputPosition) extends ProjectionClause {
 
   override def name = "WITH"
-
-  override def graphReturnItems = Some(mandatoryGraphReturnItems)
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

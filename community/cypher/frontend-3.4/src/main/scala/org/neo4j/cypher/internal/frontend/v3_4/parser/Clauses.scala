@@ -40,14 +40,6 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
-  def From: Rule1[ast.With] = rule("FROM") {
-    keyword("FROM") ~~ SingleGraph ~~>> (ast.From(_))
-  }
-
-  def Into: Rule1[ast.With] = rule("INTO") {
-    keyword("INTO") ~~ SingleGraph ~~>> (ast.Into(_))
-  }
-
   def CreateGraph: Rule1[ast.CreateGraphClause] =
     CreateNewSourceGraph | CreateNewTargetGraph | CreateRegularGraph
 
@@ -145,9 +137,8 @@ trait Clauses extends Parser
   }
 
   def With: Rule1[ast.With] = rule("WITH")(
-    group(keyword("WITH DISTINCT") ~~ WithBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _, _))
-      | group(keyword("WITH") ~~ GraphReturnItems) ~~>> (ast.With(_))
-      | group(keyword("WITH") ~~ WithBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _, _))
+    group(keyword("WITH DISTINCT") ~~ WithBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _))
+      | group(keyword("WITH") ~~ WithBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
   )
 
   def Unwind: Rule1[ast.Unwind] = rule("UNWIND")(
@@ -164,7 +155,7 @@ trait Clauses extends Parser
     keyword("_PRAGMA") ~~ (
       group(
         keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(
-          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, ast.PassAllGraphReturnItems(InputPosition.NONE), None, _, _, _))
+          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
         | group(keyword("WITHOUT") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
       )
   }
@@ -200,16 +191,12 @@ trait Clauses extends Parser
       | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
-  private def WithBody: Rule5[ast.ReturnItemsDef, ast.GraphReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
+  private def WithBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
-      FakeMandatoryGraphReturnItems ~~
       optional(Order) ~~
       optional(Skip) ~~
       optional(Limit)
   }
-
-  private def FakeMandatoryGraphReturnItems: Rule1[ast.GraphReturnItems] =
-    optional(GraphReturnItems) ~~>> { (optItem) => (pos: InputPosition) => optItem.getOrElse(ast.PassAllGraphReturnItems(pos)) }
 
   private def ReturnBody: Rule5[ast.ReturnItemsDef, Option[ast.GraphReturnItems], Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~

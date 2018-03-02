@@ -59,9 +59,8 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   private def returnAliases(statement: Statement): Set[Ref[LogicalVariable]] =
     statement.treeFold(Set.empty[Ref[LogicalVariable]]) {
 
-      case With(_, _, GraphReturnItems(_, items), _, _, _, _) =>
-        val gVars = extractGraphVars(items)
-        acc => (acc ++ gVars, Some(identity))
+      case _: With =>
+        acc => (acc, Some(identity))
 
       // ignore variable in StartItem that represents index names and key names
       case Return(_, ReturnItems(_, items), graphItems, _, _, _, _) =>

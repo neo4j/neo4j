@@ -25,7 +25,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
     val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      createGraphIntroducesHorizon,
+//      createGraphIntroducesHorizon,
       normalizeGraphReturnItems,
       normalizeReturnClauses(context.exceptionCreator),
       normalizeWithClauses(context.exceptionCreator),

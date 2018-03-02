@@ -35,7 +35,7 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Query] = Query
 
-  test("allows bound nodes in single node pattern GRAPH OF") {
+  ignore("allows bound nodes in single node pattern GRAPH OF") {
     parsing(
       """MATCH (a:Swedish)
         |RETURN GRAPH result OF (a)""".stripMargin) shouldVerify { result: SemanticCheckResult =>
@@ -44,7 +44,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("allows bound relationships in GRAPH OF") {
+  ignore("allows bound relationships in GRAPH OF") {
     parsing(
       """MATCH (a)-[r]->(b)
         |RETURN GRAPH result OF (a)-[r]->(b)""".stripMargin) shouldVerify { result: SemanticCheckResult =>
@@ -53,7 +53,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("disallow undirected relationships in GRAPH OF") {
+  ignore("disallow undirected relationships in GRAPH OF") {
     parsing(
       """MATCH (a)-[r]->(b)
         |RETURN GRAPH result OF (b)-[r]-(a)""".stripMargin) shouldVerify { result: SemanticCheckResult =>
@@ -62,7 +62,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Weird no context graphs error") {
+  ignore("Weird no context graphs error") {
     parsing(
       """MATCH (n)-->(b:B)
         |WITH count(b) AS nodes
@@ -98,7 +98,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Should fail due to no context graphs") {
+  ignore("Should fail due to no context graphs") {
     parsing(
       """WITH GRAPHS foo
         |MATCH (n)-->(b:B)
@@ -109,7 +109,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("GRAPHS * keeps existing graphs in scope (1)") {
+  ignore("GRAPHS * keeps existing graphs in scope (1)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
@@ -141,7 +141,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("GRAPHS * keeps existing graphs in scope (2)") {
+  ignore("GRAPHS * keeps existing graphs in scope (2)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN GRAPHS *
@@ -173,7 +173,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("WITH * passes on whatever graphs are in scope") {
+  ignore("WITH * passes on whatever graphs are in scope") {
     parsing(
       """WITH GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH 1 AS a
@@ -213,7 +213,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("WITH GRAPHS controls which graphs are in scope (1)") {
+  ignore("WITH GRAPHS controls which graphs are in scope (1)") {
     parsing(
       """WITH GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN GRAPH foo AT 'url', GRAPH bar AT 'url'""".stripMargin) shouldVerify { result: SemanticCheckResult =>
@@ -243,7 +243,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("WITH GRAPHS controls which graphs are in scope (2)") {
+  ignore("WITH GRAPHS controls which graphs are in scope (2)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN a""".stripMargin) shouldVerify { result: SemanticCheckResult =>
@@ -274,7 +274,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("WITH GRAPHS controls which graphs are in scope (3)") {
+  ignore("WITH GRAPHS controls which graphs are in scope (3)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH a GRAPH source
@@ -311,7 +311,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("WITH GRAPHS controls which graphs are in scope (4)") {
+  ignore("WITH GRAPHS controls which graphs are in scope (4)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH a GRAPH source
@@ -321,7 +321,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Intermediary clauses don't lose graphs") {
+  ignore("Intermediary clauses don't lose graphs") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |MATCH (b)
@@ -369,7 +369,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("FROM introduces new source and target graphs") {
+  ignore("FROM introduces new source and target graphs") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |FROM GRAPH new AT 'new'
@@ -414,7 +414,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("INTO introduces new target graph") {
+  ignore("INTO introduces new target graph") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |INTO GRAPH new AT 'new'
@@ -453,7 +453,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("graph name conflict") {
+  ignore("graph name conflict") {
     parsing(
       """WITH GRAPH AT 'url' AS foo >> GRAPH AT 'url' AS bar
         |WITH GRAPHS >> foo AS foo, bar AS foo
@@ -462,7 +462,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("WITH is allowed to refer to missing graphs at the start of query") {
+  ignore("WITH is allowed to refer to missing graphs at the start of query") {
     parsing(
       """WITH GRAPHS foo >> bar
         |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
@@ -493,7 +493,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("with is not allowed to refer to missing graphs anywhere else") {
+  ignore("with is not allowed to refer to missing graphs anywhere else") {
     parsing(
       """WITH GRAPHS foo >> bar
         |WITH GRAPHS zig >> zag
@@ -506,7 +506,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("graphs are not lost across update statements") {
+  ignore("graphs are not lost across update statements") {
     parsing(
       """WITH GRAPHS foo >> bar
         |CREATE (a)
@@ -552,7 +552,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("create graph") {
+  ignore("create graph") {
     parsing(
       """WITH GRAPHS foo >> bar
         |CREATE GRAPH zig AT 'url'
@@ -586,7 +586,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Resolution of unaliased SOURCE GRAPH") {
+  ignore("Resolution of unaliased SOURCE GRAPH") {
     parsing(
       """WITH GRAPHS foo >> bar, baz
         |MATCH (a)
@@ -637,7 +637,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("create graph and set source") {
+  ignore("create graph and set source") {
     parsing(
       """WITH GRAPHS foo >> bar
         |CREATE GRAPH zig AT 'url' >>
@@ -678,7 +678,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Resolution of unaliased SOURCE GRAPH does not fail if graph is also passed on explicitly") {
+  ignore("Resolution of unaliased SOURCE GRAPH does not fail if graph is also passed on explicitly") {
     parsing(
       """WITH GRAPHS foo >> bar, baz
         |MATCH (a)
@@ -729,7 +729,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Resolution of unaliased TARGET GRAPH does not fail if graph is also passed on explicitly") {
+  ignore("Resolution of unaliased TARGET GRAPH does not fail if graph is also passed on explicitly") {
     parsing(
       """WITH GRAPHS foo >> bar, baz
         |MATCH (a)
@@ -780,7 +780,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Track graphs with generated names") {
+  ignore("Track graphs with generated names") {
     parsing(
       """WITH GRAPH AT 'url' >> bar, GRAPH baz
         |MATCH (a)
@@ -823,7 +823,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("UNION ALL handles graphs correctly") {
+  ignore("UNION ALL handles graphs correctly") {
     parsing(
       """WITH GRAPH bar AT 'url' >> GRAPH foo AT 'url2'
         |MATCH (a:Person)
@@ -884,7 +884,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("UNION handles graphs correctly") {
+  ignore("UNION handles graphs correctly") {
     parsing(
       """WITH GRAPH bar AT 'url' >> GRAPH foo AT 'url2'
         |MATCH (a:Person)
@@ -946,7 +946,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("create graph and set target") {
+  ignore("create graph and set target") {
     parsing(
       """WITH GRAPHS foo >> bar
         |CREATE >> GRAPH zig AT 'url'
@@ -987,7 +987,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("using graph variable in normal variable position") {
+  ignore("using graph variable in normal variable position") {
     parsing(
       """WITH GRAPHS foo >> bar
         |RETURN foo GRAPHS bar
@@ -999,7 +999,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("using normal variable in graph position") {
+  ignore("using normal variable in graph position") {
     parsing(
       """WITH 1 AS a GRAPHS foo >> bar
         |RETURN GRAPHS a
@@ -1011,7 +1011,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("using normal variable in graph definition") {
+  ignore("using normal variable in graph definition") {
     parsing(
       """WITH 1 AS a GRAPHS foo >> bar
         |WITH GRAPH a
@@ -1025,7 +1025,7 @@ class MultipleGraphClauseSemanticCheckingTest
 
   }
 
-  test("persist graph") {
+  ignore("persist graph") {
     parsing(
       """WITH GRAPHS foo >> bar
         |PERSIST GRAPH foo TO 'url'
@@ -1059,7 +1059,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("relocate graph") {
+  ignore("relocate graph") {
     parsing(
       """WITH GRAPHS foo >> bar
         |RELOCATE GRAPH foo TO 'url'
@@ -1093,7 +1093,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("delete graphs") {
+  ignore("delete graphs") {
     parsing(
       """WITH GRAPHS foo >> bar
         |DELETE GRAPHS foo, bar
@@ -1127,7 +1127,7 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("snapshot graph") {
+  ignore("snapshot graph") {
     parsing(
       """WITH GRAPHS foo >> bar
         |SNAPSHOT GRAPH foo TO 'url'

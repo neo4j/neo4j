@@ -83,7 +83,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
       val introducedVariables = if (ri.includeExisting) aliasProjection.map(_.variable.name).toSet else Set.empty[String]
 
       Seq(
-        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position), gri.getOrElse(PassAllGraphReturnItems(clause.position)),
+        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position),
           orderBy = newOrderBy, skip = skip, limit = limit, where = None)(clause.position),
         Return(distinct = false, returnItems = ri.copy(items = finalProjection)(ri.position), gri,
           orderBy = None, skip = None, limit = None, excludedNames = introducedVariables)(clause.position)

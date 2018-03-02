@@ -29,20 +29,16 @@ case object createGraphIntroducesHorizon extends Rewriter {
         case clause@CreateNewSourceGraph(snapshot, graph, of, at) =>
           val createGraph = CreateRegularGraph(snapshot, graph, of, at)(clause.position)
           val p = clause.position
-          val newWith = With(
-            ReturnItems(includeExisting = true, Seq.empty)(p),
-            GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(GraphAs(graph, None)(p))(p)))(p)
-          )(p)
-          Seq(createGraph, newWith)
+          Seq(createGraph, ???)
 
         case clause@CreateNewTargetGraph(snapshot, graph, of, at) =>
           val createGraph = CreateRegularGraph(snapshot, graph, of, at)(clause.position)
           val p = clause.position
-          val newWith = With(
-            ReturnItems(includeExisting = true, Seq.empty)(p),
-            GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(GraphAs(graph, None)(p))(p)))(p)
-          )(p)
-          Seq(createGraph, newWith)
+//          val newWith = With(
+//            ReturnItems(includeExisting = true, Seq.empty)(p),
+//            GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(GraphAs(graph, None)(p))(p)))(p)
+//          )(p)
+          Seq(createGraph, ???)
 
         case clause =>
           Some(clause)
