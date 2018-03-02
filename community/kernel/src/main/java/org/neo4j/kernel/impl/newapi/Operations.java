@@ -495,15 +495,30 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value graphSetProperty( int propertyKey, Value value )
     {
+        ktx.locks().optimistic()
+                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        Value existingValue = readGraphProperty( propertyKey );
+        if ( !existingValue.equals( value ) )
+        {
+            ktx.txState().graphDoReplaceProperty( propertyKey, existingValue, value );
+        }
+        return existingValue;
     }
 
     @Override
     public Value graphRemoveProperty( int propertyKey )
     {
+        ktx.locks().optimistic()
+                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        Value existingValue = readGraphProperty( propertyKey );
+        if ( existingValue != Values.NO_VALUE )
+        {
+            ktx.txState().graphDoRemoveProperty( propertyKey, existingValue );
+        }
+        return existingValue;
     }
 
     @Override
@@ -625,6 +640,23 @@ public class Operations implements Write, ExplicitIndexWrite
     private Value readRelationshipProperty( int propertyKey )
     {
         relationshipCursor.properties( propertyCursor );
+
+        //Find out if the property had a value
+        Value existingValue = NO_VALUE;
+        while ( propertyCursor.next() )
+        {
+            if ( propertyCursor.propertyKey() == propertyKey )
+            {
+                existingValue = propertyCursor.propertyValue();
+                break;
+            }
+        }
+        return existingValue;
+    }
+
+    private Value readGraphProperty( int propertyKey )
+    {
+        allStoreHolder.graphProperties( propertyCursor );
 
         //Find out if the property had a value
         Value existingValue = NO_VALUE;

@@ -20,9 +20,9 @@
 package org.neo4j.internal.kernel.api;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.PropertyContainer;
 
 
 /**
@@ -34,7 +34,6 @@ public interface KernelAPIWriteTestSupport
     /**
      * Create the Kernel to test in the provided directory.
      * @param storeDir The directory to hold the database
-     * @throws IOException Thrown on IO failure during database creation
      */
     void setup( File storeDir );
 
@@ -57,4 +56,10 @@ public interface KernelAPIWriteTestSupport
      * Clean up resources and close the database. Executed after all tests are completed.
      */
     void tearDown();
+
+    /**
+     * Retrieves all properties associated with the graph
+     * @return The properties associated with the graph
+     */
+    PropertyContainer graphProperties();
 }

@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.impl.newapi;
 
-public class GraphState extends PropertyContainerStateImpl
+import org.neo4j.internal.kernel.api.GraphPropertiesTestBase;
+
+public class GraphPropertiesTest extends GraphPropertiesTestBase<WriteTestSupport>
 {
-    GraphState()
+    @Override
+    public WriteTestSupport newTestSupport()
     {
-        super( -1 );
+        return new WriteTestSupport();
     }
+
 }

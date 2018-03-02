@@ -207,7 +207,7 @@ public class AllStoreHolder extends Read
     @Override
     long graphPropertiesReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return statement.getGraphPropertyReference();
     }
 
     @Override

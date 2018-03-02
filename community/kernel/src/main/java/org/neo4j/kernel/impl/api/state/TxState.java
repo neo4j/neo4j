@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -653,6 +652,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
         final RelationshipStateImpl relationshipState = relationshipStatesMap.get( id );
         return relationshipState == null ? RelationshipStateImpl.EMPTY : relationshipState;
+    }
+
+    @Override
+    public GraphState getGraphState( )
+    {
+        return graphState;
     }
 
     @Override
