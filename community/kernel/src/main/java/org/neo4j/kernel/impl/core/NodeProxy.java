@@ -664,13 +664,12 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = safeAcquireTransaction();
 
-        try ( Statement ignore = transaction.acquireStatement();
-              RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();)
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.nodeCursor();
             singleNode( transaction, nodes );
 
-            return Nodes.countAll( nodes, group );
+            return Nodes.countAll( nodes, transaction.cursors() );
         }
     }
 
@@ -684,13 +683,12 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             return 0;
         }
 
-        try ( Statement ignore = transaction.acquireStatement();
-              RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();)
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.nodeCursor();
             singleNode( transaction, nodes );
 
-            return Nodes.countAll( nodes, group, typeId );
+            return Nodes.countAll( nodes, transaction.cursors(), typeId );
         }
     }
 
@@ -698,8 +696,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public int getDegree( Direction direction )
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( Statement ignore = transaction.acquireStatement();
-              RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();)
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.nodeCursor();
             singleNode( transaction, nodes );
@@ -707,11 +704,11 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             switch ( direction )
             {
             case OUTGOING:
-                return Nodes.countOutgoing( nodes, group );
+                return Nodes.countOutgoing( nodes, transaction.cursors() );
             case INCOMING:
-                return Nodes.countIncoming( nodes, group );
+                return Nodes.countIncoming( nodes, transaction.cursors() );
             case BOTH:
-                return Nodes.countAll( nodes, group );
+                return Nodes.countAll( nodes, transaction.cursors() );
             default:
                 throw new IllegalStateException( "Unknown direction " + direction );
             }
@@ -732,15 +729,14 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         {
             NodeCursor nodes = transaction.nodeCursor();
             singleNode( transaction, nodes );
-            RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();
             switch ( direction )
             {
             case OUTGOING:
-                return Nodes.countOutgoing( nodes, group, typeId );
+                return Nodes.countOutgoing( nodes, transaction.cursors(), typeId );
             case INCOMING:
-                return Nodes.countIncoming( nodes, group, typeId );
+                return Nodes.countIncoming( nodes, transaction.cursors(), typeId );
             case BOTH:
-                return Nodes.countAll( nodes, group, typeId );
+                return Nodes.countAll( nodes, transaction.cursors(), typeId );
             default:
                 throw new IllegalStateException( "Unknown direction " + direction );
             }

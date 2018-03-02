@@ -23,7 +23,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 
@@ -31,27 +30,36 @@ import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoing;
 
+@SuppressWarnings( "unused" )
 public abstract class CompiledExpandUtils
 {
+    private static final int NOT_DENSE_DEGREE = -1;
+
     public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
             NodeCursor nodeCursor,
             long fromNode, Direction direction, long toNode )
     {
-
-        try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+        //Check from
+        int fromDegree = nodeGetDegreeIfDense( read, fromNode, nodeCursor, cursors, direction );
+        if ( fromDegree == 0 )
         {
-            int fromDegree = nodeGetDegree( read, fromNode, nodeCursor, group, direction );
-            if ( fromDegree == 0 )
-            {
-                return RelationshipSelectionCursor.EMPTY;
-            }
+            return RelationshipSelectionCursor.EMPTY;
+        }
+        boolean fromNodeIsDense = fromDegree != NOT_DENSE_DEGREE;
 
-            int toDegree = nodeGetDegree( read, toNode, nodeCursor, group, direction.reverse() );
-            if ( toDegree == 0 )
-            {
-                return RelationshipSelectionCursor.EMPTY;
-            }
+        //Check to
+        read.singleNode( toNode, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            return RelationshipSelectionCursor.EMPTY;
+        }
+        boolean toNodeIsDense = nodeCursor.isDense();
 
+        //Both are dense, start with the one with the lesser degree
+        if ( fromNodeIsDense && toNodeIsDense )
+        {
+            //Note that we have already position the cursor at toNode
+            int toDegree = nodeGetDegree( nodeCursor, cursors, direction );
             long startNode;
             long endNode;
             Direction relDirection;
@@ -68,30 +76,45 @@ public abstract class CompiledExpandUtils
                 relDirection = direction.reverse();
             }
 
-            RelationshipSelectionCursor selectionCursor = CompiledCursorUtils
-                    .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection );
-
-            return connectingRelationshipsIterator( selectionCursor, endNode );
+            return connectingRelationshipsIterator( CompiledCursorUtils
+                    .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection ), endNode );
+        }
+        else if ( fromNodeIsDense )
+        {
+            return connectingRelationshipsIterator( CompiledCursorUtils
+                    .nodeGetRelationships( read, cursors, nodeCursor, toNode, direction.reverse() ), fromNode );
+        }
+        else
+        {   //either only toNode is dense or none of them, just go with what we got
+            return connectingRelationshipsIterator( CompiledCursorUtils
+                    .nodeGetRelationships( read, cursors, nodeCursor, fromNode, direction ), toNode );
         }
     }
 
     public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
             NodeCursor nodeCursor, long fromNode, Direction direction, long toNode, int[] relTypes )
     {
-        try
+        //Check from
+        int fromDegree = calculateTotalDegreeIfDense( read, fromNode, nodeCursor, direction, relTypes, cursors );
+        if ( fromDegree == 0 )
         {
-            int fromDegree = calculateTotalDegree( read, fromNode, nodeCursor, direction, relTypes, cursors );
-            if ( fromDegree == 0 )
-            {
-                return RelationshipSelectionCursor.EMPTY;
-            }
+            return RelationshipSelectionCursor.EMPTY;
+        }
+        boolean fromNodeIsDense = fromDegree != NOT_DENSE_DEGREE;
 
-            int toDegree = calculateTotalDegree( read, toNode, nodeCursor, direction.reverse(), relTypes, cursors );
-            if ( toDegree == 0 )
-            {
-                return RelationshipSelectionCursor.EMPTY;
-            }
+        //Check to
+        read.singleNode( toNode, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            return RelationshipSelectionCursor.EMPTY;
+        }
+        boolean toNodeIsDense = nodeCursor.isDense();
 
+        //Both are dense, start with the one with the lesser degree
+        if ( fromNodeIsDense && toNodeIsDense )
+        {
+            //Note that we have already position the cursor at toNode
+            int toDegree = calculateTotalDegree( nodeCursor, direction, relTypes, cursors );
             long startNode;
             long endNode;
             Direction relDirection;
@@ -108,72 +131,110 @@ public abstract class CompiledExpandUtils
                 relDirection = direction.reverse();
             }
 
-            RelationshipSelectionCursor selectionCursor = CompiledCursorUtils
-                    .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection, relTypes );
-
-            return connectingRelationshipsIterator( selectionCursor, endNode );
+            return connectingRelationshipsIterator( CompiledCursorUtils
+                    .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection ), endNode );
         }
-        catch ( EntityNotFoundException ignore )
+        else if ( fromNodeIsDense )
         {
-            return RelationshipSelectionCursor.EMPTY;
+            return connectingRelationshipsIterator( CompiledCursorUtils
+                    .nodeGetRelationships( read, cursors, nodeCursor, toNode, direction.reverse() ), fromNode );
+        }
+        else
+        {   //either only toNode is dense or none of them, just go with what we got
+            return connectingRelationshipsIterator( CompiledCursorUtils
+                    .nodeGetRelationships( read, cursors, nodeCursor, fromNode, direction ), toNode );
         }
     }
 
-    static int nodeGetDegree( Read read, long node, NodeCursor nodeCursor, RelationshipGroupCursor group,
+    static int nodeGetDegreeIfDense( Read read, long node, NodeCursor nodeCursor, CursorFactory cursors,
             Direction direction )
     {
-            read.singleNode( node, nodeCursor );
-            if ( !nodeCursor.next() )
-            {
-                return 0;
-            }
-            switch ( direction )
-            {
-            case OUTGOING:
-                return countOutgoing( nodeCursor, group );
-            case INCOMING:
-                return countIncoming( nodeCursor, group );
-            case BOTH:
-                return countAll( nodeCursor, group );
-            default:
-                throw new IllegalStateException( "Unknown direction " + direction );
-            }
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            return 0;
+        }
+        if ( !nodeCursor.isDense() )
+        {
+            return NOT_DENSE_DEGREE;
+        }
+
+        return nodeGetDegree( nodeCursor, cursors, direction );
     }
 
-    static int nodeGetDegree( Read read, long node, NodeCursor nodeCursor, RelationshipGroupCursor group,
+    private static int nodeGetDegree( NodeCursor nodeCursor, CursorFactory cursors,
+            Direction direction )
+    {
+        switch ( direction )
+        {
+        case OUTGOING:
+            return countOutgoing( nodeCursor, cursors );
+        case INCOMING:
+            return countIncoming( nodeCursor, cursors );
+        case BOTH:
+            return countAll( nodeCursor, cursors );
+        default:
+            throw new IllegalStateException( "Unknown direction " + direction );
+        }
+    }
+
+    static int nodeGetDegreeIfDense( Read read, long node, NodeCursor nodeCursor, CursorFactory cursors,
             Direction direction, int type )
     {
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
             return 0;
-            }
-            switch ( direction )
-            {
-            case OUTGOING:
-                return countOutgoing( nodeCursor, group, type );
-            case INCOMING:
-                return countIncoming( nodeCursor, group, type );
-            case BOTH:
-                return countAll( nodeCursor, group, type );
-            default:
-                throw new IllegalStateException( "Unknown direction " + direction );
-            }
+        }
+        if ( !nodeCursor.isDense() )
+        {
+            return NOT_DENSE_DEGREE;
+        }
+
+        return nodeGetDegree( nodeCursor, cursors, direction, type );
     }
 
-    private static int calculateTotalDegree( Read read, long fromNode, NodeCursor nodeCursor, Direction direction,
-            int[] relTypes, CursorFactory cursors ) throws EntityNotFoundException
+    private static int nodeGetDegree( NodeCursor nodeCursor, CursorFactory cursors,
+            Direction direction, int type )
     {
-        try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+        switch ( direction )
         {
-            int degree = 0;
-            for ( int relType : relTypes )
-            {
-                degree += nodeGetDegree( read, fromNode, nodeCursor, group, direction, relType );
-            }
-
-            return degree;
+        case OUTGOING:
+            return countOutgoing( nodeCursor, cursors, type );
+        case INCOMING:
+            return countIncoming( nodeCursor, cursors, type );
+        case BOTH:
+            return countAll( nodeCursor, cursors, type );
+        default:
+            throw new IllegalStateException( "Unknown direction " + direction );
         }
+    }
+
+    private static int calculateTotalDegreeIfDense( Read read, long node, NodeCursor nodeCursor, Direction direction,
+            int[] relTypes, CursorFactory cursors )
+    {
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            return 0;
+        }
+        if ( !nodeCursor.isDense() )
+        {
+            return NOT_DENSE_DEGREE;
+        }
+        return calculateTotalDegree( nodeCursor, direction, relTypes, cursors );
+    }
+
+    private static int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] relTypes,
+            CursorFactory cursors )
+    {
+        int degree = 0;
+        for ( int relType : relTypes )
+        {
+            degree += nodeGetDegree( nodeCursor, cursors, direction, relType );
+        }
+
+        return degree;
     }
 
     private static RelationshipSelectionCursor connectingRelationshipsIterator(

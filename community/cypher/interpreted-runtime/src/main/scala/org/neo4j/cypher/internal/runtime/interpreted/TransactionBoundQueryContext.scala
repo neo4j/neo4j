@@ -497,41 +497,35 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = {
     val cursor = nodeCursor
-    val group = transactionalContext.cursors.allocateRelationshipGroupCursor()
-    try {
       reads().singleNode(node, cursor)
       if (!cursor.next()) 0
       else {
         dir match {
-          case OUTGOING => Nodes.countOutgoing(cursor, group)
-          case INCOMING => Nodes.countIncoming(cursor, group)
-          case BOTH => Nodes.countAll(cursor, group)
+          case OUTGOING => Nodes.countOutgoing(cursor, transactionalContext.cursors)
+          case INCOMING => Nodes.countIncoming(cursor, transactionalContext.cursors)
+          case BOTH => Nodes.countAll(cursor, transactionalContext.cursors)
         }
       }
-    }
-    finally group.close()
   }
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = {
     val cursor = nodeCursor
-    val group = transactionalContext.cursors.allocateRelationshipGroupCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) 0
-      else {
-        dir match {
-          case OUTGOING => Nodes.countOutgoing(cursor, group, relTypeId)
-          case INCOMING => Nodes.countIncoming(cursor, group, relTypeId)
-          case BOTH => Nodes.countAll(cursor, group, relTypeId)
-        }
+    reads().singleNode(node, cursor)
+    if (!cursor.next()) 0
+    else {
+      dir match {
+        case OUTGOING => Nodes.countOutgoing(cursor, transactionalContext.cursors, relTypeId)
+        case INCOMING => Nodes.countIncoming(cursor, transactionalContext.cursors, relTypeId)
+        case BOTH => Nodes.countAll(cursor, transactionalContext.cursors, relTypeId)
       }
-    } finally group.close()
+    }
   }
 
   override def nodeIsDense(node: Long): Boolean = {
     val cursor = nodeCursor
     reads().singleNode(node, cursor)
-    cursor.isDense
+    if (!cursor.next()) false
+    else cursor.isDense
   }
 
   override def asObject(value: AnyValue): Any = {
