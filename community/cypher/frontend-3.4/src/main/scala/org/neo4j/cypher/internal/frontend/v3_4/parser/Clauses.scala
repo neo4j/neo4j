@@ -40,58 +40,6 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
-  def CreateGraph: Rule1[ast.CreateGraphClause] =
-    CreateNewSourceGraph | CreateNewTargetGraph | CreateRegularGraph
-
-  private def CreateRegularGraph: Rule1[ast.CreateRegularGraph] = rule("CREATE GRAPH") {
-    keyword("CREATE") ~~ CreatedGraph ~~>>(t => ast.CreateRegularGraph(t._1, t._2, t._3, t._4))
-  }
-
-  private def CreateNewSourceGraph: Rule1[ast.CreateNewSourceGraph] = rule("CREATE GRAPH >>") {
-    keyword("CREATE") ~~ CreatedGraph ~~ keyword(">>") ~~>>(t => ast.CreateNewSourceGraph(t._1, t._2, t._3, t._4))
-  }
-
-  private def CreateNewTargetGraph: Rule1[ast.CreateNewTargetGraph] = rule("CREATE >> GRAPH") {
-    keyword("CREATE") ~~ keyword(">>")  ~~ CreatedGraph ~~>>(t => ast.CreateNewTargetGraph(t._1, t._2, t._3, t._4))
-  }
-
-  private def CreatedGraph: Rule1[(Boolean, Variable, Option[ASTPattern], ast.GraphUrl)] =
-    CreatedGraphAt | CreatedGraphAs
-
-  private def CreatedGraphAt: Rule1[(Boolean,  Variable, Option[ASTPattern], ast.GraphUrl)] =
-    OptSnapshot ~~ keyword("GRAPH") ~~ Variable ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~> {
-      (snapshot, graph, pattern, url) => (snapshot, graph, pattern, url)
-    }
-
-  private def CreatedGraphAs: Rule1[(Boolean,  Variable, Option[ASTPattern], ast.GraphUrl)] =
-    OptSnapshot ~~ keyword("GRAPH") ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~ keyword("AS") ~~ Variable ~~> {
-      (snapshot, pattern, url, graph) => (snapshot, graph, pattern, url)
-    }
-
-  private def OptSnapshot: Rule1[Boolean] = rule("[SNAPSHOT]") {
-    optional(keyword("SNAPSHOT") ~~ push(true)) ~~>(_.getOrElse(false))
-  }
-
-  def Persist: Rule1[ast.Persist] = rule("PERSIST") {
-    keyword("PERSIST") ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Persist(_, _))
-  }
-
-  def Snapshot: Rule1[ast.Snapshot] = rule("SNAPSHOT") {
-    keyword("SNAPSHOT") ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Snapshot(_, _))
-  }
-
-  def Relocate: Rule1[ast.Relocate] = rule("RELOCATE") {
-    keyword("RELOCATE") ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Relocate(_, _))
-  }
-
-  def DeleteGraphs: Rule1[ast.DeleteGraphs] = rule("DELETE GRAPHS") {
-    keyword("DELETE") ~~ (
-      (keyword("GRAPHS") ~~ oneOrMore(Variable, separator = CommaSep) ~~>>(ast.DeleteGraphs(_)))
-      |
-      (oneOrMore(keyword("GRAPH") ~~ Variable, separator = CommaSep) ~~>>(ast.DeleteGraphs(_)))
-    )
-  }
-
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)

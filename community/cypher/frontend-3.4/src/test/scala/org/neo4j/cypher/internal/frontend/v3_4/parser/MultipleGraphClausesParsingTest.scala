@@ -31,84 +31,28 @@ class MultipleGraphClausesParsingTest
 
   implicit val parser: Rule1[Clause] = Clause
 
-  test("CREATE GRAPH foo AT 'url'") {
-    yields(ast.CreateRegularGraph(snapshot = false, varFor("foo"), None, url("url")))
+  test("CONSTRUCT GRAPH { CREATE () }") {
+    failsToParse
   }
 
-  test("CREATE SNAPSHOT GRAPH foo AT 'url'") {
-    yields(ast.CreateRegularGraph(snapshot = true, varFor("foo"), None, url("url")))
+  test("CREATE GRAPH foo.bar") {
+    failsToParse
   }
 
-  test("CREATE GRAPH foo OF () AT 'url'") {
-    yields(ast.CreateRegularGraph(snapshot = false, varFor("foo"), Some(nodePattern), url("url")))
+  test("COPY GRAPH foo.bar TO foo.diff") {
+    failsToParse
   }
 
-  test("CREATE SNAPSHOT GRAPH foo OF () AT 'url'") {
-    yields(ast.CreateRegularGraph(snapshot = true, varFor("foo"), Some(nodePattern), url("url")))
+  test("RENAME GRAPH foo.bar TO foo.diff") {
+    failsToParse
   }
 
-  test("CREATE GRAPH foo OF p=(), q=() AT 'url'") {
-    yields(ast.CreateRegularGraph(snapshot = false, varFor("foo"), Some(complexPattern), url("url")))
+  test("TRUNCATE GRAPH foo.bar") {
+    failsToParse
   }
 
-  test("CREATE SNAPSHOT GRAPH foo OF p=(), q=() AT 'url'") {
-    yields(ast.CreateRegularGraph(snapshot = true, varFor("foo"), Some(complexPattern), url("url")))
-  }
-
-  test("CREATE >> GRAPH foo AT 'url'") {
-    yields(ast.CreateNewTargetGraph(snapshot = false, varFor("foo"), None, url("url")))
-  }
-
-  test("CREATE >> SNAPSHOT GRAPH foo AT 'url'") {
-    yields(ast.CreateNewTargetGraph(snapshot = true, varFor("foo"), None, url("url")))
-  }
-
-  test("CREATE GRAPH foo AT 'url' >>") {
-    yields(ast.CreateNewSourceGraph(snapshot = false, varFor("foo"), None, url("url")))
-  }
-
-  test("CREATE SNAPSHOT GRAPH foo AT 'url' >>") {
-    yields(ast.CreateNewSourceGraph(snapshot = true, varFor("foo"), None, url("url")))
-  }
-
-  test("PERSIST GRAPH foo TO 'url'") {
-    yields(ast.Persist(graph("foo"), url("url")))
-  }
-
-  test("PERSIST SOURCE GRAPH TO 'url'") {
-    yields(ast.Persist(ast.SourceGraphAs(None)(pos), url("url")))
-  }
-
-  test("PERSIST TARGET GRAPH TO 'url'") {
-    yields(ast.Persist(ast.TargetGraphAs(None)(pos), url("url")))
-  }
-
-  test("SNAPSHOT GRAPH foo TO 'url'") {
-    yields(ast.Snapshot(graph("foo"), url("url")))
-  }
-
-  test("SNAPSHOT SOURCE GRAPH TO 'url'") {
-    yields(ast.Snapshot(ast.SourceGraphAs(None)(pos), url("url")))
-  }
-
-  test("SNAPSHOT TARGET GRAPH TO 'url'") {
-    yields(ast.Snapshot(ast.TargetGraphAs(None)(pos), url("url")))
-  }
-
-  test("RELOCATE GRAPH foo TO 'url'") {
-    yields(ast.Relocate(graph("foo"), url("url")))
-  }
-
-  test("DELETE GRAPHS foo, bar") {
-    yields(ast.DeleteGraphs(Seq(varFor("foo"), varFor("bar"))))
-  }
-
-  test("DELETE GRAPH foo") {
-    yields(ast.DeleteGraphs(Seq(varFor("foo"))))
-  }
-
-  test("DELETE GRAPH foo, GRAPH bar") {
-    yields(ast.DeleteGraphs(Seq(varFor("foo"), varFor("bar"))))
+  test("DELETE GRAPH foo.bar") {
+    failsToParse
   }
 
   private val nodePattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), None)(pos))))(pos)
