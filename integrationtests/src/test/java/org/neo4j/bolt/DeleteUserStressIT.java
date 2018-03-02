@@ -37,6 +37,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -45,7 +46,9 @@ import static org.neo4j.driver.v1.AuthTokens.basic;
 public class DeleteUserStressIT
 {
     @Rule
-    public Neo4jRule db = new Neo4jRule().withConfig( GraphDatabaseSettings.auth_enabled, "true" );
+    public Neo4jRule db = new Neo4jRule()
+            .withConfig( GraphDatabaseSettings.auth_enabled, "true" )
+            .withConfig( ServerSettings.script_enabled, "true" );
     private Driver adminDriver;
     private final Set<Throwable> errors = ConcurrentHashMap.newKeySet();
 
