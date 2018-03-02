@@ -42,7 +42,7 @@ public class SchemaLoggingIT
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
 
     @Test
-    public void shouldLogUserReadableLabelAndPropertyNames() throws Exception
+    public void shouldLogUserReadableLabelAndPropertyNames()
     {
         //noinspection deprecation
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();

@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
  */
 public interface ValueWriter<E extends Exception>
 {
-
     enum ArrayType
     {
         BYTE,
@@ -42,7 +41,13 @@ public interface ValueWriter<E extends Exception>
         BOOLEAN,
         STRING,
         CHAR,
-        POINT
+        POINT,
+        ZONED_DATE_TIME,
+        LOCAL_DATE_TIME,
+        DATE,
+        ZONED_TIME,
+        LOCAL_TIME,
+        DURATION
     }
 
     void writeNull() throws E;
@@ -77,6 +82,20 @@ public interface ValueWriter<E extends Exception>
     void writeByteArray( byte[] value ) throws E;
 
     void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E;
+
+    void writeDuration( long months, long days, long seconds, int nanos ) throws E;
+
+    void writeDate( long epochDay ) throws E;
+
+    void writeLocalTime( long nanoOfDay ) throws E;
+
+    void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E;
+
+    void writeLocalDateTime( long epochSecond, int nano ) throws E;
+
+    void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws E;
+
+    void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws E;
 
     class Adapter<E extends Exception> implements ValueWriter<E>
     {
@@ -147,6 +166,41 @@ public interface ValueWriter<E extends Exception>
 
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeDuration( long months, long days, long seconds, int nanos )
+        {   // no-op
+        }
+
+        @Override
+        public void writeDate( long epochDay ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeLocalTime( long nanoOfDay ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeLocalDateTime( long epochSecond, int nano ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws E
         {   // no-op
         }
     }

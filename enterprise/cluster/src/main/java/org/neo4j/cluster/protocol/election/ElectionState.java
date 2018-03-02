@@ -45,11 +45,10 @@ public enum ElectionState
     start
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == ElectionMessage.created )
                     {
@@ -68,11 +67,10 @@ public enum ElectionState
     election
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     Log log = context.getLog( ElectionState.class );
                     switch ( message.getMessageType() )
@@ -214,7 +212,7 @@ public enum ElectionState
                                 {
                                     List<InstanceId> aliveInstances = Iterables.asList( context.getAlive() );
                                     Collections.sort( aliveInstances );
-                                    outgoing.offer( message.setHeader( Message.TO,
+                                    outgoing.offer( message.setHeader( Message.HEADER_TO,
                                             context.getUriForId( firstOrNull( aliveInstances ) ).toString() ) );
                                 }
                             }
@@ -245,7 +243,7 @@ public enum ElectionState
                                     context.voted( data.getRole(), data.getInstanceId(), data.getElectionCredentials(),
                                             version );
 
-                            String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
+                            String voter = message.hasHeader( Message.HEADER_FROM ) ? message.getHeader( Message.HEADER_FROM ) : "I";
                             log.debug( voter + " voted " + data + " which i " +
                                     ( accepted ? "accepted" : "did not accept" ) );
 

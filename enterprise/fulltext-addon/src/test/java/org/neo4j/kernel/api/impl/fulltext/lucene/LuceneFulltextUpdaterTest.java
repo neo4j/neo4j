@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
@@ -846,10 +844,10 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         race.go();
         try ( Transaction tx = db.beginTx() )
         {
-            PrimitiveLongIterator bob = fulltextAccessor.query( "nodes", "bob" );
-            assertEquals( bobThreads * nodesCreatedPerThread, PrimitiveLongCollections.count( bob ) );
-            PrimitiveLongIterator alice = fulltextAccessor.query( "nodes", "alice" );
-            assertEquals( 0, PrimitiveLongCollections.count( alice ) );
+            ScoreEntityIterator bob = fulltextAccessor.query( "nodes", "bob" );
+            assertEquals( bobThreads * nodesCreatedPerThread, bob.stream().count() );
+            ScoreEntityIterator alice = fulltextAccessor.query( "nodes", "alice" );
+            assertEquals( 0, alice.stream().count() );
         }
     }
 }

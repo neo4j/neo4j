@@ -67,7 +67,7 @@ public class LuceneSchemaIndexCorruptionTest
     private final IndexProvider.Monitor monitor = new LoggingMonitor( logProvider.getLog( "test" ) );
 
     @Test
-    public void shouldRequestIndexPopulationIfTheIndexIsCorrupt() throws Exception
+    public void shouldRequestIndexPopulationIfTheIndexIsCorrupt()
     {
         // Given
         long faultyIndexId = 1;
@@ -85,7 +85,7 @@ public class LuceneSchemaIndexCorruptionTest
     }
 
     @Test
-    public void shouldRequestIndexPopulationFailingWithFileNotFoundException() throws Exception
+    public void shouldRequestIndexPopulationFailingWithFileNotFoundException()
     {
         // Given
         long faultyIndexId = 1;
@@ -103,7 +103,7 @@ public class LuceneSchemaIndexCorruptionTest
     }
 
     @Test
-    public void shouldRequestIndexPopulationWhenFailingWithEOFException() throws Exception
+    public void shouldRequestIndexPopulationWhenFailingWithEOFException()
     {
         // Given
         long faultyIndexId = 1;

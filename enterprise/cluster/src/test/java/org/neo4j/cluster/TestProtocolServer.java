@@ -123,7 +123,7 @@ public class TestProtocolServer
 
     public class TestMessageSender implements MessageSender
     {
-        List<Message> messages = new ArrayList<Message>();
+        List<Message> messages = new ArrayList<>();
 
         @Override
         public void process( List<Message<? extends MessageType>> messages )
@@ -137,7 +137,7 @@ public class TestProtocolServer
         @Override
         public boolean process( Message<? extends MessageType> message )
         {
-            message.setHeader( Message.FROM, serverUri.toASCIIString() );
+            message.setHeader( Message.HEADER_FROM, serverUri.toASCIIString() );
             messages.add( message );
             return true;
         }

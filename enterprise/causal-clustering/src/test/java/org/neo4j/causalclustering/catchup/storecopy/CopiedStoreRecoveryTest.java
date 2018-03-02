@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 public class CopiedStoreRecoveryTest
 {
     @Test
-    public void shouldThrowIfAlreadyShutdown() throws IOException
+    public void shouldThrowIfAlreadyShutdown()
     {
         // Given
         CopiedStoreRecovery copiedStoreRecovery =

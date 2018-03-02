@@ -36,7 +36,7 @@ public class ProcedureTransactionProvider implements ComponentRegistry.Provider<
         return new ProcedureTransactionImpl( ktx );
     }
 
-    private class ProcedureTransactionImpl implements ProcedureTransaction
+    private static class ProcedureTransactionImpl implements ProcedureTransaction
     {
         private final KernelTransaction ktx;
 

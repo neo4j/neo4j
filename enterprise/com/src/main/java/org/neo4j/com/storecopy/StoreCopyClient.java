@@ -137,7 +137,7 @@ public class StoreCopyClient
      */
     public interface StoreCopyRequester
     {
-        Response<?> copyStore( StoreWriter writer ) throws IOException;
+        Response<?> copyStore( StoreWriter writer );
 
         void done();
     }
@@ -261,7 +261,7 @@ public class StoreCopyClient
             response.accept( new Response.Handler()
             {
                 @Override
-                public void obligation( long txId ) throws IOException
+                public void obligation( long txId )
                 {
                     throw new UnsupportedOperationException( "Shouldn't be called" );
                 }

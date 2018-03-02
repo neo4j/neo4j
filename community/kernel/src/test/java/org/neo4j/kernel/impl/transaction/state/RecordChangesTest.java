@@ -56,7 +56,7 @@ public class RecordChangesTest
     };
 
     @Test
-    public void shouldCountChanges() throws Exception
+    public void shouldCountChanges()
     {
         // Given
         RecordChanges<Object, Object> change = new RecordChanges<>( loader, new IntCounter() );

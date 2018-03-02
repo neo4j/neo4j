@@ -218,7 +218,7 @@ public class StoreMigrationIT
         }
     }
 
-    private static void createDb( RecordFormats recordFormat, File storeDir ) throws IOException
+    private static void createDb( RecordFormats recordFormat, File storeDir )
     {
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
@@ -307,7 +307,7 @@ public class StoreMigrationIT
     //This method is overridden by a blockdevice test.
     protected ConsistencyCheckService.Result runConsistencyChecker( File db, FileSystemAbstraction fs,
             ConsistencyCheckService consistencyCheckService, String storeVersion )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         Config config = Config.defaults( GraphDatabaseSettings.record_format, storeVersion );
         return consistencyCheckService.runFullConsistencyCheck( db, config, ProgressMonitorFactory.NONE,

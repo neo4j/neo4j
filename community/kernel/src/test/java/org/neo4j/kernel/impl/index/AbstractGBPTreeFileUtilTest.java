@@ -123,13 +123,13 @@ public abstract class AbstractGBPTreeFileUtilTest
     /* boolean storeFileExists( File storeFile ) */
 
     @Test
-    public void storeFileExistsMustReturnTrueForExistingFile() throws Exception
+    public void storeFileExistsMustReturnTrueForExistingFile()
     {
         assertTrue( fileUtil.storeFileExists( existingFile ) );
     }
 
     @Test
-    public void storeFileExistsMustReturnFalseForNonExistingFile() throws Exception
+    public void storeFileExistsMustReturnFalseForNonExistingFile()
     {
         assertFalse( fileUtil.storeFileExists( nonExistingFile ) );
     }

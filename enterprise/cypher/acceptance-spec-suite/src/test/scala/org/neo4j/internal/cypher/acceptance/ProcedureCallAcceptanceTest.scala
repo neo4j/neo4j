@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
+import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.{Aggregator, BasicUserAggregationFunction}
@@ -28,6 +29,7 @@ import org.neo4j.kernel.api.proc.CallableUserFunction.BasicUserFunction
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 import org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature}
+import org.neo4j.values.AnyValue
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -41,7 +43,8 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
       }
 
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.of[Array[AnyRef], ProcedureException](input)
       }
   }
@@ -52,18 +55,19 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
       builder.out("out", Neo4jTypes.NTAny)
 
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.of[Array[AnyRef], ProcedureException](Array(value))
       }
     }
 
-  protected def registerUserFunction(value: AnyRef, typ: Neo4jTypes.AnyType = Neo4jTypes.NTAny) =
+  protected def registerUserFunction(value: AnyValue, typ: Neo4jTypes.AnyType = Neo4jTypes.NTAny) =
     registerUserDefinedFunction("my.first.value") { builder =>
       val builder = functionSignature(Array("my", "first"), "value")
       builder.out(typ)
 
       new BasicUserFunction(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): AnyRef = value
+        override def apply(ctx: Context, input: Array[AnyValue]): AnyValue = value
       }
     }
 
@@ -89,7 +93,8 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
       builder.out(ProcedureSignature.VOID)
 
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.empty()
       }
     }
@@ -97,7 +102,8 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
   protected def registerProcedureReturningNoRowsOrColumns() =
     registerProcedure("dbms.return_nothing") { builder =>
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.empty()
       }
     }

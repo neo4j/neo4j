@@ -39,7 +39,7 @@ import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStr
 public class TypicallyConnectToRandomReadReplicaStrategyTest
 {
     @Test
-    public void shouldConnectToCoreOneInTenTimesByDefault() throws Exception
+    public void shouldConnectToCoreOneInTenTimesByDefault()
     {
         // given
         MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );

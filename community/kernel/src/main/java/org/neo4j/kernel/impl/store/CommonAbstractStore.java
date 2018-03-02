@@ -46,12 +46,11 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.string.UTF8;
 
+import static java.lang.Math.max;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-
 import static org.neo4j.helpers.ArrayUtil.contains;
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -78,7 +77,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected final RecordFormat<RECORD> recordFormat;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
-    private Throwable causeOfStoreNotOk;
+    private RuntimeException causeOfStoreNotOk;
     private final String typeDescriptor;
     protected int recordSize;
 
@@ -155,7 +154,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 e.addSuppressed( failureToClose );
             }
         }
-        throw launderedException( e );
+        throwIfUnchecked( e );
+        throw new RuntimeException( e );
     }
 
     /**
@@ -262,7 +262,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         idGeneratorFactory.create( getIdFileName(), getNumberOfReservedLowIds(), false );
     }
 
-    private void createHeaderRecord( PageCursor cursor ) throws IOException
+    private void createHeaderRecord( PageCursor cursor )
     {
         int offset = cursor.getOffset();
         storeHeaderFormat.writeHeader( cursor );
@@ -353,7 +353,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * of the record format still happens in here.
      * @throws IOException if there were problems reading header information.
      */
-    private void readHeaderAndInitializeRecordFormat( PageCursor cursor ) throws IOException
+    private void readHeaderAndInitializeRecordFormat( PageCursor cursor )
     {
         storeHeader = storeHeaderFormat.readHeader( cursor );
     }
@@ -549,7 +549,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * Marks this store as "not ok".
      */
-    void setStoreNotOk( Throwable cause )
+    void setStoreNotOk( RuntimeException cause )
     {
         storeOk = false;
         causeOfStoreNotOk = cause;
@@ -573,7 +573,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         if ( !storeOk )
         {
-            throw launderedException( causeOfStoreNotOk );
+            throw causeOfStoreNotOk;
         }
     }
 
@@ -699,7 +699,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     void openIdGenerator()
     {
-        idGenerator = idGeneratorFactory.open( getIdFileName(), getIdType(), () -> scanForHighId(), recordFormat.getMaxId() );
+        idGenerator = idGeneratorFactory.open( getIdFileName(), getIdType(), this::scanForHighId, recordFormat.getMaxId() );
     }
 
     /**
@@ -714,103 +714,73 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
-            byte[] expectedLegacyVersionBytes = UTF8.encode( typeDescriptor + " " + storeVersion );
-            long nextPageId = storeFile.getLastPageId();
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
             long highestId = getNumberOfReservedLowIds();
-            while ( nextPageId >= 0 && cursor.next( nextPageId ) )
+            boolean found;
+            /*
+             * We do this in chunks of pages instead of one page at a time, the performance impact is significant.
+             * We first pre-fetch a large chunk sequentially, which is then scanned backwards for used records.
+             */
+            final long chunkSizeInPages = 256; // 2MiB (8192 bytes/page * 256 pages/chunk)
+
+            long chunkEndId = storeFile.getLastPageId();
+            while ( chunkEndId >= 0 )
             {
-                nextPageId--;
-                boolean found;
-                do
+                // Do pre-fetch of the chunk
+                long chunkStartId = max( chunkEndId - chunkSizeInPages, 0 );
+                preFetchChunk( cursor, chunkStartId, chunkEndId );
+
+                // Scan pages backwards in the chunk
+                for ( long currentId = chunkEndId; currentId >= chunkStartId && cursor.next( currentId ); currentId-- )
                 {
-                    found = false;
-                    int currentRecord = recordsPerPage;
-                    while ( currentRecord-- > 0 )
+                    do
                     {
-                        int offset = currentRecord * recordSize;
-                        cursor.setOffset( offset );
-                        long recordId = (cursor.getCurrentPageId() * recordsPerPage) + currentRecord;
-                        if ( isInUse( cursor ) )
+                        found = false;
+                        // Scan record backwards in the page
+                        for ( int offset = recordsPerPage * recordSize - recordSize; offset >= 0; offset -= recordSize )
                         {
-                            boolean justLegacyStoreTrailer = isJustLegacyStoreTrailer( cursor, offset,
-                                    expectedLegacyVersionBytes, recordSize );
-                            if ( !justLegacyStoreTrailer )
+                            cursor.setOffset( offset );
+                            if ( isInUse( cursor ) )
                             {
                                 // We've found the highest id in use
-                                highestId = recordId + 1 /*+1 since we return the high id*/;
+                                highestId = (cursor.getCurrentPageId() * recordsPerPage) + offset / recordSize + 1;
                                 found = true;
                                 break;
                             }
                         }
                     }
+                    while ( cursor.shouldRetry() );
+
+                    checkIdScanCursorBounds( cursor );
+                    if ( found )
+                    {
+                        return highestId;
+                    }
                 }
-                while ( cursor.shouldRetry() );
-                checkIdScanCursorBounds( cursor );
-                if ( found )
-                {
-                    return highestId;
-                }
+                chunkEndId = chunkStartId - 1;
             }
 
             return getNumberOfReservedLowIds();
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
-                    "Unable to find high id by scanning backwards " + getStorageFileName(), e );
+            throw new UnderlyingStorageException( "Unable to find high id by scanning backwards " + getStorageFileName(), e );
         }
     }
 
     /**
-     * {@link CommonAbstractStore} doesn't use version trailers in the end of the stores after a clean shutdown
-     * anymore. Although {@link RecordFormat} is now pluggable and so a {@link CommonAbstractStore} may be used
-     * to open an older version of the store, one which might have version trailers. This method is used
-     * during opening a store to figure out the highest id by scanning from the end. It's very convenient
-     * if we were aware of the existence of version trailers as to support opening older versions without
-     * problems in this regard. A version trailer may span multiple records in a store which has record size
-     * smaller than the trailer length and so the matching takes that into account in that it can figure
-     * out all possible subsets of the trailer to compare with. Without this method the scan which figures
-     * out highest in use id may mistake version trailer "records" for inUse records, if the inUse bit
-     * happened to be set and so would report too high highest id and reading those higher/trailer records,
-     * trying to interpret them as normal records would fail in random and interesting ways.
+     * Do a pre-fetch of pages in sequential order on the range [{@code pageIdStart},{@code pageIdEnd}].
      *
-     * @param cursor {@link PageCursor} to read and compare trailer bytes with.
-     * @param offset offset to start reading the record bytes from the cursor.
-     * @param expectedVersionBytes the whole version trailer as a {@code byte[]}.
-     * @param recordSize record size of records in this store.
-     * @return {@code true} if the record at the offset was just a version trailer "record", otherwise
-     * {@code false} where the id of this record will be set as the highest inUse record in this store.
+     * @param cursor Cursor to pre-fetch on.
+     * @param pageIdStart Page id to start pre-fetching from.
+     * @param pageIdEnd Page id to end pre-fetching on, inclusive {@code pageIdEnd}.
      */
-    private boolean isJustLegacyStoreTrailer( PageCursor cursor, int offset, byte[] expectedVersionBytes,
-            int recordSize )
+    private static void preFetchChunk( PageCursor cursor, long pageIdStart, long pageIdEnd ) throws IOException
     {
-        try
+        for ( long currentPageId = pageIdStart; currentPageId <= pageIdEnd; currentPageId++ )
         {
-            for ( int i = 0; i < expectedVersionBytes.length; )
-            {
-                // If the version bytes are bigger than record size then we must also compare with subsets
-                // of those bytes in recordSize chunks
-                boolean mismatch = false;
-                for ( int j = 0; i < expectedVersionBytes.length && j < recordSize; i++, j++ )
-                {
-                    byte b = cursor.getByte( offset + j );
-                    if ( b != expectedVersionBytes[i] )
-                    {
-                        mismatch = true;
-                    }
-                }
-                if ( !mismatch )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            return false;
+            cursor.next( currentPageId );
         }
     }
 

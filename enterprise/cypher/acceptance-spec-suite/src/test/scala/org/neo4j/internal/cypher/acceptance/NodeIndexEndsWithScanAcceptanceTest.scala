@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 /**
@@ -182,12 +183,10 @@ class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with C
 
     graph.createConstraint("Location", "name")
 
+    val config = Configs.AbsolutelyAll - Configs.Compiled - TestConfiguration(Versions(V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
     val query = "MATCH (l:Location) WHERE l.name ENDS WITH {param} RETURN l"
+    val message = List("Expected a string value, but got 42","Expected a string value, but got Long(42)","Expected two strings, but got London and 42")
 
-    failWithError(TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema, Runtimes.Interpreted, Runtimes.Slotted)) +
-      TestConfiguration(Versions.all, Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
-      TestConfiguration(Versions.V2_3, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)),
-      query, message = List("Expected a string value, but got 42","Expected a string value, but got Long(42)","Expected two strings, but got London and 42"),
-      params = "param" -> 42)
+    failWithError(config, query, message, params = "param" -> 42)
   }
 }

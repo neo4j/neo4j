@@ -39,7 +39,7 @@ public interface KernelAPIReadTestSupport
      * @param create Method which populates the database.
      * @throws IOException If database creation failed due to IO problems.
      */
-    void setup( File storeDir, Consumer<GraphDatabaseService> create ) throws IOException;
+    void setup( File storeDir, Consumer<GraphDatabaseService> create );
 
     /**
      * The Kernel to test. Called before every test.

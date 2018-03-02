@@ -39,9 +39,9 @@ public final class ServerExtender
     ServerExtender( PluginPointFactory pluginPointFactory )
     {
         this.pluginPointFactory = pluginPointFactory;
-        targetToPluginMap.put( Node.class, new ConcurrentHashMap<String, PluginPoint>() );
-        targetToPluginMap.put( Relationship.class, new ConcurrentHashMap<String, PluginPoint>() );
-        targetToPluginMap.put( GraphDatabaseService.class, new ConcurrentHashMap<String, PluginPoint>() );
+        targetToPluginMap.put( Node.class, new ConcurrentHashMap<>() );
+        targetToPluginMap.put( Relationship.class, new ConcurrentHashMap<>() );
+        targetToPluginMap.put( GraphDatabaseService.class, new ConcurrentHashMap<>() );
     }
 
     Iterable<PluginPoint> getExtensionsFor( Class<?> type )

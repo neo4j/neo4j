@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.neo4j.cypher.internal.javacompat.MapRow;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
@@ -48,6 +49,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.SpatialMocks;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.helpers.collection.MapUtil;
@@ -56,8 +58,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.MockGeometry;
-import org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.MockPoint;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mockito.mock.GraphMock;
 import org.neo4j.test.mockito.mock.Link;
@@ -73,12 +73,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
+import static org.neo4j.graphdb.SpatialMocks.mockCartesian_3D;
+import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
+import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockCartesian;
-import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockWGS84;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.link;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
@@ -408,9 +410,11 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         points.add( new Coordinate( 1, 2 ) );
         points.add( new Coordinate( 2, 3 ) );
         Result executionResult = mockExecutionResult(
-                map( "geom", new MockPoint( 12.3, 45.6, mockWGS84() ) ),
-                map( "geom", new MockPoint( 123, 456, mockCartesian() ) ),
-                map( "geom", new MockGeometry( "LineString", points, mockCartesian() ) ) );
+                map( "geom", SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() ) ),
+                map( "geom", SpatialMocks.mockPoint( 123, 456, mockCartesian() ) ),
+                map( "geom", SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() ) ),
+                map( "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) ),
+                map( "geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) ) );
 
         // when
         serializer.statementResult( executionResult, false );
@@ -426,6 +430,14 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
                       "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":" +
                         "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
                           "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6,78.9],\"crs\":" +
+                        "{\"name\":\"WGS-84-3D\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/epsg/4979/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0,789.0],\"crs\":" +
+                        "{\"name\":\"cartesian-3D\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/sr-org/9157/ogcwkt/\",\"type\":\"ogcwkt\"}" +
                         "}}],\"meta\":[null]}," +
                       "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
                         "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
@@ -786,7 +798,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         return planDescription;
     }
 
-    private JsonNode assertIsPlanRoot( String result ) throws UnsupportedEncodingException, JsonParseException
+    private JsonNode assertIsPlanRoot( String result ) throws JsonParseException
     {
         JsonNode json = jsonNode( result );
         JsonNode results = json.get( "results" ).get( 0 );
@@ -809,7 +821,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldLogIOErrors() throws Exception
+    public void shouldLogIOErrors()
     {
         // given
         IOException failure = new IOException();
@@ -828,7 +840,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldAbbreviateWellKnownIOErrors() throws Exception
+    public void shouldAbbreviateWellKnownIOErrors()
     {
         // given
         OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException( "Broken pipe" ) ) );

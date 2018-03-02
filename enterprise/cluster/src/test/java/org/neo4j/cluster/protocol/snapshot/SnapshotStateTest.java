@@ -42,7 +42,7 @@ public class SnapshotStateTest
     @Test
     public void testNoSnapshotRequestIfCoordinatorInExistingCluster() throws Throwable
     {
-        Map<InstanceId, URI> extraMember = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> extraMember = new HashMap<>();
         URI other = URI.create( "cluster://other");
         extraMember.put( new InstanceId( 2 ), other );
         baseNoSendTest( extraMember );
@@ -51,15 +51,15 @@ public class SnapshotStateTest
     @Test
     public void testNoSnapshotRequestIfOnlyMember() throws Throwable
     {
-        Map<InstanceId, URI> extraMember = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> extraMember = new HashMap<>();
         baseNoSendTest( extraMember );
     }
 
-    public void baseNoSendTest( Map<InstanceId,URI> extraMembers ) throws Throwable
+    private void baseNoSendTest( Map<InstanceId,URI> extraMembers ) throws Throwable
     {
         URI me = URI.create( "cluster://me" );
 
-        Map<InstanceId,URI> members = new HashMap<InstanceId,URI>();
+        Map<InstanceId,URI> members = new HashMap<>();
         final InstanceId myId = new InstanceId( 1 );
         members.put( myId, me );
         members.putAll( extraMembers );

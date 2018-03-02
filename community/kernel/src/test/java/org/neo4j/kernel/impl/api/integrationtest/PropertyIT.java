@@ -24,10 +24,10 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.values.storable.Value;

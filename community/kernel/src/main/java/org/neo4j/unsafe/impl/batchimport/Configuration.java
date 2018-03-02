@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
@@ -32,7 +32,6 @@ import static java.lang.Math.round;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
  * User controlled configuration for a {@link BatchImporter}.
@@ -44,7 +43,7 @@ public interface Configuration
      * database directory of the imported database, i.e. <into>/bad.log.
      */
     String BAD_FILE_NAME = "bad.log";
-    long MAX_PAGE_CACHE_MEMORY = mebiBytes( 480 );
+    long MAX_PAGE_CACHE_MEMORY = gibiBytes( 1 );
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
     /**
@@ -130,7 +129,7 @@ public interface Configuration
      */
     default boolean sequentialBackgroundFlushing()
     {
-        return true;
+        return !parallelRecordReadsWhenWriting();
     }
 
     /**
@@ -258,6 +257,18 @@ public interface Configuration
         {
             return defaults.parallelRecordReadsWhenWriting();
         }
+
+        @Override
+        public long maxMemoryUsage()
+        {
+            return defaults.maxMemoryUsage();
+        }
+
+        @Override
+        public boolean allowCacheAllocationOnHeap()
+        {
+            return defaults.allowCacheAllocationOnHeap();
+        }
     }
 
     static Configuration withBatchSize( Configuration config, int batchSize )
@@ -287,8 +298,8 @@ public interface Configuration
         {
             throw new IllegalArgumentException( "Expected percentage to be < 100, was " + percent );
         }
-        long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
-        if ( freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
+        long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+        if ( totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
         {
             // Unable to detect amount of free memory, so rather max memory should be explicitly set
             // in order to get best performance. However let's just go with a default of 2G in this case.
@@ -296,6 +307,6 @@ public interface Configuration
         }
 
         double factor = percent / 100D;
-        return round( (freePhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
+        return round( (totalPhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
     }
 }

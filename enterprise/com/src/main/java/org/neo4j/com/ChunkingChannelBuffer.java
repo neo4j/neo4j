@@ -674,7 +674,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     }
 
     @Override
-    public void operationComplete( ChannelFuture future ) throws Exception
+    public void operationComplete( ChannelFuture future )
     {
         if ( !future.isDone() )
         {

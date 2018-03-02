@@ -62,10 +62,9 @@ public class KernelRecoveryTest
         long node1 = createNode( db );
 
         // And given the power goes out
-        EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
-        db.shutdown();
-        try
+        try ( EphemeralFileSystemAbstraction crashedFs = fs.snapshot() )
         {
+            db.shutdown();
             db = newDB( crashedFs );
 
             long node2 = createNode( db );
@@ -84,10 +83,6 @@ public class KernelRecoveryTest
 
                     // checkpoint
                     checkPoint( new LogPosition( 0, 250 ) ) ) );
-        }
-        finally
-        {
-            crashedFs.close();
         }
     }
 

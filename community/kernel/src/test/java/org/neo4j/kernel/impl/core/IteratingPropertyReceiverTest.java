@@ -32,7 +32,7 @@ import static org.junit.Assert.assertFalse;
 public class IteratingPropertyReceiverTest
 {
     @Test
-    public void shouldAcceptAndThenIterateOverProperties() throws PropertyNotFoundException
+    public void shouldAcceptAndThenIterateOverProperties()
     {
         // GIVEN
         IteratingPropertyReceiver<StorageProperty> receiver = new IteratingPropertyReceiver<>();

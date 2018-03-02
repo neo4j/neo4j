@@ -22,7 +22,6 @@ package org.neo4j.cluster.protocol.cluster;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -49,7 +48,7 @@ import static org.mockito.Mockito.when;
 public class ClusterContextTest
 {
     @Test
-    public void testElectionVersionIsUpdatedOnElectionFromSelfAndProperlyIgnoredIfOld() throws Exception
+    public void testElectionVersionIsUpdatedOnElectionFromSelfAndProperlyIgnoredIfOld()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );
@@ -61,8 +60,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -91,7 +89,7 @@ public class ClusterContextTest
     }
 
     @Test
-    public void testElectionVersionIsUpdatedOnElectionFromOtherAndIgnoredIfOld() throws Exception
+    public void testElectionVersionIsUpdatedOnElectionFromOtherAndIgnoredIfOld()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );
@@ -104,8 +102,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -127,7 +124,7 @@ public class ClusterContextTest
     }
 
     @Test
-    public void testElectionVersionIsResetWhenElectorChangesFromMeToOther() throws Exception
+    public void testElectionVersionIsResetWhenElectorChangesFromMeToOther()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );
@@ -140,8 +137,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config
@@ -169,7 +165,7 @@ public class ClusterContextTest
     }
 
     @Test
-    public void testElectionVersionIsResetWhenElectorChangesFromOtherToMe() throws Exception
+    public void testElectionVersionIsResetWhenElectorChangesFromOtherToMe()
     {
         final String coordinatorRole = "coordinator";
         final InstanceId me = new InstanceId( 1 );
@@ -182,8 +178,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config

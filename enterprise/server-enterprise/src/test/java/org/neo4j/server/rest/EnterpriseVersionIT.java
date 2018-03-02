@@ -71,7 +71,7 @@ public abstract class EnterpriseVersionIT extends ExclusiveServerTestBase
     }
 
     @Before
-    public void setupTheDatabase() throws Exception
+    public void setupTheDatabase()
     {
         // do nothing, we don't care about the database contents here
     }

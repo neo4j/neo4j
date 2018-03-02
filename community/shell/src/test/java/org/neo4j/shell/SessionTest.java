@@ -29,7 +29,7 @@ public class SessionTest
     private Session session;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         session = new Session( 1 );
     }
@@ -73,7 +73,7 @@ public class SessionTest
     }
 
     @Test
-    public void canCheckInvalidVariableName() throws ShellException
+    public void canCheckInvalidVariableName()
     {
         assertEquals( false, session.has( "foo bar" ));
     }

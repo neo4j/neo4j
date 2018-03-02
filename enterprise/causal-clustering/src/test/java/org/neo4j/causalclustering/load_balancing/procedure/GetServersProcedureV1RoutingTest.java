@@ -45,7 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForCore;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -75,9 +75,9 @@ public class GetServersProcedureV1RoutingTest
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), adressesForCore( 0 ) );
-        coreMembers.put( member( 1 ), adressesForCore( 1 ) );
-        coreMembers.put( member( 2 ), adressesForCore( 2 ) );
+        coreMembers.put( member( 0 ), addressesForCore( 0 ) );
+        coreMembers.put( member( 1 ), addressesForCore( 1 ) );
+        coreMembers.put( member( 2 ), addressesForCore( 2 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
@@ -109,7 +109,7 @@ public class GetServersProcedureV1RoutingTest
     private Object[] getEndpoints( LegacyGetServersProcedure proc )
             throws org.neo4j.kernel.api.exceptions.ProcedureException
     {
-        List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+        List<Object[]> results = asList( proc.apply( null, new Object[0], null ) );
         Object[] rows = results.get( 0 );
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
         Map<String,Object[]> endpoints = servers.get( serverClass );

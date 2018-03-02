@@ -94,7 +94,7 @@ public class ClosestNewLineChunkerTest
             }
 
             @Override
-            public int read( char[] into, int offset, int length ) throws IOException
+            public int read( char[] into, int offset, int length )
             {
                 assert offset == 0 : "This test assumes offset is 0, "
                         + "which it always was for this use case at the time of writing";
@@ -109,7 +109,7 @@ public class ClosestNewLineChunkerTest
             }
 
             @Override
-            public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
+            public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
             {
                 throw new UnsupportedOperationException();
             }

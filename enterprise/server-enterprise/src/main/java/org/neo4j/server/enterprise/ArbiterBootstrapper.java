@@ -131,7 +131,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         File logFile = config.get( store_internal_log_path );
         try
         {
-            ZoneId zoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            ZoneId zoneId = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( zoneId ).toOutputStream( System.out );
             return StoreLogService.withUserLogProvider( logProvider )
                     .withInternalLog( logFile )
@@ -145,25 +145,20 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 
     private void addShutdownHook()
     {
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            @Override
-            public void run()
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
+            // ClusterJoin will block on a Future.get(), which will prevent it to shutdown.
+            // Adding a timer here in case a shutdown is requested before cluster join has succeeded. Otherwise
+            // the deadlock will prevent the shutdown from finishing.
+            timer.schedule( new TimerTask()
             {
-                // ClusterJoin will block on a Future.get(), which will prevent it to shutdown.
-                // Adding a timer here in case a shutdown is requested before cluster join has succeeded. Otherwise
-                // the deadlock will prevent the shutdown from finishing.
-                timer.schedule( new TimerTask()
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        System.err.println( "Failed to stop in a reasonable time, terminating..." );
-                        Runtime.getRuntime().halt( 1 );
-                    }
-                }, 4_000L );
-                ArbiterBootstrapper.this.stop();
-            }
-        } );
+                    System.err.println( "Failed to stop in a reasonable time, terminating..." );
+                    Runtime.getRuntime().halt( 1 );
+                }
+            }, 4_000L );
+            ArbiterBootstrapper.this.stop();
+        } ) );
     }
 }

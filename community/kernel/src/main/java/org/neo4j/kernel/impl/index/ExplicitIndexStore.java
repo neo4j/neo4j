@@ -40,7 +40,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 /**
  * Uses an {@link IndexConfigStore} and puts logic around providers and configuration comparison.
@@ -152,7 +152,7 @@ public class ExplicitIndexStore
     private String getDefaultProvider( @Nullable String indexName, @Nonnull Config dbConfig )
     {
         return dbConfig.getRaw( "index." + indexName )
-                .orElse( dbConfig.getRaw( "index" ).orElse( "lucene" ) );
+                .orElseGet( () -> dbConfig.getRaw( "index" ).orElse( "lucene" ) );
     }
 
     private Map<String, String> getOrCreateIndexConfig(

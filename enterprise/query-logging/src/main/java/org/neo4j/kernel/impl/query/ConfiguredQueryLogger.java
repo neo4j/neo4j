@@ -48,7 +48,7 @@ class ConfiguredQueryLogger implements QueryLogger
             // optional username parameter, in single, double quotes, or parametrized
             "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|[^,]*)\\s*,)?" +
             // password parameter, in single, double quotes, or parametrized
-            "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
+            "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*})\\s*\\)" );
 
     ConfiguredQueryLogger( Log log, Config config )
     {

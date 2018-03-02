@@ -44,7 +44,7 @@ public class RelationshipExpanderBuilderTest
     public static final DatabaseRule db = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldInterpretNoSpecifiedRelationshipsAsAll() throws Exception
+    public void shouldInterpretNoSpecifiedRelationshipsAsAll()
     {
         // GIVEN
         Node node = createSomeData();
@@ -67,7 +67,7 @@ public class RelationshipExpanderBuilderTest
     }
 
     @Test
-    public void shouldInterpretSomeSpecifiedRelationships() throws Exception
+    public void shouldInterpretSomeSpecifiedRelationships()
     {
         // GIVEN
         Node node = createSomeData();

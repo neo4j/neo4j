@@ -28,15 +28,15 @@ import org.neo4j.ssl.SslPolicy;
 
 // TODO: Investigate if client auth actually can be configured as below.
 // TODO: Fix the enterprise check or fix HZ to not silently fail otherwise.
-class HazelcastSslConfiguration
+public class HazelcastSslConfiguration
 {
-    static void configureSsl( NetworkConfig networkConfig, SslPolicy sslPolicy, LogProvider logProvider )
+    public static void configureSsl( NetworkConfig networkConfig, SslPolicy sslPolicy, LogProvider logProvider )
     {
         SSLConfig sslConfig = commonSslConfig( sslPolicy, logProvider );
         networkConfig.setSSLConfig( sslConfig );
     }
 
-    static void configureSsl( ClientNetworkConfig clientNetworkConfig, SslPolicy sslPolicy, LogProvider logProvider )
+    public static void configureSsl( ClientNetworkConfig clientNetworkConfig, SslPolicy sslPolicy, LogProvider logProvider )
     {
         SSLConfig sslConfig = commonSslConfig( sslPolicy, logProvider );
         clientNetworkConfig.setSSLConfig( sslConfig );

@@ -43,7 +43,7 @@ public class ContinuousJob extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         abortableJob.keepRunning = true;
         thread.start();

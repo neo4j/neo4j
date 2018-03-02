@@ -231,13 +231,12 @@ public class FibonacciHeap<KeyType>
         // arraySize = (int) Math.log( (double) nrNodes )+1;
         // FibonacciHeapNode[] A = (FibonacciHeapNode[]) new Object[arraySize];
         // FibonacciHeapNode[] A = new FibonacciHeapNode[arraySize];
-        ArrayList<FibonacciHeapNode> A = new ArrayList<FibonacciHeapNode>(
-            arraySize );
+        ArrayList<FibonacciHeapNode> A = new ArrayList<>( arraySize );
         for ( int i = 0; i < arraySize; ++i )
         {
             A.add( null );
         }
-        List<FibonacciHeapNode> rootNodes = new LinkedList<FibonacciHeapNode>();
+        List<FibonacciHeapNode> rootNodes = new LinkedList<>();
         rootNodes.add( minimum );
         for ( FibonacciHeapNode n = minimum.right; !n.equals( minimum ); n = n.right )
         {

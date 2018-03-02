@@ -62,7 +62,7 @@ public abstract class Response<T> implements AutoCloseable
     @SuppressWarnings( "unchecked" )
     public static <T> Response<T> empty()
     {
-        return (Response<T>) EMPTY;
+        return (Response<T>) TransactionObligationResponse.EMPTY_RESPONSE;
     }
 
     public abstract void accept( Handler handler ) throws Exception;
@@ -92,7 +92,4 @@ public abstract class Response<T> implements AutoCloseable
          */
         Visitor<CommittedTransactionRepresentation,Exception> transactions();
     }
-
-    public static final Response<Void> EMPTY = new TransactionObligationResponse<>( null, StoreId.DEFAULT,
-            -1, ResourceReleaser.NO_OP );
 }

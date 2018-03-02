@@ -128,7 +128,7 @@ public class GenerationSafePointerPairTest
     private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
 
     @Test
-    public void shouldReadWithLogicalPosition() throws Exception
+    public void shouldReadWithLogicalPosition()
     {
         // GIVEN
         cursor.setOffset( SLOT_A_OFFSET );
@@ -146,7 +146,7 @@ public class GenerationSafePointerPairTest
     }
 
     @Test
-    public void shouldReadWithNoLogicalPosition() throws Exception
+    public void shouldReadWithNoLogicalPosition()
     {
         // GIVEN
         cursor.setOffset( SLOT_A_OFFSET );
@@ -164,7 +164,7 @@ public class GenerationSafePointerPairTest
     }
 
     @Test
-    public void shouldWrite() throws Exception
+    public void shouldWrite()
     {
         // GIVEN
         cursor.setOffset( SLOT_A_OFFSET );

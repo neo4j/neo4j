@@ -105,11 +105,7 @@ public abstract class NodeOrRelationship
     @Override
     public boolean equals( Object o )
     {
-        if ( !( o instanceof NodeOrRelationship ) )
-        {
-            return false;
-        }
-        return getTypedId().equals( ( (NodeOrRelationship) o ).getTypedId() );
+        return o instanceof NodeOrRelationship && getTypedId().equals( ((NodeOrRelationship) o).getTypedId() );
     }
 
     @Override

@@ -15,6 +15,10 @@
   <packaging>jar</packaging>
   <description>A package for cross-module integration tests.</description>
 
+  <properties>
+    <moduleName>org.neo4j.integrationtests</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -177,6 +181,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-metrics</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.test</groupId>
       <artifactId>neo4j-harness</artifactId>
       <version>${project.version}</version>
@@ -228,12 +239,10 @@
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-library</artifactId>
-        <scope>test</scope>
     </dependency>
 
     <dependency>

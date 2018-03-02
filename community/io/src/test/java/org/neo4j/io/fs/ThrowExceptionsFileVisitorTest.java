@@ -40,7 +40,7 @@ public class ThrowExceptionsFileVisitorTest
     public FileVisitor<Path> wrapped;
 
     @Test
-    public void shouldThrowExceptionFromVisitFileFailed() throws IOException
+    public void shouldThrowExceptionFromVisitFileFailed()
     {
         IOException exception = new IOException();
         try
@@ -55,7 +55,7 @@ public class ThrowExceptionsFileVisitorTest
     }
 
     @Test
-    public void shouldThrowExceptionFromPostVisitDirectory() throws IOException
+    public void shouldThrowExceptionFromPostVisitDirectory()
     {
         IOException exception = new IOException();
         try

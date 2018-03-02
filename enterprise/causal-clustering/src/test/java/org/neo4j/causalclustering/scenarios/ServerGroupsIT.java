@@ -40,10 +40,9 @@ import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -64,7 +63,7 @@ public class ServerGroupsIT
     private Cluster cluster;
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( cluster != null )
         {
@@ -193,7 +192,7 @@ public class ServerGroupsIT
     private List<List<String>> getServerGroups( CoreGraphDatabase db )
     {
         List<List<String>> serverGroups = new ArrayList<>();
-        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.explicit, EnterpriseSecurityContext.AUTH_DISABLED ) )
+        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.explicit, EnterpriseLoginContext.AUTH_DISABLED ) )
         {
             try ( Result result = db.execute( tx, "CALL dbms.cluster.overview", EMPTY_MAP ) )
             {

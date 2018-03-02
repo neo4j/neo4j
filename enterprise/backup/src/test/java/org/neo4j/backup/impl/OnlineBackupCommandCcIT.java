@@ -57,7 +57,6 @@ import org.neo4j.util.TestHelpers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -107,11 +106,7 @@ public class OnlineBackupCommandCcIT
 
         Cluster cluster = startCluster( recordFormat );
         String customAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
+
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
@@ -128,21 +123,6 @@ public class OnlineBackupCommandCcIT
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
         assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
-    }
-
-    @Test
-    public void backupCanNotBePerformedOverBackupProtocol() throws Exception
-    {
-        assumeFalse( SystemUtils.IS_OS_WINDOWS );
-
-        Cluster cluster = startCluster( recordFormat );
-        String ip = TestHelpers.backupAddressHa( clusterLeader( cluster ).database() );
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
     }
 
     @Test
@@ -198,7 +178,7 @@ public class OnlineBackupCommandCcIT
         }
         catch ( Exception e )
         {
-            throw launderedException( e );
+            throw new RuntimeException( e );
         }
         return DbRepresentation.of( clusterLeader( cluster ).database() );
     }

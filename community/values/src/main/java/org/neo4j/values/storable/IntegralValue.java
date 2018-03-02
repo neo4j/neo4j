@@ -19,8 +19,25 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.ValueMath;
+
 public abstract class IntegralValue extends NumberValue
 {
+    public static long safeCastIntegral( String name, AnyValue value, long defaultValue )
+    {
+        if ( value == null )
+        {
+            return defaultValue;
+        }
+        if ( value instanceof IntegralValue )
+        {
+            return ((IntegralValue) value).longValue();
+        }
+        throw new IllegalArgumentException(
+                name + " must be an integer value, but was a " + value.getClass().getSimpleName() );
+    }
+
     @Override
     public boolean equals( long x )
     {
@@ -86,5 +103,53 @@ public abstract class IntegralValue extends NumberValue
     public double doubleValue()
     {
         return longValue();
+    }
+
+    @Override
+    public LongValue minus( long b )
+    {
+        return ValueMath.subtract( longValue(), b );
+    }
+
+    @Override
+    public DoubleValue minus( double b )
+    {
+        return ValueMath.subtract( longValue(), b );
+    }
+
+    @Override
+    public LongValue plus( long b )
+    {
+        return ValueMath.add( longValue(), b );
+    }
+
+    @Override
+    public DoubleValue plus( double b )
+    {
+        return ValueMath.add( longValue(), b );
+    }
+
+    @Override
+    public LongValue times( long b )
+    {
+        return ValueMath.multiply( longValue(), b );
+    }
+
+    @Override
+    public DoubleValue times( double b )
+    {
+        return ValueMath.multiply( longValue(), b );
+    }
+
+    @Override
+    public LongValue dividedBy( long b )
+    {
+        return Values.longValue( longValue() / b );
+    }
+
+    @Override
+    public DoubleValue dividedBy( double b )
+    {
+        return Values.doubleValue( doubleValue() / b );
     }
 }

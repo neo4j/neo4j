@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
@@ -138,7 +139,7 @@ public class IndexingServiceIntegrationTest
     }
 
     @Test
-    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException, IOException
+    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -205,7 +206,7 @@ public class IndexingServiceIntegrationTest
 
         expectedException.expect( UnderlyingStorageException.class );
         expectedException.expectMessage( "Unable to force" );
-        indexingService.forceAll();
+        indexingService.forceAll( IOLimiter.unlimited() );
     }
 
     private PropertyKeyTokenHolder getPropertyKeyTokenHolder( GraphDatabaseService database )

@@ -22,6 +22,7 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,9 +69,9 @@ public class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, singletonList( createQuerySnapshot( 7L ) ) );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap );
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
 
-        checkTransactionStatus( statusResult, "testQuery", "query-7" );
+        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T00:00:01.984Z" );
     }
 
     @Test
@@ -78,7 +79,7 @@ public class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, emptyList() );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap );
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
 
         checkTransactionStatusWithoutQueries( statusResult );
     }
@@ -88,9 +89,19 @@ public class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, asList( createQuerySnapshot( 7L ), createQuerySnapshot( 8L ) ) );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap );
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
 
-        checkTransactionStatus( statusResult, "testQuery", "query-7" );
+        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T00:00:01.984Z" );
+    }
+
+    @Test
+    public void statusOfTransactionWithDifferentTimeZone() throws InvalidArgumentsException
+    {
+        snapshotsMap.put( transactionHandle, singletonList( createQuerySnapshot( 7L ) ) );
+        TransactionStatusResult statusResult =
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC+1" ) );
+
+        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T01:00:01.984+01:00" );
     }
 
     private void checkTransactionStatusWithoutQueries( TransactionStatusResult statusResult )
@@ -117,12 +128,12 @@ public class TransactionStatusResultTest
     }
 
     private void checkTransactionStatus( TransactionStatusResult statusResult, String currentQuery,
-            String currentQueryId )
+            String currentQueryId, String startTime )
     {
         assertEquals( "transaction-8", statusResult.transactionId );
         assertEquals( "testUser", statusResult.username );
         assertEquals( Collections.emptyMap(), statusResult.metaData );
-        assertEquals( "1970-01-01T00:00:01.984Z", statusResult.startTime );
+        assertEquals( startTime, statusResult.startTime );
         assertEquals( "https", statusResult.protocol );
         assertEquals( "localhost:1000", statusResult.clientAddress );
         assertEquals( "https://localhost:1001/path", statusResult.requestUri );
@@ -151,7 +162,7 @@ public class TransactionStatusResultTest
         return new ExecutingQuery( queryId, getTestConnectionInfo(), "testUser", "testQuery", VirtualValues.EMPTY_MAP,
                 Collections.emptyMap(), () -> 1L, PageCursorTracer.NULL,
                 Thread.currentThread().getId(), Thread.currentThread().getName(),
-                new CountingSystemNanoClock(), new CountingCpuClock(), new CountingHeapAllocation() );
+                new CountingNanoClock(), new CountingCpuClock(), new CountingHeapAllocation() );
     }
 
     private HttpConnectionInfo getTestConnectionInfo()
@@ -169,7 +180,7 @@ public class TransactionStatusResultTest
         }
 
         @Override
-        public Stream<? extends ActiveLock> activeLocks()
+        public Stream<ActiveLock> activeLocks()
         {
             return Stream.of( ActiveLock.sharedLock( ResourceTypes.NODE, 3 ) );
         }
@@ -204,7 +215,7 @@ public class TransactionStatusResultTest
         }
     }
 
-    private static class CountingSystemNanoClock extends SystemNanoClock
+    private static class CountingNanoClock extends SystemNanoClock
     {
         private long time;
 

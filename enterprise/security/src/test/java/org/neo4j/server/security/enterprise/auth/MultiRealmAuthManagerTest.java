@@ -29,21 +29,23 @@ import org.junit.rules.ExpectedException;
 import java.util.Collections;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
+import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.InitialUserTest;
@@ -78,9 +80,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
     @Rule
     public ExpectedException expect = ExpectedException.none();
 
+    private Token token;
+
     @Before
     public void setUp() throws Throwable
     {
+        token = mock( Token.class );
         config = Config.defaults();
         users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         authStrategy = mock( AuthenticationStrategy.class );
@@ -108,7 +113,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
                     );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
-                new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications );
+                new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications,
+                false, Collections.emptyMap() );
 
         manager.init();
         return manager;
@@ -556,12 +562,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         setMockAuthenticationStrategyResult( "neo4j", "neo4j", AuthenticationResult.SUCCESS );
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) );
+        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) ).authorize( token );
         userManager.setUserPassword( "neo4j", "1234", false );
         securityContext.subject().logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
-        securityContext = manager.login( authToken( "neo4j", "1234" ) );
+        securityContext = manager.login( authToken( "neo4j", "1234" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -577,7 +583,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -593,7 +599,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -609,7 +615,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( "should allow reads", securityContext.mode().allowsReads() );
@@ -625,7 +631,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -641,7 +647,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) ).authorize( token );
 
         // Then
         assertFalse( securityContext.mode().allowsReads() );
@@ -657,13 +663,15 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
+        LoginContext loginContext = manager.login( authToken( "morpheus", "abc123" ) );
+        SecurityContext securityContext = loginContext.authorize( token );
         assertTrue( securityContext.mode().allowsReads() );
         assertTrue( securityContext.mode().allowsWrites() );
         assertTrue( securityContext.mode().allowsSchemaWrites() );
 
-        securityContext.subject().logout();
+        loginContext.subject().logout();
 
+        securityContext = loginContext.authorize( token );
         // Then
         assertFalse( securityContext.mode().allowsReads() );
         assertFalse( securityContext.mode().allowsWrites() );

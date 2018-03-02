@@ -25,7 +25,6 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
@@ -42,7 +41,7 @@ public class LearnerContextTest
     private final LogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldOnlyAllowHigherLastLearnedInstanceId() throws Exception
+    public void shouldOnlyAllowHigherLastLearnedInstanceId()
     {
         // Given
 
@@ -64,7 +63,7 @@ public class LearnerContextTest
     }
 
     @Test
-    public void shouldTrackLastKnownUpToDateAliveInstance() throws Exception
+    public void shouldTrackLastKnownUpToDateAliveInstance()
     {
         // Given
 
@@ -88,7 +87,7 @@ public class LearnerContextTest
     }
 
     @Test
-    public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin() throws Exception
+    public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin()
     {
         // Given
         Config config = mock( Config.class );

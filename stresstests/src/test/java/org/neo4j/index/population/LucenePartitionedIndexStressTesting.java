@@ -319,7 +319,7 @@ public class LucenePartitionedIndexStressTesting
         }
 
         @Override
-        public Long call() throws Exception
+        public Long call()
         {
             SequentialLongSupplier longSupplier = new SequentialLongSupplier( populatorNumber, step );
             SequentialStringSupplier stringSupplier = new SequentialStringSupplier( populatorNumber, step );

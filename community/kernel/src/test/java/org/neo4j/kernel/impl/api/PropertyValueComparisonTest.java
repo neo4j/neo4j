@@ -25,6 +25,9 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Comparator;
 
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
+
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_STRINGS;
@@ -39,7 +42,6 @@ public class PropertyValueComparisonTest
 
     Object[] values = new Object[]{
             // OTHER
-            PropertyValueComparison.LOWEST_OBJECT,
             new Object(),
 
             // STRING
@@ -58,6 +60,24 @@ public class PropertyValueComparisonTest
             // BOOLEAN
             false,
             true,
+
+            // GEOMETRY
+            Values.pointValue( CoordinateReferenceSystem.WGS84, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84, -1, -1 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 1 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 1 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84_3D, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 0, 0, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84_3D, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
 
             // NUMBER
             Double.NEGATIVE_INFINITY,
@@ -199,6 +219,6 @@ public class PropertyValueComparisonTest
 
     private int sign( int value )
     {
-        return value == 0 ? 0 : (value < 0 ? -1 : +1);
+        return Integer.compare( value, 0 );
     }
 }

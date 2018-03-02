@@ -25,5 +25,5 @@ import org.jboss.netty.buffer.ChannelBuffer;
 
 public interface ObjectSerializer<T>
 {
-    void write( T responseObject, ChannelBuffer result ) throws IOException;
+    void write( T responseObject, ChannelBuffer result );
 }

@@ -77,7 +77,7 @@ public class DumpCountsStoreTest
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void dumpMetadata() throws Exception
+    public void dumpMetadata()
     {
         DumpCountsStore countsStore = getCountStore();
 

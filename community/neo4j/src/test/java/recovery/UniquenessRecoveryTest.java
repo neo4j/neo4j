@@ -108,7 +108,7 @@ public class UniquenessRecoveryTest
     @Test
     public void shouldUpholdConstraintEvenAfterRestart() throws Exception
     {
-        assumeNotNull( "this test can only run on UNIX", PID );
+        assumeNotNull( PID ); // this test can only run on UNIX
 
         // given
         File path = dir.graphDbDir().getAbsoluteFile();

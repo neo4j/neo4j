@@ -36,7 +36,7 @@ public class JLineConsoleTest
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void createAndUseJLineConsole() throws Exception
+    public void createAndUseJLineConsole()
     {
         ShellClient shellClient = Mockito.mock( ShellClient.class );
         JLineConsole jLineConsole = JLineConsole.newConsoleOrNullIfNotFound( shellClient );

@@ -41,7 +41,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void exclusiveShouldWaitForExclusive() throws Exception
+    public void exclusiveShouldWaitForExclusive()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -57,7 +57,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void exclusiveShouldWaitForShared() throws Exception
+    public void exclusiveShouldWaitForShared()
     {
         // When
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -77,7 +77,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void sharedShouldWaitForExclusive() throws Exception
+    public void sharedShouldWaitForExclusive()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -93,7 +93,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldTrySharedLock() throws Exception
+    public void shouldTrySharedLock()
     {
         // Given I've grabbed a share lock
         assertTrue( clientA.trySharedLock( NODE, 1L ) );
@@ -106,7 +106,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldTryExclusiveLock() throws Exception
+    public void shouldTryExclusiveLock()
     {
         // Given I've grabbed an exclusive lock
         assertTrue( clientA.tryExclusiveLock( NODE, 1L ) );
@@ -119,7 +119,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldTryUpgradeSharedToExclusive() throws Exception
+    public void shouldTryUpgradeSharedToExclusive()
     {
         // Given I've grabbed an exclusive lock
         assertTrue( clientA.trySharedLock( NODE, 1L ) );
@@ -132,7 +132,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldUpgradeExclusiveOnTry() throws Exception
+    public void shouldUpgradeExclusiveOnTry()
     {
         // Given I've grabbed a shared lock
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );

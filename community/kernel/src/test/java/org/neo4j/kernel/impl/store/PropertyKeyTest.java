@@ -74,7 +74,7 @@ public class PropertyKeyTest
 
     private Map<String, Object> mapWithManyProperties( int count )
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         for ( int i = 0; i < count; i++ )
         {
             properties.put( "key:" + i, "value" );

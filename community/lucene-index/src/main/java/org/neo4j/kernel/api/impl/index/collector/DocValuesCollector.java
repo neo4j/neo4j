@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
@@ -55,6 +56,8 @@ import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.impl.lucene.explicit.EmptyIndexHits;
 import org.neo4j.kernel.impl.api.explicitindex.AbstractIndexHits;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.values.storable.Value;
 
 /**
  * Collector to record per-segment {@code DocIdSet}s and {@code LeafReaderContext}s for every
@@ -100,6 +103,11 @@ public class DocValuesCollector extends SimpleCollector
     public LongValuesIterator getValuesIterator( String field )
     {
         return new LongValuesIterator( getMatchingDocs(), getTotalHits(), field );
+    }
+
+    public IndexProgressor getIndexProgressor( String field, IndexProgressor.NodeValueClient client )
+    {
+        return new LongValuesIndexProgressor( getMatchingDocs(), getTotalHits(), field, client );
     }
 
     /**
@@ -192,13 +200,13 @@ public class DocValuesCollector extends SimpleCollector
     }
 
     @Override
-    public void setScorer( Scorer scorer ) throws IOException
+    public void setScorer( Scorer scorer )
     {
         this.scorer = scorer;
     }
 
     @Override
-    public void doSetNextReader( LeafReaderContext context ) throws IOException
+    public void doSetNextReader( LeafReaderContext context )
     {
         if ( docs != null && segmentHits > 0 )
         {
@@ -313,100 +321,34 @@ public class DocValuesCollector extends SimpleCollector
     }
 
     /**
-     * Iterates over all per-segment {@link DocValuesCollector.MatchingDocs}. Supports two kinds of lookups.
-     * One, iterate over all long values of the given field (constructor argument).
-     * Two, lookup a value for the current doc in a sidecar {@code NumericDocValues} field.
-     * That is, this iterator has a main field, that drives the iteration and allow for lookups
-     * in other, secondary fields based on the current document of the main iteration.
-     *
-     * Lookups from this class are not thread-safe. Races can happen when the segment barrier
-     * is crossed; one thread might think it is reading from one segment while another thread has
-     * already advanced this Iterator to the next segment, having raced the first thread.
+     * Iterates over all per-segment {@link DocValuesCollector.MatchingDocs}.
+     * Provides base functionality for extracting entity ids and other values from documents.
      */
-    public static class LongValuesIterator extends ValuesIterator implements PrimitiveLongResourceIterator
+    private abstract static class LongValuesSource
     {
         private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
         private final String field;
-        private DocIdSetIterator currentIdIterator;
-        private NumericDocValues currentDocValues;
-        private DocValuesCollector.MatchingDocs currentDocs;
-        private final Map<String,NumericDocValues> docValuesCache;
+        final int totalHits;
+        final Map<String,NumericDocValues> docValuesCache;
 
-        /**
-         * @param allMatchingDocs all {@link DocValuesCollector.MatchingDocs} across all segments
-         * @param totalHits the total number of hits across all segments
-         * @param field the main field, whose values drive the iteration
-         */
-        public LongValuesIterator( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
+        DocIdSetIterator currentIdIterator;
+        NumericDocValues currentDocValues;
+        DocValuesCollector.MatchingDocs currentDocs;
+        int index;
+        long next;
+
+        LongValuesSource( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
         {
-            super( totalHits );
+            this.totalHits = totalHits;
             this.field = field;
             matchingDocs = allMatchingDocs.iterator();
             docValuesCache = new HashMap<>();
         }
 
-        @Override
-        public long current()
-        {
-            return next;
-        }
-
-        @Override
-        public long getValue( String field )
-        {
-            if ( ensureValidDisi() )
-            {
-                if ( docValuesCache.containsKey( field ) )
-                {
-                    return docValuesCache.get( field ).get( currentIdIterator.docID() );
-                }
-
-                NumericDocValues docValues = currentDocs.readDocValues( field );
-                docValuesCache.put( field, docValues );
-
-                return docValues.get( currentIdIterator.docID() );
-            }
-            else
-            {
-                // same as DocValues.emptyNumeric()#get
-                // which means, getValue carries over the semantics of NDV
-                // -1 would also be a possibility here.
-                return 0;
-            }
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            try
-            {
-                if ( ensureValidDisi() )
-                {
-                    int nextDoc = currentIdIterator.nextDoc();
-                    if ( nextDoc != DocIdSetIterator.NO_MORE_DOCS )
-                    {
-                        index++;
-                        return next( currentDocValues.get( nextDoc ) );
-                    }
-                    else
-                    {
-                        currentIdIterator = null;
-                        return fetchNext();
-                    }
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-
-            return false;
-        }
-
         /**
          * @return true if it was able to make sure, that currentDisi is valid
          */
-        private boolean ensureValidDisi()
+        boolean ensureValidDisi()
         {
             try
             {
@@ -435,10 +377,159 @@ public class DocValuesCollector extends SimpleCollector
             }
         }
 
+        boolean fetchNextEntityId()
+        {
+            try
+            {
+                if ( ensureValidDisi() )
+                {
+                    int nextDoc = currentIdIterator.nextDoc();
+                    if ( nextDoc != DocIdSetIterator.NO_MORE_DOCS )
+                    {
+                        index++;
+                        next = currentDocValues.get( nextDoc );
+                        return true;
+                    }
+                    else
+                    {
+                        currentIdIterator = null;
+                        return fetchNextEntityId();
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * Iterates over all per-segment {@link DocValuesCollector.MatchingDocs}. Supports two kinds of lookups.
+     * One, iterate over all long values of the given field (constructor argument).
+     * Two, lookup a value for the current doc in a sidecar {@code NumericDocValues} field.
+     * That is, this iterator has a main field, that drives the iteration and allow for lookups
+     * in other, secondary fields based on the current document of the main iteration.
+     *
+     * Lookups from this class are not thread-safe. Races can happen when the segment barrier
+     * is crossed; one thread might think it is reading from one segment while another thread has
+     * already advanced this Iterator to the next segment, having raced the first thread.
+     */
+    public static class LongValuesIterator extends LongValuesSource implements ValuesIterator, PrimitiveLongResourceIterator
+    {
+        private boolean hasNext;
+        private boolean hasNextDecided;
+
+        /**
+         * @param allMatchingDocs all {@link DocValuesCollector.MatchingDocs} across all segments
+         * @param totalHits the total number of hits across all segments
+         * @param field the main field, whose values drive the iteration
+         */
+        public LongValuesIterator( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
+        {
+            super( allMatchingDocs, totalHits, field );
+        }
+
+        @Override
+        public long current()
+        {
+            return next;
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getValue( String field )
+        {
+            if ( ensureValidDisi() )
+            {
+                if ( docValuesCache.containsKey( field ) )
+                {
+                    return docValuesCache.get( field ).get( currentIdIterator.docID() );
+                }
+
+                NumericDocValues docValues = currentDocs.readDocValues( field );
+                docValuesCache.put( field, docValues );
+
+                return docValues.get( currentIdIterator.docID() );
+            }
+            else
+            {
+                // same as DocValues.emptyNumeric()#get
+                // which means, getValue carries over the semantics of NDV
+                // -1 would also be a possibility here.
+                return 0;
+            }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            if ( !hasNextDecided )
+            {
+                hasNext = fetchNextEntityId();
+                hasNextDecided = true;
+            }
+            return hasNext;
+        }
+
+        @Override
+        public long next()
+        {
+            if ( !hasNext() )
+            {
+                throw new NoSuchElementException();
+            }
+            hasNextDecided = false;
+            return next;
+        }
+
+        @Override
+        public int remaining()
+        {
+            return totalHits - index;
+        }
+
         @Override
         public void close()
         {
-            //nothing to close
+            // nothing to close
+        }
+    }
+
+    private static class LongValuesIndexProgressor extends LongValuesSource implements IndexProgressor
+    {
+        private final NodeValueClient client;
+
+        LongValuesIndexProgressor( Iterable<MatchingDocs> allMatchingDocs, int totalHits, String field, NodeValueClient client )
+        {
+            super( allMatchingDocs, totalHits, field );
+            this.client = client;
+        }
+
+        @Override
+        public boolean next()
+        {
+            while ( fetchNextEntityId() )
+            {
+                if ( client.acceptNode( next, (Value[]) null ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+            // nothing to close
         }
     }
 
@@ -537,7 +628,7 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        public float score() throws IOException
+        public float score()
         {
             if ( index < scores.length )
             {
@@ -547,7 +638,7 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        public int freq() throws IOException
+        public int freq()
         {
             throw new UnsupportedOperationException();
         }
@@ -755,7 +846,7 @@ public class DocValuesCollector extends SimpleCollector
         }
     }
 
-    private static final class TopDocsValuesIterator extends ValuesIterator
+    private static final class TopDocsValuesIterator extends ValuesIterator.Adapter
     {
         private final ScoreDocsIterator scoreDocs;
         private final String field;
@@ -800,6 +891,12 @@ public class DocValuesCollector extends SimpleCollector
         public long current()
         {
             return index;
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return scoreDocs.getCurrentDoc().score;
         }
 
         @Override

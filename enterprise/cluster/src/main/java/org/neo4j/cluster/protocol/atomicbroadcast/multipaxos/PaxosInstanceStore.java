@@ -52,8 +52,8 @@ public class PaxosInstanceStore
     private static final int MAX_STORED = 5000;
 
     private int queued;
-    private Queue<InstanceId> delivered = new LinkedList<InstanceId>();
-    private Map<InstanceId, PaxosInstance> instances = new HashMap<InstanceId, PaxosInstance>();
+    private Queue<InstanceId> delivered = new LinkedList<>();
+    private Map<InstanceId, PaxosInstance> instances = new HashMap<>();
     private final int maxInstancesToStore;
 
     public PaxosInstanceStore()
@@ -73,13 +73,7 @@ public class PaxosInstanceStore
             throw new NullPointerException( "InstanceId may not be null" );
         }
 
-        PaxosInstance instance = instances.get( instanceId );
-        if ( instance == null )
-        {
-            instance = new PaxosInstance( this, instanceId );
-            instances.put( instanceId, instance );
-        }
-        return instance;
+        return instances.computeIfAbsent( instanceId, i -> new PaxosInstance( this, i ) );
     }
 
     public void delivered( InstanceId instanceId )

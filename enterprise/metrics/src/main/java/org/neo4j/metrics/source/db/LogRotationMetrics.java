@@ -68,7 +68,7 @@ public class LogRotationMetrics extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         monitors.addMonitorListener( listener );
 
@@ -78,7 +78,7 @@ public class LogRotationMetrics extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
         monitors.removeMonitorListener( listener );
 

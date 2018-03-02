@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
@@ -89,13 +90,15 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapSequence( this );
+    }
+
+    @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !other.isSequenceValue() )
-        {
-            return false;
-        }
-        return equals( (SequenceValue) other );
+        return other != null && other.isSequenceValue() && equals( (SequenceValue) other );
     }
 
     public AnyValue head()

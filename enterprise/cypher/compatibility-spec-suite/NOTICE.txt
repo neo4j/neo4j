@@ -21,10 +21,12 @@ in the LICENSE.txt file.
 
 Full license texts are found in LICENSES.txt.
 
+
 Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Compress
   Apache Commons Lang
   Caffeine cache
   ConcurrentLinkedHashMap
@@ -36,7 +38,9 @@ Apache Software License, Version 2.0
   Lucene Memory
   Lucene QueryParsers
   Netty/All-in-One
+  Objenesis
   opencsv
+  openCypher TCK Features and Graphs
   parboiled-core
   parboiled-scala
 
@@ -50,6 +54,9 @@ BSD License
   ASM Util
   JLine
   Scala Compiler
+  scala-parser-combinators
+  scala-xml
+  Scalap
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

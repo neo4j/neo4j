@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -67,7 +66,7 @@ public class RecordFormatsMigrationIT
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule );
 
     @Test
-    public void migrateLatestStandardToLatestHighLimit() throws IOException
+    public void migrateLatestStandardToLatestHighLimit()
     {
         executeAndStopDb( startStandardFormatDb(), this::createNode );
         assertLatestStandardStore();
@@ -77,7 +76,7 @@ public class RecordFormatsMigrationIT
     }
 
     @Test
-    public void migrateHighLimitV3_0ToLatestHighLimit() throws IOException
+    public void migrateHighLimitV3_0ToLatestHighLimit()
     {
         executeAndStopDb( startDb( HighLimitV3_0_0.NAME ), this::createNode );
         assertStoreFormat( HighLimitV3_0_0.RECORD_FORMATS );
@@ -87,7 +86,7 @@ public class RecordFormatsMigrationIT
     }
 
     @Test
-    public void migrateHighLimitToStandard() throws IOException
+    public void migrateHighLimitToStandard()
     {
         executeAndStopDb( startHighLimitFormatDb(), this::createNode );
         assertLatestHighLimitStore();
@@ -142,17 +141,17 @@ public class RecordFormatsMigrationIT
                 .newGraphDatabase();
     }
 
-    private void assertLatestStandardStore() throws IOException
+    private void assertLatestStandardStore()
     {
         assertStoreFormat( Standard.LATEST_RECORD_FORMATS );
     }
 
-    private void assertLatestHighLimitStore() throws IOException
+    private void assertLatestHighLimitStore()
     {
         assertStoreFormat( HighLimit.RECORD_FORMATS );
     }
 
-    private void assertStoreFormat( RecordFormats expected ) throws IOException
+    private void assertStoreFormat( RecordFormats expected )
     {
         Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
         try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule.get(), config ) )

@@ -27,13 +27,13 @@ import org.neo4j.server.security.auth.ListSnapshot;
 public class InMemoryRoleRepository extends AbstractRoleRepository
 {
     @Override
-    protected void persistRoles() throws IOException
+    protected void persistRoles()
     {
         // Nothing to do
     }
 
     @Override
-    protected ListSnapshot<RoleRecord> readPersistedRoles() throws IOException
+    protected ListSnapshot<RoleRecord> readPersistedRoles()
     {
         return null;
     }

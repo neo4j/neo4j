@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -42,7 +43,6 @@ public enum LearnerState
                                             Message<LearnerMessage> message,
                                             MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == LearnerMessage.join )
                     {
@@ -59,8 +59,7 @@ public enum LearnerState
                 public LearnerState handle( LearnerContext context,
                                             Message<LearnerMessage> message,
                                             MessageHolder outgoing
-                )
-                        throws Throwable
+                ) throws IOException, ClassNotFoundException, URISyntaxException
                 {
                     switch ( message.getMessageType() )
                     {
@@ -80,7 +79,7 @@ public enum LearnerState
 
                             context.learnedInstanceId( instanceId.getId() );
 
-                            instance.closed( learnState.getValue(), message.getHeader( Message.CONVERSATION_ID ) );
+                            instance.closed( learnState.getValue(), message.getHeader( Message.HEADER_CONVERSATION_ID ) );
 
                             /*
                              * The conditional below is simply so that no expensive deserialization will happen if we
@@ -114,7 +113,7 @@ public enum LearnerState
                                 outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcastResponse,
                                         learnState.getValue() )
                                         .setHeader( InstanceId.INSTANCE, instance.id.toString() )
-                                        .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ));
+                                        .setHeader( Message.HEADER_CONVERSATION_ID, instance.conversationIdHeader ));
                                 context.setLastDeliveredInstanceId( instanceId.getId() );
 
                                 long checkInstanceId = instanceId.getId() + 1;
@@ -126,7 +125,7 @@ public enum LearnerState
                                     Message<AtomicBroadcastMessage> learnMessage = Message.internal(
                                             AtomicBroadcastMessage.broadcastResponse, instance.value_2 )
                                             .setHeader( InstanceId.INSTANCE, instance.id.toString() )
-                                            .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader );
+                                            .setHeader( Message.HEADER_CONVERSATION_ID, instance.conversationIdHeader );
                                     outgoing.offer( learnMessage );
 
                                     checkInstanceId++;
@@ -203,7 +202,7 @@ public enum LearnerState
                                 outgoing.offer( Message.respond( LearnerMessage.learn, message,
                                         new LearnerMessage.LearnState( instance.value_2 ) ).
                                         setHeader( InstanceId.INSTANCE, instanceId.toString() ).
-                                        setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ) );
+                                        setHeader( Message.HEADER_CONVERSATION_ID, instance.conversationIdHeader ) );
                             }
                             else
                             {
@@ -251,9 +250,9 @@ public enum LearnerState
                                 }
 
                                 org.neo4j.cluster.InstanceId instanceId =
-                                        message.hasHeader( Message.INSTANCE_ID )
+                                        message.hasHeader( Message.HEADER_INSTANCE_ID )
                                         ? new org.neo4j.cluster.InstanceId(
-                                                Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) )
+                                                Integer.parseInt( message.getHeader( Message.HEADER_INSTANCE_ID ) ) )
                                         : context.getMyId();
                                 context.setLastKnownLearnedInstanceInCluster( catchUpTo, instanceId );
                             }
@@ -283,7 +282,7 @@ public enum LearnerState
                     }
                     else
                     {
-                        return new URI( message.getHeader( Message.FROM ) );
+                        return new URI( message.getHeader( Message.HEADER_FROM ) );
                     }
                 }
             }

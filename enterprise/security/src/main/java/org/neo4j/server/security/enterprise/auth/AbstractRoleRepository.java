@@ -102,7 +102,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void setRoles( ListSnapshot<RoleRecord> rolesSnapshot ) throws InvalidArgumentsException, IOException
+    public void setRoles( ListSnapshot<RoleRecord> rolesSnapshot ) throws InvalidArgumentsException
     {
         for ( RoleRecord role : rolesSnapshot.values() )
         {
@@ -268,12 +268,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     {
         for ( String username : role.users() )
         {
-            SortedSet<String> memberOfRoles = rolesByUsername.get( username );
-            if ( memberOfRoles == null )
-            {
-                memberOfRoles = new ConcurrentSkipListSet<>();
-                rolesByUsername.put( username, memberOfRoles );
-            }
+            SortedSet<String> memberOfRoles = rolesByUsername.computeIfAbsent( username, k -> new ConcurrentSkipListSet<>() );
             memberOfRoles.add( role.name() );
         }
     }

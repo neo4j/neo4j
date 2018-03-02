@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -106,7 +105,7 @@ public class MasterImplConversationStopFuzzIT
             .build();
 
     @After
-    public void cleanup() throws InterruptedException
+    public void cleanup()
     {
         life.shutdown();
         executor.shutdownNow();
@@ -255,7 +254,7 @@ public class MasterImplConversationStopFuzzIT
             CLOSING_SESSION
                     {
                         @Override
-                        State next( SlaveEmulatorWorker worker ) throws Exception
+                        State next( SlaveEmulatorWorker worker )
                         {
                             if ( lowProbabilityEvent( worker ) )
                             {
@@ -272,7 +271,7 @@ public class MasterImplConversationStopFuzzIT
             abstract State next( SlaveEmulatorWorker worker ) throws Exception;
 
             protected State commit( SlaveEmulatorWorker worker, RequestContext requestContext )
-                    throws IOException, TransactionFailureException
+                    throws TransactionFailureException
             {
                 try
                 {
@@ -348,7 +347,6 @@ public class MasterImplConversationStopFuzzIT
 
         @Override
         public long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
-                throws IOException, TransactionFailureException
         {
             // sleeping here and hope to be noticed by conversation killer.
             sleep();
@@ -368,7 +366,7 @@ public class MasterImplConversationStopFuzzIT
         }
 
         @Override
-        public long getTransactionChecksum( long txId ) throws IOException
+        public long getTransactionChecksum( long txId )
         {
             return 0;
         }

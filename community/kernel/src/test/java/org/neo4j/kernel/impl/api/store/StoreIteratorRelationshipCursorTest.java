@@ -53,7 +53,7 @@ public class StoreIteratorRelationshipCursorTest
     private static final long RELATIONSHIP_ID = 1L;
 
     @Test
-    public void retrieveUsedRelationship() throws Exception
+    public void retrieveUsedRelationship()
     {
         final RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
         RecordCursor recordCursor = mock( RecordCursor.class );
@@ -156,7 +156,7 @@ public class StoreIteratorRelationshipCursorTest
         }
 
         @Override
-        public Boolean answer( InvocationOnMock invocationOnMock ) throws Throwable
+        public Boolean answer( InvocationOnMock invocationOnMock )
         {
             relationshipRecord.setInUse( used );
             relationshipRecord.setId( RELATIONSHIP_ID );

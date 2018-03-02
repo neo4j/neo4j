@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.File;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -43,5 +45,11 @@ public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
         return NativeLuceneFusionSchemaIndexProviderFactory
                 .newInstance( pageCache, graphDbDir, fs, monitor, config, OperationalMode.single,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
+    }
+
+    @Override
+    public Iterable<Value> getSupportedValues()
+    {
+        return Iterables.concat( commonValues, spatialValues, temporalValues );
     }
 }

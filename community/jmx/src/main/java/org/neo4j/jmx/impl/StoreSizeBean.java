@@ -23,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.io.File;
 import java.io.IOException;
-import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -67,13 +66,13 @@ public final class StoreSizeBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management )
     {
         return new StoreSizeImpl( management, false );
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         return new StoreSizeImpl( management, true );
     }
@@ -88,7 +87,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         private IndexProviderMap indexProviderMap;
         private LabelScanStore labelScanStore;
 
-        StoreSizeImpl( ManagementData management, boolean isMXBean ) throws NotCompliantMBeanException
+        StoreSizeImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
 

@@ -22,12 +22,10 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.auth.AuthProceduresBase.UserResult;
@@ -60,7 +58,7 @@ public class SecurityProceduresTest
     }
 
     @Test
-    public void shouldReturnSecurityContextRoles() throws IOException, InvalidArgumentsException
+    public void shouldReturnSecurityContextRoles()
     {
         List<UserResult> infoList = procedures.showCurrentUser().collect( Collectors.toList() );
         assertThat( infoList.size(), equalTo(1) );

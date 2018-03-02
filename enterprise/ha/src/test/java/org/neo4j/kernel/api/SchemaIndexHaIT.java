@@ -115,7 +115,7 @@ public class SchemaIndexHaIT
     }
 
     @Test
-    public void creatingIndexOnSlaveIsNotAllowed() throws Throwable
+    public void creatingIndexOnSlaveIsNotAllowed()
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();
@@ -547,9 +547,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public String getPopulationFailure( long indexId ) throws IllegalStateException
+        public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
         {
-            return delegate.getPopulationFailure( indexId );
+            return delegate.getPopulationFailure( indexId, descriptor );
         }
     }
 
@@ -575,7 +575,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps )
         {
             PageCache pageCache = deps.pageCache();
             File storeDir = context.storeDir();

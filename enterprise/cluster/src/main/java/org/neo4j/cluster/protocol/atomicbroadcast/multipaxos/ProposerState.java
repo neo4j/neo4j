@@ -42,7 +42,6 @@ public enum ProposerState
                                              Message<ProposerMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == ProposerMessage.join )
                     {
@@ -60,7 +59,6 @@ public enum ProposerState
                                              Message<ProposerMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -78,7 +76,7 @@ public enum ProposerState
                                     new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
                             context.getLog( ProposerState.class ).debug( "Propose for instance " + instance
-                                    + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
+                                    + " rejected from " + message.getHeader( Message.HEADER_FROM ) + " with ballot "
                                     + rejectPropose.getBallot() );
 
                             // Ignore multiple rejects on same prepare
@@ -474,7 +472,7 @@ public enum ProposerState
             // Never include node that is leaving
             if ( state.getLeave() != null )
             {
-                acceptors = new ArrayList<URI>( acceptors );
+                acceptors = new ArrayList<>( acceptors );
                 acceptors.remove( currentMembers.get(state.getLeave()) );
             }
 

@@ -72,7 +72,7 @@ public class PathImplTest
     }
 
     @Test
-    public void pathsWithTheSameContentsShouldBeEqual() throws Exception
+    public void pathsWithTheSameContentsShouldBeEqual()
     {
 
         Node node = createNode( 1337L );
@@ -88,7 +88,7 @@ public class PathImplTest
     }
 
     @Test
-    public void pathsWithDifferentLengthAreNotEqual() throws Exception
+    public void pathsWithDifferentLengthAreNotEqual()
     {
         Node node = createNode( 1337L );
         Relationship relationship = createRelationship( 1337L, 7331L );
@@ -170,7 +170,7 @@ public class PathImplTest
     private class NodeProxyAnswer implements Answer<NodeProxy>
     {
         @Override
-        public NodeProxy answer( InvocationOnMock invocation ) throws Throwable
+        public NodeProxy answer( InvocationOnMock invocation )
         {
             return createNodeProxy( ((Number) invocation.getArgument( 0 )).intValue() );
         }

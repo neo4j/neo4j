@@ -19,10 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.time.Clock;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -31,7 +27,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import java.time.Clock;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -50,21 +50,21 @@ public class CatchUpClient extends LifecycleAdapter
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
-    private final PipelineHandlerAppender pipelineAppender;
+    private final PipelineWrapper pipelineWrapper;
     private final long inactivityTimeoutMillis;
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
 
     private NioEventLoopGroup eventLoopGroup;
 
     public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
-                          PipelineHandlerAppender pipelineAppender )
+                          PipelineWrapper pipelineWrapper )
     {
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         this.monitors = monitors;
-        this.pipelineAppender = pipelineAppender;
+        this.pipelineWrapper = pipelineWrapper;
     }
 
     public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )
@@ -110,7 +110,7 @@ public class CatchUpClient extends LifecycleAdapter
                 @Override
                 protected void initChannel( SocketChannel ch ) throws Exception
                 {
-                    CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, pipelineAppender );
+                    CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, pipelineWrapper );
                 }
             } );
 

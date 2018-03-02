@@ -118,7 +118,7 @@ public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = indexes.get( indexId ).failure;
         if ( failure == null )

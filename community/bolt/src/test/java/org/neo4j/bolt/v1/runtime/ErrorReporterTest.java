@@ -54,7 +54,7 @@ public class ErrorReporterTest
     }
 
     @Test
-    public void databaseErrorShouldLogFullMessageInDebugLogAndHelpfulPointerInUserLog() throws Exception
+    public void databaseErrorShouldLogFullMessageInDebugLogAndHelpfulPointerInUserLog()
     {
         // given
         AssertableLogProvider userLog = new AssertableLogProvider();

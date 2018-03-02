@@ -32,6 +32,7 @@ import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.AbstractIndexReader;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
@@ -89,7 +91,34 @@ public class SimpleIndexReader extends AbstractIndexReader
     }
 
     @Override
+    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    {
+        Query query = toLuceneQuery( predicates );
+        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates );
+    }
+
+    @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    {
+        Query query = toLuceneQuery( predicates );
+        return search( query ).getValuesIterator( NODE_ID_KEY );
+    }
+
+    private DocValuesCollector search( Query query )
+    {
+        try
+        {
+            DocValuesCollector docValuesCollector = new DocValuesCollector();
+            getIndexSearcher().search( query, docValuesCollector );
+            return docValuesCollector;
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private Query toLuceneQuery( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -102,7 +131,7 @@ public class SimpleIndexReader extends AbstractIndexReader
                         "Exact followed by another query predicate type is not supported at this moment.";
                 values[i] = ((IndexQuery.ExactPredicate) predicates[i]).value();
             }
-            return seek( values );
+            return LuceneDocumentStructure.newSeekQuery( values );
         case exists:
             for ( IndexQuery p : predicates )
             {
@@ -112,27 +141,27 @@ public class SimpleIndexReader extends AbstractIndexReader
                             "Exists followed by another query predicate type is not supported." );
                 }
             }
-            return scan();
+            return LuceneDocumentStructure.newScanQuery();
         case rangeNumeric:
             assertNotComposite( predicates );
             IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-            return rangeSeekByNumberInclusive( np.from(), np.to() );
+            return LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( np.from(), np.to() );
         case rangeString:
             assertNotComposite( predicates );
             IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
-           return rangeSeekByString( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
+            return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
         case stringPrefix:
             assertNotComposite( predicates );
             IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
-            return rangeSeekByPrefix( spp.prefix() );
+            return LuceneDocumentStructure.newRangeSeekByPrefixQuery( spp.prefix() );
         case stringContains:
             assertNotComposite( predicates );
             IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
-            return containsString( scp.contains() );
+            return LuceneDocumentStructure.newWildCardStringQuery( scp.contains() );
         case stringSuffix:
             assertNotComposite( predicates );
             IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
-            return endsWith( ssp.suffix() );
+            return LuceneDocumentStructure.newSuffixStringQuery( ssp.suffix() );
         default:
             // todo figure out a more specific exception
             throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
@@ -140,7 +169,7 @@ public class SimpleIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
     }
@@ -148,42 +177,6 @@ public class SimpleIndexReader extends AbstractIndexReader
     private void assertNotComposite( IndexQuery[] predicates )
     {
         assert predicates.length == 1 : "composite indexes not yet supported for this operation";
-    }
-
-    private PrimitiveLongResourceIterator seek( Value... values )
-    {
-        return query( LuceneDocumentStructure.newSeekQuery( values ) );
-    }
-
-    private PrimitiveLongResourceIterator rangeSeekByNumberInclusive( Number lower, Number upper )
-    {
-        return query( LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( lower, upper ) );
-    }
-
-    private PrimitiveLongResourceIterator rangeSeekByString( String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-    {
-        return query( LuceneDocumentStructure.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
-    }
-
-    private PrimitiveLongResourceIterator rangeSeekByPrefix( String prefix )
-    {
-        return query( LuceneDocumentStructure.newRangeSeekByPrefixQuery( prefix ) );
-    }
-
-    private PrimitiveLongResourceIterator scan()
-    {
-        return query( LuceneDocumentStructure.newScanQuery() );
-    }
-
-    private PrimitiveLongResourceIterator containsString( String exactTerm )
-    {
-        return query( LuceneDocumentStructure.newWildCardStringQuery( exactTerm ) );
-    }
-
-    private PrimitiveLongResourceIterator endsWith( String suffix )
-    {
-        return query( LuceneDocumentStructure.newSuffixStringQuery( suffix ) );
     }
 
     @Override
@@ -217,20 +210,6 @@ public class SimpleIndexReader extends AbstractIndexReader
         catch ( IOException e )
         {
             throw new IndexReaderCloseException( e );
-        }
-    }
-
-    protected PrimitiveLongResourceIterator query( Query query )
-    {
-        try
-        {
-            DocValuesCollector docValuesCollector = new DocValuesCollector();
-            getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getValuesIterator( NODE_ID_KEY );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 

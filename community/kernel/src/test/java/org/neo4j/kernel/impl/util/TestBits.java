@@ -32,7 +32,7 @@ import static org.neo4j.kernel.impl.util.Bits.bits;
 public class TestBits
 {
     @Test
-    public void asBytes() throws Exception
+    public void asBytes()
     {
         int numberOfBytes = 14;
         Bits bits = bits( numberOfBytes );
@@ -49,7 +49,7 @@ public class TestBits
     }
 
     @Test
-    public void doubleAsBytes() throws Exception
+    public void doubleAsBytes()
     {
         double[] array1 = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
         Bits bits = Bits.bits( array1.length * 8 );
@@ -64,7 +64,7 @@ public class TestBits
     }
 
     @Test
-    public void doubleAsBytesWithOffset() throws Exception
+    public void doubleAsBytesWithOffset()
     {
         double[] array1 = new double[]{1.0, 2.0, 3.0, 4.0, 5.0};
         Bits bits = Bits.bits( array1.length * 8 );
@@ -84,7 +84,7 @@ public class TestBits
     }
 
     @Test
-    public void writeAndRead() throws Exception
+    public void writeAndRead()
     {
         for ( int b = 5; b <= 8; b++ )
         {

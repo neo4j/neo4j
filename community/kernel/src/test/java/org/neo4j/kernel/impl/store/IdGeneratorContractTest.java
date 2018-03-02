@@ -32,7 +32,7 @@ public abstract class IdGeneratorContractTest
     protected abstract IdGenerator openIdGenerator( int grabSize );
 
     @Test
-    public void shouldReportCorrectHighId() throws Exception
+    public void shouldReportCorrectHighId()
     {
         // given
         IdGenerator idGenerator = createIdGenerator( 2 );

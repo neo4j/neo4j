@@ -17,6 +17,7 @@
     <properties>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+        <moduleName>org.neo4j.tooling.procedure</moduleName>
     </properties>
 
     <licenses>
@@ -92,7 +93,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.testing.compile</groupId>

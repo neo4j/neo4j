@@ -46,7 +46,6 @@ public enum HeartbeatState
                                               Message<HeartbeatMessage> message,
                                               MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -93,7 +92,6 @@ public enum HeartbeatState
                                               Message<HeartbeatMessage> message,
                                               MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -136,16 +134,16 @@ public enum HeartbeatState
                                 if ( lastLearned > context.getLastKnownLearnedInstanceInCluster() )
                                 {
                                     /*
-                                     * Need to pass the INSTANCE_ID header to catchUp state,
+                                     * Need to pass the HEADER_INSTANCE_ID header to catchUp state,
                                      * as the instance in catchUp state should be aware of at least one
-                                     * alive member of the cluster. FROM used to be abused for this reason
+                                     * alive member of the cluster. HEADER_FROM used to be abused for this reason
                                      * previously, so we leave it here for legacy reasons - should really have
                                      * no use within the current codebase but mixed version clusters may
                                      * make use of it.
                                      */
                                     Message<LearnerMessage> catchUpMessage = message.copyHeadersTo(
                                             internal( LearnerMessage.catchUp, lastLearned ),
-                                            Message.FROM, Message.INSTANCE_ID );
+                                            Message.HEADER_FROM, Message.HEADER_INSTANCE_ID );
                                     outgoing.offer( catchUpMessage );
                                 }
                             }
@@ -231,7 +229,7 @@ public enum HeartbeatState
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
 
                             InstanceId fromId = new InstanceId(
-                                    Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+                                    Integer.parseInt( message.getHeader( Message.HEADER_INSTANCE_ID ) ) );
 
                             context.getLog( HeartbeatState.class )
                                     .debug( format( "Received suspicions as %s from %s", suspicions, fromId ) );
@@ -277,9 +275,9 @@ public enum HeartbeatState
                 {
                     String key = HeartbeatMessage.i_am_alive + "-" + state.getServer();
                     Message<? extends MessageType> oldTimeout = context.cancelTimeout( key );
-                    if ( oldTimeout != null && oldTimeout.hasHeader( Message.TIMEOUT_COUNT ) )
+                    if ( oldTimeout != null && oldTimeout.hasHeader( Message.HEADER_TIMEOUT_COUNT ) )
                     {
-                        int timeoutCount = Integer.parseInt( oldTimeout.getHeader( Message.TIMEOUT_COUNT ) );
+                        int timeoutCount = Integer.parseInt( oldTimeout.getHeader( Message.HEADER_TIMEOUT_COUNT ) );
                         if ( timeoutCount > 0 )
                         {
                             long timeout = context.getTimeoutFor( oldTimeout );

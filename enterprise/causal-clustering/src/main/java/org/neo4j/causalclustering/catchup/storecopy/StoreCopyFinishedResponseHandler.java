@@ -40,7 +40,7 @@ public class StoreCopyFinishedResponseHandler extends SimpleChannelInboundHandle
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final StoreCopyFinishedResponse msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, final StoreCopyFinishedResponse msg )
     {
         handler.onFileStreamingComplete( msg );
         protocol.expect( State.MESSAGE_TYPE );

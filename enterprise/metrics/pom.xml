@@ -18,6 +18,7 @@
 
   <properties>
     <prometheus.client.version>0.1.0</prometheus.client.version>
+    <moduleName>org.neo4j.metrics</moduleName>
   </properties>
 
   <dependencies>
@@ -166,7 +167,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -175,12 +175,10 @@
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>

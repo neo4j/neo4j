@@ -30,6 +30,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 
@@ -51,8 +52,8 @@ public class TestData<T> implements TestRule
 
     public static <T> TestData<T> producedThrough( Producer<T> transformation )
     {
-        transformation.getClass(); // null check
-        return new TestData<T>( transformation );
+        Objects.requireNonNull( transformation );
+        return new TestData<>( transformation );
     }
 
     public T get()
@@ -107,7 +108,7 @@ public class TestData<T> implements TestRule
     }
 
     private final Producer<T> producer;
-    private final ThreadLocal<Lazy> product = new InheritableThreadLocal<Lazy>();
+    private final ThreadLocal<Lazy> product = new InheritableThreadLocal<>();
 
     private TestData( Producer<T> producer )
     {
@@ -146,7 +147,7 @@ public class TestData<T> implements TestRule
                         }
                         catch ( Throwable sub )
                         {
-                            List<Throwable> failures = new ArrayList<Throwable>();
+                            List<Throwable> failures = new ArrayList<>();
                             if ( err instanceof MultipleFailureException )
                             {
                                 failures.addAll( ( (MultipleFailureException) err ).getFailures() );

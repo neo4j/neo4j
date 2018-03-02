@@ -36,7 +36,7 @@ public class FreelistNodeTest
     private final int maxEntries = freelist.maxEntries();
 
     @Test
-    public void shouldInitializeTreeNode() throws Exception
+    public void shouldInitializeTreeNode()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -49,7 +49,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldNodeOverwriteNodeType() throws Exception
+    public void shouldNodeOverwriteNodeType()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -66,7 +66,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldSetAndGetNext() throws Exception
+    public void shouldSetAndGetNext()
     {
         // GIVEN
         long nextId = 12345;
@@ -80,7 +80,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldReadAndWriteFreeListEntries() throws Exception
+    public void shouldReadAndWriteFreeListEntries()
     {
         // GIVEN
         long generationA = 34;
@@ -100,7 +100,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingBeyondMaxEntries() throws Exception
+    public void shouldFailOnWritingBeyondMaxEntries()
     {
         // WHEN
         try
@@ -115,7 +115,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingTooBigPointer() throws Exception
+    public void shouldFailOnWritingTooBigPointer()
     {
         // WHEN
         try
@@ -130,7 +130,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingTooBigGeneration() throws Exception
+    public void shouldFailOnWritingTooBigGeneration()
     {
         // WHEN
         try
@@ -145,7 +145,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldReturnNoPageOnUnstableEntry() throws Exception
+    public void shouldReturnNoPageOnUnstableEntry()
     {
         // GIVEN
         long stableGeneration = 10;

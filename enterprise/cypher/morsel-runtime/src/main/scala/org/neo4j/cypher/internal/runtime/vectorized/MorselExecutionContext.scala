@@ -33,7 +33,7 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = ???
 
-  override def setLongAt(offset: Int, value: Long): Unit = ???
+  override def setLongAt(offset: Int, value: Long): Unit = morsel.longs(currentRow * longsPerRow + offset) = value
 
   override def getLongAt(offset: Int): Long = morsel.longs(currentRow * longsPerRow + offset)
 
@@ -72,4 +72,8 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
   override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = ???
 
   override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = ???
+
+  override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = ???
+
+  override def isNull(key: String): Boolean = ???
 }

@@ -73,13 +73,13 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         memberStateMachine.addHighAvailabilityMemberListener( listener );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         memberStateMachine.removeHighAvailabilityMemberListener( listener );
     }

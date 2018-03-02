@@ -17,6 +17,9 @@
     <name>Neo4j - Low Level Tools</name>
     <packaging>jar</packaging>
     <description>A package for low level tools.</description>
+    <properties>
+        <moduleName>org.neo4j.tools</moduleName>
+    </properties>
 
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -96,7 +99,6 @@
           <groupId>org.hamcrest</groupId>
         </exclusion>
       </exclusions>
-      <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>commons-codec</groupId>
@@ -105,12 +107,10 @@
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>

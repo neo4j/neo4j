@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
 import org.neo4j.internal.kernel.api.Transaction.Type._
-import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
@@ -77,8 +77,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val tx = graph.beginTransaction(explicit, AUTH_DISABLED)
     for ( i <- 0 until 100 ) {
-      val n1 = graph.createNode(Label.label("L1"))
-      val n2 = graph.createNode()
+      val n1 = database.createNode(Label.label("L1"))
+      val n2 = database.createNode()
       n1.createRelationshipTo(n2, RelationshipType.withName("T"))
     }
     tx.success()

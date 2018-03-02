@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.function.LongSupplier;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -45,7 +46,7 @@ public class OnDiskLastTxIdGetterTest
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void testGetLastTxIdNoFilePresent() throws Exception
+    public void testGetLastTxIdNoFilePresent()
     {
         // This is a sign that we have some bad coupling on our hands.
         // We currently have to do this because of our lifecycle and construction ordering.
@@ -59,7 +60,7 @@ public class OnDiskLastTxIdGetterTest
         final StoreFactory storeFactory = new StoreFactory(
                 new File( "store" ), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         final NeoStores neoStores = storeFactory.openAllNeoStores( true );
         neoStores.close();
 

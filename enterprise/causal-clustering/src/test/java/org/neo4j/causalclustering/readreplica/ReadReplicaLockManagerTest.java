@@ -35,7 +35,7 @@ public class ReadReplicaLockManagerTest
     private Locks.Client lockClient = lockManager.newClient();
 
     @Test
-    public void shouldThrowOnAcquireExclusiveLock() throws Exception
+    public void shouldThrowOnAcquireExclusiveLock()
     {
         try
         {
@@ -49,7 +49,7 @@ public class ReadReplicaLockManagerTest
     }
 
     @Test
-    public void shouldThrowOnTryAcquireExclusiveLock() throws Exception
+    public void shouldThrowOnTryAcquireExclusiveLock()
     {
         try
         {
@@ -63,7 +63,7 @@ public class ReadReplicaLockManagerTest
     }
 
     @Test
-    public void shouldAcceptSharedLocks() throws Exception
+    public void shouldAcceptSharedLocks()
     {
         lockClient.acquireShared( NONE, NODE, 1 );
         lockClient.trySharedLock( NODE, 1 );

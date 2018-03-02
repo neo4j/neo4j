@@ -43,7 +43,7 @@ public class TestTopology
         return new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
     }
 
-    public static CoreServerInfo adressesForCore( int id )
+    public static CoreServerInfo addressesForCore( int id )
     {
         AdvertisedSocketAddress raftServerAddress = new AdvertisedSocketAddress( "localhost", 3000 + id );
         AdvertisedSocketAddress catchupServerAddress = new AdvertisedSocketAddress( "localhost", 4000 + id );

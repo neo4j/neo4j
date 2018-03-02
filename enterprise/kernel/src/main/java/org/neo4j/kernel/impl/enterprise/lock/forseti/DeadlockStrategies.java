@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 public enum DeadlockStrategies implements ForsetiLockManager.DeadlockResolutionStrategy
 {

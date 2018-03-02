@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -48,7 +47,7 @@ public class NodePropertyAccessor implements PropertyAccessor
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getPropertyValue( long nodeId, int propertyKeyId )
     {
         if ( nodePropertyMap.containsKey( nodeId ) )
         {

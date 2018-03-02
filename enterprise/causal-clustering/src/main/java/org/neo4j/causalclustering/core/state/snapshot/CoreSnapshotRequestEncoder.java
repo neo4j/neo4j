@@ -26,7 +26,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class CoreSnapshotRequestEncoder extends MessageToByteEncoder<CoreSnapshotRequest>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, CoreSnapshotRequest msg, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, CoreSnapshotRequest msg, ByteBuf out )
     {
         out.writeByte( 0 );
     }

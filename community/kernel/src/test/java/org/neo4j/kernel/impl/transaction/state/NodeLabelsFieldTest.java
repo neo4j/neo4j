@@ -38,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -63,12 +64,36 @@ import static org.neo4j.kernel.impl.util.Bits.bits;
 
 public class NodeLabelsFieldTest
 {
+    @ClassRule
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
     public RandomRule random = new RandomRule();
+
     private NeoStores neoStores;
+    private NodeStore nodeStore;
+
+    @Before
+    public void startUp()
+    {
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
+        Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
+        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        neoStores = storeFactory.openAllNeoStores( true );
+        nodeStore = neoStores.getNodeStore();
+    }
+
+    @After
+    public void cleanUp()
+    {
+        neoStores.close();
+    }
 
     @Test
-    public void shouldInlineOneLabel() throws Exception
+    public void shouldInlineOneLabel()
     {
         // GIVEN
         long labelId = 10;
@@ -83,7 +108,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineOneLabelWithHighId() throws Exception
+    public void shouldInlineOneLabelWithHighId()
     {
         // GIVEN
         long labelId = 10000;
@@ -98,7 +123,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineTwoSmallLabels() throws Exception
+    public void shouldInlineTwoSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -114,7 +139,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineThreeSmallLabels() throws Exception
+    public void shouldInlineThreeSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -131,7 +156,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineFourSmallLabels() throws Exception
+    public void shouldInlineFourSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -149,7 +174,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldInlineFiveSmallLabels() throws Exception
+    public void shouldInlineFiveSmallLabels()
     {
         // GIVEN
         long labelId1 = 10;
@@ -169,7 +194,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace() throws Exception
+    public void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace()
     {
         // GIVEN -- the upper limit for a label ID for 3 labels would be 36b/3 - 1 = 12b - 1 = 4095
         long labelId1 = 10;
@@ -190,7 +215,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void oneDynamicRecordShouldExtendIntoAnAdditionalIfTooManyLabels() throws Exception
+    public void oneDynamicRecordShouldExtendIntoAnAdditionalIfTooManyLabels()
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
@@ -207,7 +232,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void oneDynamicRecordShouldStoreItsOwner() throws Exception
+    public void oneDynamicRecordShouldStoreItsOwner()
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
@@ -224,7 +249,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void twoDynamicRecordsShouldShrinkToOneWhenRemoving() throws Exception
+    public void twoDynamicRecordsShouldShrinkToOneWhenRemoving()
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
@@ -244,7 +269,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void twoDynamicRecordsShouldShrinkToOneWhenRemovingWithoutChangingItsOwner() throws Exception
+    public void twoDynamicRecordsShouldShrinkToOneWhenRemovingWithoutChangingItsOwner()
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
@@ -265,7 +290,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void oneDynamicRecordShouldShrinkIntoInlinedWhenRemoving() throws Exception
+    public void oneDynamicRecordShouldShrinkIntoInlinedWhenRemoving()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
@@ -282,7 +307,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReadIdOfDynamicRecordFromDynamicLabelsField() throws Exception
+    public void shouldReadIdOfDynamicRecordFromDynamicLabelsField()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
@@ -296,7 +321,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReadNullDynamicRecordFromInlineLabelsField() throws Exception
+    public void shouldReadNullDynamicRecordFromInlineLabelsField()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithInlinedLabels( 23L );
@@ -309,7 +334,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void maximumOfSevenInlinedLabels() throws Exception
+    public void maximumOfSevenInlinedLabels()
     {
         // GIVEN
         long[] labels = new long[] {0, 1, 2, 3, 4, 5, 6};
@@ -325,7 +350,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void addingAnAlreadyAddedLabelWhenLabelsAreInlinedShouldFail() throws Exception
+    public void addingAnAlreadyAddedLabelWhenLabelsAreInlinedShouldFail()
     {
         // GIVEN
         int labelId = 1;
@@ -345,7 +370,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void addingAnAlreadyAddedLabelWhenLabelsAreInDynamicRecordsShouldFail() throws Exception
+    public void addingAnAlreadyAddedLabelWhenLabelsAreInDynamicRecordsShouldFail()
     {
         // GIVEN
         long[] labels = oneByteLongs( 20 );
@@ -365,7 +390,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void removingNonExistentInlinedLabelShouldFail() throws Exception
+    public void removingNonExistentInlinedLabelShouldFail()
     {
         // GIVEN
         int labelId1 = 1;
@@ -386,7 +411,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void removingNonExistentLabelInDynamicRecordsShouldFail() throws Exception
+    public void removingNonExistentLabelInDynamicRecordsShouldFail()
     {
         // GIVEN
         long[] labels = oneByteLongs( 20 );
@@ -406,7 +431,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReallocateSomeOfPreviousDynamicRecords() throws Exception
+    public void shouldReallocateSomeOfPreviousDynamicRecords()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
@@ -423,7 +448,7 @@ public class NodeLabelsFieldTest
     }
 
     @Test
-    public void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome() throws Exception
+    public void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome()
     {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, fourByteLongs( 100 ) );
@@ -449,7 +474,7 @@ public class NodeLabelsFieldTest
      * unforeseen issues as well.
      */
     @Test
-    public void shouldHandleRandomAddsAndRemoves() throws Exception
+    public void shouldHandleRandomAddsAndRemoves()
     {
         // GIVEN
         Set<Integer> key = new HashSet<>();
@@ -503,30 +528,6 @@ public class NodeLabelsFieldTest
             bits.put( labelId, bitsPerLabel );
         }
         return header | bits.getLongs()[0];
-    }
-
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private NodeStore nodeStore;
-
-    @Before
-    public void startUp()
-    {
-        File storeDir = new File( "dir" );
-        fs.get().mkdirs( storeDir );
-        Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
-        neoStores = storeFactory.openAllNeoStores( true );
-        nodeStore = neoStores.getNodeStore();
-    }
-
-    @After
-    public void cleanUp()
-    {
-        neoStores.close();
     }
 
     private NodeRecord nodeRecordWithInlinedLabels( long... labels )

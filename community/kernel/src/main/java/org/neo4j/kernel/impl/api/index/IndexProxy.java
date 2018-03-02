@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -97,7 +98,7 @@ public interface IndexProxy extends SchemaDescriptorSupplier
 
     PopulationProgress getIndexPopulationProgress();
 
-    void force() throws IOException;
+    void force( IOLimiter ioLimiter ) throws IOException;
 
     void refresh() throws IOException;
 

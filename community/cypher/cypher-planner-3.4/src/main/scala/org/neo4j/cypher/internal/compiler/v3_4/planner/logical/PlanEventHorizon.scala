@@ -56,7 +56,8 @@ case object PlanEventHorizon
         sortSkipAndLimit(distinctPlan, query, context, solveds, cardinalities)
 
       case UnwindProjection(variable, expression) =>
-        context.logicalPlanProducer.planUnwind(plan, variable, expression, context)
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), context, solveds, cardinalities)
+        context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
 
       case ProcedureCallProjection(call) =>
         context.logicalPlanProducer.planCallProcedure(plan, call, context)

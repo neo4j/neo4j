@@ -23,18 +23,18 @@ import java.util.Objects;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class ClusterBindingHandler implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+public class ClusterBindingHandler implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>>
 {
-    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler;
+    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegateHandler;
     private volatile ClusterId boundClusterId;
     private final Log log;
 
-    public ClusterBindingHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler, LogProvider logProvider )
+    public ClusterBindingHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegateHandler, LogProvider logProvider )
     {
         this.delegateHandler = delegateHandler;
         log = logProvider.getLog( getClass() );
@@ -42,8 +42,7 @@ public class ClusterBindingHandler implements LifecycleMessageHandler<RaftMessag
 
     public static ComposableMessageHandler composable( LogProvider logProvider )
     {
-        return ( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate ) ->
-                new ClusterBindingHandler( delegate, logProvider );
+        return delegate -> new ClusterBindingHandler( delegate, logProvider );
     }
 
     @Override
@@ -61,7 +60,7 @@ public class ClusterBindingHandler implements LifecycleMessageHandler<RaftMessag
     }
 
     @Override
-    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
+    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message )
     {
         if ( Objects.isNull( boundClusterId ) )
         {

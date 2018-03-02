@@ -103,7 +103,7 @@ public class RaftContentByteBufferMarshalTest
     }
 
     @Test
-    public void txSerializationShouldNotResultInExcessZeroes() throws Exception
+    public void txSerializationShouldNotResultInExcessZeroes()
     {
         /*
          * This test ensures that the buffer used to serialize a transaction and then extract the byte array for

@@ -29,7 +29,7 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
     private final RepresentationType extended;
     private final String name;
     private final String desciption;
-    private final List<ParameterRepresentation> parameters = new ArrayList<ParameterRepresentation>();
+    private final List<ParameterRepresentation> parameters = new ArrayList<>();
 
     public ExtensionPointRepresentation( String name, Class<?> extended, String desciption )
     {

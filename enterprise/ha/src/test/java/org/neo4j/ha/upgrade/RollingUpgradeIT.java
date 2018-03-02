@@ -130,7 +130,7 @@ public class RollingUpgradeIT
         }
     }
 
-    private void shutdownAndDoConsistencyChecks() throws ConsistencyCheckIncompleteException
+    private void shutdownAndDoConsistencyChecks()
     {
 /*
         Collection<String> storeDirs = new ArrayList<>( newDbs.length );
@@ -172,7 +172,7 @@ public class RollingUpgradeIT
     }
 
     @After
-    public void cleanUp() throws Exception
+    public void cleanUp()
     {
         if ( legacyDbs != null )
         {

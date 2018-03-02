@@ -46,7 +46,7 @@ public class DefaultTransactionTracerTest
     private final Monitor monitor = mock( Monitor.class );
 
     @Test
-    public void shouldComputeStartEndAndTotalTimeForLogRotation() throws Throwable
+    public void shouldComputeStartEndAndTotalTimeForLogRotation()
     {
         DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
 
@@ -65,7 +65,7 @@ public class DefaultTransactionTracerTest
     }
 
     @Test
-    public void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation() throws Throwable
+    public void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation()
     {
         DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
 

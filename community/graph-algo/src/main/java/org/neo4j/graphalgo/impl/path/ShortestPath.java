@@ -197,6 +197,14 @@ public class ShortestPath implements PathFinder<Path>
         @Override
         public boolean equals( Object obj )
         {
+            if ( this == obj )
+            {
+                return true;
+            }
+            if ( obj == null || getClass() != obj.getClass() )
+            {
+                return false;
+            }
             Hit o = (Hit) obj;
             return connectingNode.equals( o.connectingNode );
         }

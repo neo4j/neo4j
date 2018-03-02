@@ -20,17 +20,14 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -66,7 +63,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate<?> update )
                     {
                         job.update( update );
                     }
@@ -75,7 +72,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate<?> update )
                     {
                         throw new IllegalArgumentException( "Unsupported update mode: " + mode );
                     }
@@ -120,7 +117,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force()
+    public void force( IOLimiter ioLimiter )
     {
         // Ignored... this isn't called from the outside while we're populating the index.
     }
@@ -144,14 +141,14 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted() throws InterruptedException
     {
         job.awaitCompletion();
         return true;
     }
 
     @Override
-    public void activate() throws IndexActivationFailedKernelException
+    public void activate()
     {
         throw new IllegalStateException( "Cannot activate index while it is still populating: " + job );
     }
@@ -189,7 +186,7 @@ public class PopulatingIndexProxy implements IndexProxy
     private abstract class PopulatingIndexUpdater implements IndexUpdater
     {
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close()
         {
         }
     }

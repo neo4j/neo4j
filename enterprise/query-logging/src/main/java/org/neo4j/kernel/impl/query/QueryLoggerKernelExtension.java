@@ -53,7 +53,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     }
 
     @Override
-    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context, final Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context, final Dependencies dependencies )
     {
         FileSystemAbstraction fileSystem = dependencies.fileSystem();
         Config config = dependencies.config();
@@ -66,7 +66,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             DynamicLoggingQueryExecutionMonitor logger;
 
             @Override
-            public void init() throws Throwable
+            public void init()
             {
                 Log debugLog = logService.getInternalLog( DynamicLoggingQueryExecutionMonitor.class );
                 this.logger = new DynamicLoggingQueryExecutionMonitor( config, fileSystem, jobScheduler, debugLog );
@@ -75,7 +75,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             }
 
             @Override
-            public void shutdown() throws Throwable
+            public void shutdown()
             {
                 logger.close();
             }

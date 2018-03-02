@@ -36,6 +36,8 @@ import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.MemoryAllocationTracker;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
@@ -84,12 +86,17 @@ public class Primitive
 
     public static PrimitiveLongSet offHeapLongSet()
     {
-        return offHeapLongSet( DEFAULT_OFFHEAP_CAPACITY );
+        return offHeapLongSet( GlobalMemoryTracker.INSTANCE );
     }
 
-    public static PrimitiveLongSet offHeapLongSet( int initialCapacity )
+    public static PrimitiveLongSet offHeapLongSet( MemoryAllocationTracker allocationTracker )
     {
-        return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( initialCapacity, VALUE_MARKER ),
+        return offHeapLongSet( DEFAULT_OFFHEAP_CAPACITY, allocationTracker );
+    }
+
+    public static PrimitiveLongSet offHeapLongSet( int initialCapacity, MemoryAllocationTracker allocationTracker )
+    {
+        return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( initialCapacity, VALUE_MARKER, allocationTracker ),
                 VALUE_MARKER, NO_MONITOR );
     }
 
@@ -115,12 +122,17 @@ public class Primitive
 
     public static PrimitiveLongLongMap offHeapLongLongMap()
     {
-        return offHeapLongLongMap( DEFAULT_OFFHEAP_CAPACITY );
+        return offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
     }
 
-    public static PrimitiveLongLongMap offHeapLongLongMap( int initialCapacity )
+    public static PrimitiveLongLongMap offHeapLongLongMap( MemoryAllocationTracker allocationTracker )
     {
-        return new PrimitiveLongLongHashMap( new LongKeyLongValueUnsafeTable( initialCapacity ), NO_MONITOR );
+        return offHeapLongLongMap( DEFAULT_OFFHEAP_CAPACITY, allocationTracker );
+    }
+
+    public static PrimitiveLongLongMap offHeapLongLongMap( int initialCapacity, MemoryAllocationTracker allocationTracker )
+    {
+        return new PrimitiveLongLongHashMap( new LongKeyLongValueUnsafeTable( initialCapacity, allocationTracker ), NO_MONITOR );
     }
 
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()
@@ -146,13 +158,18 @@ public class Primitive
 
     public static PrimitiveIntSet offHeapIntSet()
     {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( 1 << 20, VALUE_MARKER ),
+        return offHeapIntSet( GlobalMemoryTracker.INSTANCE );
+    }
+
+    public static PrimitiveIntSet offHeapIntSet( MemoryAllocationTracker allocationTracker )
+    {
+        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( DEFAULT_OFFHEAP_CAPACITY, VALUE_MARKER, allocationTracker ),
                 VALUE_MARKER, NO_MONITOR );
     }
 
-    public static PrimitiveIntSet offHeapIntSet( int initialCapacity )
+    public static PrimitiveIntSet offHeapIntSet( int initialCapacity, MemoryAllocationTracker allocationTracker )
     {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( initialCapacity, VALUE_MARKER ),
+        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( initialCapacity, VALUE_MARKER, allocationTracker ),
                 VALUE_MARKER, NO_MONITOR );
     }
 
@@ -163,7 +180,7 @@ public class Primitive
 
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )
     {
-        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
+        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<>( initialCapacity ), NO_MONITOR );
     }
 
     public static PrimitiveIntLongMap intLongMap()

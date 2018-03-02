@@ -19,16 +19,27 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor
+abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor, RelationshipVisitor<RuntimeException>
 {
     Read read;
+    private boolean hasChanges;
+    private boolean checkHasChanges;
 
     RelationshipCursor()
     {
         super( NO_ID );
+    }
+
+    protected void init( Read read )
+    {
+        this.read = read;
+        this.checkHasChanges = true;
     }
 
     @Override
@@ -46,23 +57,23 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public boolean hasProperties()
     {
-        return nextProp != PropertyCursor.NO_ID;
+        return nextProp != DefaultPropertyCursor.NO_ID;
     }
 
     @Override
-    public void source( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public void source( NodeCursor cursor )
     {
         read.singleNode( sourceNodeReference(), cursor );
     }
 
     @Override
-    public void target( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public void target( NodeCursor cursor )
     {
         read.singleNode( targetNodeReference(), cursor );
     }
 
     @Override
-    public void properties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public void properties( PropertyCursor cursor )
     {
         read.relationshipProperties( relationshipReference(), propertiesReference(), cursor );
     }
@@ -83,5 +94,40 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     public long propertiesReference()
     {
         return getNextProp();
+    }
+
+    protected abstract void collectAddedTxStateSnapshot();
+
+    /**
+     * RelationshipCursor should only see changes that are there from the beginning
+     * otherwise it will not be stable.
+     */
+    protected boolean hasChanges()
+    {
+        if ( checkHasChanges )
+        {
+            hasChanges = read.hasTxStateWithChanges();
+            if ( hasChanges )
+            {
+                collectAddedTxStateSnapshot();
+            }
+            checkHasChanges = false;
+        }
+
+        return hasChanges;
+    }
+
+    // Load transaction state using RelationshipVisitor
+    protected void loadFromTxState( long reference )
+    {
+        read.txState().relationshipVisit( reference, this );
+    }
+
+    // used to visit transaction state
+    @Override
+    public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
+    {
+        setId( relationshipId );
+        initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
     }
 }

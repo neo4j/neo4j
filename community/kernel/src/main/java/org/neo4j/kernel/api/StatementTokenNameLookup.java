@@ -26,7 +26,10 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 
 /**
  * Instances allow looking up ids back to their names.
+ *
+ * Deprecated: will be replaced by SilentTokenNameLookup
  */
+@Deprecated
 public final class StatementTokenNameLookup implements TokenNameLookup
 {
     private final ReadOperations statement;

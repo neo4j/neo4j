@@ -43,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
@@ -70,7 +71,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.RECOVERY_PREVENTING_COLLECTOR;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -94,7 +94,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, verbose,
                 new ConsistencyFlags( tuningConfiguration ) );
@@ -102,7 +102,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, boolean verbose, ConsistencyFlags consistencyFlags )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
@@ -127,7 +127,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
+            boolean verbose ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, new ConsistencyFlags( tuningConfiguration ) );
@@ -135,7 +135,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem,
                 verbose, defaultReportDir( config, storeDir ), consistencyFlags );
@@ -144,7 +144,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException, IOException
+            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, reportDir, new ConsistencyFlags( tuningConfiguration ) );
@@ -152,12 +152,12 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, File reportDir,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                logProvider.getLog( PageCache.class ) );
+                logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
@@ -216,7 +216,7 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.read_only, TRUE );
 
         StoreFactory factory = new StoreFactory( storeDir, config,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
@@ -241,7 +241,7 @@ public class ConsistencyCheckService
         RelationshipTypeTokenHolder relationshipTypeTokenHolder = life.add( new DelegatingRelationshipTypeTokenHolder( tokenCreator ) );
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
-                RECOVERY_PREVENTING_COLLECTOR,
+                RecoveryCleanupWorkCollector.IGNORE,
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
                 COMMUNITY,
                 monitors, propkeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder ) );
@@ -255,7 +255,7 @@ public class ConsistencyCheckService
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, monitors,
-                            RecoveryCleanupWorkCollector.IMMEDIATE );
+                            RecoveryCleanupWorkCollector.IGNORE );
             life.add( labelScanStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();

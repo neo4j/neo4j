@@ -67,9 +67,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
+    private final String raftListenAddress;
     protected CoreGraphDatabase database;
     private final Config memberConfig;
     private final ThreadGroup threadGroup;
+    private final Monitors monitors = new Monitors();
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -94,15 +96,17 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
+        raftListenAddress = listenAddress( listenAddress, raftPort );
 
         config.put( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
         config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, discoveryPort ) );
         config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
-        config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress( listenAddress, raftPort ) );
+        config.put( CausalClusteringSettings.raft_listen_address.name(), raftListenAddress );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
-        config.put( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
+        config.put( CausalClusteringSettings.minimum_core_cluster_size_at_formation.name(), String.valueOf( clusterSize ) );
+        config.put( CausalClusteringSettings.minimum_core_cluster_size_at_runtime.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.leader_election_timeout.name(), "500ms" );
         config.put( CausalClusteringSettings.raft_messages_log_enable.name(), Settings.TRUE );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
@@ -157,11 +161,16 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return String.format( "bolt://%s", boltAdvertisedSocketAddress );
     }
 
+    public String raftListenAddress()
+    {
+        return raftListenAddress;
+    }
+
     @Override
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, memberConfig,
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
@@ -242,10 +251,21 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return config.get(settingName);
     }
 
+    public Config config()
+    {
+        return memberConfig;
+    }
+
     @Override
     public ThreadGroup threadGroup()
     {
         return threadGroup;
+    }
+
+    @Override
+    public Monitors monitors()
+    {
+        return monitors;
     }
 
     public File clusterStateDirectory()
@@ -258,7 +278,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return raftLogDir;
     }
 
-    public void stopCatchupServer() throws Throwable
+    public void stopCatchupServer()
     {
         database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
     }

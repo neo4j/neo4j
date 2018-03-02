@@ -89,7 +89,7 @@ public abstract class AbstractShellIT
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase();
     }
 
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException
+    protected ShellServer newServer( GraphDatabaseAPI db ) throws RemoteException
     {
         return new GraphDatabaseShellServer( db );
     }
@@ -128,7 +128,7 @@ public abstract class AbstractShellIT
                 InterruptSignalHandler.getHandler() );
     }
 
-    protected void makeServerRemotelyAvailable() throws RemoteException
+    protected void makeServerRemotelyAvailable()
     {
         if ( remotelyAvailableOnPort == null )
         {

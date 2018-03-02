@@ -139,7 +139,7 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
     {
         while ( true )
         {
-            values = new HashMap<Node,Double>();
+            values = new HashMap<>();
             totalIterations = 0;
 
             // generate a random start vector

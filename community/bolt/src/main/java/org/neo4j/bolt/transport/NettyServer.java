@@ -39,7 +39,8 @@ import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.logging.Log;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * Simple wrapper around Netty boss and selector threads, which allows multiple ports and protocols to be handled
@@ -57,6 +58,7 @@ public class NettyServer extends LifecycleAdapter
     private final Map<BoltConnector, ProtocolInitializer> bootstrappersMap;
     private final ThreadFactory tf;
     private final ConnectorPortRegister connectionRegister;
+    private final Log log;
     private EventLoopGroup bossGroup;
     private EventLoopGroup selectorGroup;
 
@@ -75,11 +77,12 @@ public class NettyServer extends LifecycleAdapter
      * @param connectorRegister register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, Map<BoltConnector, ProtocolInitializer> initializersMap,
-            ConnectorPortRegister connectorRegister )
+                        ConnectorPortRegister connectorRegister, Log log )
     {
         this.bootstrappersMap = initializersMap;
         this.tf = tf;
         this.connectionRegister = connectorRegister;
+        this.log = log;
     }
 
     @Override
@@ -109,6 +112,18 @@ public class NettyServer extends LifecycleAdapter
                                 .bind( protocolInitializer.address().socketAddress() ).sync();
                 InetSocketAddress localAddress = (InetSocketAddress) channelFuture.channel().localAddress();
                 connectionRegister.register( boltConnector.key(), localAddress );
+                String host = protocolInitializer.address().getHostname();
+                int port = localAddress.getPort();
+                if ( host.contains( ":" ) )
+                {
+                    // IPv6
+                    log.info( "Bolt enabled on [%s]:%s.", host, port );
+                }
+                else
+                {
+                    // IPv4
+                    log.info( "Bolt enabled on %s:%s.", host, port );
+                }
             }
             catch ( Throwable e )
             {
@@ -121,7 +136,7 @@ public class NettyServer extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         bossGroup.shutdownGracefully();
         selectorGroup.shutdownGracefully();

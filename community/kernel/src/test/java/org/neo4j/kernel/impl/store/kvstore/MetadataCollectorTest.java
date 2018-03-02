@@ -29,7 +29,7 @@ public class MetadataCollectorTest
     private final BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[4] );
 
     @Test
-    public void shouldComputePageCatalogue() throws Exception
+    public void shouldComputePageCatalogue()
     {
         // given
         StubCollector collector = new StubCollector( 4 );
@@ -58,7 +58,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueOverThreePages() throws Exception
+    public void shouldComputePageCatalogueOverThreePages()
     {
         // given
         StubCollector collector = new StubCollector( 4 );
@@ -94,7 +94,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueWhenHeaderCoversEntireFirstPage() throws Exception
+    public void shouldComputePageCatalogueWhenHeaderCoversEntireFirstPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b", "c" );
@@ -117,7 +117,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueWhenHeaderExceedsFirstPage() throws Exception
+    public void shouldComputePageCatalogueWhenHeaderExceedsFirstPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b", "c", "d" );
@@ -141,7 +141,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputeCatalogueWhenSingleDataEntryInPage() throws Exception
+    public void shouldComputeCatalogueWhenSingleDataEntryInPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b" );

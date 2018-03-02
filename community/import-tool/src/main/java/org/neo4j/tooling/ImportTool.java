@@ -47,13 +47,14 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
@@ -73,12 +74,12 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
+import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
@@ -382,8 +383,9 @@ public class ImportTool
      */
     public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
-        System.err.println("WARNING: neo4j-import is deprecated and support for it will be removed in a future\n" +
-                "version of Neo4j; please use neo4j-admin import instead.\n");
+        System.err.println( format( "WARNING: neo4j-import is deprecated and support for it will be removed in a future%n" +
+                "version of Neo4j; please use neo4j-admin import instead." ) );
+
         PrintStream out = System.out;
         PrintStream err = System.err;
         Args args = Args.parse( incomingArguments );
@@ -409,7 +411,7 @@ public class ImportTool
         Config dbConfig;
         OutputStream badOutput = null;
         IdType idType;
-        org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
+        org.neo4j.unsafe.impl.batchimport.Configuration configuration;
         File logsDir;
         File badFile = null;
         Long maxMemory;
@@ -554,6 +556,7 @@ public class ImportTool
         dbConfig.augment( logs_directory, logsDir.getCanonicalPath() );
         File internalLogFile = dbConfig.get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
+        final Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
 
         life.start();
         BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( storeDir,
@@ -561,7 +564,7 @@ public class ImportTool
                 null, // no external page cache
                 configuration,
                 logService,
-                ExecutionMonitors.defaultVisible( in ),
+                ExecutionMonitors.defaultVisible( in, jobScheduler ),
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
@@ -828,7 +831,8 @@ public class ImportTool
         {
             /* Shhhh */
         } );
-        return launderedException( e ); // throw in order to have process exit with !0
+        throwIfUnchecked( e );
+        return new RuntimeException( e ); // throw in order to have process exit with !0
     }
 
     private static void printErrorMessage( String string, Exception e, boolean stackTrace, PrintStream err )
@@ -942,7 +946,7 @@ public class ImportTool
             public char delimiter()
             {
                 return specificDelimiter != null
-                        ? specificDelimiter.charValue()
+                        ? specificDelimiter
                         : defaultConfiguration.delimiter();
             }
 
@@ -950,7 +954,7 @@ public class ImportTool
             public char arrayDelimiter()
             {
                 return specificArrayDelimiter != null
-                        ? specificArrayDelimiter.charValue()
+                        ? specificArrayDelimiter
                         : defaultConfiguration.arrayDelimiter();
             }
 
@@ -958,7 +962,7 @@ public class ImportTool
             public char quotationCharacter()
             {
                 return specificQuote != null
-                        ? specificQuote.charValue()
+                        ? specificQuote
                         : defaultConfiguration.quotationCharacter();
             }
 
@@ -966,7 +970,7 @@ public class ImportTool
             public boolean multilineFields()
             {
                 return multiLineFields != null
-                        ? multiLineFields.booleanValue()
+                        ? multiLineFields
                         : defaultConfiguration.multilineFields();
             }
 
@@ -974,7 +978,7 @@ public class ImportTool
             public boolean emptyQuotedStringsAsNull()
             {
                 return emptyStringsAsNull != null
-                        ? emptyStringsAsNull.booleanValue()
+                        ? emptyStringsAsNull
                         : defaultConfiguration.emptyQuotedStringsAsNull();
             }
 
@@ -990,7 +994,7 @@ public class ImportTool
             public boolean trimStrings()
             {
                 return trimStrings != null
-                       ? trimStrings.booleanValue()
+                       ? trimStrings
                        : defaultConfiguration.trimStrings();
             }
 
@@ -998,7 +1002,7 @@ public class ImportTool
             public boolean legacyStyleQuoting()
             {
                 return legacyStyleQuoting != null
-                        ? legacyStyleQuoting.booleanValue()
+                        ? legacyStyleQuoting
                         : defaultConfiguration.legacyStyleQuoting();
             }
         };

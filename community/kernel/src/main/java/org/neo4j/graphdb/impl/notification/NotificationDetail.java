@@ -184,7 +184,7 @@ public interface NotificationDetail
                 String pluralTerm )
         {
             StringBuilder builder = new StringBuilder();
-            builder.append( "(" );
+            builder.append( '(' );
             String separator = "";
             for ( String element : elements )
             {
@@ -192,7 +192,7 @@ public interface NotificationDetail
                 builder.append( element );
                 separator = ", ";
             }
-            builder.append( ")" );
+            builder.append( ')' );
             boolean singular = elements.size() == 1;
             return createNotificationDetail( singular ? singularTerm : pluralTerm, builder.toString(), singular );
         }

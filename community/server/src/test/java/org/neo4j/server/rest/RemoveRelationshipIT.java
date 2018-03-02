@@ -36,7 +36,7 @@ public class RemoveRelationshipIT extends AbstractRestFunctionalTestBase
     private static GraphDbHelper helper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();

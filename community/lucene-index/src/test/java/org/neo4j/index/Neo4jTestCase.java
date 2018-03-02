@@ -44,13 +44,13 @@ public abstract class Neo4jTestCase
     private Transaction tx;
 
     @BeforeClass
-    public static void setUpDb() throws Exception
+    public static void setUpDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterClass
-    public static void tearDownDb() throws Exception
+    public static void tearDownDb()
     {
         graphDb.shutdown();
     }
@@ -158,7 +158,7 @@ public abstract class Neo4jTestCase
 
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
-        List<T> list = new ArrayList<T>();
+        List<T> list = new ArrayList<>();
         for ( T item : iterable )
         {
             list.add( item );

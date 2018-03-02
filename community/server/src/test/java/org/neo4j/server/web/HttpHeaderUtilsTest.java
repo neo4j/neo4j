@@ -45,7 +45,7 @@ public class HttpHeaderUtilsTest
     }
 
     @Test
-    public void retrieveCustomTransactionTimeout() throws Exception
+    public void retrieveCustomTransactionTimeout()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "100" );
         Log log = logProvider.getLog( HttpServletRequest.class );

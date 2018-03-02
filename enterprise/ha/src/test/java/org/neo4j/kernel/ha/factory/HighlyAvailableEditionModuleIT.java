@@ -28,6 +28,7 @@ import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -49,7 +50,7 @@ public class HighlyAvailableEditionModuleIT
     public ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void createBufferedIdComponentsByDefault() throws Exception
+    public void createBufferedIdComponentsByDefault()
     {
         ClusterManager.ManagedCluster managedCluster = clusterRule.startCluster();
         DependencyResolver dependencyResolver = managedCluster.getMaster().getDependencyResolver();
@@ -71,5 +72,7 @@ public class HighlyAvailableEditionModuleIT
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
         assertTrue( filter.test( StoreUtil.BRANCH_SUBDIRECTORY ) );
         assertTrue( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
+        assertTrue( filter.test( MetaDataStore.DEFAULT_NAME + PageCacheWarmer.SUFFIX_CACHEPROF ) );
+        assertTrue( filter.test( MetaDataStore.DEFAULT_NAME + PageCacheWarmer.SUFFIX_CACHEPROF_TMP ) );
     }
 }

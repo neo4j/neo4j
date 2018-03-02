@@ -20,22 +20,20 @@
 package org.neo4j.kernel.api.impl.index.collector;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 /**
  * Document values iterators that are primitive long iterators that can access value by field from document
  * and provides information about how many items remains in the underlying source.
  */
-public abstract class ValuesIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-        implements DocValuesAccess
+public interface ValuesIterator extends PrimitiveLongIterator, DocValuesAccess
 {
-    public static final ValuesIterator EMPTY = new ValuesIterator( 0 )
-    {
-        @Override
-        public int remaining()
-        {
-            return 0;
-        }
+    int remaining();
 
+    float currentScore();
+
+    ValuesIterator EMPTY = new ValuesIterator.Adapter( 0 )
+    {
         @Override
         protected boolean fetchNext()
         {
@@ -49,25 +47,41 @@ public abstract class ValuesIterator extends PrimitiveLongCollections.PrimitiveL
         }
 
         @Override
+        public float currentScore()
+        {
+            return 0;
+        }
+
+        @Override
         public long getValue( String field )
         {
             return 0;
         }
     };
 
-    protected final int size;
-    protected int index;
-
-    ValuesIterator( int size )
+    abstract class Adapter extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements ValuesIterator
     {
-        this.size = size;
-    }
+        protected final int size;
+        protected int index;
 
-    /**
-     * @return the number of docs left in this iterator.
-     */
-    public int remaining()
-    {
-        return size - index;
+        /**
+         * Gets the score for the current iterator position.
+         *
+         * @return The score of the value, or 0 if scoring is not kept or applicable.
+         */
+        public abstract float currentScore();
+
+        Adapter( int size )
+        {
+            this.size = size;
+        }
+
+        /**
+         * @return the number of docs left in this iterator.
+         */
+        public int remaining()
+        {
+            return size - index;
+        }
     }
 }

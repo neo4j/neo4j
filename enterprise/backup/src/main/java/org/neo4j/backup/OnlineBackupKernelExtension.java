@@ -111,12 +111,12 @@ public class OnlineBackupKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
         {
@@ -177,7 +177,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 

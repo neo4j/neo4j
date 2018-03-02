@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 class RecordSet<R extends AbstractBaseRecord> implements Iterable<R>
 {
-    private final Map<Long, R> map = new HashMap<Long, R>();
+    private final Map<Long, R> map = new HashMap<>();
 
     void add( R record )
     {
@@ -36,7 +36,7 @@ class RecordSet<R extends AbstractBaseRecord> implements Iterable<R>
 
     RecordSet<R> union( RecordSet<R> other )
     {
-        RecordSet<R> set = new RecordSet<R>();
+        RecordSet<R> set = new RecordSet<>();
         set.addAll( this );
         set.addAll( other );
         return set;
@@ -86,7 +86,7 @@ class RecordSet<R extends AbstractBaseRecord> implements Iterable<R>
 
     public static <R extends AbstractBaseRecord> RecordSet<R> asSet( R... records )
     {
-        RecordSet<R> set = new RecordSet<R>();
+        RecordSet<R> set = new RecordSet<>();
         for ( R record : records )
         {
             set.add( record );

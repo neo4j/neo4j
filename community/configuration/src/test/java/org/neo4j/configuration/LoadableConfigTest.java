@@ -40,7 +40,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class LoadableConfigTest
 {
     @Test
-    public void getConfigOptions() throws Exception
+    public void getConfigOptions()
     {
         Map<String,String> config = stringMap(
                 TestConfig.integer.name(), "123",

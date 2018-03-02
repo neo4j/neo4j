@@ -19,8 +19,9 @@
  */
 package org.neo4j.collection.primitive;
 
-import java.util.Objects;
 import java.util.function.IntFunction;
+
+import static java.util.Objects.requireNonNull;
 
 public interface PrimitiveIntObjectMap<VALUE> extends PrimitiveIntCollection
 {
@@ -39,17 +40,13 @@ public interface PrimitiveIntObjectMap<VALUE> extends PrimitiveIntCollection
 
     default VALUE computeIfAbsent( int key, IntFunction<VALUE> function )
     {
-        Objects.requireNonNull( function );
+        requireNonNull( function );
         VALUE value = get( key );
-        if ( value != null )
+        if ( value == null )
         {
-            return value;
+            value = function.apply( key );
+            put( key, value );
         }
-        else
-        {
-            VALUE newValue = function.apply( key );
-            put( key, newValue );
-            return newValue;
-        }
+        return value;
     }
 }

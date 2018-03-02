@@ -27,11 +27,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Acts as a holder of multiple {@link Lifecycle} and executes each transition,
@@ -95,7 +92,7 @@ class ParallelLifecycle extends LifecycleAdapter
                 }
                 catch ( Throwable e )
                 {
-                    throw launderedException( e );
+                    throw new RuntimeException( e );
                 }
             } ) );
         }
@@ -118,7 +115,11 @@ class ParallelLifecycle extends LifecycleAdapter
             }
             catch ( InterruptedException | ExecutionException e )
             {
-                exception = Exceptions.combine( exception, e );
+                if ( exception == null )
+                {
+                    exception = new RuntimeException();
+                }
+                exception.addSuppressed( e );
             }
         }
         if ( exception != null )

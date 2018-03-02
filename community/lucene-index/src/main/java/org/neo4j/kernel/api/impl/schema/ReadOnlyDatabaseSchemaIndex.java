@@ -45,7 +45,7 @@ public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<L
     }
 
     @Override
-    public LuceneIndexWriter getIndexWriter() throws IOException
+    public LuceneIndexWriter getIndexWriter()
     {
         throw new UnsupportedOperationException( "Can't get index writer for read only lucene index." );
     }
@@ -95,7 +95,7 @@ public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<L
      * Unsupported operation in read only index.
      */
     @Override
-    public void markAsOnline() throws IOException
+    public void markAsOnline()
     {
         throw new UnsupportedOperationException( "Can't mark read only index." );
     }

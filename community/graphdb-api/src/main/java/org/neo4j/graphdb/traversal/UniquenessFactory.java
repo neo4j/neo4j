@@ -43,7 +43,7 @@ public interface UniquenessFactory
      * level of uniqueness it is not always necessary to eagerly exhaust start
      * branches which can speed up the execution of the traversal.
      *
-     * @return <tt>true</tt> if eager start branches must be used, otherwise <tt>false</tt>.
+     * @return {@code true} if eager start branches must be used, otherwise {@code false}.
      */
     boolean eagerStartBranches();
 }

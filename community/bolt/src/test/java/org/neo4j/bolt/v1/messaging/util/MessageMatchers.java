@@ -38,7 +38,6 @@ import org.neo4j.bolt.v1.messaging.BoltResponseMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageRecorder;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
@@ -292,10 +291,9 @@ public class MessageMatchers
         };
     }
 
-    public static byte[] serialize( RequestMessage... messages ) throws IOException
+    public static byte[] serialize( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
     {
         RecordingByteChannel rawData = new RecordingByteChannel();
-        Neo4jPack neo4jPack = new Neo4jPackV1();
         Neo4jPack.Packer packer = neo4jPack.newPacker( new BufferedChannelOutput( rawData ) );
         BoltRequestMessageWriter writer = new BoltRequestMessageWriter( packer, NO_BOUNDARY_HOOK );
 
@@ -308,10 +306,9 @@ public class MessageMatchers
         return rawData.getBytes();
     }
 
-    public static byte[] serialize( ResponseMessage... messages ) throws IOException
+    public static byte[] serialize( Neo4jPack neo4jPack, ResponseMessage... messages ) throws IOException
     {
         RecordingByteChannel rawData = new RecordingByteChannel();
-        Neo4jPack neo4jPack = new Neo4jPackV1();
         Neo4jPack.Packer packer = neo4jPack.newPacker( new BufferedChannelOutput( rawData ) );
         BoltResponseMessageWriter writer = new BoltResponseMessageWriter( packer, NO_BOUNDARY_HOOK,
                 NullBoltMessageLogger.getInstance() );
@@ -325,9 +322,9 @@ public class MessageMatchers
         return rawData.getBytes();
     }
 
-    public static ResponseMessage responseMessage( byte[] bytes ) throws IOException
+    public static ResponseMessage responseMessage( Neo4jPack neo4jPack, byte[] bytes ) throws IOException
     {
-        BoltResponseMessageReader unpacker = responseReader( bytes );
+        BoltResponseMessageReader unpacker = responseReader( neo4jPack, bytes );
         BoltResponseMessageRecorder consumer = new BoltResponseMessageRecorder();
 
         try
@@ -342,11 +339,10 @@ public class MessageMatchers
         }
     }
 
-    private static BoltResponseMessageReader responseReader( byte[] bytes )
+    private static BoltResponseMessageReader responseReader( Neo4jPack neo4jPack, byte[] bytes )
     {
         BufferedChannelInput input = new BufferedChannelInput( 128 );
         input.reset( new ArrayByteChannel( bytes ) );
-        Neo4jPack neo4jPack = new Neo4jPackV1();
         return new BoltResponseMessageReader( neo4jPack.newUnpacker( input ) );
     }
 

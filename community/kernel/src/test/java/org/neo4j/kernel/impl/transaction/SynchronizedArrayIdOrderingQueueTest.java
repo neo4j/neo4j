@@ -105,7 +105,7 @@ public class SynchronizedArrayIdOrderingQueueTest
     }
 
     @Test
-    public void shouldExtendArrayWhenIdsAreWrappingAround() throws Exception
+    public void shouldExtendArrayWhenIdsAreWrappingAround()
     {
         // GIVEN
         IdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 5 );

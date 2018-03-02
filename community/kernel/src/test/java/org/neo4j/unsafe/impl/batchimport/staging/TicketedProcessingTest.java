@@ -31,7 +31,6 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.IteratorWrapper;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;

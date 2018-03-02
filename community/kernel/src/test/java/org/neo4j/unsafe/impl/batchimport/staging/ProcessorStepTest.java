@@ -156,7 +156,7 @@ public class ProcessorStepTest
         }
 
         @Override
-        protected void process( Integer batch, BatchSender sender ) throws Throwable
+        protected void process( Integer batch, BatchSender sender )
         {   // No processing in this test
             nextExpected.incrementAndGet();
         }

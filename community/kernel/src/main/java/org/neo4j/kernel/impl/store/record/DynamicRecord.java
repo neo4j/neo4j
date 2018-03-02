@@ -159,8 +159,8 @@ public class DynamicRecord extends AbstractBaseRecord
         StringBuilder buf = new StringBuilder();
         buf.append( "DynamicRecord[" )
                 .append( getId() )
-                .append( ",used=" ).append(inUse() ).append( "," )
-                .append("(" ).append( length ).append( "),type=" );
+                .append( ",used=" ).append( inUse() ).append( ',' )
+                .append( '(' ).append( length ).append( "),type=" );
         PropertyType type = getType();
         if ( type == null )
         {
@@ -198,7 +198,7 @@ public class DynamicRecord extends AbstractBaseRecord
             buf.append( "]," );
         }
         buf.append( "start=" ).append( startRecord );
-        buf.append( ",next=" ).append( nextBlock ).append( "]" );
+        buf.append( ",next=" ).append( nextBlock ).append( ']' );
         return buf.toString();
     }
 

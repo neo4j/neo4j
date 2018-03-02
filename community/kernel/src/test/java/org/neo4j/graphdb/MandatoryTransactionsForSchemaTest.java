@@ -28,13 +28,13 @@ import static org.neo4j.graphdb.SchemaFacadeMethods.ALL_SCHEMA_FACADE_METHODS;
 public class MandatoryTransactionsForSchemaTest extends AbstractMandatoryTransactionsTest<Schema>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnSchema() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnSchema()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_SCHEMA_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnSchema() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnSchema()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_SCHEMA_FACADE_METHODS );
     }

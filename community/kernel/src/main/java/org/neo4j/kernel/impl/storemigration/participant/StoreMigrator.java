@@ -46,6 +46,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
@@ -101,7 +102,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -445,7 +445,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
     {
         return new StoreFactory( storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance() ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
@@ -514,7 +514,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory(
-                migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider );
+                migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider,
+                EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();
@@ -528,7 +529,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum,
-            final long lastTxLogVersion, final long lastTxLogByteOffset ) throws IOException
+            final long lastTxLogVersion, final long lastTxLogByteOffset )
     {
         return new AdditionalInitialIds()
         {
@@ -611,15 +612,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         if ( !requiresPropertyMigration )
         {
-            return ( entity, record ) ->
-            {
-                entity.propertyId( record.getNextProp() );
-            };
+            return ( entity, record ) -> entity.propertyId( record.getNextProp() );
         }
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
-        return ( InputEntityVisitor entity, RECORD record ) ->
-        {
+        return ( entity, record ) -> {
             cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
             while ( cursor.next() )
             {
@@ -745,7 +742,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
+    private static class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
     {
         private final ProgressReporter progressReporter;
 

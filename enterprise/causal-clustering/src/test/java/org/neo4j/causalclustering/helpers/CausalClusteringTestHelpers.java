@@ -23,8 +23,6 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.util.TestHelpers;
 
 public class CausalClusteringTestHelpers
 {

@@ -28,15 +28,15 @@ case class UnwindPrimitiveCollection(opName: String, collection: CodeGenExpressi
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit =
     collection.init(generator)
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])
+  override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])
                                  (implicit context: CodeGenContext): Unit = {
     generator.declarePrimitiveIterator(iterVar, collection.codeGenType)
     val iterator = generator.primitiveIteratorFrom(collection.generateExpression(generator), collection.codeGenType)
     generator.assign(iterVar, CodeGenType.Any, iterator)
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext): Unit = {
+  override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                         (implicit context: CodeGenContext): Unit = {
     val elementType = collection.codeGenType match {
       case CypherCodeGenType(symbols.ListType(innerCt), ListReferenceType(innerRepr)) => CypherCodeGenType(innerCt, innerRepr)
       case _ => throw new IllegalArgumentException(s"CodeGenType $collection.codeGenType not supported as primitive iterator")
@@ -45,6 +45,6 @@ case class UnwindPrimitiveCollection(opName: String, collection: CodeGenExpressi
     generator.assign(nextVar.name, elementType, next)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E =
+  override def checkNext[E](generator: MethodStructure[E], iterVar: String): E =
     generator.iteratorHasNext(generator.loadVariable(iterVar))
 }

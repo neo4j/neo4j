@@ -19,6 +19,10 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
     <packaging>jar</packaging>
 
+    <properties>
+        <moduleName>org.neo4j.causalclustering</moduleName>
+    </properties>
+
     <scm>
         <url>https://github.com/neo4j/neo4j/tree/3.1/enterprise/causal-clustering</url>
     </scm>
@@ -186,13 +190,11 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -210,13 +212,11 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-library</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

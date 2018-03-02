@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.helpers.Exceptions;
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -29,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
@@ -60,7 +62,7 @@ public class Recovery extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws Throwable
+    public void init() throws IOException
     {
         RecoveryStartInformation recoveryStartInformation = recoveryService.getRecoveryStartInformation();
         if ( !recoveryStartInformation.isRecoveryRequired() )
@@ -118,7 +120,8 @@ public class Recovery extends LifecycleAdapter
         {
             if ( failOnCorruptedLogFiles )
             {
-                throw Exceptions.launderedException( t );
+                throwIfUnchecked( t );
+                throw new RuntimeException( t );
             }
             if ( lastTransaction != null )
             {

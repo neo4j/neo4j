@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 
+import java.time.temporal.TemporalAmount
+import java.time._
 import java.util
 
 import org.neo4j.cypher.internal.util.v3_4.{ProfilerStatisticsNotReadyException, TaskCloser}
@@ -35,7 +37,7 @@ import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable._
 import org.neo4j.values.storable.Values.{of => DONT_USE_OMG, _}
 
 /**
@@ -108,6 +110,12 @@ class ProcedureExecutionResult(context: QueryContext,
           case CTBoolean => transform(res(pos), booleanValue)
           case CTPoint => transform(res(pos), (p: Point) => asPointValue(p))
           case CTGeometry => transform(res(pos), (g: Geometry) => asGeometryValue(g))
+          case CTDateTime => transform(res(pos), (g: ZonedDateTime) => DateTimeValue.datetime(g))
+          case CTLocalDateTime => transform(res(pos), (g: LocalDateTime) => LocalDateTimeValue.localDateTime(g))
+          case CTDate => transform(res(pos), (g: LocalDate) => DateValue.date(g))
+          case CTTime => transform(res(pos), (g: OffsetTime) => TimeValue.time(g))
+          case CTLocalTime => transform(res(pos), (g: LocalTime) => LocalTimeValue.localTime(g))
+          case CTDuration => transform(res(pos), (g: TemporalAmount) => Values.durationValue(g))
           case CTMap => transform(res(pos), asMapValue)
           case ListType(_) => transform(res(pos), asListValue)
           case CTAny => transform(res(pos), ValueUtils.of)

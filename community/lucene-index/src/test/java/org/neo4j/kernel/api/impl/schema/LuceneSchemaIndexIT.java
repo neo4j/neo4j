@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -87,7 +88,7 @@ public class LuceneSchemaIndexIT
         try ( LuceneIndexAccessor indexAccessor = createDefaultIndexAccessor() )
         {
             generateUpdates( indexAccessor, 32 );
-            indexAccessor.force();
+            indexAccessor.force( IOLimiter.unlimited() );
 
             // When & Then
             List<String> singlePartitionFileTemplates = Arrays.asList( ".cfe", ".cfs", ".si", "segments_1" );

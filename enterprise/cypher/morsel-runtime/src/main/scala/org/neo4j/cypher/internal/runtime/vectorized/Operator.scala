@@ -74,7 +74,7 @@ case object NoDependencies extends Dependency {
 case class QueryState(params: MapValue, visitor: QueryResultVisitor[_])
 
 case class Pipeline(start: Operator,
-                    operators: Seq[MiddleOperator],
+                    operators: IndexedSeq[MiddleOperator],
                     slots: SlotConfiguration,
                     dependency: Dependency)
                    (var parent: Option[Pipeline] = None) {

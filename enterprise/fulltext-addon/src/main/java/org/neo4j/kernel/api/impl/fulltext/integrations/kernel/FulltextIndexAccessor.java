@@ -25,10 +25,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
@@ -71,7 +72,7 @@ public class FulltextIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
         luceneFulltext.markAsOnline();
         luceneFulltext.maybeRefreshBlocking();
@@ -134,7 +135,13 @@ public class FulltextIndexAccessor implements IndexAccessor
         //Sure whatever
     }
 
-    public PrimitiveLongIterator query( String query ) throws IOException
+    @Override
+    public boolean isDirty()
+    {
+        return !luceneFulltext.isValid();
+    }
+
+    public ScoreEntityIterator query( String query ) throws IOException
     {
         try ( ReadOnlyFulltext indexReader = luceneFulltext.getIndexReader() )
         {

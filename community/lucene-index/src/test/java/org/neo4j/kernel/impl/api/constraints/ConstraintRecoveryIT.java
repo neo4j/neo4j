@@ -58,7 +58,7 @@ public class ConstraintRecoveryIT
     private GraphDatabaseAPI db;
 
     @Test
-    public void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails() throws IOException
+    public void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails()
     {
         // given
         final EphemeralFileSystemAbstraction fs = fileSystemRule.get();

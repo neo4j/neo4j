@@ -159,7 +159,7 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
     @Override
     public boolean equals( Object o )
     {
-        if ( o != null && o instanceof IndexRule )
+        if ( o instanceof IndexRule )
         {
             IndexRule that = (IndexRule) o;
             return this.descriptor.equals( that.descriptor );

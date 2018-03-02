@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -47,7 +46,9 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class LuceneFulltextTestSupport
@@ -75,7 +76,7 @@ public class LuceneFulltextTestSupport
 //    }
 
     @Before
-    public void setUp() throws Throwable
+    public void setUp()
     {
         fulltextAccessor = getAccessor();
     }
@@ -127,7 +128,7 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
-        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
@@ -135,7 +136,7 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
-        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
@@ -153,7 +154,7 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( query, true, matchAll );
-        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
@@ -161,28 +162,33 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( Arrays.asList( query ), true, matchAll );
-        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
-    protected void assertQueryResultsMatch( PrimitiveLongIterator result, long[] ids )
+    protected void assertQueryResultsMatch( ScoreEntityIterator result, long[] ids )
     {
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
         while ( result.hasNext() )
         {
-            long next = result.next();
+            long next = result.next().entityId();
             assertTrue( String.format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
         }
         assertTrue( "Number of results differ from expected", set.isEmpty() );
     }
 
-    protected void assertQueryResultsMatchInOrder( PrimitiveLongIterator result, long[] ids )
+    protected void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )
     {
         int num = 0;
+        float score = Float.MAX_VALUE;
         while ( result.hasNext() )
         {
-            long next = result.next();
-            assertEquals( String.format( "Result returned node id %d, expected %d", next, ids[num] ), ids[num], next );
+            ScoreEntityIterator.ScoreEntry scoredResult = result.next();
+            long nextId = scoredResult.entityId();
+            float nextScore = scoredResult.score();
+            assertThat( nextScore, lessThanOrEqualTo( score ) );
+            score = nextScore;
+            assertEquals( String.format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );
             num++;
         }
         assertEquals( "Number of results differ from expected", ids.length, num );

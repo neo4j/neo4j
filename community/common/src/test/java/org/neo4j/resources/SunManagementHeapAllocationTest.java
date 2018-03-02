@@ -44,14 +44,14 @@ public class SunManagementHeapAllocationTest
     }
 
     @Test
-    public void shouldLoadHeapAllocation() throws Exception
+    public void shouldLoadHeapAllocation()
     {
         assertNotSame( NOT_AVAILABLE, HEAP_ALLOCATION );
         assertThat( HEAP_ALLOCATION, instanceOf( SunManagementHeapAllocation.class ) );
     }
 
     @Test
-    public void shouldMeasureAllocation() throws Exception
+    public void shouldMeasureAllocation()
     {
         // given
         long allocatedBytes = HEAP_ALLOCATION.allocatedBytes( currentThread() );

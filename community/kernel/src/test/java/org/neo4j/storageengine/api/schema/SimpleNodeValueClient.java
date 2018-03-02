@@ -53,6 +53,12 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
         return true;
     }
 
+    @Override
+    public boolean needsValues()
+    {
+        return true;
+    }
+
     private void closeProgressor()
     {
         if ( progressor != null )

@@ -93,18 +93,20 @@ public class RestfulGraphDatabaseTest
     private static GraphDatabaseFacade graph;
 
     @BeforeClass
-    public static void doBefore() throws IOException
+    public static void doBefore()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
+        DatabaseActions databaseActions = new DatabaseActions(
+                new LeaseManager( Clocks.fakeClock() ), ScriptExecutionMode.SANDBOXED, database.getGraph() );
         service = new TransactionWrappingRestfulGraphDatabase(
                 graph,
                 new RestfulGraphDatabase(
                         new JsonFormat(),
                         output,
-                        new DatabaseActions( new LeaseManager( Clocks.fakeClock() ), true, database.getGraph() ),
+                        databaseActions,
                         new ConfigAdapter( Config.defaults() )
                 )
         );
@@ -150,7 +152,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @AfterClass
-    public static void shutdownDatabase() throws Throwable
+    public static void shutdownDatabase()
     {
         graph.shutdown();
     }
@@ -306,7 +308,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204AfterSettingPropertiesOnExistingNode() throws Exception
+    public void shouldRespondWith204AfterSettingPropertiesOnExistingNode()
     {
         Response response = service.setAllNodeProperties( helper.createNode(),
                 "{\"foo\" : \"bar\", \"a-boolean\": true, \"boolean-array\": [true, false, false]}" );
@@ -340,7 +342,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200ForGetNodeProperties() throws Exception
+    public void shouldRespondWith200ForGetNodeProperties()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<>();
@@ -473,7 +475,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldReturnCorrectValueForGetNodeProperty() throws Exception
+    public void shouldReturnCorrectValueForGetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -948,7 +950,6 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWithNoIndexOrOnlyNodeAutoIndex()
-            throws JsonParseException
     {
         Response isEnabled = service.isAutoIndexerEnabled( "node" );
         assertEquals( "false", entityAsString( isEnabled ) );
@@ -969,7 +970,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithAvailableIndexNodeRoots() throws BadInputException
+    public void shouldRespondWithAvailableIndexNodeRoots()
     {
         int numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup = helper.getNodeIndexes().length;
         String indexName = "someNodes";
@@ -993,7 +994,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithAvailableIndexRelationshipRoots() throws BadInputException
+    public void shouldRespondWithAvailableIndexRelationshipRoots()
     {
         String indexName = "someRelationships";
         helper.createRelationshipIndex( indexName );
@@ -1129,7 +1130,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void uniquelyIndexedNodeGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws Exception
+    public void uniquelyIndexedNodeGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified()
     {
         final String key = "somekey";
         String value = "somevalue";
@@ -1151,7 +1152,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedNodes() throws Exception
+    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedNodes()
     {
         final String key = "a_key";
         String value = "a value";
@@ -1176,7 +1177,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToCreateAnIndexWithEmptyName() throws Exception
+    public void shouldNotBeAbleToCreateAnIndexWithEmptyName()
     {
         URI node = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
@@ -1209,7 +1210,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing() throws Exception
+    public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing()
     {
         service.createNode( null ).getMetadata().getFirst( "Location" );
         Map<String, Object> body = new HashMap<>();
@@ -1227,7 +1228,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexRelationshipUniquely() throws Exception
+    public void shouldBeAbleToIndexRelationshipUniquely()
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
@@ -1251,8 +1252,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void uniquelyIndexedRelationshipGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws
-            Exception
+    public void uniquelyIndexedRelationshipGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified()
     {
         final String key = "somekey";
         String value = "somevalue";
@@ -1279,7 +1279,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedRelationships() throws Exception
+    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedRelationships()
     {
         final String key = "a_key";
         String value = "a value";
@@ -1309,7 +1309,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexRelationshipUniquelyWithBothUriAndCreationalDataInPayload() throws Exception
+    public void shouldNotBeAbleToIndexRelationshipUniquelyWithBothUriAndCreationalDataInPayload()
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
@@ -1337,7 +1337,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotBeAbleToIndexRelationshipUniquelyWithRequiredParameterMissing() throws Exception
+    public void shouldNotBeAbleToIndexRelationshipUniquelyWithRequiredParameterMissing()
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
@@ -1826,7 +1826,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToFindSinglePathBetweenTwoNodes() throws Exception
+    public void shouldBeAbleToFindSinglePathBetweenTwoNodes()
     {
         long n1 = helper.createNode();
         long n2 = helper.createNode();
@@ -1846,7 +1846,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToFindSinglePathBetweenTwoNodesEvenWhenAskingForAllPaths() throws Exception
+    public void shouldBeAbleToFindSinglePathBetweenTwoNodesEvenWhenAskingForAllPaths()
     {
         long n1 = helper.createNode();
         long n2 = helper.createNode();
@@ -1866,7 +1866,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws Exception
+    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart()
     {
         Response response = service.createNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
@@ -1950,7 +1950,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void nodeAutoindexingSupposedToWork() throws JsonParseException
+    public void nodeAutoindexingSupposedToWork()
     {
         String type = "node";
         Response response = service.startAutoIndexingProperty( type, "myAutoIndexedProperty" );

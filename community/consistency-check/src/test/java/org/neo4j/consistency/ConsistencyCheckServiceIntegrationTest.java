@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -187,7 +186,7 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     @Test
-    public void shouldAllowGraphCheckDisabled() throws IOException, ConsistencyCheckIncompleteException
+    public void shouldAllowGraphCheckDisabled() throws ConsistencyCheckIncompleteException
     {
         GraphDatabaseService gds = getGraphDatabaseService();
 
@@ -374,13 +373,13 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( service, configuration, fixture.directory() );
     }
 
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, File storeDir )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         return service.runFullConsistencyCheck( storeDir,
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );

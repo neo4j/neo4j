@@ -69,7 +69,7 @@ public class ListTest
         assertEqualValues( list(), intArray( new int[]{} ) );
         assertEqualValues( list(), longArray( new long[]{} ) );
         assertEqualValues( list(), shortArray( new short[]{} ) );
-        assertEqualValues( list(), stringArray( new String[]{} ) );
+        assertEqualValues( list(), stringArray() );
 
         //actual values to test the equality
         assertEqualValues( list( true ), booleanArray( new boolean[]{true} ) );
@@ -90,8 +90,8 @@ public class ListTest
         assertEqualValues( list( 2L, -3L ), longArray( new long[]{2L, -3L} ) );
         assertEqualValues( list( (short) 2 ), shortArray( new short[]{(short) 2} ) );
         assertEqualValues( list( (short) 2, (short) -3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
-        assertEqualValues( list( "hi" ), stringArray( new String[]{"hi"} ) );
-        assertEqualValues( list( "hi", "ho" ), stringArray( new String[]{"hi", "ho"} ) );
+        assertEqualValues( list( "hi" ), stringArray( "hi" ) );
+        assertEqualValues( list( "hi", "ho" ), stringArray( "hi", "ho" ) );
     }
 
     @Test
@@ -106,7 +106,7 @@ public class ListTest
         assertNotEqual( list( 1, "d" ), list( "d", 1 ) );
         assertNotEqual( list( "d" ), list( false ) );
         assertNotEqual(
-                list( Values.stringArray( new String[]{"d"} ) ),
+                list( Values.stringArray( "d" ) ),
                 list( "d" ) );
 
         assertNotEqual(
@@ -120,7 +120,7 @@ public class ListTest
         assertNotEqual( list( true, true ), floatArray( new float[]{0.0f, 0.0f} ) );
         assertNotEqual( list( true, true ), doubleArray( new double[]{0.0, 0.0} ) );
         assertNotEqual( list( true, true ), charArray( new char[]{'T', 'T'} ) );
-        assertNotEqual( list( true, true ), stringArray( new String[]{"True", "True"} ) );
+        assertNotEqual( list( true, true ), stringArray( "True", "True" ) );
         assertNotEqual( list( true, true ), byteArray( new byte[]{(byte) 0, (byte) 0} ) );
 
         // wrong or missing items
@@ -140,8 +140,8 @@ public class ListTest
         assertNotEqual( list( 2L ), longArray( new long[]{2L, -3L} ) );
         assertNotEqual( list( (short) 2, (short) 3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
         assertNotEqual( list( (short) 2 ), shortArray( new short[]{(short) 2, (short) -3} ) );
-        assertNotEqual( list( "hi", "hello" ), stringArray( new String[]{"hi"} ) );
-        assertNotEqual( list( "hello" ), stringArray( new String[]{"hi"} ) );
+        assertNotEqual( list( "hi", "hello" ), stringArray( "hi" ) );
+        assertNotEqual( list( "hello" ), stringArray( "hi" ) );
 
         assertNotEqual( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
     }
@@ -178,31 +178,31 @@ public class ListTest
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ),
+                        stringArray( "Hello", "World" ) ),
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ) );
+                        stringArray( "Hello", "World" ) ) );
 
         assertNotEqual(
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{5, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ),
+                        stringArray( "Hello", "World" ) ),
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ) );
+                        stringArray( "Hello", "World" ) ) );
 
         assertNotEqual(
                 list(
                         intArray( new int[]{1, 2} ),
                         booleanArray( new boolean[]{true, false} ),
-                        stringArray( new String[]{"Hello", "World"} ) ),
+                        stringArray( "Hello", "World" ) ),
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ) );
+                        stringArray( "Hello", "World" ) ) );
     }
 
     @Test

@@ -65,7 +65,7 @@ public interface IOLimiter
      * out the IO load on the storage device.
      * @return A new stamp to pass into the next call to this method.
      */
-    long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException;
+    long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable );
 
     /**
      * Temporarily disable the IOLimiter, to allow IO to proceed at full speed.

@@ -26,7 +26,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class ResponseMessageTypeEncoder extends MessageToByteEncoder<ResponseMessageType>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, ResponseMessageType response, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, ResponseMessageType response, ByteBuf out )
     {
         out.writeByte( response.messageType() );
     }

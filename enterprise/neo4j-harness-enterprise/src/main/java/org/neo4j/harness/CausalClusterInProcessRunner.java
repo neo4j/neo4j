@@ -19,14 +19,12 @@
  */
 package org.neo4j.harness;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -53,7 +51,7 @@ public class CausalClusterInProcessRunner
     {
     }
 
-    public static void main( String[] args ) throws IOException, ExecutionException, InterruptedException
+    public static void main( String[] args )
     {
         try
         {
@@ -164,7 +162,7 @@ public class CausalClusterInProcessRunner
             this.portPickingStrategy = portPickingStrategy;
         }
 
-        void boot() throws IOException, InterruptedException
+        void boot() throws InterruptedException
         {
             List<String> initialMembers = new ArrayList<>( nCores );
 
@@ -192,6 +190,7 @@ public class CausalClusterInProcessRunner
                 String homePath = Paths.get( clusterPath.toString(), homeDir ).toAbsolutePath().toString();
                 builder.withConfig( GraphDatabaseSettings.neo4j_home.name(), homePath );
                 builder.withConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+                builder.withConfig( ServerSettings.script_enabled, Settings.TRUE );
 
                 builder.withConfig( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
                 builder.withConfig( CausalClusteringSettings.multi_dc_license.name(), "true" );
@@ -201,7 +200,8 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( CausalClusteringSettings.transaction_listen_address.name(), specifyPortOnly( txPort ) );
                 builder.withConfig( CausalClusteringSettings.raft_listen_address.name(), specifyPortOnly( raftPort ) );
 
-                builder.withConfig( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( nCores ) );
+                builder.withConfig( CausalClusteringSettings.minimum_core_cluster_size_at_formation.name(), String.valueOf( nCores ) );
+                builder.withConfig( CausalClusteringSettings.minimum_core_cluster_size_at_runtime.name(), String.valueOf( nCores ) );
                 builder.withConfig( CausalClusteringSettings.server_groups.name(), "core," + "core" + coreId );
                 configureConnectors( boltPort, httpPort, httpsPort, builder );
 

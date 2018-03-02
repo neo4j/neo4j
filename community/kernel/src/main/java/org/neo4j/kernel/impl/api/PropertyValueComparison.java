@@ -19,26 +19,17 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Comparator;
-
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.Strings;
+import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
 
 public class PropertyValueComparison
 {
-    public static final Object LOWEST_OBJECT = new Object()
-    {
-        @Override
-        public String toString()
-        {
-            return "";
-        }
-    };
-
     private PropertyValueComparison()
     {
+        throw new AssertionError( "no instance" );
     }
 
     // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!
@@ -52,26 +43,25 @@ public class PropertyValueComparison
 
     public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
 
+    public static final PropertyValueComparator<PointValue> COMPARE_POINTS = new PointPropertyValueComparator();
+
     public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
     public enum SuperType
     {
-        OTHER( 0, Limit.inclusive( LOWEST_OBJECT ), Limit.exclusive( "" ) ),
-        STRING( 1, Limit.inclusive( "" ), Limit.exclusive( false ) ),
-        BOOLEAN( 2, Limit.inclusive( false ), Limit.inclusive( true ) ),
+        OTHER( 0 ),
+        STRING( 1 ),
+        BOOLEAN( 2 ),
+        GEOMETRY( 3 ),
 
         // Keep this last so that Double.NaN is the largest value
-        NUMBER( 3, Limit.inclusive( Double.NEGATIVE_INFINITY ), Limit.inclusive( Double.NaN ) );
+        NUMBER( 4 );
 
         public final int typeId;
-        public final Limit<Object> lowLimit;
-        public final Limit<Object> highLimit;
 
-        SuperType( int typeId, Limit<Object> lowLimit, Limit<Object> highLimit )
+        SuperType( int typeId )
         {
             this.typeId = typeId;
-            this.lowLimit = lowLimit;
-            this.highLimit = highLimit;
         }
 
         public boolean isSuperTypeOf( Object value )
@@ -103,37 +93,12 @@ public class PropertyValueComparison
             {
                 return STRING;
             }
+            else if ( value instanceof PointValue )
+            {
+                return GEOMETRY;
+            }
 
             return OTHER;
-        }
-
-        public static Comparator<SuperType> TYPE_ID_COMPARATOR = ( left, right ) -> left.typeId - right.typeId;
-    }
-
-    public static final class Limit<T>
-    {
-        public final T value;
-        public final boolean isInclusive;
-
-        private Limit( T value, boolean isInclusive )
-        {
-            this.value = value;
-            this.isInclusive = isInclusive;
-        }
-
-        public <X extends T> X castValue( Class<X> clazz )
-        {
-            return clazz.cast( value );
-        }
-
-        public static <T> Limit<T> inclusive( T value )
-        {
-            return new Limit<>( value, true );
-        }
-
-        public static <T> Limit<T> exclusive( T value )
-        {
-            return new Limit<>( value, false );
         }
     }
 
@@ -158,6 +123,9 @@ public class PropertyValueComparison
 
                     case BOOLEAN:
                         return Boolean.compare( (Boolean) left, (Boolean) right );
+
+                    case GEOMETRY:
+                        return COMPARE_POINTS.compare( (PointValue) left, (PointValue) right );
 
                     // case OTHER:
                     default:
@@ -276,6 +244,16 @@ public class PropertyValueComparison
                         leftClazz, rightClazz
                 ) );
             }
+        }
+    }
+
+    private static class PointPropertyValueComparator extends PropertyValueComparator<PointValue>
+    {
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public int compare( PointValue left, PointValue right )
+        {
+            return left.compareTo( right );
         }
     }
 

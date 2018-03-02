@@ -47,19 +47,21 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -206,7 +208,7 @@ public class QueryExecutionLocksIT
         GraphDatabaseQueryService graph = databaseRule.resolveDependency( GraphDatabaseQueryService.class );
         QueryExecutionEngine executionEngine = databaseRule.resolveDependency( QueryExecutionEngine.class );
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED ) )
+                .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
@@ -367,6 +369,12 @@ public class QueryExecutionLocksIT
         public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
         {
             return delegate.restrictCurrentTransaction( context );
+        }
+
+        @Override
+        public ResourceTracker resourceTracker()
+        {
+            return delegate.resourceTracker();
         }
     }
 

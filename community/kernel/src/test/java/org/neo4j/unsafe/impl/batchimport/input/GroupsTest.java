@@ -55,7 +55,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGetOrCreate() throws Exception
+    public void shouldSupportMixedGroupModeInGetOrCreate()
     {
         // given
         Groups groups = new Groups();
@@ -66,7 +66,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGetOrCreate2() throws Exception
+    public void shouldSupportMixedGroupModeInGetOrCreate2()
     {
         // given
         Groups groups = new Groups();
@@ -77,7 +77,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldGetCreatedGroup() throws Exception
+    public void shouldGetCreatedGroup()
     {
         // given
         Groups groups = new Groups();
@@ -92,7 +92,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldGetGlobalGroup() throws Exception
+    public void shouldGetGlobalGroup()
     {
         // given
         Groups groups = new Groups();
@@ -106,7 +106,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGet() throws Exception
+    public void shouldSupportMixedGroupModeInGet()
     {
         // given
         Groups groups = new Groups();
@@ -117,7 +117,7 @@ public class GroupsTest
     }
 
     @Test ( expected = HeaderException.class )
-    public void shouldFailOnGettingNonExistentGroup() throws Exception
+    public void shouldFailOnGettingNonExistentGroup()
     {
         // given
         Groups groups = new Groups();

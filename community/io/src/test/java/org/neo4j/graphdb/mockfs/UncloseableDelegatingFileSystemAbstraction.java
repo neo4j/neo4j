@@ -35,7 +35,7 @@ public class UncloseableDelegatingFileSystemAbstraction extends DelegatingFileSy
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // do nothing
     }

@@ -295,7 +295,7 @@ public class BackupTool
 
         try
         {
-            ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             FormattedLogProvider userLogProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out );
             return service.resolve( from, args, new SimpleLogService( userLogProvider, NullLogProvider.getInstance() ) );
         }

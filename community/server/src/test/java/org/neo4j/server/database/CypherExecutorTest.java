@@ -28,11 +28,12 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -44,7 +45,7 @@ import org.neo4j.server.web.HttpHeaderUtils;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class CypherExecutorTest
 {
@@ -70,7 +71,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransaction() throws Throwable
+    public void startDefaultTransaction()
     {
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
@@ -82,7 +83,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startTransactionWithCustomTimeout() throws Throwable
+    public void startTransactionWithCustomTimeout()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
@@ -98,7 +99,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransactionWhenHeaderHasIncorrectValue() throws Throwable
+    public void startDefaultTransactionWhenHeaderHasIncorrectValue()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "not a number" );
@@ -114,7 +115,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransactionIfTimeoutIsNegative() throws Throwable
+    public void startDefaultTransactionIfTimeoutIsNegative()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "-2" );
@@ -147,20 +148,20 @@ public class CypherExecutorTest
 
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, () -> statement );
 
-        SecurityContext securityContext = AUTH_DISABLED;
+        LoginContext loginContext = AUTH_DISABLED;
         KernelTransaction.Type type = KernelTransaction.Type.implicit;
         QueryRegistryOperations registryOperations = mock( QueryRegistryOperations.class );
         when( statement.queryRegistration() ).thenReturn( registryOperations );
         when( statementBridge.get() ).thenReturn( statement );
-        when( kernelTransaction.securityContext() ).thenReturn( securityContext );
+        when( kernelTransaction.securityContext() ).thenReturn( loginContext.authorize( mock( Token.class ) ) );
         when( kernelTransaction.transactionType() ).thenReturn( type  );
         when( database.getGraph() ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( executionEngine );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( statementBridge );
         when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( databaseQueryService );
-        when( databaseQueryService.beginTransaction( type, securityContext ) ).thenReturn( transaction );
-        when( databaseQueryService.beginTransaction( type, securityContext,
+        when( databaseQueryService.beginTransaction( type, loginContext ) ).thenReturn( transaction );
+        when( databaseQueryService.beginTransaction( type, loginContext,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS ) ).thenReturn( transaction );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( resolver );
         when( request.getScheme() ).thenReturn( "http" );

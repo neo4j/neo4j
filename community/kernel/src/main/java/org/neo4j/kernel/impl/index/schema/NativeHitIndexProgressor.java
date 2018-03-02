@@ -26,11 +26,12 @@ import java.util.Collection;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.values.storable.Value;
 
 public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> implements IndexProgressor
 {
-    private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
-    private final NodeValueClient client;
+    final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
+    final NodeValueClient client;
     private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
     private boolean closed;
 
@@ -50,7 +51,8 @@ public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends
             while ( seeker.next() )
             {
                 KEY key = seeker.get().key();
-                if ( client.acceptNode( key.getEntityId(), key.asValue() ) )
+                Value[] values = extractValues( key );
+                if ( client.acceptNode( key.getEntityId(), values ) )
                 {
                     return true;
                 }
@@ -61,6 +63,11 @@ public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    Value[] extractValues( KEY key )
+    {
+        return client.needsValues() ? new Value[]{ key.asValue()} : null;
     }
 
     @Override

@@ -159,14 +159,12 @@ public class NetworkedServerFactory
 
             @Override
             public void init()
-                    throws Throwable
             {
                 protocolServer.getTimeouts().tick( System.currentTimeMillis() );
             }
 
             @Override
             public void start()
-                    throws Throwable
             {
                 scheduler = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "timeout" ) );
 
@@ -180,14 +178,12 @@ public class NetworkedServerFactory
 
             @Override
             public void stop()
-                    throws Throwable
             {
                 scheduler.shutdownNow();
             }
 
             @Override
             public void shutdown()
-                    throws Throwable
             {
             }
         } );

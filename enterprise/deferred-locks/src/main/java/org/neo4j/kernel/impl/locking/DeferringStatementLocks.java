@@ -68,7 +68,7 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public Stream<? extends ActiveLock> activeLocks()
+    public Stream<ActiveLock> activeLocks()
     {
         return Stream.concat( explicit.activeLocks(), implicit.activeLocks() );
     }

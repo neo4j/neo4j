@@ -69,34 +69,34 @@ public class ReadOnlyLuceneSchemaIndexTest
     }
 
     @Test
-    public void indexDeletionIndReadOnlyModeIsNotSupported() throws Exception
+    public void indexDeletionIndReadOnlyModeIsNotSupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.drop();
     }
 
     @Test
-    public void indexCreationInReadOnlyModeIsNotSupported() throws Exception
+    public void indexCreationInReadOnlyModeIsNotSupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.create();
     }
 
     @Test
-    public void readOnlyIndexMarkingIsNotSupported() throws Exception
+    public void readOnlyIndexMarkingIsNotSupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.markAsOnline();
     }
 
     @Test
-    public void readOnlyIndexMode() throws Exception
+    public void readOnlyIndexMode()
     {
         assertTrue( luceneSchemaIndex.isReadOnly() );
     }
 
     @Test
-    public void writerIsNotAccessibleInReadOnlyMode() throws Exception
+    public void writerIsNotAccessibleInReadOnlyMode()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.getIndexWriter();

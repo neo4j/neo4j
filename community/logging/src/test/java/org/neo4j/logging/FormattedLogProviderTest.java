@@ -63,7 +63,7 @@ public class FormattedLogProviderTest
     }
 
     @Test
-    public void shouldLogWithAbbreviatedClassNameAsContext() throws Exception
+    public void shouldLogWithAbbreviatedClassNameAsContext()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -78,7 +78,7 @@ public class FormattedLogProviderTest
     }
 
     @Test
-    public void shouldSetLevelForLogWithMatchingContext() throws Exception
+    public void shouldSetLevelForLogWithMatchingContext()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -98,7 +98,7 @@ public class FormattedLogProviderTest
     }
 
     @Test
-    public void shouldSetLevelForLogWithPartiallyMatchingContext() throws Exception
+    public void shouldSetLevelForLogWithPartiallyMatchingContext()
     {
         // Given
         StringWriter writer = new StringWriter();

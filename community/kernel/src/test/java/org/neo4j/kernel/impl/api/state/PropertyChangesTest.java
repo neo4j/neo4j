@@ -34,7 +34,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 public class PropertyChangesTest
 {
     @Test
-    public void shouldListChanges() throws Exception
+    public void shouldListChanges()
     {
         // Given
         PropertyChanges changes = new PropertyChanges();

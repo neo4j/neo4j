@@ -98,64 +98,59 @@ public class MeasureUpdatePullingRecordAndIndexGap
     private void startMeasuringTheGap( final AtomicInteger good, final AtomicInteger bad, final AtomicInteger ugly,
             final AtomicBoolean halter, final AtomicLong[] highIdNodes, final GraphDatabaseAPI db )
     {
-        new Thread()
-        {
-            @Override
-            public void run()
+        new Thread( () -> {
+            while ( !halter.get() )
             {
-                while ( !halter.get() )
+                for ( int i = 0; i < numberOfIndexes; i++ )
                 {
-                    for ( int i = 0; i < numberOfIndexes; i++ )
+                    long targetNodeId = highIdNodes[i].get();
+                    if ( targetNodeId == 0 )
                     {
-                        long targetNodeId = highIdNodes[i].get();
-                        if ( targetNodeId == 0 )
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        try ( Transaction tx = db.beginTx() )
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        Node nodeFromStorePOV = null;
+                        long nodeId = targetNodeId;
+                        while ( nodeFromStorePOV == null && !halter.get() )
                         {
-                            Node nodeFromStorePOV = null;
-                            long nodeId = targetNodeId;
-                            while ( nodeFromStorePOV == null && !halter.get() )
+                            try
                             {
+                                nodeFromStorePOV = db.getNodeById( nodeId );
+                            }
+                            catch ( NotFoundException e )
+                            {   // Keep on spinning
+                                nodeId = max( nodeId - 1, 0 );
                                 try
                                 {
-                                    nodeFromStorePOV = db.getNodeById( nodeId );
+                                    Thread.sleep( 10 );
                                 }
-                                catch ( NotFoundException e )
-                                {   // Keep on spinning
-                                    nodeId = max( nodeId - 1, 0 );
-                                    try
-                                    {
-                                        Thread.sleep( 10 );
-                                    }
-                                    catch ( InterruptedException e1 )
-                                    {
-                                        throw new RuntimeException( e1 );
-                                    }
+                                catch ( InterruptedException e1 )
+                                {
+                                    throw new RuntimeException( e1 );
                                 }
                             }
+                        }
 
-                            Node nodeFromIndexPOV = db.findNode( label( i ), key( i ), nodeId );
-                            tx.success();
-                            if ( nodeFromIndexPOV != null )
-                            {
-                                good.incrementAndGet();
-                            }
-                            else
-                            {
-                                bad.incrementAndGet();
-                            }
-                            if ( nodeId != targetNodeId )
-                            {
-                                ugly.incrementAndGet();
-                            }
+                        Node nodeFromIndexPOV = db.findNode( label( i ), key( i ), nodeId );
+                        tx.success();
+                        if ( nodeFromIndexPOV != null )
+                        {
+                            good.incrementAndGet();
+                        }
+                        else
+                        {
+                            bad.incrementAndGet();
+                        }
+                        if ( nodeId != targetNodeId )
+                        {
+                            ugly.incrementAndGet();
                         }
                     }
                 }
             }
-        }.start();
+        } ).start();
     }
 
     private void printStats( int good, int bad, int ugly )
@@ -182,32 +177,27 @@ public class MeasureUpdatePullingRecordAndIndexGap
 
     private void startCatchingUp( final GraphDatabaseAPI db, final AtomicBoolean halter, final CountDownLatch endLatch )
     {
-        new Thread()
-        {
-            @Override
-            public void run()
+        new Thread( () -> {
+            try
             {
-                try
+                while ( !halter.get() )
                 {
-                    while ( !halter.get() )
+                    try
                     {
-                        try
-                        {
-                            db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                            throw new RuntimeException( e );
-                        }
+                        db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException( e );
                     }
                 }
-                finally
-                {
-                    endLatch.countDown();
-                }
             }
-        }.start();
+            finally
+            {
+                endLatch.countDown();
+            }
+        } ).start();
     }
 
     private void createIndexes( GraphDatabaseService db )
@@ -238,31 +228,26 @@ public class MeasureUpdatePullingRecordAndIndexGap
         for ( int i = 0; i < numberOfIndexes; i++ )
         {
             final int x = i;
-            new Thread()
-            {
-                @Override
-                public void run()
+            new Thread( () -> {
+                try
                 {
-                    try
+                    while ( !halter.get() )
                     {
-                        while ( !halter.get() )
+                        long nodeId;
+                        try ( Transaction tx = db.beginTx() )
                         {
-                            long nodeId;
-                            try ( Transaction tx = db.beginTx() )
-                            {
-                                Node node = db.createNode( label( x ) );
-                                node.setProperty( key( x ), nodeId = node.getId() );
-                                tx.success();
-                            }
-                            highIdNodes[x].set( nodeId );
+                            Node node = db.createNode( label( x ) );
+                            node.setProperty( key( x ), nodeId = node.getId() );
+                            tx.success();
                         }
-                    }
-                    finally
-                    {
-                        endLatch.countDown();
+                        highIdNodes[x].set( nodeId );
                     }
                 }
-            }.start();
+                finally
+                {
+                    endLatch.countDown();
+                }
+            } ).start();
         }
     }
 }

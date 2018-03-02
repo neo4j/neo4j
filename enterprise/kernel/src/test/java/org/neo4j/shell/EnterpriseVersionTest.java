@@ -39,7 +39,7 @@ public class EnterpriseVersionTest
     public final TestDirectory dir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldPrintVersionAndExit() throws Exception
+    public void shouldPrintVersionAndExit()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -57,7 +57,7 @@ public class EnterpriseVersionTest
     }
 
     @Test
-    public void shouldReportEditionThroughDbInfoApp() throws Exception
+    public void shouldReportEditionThroughDbInfoApp()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();

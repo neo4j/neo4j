@@ -29,7 +29,7 @@ import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeader
 public class LogIndexTxHeaderEncodingTest
 {
     @Test
-    public void shouldEncodeIndexAsBytes() throws Exception
+    public void shouldEncodeIndexAsBytes()
     {
         long index = 123_456_789_012_567L;
         byte[] bytes = encodeLogIndexAsTxHeader( index );
@@ -37,7 +37,7 @@ public class LogIndexTxHeaderEncodingTest
     }
 
     @Test
-    public void shouldThrowExceptionForAnEmptyByteArray() throws Exception
+    public void shouldThrowExceptionForAnEmptyByteArray()
     {
         // given
         try

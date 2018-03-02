@@ -32,7 +32,6 @@ import java.util.List;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.rest.web.AllowAjaxFilter;
 
 /**
  * Different {@link ServerModule}s can register services at the same mount point.
@@ -41,8 +40,8 @@ import org.neo4j.server.rest.web.AllowAjaxFilter;
  */
 public abstract class JaxRsServletHolderFactory
 {
-    private final List<String> items = new ArrayList<String>();
-    private final List<Injectable<?>> injectables = new ArrayList<Injectable<?>>();
+    private final List<String> items = new ArrayList<>();
+    private final List<Injectable<?>> injectables = new ArrayList<>();
 
     public void add( List<String> items, Collection<Injectable<?>> injectableProviders )
     {
@@ -65,7 +64,6 @@ public abstract class JaxRsServletHolderFactory
         ServletHolder servletHolder = new ServletHolder( container );
         servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( !wadlEnabled ) );
         configure( servletHolder, toCommaSeparatedList( items ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
         servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, getRequestFilterConfig() );
         return servletHolder;
     }
@@ -81,7 +79,7 @@ public abstract class JaxRsServletHolderFactory
     private Collection<InjectableProvider<?>> mergeInjectables( Collection<InjectableProvider<?>> defaultInjectables,
             Collection<Injectable<?>> injectables )
     {
-        Collection<InjectableProvider<?>> injectableProviders = new ArrayList<InjectableProvider<?>>();
+        Collection<InjectableProvider<?>> injectableProviders = new ArrayList<>();
         if ( defaultInjectables != null )
         {
             injectableProviders.addAll( defaultInjectables );

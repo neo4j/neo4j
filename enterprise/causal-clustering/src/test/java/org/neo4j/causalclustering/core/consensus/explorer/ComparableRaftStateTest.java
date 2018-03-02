@@ -32,19 +32,17 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class ComparableRaftStateTest
 {
     @Test
-    public void twoIdenticalStatesShouldBeEqual() throws Exception
+    public void twoIdenticalStatesShouldBeEqual()
     {
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
         ComparableRaftState state1 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog(), new ConsecutiveInFlightCache(), logProvider );
+                asSet( member( 0 ), member( 1 ), member( 2 ) ), false, new InMemoryRaftLog(), new ConsecutiveInFlightCache(), logProvider );
 
         ComparableRaftState state2 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog(), new ConsecutiveInFlightCache(), logProvider );
+                asSet( member( 0 ), member( 1 ), member( 2 ) ), false, new InMemoryRaftLog(), new ConsecutiveInFlightCache(), logProvider );
 
         // then
         assertEquals(state1, state2);

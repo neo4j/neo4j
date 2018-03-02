@@ -41,7 +41,6 @@ import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -53,11 +52,9 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
-import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -205,24 +202,19 @@ public class TransactionIT
         BinaryLatch latch = new BinaryLatch();
 
         long dbVersion = env.lastClosedTxId();
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
             {
-                try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
-                {
-                    machine.init( USER_AGENT, emptyMap(), null );
-                    latch.await();
-                    machine.run( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP, nullResponseHandler() );
-                    machine.pullAll( nullResponseHandler() );
-                }
-                catch ( BoltConnectionFatality connectionFatality )
-                {
-                    throw new RuntimeException( connectionFatality );
-                }
+                machine.init( USER_AGENT, emptyMap(), null );
+                latch.await();
+                machine.run( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP, nullResponseHandler() );
+                machine.pullAll( nullResponseHandler() );
             }
-        };
+            catch ( BoltConnectionFatality connectionFatality )
+            {
+                throw new RuntimeException( connectionFatality );
+            }
+        } );
         thread.start();
 
         long dbVersionAfterWrite = dbVersion + 1;
@@ -269,37 +261,32 @@ public class TransactionIT
 
         final BoltStateMachine[] machine = {null};
 
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
             {
-                try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
+                machine[0] = stateMachine;
+                stateMachine.init( USER_AGENT, emptyMap(), null );
+                String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
+                                       "CREATE (n:A {id: line[0], square: line[1]}) " +
+                                       "WITH count(*) as number " +
+                                       "CREATE (n:ShouldNotExist)",
+                                       localPort );
+                try
                 {
-                    machine[0] = stateMachine;
-                    stateMachine.init( USER_AGENT, emptyMap(), null );
-                    String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
-                                           "CREATE (n:A {id: line[0], square: line[1]}) " +
-                                           "WITH count(*) as number " +
-                                           "CREATE (n:ShouldNotExist)",
-                                           localPort );
-                    try
-                    {
-                        latch.start();
-                        stateMachine.run( query, EMPTY_MAP, nullResponseHandler() );
-                        stateMachine.pullAll( nullResponseHandler() );
-                    }
-                    finally
-                    {
-                        latch.finish();
-                    }
+                    latch.start();
+                    stateMachine.run( query, EMPTY_MAP, nullResponseHandler() );
+                    stateMachine.pullAll( nullResponseHandler() );
                 }
-                catch ( BoltConnectionFatality connectionFatality )
+                finally
                 {
-                    throw new RuntimeException( connectionFatality );
+                    latch.finish();
                 }
             }
-        };
+            catch ( BoltConnectionFatality connectionFatality )
+            {
+                throw new RuntimeException( connectionFatality );
+            }
+        } );
         thread.setName( "query runner" );
         thread.start();
 
@@ -398,7 +385,7 @@ public class TransactionIT
             @Override
             public void handle(
                     String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response )
-                    throws IOException, ServletException
+                    throws IOException
             {
                 response.setContentType( "text/plain; charset=utf-8" );
                 response.setStatus( HttpServletResponse.SC_OK );

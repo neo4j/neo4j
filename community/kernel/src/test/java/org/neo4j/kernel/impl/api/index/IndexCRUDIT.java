@@ -163,7 +163,7 @@ public class IndexCRUDIT
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
@@ -182,7 +182,7 @@ public class IndexCRUDIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }
@@ -204,12 +204,12 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
         {
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return newUpdater( IndexUpdateMode.ONLINE );
         }
@@ -220,7 +220,7 @@ public class IndexCRUDIT
             return new CollectingIndexUpdater()
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                     updatesCommitted.addAll( updates );
                 }
@@ -256,12 +256,7 @@ public class IndexCRUDIT
 
         private void addValueToSample( long nodeId, Object propertyValue )
         {
-            Set<Long> nodeIds = indexSamples.get( propertyValue );
-            if ( nodeIds == null )
-            {
-                nodeIds = new HashSet<>();
-                indexSamples.put( propertyValue, nodeIds );
-            }
+            Set<Long> nodeIds = indexSamples.computeIfAbsent( propertyValue, k -> new HashSet<>() );
             nodeIds.add( nodeId );
         }
     }

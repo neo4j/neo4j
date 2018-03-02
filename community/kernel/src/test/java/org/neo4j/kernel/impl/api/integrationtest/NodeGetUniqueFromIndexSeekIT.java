@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -248,7 +248,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
     private SchemaIndexDescriptor createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
     {
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyIds );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
         //TODO ugly cast

@@ -62,6 +62,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.rule.VerboseTimeout;
 
@@ -103,7 +104,9 @@ public class SessionResetIT
     private static final String[] STRESS_IT_QUERIES = {SHORT_QUERY_1, SHORT_QUERY_2, LONG_QUERY};
 
     private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 3, MINUTES ).build();
-    private final Neo4jRule db = new EnterpriseNeo4jRule().withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+    private final Neo4jRule db = new EnterpriseNeo4jRule()
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+            .withConfig( ServerSettings.script_enabled, Settings.TRUE );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( timeout ).around( db );
@@ -111,13 +114,13 @@ public class SessionResetIT
     private Driver driver;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         driver = GraphDatabase.driver( db.boltURI(), Config.build().withEncryptionLevel( NONE ).toConfig() );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         IOUtils.closeAllSilently( driver );
     }

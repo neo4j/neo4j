@@ -51,7 +51,7 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 public class GraphDbStructureGuideTest
 {
     @Test
-    public void visitsLabelIds() throws Exception
+    public void visitsLabelIds()
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -97,7 +97,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Test
-    public void visitsRelationshipTypeIds() throws Exception
+    public void visitsRelationshipTypeIds()
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -305,7 +305,7 @@ public class GraphDbStructureGuideTest
     private Transaction tx;
 
     @Before
-    public void setUp() throws InvalidTransactionTypeKernelException
+    public void setUp()
     {
         GraphDatabaseAPI api = dbRule.getGraphDatabaseAPI();
         graph = api;

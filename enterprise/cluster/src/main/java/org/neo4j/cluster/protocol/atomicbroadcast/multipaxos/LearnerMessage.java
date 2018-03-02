@@ -107,11 +107,7 @@ public enum LearnerMessage
         @Override
         public boolean equals( Object obj )
         {
-            if ( obj == null )
-            {
-                return false;
-            }
-            return getClass() == obj.getClass();
+            return obj != null && getClass() == obj.getClass();
         }
 
         @Override

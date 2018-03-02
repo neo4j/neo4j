@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -222,26 +223,31 @@ public class LogFilesBuilder
         Supplier<LogVersionRepository> logVersionRepositorySupplier = getLogVersionRepositorySupplier();
         LongSupplier lastCommittedIdSupplier = lastCommittedIdSupplier();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
-        long rotationThreshold = getRotationThreshold();
+
+        // Register listener for rotation threshold
+        AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
+
         return new TransactionLogFilesContext( rotationThreshold, logEntryReader,
                 lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem );
     }
 
-    private long getRotationThreshold()
+    private AtomicLong getRotationThresholdAndRegisterForUpdates()
     {
         if ( rotationThreshold != null )
         {
-            return rotationThreshold;
+            return new AtomicLong( rotationThreshold );
         }
         if ( readOnly )
         {
-            return Long.MAX_VALUE;
+            return new AtomicLong( Long.MAX_VALUE );
         }
         if ( config == null )
         {
             config = Config.defaults();
         }
-        return config.get( logical_log_rotation_threshold );
+        AtomicLong configThreshold = new AtomicLong( config.get( logical_log_rotation_threshold ) );
+        config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
+        return configThreshold;
     }
 
     private Supplier<LogVersionRepository> getLogVersionRepositorySupplier() throws IOException

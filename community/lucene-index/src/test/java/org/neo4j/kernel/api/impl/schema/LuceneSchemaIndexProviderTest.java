@@ -29,6 +29,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -68,7 +69,7 @@ public class LuceneSchemaIndexProviderTest
     }
 
     @Test
-    public void shouldFailToInvokePopulatorInReadOnlyMode() throws Exception
+    public void shouldFailToInvokePopulatorInReadOnlyMode()
     {
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
@@ -115,7 +116,7 @@ public class LuceneSchemaIndexProviderTest
                 new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
 
         // We assert that 'force' does not throw an exception
-        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force();
+        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force( IOLimiter.unlimited() );
     }
 
     private void createEmptySchemaIndex( DirectoryFactory directoryFactory ) throws IOException

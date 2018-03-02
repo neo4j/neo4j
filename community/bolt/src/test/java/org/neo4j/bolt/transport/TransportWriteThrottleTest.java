@@ -33,15 +33,22 @@ import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 
-import java.util.concurrent.Executors;
+import java.net.InetSocketAddress;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -78,10 +85,15 @@ public class TransportWriteThrottleTest
         lockAttribute = mock( Attribute.class );
         when( lockAttribute.get() ).thenReturn( lock );
 
+        Attribute durationExceedAttribute = mock( Attribute.class );
+        when( durationExceedAttribute.get() ).thenReturn( null );
+
         channel = mock( SocketChannel.class, Answers.RETURNS_MOCKS );
         when( channel.config() ).thenReturn( config );
         when( channel.isOpen() ).thenReturn( true );
-        when( channel.attr( any() ) ).thenReturn( lockAttribute );
+        when( channel.remoteAddress() ).thenReturn( InetSocketAddress.createUnresolved( "localhost", 32000 ) );
+        when( channel.attr( TransportWriteThrottle.LOCK_KEY ) ).thenReturn( lockAttribute );
+        when( channel.attr( TransportWriteThrottle.MAX_DURATION_EXCEEDED_KEY ) ).thenReturn( durationExceedAttribute );
 
         ChannelPipeline pipeline = channel.pipeline();
         when( channel.pipeline() ).thenReturn( pipeline );
@@ -115,7 +127,11 @@ public class TransportWriteThrottleTest
         when( channel.isWritable() ).thenReturn( true );
 
         // when
-        Future future = Executors.newSingleThreadExecutor().submit( () -> throttle.acquire( channel ) );
+        Future future = otherThread.execute( state ->
+        {
+            throttle.acquire( channel );
+            return null;
+        } );
 
         // expect
         try
@@ -140,7 +156,11 @@ public class TransportWriteThrottleTest
         when( channel.isWritable() ).thenReturn( false );
 
         // when
-        Future future = Executors.newSingleThreadExecutor().submit( () -> throttle.acquire( channel ) );
+        Future future = otherThread.execute( state ->
+        {
+            throttle.acquire( channel );
+            return null;
+        } );
 
         // expect
         try
@@ -203,12 +223,45 @@ public class TransportWriteThrottleTest
         assertThat( lockOverride.unlockCallCount(), is( 1 ) );
     }
 
-    private TransportThrottle newThrottle()
+    @Test
+    public void shouldThrowThrottleExceptionWhenMaxDurationIsReached() throws Exception
     {
-        return newThrottle( null );
+        // given
+        TestThrottleLock lockOverride = new TestThrottleLock();
+        FakeClock clock = Clocks.fakeClock( 1, TimeUnit.SECONDS );
+        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride, clock, Duration.ofSeconds( 5 ) );
+        when( channel.isWritable() ).thenReturn( false );
+
+        // when
+        Future future = otherThread.execute( state ->
+        {
+            throttle.acquire( channel );
+            return null;
+        } );
+
+        otherThread.get().waitUntilWaiting();
+        clock.forward( 6, TimeUnit.SECONDS );
+
+        // expect
+        try
+        {
+            future.get( 1, TimeUnit.MINUTES );
+
+            fail( "expecting ExecutionException" );
+        }
+        catch ( ExecutionException ex )
+        {
+            assertThat( ex.getCause(), instanceOf( TransportThrottleException.class ) );
+            assertThat( ex.getMessage(), containsString( "will be closed because the client did not consume outgoing buffers for" ) );
+        }
     }
 
-    private TransportThrottle newThrottle( ThrottleLock lockOverride )
+    private TransportThrottle newThrottle()
+    {
+        return newThrottle( null, Clocks.systemClock(), Duration.ZERO );
+    }
+
+    private TransportThrottle newThrottle( ThrottleLock lockOverride, Clock clock, Duration maxLockDuration )
     {
         if ( lockOverride != null )
         {
@@ -217,7 +270,7 @@ public class TransportWriteThrottleTest
             when( lockAttribute.get() ).thenReturn( lockOverride );
         }
 
-        return new TransportWriteThrottle( 64, 256, () -> lock );
+        return new TransportWriteThrottle( 64, 256, clock, maxLockDuration, () -> lock );
     }
 
     private TransportThrottle newThrottleAndInstall( Channel channel )
@@ -227,7 +280,12 @@ public class TransportWriteThrottleTest
 
     private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lockOverride )
     {
-        TransportThrottle throttle = newThrottle( lockOverride );
+        return newThrottleAndInstall( channel, lockOverride, Clocks.systemClock(), Duration.ZERO );
+    }
+
+    private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lockOverride, Clock clock, Duration maxLockDuration )
+    {
+        TransportThrottle throttle = newThrottle( lockOverride, clock, maxLockDuration );
 
         throttle.install( channel );
 
@@ -243,7 +301,7 @@ public class TransportWriteThrottleTest
         @Override
         public void lock( Channel channel, long timeout ) throws InterruptedException
         {
-            actualLock.lock( channel, 0 );
+            actualLock.lock( channel, timeout );
             lockCount.incrementAndGet();
         }
 

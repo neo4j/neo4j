@@ -25,7 +25,9 @@ import org.junit.Test;
 
 import java.time.Clock;
 
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
@@ -34,6 +36,7 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 
@@ -43,8 +46,8 @@ public class EnterpriseSecurityContextDescriptionTest
     public MultiRealmAuthManagerRule authManagerRule = new MultiRealmAuthManagerRule( new InMemoryUserRepository(),
             new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ) );
 
-    private EnterpriseSecurityContext context;
     private EnterpriseUserManager manager;
+    private Token token;
 
     @Before
     public void setUp() throws Throwable
@@ -52,79 +55,76 @@ public class EnterpriseSecurityContextDescriptionTest
         authManagerRule.getManager().start();
         manager = authManagerRule.getManager().getUserManager();
         manager.newUser( "mats", "foo", false );
-        context = authManagerRule.getManager().login( authToken( "mats", "foo" ) );
+        token = mock( Token.class );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithoutRoles() throws Throwable
+    public void shouldMakeNiceDescriptionWithoutRoles() throws Exception
     {
-        assertThat( context.description(), equalTo( "user 'mats' with no roles" ) );
+        assertThat( context().description(), equalTo( "user 'mats' with no roles" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithRoles() throws Throwable
-    {
-        manager.newRole( "role1", "mats" );
-        manager.addRoleToUser( PUBLISHER, "mats" );
-
-        assertThat( context.description(), equalTo( "user 'mats' with roles [publisher,role1]" ) );
-    }
-
-    @Test
-    public void shouldMakeNiceDescriptionFrozen() throws Throwable
+    public void shouldMakeNiceDescriptionWithRoles() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
 
-        EnterpriseSecurityContext frozen = context.freeze();
-        assertThat( frozen.description(), equalTo( "user 'mats' with roles [publisher,role1]" ) );
+        assertThat( context().description(), equalTo( "user 'mats' with roles [publisher,role1]" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithMode() throws Throwable
+    public void shouldMakeNiceDescriptionWithMode() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
 
-        EnterpriseSecurityContext modified = context.withMode( AccessMode.Static.CREDENTIALS_EXPIRED );
+        EnterpriseSecurityContext modified = context().withMode( AccessMode.Static.CREDENTIALS_EXPIRED );
         assertThat( modified.description(), equalTo( "user 'mats' with CREDENTIALS_EXPIRED" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionRestricted() throws Throwable
+    public void shouldMakeNiceDescriptionRestricted() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
 
+        EnterpriseSecurityContext context = context();
         EnterpriseSecurityContext restricted =
                 context.withMode( new RestrictedAccessMode( context.mode(), AccessMode.Static.READ ) );
         assertThat( restricted.description(), equalTo( "user 'mats' with roles [publisher,role1] restricted to READ" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionOverridden() throws Throwable
+    public void shouldMakeNiceDescriptionOverridden() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
 
+        EnterpriseSecurityContext context = context();
         EnterpriseSecurityContext overridden =
                 context.withMode( new OverriddenAccessMode( context.mode(), AccessMode.Static.READ ) );
         assertThat( overridden.description(), equalTo( "user 'mats' with roles [publisher,role1] overridden by READ" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabled() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabled()
     {
         EnterpriseSecurityContext disabled = EnterpriseSecurityContext.AUTH_DISABLED;
         assertThat( disabled.description(), equalTo( "AUTH_DISABLED with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
     {
         EnterpriseSecurityContext disabled = EnterpriseSecurityContext.AUTH_DISABLED;
         EnterpriseSecurityContext restricted =
                 disabled.withMode( new RestrictedAccessMode( disabled.mode(), AccessMode.Static.READ ) );
         assertThat( restricted.description(), equalTo( "AUTH_DISABLED with FULL restricted to READ" ) );
+    }
+
+    private EnterpriseSecurityContext context() throws InvalidAuthTokenException
+    {
+        return authManagerRule.getManager().login( authToken( "mats", "foo" ) ).authorize( token );
     }
 }

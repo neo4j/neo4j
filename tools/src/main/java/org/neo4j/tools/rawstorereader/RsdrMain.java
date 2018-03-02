@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.xml.bind.DatatypeConverter;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -36,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.string.HexString;
 import org.neo4j.tools.util.TransactionLogUtils;
 
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
@@ -62,7 +63,7 @@ public class RsdrMain
     private static final Console console = System.console();
     private static final Pattern readCommandPattern = Pattern.compile( "r" + // 'r' means read command
             "((?<lower>\\d+)?,(?<upper>\\d+)?)?\\s+" + // optional record id range bounds, followed by whitespace
-            "(?<fname>[\\w\\.]+)" + // files are a sequence of word characters or literal '.'
+            "(?<fname>[\\w.]+)" + // files are a sequence of word characters or literal '.'
             "(\\s*\\|\\s*(?<regex>.+))?" // a pipe signifies a regex to filter records by
     );
 
@@ -108,7 +109,7 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider );
+        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 
     private static void interact( FileSystemAbstraction fileSystem, NeoStores neoStores ) throws IOException
@@ -226,7 +227,7 @@ public class RsdrMain
                 byte[] bytes = new byte[count];
                 buf.clear();
                 buf.get( bytes );
-                String hex = DatatypeConverter.printHexBinary( bytes );
+                String hex = HexString.encodeHexString( bytes );
                 int paddingNeeded = (recordSize * 2 - Math.max( count * 2, 0 )) + 1;
                 String format = "%s %6s 0x%08X %s%" + paddingNeeded + "s%s%n";
                 String str;

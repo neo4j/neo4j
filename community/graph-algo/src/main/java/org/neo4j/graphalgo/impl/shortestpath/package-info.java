@@ -20,7 +20,7 @@
 /**
  * Package containing older implementations of Dijkstra and shortest path,
  * where the ones in {@link org.neo4j.graphalgo.GraphAlgoFactory} would be
- * a better option. Also contains algorithms, such as {@link FloydWarshall}
+ * a better option. Also contains algorithms, such as {@link org.neo4j.graphalgo.impl.shortestpath.FloydWarshall}
  * which doesn't scale to bigger graphs.
  */
 package org.neo4j.graphalgo.impl.shortestpath;

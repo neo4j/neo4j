@@ -32,12 +32,12 @@ import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -53,9 +53,11 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
-import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -79,7 +81,7 @@ public class InProcessBuilderTestIT
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void shouldLaunchAServerInSpecifiedDirectory() throws Exception
+    public void shouldLaunchAServerInSpecifiedDirectory()
     {
         // Given
         File workDir = testDir.directory( "specific" );
@@ -98,7 +100,7 @@ public class InProcessBuilderTestIT
 
     private TestServerBuilder getTestServerBuilder( File workDir )
     {
-        return newInProcessBuilder( workDir );
+        return newInProcessBuilder( workDir ).withConfig( ServerSettings.script_enabled, Settings.TRUE );
     }
 
     @Test
@@ -106,6 +108,10 @@ public class InProcessBuilderTestIT
     {
         // Given
         trustAllSSLCerts();
+
+        // Get default trusted cypher suites
+        SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+        String[] defaultCiphers = ssf.getDefaultCipherSuites();
 
         // When
         HttpConnector httpConnector = new HttpConnector( "0", Encryption.NONE );
@@ -118,19 +124,27 @@ public class InProcessBuilderTestIT
                 .withConfig( httpsConnector.type, "HTTP" )
                 .withConfig( httpsConnector.enabled, "true" )
                 .withConfig( httpsConnector.encryption, "TLS" )
-                .withConfig( httpsConnector.address, "localhost:" + PortAuthority.allocatePort() )
-                .withConfig( LegacySslPolicyConfig.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
+                .withConfig( httpsConnector.listen_address, "localhost:" + PortAuthority.allocatePort() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
+                // override legacy policy
+                .withConfig( "https.ssl_policy", "test" )
+                .withConfig( "dbms.ssl.policy.test.base_directory", testDir.directory( "certificates" ).getAbsolutePath() )
+                .withConfig( "dbms.ssl.policy.test.allow_key_generation", "true" )
+                .withConfig( "dbms.ssl.policy.test.ciphers", String.join( ",", defaultCiphers ) )
+                .withConfig( "dbms.ssl.policy.test.tls_versions", "TLSv1.2, TLSv1.1, TLSv1" )
+                .withConfig( "dbms.ssl.policy.test.client_auth", ClientAuth.NONE.name() )
+                .withConfig( "dbms.ssl.policy.test.trust_all", "true" )
                 .newServer() )
         {
             // Then
+            assertThat( HTTP.GET( server.httpURI().toString() ).status(), equalTo( 200 ) );
             assertThat( HTTP.GET( server.httpsURI().get().toString() ).status(), equalTo( 200 ) );
             assertDBConfig( server, "20", GraphDatabaseSettings.dense_node_threshold.name() );
         }
     }
 
     @Test
-    public void shouldMountUnmanagedExtensionsByClass() throws Exception
+    public void shouldMountUnmanagedExtensionsByClass()
     {
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
@@ -144,7 +158,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldMountUnmanagedExtensionsByPackage() throws Exception
+    public void shouldMountUnmanagedExtensionsByPackage()
     {
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
@@ -158,7 +172,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldFindFreePort() throws Exception
+    public void shouldFindFreePort()
     {
         // Given one server is running
         try ( ServerControls firstServer = getTestServerBuilder( testDir.directory() ).newServer() )
@@ -233,7 +247,7 @@ public class InProcessBuilderTestIT
     public void shouldOpenBoltPort() throws Throwable
     {
         // given
-        try ( ServerControls controls = newInProcessBuilder().newServer() )
+        try ( ServerControls controls = getTestServerBuilder( testDir.graphDbDir() ).newServer() )
         {
             URI uri = controls.boltURI();
 
@@ -251,7 +265,8 @@ public class InProcessBuilderTestIT
         File notADirectory = File.createTempFile( "prefix", "suffix" );
         assertFalse( notADirectory.isDirectory() );
 
-        try ( ServerControls ignored = newInProcessBuilder().copyFrom( notADirectory ).newServer() )
+        try ( ServerControls ignored = getTestServerBuilder( testDir.graphDbDir() )
+                .copyFrom( notADirectory ).newServer() )
         {
             fail( "server should not start" );
         }
@@ -305,13 +320,11 @@ public class InProcessBuilderTestIT
         {
             @Override
             public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
             {
             }
 
             @Override
             public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
             {
             }
 

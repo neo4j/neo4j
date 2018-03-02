@@ -81,7 +81,7 @@ public class AStar implements PathFinder<WeightedPath>
                 }
                 else
                 {
-                    LinkedList<Relationship> rels = new LinkedList<Relationship>();
+                    LinkedList<Relationship> rels = new LinkedList<>();
                     Relationship rel = graphDb.getRelationshipById(
                             iterator.visitData.get( node.getId() ).cameFromRelationship );
                     while ( rel != null )
@@ -155,7 +155,7 @@ public class AStar implements PathFinder<WeightedPath>
         private Node lastNode;
         private final PriorityMap<Node, Node, Double> nextPrioritizedNodes =
                 PriorityMap.withSelfKeyNaturalOrder();
-        private final Map<Long, Visit> visitData = new HashMap<Long, Visit>();
+        private final Map<Long, Visit> visitData = new HashMap<>();
 
         AStarIterator( Node start, Node end )
         {

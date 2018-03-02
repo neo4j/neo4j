@@ -22,16 +22,16 @@ package org.neo4j.causalclustering.core.consensus.shipping;
 import java.io.IOException;
 import java.time.Clock;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.LeaderContext;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.schedule.Timer;
-import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
+import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.state.InFlightLogEntryReader;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -41,7 +41,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
 import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.ASYNC;
-import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.CATCHUP;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Timeouts.RESEND;

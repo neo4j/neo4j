@@ -52,7 +52,7 @@ public class ConsistencyCheckTool
     private static final String CONFIG = "config";
     private static final String VERBOSE = "v";
 
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args )
     {
         try
         {
@@ -68,7 +68,7 @@ public class ConsistencyCheckTool
 
     public static ConsistencyCheckService.Result runConsistencyCheckTool( String[] args, PrintStream outStream,
                                                                           PrintStream errStream )
-            throws ToolFailureException, IOException
+            throws ToolFailureException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
@@ -104,7 +104,7 @@ public class ConsistencyCheckTool
         this.systemError = systemError;
     }
 
-    ConsistencyCheckService.Result run( String... args ) throws ToolFailureException, IOException
+    ConsistencyCheckService.Result run( String... args ) throws ToolFailureException
     {
         Args arguments = Args.withFlags( VERBOSE ).parse( args );
 
@@ -114,7 +114,7 @@ public class ConsistencyCheckTool
 
         checkDbState( storeDir, tuningConfiguration );
 
-        ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         LogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( systemOut );
         try
         {

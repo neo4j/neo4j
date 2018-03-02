@@ -31,14 +31,13 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-public class NumberSchemaIndexAccessor<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndexAccessor<KEY,VALUE>
+public class NumberSchemaIndexAccessor extends NativeSchemaIndexAccessor<NumberSchemaKey,NativeSchemaValue>
 {
     NumberSchemaIndexAccessor(
             PageCache pageCache,
             FileSystemAbstraction fs,
             File storeFile,
-            Layout<KEY,VALUE> layout,
+            Layout<NumberSchemaKey,NativeSchemaValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IndexProvider.Monitor monitor,
             SchemaIndexDescriptor descriptor,

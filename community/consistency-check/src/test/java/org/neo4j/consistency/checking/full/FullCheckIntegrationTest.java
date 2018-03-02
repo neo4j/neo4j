@@ -60,6 +60,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -584,7 +585,7 @@ public class FullCheckIntegrationTest
                     }
                 }
             }
-            accessor.force();
+            accessor.force( IOLimiter.unlimited() );
             accessor.close();
         }
 
@@ -611,7 +612,7 @@ public class FullCheckIntegrationTest
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
             updater.close();
-            accessor.force();
+            accessor.force( IOLimiter.unlimited() );
             accessor.close();
         }
 
@@ -2267,7 +2268,7 @@ public class FullCheckIntegrationTest
         } );
     }
 
-    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -2283,7 +2284,7 @@ public class FullCheckIntegrationTest
         writeToSchemaStore( schemaStore, uniqueRule );
     }
 
-    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 

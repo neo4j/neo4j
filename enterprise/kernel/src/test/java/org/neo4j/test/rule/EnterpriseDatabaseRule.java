@@ -29,4 +29,10 @@ public class EnterpriseDatabaseRule extends EmbeddedDatabaseRule
     {
         return new TestEnterpriseGraphDatabaseFactory();
     }
+
+    @Override
+    public EnterpriseDatabaseRule startLazily()
+    {
+        return (EnterpriseDatabaseRule) super.startLazily();
+    }
 }

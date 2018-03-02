@@ -40,9 +40,19 @@ public interface DiagnosticsReportSource
      * This method should output the diagnostics source to the provided destination.
      *
      * @param archiveDestination the target destination that should be written to.
-     * @param monitor a monitor that can track progress.
+     * @param progress a monitor that can track progress.
      * @throws IOException if any file operations fail, exceptions should be handled by the caller for better error
      * reporting to the user.
      */
-    void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor ) throws IOException;
+    void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress ) throws IOException;
+
+    /**
+     * Returns an estimated upper bound of the input file size. Since the content will be placed in an archive the final
+     * size can actually both increase and decrease.
+     *
+     * @param progress a monitor that can track progress.
+     * @return the estimated file size in bytes.
+     * @throws IOException if size cannot be determined.
+     */
+    long estimatedSize( DiagnosticsReporterProgress progress ) throws IOException;
 }

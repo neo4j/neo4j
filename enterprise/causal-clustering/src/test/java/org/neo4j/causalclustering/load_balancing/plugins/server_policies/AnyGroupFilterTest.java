@@ -34,7 +34,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class AnyGroupFilterTest
 {
     @Test
-    public void shouldReturnServersMatchingAnyGroup() throws Exception
+    public void shouldReturnServersMatchingAnyGroup()
     {
         // given
         AnyGroupFilter groupFilter = new AnyGroupFilter( asSet( "china-west", "europe" ) );

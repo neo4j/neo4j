@@ -28,7 +28,7 @@ import static org.junit.Assert.assertTrue;
 public class QuantizedProjectionTest
 {
     @Test
-    public void shouldProjectSteps() throws Exception
+    public void shouldProjectSteps()
     {
         // GIVEN
         QuantizedProjection projection = new QuantizedProjection( 9, 7 );

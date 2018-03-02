@@ -63,6 +63,7 @@ class UnwindOperator(collection: Expression,
         iterationState = is
         unwoundValues = inValues
         currentRow = new MorselExecutionContext(data, inputLongCount, inputRefCount, currentRow = readPos)
+      case _ => throw new IllegalStateException()
     }
 
     var writePos = 0

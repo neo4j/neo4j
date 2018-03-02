@@ -27,9 +27,10 @@ import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.TokenWriteOperations;
 
-public class StubStatement implements Statement
+public class StubStatement extends StubResourceManager implements Statement
 {
     private final ReadOperations readOperations;
 
@@ -57,13 +58,13 @@ public class StubStatement implements Statement
     }
 
     @Override
-    public DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException
+    public DataWriteOperations dataWriteOperations()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException
+    public SchemaWriteOperations schemaWriteOperations()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

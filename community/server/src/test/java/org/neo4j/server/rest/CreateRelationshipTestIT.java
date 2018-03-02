@@ -42,7 +42,7 @@ public class CreateRelationshipTestIT extends AbstractRestFunctionalDocTestBase
     @Graph( "Joe knows Sara" )
     @Documented( "Upon successful creation of a relationship, the new relationship is returned." )
     @Title( "Create a relationship with properties" )
-    public void create_a_relationship_with_properties() throws Exception
+    public void create_a_relationship_with_properties()
     {
         String jsonString = "{\"to\" : \""
                             + getDataUri()

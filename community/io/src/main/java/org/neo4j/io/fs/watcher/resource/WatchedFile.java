@@ -35,7 +35,7 @@ public class WatchedFile implements WatchedResource
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         watchKey.cancel();
     }

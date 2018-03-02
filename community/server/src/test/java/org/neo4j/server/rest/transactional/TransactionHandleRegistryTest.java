@@ -44,7 +44,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class TransactionHandleRegistryTest
 {
     @Test
-    public void shouldGenerateTransactionId() throws Exception
+    public void shouldGenerateTransactionId()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();

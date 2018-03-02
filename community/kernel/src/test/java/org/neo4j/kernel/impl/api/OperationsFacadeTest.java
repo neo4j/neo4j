@@ -73,7 +73,7 @@ public class OperationsFacadeTest
     }
 
     @Test
-    public void testThrowExceptionWhenIndexNotFound() throws SchemaRuleNotFoundException
+    public void testThrowExceptionWhenIndexNotFound()
     {
         try ( Transaction ignored = db.beginTx();
               Statement statement = db.statement() )
@@ -108,7 +108,7 @@ public class OperationsFacadeTest
     }
 
     @Test
-    public void indexGetProviderDescriptorMustThrowIfIndexDoesNotExist() throws Exception
+    public void indexGetProviderDescriptorMustThrowIfIndexDoesNotExist()
     {
         try ( Transaction tx = db.beginTx();
               Statement statement = db.statement() )

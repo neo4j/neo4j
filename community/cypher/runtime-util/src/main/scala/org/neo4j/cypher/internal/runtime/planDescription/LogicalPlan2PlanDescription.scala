@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyName, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v3_4.functions.Point
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -81,7 +82,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
         val entityByIdRhs = EntityByIdRhs(relIds)
-        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
+        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeek", NoChildren, Seq(entityByIdRhs), variables)
 
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
@@ -228,6 +229,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: MergeCreateRelationship =>
         PlanDescriptionImpl(id, "MergeCreateRelationship", children, Seq.empty, variables)
 
+      case _: ActiveRead =>
+        PlanDescriptionImpl(id, "ActiveRead", children, Seq.empty, variables)
+
       case _: Optional =>
         PlanDescriptionImpl(id, "Optional", children, Seq.empty, variables)
 
@@ -340,8 +344,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: LetAntiSemiApply =>
         PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq.empty, variables)
 
-      case OuterHashJoin(nodes, _, _) =>
-        PlanDescriptionImpl(id, "NodeOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
+      case LeftOuterHashJoin(nodes, _, _) =>
+        PlanDescriptionImpl(id, "NodeLeftOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
+
+      case RightOuterHashJoin(nodes, _, _) =>
+        PlanDescriptionImpl(id, "NodeRightOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
 
       case RollUpApply(_, _, collectionName, _, _) =>
         PlanDescriptionImpl(id, "RollUpApply", children, Seq(KeyNames(Seq(collectionName))), variables)
@@ -392,18 +399,24 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             (name, PrefixIndex(label.name, propertyKey, range.prefix))
           case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-                                   bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}")
-                                     .toIndexedSeq))
+              bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-                                   bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}")
-                                     .toIndexedSeq))
+              bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
-            val greaterThanBoundsText = greaterThanBounds.bounds
-              .map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
-            val lessThanBoundsText = lessThanBounds.bounds
-              .map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound =>
+              s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
+            val lessThanBoundsText = lessThanBounds.bounds.map(bound =>
+              s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
             (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
+          case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
+            val funcName = Point.name
+            val poi = point match {
+              case FunctionInvocation(Namespace(List()), FunctionName(funcName), _, Seq(MapExpression(args))) =>
+                s"point(${args.map(_._1.name).mkString(",")})"
+              case _ => point.toString
+            }
+            (name, PointDistanceIndex(label.name, propertyKey, poi, distance.toString, inclusive))
           case _ => throw new InternalException("This should never happen. Missing a case?")
         }
       case _ =>

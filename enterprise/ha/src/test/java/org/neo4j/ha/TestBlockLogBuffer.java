@@ -41,7 +41,7 @@ import static org.junit.Assert.assertThat;
 public class TestBlockLogBuffer
 {
     @Test
-    public void onlyOneNonFullBlock() throws IOException
+    public void onlyOneNonFullBlock()
     {
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -71,7 +71,7 @@ public class TestBlockLogBuffer
         assertEquals( doubleValue, verificationBuffer.getDouble(), 0.0 );
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
-        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
+        assertThat( actualBytes, new ArrayMatches<>( bytesValue ) );
     }
 
     @Test
@@ -138,11 +138,11 @@ public class TestBlockLogBuffer
         assertEquals( doubleValue, verificationBuffer.getDouble(), 0.0 );
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
-        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
+        assertThat( actualBytes, new ArrayMatches<>( bytesValue ) );
     }
 
     @Test
-    public void onlyOneFullBlock() throws Exception
+    public void onlyOneFullBlock()
     {
         byte[] bytes = new byte[256];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -159,7 +159,7 @@ public class TestBlockLogBuffer
         assertEquals( (byte) 255, verificationBuffer.get() );
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
-        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
+        assertThat( actualBytes, new ArrayMatches<>( bytesValue ) );
     }
 
     @Test
@@ -182,11 +182,11 @@ public class TestBlockLogBuffer
         verificationBuffer.flip();
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
-        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
+        assertThat( actualBytes, new ArrayMatches<>( bytesValue ) );
     }
 
     @Test
-    public void canWriteLargestAtomAfterFillingBuffer() throws Exception
+    public void canWriteLargestAtomAfterFillingBuffer()
     {
         byte[] bytes = new byte[300];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -205,13 +205,13 @@ public class TestBlockLogBuffer
         assertEquals( (byte) 0, verificationBuffer.get() );
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
-        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
+        assertThat( actualBytes, new ArrayMatches<>( bytesValue ) );
         assertEquals( (byte) 8, verificationBuffer.get() );
         assertEquals( longValue, verificationBuffer.getLong() );
     }
 
     @Test
-    public void canWriteReallyLargeByteArray() throws Exception
+    public void canWriteReallyLargeByteArray()
     {
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -234,19 +234,19 @@ public class TestBlockLogBuffer
         assertEquals( (byte) 0, verificationBuffer.get() );
         actual = new byte[255];
         verificationBuffer.get( actual );
-        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 0, 255 ) ) );
+        assertThat( actual, new ArrayMatches<>( Arrays.copyOfRange( bytesValue, 0, 255 ) ) );
         assertEquals( (byte) 0, verificationBuffer.get() );
         actual = new byte[255];
         verificationBuffer.get( actual );
-        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 255, 510 ) ) );
+        assertThat( actual, new ArrayMatches<>( Arrays.copyOfRange( bytesValue, 255, 510 ) ) );
         assertEquals( (byte) 90, verificationBuffer.get() );
         actual = new byte[90];
         verificationBuffer.get( actual );
-        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 510, 600 ) ) );
+        assertThat( actual, new ArrayMatches<>( Arrays.copyOfRange( bytesValue, 510, 600 ) ) );
     }
 
     @Test
-    public void canReaderReallyLargeByteArray() throws Exception
+    public void canReaderReallyLargeByteArray()
     {
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -271,13 +271,13 @@ public class TestBlockLogBuffer
         verificationBuffer.flip();
         actual = new byte[255];
         verificationBuffer.get( actual );
-        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 0, 255 ) ) );
+        assertThat( actual, new ArrayMatches<>( Arrays.copyOfRange( bytesValue, 0, 255 ) ) );
         actual = new byte[255];
         verificationBuffer.get( actual );
-        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 255, 510 ) ) );
+        assertThat( actual, new ArrayMatches<>( Arrays.copyOfRange( bytesValue, 255, 510 ) ) );
         actual = new byte[90];
         verificationBuffer.get( actual );
-        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 510, 600 ) ) );
+        assertThat( actual, new ArrayMatches<>( Arrays.copyOfRange( bytesValue, 510, 600 ) ) );
     }
 
     private class ArrayMatches<T> extends BaseMatcher<T>

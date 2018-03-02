@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -52,6 +53,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -59,7 +61,6 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -74,8 +75,9 @@ import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
-import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -128,6 +130,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
     private final AccessCapability accessCapability;
@@ -179,8 +182,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore )
+            StorageEngine storageEngine, AccessCapability accessCapability, KernelToken token, DefaultCursors cursors, AutoIndexing autoIndexing,
+            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -196,22 +199,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations );
+                procedures, accessCapability, lockTracer, statementOperations, new ClockContext( clock ),
+                versionContextSupplier );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
-        org.neo4j.kernel.impl.newapi.NodeSchemaMatcher matcher =
-                new org.neo4j.kernel.impl.newapi.NodeSchemaMatcher( allStoreHolder );
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
                         storageStatement,
-                        this, cursors, autoIndexing, matcher );
+                        this, token, cursors, autoIndexing );
     }
 
     /**
@@ -229,7 +232,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.beforeHookInvoked = false;
         this.failure = false;
         this.success = false;
-        this.beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.millis();
         this.timeoutMillis = transactionTimeout;
@@ -394,16 +396,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             for ( SchemaIndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
-                try
-                {
-                    // TODO logically, which statement should this operation be performed on?
-                    constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
-                }
-                catch ( DropIndexFailureException e )
-                {
-                    throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                            "possible to drop during rollback of that transaction.", e );
-                }
+                // TODO logically, which statement should this operation be performed on?
+                constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
             }
         }
     }
@@ -638,7 +632,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation,
+                            versionContextSupplier.getVersionContext() );
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }
@@ -693,7 +688,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                                throws ConstraintValidationException
                         {
                             storeLayer.releaseRelationship( id );
                         }
@@ -720,6 +714,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public Read stableDataRead()
+    {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        return operations.dataRead();
+    }
+
+    @Override
+    public void markAsStable()
+    {
+        // ignored until 2-layer tx-state is supported
+    }
+
+    @Override
     public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
@@ -740,6 +747,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TokenRead tokenRead()
     {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
         return operations.token();
     }
 
@@ -1063,6 +1071,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public NodeCursor nodeCursor()
     {
         return operations.nodeCursor();
+    }
+
+    @Override
+    public RelationshipScanCursor relationshipCursor()
+    {
+        return operations.relationshipCursor();
     }
 
     @Override

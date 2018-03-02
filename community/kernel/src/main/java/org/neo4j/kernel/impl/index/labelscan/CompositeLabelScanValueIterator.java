@@ -102,7 +102,7 @@ class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator implemen
         toClose.clear();
     }
 
-    private class IdAndSource implements Comparable<IdAndSource>
+    private static class IdAndSource implements Comparable<IdAndSource>
     {
         private long latestReturned;
         private final PrimitiveLongIterator source;

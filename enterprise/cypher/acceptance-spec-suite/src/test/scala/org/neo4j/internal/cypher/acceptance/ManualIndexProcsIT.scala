@@ -515,12 +515,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result1.head("config").asInstanceOf[Map[String, String]] should contain("provider" -> "lucene")
     intercept[Exception] {
       execute("CALL db.index.explicit.forNodes('usernames', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
-    }.getMessage should be(
-      """Failed to invoke procedure `db.index.explicit.forNodes`: Caused by: java.lang.IllegalArgumentException: Supplied index configuration:
-        |{type=fulltext, provider=lucene}
-        |doesn't match stored config in a valid way:
-        |{type=exact, provider=lucene}
-        |for 'usernames'""".stripMargin)
+    }.getMessage should include("doesn't match stored config in a valid way")
 
     //And Then
     assertNodeIndexExists("usernames", true)
@@ -593,12 +588,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result1.head("config").asInstanceOf[Map[String, String]] should contain("provider" -> "lucene")
     intercept[Exception] {
       execute("CALL db.index.explicit.forRelationships('relIndex', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
-    }.getMessage should be(
-      """Failed to invoke procedure `db.index.explicit.forRelationships`: Caused by: java.lang.IllegalArgumentException: Supplied index configuration:
-        |{type=fulltext, provider=lucene}
-        |doesn't match stored config in a valid way:
-        |{type=exact, provider=lucene}
-        |for 'relIndex'""".stripMargin)
+    }.getMessage should include("doesn't match stored config in a valid way")
 
     //And Then
     assertRelationshipIndexExists("relIndex", true)

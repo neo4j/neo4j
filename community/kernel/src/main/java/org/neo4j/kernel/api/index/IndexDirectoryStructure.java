@@ -130,25 +130,18 @@ public abstract class IndexDirectoryStructure
      */
     public static Factory directoriesBySubProvider( IndexDirectoryStructure parentStructure )
     {
-        return new Factory()
+        return descriptor -> new IndexDirectoryStructure()
         {
             @Override
-            public IndexDirectoryStructure forProvider( Descriptor descriptor )
+            public File rootDirectory()
             {
-                return new IndexDirectoryStructure()
-                {
-                    @Override
-                    public File rootDirectory()
-                    {
-                        return parentStructure.rootDirectory();
-                    }
+                return parentStructure.rootDirectory();
+            }
 
-                    @Override
-                    public File directoryForIndex( long indexId )
-                    {
-                        return path( parentStructure.directoryForIndex( indexId ), fileNameFriendly( descriptor ) );
-                    }
-                };
+            @Override
+            public File directoryForIndex( long indexId )
+            {
+                return path( parentStructure.directoryForIndex( indexId ), fileNameFriendly( descriptor ) );
             }
         };
     }

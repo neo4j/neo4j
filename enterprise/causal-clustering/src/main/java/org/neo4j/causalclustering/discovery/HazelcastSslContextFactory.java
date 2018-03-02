@@ -28,7 +28,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.util.Properties;
-import java.util.UUID;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -54,7 +53,7 @@ class HazelcastSslContextFactory implements SSLContextFactory
     }
 
     @Override
-    public void init( Properties properties ) throws Exception
+    public void init( Properties properties )
     {
     }
 

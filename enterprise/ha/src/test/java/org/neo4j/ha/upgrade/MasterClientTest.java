@@ -37,6 +37,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencies;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
@@ -127,6 +128,7 @@ public class MasterClientTest
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
         when( deps.commitProcess() ).thenReturn( commitProcess );
         when( deps.logService() ).thenReturn( NullLogService.getInstance() );
+        when( deps.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.EMPTY );
         when( deps.kernelTransactions() ).thenReturn( mock( KernelTransactions.class ) );
 
         ResponseUnpacker unpacker = life.add(
@@ -178,7 +180,7 @@ public class MasterClientTest
         return when( mock( MasterImpl.SPI.class ).storeId() ).thenReturn( storeId ).getMock();
     }
 
-    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable
+    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI )
     {
         MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock(
                 ConversationManager.class ), mock( Monitor.class ), masterConfig() );
@@ -192,7 +194,7 @@ public class MasterClientTest
                 ConversationManager.class ), mock( Monitor.class ), masterConfig() );
     }
 
-    private MasterServer newMasterServer( MasterImpl masterImpl ) throws Throwable
+    private MasterServer newMasterServer( MasterImpl masterImpl )
     {
         return life.add( new MasterServer( masterImpl, NullLogProvider.getInstance(),
                 masterServerConfiguration(),
@@ -202,12 +204,12 @@ public class MasterClientTest
                 ConversationManager.class ), logEntryReader ) );
     }
 
-    private MasterClient newMasterClient320( StoreId storeId ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId )
     {
         return newMasterClient320( storeId, NO_OP_RESPONSE_UNPACKER );
     }
 
-    private MasterClient newMasterClient320( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId, ResponseUnpacker responseUnpacker )
     {
         return life.add( new MasterClient320( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,

@@ -27,17 +27,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 
@@ -52,7 +47,7 @@ public class BadCollectorTest
         // given
         int tolerance = 5;
 
-        try ( BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL ); )
+        try ( BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL ) )
         {
             // when
             badCollector.collectBadRelationship( "1", "a", "T", "2", "b", "1" );
@@ -151,50 +146,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveDuplicateNodeIds() throws IOException
-    {
-        // given
-        int tolerance = 15;
-
-        try ( BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL ); )
-        {
-            // when
-            for ( int i = 0; i < 15; i++ )
-            {
-                badCollector.collectDuplicateNode( i, i, "group" );
-            }
-
-            // then
-            assertEquals( 15, PrimitiveLongCollections.count( badCollector.leftOverDuplicateNodesIds() ) );
-
-            PrimitiveLongSet longs = PrimitiveLongCollections.asSet( badCollector.leftOverDuplicateNodesIds() );
-            for ( int i = 0; i < 15; i++ )
-            {
-                assertTrue( longs.contains( i ) );
-            }
-        }
-    }
-
-    @Test
-    public void shouldProvideNodeIdsSorted() throws Exception
-    {
-        // GIVEN
-        try ( BadCollector badCollector = new BadCollector( badOutputFile(), 10, BadCollector.DUPLICATE_NODES ); )
-        {
-            badCollector.collectDuplicateNode( "a", 10, "group" );
-            badCollector.collectDuplicateNode( "b", 8, "group" );
-            badCollector.collectDuplicateNode( "c", 12, "group" );
-
-            // WHEN
-            long[] nodeIds = PrimitiveLongCollections.asArray( badCollector.leftOverDuplicateNodesIds() );
-
-            // THEN
-            assertArrayEquals( new long[] {8, 10, 12}, nodeIds );
-        }
-    }
-
-    @Test
-    public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo() throws Exception
+    public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo()
     {
         // GIVEN
         try ( BadCollector collector = new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL ) )

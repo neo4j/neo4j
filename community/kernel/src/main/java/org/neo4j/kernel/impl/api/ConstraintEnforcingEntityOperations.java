@@ -23,7 +23,6 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -34,6 +33,7 @@ import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -511,7 +510,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
+    public PrimitiveIntSet nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
     {
         return entityReadOperations.nodeGetPropertyKeys( statement, node );
     }
@@ -536,7 +535,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+    public PrimitiveIntSet relationshipGetPropertyKeys( KernelStatement statement,
             RelationshipItem relationship )
     {
         return entityReadOperations.relationshipGetPropertyKeys( statement, relationship );

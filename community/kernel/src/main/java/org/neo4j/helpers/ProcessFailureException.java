@@ -21,11 +21,16 @@ package org.neo4j.helpers;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.util.List;
 
+/**
+ * @deprecated Exception is not in use anymore
+ */
+@Deprecated
 public class ProcessFailureException extends Exception
 {
-    public static final class Entry
+    public static final class Entry implements Serializable
     {
         private final String part;
         private final Throwable failure;
@@ -48,7 +53,7 @@ public class ProcessFailureException extends Exception
     public ProcessFailureException( List<Entry> causes )
     {
         super( "Monitored process failed" + message( causes ), cause( causes ) );
-        this.causes = causes.toArray( new Entry[causes.size()] );
+        this.causes = causes.toArray( new Entry[0] );
     }
 
     private static String message( List<Entry> causes )

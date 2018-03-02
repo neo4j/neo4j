@@ -21,6 +21,8 @@ package org.neo4j.values.storable;
 
 import org.hamcrest.Matchers;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -173,6 +175,48 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         buffer.add( Specials.byteArray( value ) );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        buffer.add( DurationValue.duration( months, days, seconds, nanos ) );
+    }
+
+    @Override
+    public void writeDate( long epochDay ) throws RuntimeException
+    {
+        buffer.add( DateValue.epochDate( epochDay ) );
+    }
+
+    @Override
+    public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    {
+        buffer.add( LocalTimeValue.localTime( nanoOfDay ) );
+    }
+
+    @Override
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    {
+        buffer.add( TimeValue.time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+    }
+
+    @Override
+    public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    {
+        buffer.add( LocalDateTimeValue.localDateTime( epochSecond, nano ) );
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    {
+        buffer.add( DateTimeValue.datetime( epochSecondUTC, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+    {
+        buffer.add( DateTimeValue.datetime( epochSecondUTC, nano, ZoneId.of( zoneId ) ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )

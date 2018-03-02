@@ -35,7 +35,7 @@ public class ResampleOutdatedIndexesProcedureTest
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( null ), indexingService );
 
     @Test
-    public void shouldTriggerResampling() throws SchemaRuleNotFoundException, ProcedureException
+    public void shouldTriggerResampling()
     {
         procedure.resampleOutdatedIndexes();
 

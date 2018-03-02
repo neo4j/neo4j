@@ -37,49 +37,49 @@ public class ByteBufferReadableChannel implements ReadableClosableChannel
     }
 
     @Override
-    public byte get() throws IOException
+    public byte get()
     {
         return buffer.get();
     }
 
     @Override
-    public short getShort() throws IOException
+    public short getShort()
     {
         return buffer.getShort();
     }
 
     @Override
-    public int getInt() throws IOException
+    public int getInt()
     {
         return buffer.getInt();
     }
 
     @Override
-    public long getLong() throws IOException
+    public long getLong()
     {
         return buffer.getLong();
     }
 
     @Override
-    public float getFloat() throws IOException
+    public float getFloat()
     {
         return buffer.getFloat();
     }
 
     @Override
-    public double getDouble() throws IOException
+    public double getDouble()
     {
         return buffer.getDouble();
     }
 
     @Override
-    public void get( byte[] bytes, int length ) throws IOException
+    public void get( byte[] bytes, int length )
     {
         buffer.get( bytes, 0, length );
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 }

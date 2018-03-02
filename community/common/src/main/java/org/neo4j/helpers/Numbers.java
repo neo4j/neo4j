@@ -57,6 +57,15 @@ public class Numbers
         return (short) value;
     }
 
+    public static short safeCastIntToShort( int value )
+    {
+        if ( (short) value != value )
+        {
+            throw new ArithmeticException( getOverflowMessage( value, Short.TYPE ) );
+        }
+        return (short) value;
+    }
+
     public static byte safeCastLongToByte( long value )
     {
         if ( (byte) value != value )

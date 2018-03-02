@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -71,6 +71,18 @@ public class StubKernelTransaction implements KernelTransaction
     public Read dataRead()
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Read stableDataRead()
+    {
+        return null;
+    }
+
+    @Override
+    public void markAsStable()
+    {
+
     }
 
     @Override
@@ -128,7 +140,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public long closeTransaction() throws TransactionFailureException
+    public long closeTransaction()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -219,6 +231,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public NodeCursor nodeCursor()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RelationshipScanCursor relationshipCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

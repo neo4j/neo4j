@@ -19,97 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
-
 import java.io.File;
-import java.util.Arrays;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.storageengine.api.schema.IndexSample;
-import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
-
-public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
 {
     @Override
     NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
             File indexFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, schemaIndexDescriptor,
-                indexId );
-    }
-
-    @Test
-    public void addShouldApplyDuplicateValues() throws Exception
-    {
-        // given
-        populator.create();
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
-
-        // when
-        populator.add( Arrays.asList( updates ) );
-
-        // then
-        populator.close( true );
-        verifyUpdates( updates );
-    }
-
-    @Test
-    public void updaterShouldApplyDuplicateValues() throws Exception
-    {
-        // given
-        populator.create();
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
-        {
-            // when
-            for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
-            {
-                updater.process( update );
-            }
-        }
-
-        // then
-        populator.close( true );
-        verifyUpdates( updates );
-    }
-
-    @Test
-    public void shouldSampleUpdatesIfConfiguredForOnlineSampling() throws Exception
-    {
-        // GIVEN
-        populator.create();
-        IndexEntryUpdate<SchemaIndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
-        populator.add( Arrays.asList( scanUpdates ) );
-        Number[] updates = array( 101, 102, 102, 103, 103 );
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
-        {
-            long nodeId = 1000;
-            for ( Number number : updates )
-            {
-                IndexEntryUpdate<SchemaIndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( number ) );
-                updater.process( update );
-                populator.includeSample( update );
-            }
-        }
-
-        // WHEN
-        IndexSample sample = populator.sampleResult();
-
-        // THEN
-        assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
-        assertEquals( updates.length, sample.indexSize() );
-        populator.close( true );
+        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor,
+                schemaIndexDescriptor, indexId );
     }
 
     @Override

@@ -24,13 +24,12 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.centrality.StressCentrality;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 
 import static org.junit.Assert.assertTrue;
 
@@ -38,10 +37,8 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
 {
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
-        return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
     protected void assertCentrality( StressCentrality<Double> stressCentrality,
@@ -55,8 +52,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
     public void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
-        StressCentrality<Double> stressCentrality = new StressCentrality<Double>(
-            getSingleSourceShortestPath(), graph.getAllNodes() );
+        StressCentrality<Double> stressCentrality = new StressCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
         stressCentrality.calculate();
         assertCentrality( stressCentrality, "a", 1.0 );
         assertCentrality( stressCentrality, "b", 1.0 );
@@ -69,8 +65,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
     {
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
-        StressCentrality<Double> stressCentrality = new StressCentrality<Double>(
-            getSingleSourceShortestPath(), graph.getAllNodes() );
+        StressCentrality<Double> stressCentrality = new StressCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
         stressCentrality.calculate();
         assertCentrality( stressCentrality, "a", 0.0 );
         assertCentrality( stressCentrality, "b", 6.0 );
@@ -83,8 +78,7 @@ public class StressCentralityTest extends Neo4jAlgoTestCase
     public void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
-        StressCentrality<Double> stressCentrality = new StressCentrality<Double>(
-            getSingleSourceShortestPath(), graph.getAllNodes() );
+        StressCentrality<Double> stressCentrality = new StressCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
         stressCentrality.calculate();
         assertCentrality( stressCentrality, "a", 0.0 );
         assertCentrality( stressCentrality, "b", 3.0 );

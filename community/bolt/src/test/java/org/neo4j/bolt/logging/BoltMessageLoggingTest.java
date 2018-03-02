@@ -88,7 +88,7 @@ public class BoltMessageLoggingTest
     {
         Config config = newConfig( true );
 
-        when( channel.remoteAddress() ).thenReturn( this.inetSocketAddress );
+        when( channel.remoteAddress() ).thenReturn( inetSocketAddress );
         BoltMessageLogging logging = BoltMessageLogging.create( fs, jobScheduler, config, log );
         BoltMessageLogger logger = logging.newLogger( channel );
 

@@ -473,14 +473,14 @@ public class StoreUpgradeIT
 
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.get();
+            KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( true );
 
             for ( Map.Entry<Label,Long> entry : counts.entrySet() )
             {
                 assertEquals(
                         entry.getValue().longValue(),
-                        statement.readOperations().countsForNode(
-                                statement.readOperations().labelGetForName( entry.getKey().name() ) )
+                        kernelTransaction.dataRead().countsForNode(
+                                kernelTransaction.tokenRead().nodeLabel( entry.getKey().name() ) )
                 );
             }
         }
@@ -492,9 +492,9 @@ public class StoreUpgradeIT
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.get();
+            KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( true );
 
-            assertThat( statement.readOperations().countsForNode( -1 ), is( store.expectedNodeCount ) );
+            assertThat( kernelTransaction.dataRead().countsForNode( -1 ), is( store.expectedNodeCount ) );
         }
     }
 

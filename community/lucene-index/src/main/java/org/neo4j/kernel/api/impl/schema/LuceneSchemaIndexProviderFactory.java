@@ -65,7 +65,7 @@ public class LuceneSchemaIndexProviderFactory extends
     }
 
     @Override
-    public LuceneSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public LuceneSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         File storeDir = context.storeDir();

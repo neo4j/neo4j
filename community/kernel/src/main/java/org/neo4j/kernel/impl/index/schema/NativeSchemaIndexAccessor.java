@@ -30,7 +30,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -89,10 +88,9 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        // TODO add IOLimiter arg
-        tree.checkpoint( IOLimiter.unlimited() );
+        tree.checkpoint( ioLimiter );
     }
 
     @Override
@@ -108,6 +106,12 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
+    public boolean isDirty()
+    {
+        return tree.wasDirtyOnStartup();
+    }
+
+    @Override
     public abstract IndexReader newReader();
 
     @Override
@@ -117,14 +121,13 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public ResourceIterator<File> snapshotFiles()
     {
         return asResourceIterator( iterator( storeFile ) );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-            throws IndexEntryConflictException, IOException
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 }

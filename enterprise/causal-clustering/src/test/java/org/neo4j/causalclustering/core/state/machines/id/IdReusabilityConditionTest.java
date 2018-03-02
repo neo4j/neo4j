@@ -44,7 +44,7 @@ public class IdReusabilityConditionTest
     private IdReusabilityCondition idReusabilityCondition;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         when( raftMachine.state() ) .thenReturn( state );
         myself = new MemberId( UUID.randomUUID() );
@@ -52,13 +52,13 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldReturnFalseAsDefault() throws Exception
+    public void shouldReturnFalseAsDefault()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
     }
 
     @Test
-    public void shouldNeverReuseWhenNotLeader() throws Exception
+    public void shouldNeverReuseWhenNotLeader()
     {
         MemberId someoneElse = new MemberId( UUID.randomUUID() );
 
@@ -67,7 +67,7 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldNotReturnTrueWithPendingTransactions() throws Exception
+    public void shouldNotReturnTrueWithPendingTransactions()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
@@ -85,7 +85,7 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldOnlyReturnTrueWhenOldTransactionsBeenApplied() throws Exception
+    public void shouldOnlyReturnTrueWhenOldTransactionsBeenApplied()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
@@ -103,7 +103,7 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldNotReuseIfReelection() throws Exception
+    public void shouldNotReuseIfReelection()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 

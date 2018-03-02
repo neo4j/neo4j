@@ -66,7 +66,7 @@ public class OptionalHostnamePort
         }
         return upperRangePort
                 .map( upperRange -> new HostnamePort( hostname.get(), port.get(), upperRange ) )
-                .orElse( new HostnamePort( hostname.get(), port.get() ) );
+                .orElseGet( () -> new HostnamePort( hostname.get(), port.get() ) );
     }
 
     @Override

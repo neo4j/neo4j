@@ -27,9 +27,14 @@ import org.neo4j.bolt.BoltChannel;
  */
 public interface WorkerFactory
 {
+    default BoltWorker newWorker( BoltChannel boltChannel )
+    {
+        return newWorker( boltChannel, null );
+    }
+
     /**
      * @param boltChannel channel over which Bolt messages can be exchanged
      * @return a new job queue
      */
-    BoltWorker newWorker( BoltChannel boltChannel );
+    BoltWorker newWorker( BoltChannel boltChannel, BoltWorkerQueueMonitor queueMonitor );
 }

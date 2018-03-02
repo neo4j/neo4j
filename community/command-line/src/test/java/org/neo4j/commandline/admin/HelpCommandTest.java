@@ -53,7 +53,7 @@ public class HelpCommandTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void printsUnknownCommandWhenUnknownCommandIsProvided() throws Exception
+    public void printsUnknownCommandWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         when( commandLocator.getAllProviders() ).thenReturn( Collections.EMPTY_LIST );
@@ -73,7 +73,7 @@ public class HelpCommandTest
     }
 
     @Test
-    public void printsAvailableCommandsWhenUnknownCommandIsProvided() throws Exception
+    public void printsAvailableCommandsWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
@@ -128,7 +128,7 @@ public class HelpCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "available commands:%n" +
@@ -172,7 +172,7 @@ public class HelpCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "This is a description of the foobar command.%n" +

@@ -69,10 +69,7 @@ public class EigenvectorCentralityArnoldi extends EigenvectorCentralityBase
         // Create a list of the nodes, in order to quickly translate an index
         // into a node.
         ArrayList<Node> nodes = new ArrayList<>( nodeSet.size() );
-        for ( Node node : nodeSet )
-        {
-            nodes.add( node );
-        }
+        nodes.addAll( nodeSet );
         DoubleMatrix hMatrix = new DoubleMatrix();
         DoubleMatrix qMatrix = new DoubleMatrix();
         for ( int i = 0; i < nodes.size(); ++i )

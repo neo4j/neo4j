@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
@@ -69,7 +70,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force()
+    public void force( IOLimiter ioLimiter )
     {
     }
 

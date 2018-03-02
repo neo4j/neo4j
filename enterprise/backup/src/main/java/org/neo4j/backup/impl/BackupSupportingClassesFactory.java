@@ -28,9 +28,9 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -43,7 +43,7 @@ import org.neo4j.logging.LogProvider;
  * By having this factory we can wait until the configuration has been loaded and the provide all the classes required
  * for backups that are dependant on the config.
  */
-class BackupSupportingClassesFactory
+public class BackupSupportingClassesFactory
 {
     private static final long INACTIVITY_TIMEOUT_MILLIS = 60 * 1000;
 
@@ -88,9 +88,9 @@ class BackupSupportingClassesFactory
 
     private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )
     {
-        PipelineHandlerAppender pipelineHandlerAppender = createPipelineHandlerAppender( config );
+        PipelineWrapper pipelineWrapper = createPipelineWrapper( config );
         CatchUpClient catchUpClient = new CatchUpClient(
-                logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, monitors, pipelineHandlerAppender );
+                logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, monitors, pipelineWrapper );
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
         StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider );
 
@@ -102,10 +102,10 @@ class BackupSupportingClassesFactory
         return backupDelegator( remoteStore, catchUpClient, storeCopyClient );
     }
 
-    protected PipelineHandlerAppender createPipelineHandlerAppender( Config config )
+    protected PipelineWrapper createPipelineWrapper( Config config )
     {
-        PipelineHandlerAppenderFactory pipelineHandlerAppenderFactory = new NoOpPipelineHandlerAppenderFactory();
-        return pipelineHandlerAppenderFactory.create( config, null, logProvider );
+        DuplexPipelineWrapperFactory pipelineWrapperFactory = new VoidPipelineWrapperFactory();
+        return pipelineWrapperFactory.forServer( config, null, logProvider );
     }
 
     private static BackupDelegator backupDelegator(

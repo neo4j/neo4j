@@ -21,7 +21,7 @@ package org.neo4j.diagnostics;
 
 import java.io.PrintStream;
 
-public class NonInteractiveProgress implements DiagnosticsReporterProgressCallback
+public class NonInteractiveProgress implements DiagnosticsReporterProgress
 {
     private String totalSteps = "?";
     private final PrintStream out;

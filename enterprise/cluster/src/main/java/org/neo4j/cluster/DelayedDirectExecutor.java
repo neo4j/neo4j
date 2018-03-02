@@ -34,7 +34,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class DelayedDirectExecutor extends AbstractExecutorService
 {
-    private List<Runnable> runnables = new ArrayList<Runnable>();
+    private List<Runnable> runnables = new ArrayList<>();
 
     private final Log log;
 
@@ -67,7 +67,7 @@ public class DelayedDirectExecutor extends AbstractExecutorService
     }
 
     @Override
-    public boolean awaitTermination( long timeout, TimeUnit unit ) throws InterruptedException
+    public boolean awaitTermination( long timeout, TimeUnit unit )
     {
         return true;
     }
@@ -84,7 +84,7 @@ public class DelayedDirectExecutor extends AbstractExecutorService
         synchronized ( this )
         {
             currentRunnables = runnables;
-            runnables = new ArrayList<Runnable>();
+            runnables = new ArrayList<>();
         }
         for ( Runnable runnable : currentRunnables )
         {

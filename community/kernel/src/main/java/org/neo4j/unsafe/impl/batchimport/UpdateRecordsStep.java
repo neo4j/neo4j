@@ -58,7 +58,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     }
 
     @Override
-    protected void process( RECORD[] batch, BatchSender sender ) throws Throwable
+    protected void process( RECORD[] batch, BatchSender sender )
     {
         LongFunction<IdSequence> idSequence = prepareIdSequence.apply( store );
         int recordsUpdatedInThisBatch = 0;

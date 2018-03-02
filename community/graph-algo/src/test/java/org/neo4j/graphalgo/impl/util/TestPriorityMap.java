@@ -78,7 +78,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void shouldReplaceIfBetter() throws Exception
+    public void shouldReplaceIfBetter()
     {
         // GIVEN
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
@@ -92,11 +92,11 @@ public class TestPriorityMap
         Entry<Integer, Double> top = map.pop();
         assertNull( map.peek() );
         assertEquals( 1, top.getEntity().intValue() );
-        assertEquals( 1.5d, top.getPriority().doubleValue(), 0d );
+        assertEquals( 1.5d, top.getPriority(), 0d );
     }
 
     @Test
-    public void shouldKeepAllPrioritiesIfToldTo() throws Exception
+    public void shouldKeepAllPrioritiesIfToldTo()
     {
         // GIVEN
         int entity = 5;

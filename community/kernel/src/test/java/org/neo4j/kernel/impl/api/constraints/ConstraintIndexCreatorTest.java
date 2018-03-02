@@ -29,9 +29,11 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Session;
@@ -39,14 +41,13 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -66,6 +67,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
@@ -80,7 +82,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
@@ -91,6 +92,7 @@ public class ConstraintIndexCreatorTest
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 123, 456 );
+    private final Monitors monitors = new Monitors();
 
     @Test
     public void shouldCreateIndexInAnotherTransaction() throws Exception
@@ -111,7 +113,7 @@ public class ConstraintIndexCreatorTest
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         when( constraintCreationContext.schemaReadOperations().indexGetForSchema( state, descriptor ) )
                 .thenReturn( null );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, monitors );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), descriptor );
@@ -148,7 +150,7 @@ public class ConstraintIndexCreatorTest
         when( schemaOps.indexGetForSchema( any( KernelStatement.class ), any( LabelSchemaDescriptor.class ) ) )
                 .thenReturn( null )   // first claim it doesn't exist, because it doesn't... so that it gets created
                 .thenReturn( index ); // then after it failed claim it does exist
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, monitors );
 
         // when
         try
@@ -185,7 +187,7 @@ public class ConstraintIndexCreatorTest
 
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, monitors );
 
         // when
         creator.dropUniquenessConstraintIndex( index );
@@ -215,7 +217,7 @@ public class ConstraintIndexCreatorTest
         when( constraintCreationContext.schemaReadOperations().indexGetForSchema( state, descriptor ) )
                 .thenReturn( null );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, monitors );
 
         // when
         creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), descriptor );
@@ -250,7 +252,7 @@ public class ConstraintIndexCreatorTest
                 .thenReturn( index );
         when( constraintCreationContext.schemaReadOperations().indexGetOwningUniquenessConstraintId(
                 state, index ) ).thenReturn( null ); // which means it has no owner
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, monitors );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state,
@@ -294,7 +296,7 @@ public class ConstraintIndexCreatorTest
                 state, index ) ).thenReturn( constraintIndexOwnerId ); // which means there's an owner
         when( state.readOperations().labelGetName( LABEL_ID ) ).thenReturn( "MyLabel" );
         when( state.readOperations().propertyKeyGetName( PROPERTY_KEY_ID ) ).thenReturn( "MyKey" );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, monitors );
 
         // when
         try
@@ -323,14 +325,13 @@ public class ConstraintIndexCreatorTest
         private final List<KernelStatement> statements = new ArrayList<>();
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+        public KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext )
         {
             return new StubKernelTransaction();
         }
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
-                throws TransactionFailureException
+        public KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
         {
             return new StubKernelTransaction( timeout );
         }
@@ -348,14 +349,13 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public void registerUserFunction( CallableUserFunction function ) throws ProcedureException
+        public void registerUserFunction( CallableUserFunction function )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void registerUserAggregationFunction( CallableUserAggregationFunction function )
-                throws ProcedureException
         {
             throw new UnsupportedOperationException();
         }
@@ -367,9 +367,15 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public Session beginSession( SecurityContext securityContext )
+        public Session beginSession( LoginContext loginContext )
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Modes modes()
+        {
+            return null;
         }
 
         private class StubKernelTransaction implements KernelTransaction
@@ -399,6 +405,18 @@ public class ConstraintIndexCreatorTest
             public Read dataRead()
             {
                 throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public Read stableDataRead()
+            {
+                return null;
+            }
+
+            @Override
+            public void markAsStable()
+            {
+
             }
 
             @Override
@@ -456,7 +474,7 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
-            public long closeTransaction() throws TransactionFailureException
+            public long closeTransaction()
             {
                 return ROLLBACK;
             }
@@ -488,7 +506,7 @@ public class ConstraintIndexCreatorTest
             @Override
             public Optional<Status> getReasonIfTerminated()
             {
-                return null;
+                return Optional.empty();
             }
 
             @Override
@@ -557,6 +575,12 @@ public class ConstraintIndexCreatorTest
 
             @Override
             public NodeCursor nodeCursor()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public RelationshipScanCursor relationshipCursor()
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }

@@ -59,7 +59,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
     @Documented( "Adding a label to a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
-    public void adding_a_label_to_a_node() throws PropertyValueException
+    public void adding_a_label_to_a_node()
     {
         Map<String,Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
@@ -73,7 +73,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
     @Documented( "Adding multiple labels to a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
-    public void adding_multiple_labels_to_a_node() throws PropertyValueException
+    public void adding_multiple_labels_to_a_node()
     {
         Map<String,Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
@@ -93,7 +93,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "Adding an invalid label to a node will lead to a HTTP 400 response." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
-    public void adding_an_invalid_label_to_a_node() throws PropertyValueException
+    public void adding_an_invalid_label_to_a_node()
     {
         Map<String,Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
@@ -111,7 +111,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true,
             labels = {@LABEL( "Person" )} )} )
-    public void replacing_labels_on_a_node() throws PropertyValueException
+    public void replacing_labels_on_a_node()
     {
         Map<String,Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
@@ -147,7 +147,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
     @Documented( "Removing a label from a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Person" ) } ) } )
-    public void removing_a_label_from_a_node() throws PropertyValueException
+    public void removing_a_label_from_a_node()
     {
         Map<String,Node> nodes = data.get();
         Node node = nodes.get( "Clint Eastwood" );
@@ -164,7 +164,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
     @Documented( "Removing a non-existent label from a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
-    public void removing_a_non_existent_label_from_a_node() throws PropertyValueException
+    public void removing_a_non_existent_label_from_a_node()
     {
         Map<String,Node> nodes = data.get();
         Node node = nodes.get( "Clint Eastwood" );

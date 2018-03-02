@@ -91,7 +91,6 @@ public enum FileOperation
         public void perform( FileSystemAbstraction fs, String fileName,
                 File directory, boolean skipNonExistentFromFile,
                 File unusedFile, ExistingTargetStrategy unused )
-                throws IOException
         {
             File file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
             if ( file != null )

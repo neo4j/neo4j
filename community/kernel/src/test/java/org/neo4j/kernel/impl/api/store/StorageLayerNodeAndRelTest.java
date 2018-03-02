@@ -38,7 +38,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class StorageLayerNodeAndRelTest extends StorageLayerTest
 {
     @Test
-    public void shouldTellIfNodeExists() throws Exception
+    public void shouldTellIfNodeExists()
     {
         // Given
         long created = createLabeledNode( db, map() ).getId();
@@ -58,7 +58,7 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
     }
 
     @Test
-    public void shouldTellIfRelExists() throws Exception
+    public void shouldTellIfRelExists()
     {
         // Given
         long node = createLabeledNode( db, map() ).getId();

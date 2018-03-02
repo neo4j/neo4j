@@ -33,8 +33,10 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -42,6 +44,8 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -59,7 +63,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -69,11 +72,9 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -113,6 +114,8 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -410,11 +413,8 @@ public class OperationsFacade
     public boolean graphHasProperty( int propertyKeyId )
     {
         statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
-        {
-            return false;
-        }
-        return dataRead().graphHasProperty( statement, propertyKeyId );
+        return propertyKeyId != StatementConstants.NO_SUCH_PROPERTY_KEY &&
+                dataRead().graphHasProperty( statement, propertyKeyId );
     }
 
     @Override
@@ -704,7 +704,9 @@ public class OperationsFacade
     public Iterator<Token> propertyKeyGetAllTokens()
     {
         statement.assertOpen();
-        return tokenRead().propertyKeyGetAllTokens( statement );
+        AccessMode mode = tx.securityContext().mode();
+        return Iterators.stream( tokenRead().propertyKeyGetAllTokens( statement ) ).
+                filter( propKey -> mode.allowsPropertyReads( propKey.id() ) ).iterator();
     }
 
     @Override
@@ -871,7 +873,7 @@ public class OperationsFacade
 
     @Override
     public long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataWrite().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
@@ -1145,7 +1147,7 @@ public class OperationsFacade
 
     @Override
     public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().nodeAddToExplicitIndex( statement, indexName, node, key, value );
@@ -1184,7 +1186,7 @@ public class OperationsFacade
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key, value );
@@ -1192,7 +1194,7 @@ public class OperationsFacade
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key );
@@ -1200,7 +1202,7 @@ public class OperationsFacade
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship );
@@ -1459,7 +1461,7 @@ public class OperationsFacade
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
             ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
-            procedureCall = procedures.callProcedure( ctx, name, input );
+            procedureCall = procedures.callProcedure( ctx, name, input, statement );
         }
         return new RawIterator<Object[],ProcedureException>()
         {
@@ -1484,7 +1486,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException
+    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
     {
         if ( !tx.securityContext().mode().allowsReads() )
         {
@@ -1496,7 +1498,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Object functionCallOverride( QualifiedName name, Object[] arguments ) throws ProcedureException
+    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
     {
         return callFunction( name, arguments,
                 new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
@@ -1520,7 +1522,13 @@ public class OperationsFacade
                 new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
-    private Object callFunction( QualifiedName name, Object[] input, final AccessMode mode ) throws ProcedureException
+    @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        return procedures.valueMapper();
+    }
+
+    private AnyValue callFunction( QualifiedName name, AnyValue[] input, final AccessMode mode ) throws ProcedureException
     {
         statement.assertOpen();
 
@@ -1529,6 +1537,10 @@ public class OperationsFacade
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
+            ClockContext clocks = statement.clocks();
+            ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );
+            ctx.put( Context.STATEMENT_CLOCK, clocks.statementClock() );
+            ctx.put( Context.TRANSACTION_CLOCK, clocks.transactionClock() );
             return procedures.callFunction( ctx, name, input );
         }
     }

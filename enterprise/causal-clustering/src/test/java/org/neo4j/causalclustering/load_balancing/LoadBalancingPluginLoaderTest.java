@@ -165,15 +165,15 @@ public class LoadBalancingPluginLoaderTest
         public void validate( Config config, Log log ) throws InvalidSettingException
         {
             Optional<String> invalidSetting = config.getRaw( settingFor( DUMMY_PLUGIN_NAME, DO_NOT_USE_THIS_CONFIG ) );
-            if ( invalidSetting.isPresent() )
+            invalidSetting.ifPresent( s ->
             {
                 throw new InvalidSettingException( "Do not use this setting" );
-            }
+            } );
         }
 
         @Override
         public void init( TopologyService topologyService, LeaderLocator leaderLocator, LogProvider logProvider,
-                Config config ) throws Throwable
+                Config config )
         {
             wasInitialized = true;
         }

@@ -77,7 +77,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 {
                     @Override
                     public void process( IndexEntryUpdate<?> update )
-                            throws IOException, IndexEntryConflictException
+                            throws IOException
                     {
                         try
                         {
@@ -90,7 +90,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
 
                     @Override
-                    public void close() throws IOException, IndexEntryConflictException
+                    public void close() throws IOException
                     {
                         try
                         {

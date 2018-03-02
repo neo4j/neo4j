@@ -31,7 +31,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class StandardBoltConnectionTrackerTest
 {
     @Test
-    public void shouldTrackConnectionsAndTheirOwners() throws Exception
+    public void shouldTrackConnectionsAndTheirOwners()
     {
         // given
         StandardBoltConnectionTracker tracker = new StandardBoltConnectionTracker();

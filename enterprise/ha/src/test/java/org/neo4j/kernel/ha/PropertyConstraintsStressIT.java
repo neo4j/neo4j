@@ -109,7 +109,7 @@ public class PropertyConstraintsStressIT
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.pull_interval, "0" )
@@ -117,7 +117,7 @@ public class PropertyConstraintsStressIT
         clearData();
     }
 
-    private void clearData() throws InterruptedException
+    private void clearData()
     {
         HighlyAvailableGraphDatabase db = cluster.getMaster();
         GraphDatabaseServiceCleaner.cleanDatabaseContent( db );
@@ -369,21 +369,20 @@ public class PropertyConstraintsStressIT
                     }
                 }
             }
-            catch ( TransactionFailureException | TransientTransactionFailureException e )
+            catch ( TransactionFailureException | TransientTransactionFailureException | ComException | ConstraintViolationException e )
             {
-                // Swallowed on purpose, we except it to fail sometimes due to either
-                //  - constraint violation on master
-                //  - concurrent schema operation on master
-            }
-            catch ( ConstraintViolationException e )
-            {
-                // Constraint violation detected on slave while building transaction
-            }
-            catch ( ComException e )
-            {
-                // Happens sometimes, cause:
-                // - The lock session requested to start is already in use.
-                //   Please retry your request in a few seconds.
+                // TransactionFailureException and TransientTransactionFailureException
+                //   Swallowed on purpose, we except it to fail sometimes due to either
+                //    - constraint violation on master
+                //    - concurrent schema operation on master
+
+                // ConstraintViolationException
+                //   Constraint violation detected on slave while building transaction
+
+                // ComException
+                //   Happens sometimes, cause:
+                //   - The lock session requested to start is already in use.
+                //     Please retry your request in a few seconds.
             }
             return i;
         };
@@ -589,7 +588,6 @@ public class PropertyConstraintsStressIT
             }
             catch ( QueryExecutionException e )
             {
-                System.out.println( "Constraint failed: " + e.getMessage() );
                 if ( Exceptions.rootCause( e ) instanceof ConstraintValidationException )
                 {
                     // Unable to create constraint since it is not consistent with existing data
@@ -599,11 +597,6 @@ public class PropertyConstraintsStressIT
                 {
                     throw e;
                 }
-            }
-
-            if ( !constraintCreationFailed )
-            {
-                System.out.println( "Constraint created: " + query );
             }
 
             return constraintCreationFailed;

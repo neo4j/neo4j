@@ -34,8 +34,8 @@ final class Aggregator
     private volatile long progress;
     @SuppressWarnings( "unused"/*accessed through updater*/ )
     private volatile int last;
-    private static final AtomicLongFieldUpdater<Aggregator> PROGRESS = newUpdater( Aggregator.class, "progress" );
-    private static final AtomicIntegerFieldUpdater<Aggregator> LAST =
+    private static final AtomicLongFieldUpdater<Aggregator> PROGRESS_UPDATER = newUpdater( Aggregator.class, "progress" );
+    private static final AtomicIntegerFieldUpdater<Aggregator> LAST_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater( Aggregator.class, "last" );
     private long totalCount;
 
@@ -62,11 +62,11 @@ final class Aggregator
 
     void update( long delta )
     {
-        long progress = PROGRESS.addAndGet( this, delta );
+        long progress = PROGRESS_UPDATER.addAndGet( this, delta );
         int current = (int) ((progress * indicator.reportResolution()) / totalCount);
         for ( int last = this.last; current > last; last = this.last )
         {
-            if ( LAST.compareAndSet( this, last, current ) )
+            if ( LAST_UPDATER.compareAndSet( this, last, current ) )
             {
                 synchronized ( this )
                 {

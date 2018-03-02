@@ -79,7 +79,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class MasterImplTest
 {
     @Test
-    public void givenStartedAndInaccessibleWhenNewLockSessionThrowException() throws Throwable
+    public void givenStartedAndInaccessibleWhenNewLockSessionThrowException()
     {
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
@@ -239,7 +239,7 @@ public class MasterImplTest
         }
     }
 
-    private MasterImpl newMasterWithLocksClient( Client client ) throws Throwable
+    private MasterImpl newMasterWithLocksClient( Client client )
     {
         SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -358,7 +358,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void shouldStartStopConversationManager() throws Throwable
+    public void shouldStartStopConversationManager()
     {
         MasterImpl.SPI spi = mockedSpi();
         ConversationManager conversationManager = mock( ConversationManager.class );
@@ -409,7 +409,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockDeadlocks() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockDeadlocks()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -431,7 +431,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringSharedLockDeadlocks() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringSharedLockDeadlocks()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -453,7 +453,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockThrowsIllegalResource() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockThrowsIllegalResource()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -475,7 +475,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringSharedLockThrowsIllegalResource() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringSharedLockThrowsIllegalResource()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();

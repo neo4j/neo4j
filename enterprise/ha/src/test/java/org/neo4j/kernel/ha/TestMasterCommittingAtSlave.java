@@ -34,7 +34,6 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
@@ -72,7 +71,7 @@ public class TestMasterCommittingAtSlave
             containsString( "communication" ), any( Object[].class ), any( Throwable.class ) );
 
     @Test
-    public void commitSuccessfullyToTheFirstOne() throws Exception
+    public void commitSuccessfullyToTheFirstOne()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -81,7 +80,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitACoupleOfTransactionsSuccessfully() throws Exception
+    public void commitACoupleOfTransactionsSuccessfully()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -92,7 +91,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitFailureAtFirstOneShouldMoveOnToNext() throws Exception
+    public void commitFailureAtFirstOneShouldMoveOnToNext()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder(), true );
         propagator.committed( 2, MasterServerId );
@@ -103,7 +102,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitSuccessfullyAtThreeSlaves() throws Exception
+    public void commitSuccessfullyAtThreeSlaves()
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -121,7 +120,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitSuccessfullyOnSomeOfThreeSlaves() throws Exception
+    public void commitSuccessfullyOnSomeOfThreeSlaves()
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder(), false, true, true );
         propagator.committed( 2, MasterServerId );
@@ -135,7 +134,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void roundRobinSingleSlave() throws Exception
+    public void roundRobinSingleSlave()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, roundRobin() );
         for ( long tx = 2; tx <= 6; tx++ )
@@ -150,7 +149,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void roundRobinSomeFailing() throws Exception
+    public void roundRobinSomeFailing()
     {
         TransactionPropagator propagator = newPropagator( 4, 2, roundRobin(), false, true );
         for ( long tx = 2; tx <= 6; tx++ )
@@ -174,7 +173,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void notEnoughSlavesSuccessful() throws Exception
+    public void notEnoughSlavesSuccessful()
     {
         TransactionPropagator propagator = newPropagator( 3, 2, givenOrder(), true, true );
         propagator.committed( 2, MasterServerId );
@@ -213,7 +212,7 @@ public class TestMasterCommittingAtSlave
     }
 
     private TransactionPropagator newPropagator( int slaveCount, int replication, SlavePriority slavePriority,
-                                                 boolean... failingSlaves ) throws Exception
+                                                 boolean... failingSlaves )
     {
         slaves = instantiateSlaves( slaveCount, failingSlaves );
 
@@ -233,14 +232,14 @@ public class TestMasterCommittingAtSlave
         }
         catch ( Throwable e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
         return result;
     }
 
     private Iterable<Slave> instantiateSlaves( int count, boolean[] failingSlaves )
     {
-        List<Slave> slaves = new ArrayList<Slave>();
+        List<Slave> slaves = new ArrayList<>();
         for ( int i = 0; i < count; i++ )
         {
             slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i + MasterServerId + 1 ) );
@@ -250,7 +249,7 @@ public class TestMasterCommittingAtSlave
 
     private static class FakeSlave implements Slave
     {
-        private volatile Queue<Long> calledWithTxId = new LinkedList<Long>();
+        private volatile Queue<Long> calledWithTxId = new LinkedList<>();
         private final boolean failing;
         private final int serverId;
 

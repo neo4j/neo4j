@@ -31,14 +31,11 @@ public final class ServerExtensionRepresentation extends MappingRepresentation
     public ServerExtensionRepresentation( String name, List<ExtensionPointRepresentation> methods )
     {
         super( RepresentationType.SERVER_PLUGIN_DESCRIPTION );
-        this.extended = new HashMap<String, EntityExtensionRepresentation>();
+        this.extended = new HashMap<>();
         for ( ExtensionPointRepresentation extension : methods )
         {
-            EntityExtensionRepresentation entity = extended.get( extension.getExtendedEntity() );
-            if ( entity == null )
-            {
-                extended.put( extension.getExtendedEntity(), entity = new EntityExtensionRepresentation() );
-            }
+            EntityExtensionRepresentation entity =
+                    extended.computeIfAbsent( extension.getExtendedEntity(), k -> new EntityExtensionRepresentation() );
             entity.add( extension );
         }
     }
@@ -59,7 +56,7 @@ public final class ServerExtensionRepresentation extends MappingRepresentation
         EntityExtensionRepresentation()
         {
             super( "entity-extensions" );
-            this.extensions = new ArrayList<ExtensionPointRepresentation>();
+            this.extensions = new ArrayList<>();
         }
 
         void add( ExtensionPointRepresentation extension )

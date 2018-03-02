@@ -215,8 +215,6 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   def allHints: Set[Hint] =
     hints ++ optionalMatches.flatMap(_.allHints)
 
-  def numHints: Int = allHints.size
-
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
       selections = selections ++ other.selections,
@@ -282,6 +280,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
 
   def joinHints: Set[UsingJoinHint] =
     hints.collect { case hint: UsingJoinHint => hint }
+
 
   private def connectedComponentFor(startNode: String, visited: mutable.Set[String]): QueryGraph = {
     val queue = mutable.Queue(startNode)
@@ -442,7 +441,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[QueryGraph]
 
-  override def hashCode(): Int = {
+  override lazy val hashCode: Int = {
     val optionals = if(optionalMatches.nonEmpty && containsIndependentOptionalMatches)
       optionalMatches.toSet
     else

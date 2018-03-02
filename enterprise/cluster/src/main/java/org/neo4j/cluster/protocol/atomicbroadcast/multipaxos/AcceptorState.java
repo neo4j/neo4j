@@ -36,7 +36,6 @@ public enum AcceptorState
                                              Message<AcceptorMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == AcceptorMessage.join )
                     {
@@ -54,7 +53,6 @@ public enum AcceptorState
                                              Message<AcceptorMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -83,7 +81,7 @@ public enum AcceptorState
                             {
                                 // Optimization - explicit reject
                                 context.getLog( AcceptorState.class ).debug("Rejecting prepare from "
-                                        + message.getHeader( Message.FROM ) + " for instance "
+                                        + message.getHeader( Message.HEADER_FROM ) + " for instance "
                                         + message.getHeader( InstanceId.INSTANCE ) + " and ballot "
                                         + incomingState.getBallot() + " (i had a prepare state ballot = "
                                         + localState.getBallot() + ")" );

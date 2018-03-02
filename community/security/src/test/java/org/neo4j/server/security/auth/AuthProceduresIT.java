@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -66,7 +67,7 @@ public class AuthProceduresIT
     protected GraphDatabaseAPI db;
     private EphemeralFileSystemAbstraction fs;
     private BasicAuthManager authManager;
-    private BasicSecurityContext admin;
+    private LoginContext admin;
 
     @Before
     public void setup() throws InvalidAuthTokenException, IOException
@@ -98,7 +99,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotChangeOwnPasswordIfNewPasswordInvalid() throws Exception
+    public void shouldNotChangeOwnPasswordIfNewPasswordInvalid()
     {
         assertFail( admin, "CALL dbms.changePassword( '' )", "A password cannot be empty." );
         assertFail( admin, "CALL dbms.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
@@ -119,7 +120,7 @@ public class AuthProceduresIT
     {
         // Given
         authManager.newUser( "andres", "banana", true );
-        BasicSecurityContext user = login("andres", "banana");
+        LoginContext user = login("andres", "banana");
 
         // Then
         assertFail( user, "CALL dbms.procedures",
@@ -129,7 +130,7 @@ public class AuthProceduresIT
     //---------- create user -----------
 
     @Test
-    public void shouldCreateUser() throws Exception
+    public void shouldCreateUser()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', true)" );
         try
@@ -143,7 +144,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldCreateUserWithNoPasswordChange() throws Exception
+    public void shouldCreateUserWithNoPasswordChange()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', false)" );
         try
@@ -157,7 +158,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldCreateUserWithDefault() throws Exception
+    public void shouldCreateUserWithDefault()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123')" );
         try
@@ -171,7 +172,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotCreateUserIfInvalidUsername() throws Exception
+    public void shouldNotCreateUserIfInvalidUsername()
     {
         assertFail( admin, "CALL dbms.security.createUser('', '1234', true)", "The provided username is empty." );
         assertFail( admin, "CALL dbms.security.createUser(',!', '1234', true)",
@@ -181,13 +182,13 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotCreateUserIfInvalidPassword() throws Exception
+    public void shouldNotCreateUserIfInvalidPassword()
     {
         assertFail( admin, "CALL dbms.security.createUser('andres', '', true)", "A password cannot be empty." );
     }
 
     @Test
-    public void shouldNotCreateExistingUser() throws Exception
+    public void shouldNotCreateExistingUser()
     {
         assertFail( admin, "CALL dbms.security.createUser('neo4j', '1234', true)",
                 "The specified user 'neo4j' already exists" );
@@ -217,7 +218,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotDeleteNonExistentUser() throws Exception
+    public void shouldNotDeleteNonExistentUser()
     {
         assertFail( admin, "CALL dbms.security.deleteUser('nonExistentUser')", "User 'nonExistentUser' does not exist" );
     }
@@ -251,7 +252,7 @@ public class AuthProceduresIT
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
 
         authManager.newUser( "andres", "123", false );
-        BasicSecurityContext andres = login( "andres", "123" );
+        LoginContext andres = login( "andres", "123" );
         assertSuccess( andres, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );
     }
@@ -281,12 +282,12 @@ public class AuthProceduresIT
         }
     }
 
-    private BasicSecurityContext login( String username, String password ) throws InvalidAuthTokenException
+    private LoginContext login( String username, String password ) throws InvalidAuthTokenException
     {
         return authManager.login( SecurityTestUtils.authToken( username, password ) );
     }
 
-    private void assertEmpty( BasicSecurityContext subject, String query )
+    private void assertEmpty( LoginContext subject, String query )
     {
         assertThat( execute( subject, query, r ->
                 {
@@ -295,7 +296,7 @@ public class AuthProceduresIT
                 equalTo( "" ) );
     }
 
-    private void assertFail( BasicSecurityContext subject, String query, String partOfErrorMsg )
+    private void assertFail( LoginContext subject, String query, String partOfErrorMsg )
     {
         assertThat( execute( subject, query, r ->
                 {
@@ -304,7 +305,7 @@ public class AuthProceduresIT
                 containsString( partOfErrorMsg ) );
     }
 
-    private void assertSuccess( BasicSecurityContext subject, String query,
+    private void assertSuccess( LoginContext subject, String query,
             Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
     {
         assertThat(
@@ -312,7 +313,7 @@ public class AuthProceduresIT
                 equalTo( "" ) );
     }
 
-    private String execute( BasicSecurityContext subject, String query,
+    private String execute( LoginContext subject, String query,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
         try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )

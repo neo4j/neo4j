@@ -32,7 +32,7 @@ import org.junit.Test;
 public class SimplePortProviderTest
 {
     @Test
-    public void shouldProvideUniquePorts() throws Exception
+    public void shouldProvideUniquePorts()
     {
         PortProvider portProvider = new SimplePortProvider( port -> false, 42 );
 
@@ -43,7 +43,7 @@ public class SimplePortProviderTest
     }
 
     @Test
-    public void shouldSkipOccupiedPorts() throws Exception
+    public void shouldSkipOccupiedPorts()
     {
         PortProbe portProbe = mock( PortProbe.class );
         PortProvider portProvider = new SimplePortProvider( portProbe, 40 );
@@ -58,7 +58,7 @@ public class SimplePortProviderTest
     }
 
     @Test
-    public void shouldNotOverRun() throws Exception
+    public void shouldNotOverRun()
     {
         PortProvider portProvider = new SimplePortProvider( port -> false, 65534 );
 

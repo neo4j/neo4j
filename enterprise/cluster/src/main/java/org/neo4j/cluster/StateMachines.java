@@ -41,8 +41,8 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.CREATED_BY;
+import static org.neo4j.cluster.com.message.Message.HEADER_CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.HEADER_CREATED_BY;
 
 
 /**
@@ -68,10 +68,9 @@ public class StateMachines
     private DelayedDirectExecutor executor;
     private Executor stateMachineExecutor;
     private Timeouts timeouts;
-    private final Map<Class<? extends MessageType>, StateMachine> stateMachines = new LinkedHashMap<Class<? extends
-            MessageType>, StateMachine>();
+    private final Map<Class<? extends MessageType>, StateMachine> stateMachines = new LinkedHashMap<>();
 
-    private final List<MessageProcessor> outgoingProcessors = new ArrayList<MessageProcessor>();
+    private final List<MessageProcessor> outgoingProcessors = new ArrayList<>();
     private final OutgoingMessageHolder outgoing;
     // This is used to ensure fairness of message delivery
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
@@ -161,7 +160,7 @@ public class StateMachines
                         {
                             while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
                             {
-                                message.copyHeadersTo( outgoingMessage, CONVERSATION_ID, CREATED_BY );
+                                message.copyHeadersTo( outgoingMessage, HEADER_CONVERSATION_ID, HEADER_CREATED_BY );
 
                                 for ( MessageProcessor outgoingProcessor : outgoingProcessors )
                                 {
@@ -178,9 +177,9 @@ public class StateMachines
                                     }
                                 }
 
-                                if ( outgoingMessage.hasHeader( Message.TO ) )
+                                if ( outgoingMessage.hasHeader( Message.HEADER_TO ) )
                                 {
-                                    outgoingMessage.setHeader( Message.INSTANCE_ID, instanceIdHeaderValue );
+                                    outgoingMessage.setHeader( Message.HEADER_INSTANCE_ID, instanceIdHeaderValue );
                                     toSend.add( outgoingMessage );
                                 }
                                 else
@@ -248,7 +247,7 @@ public class StateMachines
     @Override
     public String toString()
     {
-        List<String> states = new ArrayList<String>();
+        List<String> states = new ArrayList<>();
         for ( StateMachine stateMachine : stateMachines.values() )
         {
             states.add( stateMachine.getState().getClass().getSuperclass().getSimpleName() + ":" + stateMachine
@@ -264,8 +263,7 @@ public class StateMachines
 
     private class OutgoingMessageHolder implements MessageHolder
     {
-        private Deque<Message<? extends MessageType>> outgoingMessages = new ArrayDeque<Message<? extends
-                MessageType>>();
+        private Deque<Message<? extends MessageType>> outgoingMessages = new ArrayDeque<>();
 
         @Override
         public synchronized void offer( Message<? extends MessageType> message )

@@ -69,17 +69,14 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
@@ -316,18 +313,13 @@ public class MultipleIndexPopulationStressIT
     {
         RandomNodeGenerator( int count )
         {
-            super( count, 1_000, new RandomsStates( random.seed() ), new Generator<Randoms>()
-            {
-                @Override
-                public void accept( Randoms state, InputEntityVisitor visitor, long id ) throws IOException
+            super( count, 1_000, new RandomsStates( random.seed() ), ( state, visitor, id ) -> {
+                String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+                for ( String key : keys )
                 {
-                    String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-                    for ( String key : keys )
-                    {
-                        visitor.property( key, randomPropertyValue( state.random() ) );
-                    }
-                    visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
+                    visitor.property( key, randomPropertyValue( state.random() ) );
                 }
+                visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
             }, 0 );
         }
     }

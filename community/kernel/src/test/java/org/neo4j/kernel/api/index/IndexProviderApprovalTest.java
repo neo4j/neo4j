@@ -41,6 +41,9 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
@@ -77,6 +80,10 @@ public abstract class IndexProviderApprovalTest
         SHORT_42( (short) 42 ),
         FLOAT_42( (float) 42 ),
         FLOAT_42andAHalf( 42.5f ),
+        POINT_123456_GPS( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) ),
+        POINT_123456_CAR( Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 ) ),
+        POINT_123456_GPS_3D( Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.3, 45.6, 78.9 ) ),
+        POINT_123456_CAR_3D( Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123, 456, 789 ) ),
         ARRAY_OF_INTS( new int[]{1, 2, 3} ),
         ARRAY_OF_LONGS( new long[]{1, 2, 3} ),
         ARRAY_OF_LARGE_LONGS_1( new long[] { 4611686018427387905L } ),
@@ -95,7 +102,11 @@ public abstract class IndexProviderApprovalTest
         ONE( new String[]{"", "||"} ),
         OTHER( new String[]{"||", ""} ),
         ANOTHER_ARRAY_OF_STRING( new String[]{"1|2|3"} ),
-        ARRAY_OF_CHAR( new char[]{'1', '2', '3'} );
+        ARRAY_OF_CHAR( new char[]{'1', '2', '3'} ),
+        ARRAY_OF_POINTS_GPS( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 )} ),
+        ARRAY_OF_POINTS_CAR( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 )} ),
+        ARRAY_OF_POINTS_GPS_3D( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.3, 45.6, 78.9 )} ),
+        ARRAY_OF_POINTS_CAR_3D( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123, 456, 789 )} );
 
         private final Object value;
 

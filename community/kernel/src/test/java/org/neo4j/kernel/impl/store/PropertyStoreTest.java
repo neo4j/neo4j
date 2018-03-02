@@ -58,7 +58,7 @@ public class PropertyStoreTest
     private File path;
 
     @Before
-    public void setup() throws IOException
+    public void setup()
     {
         fileSystemAbstraction = fsRule.get();
         path = new File( "/tmp/foobar" );
@@ -67,7 +67,7 @@ public class PropertyStoreTest
     }
 
     @Test
-    public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord() throws IOException
+    public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
     {
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );

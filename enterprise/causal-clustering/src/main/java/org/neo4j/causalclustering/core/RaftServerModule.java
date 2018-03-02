@@ -26,66 +26,84 @@ import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessageMonitoringHandler;
+import org.neo4j.causalclustering.core.consensus.RaftMessageNettyHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClusterIdAwareMessage;
+import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
 import org.neo4j.causalclustering.core.state.RaftMessageApplier;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.messaging.LoggingInbound;
+import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
+import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.ProtocolInstaller;
+import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
+import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
+import org.neo4j.causalclustering.protocol.handshake.ProtocolRepository;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
-public class RaftServerModule
+import static java.util.Collections.singletonList;
+
+class RaftServerModule
 {
     private final PlatformModule platformModule;
     private final ConsensusModule consensusModule;
     private final IdentityModule identityModule;
     private final LocalDatabase localDatabase;
-    private final Monitors monitors;
     private final MessageLogger<MemberId> messageLogger;
     private final LogProvider logProvider;
-    private final PipelineHandlerAppender pipelineHandlerAppender;
+    private final NettyPipelineBuilderFactory pipelineBuilderFactory;
+    private final RaftServer raftServer;
 
     RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
-            LocalDatabase localDatabase, PipelineHandlerAppender pipelineHandlerAppender, Monitors monitors, MessageLogger<MemberId> messageLogger )
+            LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
         this.identityModule = identityModule;
         this.localDatabase = localDatabase;
-        this.monitors = monitors;
         this.messageLogger = messageLogger;
         this.logProvider = platformModule.logging.getInternalLogProvider();
-        this.pipelineHandlerAppender = pipelineHandlerAppender;
+        this.pipelineBuilderFactory = pipelineBuilderFactory;
 
-        LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain = createMessageHandlerChain( coreServerModule );
+        LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule );
 
-        createRaftServer( coreServerModule, messageHandlerChain );
+        raftServer = createRaftServer( coreServerModule, messageHandlerChain );
     }
 
-    private void createRaftServer( CoreServerModule coreServerModule, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain )
+    private RaftServer createRaftServer( CoreServerModule coreServerModule,
+            LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain )
     {
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), pipelineHandlerAppender, platformModule.config, logProvider,
-                platformModule.logging.getUserLogProvider(), monitors, platformModule.clock );
+        ProtocolRepository protocolRepository = new ProtocolRepository( Protocol.Protocols.values() );
 
-        LoggingInbound<ReceivedInstantClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
-                messageLogger, identityModule.myself() );
+        RaftMessageNettyHandler nettyHandler = new RaftMessageNettyHandler( logProvider );
+        RaftProtocolServerInstaller raftProtocolServerInstaller = new RaftProtocolServerInstaller( nettyHandler, pipelineBuilderFactory, logProvider );
+        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository =
+                new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ) );
+
+        HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( logProvider, protocolRepository, Protocol.Identifier.RAFT,
+                protocolInstallerRepository, pipelineBuilderFactory );
+        RaftServer raftServer = new RaftServer( handshakeServerInitializer, platformModule.config,
+                logProvider, platformModule.logging.getUserLogProvider() );
+
+        LoggingInbound<ReceivedInstantClusterIdAwareMessage<?>> loggingRaftInbound =
+                new LoggingInbound<>( nettyHandler, messageLogger, identityModule.myself() );
         loggingRaftInbound.registerHandler( messageHandlerChain );
 
         platformModule.life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         platformModule.life.add( coreServerModule.createCoreLife( messageHandlerChain ) );
         platformModule.life.add( coreServerModule.catchupServer() ); // must start last and stop first, since it handles external requests
         platformModule.life.add( coreServerModule.downloadService() );
+
+        return raftServer;
     }
 
-    private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> createMessageHandlerChain( CoreServerModule coreServerModule )
+    private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule )
     {
         RaftMessageApplier messageApplier = new RaftMessageApplier( localDatabase, logProvider,
                 consensusModule.raftMachine(), coreServerModule.downloadService(), coreServerModule.commandApplicationProcess() );
@@ -94,7 +112,7 @@ public class RaftServerModule
 
         int queueSize = platformModule.config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = platformModule.config.get( CausalClusteringSettings.raft_in_queue_max_batch );
-        Function<Runnable, ContinuousJob> jobFactory = ( Runnable runnable ) ->
+        Function<Runnable, ContinuousJob> jobFactory = runnable ->
                 new ContinuousJob( platformModule.jobScheduler.threadFactory( new JobScheduler.Group( "raft-batch-handler" ) ), runnable, logProvider );
         ComposableMessageHandler batchingMessageHandler = BatchingMessageHandler.composable( queueSize, maxBatch, jobFactory, logProvider );
 
@@ -108,5 +126,10 @@ public class RaftServerModule
                 .compose( batchingMessageHandler )
                 .compose( monitoringHandler )
                 .apply( messageApplier );
+    }
+
+    public RaftServer raftServer()
+    {
+        return raftServer;
     }
 }

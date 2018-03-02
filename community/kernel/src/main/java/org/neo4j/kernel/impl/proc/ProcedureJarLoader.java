@@ -39,8 +39,6 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.logging.Log;
 
-import static java.util.stream.Collectors.toList;
-
 /**
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
  * instances.
@@ -71,9 +69,8 @@ public class ProcedureJarLoader
 
         Callables out = new Callables();
 
-        List<URL> list = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL )
-                .collect( toList() );
-        URL[] jarFiles = list.toArray( new URL[list.size()] );
+        URL[] jarFiles = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL )
+                .toArray( URL[]::new );
 
         URLClassLoader loader = new URLClassLoader( jarFiles, this.getClass().getClassLoader() );
 
@@ -134,7 +131,7 @@ public class ProcedureJarLoader
                         if ( name.endsWith( ".class" ) )
                         {
                             String className =
-                                    name.substring( 0, name.length() - ".class".length() ).replace( "/", "." );
+                                    name.substring( 0, name.length() - ".class".length() ).replace( '/', '.' );
 
                             try
                             {

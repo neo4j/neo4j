@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
+import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -34,7 +36,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 
@@ -58,6 +60,8 @@ trait QueryContext extends TokenContext {
 
   def transactionalContext: QueryTransactionalContext
 
+  def withActiveRead: QueryContext
+
   def resources: CloseableResource
 
   def nodeOps: Operations[NodeValue]
@@ -76,6 +80,8 @@ trait QueryContext extends TokenContext {
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator
 
+  def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor
+
   def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue
 
   def getOrCreateLabelId(labelName: String): Int
@@ -87,8 +93,6 @@ trait QueryContext extends TokenContext {
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
 
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
-
-  def getPropertiesForRelationship(relId: Long): Iterator[Int]
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
@@ -190,7 +194,7 @@ trait QueryContext extends TokenContext {
 
   def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
+  def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue
 
   def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
 
@@ -243,6 +247,14 @@ trait QueryTransactionalContext extends CloseableResource {
   def cursors : CursorFactory
 
   def dataRead: Read
+
+  def stableDataRead: Read
+
+  def markAsStable(): Unit
+
+  def tokenRead: TokenRead
+
+  def schemaRead: SchemaRead
 
   def dataWrite: Write
 

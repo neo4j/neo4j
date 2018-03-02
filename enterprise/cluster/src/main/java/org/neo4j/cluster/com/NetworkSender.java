@@ -22,7 +22,6 @@ package org.neo4j.cluster.com;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -149,14 +148,12 @@ public class NetworkSender
 
     @Override
     public void init()
-            throws Throwable
     {
         ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
     }
 
     @Override
     public void start()
-            throws Throwable
     {
         channels = new DefaultChannelGroup();
 
@@ -208,7 +205,6 @@ public class NetworkSender
 
     @Override
     public void shutdown()
-            throws Throwable
     {
     }
 
@@ -234,7 +230,7 @@ public class NetworkSender
     {
         if ( !paused )
         {
-            if ( message.hasHeader( Message.TO ) )
+            if ( message.hasHeader( Message.HEADER_TO ) )
             {
                 send( message );
             }
@@ -261,15 +257,10 @@ public class NetworkSender
     {
         monitor.queuedMessage( message );
 
-        final URI to = URI.create( message.getHeader( Message.TO ) );
+        final URI to = URI.create( message.getHeader( Message.HEADER_TO ) );
 
-        ExecutorService senderExecutor = senderExecutors.get( to );
-        if ( senderExecutor == null )
-        {
-            senderExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender " + to
-                    .toASCIIString(), monitor ) );
-            senderExecutors.put( to, senderExecutor );
-        }
+        ExecutorService senderExecutor = senderExecutors.computeIfAbsent( to, t -> Executors
+                .newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender " + t.toASCIIString(), monitor ) ) );
 
         senderExecutor.submit( () ->
         {
@@ -300,8 +291,8 @@ public class NetworkSender
 
             try
             {
-                // Set FROM header
-                message.setHeader( Message.FROM, me.toASCIIString() );
+                // Set HEADER_FROM header
+                message.setHeader( Message.HEADER_FROM, me.toASCIIString() );
 
                 msgLog.debug( "Sending to " + to + ": " + message );
 
@@ -414,7 +405,7 @@ public class NetworkSender
             implements ChannelPipelineFactory
     {
         @Override
-        public ChannelPipeline getPipeline() throws Exception
+        public ChannelPipeline getPipeline()
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
@@ -437,14 +428,14 @@ public class NetworkSender
         }
 
         @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( ctx.getChannel() );
             channels.remove( ctx.getChannel() );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
         {
             Throwable cause = e.getCause();
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )

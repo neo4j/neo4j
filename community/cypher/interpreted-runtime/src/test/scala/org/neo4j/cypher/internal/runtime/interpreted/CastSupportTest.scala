@@ -21,6 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.DurationValue.duration
+import org.neo4j.values.storable.LocalTimeValue.localTime
+import org.neo4j.values.storable._
+import org.neo4j.values.virtual.VirtualValues
 
 class CastSupportTest extends CypherFunSuite {
 
@@ -57,5 +61,37 @@ class CastSupportTest extends CypherFunSuite {
   test("downcastAppMismatchTest") {
     val given: Any = Seq(1)
     intercept[CypherTypeException](CastSupport.castOrFail[Int](given))
+  }
+
+  test("should convert string lists to arrays") {
+    val valueObj = Values.stringValue("test")
+    val list = VirtualValues.list(valueObj)
+    val array = CastSupport.getConverter(valueObj).arrayConverter(list)
+    array shouldBe a[StringArray]
+    array.asInstanceOf[StringArray].asObjectCopy()(0) should equal(valueObj.asObjectCopy())
+  }
+
+  test("should convert point lists to arrays") {
+    val valueObj = Values.pointValue(CoordinateReferenceSystem.Cartesian, 0.0, 1.0)
+    val list = VirtualValues.list(valueObj)
+    val array = CastSupport.getConverter(valueObj).arrayConverter(list)
+    array shouldBe a[PointArray]
+    array.asInstanceOf[PointArray].asObjectCopy()(0) should equal(valueObj)
+  }
+
+  test("should convert local time lists to arrays") {
+    val valueObj = localTime(3, 20, 45, 0)
+    val list = VirtualValues.list(valueObj)
+    val array = CastSupport.getConverter(valueObj).arrayConverter(list)
+    array shouldBe a[LocalTimeArray]
+    array.asInstanceOf[LocalTimeArray].asObjectCopy()(0) should equal(valueObj.asObjectCopy())
+  }
+
+  test("should convert duration lists to arrays") {
+    val valueObj = duration(3, 20, 45, 0)
+    val list = VirtualValues.list(valueObj)
+    val array = CastSupport.getConverter(valueObj).arrayConverter(list)
+    array shouldBe a[DurationArray]
+    array.asInstanceOf[DurationArray].asObjectCopy()(0) should equal(valueObj.asObjectCopy())
   }
 }

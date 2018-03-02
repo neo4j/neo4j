@@ -275,7 +275,7 @@ public class TransactionRecordStateTest
         representation.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
         {
             @Override
-            public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+            public boolean visitPropertyCommand( PropertyCommand command )
             {
                 // THEN
                 verifyPropertyRecord( command.getBefore() );
@@ -756,13 +756,13 @@ public class TransactionRecordStateTest
         LockService locks = mock( LockService.class, new Answer<Object>()
         {
             @Override
-            public synchronized Object answer( final InvocationOnMock invocation ) throws Throwable
+            public synchronized Object answer( final InvocationOnMock invocation )
             {
                 // This is necessary because finalize() will also be called
                 String name = invocation.getMethod().getName();
                 if ( name.equals( "acquireNodeLock" ) || name.equals( "acquireRelationshipLock" ) )
                 {
-                    return mock( Lock.class, (Answer) invocationOnMock -> null );
+                    return mock( Lock.class, invocationOnMock -> null );
                 }
                 return null;
             }
@@ -864,7 +864,7 @@ public class TransactionRecordStateTest
         ptx.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
         {
             @Override
-            public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
+            public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command )
             {
                 if ( command.getAfter().inUse() )
                 {
@@ -1406,7 +1406,7 @@ public class TransactionRecordStateTest
         final List<EntityUpdates> entityUpdatesList = new ArrayList<>();
 
         @Override
-        public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
+        public void apply( IndexUpdates updates )
         {
         }
 

@@ -1,209 +1,296 @@
-Case should handle mixed number types
-Case should handle mixed types
-Returning a CASE expression into pattern expression
-Returning a CASE expression into integer
-Returning a CASE expression with label predicates
-Using a CASE expression in a WITH, positive case
-Using a CASE expression in a WITH, negative case
-Using a CASE expression with label predicates in a WITH
-Using a CASE expression in a WHERE, positive case
-Using a CASE expression in a WHERE, negative case
-Using a CASE expression in a WHERE, with relationship predicate
-Using a CASE expression in a WHERE, with label predicate
-Returning a CASE expression with a pattern expression alternative
-Merge node with prop and label and unique index
-Merge node with prop and label and unique index when no match
-Merge using unique constraint should update existing node
-Merge using unique constraint should create missing node
-Should match on merge using multiple unique indexes if only found single node for both indexes
-Should match on merge using multiple unique indexes and labels if only found single node for both indexes
-Should match on merge using multiple unique indexes using same key if only found single node for both indexes
-Should create on merge using multiple unique indexes if found no nodes
-Should create on merge using multiple unique indexes and labels if found no nodes
-Should fail on merge using multiple unique indexes using same key if found different nodes
-Should fail on merge using multiple unique indexes if found different nodes
-Should fail on merge using multiple unique indexes if it found a node matching single property only
-Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order
-Should fail on merge using multiple unique indexes and labels if found different nodes
-Merge with uniqueness constraints must properly handle multiple labels
-Unrelated nodes with same property should not clash
-Works fine with index and constraint
-Works with property repeated in literal map in set
-Works with property in map that gets set
-Failing when creation would violate constraint
-Explanation of in-query procedure call
-Add labels inside FOREACH
-Merging inside a FOREACH using a previously matched node
-Merging inside a FOREACH using a previously matched node and a previously merged node
-Merging inside a FOREACH using two previously merged nodes
-Merging inside a FOREACH using two previously merged nodes that also depend on WITH
-Inside nested FOREACH
-Inside nested FOREACH, nodes inlined
-Should handle running merge inside a foreach loop
-Merge inside foreach should see variables introduced by update actions outside foreach
-Handling numerical literal on the left when using an index
-Handling numerical literal on the right when using an index
-Works fine with index
-Works with indexed and unindexed property
-Works with two indexed properties
-Should be able to merge using property from match with index
-Merge with an index must properly handle multiple labels
-STARTS WITH should handle null prefix
-Filter on path nodes
-Using a single bound node
-Using a longer pattern
-Using bound nodes in mid-pattern
-Using bound nodes in mid-pattern when pattern partly matches
-Introduce named paths
-Unbound pattern
-Returning an `extract()` expression
-Using an `extract()` expression in a WITH
-Using an `extract()` expression in a WHERE
-Using a pattern expression and a CASE expression in a WHERE
-Pattern expressions and ORDER BY
-Returning a pattern expression
-Returning a pattern expression with label predicate
-Returning a pattern expression with bound nodes
-Using a pattern expression in a WITH
-Using a variable-length pattern expression in a WITH
-Using pattern expression in RETURN
-Aggregating on pattern expression
-Using `length()` on outgoing pattern expression
-Using `length()` on incoming pattern expression
-Using `length()` on undirected pattern expression
-Using `length()` on pattern expression with complex relationship predicate
-Returning pattern expression in `exists()`
-Pattern expression inside list comprehension
-Get node degree via length of pattern expression
-Get node degree via length of pattern expression that specifies a relationship type
-Get node degree via length of pattern expression that specifies multiple relationship types
-Filter relationships with properties using pattern predicate
-Filter using negated pattern predicate
-Filter using a variable length relationship pattern predicate with properties
-Filter using a pattern predicate that is a logical OR between an expression and a subquery
-Filter using a pattern predicate that is a logical OR between two expressions and a subquery
-Filter using a pattern predicate that is a logical OR between one expression and a negated subquery
-Filter using a pattern predicate that is a logical OR between one subquery and a negated subquery
-Filter using a pattern predicate that is a logical OR between one negated subquery and a subquery
-Filter using a pattern predicate that is a logical OR between two subqueries
-Filter using a pattern predicate that is a logical OR between one negated subquery, a subquery, and an equality expression
-Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression
-Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression 2
-Using a pattern predicate after aggregation 1
-Using a pattern predicate after aggregation 2
-Returning a relationship from a pattern predicate
-Pattern predicate should uphold the relationship uniqueness constraint
-Using pattern predicate
-Matching using pattern predicate with multiple relationship types
-Matching using pattern predicate
-Pattern predicates on missing optionally matched nodes should simply evaluate to false
-Pattern predicates and parametrised predicate
-Matching with complex composite pattern predicate
-Handling pattern predicates without matches
-Handling pattern predicates
-Matching named path with variable length pattern and pattern predicates
-In-query call to procedure that takes no arguments
-Calling the same procedure twice using the same outputs in each call
-In-query call to VOID procedure that takes no arguments
-In-query call to VOID procedure does not consume rows
-In-query call to procedure with explicit arguments
-In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
-In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
-In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
-In-query call to procedure with null argument
-Filter should work
-Find a shortest path among paths that fulfill a predicate on all nodes
-Find a shortest path among paths that fulfill a predicate on all relationships
-Find a shortest path among paths that fulfill a predicate on all relationships 2
-Find a shortest path among paths that fulfill a predicate
-Find a shortest path without loosing context information at runtime
-Find a shortest path in an expression context
-Finds shortest path
-Optionally finds shortest path
-Optionally finds shortest path using previously bound nodes
-Returns null when not finding a shortest path during an OPTIONAL MATCH
-Find relationships of a shortest path
-Find no shortest path when a length limit prunes all candidates
-Find no shortest path when the start node is null
-Find all shortest paths
-Find a combination of a shortest path and a pattern expression
-Filter with AND/OR
-LIMIT 0 should stop side effects
-Id on null
-type on null
-Shorthand case with filter should work as expected
-optional equality with boolean lists
-
-//OrderByAcceptance.feature - Unsupported orderability
-ORDER BY nodes should return null results last in ascending order
-ORDER BY relationships should return null results last in ascending order
-Ordering is well defined across all types, ascending
-Ordering is well defined across all types, descending
-Ordering for lists, ascending
-Ordering for lists, descending
-
-// Long chain of comparison operators
-Long chains of integer comparisons
-Long chains of floating point comparisons
-Long chains of string comparisons
-
-Accessing a list with null should return null
-Accessing a list with null as lower bound should return null
-Accessing a list with null as upper bound should return null
-Accessing a map with null should return null
-
-Should allow AND and OR with equality predicates
-Should allow AND and OR with inequality predicates
-Should allow AND and OR with STARTS WITH predicates
-Should allow AND and OR with regex predicates
-Should allow OR with regex predicates
-Should allow AND and OR with index and equality predicates
-Should allow AND and OR with index and inequality predicates
-Should allow AND and OR with index and STARTS WITH predicates
-Should allow AND and OR with index and regex predicates
-Should allow OR with index and regex predicates
-
-//SkipLimitAcceptance.feature
-Combining LIMIT and aggregation
-Using a optional match after aggregation and before an aggregation
-Limit before sort
-Limit before top
-Limit before distinct
-
-//VarLengthAcceptance.feature
-Handles checking properties on nodes in path - using in-pattern property value
-Handles checking properties on nodes in path - using ALL() function on path node properties
-Handles checking properties on nodes in multistep path - using ALL() function on path node properties
-Handles checking properties on relationships in path - using in-pattern property value
-Handles checking properties on relationships in path - using ALL() function on relationship identifier
-Handles checking properties on relationships in path - using ALL() function on path relationship properties
-Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
-
-//AggregationAcceptance.feature
-max() over strings
-min() over strings
-max() over mixed numeric values
-min() over mixed numeric values
-max() over mixed values
-min() over mixed values
-max() over list values
-min() over list values
-max() over integers
-min() over integers
-max() over floats
-min() over floats
-Multiple aggregations should work
-
-//MatchAcceptance.feature
-difficult to plan query number 1
-difficult to plan query number 2
-difficult to plan query number 3
-Match on multiple labels with OR
-Variable length path with both sides already bound
-Should handle EXISTS on node property when node is null
-Should handle NOT EXISTS on node property when node is null
-Should handle simple IS NOT NULL on node property when node is null
-Should handle complex IS NOT NULL on node property when node is null
-
-//DeleteAcceptance.feature
-Return properties from deleted node
+Feature "AggregationAcceptance": Scenario "Using a optional match after aggregation and before an aggregation"
+Feature "AggregationAcceptance": Scenario "max() over strings"
+Feature "AggregationAcceptance": Scenario "min() over strings"
+Feature "AggregationAcceptance": Scenario "max() over integers"
+Feature "AggregationAcceptance": Scenario "min() over integers"
+Feature "AggregationAcceptance": Scenario "max() over floats"
+Feature "AggregationAcceptance": Scenario "min() over floats"
+Feature "AggregationAcceptance": Scenario "max() over mixed numeric values"
+Feature "AggregationAcceptance": Scenario "min() over mixed numeric values"
+Feature "AggregationAcceptance": Scenario "max() over mixed values"
+Feature "AggregationAcceptance": Scenario "min() over mixed values"
+Feature "AggregationAcceptance": Scenario "max() over list values"
+Feature "AggregationAcceptance": Scenario "min() over list values"
+Feature "AggregationAcceptance": Scenario "Multiple aggregations should work"
+Feature "CaseExpression": Scenario "Case should handle mixed number types"
+Feature "CaseExpression": Scenario "Case should handle mixed types"
+Feature "CaseExpression": Scenario "Returning a CASE expression into pattern expression"
+Feature "CaseExpression": Scenario "Returning a CASE expression into integer"
+Feature "CaseExpression": Scenario "Returning a CASE expression with label predicates"
+Feature "CaseExpression": Scenario "Using a CASE expression in a WITH, positive case"
+Feature "CaseExpression": Scenario "Using a CASE expression in a WITH, negative case"
+Feature "CaseExpression": Scenario "Using a CASE expression with label predicates in a WITH"
+Feature "CaseExpression": Scenario "Using a CASE expression in a WHERE, positive case"
+Feature "CaseExpression": Scenario "Using a CASE expression in a WHERE, negative case"
+Feature "CaseExpression": Scenario "Using a CASE expression in a WHERE, with relationship predicate"
+Feature "CaseExpression": Scenario "Using a CASE expression in a WHERE, with label predicate"
+Feature "CaseExpression": Scenario "Returning a CASE expression with a pattern expression alternative"
+Feature "CaseExpression": Scenario "Shorthand case with filter should work as expected"
+Feature "ConstraintAcceptance": Scenario "Merge node with prop and label and unique index"
+Feature "ConstraintAcceptance": Scenario "Merge node with prop and label and unique index when no match"
+Feature "ConstraintAcceptance": Scenario "Merge using unique constraint should update existing node"
+Feature "ConstraintAcceptance": Scenario "Merge using unique constraint should create missing node"
+Feature "ConstraintAcceptance": Scenario "Should match on merge using multiple unique indexes if only found single node for both indexes"
+Feature "ConstraintAcceptance": Scenario "Should match on merge using multiple unique indexes and labels if only found single node for both indexes"
+Feature "ConstraintAcceptance": Scenario "Should match on merge using multiple unique indexes using same key if only found single node for both indexes"
+Feature "ConstraintAcceptance": Scenario "Should create on merge using multiple unique indexes if found no nodes"
+Feature "ConstraintAcceptance": Scenario "Should create on merge using multiple unique indexes and labels if found no nodes"
+Feature "ConstraintAcceptance": Scenario "Should fail on merge using multiple unique indexes using same key if found different nodes"
+Feature "ConstraintAcceptance": Scenario "Should fail on merge using multiple unique indexes if found different nodes"
+Feature "ConstraintAcceptance": Scenario "Should fail on merge using multiple unique indexes if it found a node matching single property only"
+Feature "ConstraintAcceptance": Scenario "Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order"
+Feature "ConstraintAcceptance": Scenario "Should fail on merge using multiple unique indexes and labels if found different nodes"
+Feature "ConstraintAcceptance": Scenario "Merge with uniqueness constraints must properly handle multiple labels"
+Feature "ConstraintAcceptance": Scenario "Unrelated nodes with same property should not clash"
+Feature "ConstraintAcceptance": Scenario "Works fine with index and constraint"
+Feature "ConstraintAcceptance": Scenario "Works with property repeated in literal map in set"
+Feature "ConstraintAcceptance": Scenario "Works with property in map that gets set"
+Feature "ConstraintAcceptance": Scenario "Failing when creation would violate constraint"
+Feature "DeleteAcceptance": Scenario "Return properties from deleted node"
+Feature "ExplainAcceptance": Scenario "Explanation of in-query procedure call"
+Feature "ForeachAcceptance": Scenario "Add labels inside FOREACH"
+Feature "ForeachAcceptance": Scenario "Merging inside a FOREACH using a previously matched node"
+Feature "ForeachAcceptance": Scenario "Merging inside a FOREACH using a previously matched node and a previously merged node"
+Feature "ForeachAcceptance": Scenario "Merging inside a FOREACH using two previously merged nodes"
+Feature "ForeachAcceptance": Scenario "Merging inside a FOREACH using two previously merged nodes that also depend on WITH"
+Feature "ForeachAcceptance": Scenario "Inside nested FOREACH"
+Feature "ForeachAcceptance": Scenario "Inside nested FOREACH, nodes inlined"
+Feature "ForeachAcceptance": Scenario "Should handle running merge inside a foreach loop"
+Feature "ForeachAcceptance": Scenario "Merge inside foreach should see variables introduced by update actions outside foreach"
+Feature "IndexAcceptance": Scenario "Handling numerical literal on the left when using an index"
+Feature "IndexAcceptance": Scenario "Handling numerical literal on the right when using an index"
+Feature "IndexAcceptance": Scenario "Works fine with index"
+Feature "IndexAcceptance": Scenario "Works with indexed and unindexed property"
+Feature "IndexAcceptance": Scenario "Works with two indexed properties"
+Feature "IndexAcceptance": Scenario "Should be able to merge using property from match with index"
+Feature "IndexAcceptance": Scenario "Merge with an index must properly handle multiple labels"
+Feature "IndexAcceptance": Scenario "Should allow AND and OR with index and equality predicates"
+Feature "IndexAcceptance": Scenario "Should allow AND and OR with index and inequality predicates"
+Feature "IndexAcceptance": Scenario "Should allow AND and OR with index and STARTS WITH predicates"
+Feature "IndexAcceptance": Scenario "Should allow AND and OR with index and regex predicates"
+Feature "IndexAcceptance": Scenario "Should allow OR with index and regex predicates"
+Feature "IndexAcceptance": Scenario "STARTS WITH should handle null prefix"
+Feature "MatchAcceptance": Scenario "Filter on path nodes"
+Feature "MatchAcceptance": Scenario "Filter with AND/OR"
+Feature "MatchAcceptance": Scenario "Should allow AND and OR with equality predicates"
+Feature "MatchAcceptance": Scenario "Should allow AND and OR with inequality predicates"
+Feature "MatchAcceptance": Scenario "Should allow AND and OR with STARTS WITH predicates"
+Feature "MatchAcceptance": Scenario "Should allow AND and OR with regex predicates"
+Feature "MatchAcceptance": Scenario "Should allow OR with regex predicates"
+Feature "MatchAcceptance": Scenario "difficult to plan query number 1"
+Feature "MatchAcceptance": Scenario "difficult to plan query number 2"
+Feature "MatchAcceptance": Scenario "difficult to plan query number 3"
+Feature "MatchAcceptance": Scenario "Match on multiple labels with OR"
+Feature "MatchAcceptance": Scenario "Variable length path with both sides already bound"
+Feature "MatchAcceptance": Scenario "Should handle EXISTS on node property when node is null"
+Feature "MatchAcceptance": Scenario "Should handle NOT EXISTS on node property when node is null"
+Feature "MatchAcceptance": Scenario "Should handle simple IS NOT NULL on node property when node is null"
+Feature "MatchAcceptance": Scenario "Should handle complex IS NOT NULL on node property when node is null"
+Feature "MergeLegacyAcceptance": Scenario "Using a single bound node"
+Feature "MergeLegacyAcceptance": Scenario "Using a longer pattern"
+Feature "MergeLegacyAcceptance": Scenario "Using bound nodes in mid-pattern"
+Feature "MergeLegacyAcceptance": Scenario "Using bound nodes in mid-pattern when pattern partly matches"
+Feature "MergeLegacyAcceptance": Scenario "Introduce named paths"
+Feature "MergeLegacyAcceptance": Scenario "Unbound pattern"
+Feature "OperatorChaining": Scenario "Long chains of integer comparisons"
+Feature "OperatorChaining": Scenario "Long chains of floating point comparisons"
+Feature "OperatorChaining": Scenario "Long chains of string comparisons"
+Feature "OptionalMatchAcceptance": Scenario "Id on null"
+Feature "OptionalMatchAcceptance": Scenario "type on null"
+Feature "OptionalMatchAcceptance": Scenario "optional equality with boolean lists"
+Feature "OrderByAcceptance": Scenario "ORDER BY nodes should return null results last in ascending order"
+Feature "OrderByAcceptance": Scenario "ORDER BY relationships should return null results last in ascending order"
+Feature "OrderByAcceptance": Scenario "Ordering is well defined across all types, ascending"
+Feature "OrderByAcceptance": Scenario "Ordering is well defined across all types, descending"
+Feature "OrderByAcceptance": Scenario "Ordering for lists, ascending"
+Feature "OrderByAcceptance": Scenario "Ordering for lists, descending"
+Feature "PatternExpressionAcceptance": Scenario "Returning an `extract()` expression"
+Feature "PatternExpressionAcceptance": Scenario "Using an `extract()` expression in a WITH"
+Feature "PatternExpressionAcceptance": Scenario "Using an `extract()` expression in a WHERE"
+Feature "PatternExpressionAcceptance": Scenario "Using a pattern expression and a CASE expression in a WHERE"
+Feature "PatternExpressionAcceptance": Scenario "Pattern expressions and ORDER BY"
+Feature "PatternExpressionAcceptance": Scenario "Returning a pattern expression"
+Feature "PatternExpressionAcceptance": Scenario "Returning a pattern expression with label predicate"
+Feature "PatternExpressionAcceptance": Scenario "Returning a pattern expression with bound nodes"
+Feature "PatternExpressionAcceptance": Scenario "Using a pattern expression in a WITH"
+Feature "PatternExpressionAcceptance": Scenario "Using a variable-length pattern expression in a WITH"
+Feature "PatternExpressionAcceptance": Scenario "Using pattern expression in RETURN"
+Feature "PatternExpressionAcceptance": Scenario "Aggregating on pattern expression"
+Feature "PatternExpressionAcceptance": Scenario "Using `length()` on outgoing pattern expression"
+Feature "PatternExpressionAcceptance": Scenario "Using `length()` on incoming pattern expression"
+Feature "PatternExpressionAcceptance": Scenario "Using `length()` on undirected pattern expression"
+Feature "PatternExpressionAcceptance": Scenario "Using `length()` on pattern expression with complex relationship predicate"
+Feature "PatternExpressionAcceptance": Scenario "Returning pattern expression in `exists()`"
+Feature "PatternExpressionAcceptance": Scenario "Pattern expression inside list comprehension"
+Feature "PatternExpressionAcceptance": Scenario "Get node degree via length of pattern expression"
+Feature "PatternExpressionAcceptance": Scenario "Get node degree via length of pattern expression that specifies a relationship type"
+Feature "PatternExpressionAcceptance": Scenario "Get node degree via length of pattern expression that specifies multiple relationship types"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions 2"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions 3"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehensions 4"
+Feature "PatternExpressionAcceptance": Scenario "Nested pattern comprehension with food"
+Feature "PatternPredicates": Scenario "Filter relationships with properties using pattern predicate"
+Feature "PatternPredicates": Scenario "Filter using negated pattern predicate"
+Feature "PatternPredicates": Scenario "Filter using a variable length relationship pattern predicate with properties"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between an expression and a subquery"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between two expressions and a subquery"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between one expression and a negated subquery"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between one subquery and a negated subquery"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between one negated subquery and a subquery"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between two subqueries"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between one negated subquery, a subquery, and an equality expression"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression"
+Feature "PatternPredicates": Scenario "Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression 2"
+Feature "PatternPredicates": Scenario "Using a pattern predicate after aggregation 1"
+Feature "PatternPredicates": Scenario "Using a pattern predicate after aggregation 2"
+Feature "PatternPredicates": Scenario "Returning a relationship from a pattern predicate"
+Feature "PatternPredicates": Scenario "Pattern predicate should uphold the relationship uniqueness constraint"
+Feature "PatternPredicates": Scenario "Using pattern predicate"
+Feature "PatternPredicates": Scenario "Matching using pattern predicate with multiple relationship types"
+Feature "PatternPredicates": Scenario "Matching using pattern predicate"
+Feature "PatternPredicates": Scenario "Pattern predicates on missing optionally matched nodes should simply evaluate to false"
+Feature "PatternPredicates": Scenario "Pattern predicates and parametrised predicate"
+Feature "PatternPredicates": Scenario "Matching with complex composite pattern predicate"
+Feature "PatternPredicates": Scenario "Handling pattern predicates without matches"
+Feature "PatternPredicates": Scenario "Handling pattern predicates"
+Feature "PatternPredicates": Scenario "Matching named path with variable length pattern and pattern predicates"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "Calling the same procedure twice using the same outputs in each call"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to VOID procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to VOID procedure does not consume rows"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type NUMBER accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type NUMBER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type FLOAT accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with null argument"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
+Feature "ReturnAcceptance": Scenario "Filter should work"
+Feature "ReturnAcceptance": Scenario "LIMIT 0 should stop side effects"
+Feature "ReturnAcceptance": Scenario "Accessing a list with null should return null"
+Feature "ReturnAcceptance": Scenario "Accessing a list with null as lower bound should return null"
+Feature "ReturnAcceptance": Scenario "Accessing a list with null as upper bound should return null"
+Feature "ReturnAcceptance": Scenario "Accessing a map with null should return null"
+Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate on all nodes"
+Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate on all relationships"
+Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate on all relationships 2"
+Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate"
+Feature "ShortestPathAcceptance": Scenario "Find a shortest path without loosing context information at runtime"
+Feature "ShortestPathAcceptance": Scenario "Find a shortest path in an expression context"
+Feature "ShortestPathAcceptance": Scenario "Finds shortest path"
+Feature "ShortestPathAcceptance": Scenario "Optionally finds shortest path"
+Feature "ShortestPathAcceptance": Scenario "Optionally finds shortest path using previously bound nodes"
+Feature "ShortestPathAcceptance": Scenario "Returns null when not finding a shortest path during an OPTIONAL MATCH"
+Feature "ShortestPathAcceptance": Scenario "Find relationships of a shortest path"
+Feature "ShortestPathAcceptance": Scenario "Find no shortest path when a length limit prunes all candidates"
+Feature "ShortestPathAcceptance": Scenario "Find no shortest path when the start node is null"
+Feature "ShortestPathAcceptance": Scenario "Find all shortest paths"
+Feature "ShortestPathAcceptance": Scenario "Find a combination of a shortest path and a pattern expression"
+Feature "SkipLimitAcceptance": Scenario "Combining LIMIT and aggregation"
+Feature "SkipLimitAcceptance": Scenario "Limit before sort"
+Feature "SkipLimitAcceptance": Scenario "Limit before top"
+Feature "SkipLimitAcceptance": Scenario "Limit before distinct"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on nodes in path - using in-pattern property value"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on nodes in path - using ALL() function on path node properties"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on nodes in multistep path - using ALL() function on path node properties"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using in-pattern property value"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using ALL() function on relationship identifier"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using ALL() function on path relationship properties"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties"
+Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with empty db"
+Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with hits"
+Feature "TemporalSelectAcceptance": Scenario "Should select date"
+Feature "TemporalSelectAcceptance": Scenario "Should select local time"
+Feature "TemporalSelectAcceptance": Scenario "Should select time"
+Feature "TemporalSelectAcceptance": Scenario "Should select date into local date time"
+Feature "TemporalSelectAcceptance": Scenario "Should select time into local date time"
+Feature "TemporalSelectAcceptance": Scenario "Should select date and time into local date time"
+Feature "TemporalSelectAcceptance": Scenario "Should select datetime into local date time"
+Feature "TemporalSelectAcceptance": Scenario "Should select date into date time"
+Feature "TemporalSelectAcceptance": Scenario "Should select time into date time"
+Feature "TemporalSelectAcceptance": Scenario "Should select date and time into date time"
+Feature "TemporalSelectAcceptance": Scenario "Should select datetime into date time"
+Feature "TemporalComparisonAcceptance": Scenario "Should compare dates"
+Feature "TemporalComparisonAcceptance": Scenario "Should compare local times"
+Feature "TemporalComparisonAcceptance": Scenario "Should compare times"
+Feature "TemporalComparisonAcceptance": Scenario "Should compare local date times"
+Feature "TemporalComparisonAcceptance": Scenario "Should compare date times"
+Feature "TemporalComparisonAcceptance": Scenario "Should not compare durations"
+Feature "TemporalParseAcceptance": Scenario "Should parse date from string"
+Feature "TemporalParseAcceptance": Scenario "Should parse local time from string"
+Feature "TemporalParseAcceptance": Scenario "Should parse time from string"
+Feature "TemporalParseAcceptance": Scenario "Should parse local date time from string"
+Feature "TemporalParseAcceptance": Scenario "Should parse date time from string"
+Feature "TemporalParseAcceptance": Scenario "Should parse duration from string"
+Feature "TemporalToStringAcceptance": Scenario "Should serialize date"
+Feature "TemporalToStringAcceptance": Scenario "Should serialize local time"
+Feature "TemporalToStringAcceptance": Scenario "Should serialize time"
+Feature "TemporalToStringAcceptance": Scenario "Should serialize local date time"
+Feature "TemporalToStringAcceptance": Scenario "Should serialize date time"
+Feature "TemporalToStringAcceptance": Scenario "Should serialize duration"
+Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date"
+Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local time"
+Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for time"
+Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local date time"
+Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date time"
+Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for duration"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to millennium"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to millennium with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to century"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to century with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to decade"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to decade with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to year"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to year with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to quarter"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to quarter with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to month"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to month with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to week"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to week with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to day"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate to day with time zone"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate datetime to hour"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localdatetime to hour"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate time to hour"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localtime to hour"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate datetime to minute"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localdatetime to minute"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate time to minute"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localtime to minute"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate datetime to second"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localdatetime to second"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate time to second"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localtime to second"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate datetime to millisecond"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localdatetime to millisecond"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate time to millisecond"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localtime to millisecond"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate datetime to microsecond"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localdatetime to microsecond"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate time to microsecond"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate localtime to microsecond"
+Feature "TemporalCreateAcceptance": Scenario "Should construct date"
+Feature "TemporalCreateAcceptance": Scenario "Should construct local time"
+Feature "TemporalCreateAcceptance": Scenario "Should construct time"
+Feature "TemporalCreateAcceptance": Scenario "Should construct local date time"
+Feature "TemporalCreateAcceptance": Scenario "Should construct date time"
+Feature "TemporalCreateAcceptance": Scenario "Should create duration"
+Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from date"
+Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from local time"
+Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from time"
+Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from local date time"
+Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from date time"
+Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract durations"
+Feature "TemporalArithmeticAcceptance": Scenario "Should multiply or divide durations by numbers"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in years"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in quarters"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in months"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in weeks"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in days"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in hours"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in minutes"
+Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in seconds"

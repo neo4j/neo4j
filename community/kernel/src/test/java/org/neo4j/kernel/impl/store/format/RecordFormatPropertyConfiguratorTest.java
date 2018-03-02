@@ -51,7 +51,7 @@ public class RecordFormatPropertyConfiguratorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void keepUserDefinedFormatConfig() throws Exception
+    public void keepUserDefinedFormatConfig()
     {
         Config config = Config.defaults( string_block_size, "36" );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;

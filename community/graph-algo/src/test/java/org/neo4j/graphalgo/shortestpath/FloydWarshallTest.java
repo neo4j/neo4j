@@ -19,20 +19,18 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import common.Neo4jAlgoTestCase;
+import org.junit.Test;
 
 import java.util.List;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
-import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.FloydWarshall;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class FloydWarshallTest extends Neo4jAlgoTestCase
 {
@@ -50,12 +48,9 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "c", "d", "cost", (byte) 1 );
         graph.makeEdge( "d", "e", "cost", (short) 1 );
         graph.makeEdge( "e", "b", "cost", (byte) 1 );
-        FloydWarshall<Double> floydWarshall = new FloydWarshall<Double>( 0.0,
-            Double.MAX_VALUE, Direction.OUTGOING,
-            CommonEvaluators.doubleCostEvaluator( "cost" ),
-            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
-                .getAllNodes(), graph.getAllEdges() );
+        FloydWarshall<Double> floydWarshall = new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING,
+                CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph.getAllNodes(), graph.getAllEdges() );
         assertTrue( floydWarshall.getCost( graph.getNode( "a" ), graph
             .getNode( "a" ) ) == 0.0 );
         assertTrue( floydWarshall.getCost( graph.getNode( "a" ), graph
@@ -75,12 +70,9 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "c", "d", "cost", 1 );
         graph.makeEdge( "d", "e", "cost", (long) 1 );
         graph.makeEdge( "e", "f", "cost", (byte) 1 );
-        FloydWarshall<Double> floydWarshall = new FloydWarshall<Double>( 0.0,
-            Double.MAX_VALUE, Direction.OUTGOING,
-            CommonEvaluators.doubleCostEvaluator( "cost" ),
-            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
-                .getAllNodes(), graph.getAllEdges() );
+        FloydWarshall<Double> floydWarshall = new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING,
+                CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph.getAllNodes(), graph.getAllEdges() );
         List<Node> path = floydWarshall.getPath( graph.getNode( "a" ), graph
             .getNode( "f" ) );
         assertTrue( path.size() == 6 );
@@ -103,21 +95,15 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "b", "s" );
         graph.makeEdge( "e", "c" );
         graph.makeEdge( "d", "e" );
-        new FloydWarshall<Double>( 0.0, Double.MAX_VALUE, Direction.OUTGOING,
-                ( relationship, direction ) ->
-                {
-                    assertEquals( Direction.OUTGOING, direction );
-                    return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
-                .getAllNodes(), graph.getAllEdges() ).calculate();
-        new FloydWarshall<Double>( 0.0, Double.MAX_VALUE, Direction.INCOMING,
-                ( relationship, direction ) ->
-                {
-                    assertEquals( Direction.INCOMING, direction );
-                    return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
-                .getAllNodes(), graph.getAllEdges() ).calculate();
+        new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, ( relationship, direction ) -> {
+            assertEquals( Direction.OUTGOING, direction );
+            return 1.0;
+        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                graph.getAllNodes(), graph.getAllEdges() ).calculate();
+        new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.INCOMING, ( relationship, direction ) -> {
+            assertEquals( Direction.INCOMING, direction );
+            return 1.0;
+        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                graph.getAllNodes(), graph.getAllEdges() ).calculate();
     }
 }

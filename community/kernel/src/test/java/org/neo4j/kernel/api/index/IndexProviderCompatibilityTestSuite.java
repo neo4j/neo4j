@@ -25,6 +25,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,6 +35,10 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {
@@ -49,6 +55,14 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
 public abstract class IndexProviderCompatibilityTestSuite
 {
     protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
+
+    public abstract Iterable<Value> getSupportedValues();
+
+    protected List<Value> commonValues = Arrays.asList( Values.of( "string1" ), Values.of( 42 ) );
+    protected List<Value> temporalValues = Arrays.asList( DateValue.epochDate( 2 ), DateValue.epochDate( 5 ) );
+    protected List<Value> spatialValues = Arrays.asList(
+            Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
+            Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) );
 
     public abstract static class Compatibility
     {

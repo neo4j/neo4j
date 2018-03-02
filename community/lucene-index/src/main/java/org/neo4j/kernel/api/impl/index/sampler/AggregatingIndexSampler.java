@@ -39,7 +39,7 @@ public class AggregatingIndexSampler implements IndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex() throws IndexNotFoundKernelException
+    public IndexSample sampleIndex()
     {
         return indexSamplers.parallelStream()
                 .map( this::sampleIndex )

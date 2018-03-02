@@ -113,7 +113,7 @@ public class DefaultFormat extends RepresentationFormat
     }
 
     @Override
-    public List<Object> readList( String input ) throws BadInputException
+    public List<Object> readList( String input )
     {
         try
         {
@@ -126,7 +126,7 @@ public class DefaultFormat extends RepresentationFormat
     }
 
     @Override
-    public URI readUri( String input ) throws BadInputException
+    public URI readUri( String input )
     {
         try
         {
@@ -145,7 +145,11 @@ public class DefaultFormat extends RepresentationFormat
         {
             if ( !map.containsKey( key ) )
             {
-                (missing == null ? (missing = new HashSet<String>()) : missing).add( key );
+                if ( missing == null )
+                {
+                    missing = new HashSet<>();
+                }
+                missing.add( key );
             }
         }
         if ( missing != null )

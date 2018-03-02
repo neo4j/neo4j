@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -42,6 +44,8 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -61,6 +65,7 @@ public class ResourceInjectionTest
     public ExpectedException exception = ExpectedException.none();
 
     private ReflectiveProcedureCompiler compiler;
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     private Log log = mock(Log.class);
 
@@ -95,7 +100,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithInjectedAPI.class, Optional.empty(), true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
+        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new Object[]{"Bonnie"} ) );
@@ -123,7 +128,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, Optional.empty(), true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
+        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new Object[]{"Morpheus"} ) );
@@ -143,7 +148,7 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         try
         {
-            procList.get( 0 ).apply( new BasicContext(), new Object[0] );
+            procList.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker );
             fail();
         }
         catch ( ProcedureException e )
@@ -160,10 +165,10 @@ public class ResourceInjectionTest
                 compiler.compileFunction( FunctionWithInjectedAPI.class).get( 0 );
 
         // When
-        Object out = proc.apply( new BasicContext(), new Object[0] );
+        Object out = proc.apply( new BasicContext(), new AnyValue[0] );
 
         // Then
-        assertThat( out, equalTo( "[Bonnie, Clyde]" ) );
+        assertThat( out, equalTo( Values.of("[Bonnie, Clyde]") ) );
     }
 
     @Test
@@ -190,7 +195,7 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         try
         {
-            procList.get( 0 ).apply( new BasicContext(), new Object[0] );
+            procList.get( 0 ).apply( new BasicContext(), new AnyValue[0] );
             fail();
         }
         catch ( ProcedureException e )

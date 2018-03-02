@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -55,7 +56,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void shouldFitAsManyPagesAsItCan() throws Throwable
+    public void shouldFitAsManyPagesAsItCan()
     {
         // Given
         long pageCount = 60;
@@ -66,7 +67,7 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance() );
+                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
@@ -77,7 +78,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void shouldWarnWhenCreatedWithConfiguredPageCache() throws Exception
+    public void shouldWarnWhenCreatedWithConfiguredPageCache()
     {
         // Given
         Config config = Config.defaults( stringMap(
@@ -88,7 +89,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log );
+                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
 
         // Then
         try ( PageCache ignore = pageCacheFactory.getOrCreatePageCache() )
@@ -100,7 +101,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void mustUseAndLogConfiguredPageSwapper() throws Exception
+    public void mustUseAndLogConfiguredPageSwapper()
     {
         // Given
         Config config = Config.defaults( stringMap(
@@ -111,7 +112,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory cacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, log );
+                        PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
         cacheFactory.getOrCreatePageCache().close();
 
         // Then
@@ -121,7 +122,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowIfConfiguredPageSwapperCannotBeFound() throws Exception
+    public void mustThrowIfConfiguredPageSwapperCannotBeFound()
     {
         // Given
         Config config = Config.defaults( stringMap(
@@ -129,7 +130,7 @@ public class ConfiguringPageCacheFactoryTest
                 pagecache_swapper.name(), "non-existing" ) );
 
         // When
-        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache().close();
+        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY ).getOrCreatePageCache().close();
     }
 }

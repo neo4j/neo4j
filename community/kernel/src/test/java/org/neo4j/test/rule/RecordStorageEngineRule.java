@@ -27,6 +27,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
@@ -207,7 +208,7 @@ public class RecordStorageEngineRule extends ExternalResource
                     relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
                     lockService, new DefaultIndexProviderMap( indexProvider ),
                     indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
-                    idController, monitors, recoveryCleanupWorkCollector, operationalMode );
+                    idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

@@ -25,7 +25,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class TransactionExecutionStatistic
 {
-    static final TransactionExecutionStatistic NOT_AVAILABLE = new TransactionExecutionStatistic();
+    public static final TransactionExecutionStatistic NOT_AVAILABLE = new TransactionExecutionStatistic();
 
     private final Long heapAllocateBytes;
     private final Long cpuTimeMillis;

@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 public class ResultFormatV1Test
 {
     @Test
-    public void shouldSerializeToAndFromRecordFormat() throws Exception
+    public void shouldSerializeToAndFromRecordFormat()
     {
         // given
         List<Endpoint> writers = asList(
@@ -64,7 +64,7 @@ public class ResultFormatV1Test
     }
 
     @Test
-    public void shouldSerializeToAndFromRecordFormatWithNoEntries() throws Exception
+    public void shouldSerializeToAndFromRecordFormatWithNoEntries()
     {
         // given
         List<Endpoint> writers = emptyList();

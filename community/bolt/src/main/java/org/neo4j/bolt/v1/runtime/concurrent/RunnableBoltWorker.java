@@ -21,8 +21,8 @@ package org.neo4j.bolt.v1.runtime.concurrent;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
@@ -30,6 +30,7 @@ import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.v1.runtime.BoltWorkerQueueMonitor;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
@@ -39,21 +40,28 @@ import org.neo4j.logging.Log;
  */
 class RunnableBoltWorker implements Runnable, BoltWorker
 {
-    private static final int workQueueSize = Integer.getInteger( "org.neo4j.bolt.workQueueSize", 100 );
+    private static final int workQueueMaxBatchSize = Integer.getInteger( "org.neo4j.bolt.workQueueMaxBatchSize", 100 );
     static final int workQueuePollDuration =  Integer.getInteger( "org.neo4j.bolt.workQueuePollDuration", 10 );
 
-    private final BlockingQueue<Job> jobQueue = new ArrayBlockingQueue<>( workQueueSize );
+    private final BlockingQueue<Job> jobQueue = new LinkedBlockingQueue<>();
     private final BoltStateMachine machine;
     private final Log log;
     private final Log userLog;
+    private final BoltWorkerQueueMonitor queueMonitor;
 
     private volatile boolean keepRunning = true;
 
     RunnableBoltWorker( BoltStateMachine machine, LogService logging )
     {
+        this( machine, logging, null );
+    }
+
+    RunnableBoltWorker( BoltStateMachine machine, LogService logging, BoltWorkerQueueMonitor queueMonitor )
+    {
         this.machine = machine;
         this.log = logging.getInternalLog( getClass() );
         this.userLog = logging.getUserLog( getClass() );
+        this.queueMonitor = queueMonitor;
     }
 
     /**
@@ -68,6 +76,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         try
         {
             jobQueue.put( job );
+            notifyEnqueued( job );
         }
         catch ( InterruptedException e )
         {
@@ -80,7 +89,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     @Override
     public void run()
     {
-        List<Job> batch = new ArrayList<>( workQueueSize );
+        List<Job> batch = new ArrayList<>( workQueueMaxBatchSize );
 
         try
         {
@@ -89,11 +98,13 @@ class RunnableBoltWorker implements Runnable, BoltWorker
                 Job job = jobQueue.poll( workQueuePollDuration, TimeUnit.SECONDS );
                 if ( job != null )
                 {
+                    notifyDequeued( job );
                     execute( job );
 
-                    for ( int jobCount = jobQueue.drainTo( batch ); keepRunning && jobCount > 0;
-                          jobCount = jobQueue.drainTo( batch ) )
+                    for ( int jobCount = jobQueue.drainTo( batch, workQueueMaxBatchSize ); keepRunning && jobCount > 0;
+                          jobCount = jobQueue.drainTo( batch, workQueueMaxBatchSize ) )
                     {
+                        notifyDrained( batch );
                         executeBatch( batch );
                     }
                 }
@@ -173,4 +184,29 @@ class RunnableBoltWorker implements Runnable, BoltWorker
             log.error( "Unable to close Bolt session '" + machine.key() + "'", t );
         }
     }
+
+    private void notifyEnqueued( Job job )
+    {
+        if ( queueMonitor != null )
+        {
+            queueMonitor.enqueued( job );
+        }
+    }
+
+    private void notifyDequeued( Job job )
+    {
+        if ( queueMonitor != null )
+        {
+            queueMonitor.dequeued( job );
+        }
+    }
+
+    private void notifyDrained( List<Job> jobs )
+    {
+        if ( queueMonitor != null )
+        {
+            queueMonitor.drained( jobs );
+        }
+    }
+
 }

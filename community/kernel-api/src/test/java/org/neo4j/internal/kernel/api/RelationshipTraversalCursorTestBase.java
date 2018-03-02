@@ -22,26 +22,29 @@ package org.neo4j.internal.kernel.api;
 import org.junit.Assume;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
-import static java.util.Arrays.sort;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCount;
+import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCounts;
+import static org.neo4j.internal.kernel.api.RelationshipTestSupport.count;
 
 public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
 {
-    private static long bare, start, end, sparse, dense;
+    private static long bare, start, end;
+    private static RelationshipTestSupport.StartNode sparse, dense;
 
     protected boolean supportsDirectTraversal()
     {
@@ -53,22 +56,10 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         return true;
     }
 
-    @Override
-    void createTestGraph( GraphDatabaseService graphDb )
+    private static void bareStartAndEnd( GraphDatabaseService graphDb )
     {
-        Relationship dead;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node a = graphDb.createNode(),
-                    b = graphDb.createNode(),
-                    c = graphDb.createNode(),
-                    d = graphDb.createNode();
-
-            a.createRelationshipTo( a, withName( "ALPHA" ) );
-            a.createRelationshipTo( b, withName( "BETA" ) );
-            a.createRelationshipTo( c, withName( "GAMMA" ) );
-            a.createRelationshipTo( d, withName( "DELTA" ) );
-
             bare = graphDb.createNode().getId();
 
             Node x = graphDb.createNode(), y = graphDb.createNode();
@@ -76,115 +67,22 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             end = y.getId();
             x.createRelationshipTo( y, withName( "GEN" ) );
 
-            graphDb.createNode().createRelationshipTo( a, withName( "BETA" ) );
-            a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
-            dead = a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
-            a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
-
-            Node clump = graphDb.createNode();
-            clump.createRelationshipTo( clump, withName( "REL" ) );
-            clump.createRelationshipTo( clump, withName( "REL" ) );
-            clump.createRelationshipTo( clump, withName( "REL" ) );
-            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
-            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
-            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
-            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
-            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
-            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
-
             tx.success();
         }
-
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            Node node = dead.getEndNode();
-            dead.delete();
-            node.delete();
-
-            tx.success();
-        }
-
-        Node sparseNode = node(
-                graphDb,
-                outgoing( "FOO" ),
-                outgoing( "BAR" ),
-                outgoing( "BAR" ),
-                incoming( "FOO" ),
-                outgoing( "FOO" ),
-                incoming( "BAZ" ),
-                incoming( "BAR" ),
-                outgoing( "BAZ" ) );
-        Node denseNode;
-        // dense node
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            denseNode = graphDb.createNode();
-            for ( Relationship rel : sparseNode.getRelationships() )
-            {
-                if ( sparseNode.equals( rel.getStartNode() ) )
-                {
-                    denseNode.createRelationshipTo( graphDb.createNode(), rel.getType() );
-                }
-                else
-                {
-                    graphDb.createNode().createRelationshipTo( denseNode, rel.getType() );
-                }
-            }
-            for ( int i = 0; i < 200; i++ )
-            {
-                denseNode.createRelationshipTo( graphDb.createNode(), withName( "BULK" ) );
-            }
-
-            tx.success();
-        }
-        sparse = sparseNode.getId();
-        dense = denseNode.getId();
     }
 
-    @SafeVarargs
-    private static Node node( GraphDatabaseService db, Consumer<Node>... changes )
+    @Override
+    void createTestGraph( GraphDatabaseService graphDb )
     {
-        Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = db.createNode();
-            tx.success();
-        }
-        for ( int i = changes.length; i-- > 0; )
-        {
-            changes[i].accept( node );
-        }
-        return node;
-    }
+        RelationshipTestSupport.someGraph( graphDb );
+        bareStartAndEnd( graphDb );
 
-    private static Consumer<Node> outgoing( String type )
-    {
-        return node ->
-        {
-            GraphDatabaseService db = node.getGraphDatabase();
-            try ( Transaction tx = db.beginTx() )
-            {
-                node.createRelationshipTo( db.createNode(), withName( type ) );
-                tx.success();
-            }
-        };
-    }
-
-    private static Consumer<Node> incoming( String type )
-    {
-        return node ->
-        {
-            GraphDatabaseService db = node.getGraphDatabase();
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.createNode().createRelationshipTo( node, withName( type ) );
-                tx.success();
-            }
-        };
+        sparse = RelationshipTestSupport.sparse( graphDb );
+        dense = RelationshipTestSupport.dense( graphDb );
     }
 
     @Test
-    public void shouldNotAccessGroupsOfBareNode() throws Exception
+    public void shouldNotAccessGroupsOfBareNode()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -201,7 +99,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldTraverseRelationshipsOfGivenType() throws Exception
+    public void shouldTraverseRelationshipsOfGivenType()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -223,7 +121,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     while ( relationship.next() )
                     {
                         assertEquals( "node #" + node.nodeReference() +
-                                        " relationship should have same label as group", group.relationshipLabel(),
+                                        " relationship should have same label as group", group.type(),
                                 relationship.label() );
                         degree.outgoing++;
                     }
@@ -231,7 +129,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     while ( relationship.next() )
                     {
                         assertEquals( "node #" + node.nodeReference() +
-                                        "relationship should have same label as group", group.relationshipLabel(),
+                                        "relationship should have same label as group", group.type(),
                                 relationship.label() );
                         degree.incoming++;
                     }
@@ -239,7 +137,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     while ( relationship.next() )
                     {
                         assertEquals( "node #" + node.nodeReference() +
-                                        "relationship should have same label as group", group.relationshipLabel(),
+                                        "relationship should have same label as group", group.type(),
                                 relationship.label() );
                         degree.loop++;
                     }
@@ -256,7 +154,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                             degree.incoming );
                     assertEquals( "node #" + node.nodeReference() + " loop", group.loopCount(), degree.loop );
                     assertEquals( "node #" + node.nodeReference() + " all = incoming + outgoing - loop",
-                            group.totalCount(), degree.incoming + degree.outgoing - degree.loop );
+                            group.totalCount(), degree.incoming + degree.outgoing + degree.loop );
                 }
                 if ( none )
                 {
@@ -270,7 +168,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldFollowSpecificRelationship() throws Exception
+    public void shouldFollowSpecificRelationship()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -292,7 +190,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( "node of origin", start, relationship.originNodeReference() );
             assertEquals( "neighbouring node", end, relationship.neighbourNodeReference() );
 
-            assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+            assertEquals( "relationship should have same label as group", group.type(),
                     relationship.label() );
 
             assertFalse( "only a single relationship", relationship.next() );
@@ -319,7 +217,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( "node of origin", end, relationship.originNodeReference() );
             assertEquals( "neighbouring node", start, relationship.neighbourNodeReference() );
 
-            assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+            assertEquals( "relationship should have same label as group", group.type(),
                     relationship.label() );
 
             assertFalse( "only a single relationship", relationship.next() );
@@ -334,16 +232,16 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldHaveBeenAbleToCreateDenseAndSparseNodes() throws Exception
+    public void shouldHaveBeenAbleToCreateDenseAndSparseNodes()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor() )
         {
-            read.singleNode( dense, node );
+            read.singleNode( dense.id, node );
             assertTrue( "access dense node", node.next() );
             assertTrue( "dense node", node.isDense() );
 
-            read.singleNode( sparse, node );
+            read.singleNode( sparse.id, node );
             assertTrue( "access sparse node", node.next() );
             assertFalse( "sparse node", node.isDense() && supportsSparseNodes() );
         }
@@ -401,119 +299,93 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         traverseWithoutGroups( dense, true );
     }
 
-    private void traverseViaGroups( long start, boolean detached )
+    private void traverseViaGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws KernelException
     {
         // given
+        Map<String,Integer> expectedCounts = start.expectedCounts();
+
         try ( NodeCursor node = cursors.allocateNodeCursor();
               RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
               RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
         {
             // when
-            read.singleNode( start, node );
+            read.singleNode( start.id, node );
             assertTrue( "access node", node.next() );
             if ( detached )
             {
-                read.relationshipGroups( start, node.relationshipGroupReference(), group );
+                read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
             }
             else
             {
                 node.relationships( group );
             }
-            Map<Integer,Integer> counts = new HashMap<>();
+
             while ( group.next() )
             {
                 // outgoing
                 if ( detached )
                 {
-                    read.relationships( start, group.outgoingReference(), relationship );
+                    read.relationships( start.id, group.outgoingReference(), relationship );
                 }
                 else
                 {
                     group.outgoing( relationship );
                 }
-                count( relationship, counts, true );
+                // then
+                assertCount( session, relationship, expectedCounts, group.type(), OUTGOING );
 
                 // incoming
                 if ( detached )
                 {
-                    read.relationships( start, group.incomingReference(), relationship );
+                    read.relationships( start.id, group.incomingReference(), relationship );
                 }
                 else
                 {
                     group.incoming( relationship );
                 }
-                count( relationship, counts, true );
+                // then
+                assertCount( session, relationship, expectedCounts, group.type(), INCOMING );
 
                 // loops
                 if ( detached )
                 {
-                    read.relationships( start, group.loopsReference(), relationship );
+                    read.relationships( start.id, group.loopsReference(), relationship );
                 }
                 else
                 {
                     group.loops( relationship );
                 }
-                count( relationship, counts, true );
+                // then
+                assertCount( session, relationship, expectedCounts, group.type(), BOTH );
             }
-
-            // then
-            assertCounts( counts );
         }
     }
 
-    private void traverseWithoutGroups( long start, boolean detached )
+    private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached )
+            throws KernelException
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
               RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
         {
             // when
-            read.singleNode( start, node );
+            read.singleNode( start.id, node );
             assertTrue( "access node", node.next() );
+
             if ( detached )
             {
-                read.relationships( start, node.allRelationshipsReference(), relationship );
+                read.relationships( start.id, node.allRelationshipsReference(), relationship );
             }
             else
             {
                 node.allRelationships( relationship );
             }
-            Map<Integer,Integer> counts = new HashMap<>();
-            count( relationship, counts, false );
+
+            Map<String,Integer> counts = count( session, relationship );
 
             // then
-            assertCounts( counts );
+            assertCounts( start.expectedCounts(), counts );
         }
-    }
-
-    private void count( RelationshipTraversalCursor relationship, Map<Integer,Integer> counts, boolean expectSameType )
-    {
-        Integer type = null;
-        while ( relationship.next() )
-        {
-            if ( expectSameType )
-            {
-                if ( type != null )
-                {
-                    assertEquals( "same type", type.intValue(), relationship.label() );
-                }
-                else
-                {
-                    type = relationship.label();
-                }
-            }
-            counts.compute( relationship.label(), ( key, value ) -> value == null ? 1 : value + 1 );
-        }
-    }
-
-    private void assertCounts( Map<Integer,Integer> counts )
-    {
-        Integer[] values = counts.values().toArray( new Integer[0] );
-        assertTrue( values.length >= 3 );
-        sort( values );
-        assertEquals( 2, values[0].intValue() );
-        assertEquals( 3, values[1].intValue() );
-        assertEquals( 3, values[2].intValue() );
     }
 
     private static class Sizes

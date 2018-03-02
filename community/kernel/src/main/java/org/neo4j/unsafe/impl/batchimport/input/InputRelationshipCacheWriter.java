@@ -36,7 +36,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
 public class InputRelationshipCacheWriter extends InputEntityCacheWriter
 {
     public InputRelationshipCacheWriter( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
-            throws IOException
     {
         super( channel, header, recordFormats, chunkSize );
     }

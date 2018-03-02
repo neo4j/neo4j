@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.neo4j.io.pagecache.CursorException;
@@ -30,13 +31,15 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 abstract class MuninnPageCursor extends PageCursor
 {
@@ -55,7 +58,7 @@ abstract class MuninnPageCursor extends PageCursor
     private final PageCursorTracer tracer;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
-    protected int swapperId;
+    protected short swapperId;
     protected long pinnedPageRef;
     protected PinEvent pinEvent;
     protected long pageId;
@@ -69,6 +72,7 @@ abstract class MuninnPageCursor extends PageCursor
     private long pointer;
     private int pageSize;
     private int filePageSize;
+    protected final VersionContextSupplier versionContextSupplier;
     private int offset;
     private boolean outOfBounds;
     private boolean isLinkedCursor;
@@ -77,11 +81,12 @@ abstract class MuninnPageCursor extends PageCursor
     // offending code.
     private Object cursorException;
 
-    MuninnPageCursor( long victimPage, PageCursorTracer tracer )
+    MuninnPageCursor( long victimPage, PageCursorTracer tracer, VersionContextSupplier versionContextSupplier )
     {
         this.victimPage = victimPage;
         this.pointer = victimPage;
         this.tracer = tracer;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     final void initialiseFile( MuninnPagedFile pagedFile )
@@ -127,10 +132,39 @@ abstract class MuninnPageCursor extends PageCursor
     {
         if ( currentPageId == pageId )
         {
+            verifyContext();
             return true;
         }
         nextPageId = pageId;
         return next();
+    }
+
+    void verifyContext()
+    {
+        VersionContext versionContext = versionContextSupplier.getVersionContext();
+        long lastClosedTransactionId = versionContext.lastClosedTransactionId();
+        if ( lastClosedTransactionId == Long.MAX_VALUE )
+        {
+            return;
+        }
+        if ( isPotentiallyReadingDirtyData( lastClosedTransactionId ) )
+        {
+            versionContext.markAsDirty();
+        }
+    }
+
+    /**
+     * We reading potentially dirty data in case if our page last modification version is higher then
+     * requested lastClosedTransactionId; or for this page file we already evict some page with version that is higher
+     * then requested lastClosedTransactionId. In this case we can't be sure that data of current page satisfying
+     * visibility requirements and we pessimistically will assume that we reading dirty data.
+     * @param lastClosedTransactionId last closed transaction id
+     * @return true in case if we reading potentially dirty data for requested lastClosedTransactionId.
+     */
+    private boolean isPotentiallyReadingDirtyData( long lastClosedTransactionId )
+    {
+        return pagedFile.getLastModifiedTxId( pinnedPageRef ) > lastClosedTransactionId ||
+                pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
     }
 
     @Override
@@ -687,6 +721,17 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        long p = getBoundedPointer( offset, bytes );
+        if ( !outOfBounds )
+        {
+            UnsafeUtil.setMemory( p, bytes, value );
+        }
+        offset += bytes;
+    }
+
+    @Override
     public final short getShort()
     {
         long p = nextBoundedPointer( SIZE_OF_SHORT );
@@ -776,6 +821,119 @@ abstract class MuninnPageCursor extends PageCursor
         }
         outOfBounds = true;
         return 0;
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer buf )
+    {
+        if ( buf.getClass() == UnsafeUtil.directByteBufferClass && buf.isDirect() && !buf.isReadOnly() )
+        {
+            // We expect that the mutable direct byte buffer is implemented with a class that is distinct from the
+            // non-mutable (read-only) and non-direct (on-heap) byte buffers. By comparing class object instances,
+            // we also implicitly assume that the classes are loaded by the same class loader, which should be
+            // trivially true in almost all practical cases.
+            // If our expectations are not met, then the additional isDirect and !isReadOnly checks will send all
+            // calls to the byte-wise-copy fallback.
+            return copyToDirectByteBuffer( sourceOffset, buf );
+        }
+        return copyToByteBufferByteWise( sourceOffset, buf );
+    }
+
+    private int copyToDirectByteBuffer( int sourceOffset, ByteBuffer buf )
+    {
+        int pos = buf.position();
+        int bytesToCopy = Math.min( buf.limit() - pos, pageSize - sourceOffset );
+        long source = pointer + sourceOffset;
+        if ( sourceOffset < getCurrentPageSize() & sourceOffset >= 0 )
+        {
+            long target = UnsafeUtil.getDirectByteBufferAddress( buf );
+            UnsafeUtil.copyMemory( source, target + pos, bytesToCopy );
+            buf.position( pos + bytesToCopy );
+        }
+        else
+        {
+            outOfBounds = true;
+        }
+        return bytesToCopy;
+    }
+
+    private int copyToByteBufferByteWise( int sourceOffset, ByteBuffer buf )
+    {
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        for ( int i = 0; i < bytesToCopy; i++ )
+        {
+            byte b = getByte( sourceOffset + i );
+            buf.put( b );
+        }
+        return bytesToCopy;
+    }
+
+    @Override
+    public void shiftBytes( int sourceStart, int length, int shift )
+    {
+        int sourceEnd = sourceStart + length;
+        int targetStart = sourceStart + shift;
+        int targetEnd = sourceStart + length + shift;
+        if ( sourceStart < 0
+                | sourceEnd > filePageSize
+                | targetStart < 0
+                | targetEnd > filePageSize
+                | length < 0 )
+        {
+            outOfBounds = true;
+            return;
+        }
+
+        if ( shift < 0 )
+        {
+            unsafeShiftLeft( sourceStart, sourceEnd, length, shift );
+        }
+        else
+        {
+            unsafeShiftRight( sourceEnd, sourceStart, length, shift );
+        }
+    }
+
+    private void unsafeShiftLeft( int fromPos, int toPos, int length, int shift )
+    {
+        int longSteps = length >> 3;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess && longSteps > 0 )
+        {
+            for ( int i = 0; i < longSteps; i++ )
+            {
+                long x = UnsafeUtil.getLong( pointer + fromPos );
+                UnsafeUtil.putLong( pointer + fromPos + shift, x );
+                fromPos += Long.BYTES;
+            }
+        }
+
+        while ( fromPos < toPos )
+        {
+            byte b = UnsafeUtil.getByte( pointer + fromPos );
+            UnsafeUtil.putByte( pointer + fromPos + shift, b );
+            fromPos++;
+        }
+    }
+
+    private void unsafeShiftRight( int fromPos, int toPos, int length, int shift )
+    {
+        int longSteps = length >> 3;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess && longSteps > 0 )
+        {
+            for ( int i = 0; i < longSteps; i++ )
+            {
+                fromPos -= Long.BYTES;
+                long x = UnsafeUtil.getLong( pointer + fromPos );
+                UnsafeUtil.putLong( pointer + fromPos + shift, x );
+            }
+        }
+
+        while ( fromPos > toPos )
+        {
+            fromPos--;
+            byte b = UnsafeUtil.getByte( pointer + fromPos );
+            UnsafeUtil.putByte( pointer + fromPos + shift, b );
+        }
     }
 
     @Override

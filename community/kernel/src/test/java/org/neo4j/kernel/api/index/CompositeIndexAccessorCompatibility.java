@@ -25,6 +25,8 @@ import org.junit.Test;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
@@ -75,6 +77,32 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
+    @Test
+    public void testIndexSeekAndScanByPoint() throws Exception
+    {
+        PointValue gps = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
+        PointValue car = Values.pointValue( CoordinateReferenceSystem.Cartesian, 12.6, 56.7 );
+        PointValue gps_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.7, 100.0 );
+        PointValue car_3d = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 12.6, 56.7, 100.0 );
+
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), gps, gps ),
+                add( 2L, descriptor.schema(), car, car ),
+                add( 3L, descriptor.schema(), gps, car ),
+                add( 4L, descriptor.schema(), gps_3d, gps_3d ),
+                add( 5L, descriptor.schema(), car_3d, car_3d ),
+                add( 6L, descriptor.schema(), gps, car_3d )
+        ) );
+
+        assertThat( query( exact( 0, gps ), exact( 1, gps ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, car ), exact( 1, car ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, gps ), exact( 1, car ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exact( 0, gps_3d ), exact( 1, gps_3d ) ), equalTo( singletonList( 4L ) ) );
+        assertThat( query( exact( 0, car_3d ), exact( 1, car_3d ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( exact( 0, gps ), exact( 1, car_3d ) ), equalTo( singletonList( 6L ) ) );
+        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
+    }
+
     // This behaviour is expected by General indexes
 
     @Ignore( "Not a test. This is a compatibility suite" )
@@ -103,6 +131,17 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     add( 2L, descriptor.schema(), 333, 333 ) ) );
 
             assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( asList( 1L, 2L ) ) );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByPoint() throws Exception
+        {
+            PointValue gps = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
+            updateAndCommit( asList(
+                    add( 1L, descriptor.schema(), gps, gps ),
+                    add( 2L, descriptor.schema(), gps, gps ) ) );
+
+            assertThat( query( exact( 0, gps ), exact( 1, gps ) ), equalTo( asList( 1L, 2L ) ) );
         }
     }
 

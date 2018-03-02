@@ -61,7 +61,7 @@ public class GraphDatabaseServiceTest
     public RuleChain chain = RuleChain.outerRule( testDirectory ).around( exception ).around( t2 ).around( t3 );
 
     @Test
-    public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception
+    public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown()
     {
         // Given
         GraphDatabaseService db = getTemporaryDatabase();
@@ -117,7 +117,7 @@ public class GraphDatabaseServiceTest
     }
 
     @Test
-    public void terminateTransactionThrowsExceptionOnNextOperation() throws Exception
+    public void terminateTransactionThrowsExceptionOnNextOperation()
     {
         // Given
         final GraphDatabaseService db = globalDb;
@@ -137,7 +137,7 @@ public class GraphDatabaseServiceTest
     }
 
     @Test
-    public void terminateNestedTransactionThrowsExceptionOnNextOperation() throws Exception
+    public void terminateNestedTransactionThrowsExceptionOnNextOperation()
     {
         // Given
         final GraphDatabaseService db = globalDb;
@@ -160,7 +160,7 @@ public class GraphDatabaseServiceTest
     }
 
     @Test
-    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperation() throws Exception
+    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperation()
     {
         // Given
         final GraphDatabaseService db = globalDb;

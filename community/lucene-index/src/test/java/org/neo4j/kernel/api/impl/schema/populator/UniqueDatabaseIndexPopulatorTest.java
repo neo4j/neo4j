@@ -95,7 +95,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private LabelSchemaDescriptor schemaDescriptor;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         File folder = testDir.directory( "folder" );
         indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, false );
@@ -553,7 +553,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
-            throws IOException, IndexEntryConflictException
+            throws IOException
     {
         IndexEntryUpdate<?> update = add( nodeId, descriptor.schema(), value );
         populator.add( asList( update ) );

@@ -19,14 +19,10 @@
  */
 package org.neo4j.tooling.procedure.procedures.invalid.aggregation;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.procedure.UserAggregationFunction;
 
 public class FunctionWithWrongReturnType
 {
-
     @UserAggregationFunction
     public void aggregateAllTheThings()
     {

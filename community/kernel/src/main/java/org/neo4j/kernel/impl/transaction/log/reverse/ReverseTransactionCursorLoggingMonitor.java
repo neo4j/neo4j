@@ -33,7 +33,7 @@ public class ReverseTransactionCursorLoggingMonitor implements ReversedTransacti
     }
 
     @Override
-    public void transactionalLogRecordReadFailure( Throwable t, long[] transactionOffsets, int transactionIndex, long logVersion )
+    public void transactionalLogRecordReadFailure( long[] transactionOffsets, int transactionIndex, long logVersion )
     {
         log.warn( transactionIndex > 0 ?
                format( "Fail to read transaction log version %d. Last valid transaction start offset is: %d.",

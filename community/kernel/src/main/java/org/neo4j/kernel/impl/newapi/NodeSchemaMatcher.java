@@ -24,6 +24,8 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingBiConsumer;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 
@@ -32,11 +34,9 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
  */
 public class NodeSchemaMatcher
 {
-    private final Read read;
-
-    public NodeSchemaMatcher( Read read )
+    private NodeSchemaMatcher()
     {
-        this.read = read;
+        throw new AssertionError( "no instance" );
     }
 
     /**
@@ -57,10 +57,10 @@ public class NodeSchemaMatcher
      * @param callback The action to take on match
      * @throws EXCEPTION This exception is propagated from the action
      */
-    <SUPPLIER extends SchemaDescriptorSupplier, EXCEPTION extends Exception> void onMatchingSchema(
+    static <SUPPLIER extends SchemaDescriptorSupplier, EXCEPTION extends Exception> void onMatchingSchema(
             Iterator<SUPPLIER> schemaSuppliers,
-            org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor property,
+            NodeCursor node,
+            PropertyCursor property,
             int specialPropertyId,
             ThrowingBiConsumer<SUPPLIER,PrimitiveIntSet,EXCEPTION> callback
     ) throws EXCEPTION

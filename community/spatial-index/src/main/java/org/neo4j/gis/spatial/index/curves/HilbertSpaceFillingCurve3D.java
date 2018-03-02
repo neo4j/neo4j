@@ -214,7 +214,7 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
 
     enum Direction3D
     {
-        UP, RIGHT, LEFT, DOWN, FRONT, BACK;
+        UP, RIGHT, LEFT, DOWN, FRONT, BACK
     }
 
     static class SubCurve3D

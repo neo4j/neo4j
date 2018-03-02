@@ -158,7 +158,7 @@ public class NeoStoreDataSourceTest
     }
 
     @Test
-    public void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs() throws Exception
+    public void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs()
     {
         // GIVEN
         NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId( noLogs() );
@@ -211,7 +211,7 @@ public class NeoStoreDataSourceTest
     }
 
     @Test
-    public void logModuleSetUpError() throws Exception
+    public void logModuleSetUpError()
     {
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );

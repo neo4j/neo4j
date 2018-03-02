@@ -31,7 +31,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class AuthTokenTest
 {
     @Test
-    public void shouldMakeBasicAuthToken() throws Exception
+    public void shouldMakeBasicAuthToken()
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -41,7 +41,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeBasicAuthTokenWithRealm() throws Exception
+    public void shouldMakeBasicAuthTokenWithRealm()
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret", "my realm" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -51,7 +51,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeCustomAuthTokenAndBasicScheme() throws Exception
+    public void shouldMakeCustomAuthTokenAndBasicScheme()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "basic" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -61,7 +61,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeCustomAuthTokenAndCustomcScheme() throws Exception
+    public void shouldMakeCustomAuthTokenAndCustomcScheme()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -71,7 +71,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeCustomAuthTokenAndCustomcSchemeWithParameters() throws Exception
+    public void shouldMakeCustomAuthTokenAndCustomcSchemeWithParameters()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme", map("a", "A", "b", "B") );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));

@@ -25,6 +25,8 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -41,15 +43,13 @@ public class IndexTxStateUpdater
 {
     private final StoreReadLayer storeReadLayer;
     private final Read read;
-    private final NodeSchemaMatcher nodeIndexMatcher;
 
     // We can use the StoreReadLayer directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read, NodeSchemaMatcher nodeIndexMatcher )
+    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read )
     {
         this.storeReadLayer = storeReadLayer;
         this.read = read;
-        this.nodeIndexMatcher = nodeIndexMatcher;
     }
 
     // LABEL CHANGES
@@ -68,8 +68,7 @@ public class IndexTxStateUpdater
      * @param propertyCursor cursor to the properties of node
      * @param changeType The type of change event
      */
-    void onLabelChange( int labelId, org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, LabelChangeType changeType )
+    void onLabelChange( int labelId, NodeCursor node, PropertyCursor propertyCursor, LabelChangeType changeType )
     {
         assert noSchemaChangedInTx();
 
@@ -116,13 +115,12 @@ public class IndexTxStateUpdater
 
     //PROPERTY CHANGES
 
-    void onPropertyAdd( org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, int propertyKeyId, Value value )
+    void onPropertyAdd( NodeCursor node, PropertyCursor propertyCursor, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx();
         Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
-        nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
+        NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
                     Validators.INDEX_VALUE_VALIDATOR.validate( value );
@@ -133,13 +131,12 @@ public class IndexTxStateUpdater
                 } );
     }
 
-    void onPropertyRemove( org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, int propertyKeyId, Value value )
+    void onPropertyRemove( NodeCursor node, PropertyCursor propertyCursor, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx();
         Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
-        nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
+        NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
                     ValueTuple values =
@@ -149,13 +146,12 @@ public class IndexTxStateUpdater
                 } );
     }
 
-    void onPropertyChange( org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, int propertyKeyId, Value beforeValue,
-            Value afterValue )
+    void onPropertyChange( NodeCursor node, PropertyCursor propertyCursor, int propertyKeyId,
+            Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx();
         Iterator<IndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
-        nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
+        NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
                     Validators.INDEX_VALUE_VALIDATOR.validate( afterValue );
@@ -191,14 +187,12 @@ public class IndexTxStateUpdater
                 } );
     }
 
-    private ValueTuple getValueTuple( org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, int[] indexPropertyIds )
+    private ValueTuple getValueTuple( NodeCursor node, PropertyCursor propertyCursor, int[] indexPropertyIds )
     {
         return getValueTuple( node, propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds );
     }
 
-    private ValueTuple getValueTuple( org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor propertyCursor,
+    private ValueTuple getValueTuple( NodeCursor node, PropertyCursor propertyCursor,
             int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds )
     {
         Value[] values = new Value[indexPropertyIds.length];

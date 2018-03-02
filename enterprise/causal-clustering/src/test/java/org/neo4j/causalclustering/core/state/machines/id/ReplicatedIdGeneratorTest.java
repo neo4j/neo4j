@@ -19,16 +19,15 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.BooleanSupplier;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
@@ -70,7 +69,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     private IdReusabilityCondition idReusabilityCondition;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         file = testDirectory.file( "idgen" );
         fs = fileSystemRule.get();
@@ -93,7 +92,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldCreateIdFileForPersistence() throws Exception
+    public void shouldCreateIdFileForPersistence()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
@@ -104,7 +103,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldNotStepBeyondAllocationBoundaryWithoutBurnedId() throws Exception
+    public void shouldNotStepBeyondAllocationBoundaryWithoutBurnedId()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
@@ -121,7 +120,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldNotStepBeyondAllocationBoundaryWithBurnedId() throws Exception
+    public void shouldNotStepBeyondAllocationBoundaryWithBurnedId()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
@@ -139,7 +138,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldThrowIfAdjustmentFailsDueToInconsistentValues() throws Exception
+    public void shouldThrowIfAdjustmentFailsDueToInconsistentValues()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = mock( ReplicatedIdRangeAcquirer.class );
         when( rangeAcquirer.acquireIds( IdType.NODE ) ).thenReturn( allocation( 3, 21, 21 ) );
@@ -151,7 +150,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldReuseIdOnlyWhenLeader() throws Exception
+    public void shouldReuseIdOnlyWhenLeader()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
@@ -175,7 +174,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldReuseIdBeforeHighId() throws Exception
+    public void shouldReuseIdBeforeHighId()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
@@ -194,7 +193,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void freeIdOnlyWhenReusabilityConditionAllows() throws Exception
+    public void freeIdOnlyWhenReusabilityConditionAllows()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 

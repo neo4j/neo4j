@@ -36,7 +36,7 @@ public class GetIndexRootIT extends AbstractRestFunctionalTestBase
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
@@ -45,7 +45,7 @@ public class GetIndexRootIT extends AbstractRestFunctionalTestBase
      * /db/data/index is not itself a resource
      */
     @Test
-    public void shouldRespondWith404ForNonResourceIndexPath() throws Exception
+    public void shouldRespondWith404ForNonResourceIndexPath()
     {
         JaxRsResponse response = RestRequest.req().get( functionalTestHelper.indexUri() );
         assertEquals( 404, response.getStatus() );

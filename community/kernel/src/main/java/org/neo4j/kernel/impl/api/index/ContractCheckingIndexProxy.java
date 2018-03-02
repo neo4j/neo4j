@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
@@ -119,12 +120,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
         openCall( "force" );
         try
         {
-            super.force();
+            super.force( ioLimiter );
         }
         finally
         {
@@ -140,7 +141,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             return super.drop();
         }
 
-        if ( State.STARTING.equals( state.get() ) )
+        if ( State.STARTING == state.get() )
         {
             throw new IllegalStateException( "Concurrent drop while creating index" );
         }
@@ -187,12 +188,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     private void openCall( String name )
     {
         // do not open call unless we are in STARTED
-        if ( State.STARTED.equals( state.get() ) )
+        if ( State.STARTED == state.get() )
         {
             // increment openCalls for closers to see
             openCalls.incrementAndGet();
             // ensure that the previous increment actually gets seen by closers
-            if ( State.CLOSED.equals( state.get() ) )
+            if ( State.CLOSED == state.get() )
             {
                 throw new IllegalStateException( "Cannot call " + name + "() after index has been closed" );
             }

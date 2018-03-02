@@ -40,7 +40,7 @@ public class CypherUpdateMapTest
     private GraphDatabaseService db;
 
     @Test
-    public void updateNodeByMapParameter() throws Throwable
+    public void updateNodeByMapParameter()
     {
         db.execute(
                 "CREATE (n:Reference) SET n = {data} RETURN n" ,

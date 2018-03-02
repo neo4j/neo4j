@@ -55,7 +55,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor )
     {
         return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler );
     }

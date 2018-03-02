@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.Test;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 public class CypherSessionTest
 {
     @Test
-    public void shouldReturnASingleNode() throws Throwable
+    public void shouldReturnASingleNode()
     {
         GraphDatabaseFacade graphdb = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         Database database = new WrappedDatabase( graphdb );

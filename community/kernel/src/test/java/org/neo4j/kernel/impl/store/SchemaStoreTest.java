@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -65,20 +66,20 @@ public class SchemaStoreTest
     private static IndexProviderMap indexProviderMap = IndexProviderMap.EMPTY;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
-                fs.get(), NullLogProvider.getInstance() );
+                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getSchemaStore();
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         neoStores.close();
     }
@@ -136,7 +137,7 @@ public class SchemaStoreTest
     }
 
     @Test
-    public void storeAndLoadAllRules() throws Exception
+    public void storeAndLoadAllRules()
     {
         // GIVEN
         long indexId = store.nextId();

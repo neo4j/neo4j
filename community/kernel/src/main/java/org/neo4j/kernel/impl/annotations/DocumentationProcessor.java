@@ -38,7 +38,7 @@ public class DocumentationProcessor extends AnnotationProcessor
 {
     @Override
     protected void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
-            Map<? extends ExecutableElement,? extends AnnotationValue> values ) throws IOException
+            Map<? extends ExecutableElement,? extends AnnotationValue> values )
     {
         if ( values.size() != 1 )
         {

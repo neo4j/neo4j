@@ -43,11 +43,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -269,13 +271,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
         try ( Transaction transaction = embeddedDatabase.beginTx();
-              Statement statement = transactionStatementContextBridge.get() )
+              KernelTransaction ktx = transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true ) )
         {
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( updates, neoStores, labelScanStore );
 
             IndexProviderMap providerMap = getSchemaIndexProvider();
             JobScheduler scheduler = getJobScheduler();
-            StatementTokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
+            TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),

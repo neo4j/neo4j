@@ -28,9 +28,10 @@ import java.io.IOException;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.kernel.impl.index.IndexCommand;
 
 /**
- * This presents a context for each {@link LuceneCommand} when they are
+ * This presents a context for each {@link IndexCommand} when they are
  * committing its data.
  */
 class CommitContext implements Closeable

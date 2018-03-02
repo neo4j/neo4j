@@ -230,6 +230,7 @@ Feature: ConstraintAcceptance
       | +labels     | 2 |
       | +properties | 3 |
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes using same key if found different nodes
     Given an empty graph
     And having executed:
@@ -250,6 +251,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes if found different nodes
     Given an empty graph
     And having executed:
@@ -270,6 +272,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes if it found a node matching single property only
     Given an empty graph
     And having executed:
@@ -290,6 +293,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order
     Given an empty graph
     And having executed:
@@ -310,6 +314,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes and labels if found different nodes
     Given an empty graph
     And having executed:
@@ -330,6 +335,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Merge with uniqueness constraints must properly handle multiple labels
     Given an empty graph
     And having executed:
@@ -427,6 +433,7 @@ Feature: ConstraintAcceptance
       | +labels     | 1 |
       | +properties | 2 |
 
+  @allowCustomErrors
   Scenario: Failing when creation would violate constraint
     Given an empty graph
     And having executed:

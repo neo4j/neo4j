@@ -77,6 +77,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -87,7 +88,7 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.log_timezone;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.scheduler.JobScheduler.Groups.serverTransactionTimeout;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
@@ -229,7 +230,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return new DatabaseActions(
                 new LeaseManager( Clocks.systemClock() ),
-                config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
+                ScriptExecutionMode.getConfiguredMode( config ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -296,7 +297,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return config;
     }
 
-    private void configureWebServer() throws Exception
+    private void configureWebServer()
     {
         webServer.setAddress( httpListenAddress );
         webServer.setHttpsAddress( httpsListenAddress );
@@ -363,7 +364,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         AsyncRequestLog requestLog = new AsyncRequestLog(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                config.get( log_timezone ).getZoneId(),
+                config.get( db_timezone ).getZoneId(),
                 config.get( http_log_path ).toString(),
                 config.get( http_logging_rotation_size ),
                 config.get( http_logging_rotation_keep_number ) );
@@ -430,14 +431,12 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public PluginManager getExtensionManager()
     {
-        if ( hasModule( RESTApiModule.class ) )
+        RESTApiModule module = getModule( RESTApiModule.class );
+        if ( module != null )
         {
-            return getModule( RESTApiModule.class ).getPlugins();
+            return module.getPlugins();
         }
-        else
-        {
-            return null;
-        }
+        return null;
     }
 
     protected Collection<InjectableProvider<?>> createDefaultInjectables()
@@ -473,18 +472,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
-    }
-
-    private boolean hasModule( Class<? extends ServerModule> clazz )
-    {
-        for ( ServerModule sm : serverModules )
-        {
-            if ( sm.getClass() == clazz )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -544,7 +531,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
         @Override
         public void stop()
-                throws Throwable
         {
             stopWebServer();
             stopModules();

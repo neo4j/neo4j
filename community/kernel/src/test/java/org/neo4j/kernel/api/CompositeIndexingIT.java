@@ -29,7 +29,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -40,17 +39,16 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.Values;
@@ -65,8 +63,7 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
 {
-    public static final int LABEL_ID = 1;
-    private final Cursors cursors = new Cursors();
+    private static final int LABEL_ID = 1;
 
     @ClassRule
     public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
@@ -139,7 +136,7 @@ public class CompositeIndexingIT
     }
 
     @Parameterized.Parameters( name = "Index: {0}" )
-    public static Iterable<Object[]> parameterValues() throws IOException
+    public static Iterable<Object[]> parameterValues()
     {
         return Arrays.asList( Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
                 Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),

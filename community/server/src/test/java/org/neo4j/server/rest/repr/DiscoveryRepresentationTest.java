@@ -32,7 +32,7 @@ import static org.junit.Assert.assertNotNull;
 public class DiscoveryRepresentationTest
 {
     @Test
-    public void shouldCreateAMapContainingDataAndManagementURIs() throws Exception
+    public void shouldCreateAMapContainingDataAndManagementURIs()
     {
         String managementUri = "/management";
         String dataUri = "/data";

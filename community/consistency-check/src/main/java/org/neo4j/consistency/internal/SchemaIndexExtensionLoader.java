@@ -22,7 +22,6 @@ package org.neo4j.consistency.internal;
 import java.io.File;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.index.internal.gbptree.CleanupJob;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -51,11 +49,6 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class SchemaIndexExtensionLoader
 {
-    /**
-     * Used in scenarios where recovery isn't allowed.
-     */
-    public static final RecoveryCleanupWorkCollector RECOVERY_PREVENTING_COLLECTOR = new RecoveryPreventingCollector();
-
     public static IndexProviderMap loadSchemaIndexProviders( KernelExtensions extensions )
     {
         AllByPrioritySelectionStrategy<IndexProvider<?>> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
@@ -78,24 +71,5 @@ public class SchemaIndexExtensionLoader
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, databaseInfo, deps );
         return new KernelExtensions( kernelContext, kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() );
-    }
-
-    private static class RecoveryPreventingCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
-    {
-        @Override
-        public void add( CleanupJob job )
-        {
-            try
-            {
-                if ( job.needed() )
-                {
-                    throw new IllegalStateException( "Consistency checker should not do recovery" );
-                }
-            }
-            finally
-            {
-                job.close();
-            }
-        }
     }
 }

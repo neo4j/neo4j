@@ -47,9 +47,7 @@ import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
-  val createConf = Configs.Interpreted - Configs.Cost2_3
-  val startConf = TestConfiguration(Versions(V3_4, Versions.Default), Planners(Planners.Rule, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
-                  TestConfiguration(Versions(V2_3, V3_1), Planners.all, Runtimes.Default)
+  val startConf = Configs.CommunityInterpreted - Configs.Version3_3
 
   test("shouldGetRelationshipById") {
     val n = createNode()
@@ -533,7 +531,7 @@ order by a.COL1""".format(a, b))
   }
 
   test("with should not forget original type") {
-    val result = executeWith(createConf, "create (a{x:8}) with a.x as foo return sum(foo)")
+    val result = executeWith(Configs.UpdateConf, "create (a{x:8}) with a.x as foo return sum(foo)")
 
     result.toList should equal(List(Map("sum(foo)" -> 8)))
   }
@@ -550,7 +548,7 @@ order by a.COL1""".format(a, b))
 
   test("with should not forget parameters2") {
     val id = createNode().getId
-    val result = executeWith(createConf, "match (n) where id(n) = {id} with n set n.foo={id} return n", params = Map("id" -> id)).toList
+    val result = executeWith(Configs.UpdateConf, "match (n) where id(n) = {id} with n set n.foo={id} return n", params = Map("id" -> id)).toList
 
     result should have size 1
     graph.inTx {
@@ -596,7 +594,7 @@ order by a.COL1""".format(a, b))
 
   test("can use variables created inside the foreach") {
     createNode()
-    val result = executeWith(createConf, "match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
+    val result = executeWith(Configs.UpdateConf, "match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
     result.toList shouldBe empty
   }
@@ -654,28 +652,28 @@ order by a.COL1""".format(a, b))
 
   test("should add label to node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a :foo RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 SET a :foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should add multiple labels to node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a :foo:bar RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 SET a :foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set label on node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) SET a:foo RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) SET a:foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set multiple labels on node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a:foo:bar RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 SET a:foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -801,7 +799,7 @@ order by a.COL1""".format(a, b))
     relate(a,b,"FOO")
 
     //WHEN
-    val result = executeWith(createConf,
+    val result = executeWith(Configs.UpdateConf,
       """MATCH (a), (b)
          WHERE id(a) = 0 AND id(b) = 1
          AND not (a)-[:FOO]->(b)
@@ -859,10 +857,10 @@ order by a.COL1""".format(a, b))
 
   test("doctest gone wild") {
     // given
-    executeWith(createConf, "CREATE (n:Actor {name:'Tom Hanks'})")
+    executeWith(Configs.UpdateConf, "CREATE (n:Actor {name:'Tom Hanks'})")
 
     // when
-    val result = executeWith(createConf, """MATCH (actor:Actor)
+    val result = executeWith(Configs.UpdateConf, """MATCH (actor:Actor)
                                WHERE actor.name = "Tom Hanks"
                                CREATE (movie:Movie {title:'Sleepless in Seattle'})
                                CREATE (actor)-[:ACTED_IN]->(movie)""")
@@ -890,7 +888,7 @@ order by a.COL1""".format(a, b))
 
   test("merge should support single parameter") {
     //WHEN
-    val result = executeWith(createConf, "MERGE (n:User {foo: {single_param}})", params = Map("single_param" -> 42))
+    val result = executeWith(Configs.UpdateConf, "MERGE (n:User {foo: {single_param}})", params = Map("single_param" -> 42))
 
     //THEN DOESN'T THROW EXCEPTION
     result.toList shouldBe empty
@@ -947,7 +945,7 @@ order by a.COL1""".format(a, b))
   }
 
   test("should not mind rewriting NOT queries") {
-    val result = executeWith(createConf, " create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
+    val result = executeWith(Configs.UpdateConf, " create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     result.toList should equal(List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }
 
@@ -958,10 +956,6 @@ order by a.COL1""".format(a, b))
     }
     val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any])
     result.asScala should have size 2
-  }
-
-  override protected def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 
   override def databaseConfig(): collection.Map[Setting[_], String] = super.databaseConfig() ++ Map(

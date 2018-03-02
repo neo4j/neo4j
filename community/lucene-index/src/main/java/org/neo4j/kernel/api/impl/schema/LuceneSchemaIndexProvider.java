@@ -128,7 +128,7 @@ public class LuceneSchemaIndexProvider extends IndexProvider
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {   // Nothing to shut down
     }
 
@@ -171,7 +171,7 @@ public class LuceneSchemaIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = getIndexStorage( indexId ).getStoredIndexFailure();
         if ( failure == null )

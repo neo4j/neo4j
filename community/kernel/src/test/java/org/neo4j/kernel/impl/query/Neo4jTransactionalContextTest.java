@@ -76,7 +76,7 @@ public class Neo4jTransactionalContextTest
     }
 
     @Test
-    public void checkKernelStatementOnCheck() throws Exception
+    public void checkKernelStatementOnCheck()
     {
         InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
 

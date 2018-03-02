@@ -60,13 +60,16 @@ public class RaftState implements ReadableRaftState
     private long commitIndex = -1;
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private boolean isPreElection;
+    private final boolean refuseToBeLeader;
 
     public RaftState( MemberId myself,
                       StateStorage<TermState> termStorage,
                       RaftMembership membership,
                       RaftLog entryLog,
                       StateStorage<VoteState> voteStorage,
-                      InFlightCache inFlightCache, LogProvider logProvider, boolean supportPreVoting )
+                      InFlightCache inFlightCache, LogProvider logProvider, boolean supportPreVoting,
+                      boolean refuseToBeLeader
+            )
     {
         this.myself = myself;
         this.termStorage = termStorage;
@@ -79,6 +82,7 @@ public class RaftState implements ReadableRaftState
 
         // Initial state
         this.isPreElection = supportPreVoting;
+        this.refuseToBeLeader = refuseToBeLeader;
     }
 
     @Override
@@ -193,6 +197,12 @@ public class RaftState implements ReadableRaftState
     public Set<MemberId> preVotesForMe()
     {
         return preVotesForMe;
+    }
+
+    @Override
+    public boolean refusesToBeLeader()
+    {
+        return refuseToBeLeader;
     }
 
     public void update( Outcome outcome ) throws IOException

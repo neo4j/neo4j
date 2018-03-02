@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_
 public class IdRangeIteratorTest
 {
     @Test
-    public void shouldReturnValueRepresentingNullIfWeExhaustIdRange() throws Exception
+    public void shouldReturnValueRepresentingNullIfWeExhaustIdRange()
     {
         // given
         int rangeLength = 1024;
@@ -50,7 +50,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldNotHaveAnyGaps() throws Exception
+    public void shouldNotHaveAnyGaps()
     {
         // given
         int rangeLength = 1024;
@@ -70,7 +70,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldUseDefragIdsFirst() throws Exception
+    public void shouldUseDefragIdsFirst()
     {
         // given
         int rangeLength = 1024;
@@ -84,7 +84,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromOnlyDefragIds() throws Exception
+    public void shouldGetNextIdBatchFromOnlyDefragIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
@@ -102,7 +102,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromOnlyDefragIdsWhenSomeDefragIdsHaveAlreadyBeenReturned() throws Exception
+    public void shouldGetNextIdBatchFromOnlyDefragIdsWhenSomeDefragIdsHaveAlreadyBeenReturned()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
@@ -122,7 +122,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromSomeDefragAndSomeRangeIds() throws Exception
+    public void shouldGetNextIdBatchFromSomeDefragAndSomeRangeIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3}, 10, 5 ).iterator();
@@ -142,7 +142,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromSomeRangeIds() throws Exception
+    public void shouldGetNextIdBatchFromSomeRangeIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( EMPTY_LONG_ARRAY, 0, 20 ).iterator();
@@ -171,7 +171,7 @@ public class IdRangeIteratorTest
     }
 
     @Test
-    public void shouldGetNextIdBatchFromSomeRangeIdsWhenThereAreUsedDefragIds() throws Exception
+    public void shouldGetNextIdBatchFromSomeRangeIdsWhenThereAreUsedDefragIds()
     {
         // given
         IdRangeIterator iterator = new IdRange( new long[] {0, 1, 2}, 3, 10 ).iterator();

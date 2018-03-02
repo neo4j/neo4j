@@ -103,7 +103,7 @@ public class NativeLabelScanStoreHaIT
     }
 
     @Test
-    public void shouldCopyLabelScanStoreToNewSlaves() throws Exception
+    public void shouldCopyLabelScanStoreToNewSlaves()
     {
         // This check is here o check so that the extension provided by this test is selected.
         // It can be higher than 3 (number of cluster members) since some members may restart

@@ -156,6 +156,12 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public double usageRatio()
+    {
+        return 0d;
+    }
+
+    @Override
     public void pins( long pins )
     {
         this.pins.getAndAdd( pins );
@@ -200,6 +206,11 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void flushes( long flushes )
+    {
+    }
+
+    @Override
+    public void maxPages( long maxPages )
     {
     }
 

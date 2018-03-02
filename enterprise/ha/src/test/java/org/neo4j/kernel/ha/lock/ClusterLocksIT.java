@@ -34,8 +34,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -61,7 +61,7 @@ public class ClusterLocksIT
     private ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.tx_push_factor, "2" )

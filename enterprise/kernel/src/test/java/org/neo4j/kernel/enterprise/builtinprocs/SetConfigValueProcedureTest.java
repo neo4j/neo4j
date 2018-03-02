@@ -43,7 +43,7 @@ public class SetConfigValueProcedureTest
     public final ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void configShouldBeAffected() throws Exception
+    public void configShouldBeAffected()
     {
         Config config = db.resolveDependency( Config.class );
 
@@ -55,7 +55,7 @@ public class SetConfigValueProcedureTest
     }
 
     @Test
-    public void failIfUnknownSetting() throws Exception
+    public void failIfUnknownSetting()
     {
         expect.expect( new NestedThrowableMatcher( IllegalArgumentException.class ) );
         expect.expectMessage( "Unknown setting: unknown.setting.indeed" );
@@ -64,7 +64,7 @@ public class SetConfigValueProcedureTest
     }
 
     @Test
-    public void failIfStaticSetting() throws Exception
+    public void failIfStaticSetting()
     {
         expect.expect( new NestedThrowableMatcher( IllegalArgumentException.class ) );
         expect.expectMessage( "Setting is not dynamic and can not be changed at runtime" );
@@ -74,7 +74,7 @@ public class SetConfigValueProcedureTest
     }
 
     @Test
-    public void failIfInvalidValue() throws Exception
+    public void failIfInvalidValue()
     {
         expect.expect( new NestedThrowableMatcher( InvalidSettingException.class ) );
         expect.expectMessage( "Bad value 'invalid' for setting 'dbms.logs.query.enabled': must be 'true' or 'false'" );

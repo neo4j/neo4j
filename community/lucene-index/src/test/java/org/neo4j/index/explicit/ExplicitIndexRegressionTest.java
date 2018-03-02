@@ -36,7 +36,7 @@ public class ExplicitIndexRegressionTest
     public final DatabaseRule graphdb = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldAccessAndUpdateIndexInSameTransaction() throws Exception
+    public void shouldAccessAndUpdateIndexInSameTransaction()
     {
         try ( Transaction tx = graphdb.beginTx() )
         {

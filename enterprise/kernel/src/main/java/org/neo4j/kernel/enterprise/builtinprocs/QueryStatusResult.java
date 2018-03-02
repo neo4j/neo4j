@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +34,8 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.singletonList;
@@ -87,18 +88,18 @@ public class QueryStatusResult
     /** @since Neo4j 3.2 */
     public final long pageFaults;
 
-    QueryStatusResult( ExecutingQuery query, EmbeddedProxySPI manager ) throws InvalidArgumentsException
+    QueryStatusResult( ExecutingQuery query, EmbeddedProxySPI manager, ZoneId zoneId ) throws InvalidArgumentsException
     {
-        this( query.snapshot(), manager );
+        this( query.snapshot(), manager, zoneId );
     }
 
-    private QueryStatusResult( QuerySnapshot query, EmbeddedProxySPI manager ) throws InvalidArgumentsException
+    private QueryStatusResult( QuerySnapshot query, EmbeddedProxySPI manager, ZoneId zoneId ) throws InvalidArgumentsException
     {
         this.queryId = ofInternalId( query.internalQueryId() ).toString();
         this.username = query.username();
         this.query = query.queryText();
         this.parameters = asRawMap( query.queryParameters(), new ParameterWriter( manager ) );
-        this.startTime = formatTime( query.startTimestampMillis() );
+        this.startTime = formatTime( query.startTimestampMillis(), zoneId );
         this.elapsedTimeMillis = query.elapsedTimeMillis();
         this.elapsedTime = formatInterval( elapsedTimeMillis );
         ClientConnectionInfo clientConnection = query.clientConnection();

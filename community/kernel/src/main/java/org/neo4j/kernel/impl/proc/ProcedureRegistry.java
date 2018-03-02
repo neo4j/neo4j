@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.values.AnyValue;
 
 public class ProcedureRegistry
 {
@@ -190,7 +192,7 @@ public class ProcedureRegistry
         return Optional.of( func.signature() );
     }
 
-    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input )
+    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
         CallableProcedure proc = procedures.get( name );
@@ -198,10 +200,10 @@ public class ProcedureRegistry
         {
             throw noSuchProcedure( name );
         }
-        return proc.apply( ctx, input );
+        return proc.apply( ctx, input, resourceTracker );
     }
 
-    public Object callFunction( Context ctx, QualifiedName name, Object[] input )
+    public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input )
             throws ProcedureException
     {
         CallableUserFunction func = functions.get( name );

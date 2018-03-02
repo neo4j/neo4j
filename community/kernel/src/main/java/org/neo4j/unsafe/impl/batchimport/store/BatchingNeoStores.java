@@ -34,6 +34,8 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -66,7 +68,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingR
 import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
 import static java.lang.String.valueOf;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -134,7 +135,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private boolean databaseExistsAndContainsData( PageCache pageCache, File storeDir )
     {
         File metaDataFile = new File( storeDir, StoreType.META_DATA.getStoreFile().fileName( StoreFileType.STORE ) );
-        try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), StandardOpenOption.READ ); )
+        try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), StandardOpenOption.READ ) )
         {
             // OK so the db probably exists
         }
@@ -238,7 +239,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer,
-                DefaultPageCursorTracerSupplier.INSTANCE );
+                DefaultPageCursorTracerSupplier.INSTANCE, EmptyVersionContextSupplier.EMPTY );
 
         return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
                 initialIds, false, tracer::bytesWritten );
@@ -263,17 +264,17 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
-            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
+            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier )
     {
         return new ConfiguringPageCacheFactory( fileSystem, config, tracer, cursorTracerSupplier,
-                log.getLog( BatchingNeoStores.class ) ).getOrCreatePageCache();
+                log.getLog( BatchingNeoStores.class ), contextSupplier ).getOrCreatePageCache();
     }
 
     private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
     {
         return new StoreFactory( storeDir, name, neo4jConfig,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,
-                openOptions );
+                        EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 
     /**
@@ -338,7 +339,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // Here as a safety mechanism when e.g. panicking.
         if ( flusher != null )

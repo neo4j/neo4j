@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.test.Race;
@@ -50,7 +49,9 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
+import static java.lang.Math.toIntExact;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -60,9 +61,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Math.toIntExact;
-
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
@@ -94,21 +93,22 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleGreatAmountsOfStuff() throws Exception
+    public void shouldHandleGreatAmountsOfStuff()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         LongFunction<Object> inputIdLookup = String::valueOf;
+        int count = 300_000;
 
         // WHEN
-        for ( long nodeId = 0; nodeId < 300_000; nodeId++ )
+        for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
             idMapper.put( inputIdLookup.apply( nodeId ), nodeId, GLOBAL );
         }
         idMapper.prepare( inputIdLookup, mock( Collector.class ), NONE );
 
         // THEN
-        for ( long nodeId = 0; nodeId < 300_000; nodeId++ )
+        for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
             // the UUIDs here will be generated in the same sequence as above because we reset the random
             Object id = inputIdLookup.apply( nodeId );
@@ -120,7 +120,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReturnExpectedValueForNotFound() throws Exception
+    public void shouldReturnExpectedValueForNotFound()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -134,7 +134,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReportyProgressForSortAndDetect() throws Exception
+    public void shouldReportyProgressForSortAndDetect()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -151,7 +151,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldEncodeShortStrings() throws Exception
+    public void shouldEncodeShortStrings()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -167,7 +167,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldEncodeSmallSetOfRandomData() throws Throwable
+    public void shouldEncodeSmallSetOfRandomData()
     {
         // GIVEN
         int size = random.nextInt( 10_000 ) + 2;
@@ -191,7 +191,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReportCollisionsForSameInputId() throws Exception
+    public void shouldReportCollisionsForSameInputId()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -210,8 +210,13 @@ public class EncodingIdMapperTest
         verifyNoMoreInteractions( collector );
     }
 
+    private static LongFunction<Object> wrap( List<Object> ids )
+    {
+        return nodeId -> ids.get( toIntExact( nodeId ) );
+    }
+
     @Test
-    public void shouldCopeWithCollisionsBasedOnDifferentInputIds() throws Exception
+    public void shouldCopeWithCollisionsBasedOnDifferentInputIds()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -240,7 +245,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldCopeWithMixedActualAndAccidentalCollisions() throws Exception
+    public void shouldCopeWithMixedActualAndAccidentalCollisions()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -290,7 +295,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups() throws Exception
+    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -313,10 +318,11 @@ public class EncodingIdMapperTest
         assertEquals( 0L, mapper.get( "10", firstGroup ) );
         assertEquals( 1L, mapper.get( "9", firstGroup ) );
         assertEquals( 2L, mapper.get( "10", secondGroup ) );
+        assertFalse( mapper.leftOverDuplicateNodesIds().hasNext() );
     }
 
     @Test
-    public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
+    public void shouldOnlyFindInputIdsInSpecificGroup()
     {
         // GIVEN
         Group firstGroup = groups.getOrCreate( "first" );
@@ -345,7 +351,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleManyGroups() throws Exception
+    public void shouldHandleManyGroups()
     {
         // GIVEN
         int size = 256; // which results in GLOBAL (0) + 1-256 = 257 groups, i.e. requiring two bytes
@@ -371,7 +377,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups() throws Exception
+    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups()
     {
         // GIVEN
         final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
@@ -381,7 +387,8 @@ public class EncodingIdMapperTest
         {
             groups.getOrCreate( "Group " + i );
         }
-        IdMapper mapper = mapper( encoder, Radix.LONG, NO_MONITOR );
+        IdMapper mapper = mapper( encoder, Radix.LONG, NO_MONITOR, ParallelSort.DEFAULT,
+                numberOfCollisions -> new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions ) );
         final AtomicReference<Group> group = new AtomicReference<>();
         LongFunction<Object> ids = nodeId ->
         {
@@ -413,6 +420,7 @@ public class EncodingIdMapperTest
             mapper.put( ids.apply( nodeId ), nodeId, group.get() );
         }
         Collector collector = mock( Collector.class );
+
         mapper.prepare( ids, collector, NONE );
 
         // THEN
@@ -421,10 +429,12 @@ public class EncodingIdMapperTest
         {
             assertEquals( nodeId, mapper.get( ids.apply( nodeId ), group.get() ) );
         }
+        verifyNoMoreInteractions( collector );
+        assertFalse( mapper.leftOverDuplicateNodesIds().hasNext() );
     }
 
     @Test
-    public void shouldHandleHolesInIdSequence() throws Exception
+    public void shouldHandleHolesInIdSequence()
     {
         // GIVEN
         IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
@@ -454,7 +464,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleLargeAmountsOfDuplicateNodeIds() throws Exception
+    public void shouldHandleLargeAmountsOfDuplicateNodeIds()
     {
         // GIVEN
         IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
@@ -482,10 +492,11 @@ public class EncodingIdMapperTest
 
         // THEN
         verify( collector, times( high ) ).collectDuplicateNode( any( Object.class ), anyLong(), anyString() );
+        assertEquals( high, count( mapper.leftOverDuplicateNodesIds() ) );
     }
 
     @Test
-    public void shouldDetectLargeAmountsOfCollisions() throws Exception
+    public void shouldDetectLargeAmountsOfCollisions()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -562,14 +573,7 @@ public class EncodingIdMapperTest
 
     private LongFunction<Object> values( Object... values )
     {
-        return new LongFunction<Object>()
-        {
-            @Override
-            public Object apply( long value )
-            {
-                return values[toIntExact( value )];
-            }
-        };
+        return value -> values[toIntExact( value )];
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )
@@ -579,8 +583,22 @@ public class EncodingIdMapperTest
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor, Comparator comparator )
     {
+        return mapper( encoder, radix, monitor, comparator, autoDetect( encoder ) );
+    }
+
+    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor, Comparator comparator,
+            LongFunction<CollisionValues> collisionValuesFactory )
+    {
         return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
-                1_000, processors, comparator );
+                collisionValuesFactory, 1_000, processors, comparator );
+    }
+
+    private LongFunction<CollisionValues> autoDetect( Encoder encoder )
+    {
+        return numberOfCollisions -> encoder instanceof LongEncoder
+                ? new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions )
+                : new StringCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions );
+
     }
 
     private static final TrackerFactory RANDOM_TRACKER_FACTORY =
@@ -764,12 +782,6 @@ public class EncodingIdMapperTest
 
         @Override
         public long badEntries()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public PrimitiveLongIterator leftOverDuplicateNodesIds()
         {
             throw new UnsupportedOperationException();
         }

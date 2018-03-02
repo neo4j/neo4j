@@ -82,7 +82,7 @@ public class CountsStoreRecoveryTest
         assertEquals( 3, number.get() );
     }
 
-    private void flushNeoStoreOnly() throws Exception
+    private void flushNeoStoreOnly()
     {
         NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();

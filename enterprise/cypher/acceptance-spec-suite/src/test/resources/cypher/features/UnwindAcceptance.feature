@@ -228,3 +228,107 @@ Feature: UnwindAcceptance
       | 'c'   |
     And no side effects
 
+  Scenario: Nested unwind with longs
+    Given an empty graph
+    When executing query:
+      """
+      WITH [[1, 2], [3, 4], 5] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+        | y |
+        | 1 |
+        | 2 |
+        | 3 |
+        | 4 |
+        | 5 |
+    And no side effects
+
+  Scenario: Nested unwind with doubles
+    Given an empty graph
+    When executing query:
+      """
+      WITH [[1.5, 2.5], [3.5, 4.5], 5.5] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+      | y   |
+      | 1.5 |
+      | 2.5 |
+      | 3.5 |
+      | 4.5 |
+      | 5.5 |
+    And no side effects
+
+  Scenario: Nested unwind with strings
+    Given an empty graph
+    When executing query:
+      """
+      WITH [['a', 'b'], ['c', 'd'], 'e'] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+      | y   |
+      | 'a' |
+      | 'b' |
+      | 'c' |
+      | 'd' |
+      | 'e' |
+    And no side effects
+
+  Scenario: Nested unwind with mixed types
+    Given an empty graph
+    When executing query:
+      """
+      WITH [['a', 'b'], ['1.5', 'c'], '2', 'd' ] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+      | y     |
+      | 'a'   |
+      | 'b'   |
+      | '1.5' |
+      | 'c'   |
+      | '2'   |
+      | 'd'   |
+    And no side effects
+
+  Scenario: Pattern comprehension in unwind with empty db
+    Given an empty graph
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c |
+    And no side effects
+
+  Scenario: Pattern comprehension in unwind with hits
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A)
+      CREATE (b:B)
+      CREATE (c:C)
+      CREATE (a)-[:T]->(b),
+             (b)-[:T]->(c)
+      """
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c     |
+      | (:B)  |
+      | (:C)  |
+    And no side effects

@@ -303,7 +303,7 @@ public class NativeLabelScanStore implements LabelScanStore
      * @throws IOException on file access exceptions.
      */
     @Override
-    public ResourceIterator<File> snapshotStoreFiles() throws IOException
+    public ResourceIterator<File> snapshotStoreFiles()
     {
         return asResourceIterator( iterator( storeFile ) );
     }
@@ -339,14 +339,17 @@ public class NativeLabelScanStore implements LabelScanStore
         if ( isDirty )
         {
             monitor.notValidIndex();
-            dropStrict();
-            instantiateTree();
+            if ( !readOnly )
+            {
+                dropStrict();
+                instantiateTree();
+            }
             needsRebuild = true;
         }
     }
 
     @Override
-    public boolean hasStore() throws IOException
+    public boolean hasStore()
     {
         return gbpTreeUtil.storeFileExists( storeFile );
     }
@@ -420,7 +423,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void start() throws IOException
     {
-        if ( needsRebuild )
+        if ( needsRebuild && !readOnly )
         {
             monitor.rebuilding();
             long numberOfNodes;
@@ -455,7 +458,7 @@ public class NativeLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {   // Not needed
     }
 
@@ -467,12 +470,21 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void shutdown() throws IOException
     {
-        index.close();
+        if ( index != null )
+        {
+            index.close();
+            index = null;
+        }
     }
 
     @Override
     public boolean isReadOnly()
     {
         return readOnly;
+    }
+
+    public boolean isDirty()
+    {
+        return index == null || index.wasDirtyOnStartup();
     }
 }

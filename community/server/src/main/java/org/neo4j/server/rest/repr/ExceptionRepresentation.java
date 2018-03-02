@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.repr;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,10 +49,7 @@ public class ExceptionRepresentation extends MappingRepresentation
     public ExceptionRepresentation( Neo4jError ... errors )
     {
         super( RepresentationType.EXCEPTION );
-        for ( Neo4jError exception : errors )
-        {
-            this.errors.add( exception );
-        }
+        this.errors.addAll( Arrays.asList( errors ) );
     }
 
     @Override
@@ -85,7 +83,7 @@ public class ExceptionRepresentation extends MappingRepresentation
         StackTraceElement[] trace = exception.getStackTrace();
         if ( trace != null )
         {
-            Collection<String> lines = new ArrayList<String>( trace.length );
+            Collection<String> lines = new ArrayList<>( trace.length );
             for ( StackTraceElement element : trace )
             {
                 if ( element.toString().matches( ".*(jetty|jersey|sun\\.reflect|mortbay|javax\\.servlet).*" ) )

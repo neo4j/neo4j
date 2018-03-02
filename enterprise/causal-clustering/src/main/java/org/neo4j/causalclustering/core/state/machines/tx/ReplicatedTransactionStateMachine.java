@@ -27,6 +27,7 @@ import org.neo4j.causalclustering.core.state.machines.StateMachine;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
@@ -50,19 +51,25 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     private final int maxBatchSize;
     private final Log log;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
 
     private TransactionQueue queue;
     private long lastCommittedIndex = -1;
     private CommandReaderFactory commandReaderFactory;
 
-    public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker, ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize,
-            LogProvider logProvider, PageCursorTracerSupplier pageCursorTracerSupplier, CommandReaderFactory commandReaderFactory )
+    public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker,
+                                              ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize,
+                                              LogProvider logProvider,
+                                              PageCursorTracerSupplier pageCursorTracerSupplier,
+                                              VersionContextSupplier versionContextSupplier,
+                                              CommandReaderFactory commandReaderFactory )
     {
         this.commandIndexTracker = commandIndexTracker;
         this.lockTokenStateMachine = lockStateMachine;
         this.maxBatchSize = maxBatchSize;
         this.log = logProvider.getLog( getClass() );
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
         this.commandReaderFactory = commandReaderFactory;
     }
 
@@ -104,7 +111,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
         {
             try
             {
-                TransactionToApply transaction = new TransactionToApply( tx );
+                TransactionToApply transaction = new TransactionToApply( tx, versionContextSupplier.getVersionContext() );
                 transaction.onClose( txId ->
                 {
                     callback.accept( Result.of( txId ) );
@@ -120,7 +127,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     }
 
     @Override
-    public void flush() throws IOException
+    public void flush()
     {
         // implicitly flushed
     }

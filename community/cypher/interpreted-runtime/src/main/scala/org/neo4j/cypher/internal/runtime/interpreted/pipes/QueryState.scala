@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.UUID
-
 import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
@@ -38,13 +36,13 @@ class QueryState(val query: QueryContext,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,
                  val initialContext: Option[ExecutionContext] = None,
-                 val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
                  new SingleThreadedLRUCache(maxSize = 16)) {
 
   private var _pathValueBuilder: PathValueBuilder = _
+  private var _exFactory: ExecutionContextFactory = _
 
   def createOrGetInitialContext(factory: ExecutionContextFactory): ExecutionContext =
     initialContext.getOrElse(ExecutionContext.empty)
@@ -73,11 +71,11 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState,
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState,
                    repeatableReads, cachedIn)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState,
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), triadicState,
                    repeatableReads, cachedIn)
 
   /**
@@ -91,8 +89,14 @@ class QueryState(val query: QueryContext,
   def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => initData.copyTo(ctx))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState,
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState,
                    repeatableReads, cachedIn)
+
+  def setExecutionContextFactory(exFactory: ExecutionContextFactory) = {
+    _exFactory = exFactory
+  }
+
+  def executionContextFactory = _exFactory
 }
 
 object QueryState {

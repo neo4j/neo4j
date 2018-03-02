@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
@@ -46,7 +45,6 @@ public enum AtomicBroadcastState
                                                     Message<AtomicBroadcastMessage> message,
                                                     MessageHolder outgoing
                 )
-                        throws Throwable
                 {
 
                     switch ( message.getMessageType() )
@@ -74,11 +72,10 @@ public enum AtomicBroadcastState
     joining
             {
                 @Override
-                public State<?, ?> handle( AtomicBroadcastContext context,
+                public AtomicBroadcastState handle( AtomicBroadcastContext context,
                                            Message<AtomicBroadcastMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -124,7 +121,6 @@ public enum AtomicBroadcastState
                                                     Message<AtomicBroadcastMessage> message,
                                                     MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -139,14 +135,14 @@ public enum AtomicBroadcastState
                                     URI coordinatorUri = context.getUriForId( coordinator );
                                     outgoing.offer( message.copyHeadersTo(
                                             to( ProposerMessage.propose, coordinatorUri, message.getPayload() ) ) );
-                                    context.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
+                                    context.setTimeout( "broadcast-" + message.getHeader( Message.HEADER_CONVERSATION_ID ),
                                             timeout( AtomicBroadcastMessage.broadcastTimeout, message,
                                                     message.getPayload() ) );
                                 }
                                 else
                                 {
                                     outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
-                                            message.getPayload() ), Message.CONVERSATION_ID, org.neo4j.cluster.protocol
+                                            message.getPayload() ), Message.HEADER_CONVERSATION_ID, org.neo4j.cluster.protocol
                                             .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
                             }
@@ -160,7 +156,7 @@ public enum AtomicBroadcastState
 
                         case broadcastResponse:
                         {
-                            context.cancelTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ) );
+                            context.cancelTimeout( "broadcast-" + message.getHeader( Message.HEADER_CONVERSATION_ID ) );
 
                             // TODO FILTER MESSAGES
 
@@ -174,7 +170,7 @@ public enum AtomicBroadcastState
                                     outgoing.offer( message.copyHeadersTo(
                                             Message.internal( HeartbeatMessage.i_am_alive,
                                                     new HeartbeatMessage.IAmAliveState( change.getJoin() ) ),
-                                            Message.FROM ) );
+                                            Message.HEADER_FROM ) );
                                 }
                             }
                             else

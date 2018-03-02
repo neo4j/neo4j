@@ -88,7 +88,7 @@ public class BatchingTransactionAppenderTest
     private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10 );
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
     }
@@ -197,7 +197,7 @@ public class BatchingTransactionAppenderTest
     }
 
     @Test
-    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead() throws Exception
+    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead()
     {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -242,7 +242,8 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
+        FlushablePositionAwareChannel channel =
+                spy( new PositionAwarePhysicalFlushableChannel( mock( PhysicalLogVersionedStoreChannel.class ) ) );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );

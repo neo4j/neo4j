@@ -31,6 +31,7 @@ import java.nio.file.OpenOption;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -61,7 +62,7 @@ public class StoreFactoryTest
     private PageCache pageCache;
 
     @Before
-    public void setUp() throws IOException
+    public void setUp()
     {
         FileSystemAbstraction fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
@@ -74,7 +75,7 @@ public class StoreFactoryTest
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForStoreOrConfig( config, storeDir, pageCache, logProvider );
         return new StoreFactory( storeDir, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
-                recordFormats, logProvider, openOptions );
+                recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 
     private File directory( String name )
@@ -94,7 +95,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
+    public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
     {
         // When
         neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
@@ -105,7 +106,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
+    public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
     {
         // When
         neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
@@ -137,7 +138,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldDelegateDeletionOptionToStores() throws Exception
+    public void shouldDelegateDeletionOptionToStores()
     {
         // GIVEN
         StoreFactory storeFactory = storeFactory( Config.defaults(), DELETE_ON_CLOSE );

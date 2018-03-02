@@ -34,11 +34,14 @@ import org.neo4j.values.virtual.{NodeReference, NodeValue, VirtualValues}
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
-case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
+case class ShortestPathExpression(shortestPathPattern: ShortestPath,
+                                  perStepPredicates: Seq[Predicate] = Seq.empty,
+                                  fullPathPredicates: Seq[Predicate] = Seq.empty,
                                   withFallBack: Boolean = false, disallowSameNode: Boolean = true) extends Expression {
 
   val pathPattern: Seq[Pattern] = Seq(shortestPathPattern)
   val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
+  val predicates = perStepPredicates ++ fullPathPredicates
 
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     if (anyStartpointsContainNull(ctx)) {
@@ -189,34 +192,28 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
 
   private def addPredicates(ctx: ExecutionContext, relTypeAndDirExpander: Expander, state: QueryState):
   (Expander, Seq[KernelPredicate[PropertyContainer]]) =
-    if (predicates.isEmpty) (relTypeAndDirExpander, Seq())
+    if (perStepPredicates.isEmpty) (relTypeAndDirExpander, Seq())
     else
-      predicates.foldLeft((relTypeAndDirExpander, Seq[KernelPredicate[PropertyContainer]]())) {
+      perStepPredicates.foldLeft((relTypeAndDirExpander, Seq[KernelPredicate[PropertyContainer]]())) {
         case ((currentExpander, currentNodePredicates: Seq[KernelPredicate[PropertyContainer]]), predicate) =>
           predicate match {
-            case NoneInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(
-              innerPredicate) =>
+            case NoneInList(RelationshipFunction(_), symbolName, innerPredicate) =>
               val expander = addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate,
                 symbolName, state)
               (expander, currentNodePredicates)
-            case AllInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(
-              innerPredicate) =>
+            case AllInList(RelationshipFunction(_), symbolName, innerPredicate) =>
               val expander = addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate,
                 symbolName, state)
               (expander, currentNodePredicates)
-            case NoneInList(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            case NoneInList(NodesFunction(_), symbolName, innerPredicate) =>
               addAllOrNoneNodeExpander(ctx, currentExpander, all = false, innerPredicate, symbolName,
                                        currentNodePredicates, state)
-            case AllInList(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            case AllInList(NodesFunction(_), symbolName, innerPredicate) =>
               addAllOrNoneNodeExpander(ctx, currentExpander, all = true, innerPredicate, symbolName,
                                        currentNodePredicates, state)
             case _ => (currentExpander, currentNodePredicates)
           }
       }
-
-  private def doesNotDependOnFullPath(predicate: Predicate): Boolean = {
-    (predicate.symbolTableDependencies intersect pathVariables).isEmpty
-  }
 }
 
 object ShortestPathExpression {

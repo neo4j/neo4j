@@ -236,7 +236,7 @@ public class TransactionTerminationIT
         }
     }
 
-    private void createNode( ClusterManager.ManagedCluster cluster ) throws InterruptedException
+    private void createNode( ClusterManager.ManagedCluster cluster )
     {
         createNode( cluster.getMaster() );
         cluster.sync();
@@ -253,7 +253,7 @@ public class TransactionTerminationIT
         }
     }
 
-    private static void assertNodeExists( ClusterManager.ManagedCluster cluster, Object value ) throws Exception
+    private static void assertNodeExists( ClusterManager.ManagedCluster cluster, Object value )
     {
         cluster.sync();
         assertNodeExists( cluster.getMaster(), value );
@@ -384,7 +384,7 @@ public class TransactionTerminationIT
         return Executors.newSingleThreadExecutor( named( threadName ) ).submit( runnable );
     }
 
-    private ClusterManager.ManagedCluster startCluster() throws Exception
+    private ClusterManager.ManagedCluster startCluster()
     {
         clusterRule.withSharedSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, lockManagerName );
 

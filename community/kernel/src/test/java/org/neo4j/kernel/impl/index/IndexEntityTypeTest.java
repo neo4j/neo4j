@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class IndexEntityTypeTest
 {
     @Test
-    public void shouldLowerCaseEnumName() throws Exception
+    public void shouldLowerCaseEnumName()
     {
         assertEquals( "node", IndexEntityType.Node.nameToLowerCase() );
         assertEquals( "relationship", IndexEntityType.Relationship.nameToLowerCase() );

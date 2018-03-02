@@ -97,7 +97,7 @@ public class SegmentedRaftLogRotationTest
         return new ReplicatedString( builder.toString() );
     }
 
-    private SegmentedRaftLog createRaftLog( long rotateAtSize ) throws IOException
+    private SegmentedRaftLog createRaftLog( long rotateAtSize )
     {
         LogProvider logProvider = getInstance();
         CoreLogPruningStrategy pruningStrategy =

@@ -67,7 +67,7 @@ public class UniqueIndexApplicationIT
     }
 
     @After
-    public void then() throws Exception
+    public void then()
     {
         assertThat( "Matching nodes from index lookup",
                 db.when( db.tx( listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ) ) ),
@@ -75,14 +75,14 @@ public class UniqueIndexApplicationIT
     }
 
     @Before
-    public void given() throws Exception
+    public void given()
     {
         db.executeAndCommit( createIndex );
         db.executeAndCommit( awaitIndexesOnline( 5, SECONDS ) );
     }
 
     @Test
-    public void tx_createNode_addLabel_setProperty() throws Exception
+    public void tx_createNode_addLabel_setProperty()
     {
         db.when( db.tx(
                 createNode().andThen( addLabel( label( "Label1" ) ).andThen( setProperty( "key1", "value1" ) ) )
@@ -90,7 +90,7 @@ public class UniqueIndexApplicationIT
     }
 
     @Test
-    public void tx_createNode_tx_addLabel_setProperty() throws Exception
+    public void tx_createNode_tx_addLabel_setProperty()
     {
         db.when( db.tx(
                 createNode()
@@ -100,7 +100,7 @@ public class UniqueIndexApplicationIT
     }
 
     @Test
-    public void tx_createNode_addLabel_tx_setProperty() throws Exception
+    public void tx_createNode_addLabel_tx_setProperty()
     {
         db.when( db.tx(
                 createNode().andThen( addLabel( label( "Label1" ) ) )
@@ -110,7 +110,7 @@ public class UniqueIndexApplicationIT
     }
 
     @Test
-    public void tx_createNode_setProperty_tx_addLabel() throws Exception
+    public void tx_createNode_setProperty_tx_addLabel()
     {
         db.when( db.tx(
                 createNode().andThen( setProperty( "key1", "value1" ) )
@@ -120,7 +120,7 @@ public class UniqueIndexApplicationIT
     }
 
     @Test
-    public void tx_createNode_tx_addLabel_tx_setProperty() throws Exception
+    public void tx_createNode_tx_addLabel_tx_setProperty()
     {
         db.when( db.tx(
                 createNode()
@@ -132,7 +132,7 @@ public class UniqueIndexApplicationIT
     }
 
     @Test
-    public void tx_createNode_tx_setProperty_tx_addLabel() throws Exception
+    public void tx_createNode_tx_setProperty_tx_addLabel()
     {
         db.when( db.tx(
                 createNode()

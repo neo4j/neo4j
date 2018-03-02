@@ -360,8 +360,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         val result = legacyProfile(query)
 
         // then
-        val expectedTxCount = 1 + // First tx used to compile the query
-                              10  // One per 10 rows of CSV file
+        val expectedTxCount = 10  // One per 10 rows of CSV file
 
         graph.txCounts-initialTxCounts should equal(TxCounts(commits = expectedTxCount))
         result.queryStatistics().containsUpdates should equal(true)
@@ -660,19 +659,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
+      plan => assert(getArgument[Rows](plan).value === expectedRows, s" wrong row count for plan: ${plan.name}")
     }
   }
 
   private def assertEstimatedRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[EstimatedRows](plan).value, s" wrong estiamted row count for plan: ${plan.name}")
+      plan => assert(getArgument[EstimatedRows](plan).value === expectedRows , s" wrong estiamted row count for plan: ${plan.name}")
     }
   }
 
   private def assertDbHits(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[DbHits](plan).value, s" wrong db hits for plan: ${plan.name}")
+      plan => assert(getArgument[DbHits](plan).value === expectedRows , s" wrong db hits for plan: ${plan.name}")
     }
   }
 

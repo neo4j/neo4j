@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -42,7 +43,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     private final SchemaIndex luceneIndex;
     private final IndexDescriptor descriptor;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
     {
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
@@ -66,7 +67,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
         // We never change status of read-only indexes.
         if ( !luceneIndex.isReadOnly() )
@@ -120,6 +121,12 @@ public class LuceneIndexAccessor implements IndexAccessor
         luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyIds() );
     }
 
+    @Override
+    public boolean isDirty()
+    {
+        return luceneIndex.isValid();
+    }
+
     private class LuceneIndexUpdater implements IndexUpdater
     {
         private final boolean idempotent;
@@ -164,7 +171,7 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close() throws IOException
         {
             if ( hasChanges && refresh )
             {

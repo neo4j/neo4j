@@ -63,7 +63,7 @@ public class MessageArgumentMatcher<T extends MessageType> implements ArgumentMa
     }
 
     /**
-     * Use this for matching on headers other than TO and FROM, for which there are dedicated methods. The value
+     * Use this for matching on headers other than HEADER_TO and HEADER_FROM, for which there are dedicated methods. The value
      * of the header is mandatory - if you don't care about it, set it to the empty string.
      */
     public MessageArgumentMatcher<T> withHeader( String headerName, String headerValue )
@@ -80,8 +80,8 @@ public class MessageArgumentMatcher<T extends MessageType> implements ArgumentMa
         {
             return false;
         }
-        boolean toMatches = to == null || to.toString().equals( message.getHeader( Message.TO ) );
-        boolean fromMatches = from == null || from.toString().equals( message.getHeader( Message.FROM ) );
+        boolean toMatches = to == null || to.toString().equals( message.getHeader( Message.HEADER_TO ) );
+        boolean fromMatches = from == null || from.toString().equals( message.getHeader( Message.HEADER_FROM ) );
         boolean typeMatches = theMessageType == null || theMessageType == ((Message) message).getMessageType();
         boolean payloadMatches = payload == null || payload.equals( message.getPayload() );
         boolean headersMatch = true;

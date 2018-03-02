@@ -51,7 +51,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
@@ -150,7 +150,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         throw new UnsupportedOperationException( "Can't drop indexes from this populator implementation" );
     }
@@ -259,7 +259,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor )
     {
         throw new UnsupportedOperationException( "Should not be called directly" );
     }
@@ -283,7 +283,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void markAsFailed( String failure ) throws IOException
+    public void markAsFailed( String failure )
     {
         throw new UnsupportedOperationException( "Multiple index populator can't be marked as failed." );
     }
@@ -568,7 +568,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( EntityUpdates updates ) throws IndexPopulationFailedKernelException
+        public boolean visit( EntityUpdates updates )
         {
             add( updates );
             populateFromQueueBatched( updates.getEntityId() );

@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 public class IndexDefineCommandTest
 {
     @Test
-    public void testIndexCommandCreationEnforcesLimit() throws Exception
+    public void testIndexCommandCreationEnforcesLimit()
     {
         // Given
         IndexDefineCommand idc = new IndexDefineCommand();

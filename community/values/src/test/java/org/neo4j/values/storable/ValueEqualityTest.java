@@ -25,7 +25,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
-import static org.neo4j.values.utils.AnyValueTestUtil.assertIncomparable;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 /**

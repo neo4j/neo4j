@@ -46,7 +46,7 @@ public class TestDatasourceCommitOrderDataVisibility
     private GraphDatabaseService graphDatabaseService;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
@@ -94,7 +94,7 @@ public class TestDatasourceCommitOrderDataVisibility
         {
             try ( Transaction ignored = graphDatabaseService.beginTx();
                   IndexHits<Node> indexHits = graphDatabaseService.index()
-                          .forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ); )
+                          .forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ) )
             {
                 assertThat( indexHits.size(), is( 0 ) );
             }

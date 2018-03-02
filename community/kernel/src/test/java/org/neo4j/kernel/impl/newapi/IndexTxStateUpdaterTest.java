@@ -26,10 +26,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.StubNodeCursor;
-import org.neo4j.internal.kernel.api.StubPropertyCursor;
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -111,14 +110,14 @@ public class IndexTxStateUpdaterTest
         Read readOps = mock( Read.class );
         when( readOps.txState() ).thenReturn( txState );
 
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, new NodeSchemaMatcher( readOps ) );
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
 
     }
 
     // LABELS
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( unIndexedLabelId, node, propertyCursor, ADDED_LABEL );
@@ -129,7 +128,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId1, node, propertyCursor, ADDED_LABEL );
@@ -141,7 +140,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId2, node, propertyCursor, REMOVED_LABEL );
@@ -152,7 +151,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ) );
@@ -164,7 +163,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, newPropId, Values.of( "newHi" ) );
@@ -176,7 +175,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyRemove( node, propertyCursor, propId2, Values.of( "hi2" ) );
@@ -188,7 +187,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnChangesProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyChange( node, propertyCursor, propId2, Values.of( "hi2" ), Values.of( "new2" ) );

@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
-import org.neo4j.cypher.internal.runtime.{QueryContext, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.{QueryContext, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -125,7 +125,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
           }))
 
         case unknownPlan => Failure(new UnsupportedOperationException(
-          s"Plan is not a procedure Call or schema command: $unknownPlan"))
+          s"Plan is not a procedure Call or schema command: ${unknownPlan.getClass.getSimpleName}"))
       }
     }
 

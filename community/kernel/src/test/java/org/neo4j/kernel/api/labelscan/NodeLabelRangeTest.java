@@ -26,7 +26,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class NodeLabelRangeTest
 {
     @Test
-    public void shouldTransposeNodeIdsAndLabelIds() throws Exception
+    public void shouldTransposeNodeIdsAndLabelIds()
     {
         // given
         long[][] labelsPerNode = new long[][] {
@@ -52,7 +52,7 @@ public class NodeLabelRangeTest
     }
 
     @Test
-    public void shouldRebaseOnRangeId() throws Exception
+    public void shouldRebaseOnRangeId()
     {
         // given
         long[][] labelsPerNode = new long[][] {

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -59,7 +60,7 @@ public class HaCountsIT
     private HighlyAvailableGraphDatabase slave2;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
         master = cluster.getMaster();
@@ -68,7 +69,7 @@ public class HaCountsIT
         clearDatabase();
     }
 
-    private void clearDatabase() throws InterruptedException
+    private void clearDatabase()
     {
         try ( Transaction tx = master.beginTx() )
         {
@@ -95,7 +96,7 @@ public class HaCountsIT
     }
 
     @Test
-    public void shouldUpdateCountsOnSlavesWhenCreatingANodeOnMaster() throws Exception
+    public void shouldUpdateCountsOnSlavesWhenCreatingANodeOnMaster()
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
@@ -110,7 +111,7 @@ public class HaCountsIT
     }
 
     @Test
-    public void shouldUpdateCountsOnMasterAndSlaveWhenCreatingANodeOnSlave() throws Exception
+    public void shouldUpdateCountsOnMasterAndSlaveWhenCreatingANodeOnSlave()
     {
         // when creating a node on the slave
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
@@ -192,12 +193,12 @@ public class HaCountsIT
     private void assertOnNodeCounts( int expectedTotalNodes, int expectedLabelledNodes,
                                      Label label, HighlyAvailableGraphDatabase db )
     {
-        try ( Transaction ignored = db.beginTx();
-              Statement statement = statement( db ) )
+        try ( Transaction ignored = db.beginTx() )
         {
-            final int labelId = statement.readOperations().labelGetForName( label.name() );
-            assertEquals( expectedTotalNodes, statement.readOperations().countsForNode( -1 ) );
-            assertEquals( expectedLabelledNodes, statement.readOperations().countsForNode( labelId ) );
+            KernelTransaction transaction = kernelTransaction( db );
+            final int labelId = transaction.tokenRead().nodeLabel( label.name() );
+            assertEquals( expectedTotalNodes, transaction.dataRead().countsForNode( -1 ) );
+            assertEquals( expectedLabelledNodes, transaction.dataRead().countsForNode( labelId ) );
         }
     }
 
@@ -230,6 +231,13 @@ public class HaCountsIT
         return db.getDependencyResolver()
                  .resolveDependency( ThreadToStatementContextBridge.class )
                  .get();
+    }
+
+    private KernelTransaction kernelTransaction( HighlyAvailableGraphDatabase db )
+    {
+        return db.getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread(true);
     }
 
     private IndexingService indexingService( HighlyAvailableGraphDatabase db )

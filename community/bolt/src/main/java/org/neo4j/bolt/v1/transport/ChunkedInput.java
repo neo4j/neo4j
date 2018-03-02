@@ -48,9 +48,9 @@ public class ChunkedInput implements PackInput
         remaining = 0;
 
         // Release references to all buffers
-        for ( int i = 0; i < chunks.size(); i++ )
+        for ( ByteBuf chunk : chunks )
         {
-            chunks.get( i ).release();
+            chunk.release();
         }
 
         if ( chunks.size() > 128 )

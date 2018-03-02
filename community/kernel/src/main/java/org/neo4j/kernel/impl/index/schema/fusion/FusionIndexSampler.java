@@ -23,28 +23,25 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
-class FusionIndexSampler implements IndexSampler
-{
-    private final IndexSampler nativeSampler;
-    private final IndexSampler luceneSampler;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
-    FusionIndexSampler( IndexSampler nativeSampler, IndexSampler luceneSampler )
+public class FusionIndexSampler implements IndexSampler
+{
+    private final IndexSampler[] samplers;
+
+    public FusionIndexSampler( IndexSampler... samplers )
     {
-        this.nativeSampler = nativeSampler;
-        this.luceneSampler = luceneSampler;
+        this.samplers = samplers;
     }
 
     @Override
     public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
-        return combineSamples( nativeSampler.sampleIndex(), luceneSampler.sampleIndex() );
-    }
-
-    static IndexSample combineSamples( IndexSample first, IndexSample other )
-    {
-        return new IndexSample(
-                first.indexSize() + other.indexSize(),
-                first.uniqueValues() + other.uniqueValues(),
-                first.sampleSize() + other.sampleSize() );
+        IndexSample[] samples = new IndexSample[samplers.length];
+        for ( int i = 0; i < samplers.length; i++ )
+        {
+            samples[i] = samplers[i].sampleIndex();
+        }
+        return combineSamples( samples );
     }
 }

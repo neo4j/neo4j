@@ -64,7 +64,7 @@ public class StartClientIT extends AbstractShellIT
     private GraphDatabaseShellServer shellServer;
 
     @Before
-    public void startDatabase() throws Exception
+    public void startDatabase()
     {
         makeServerRemotelyAvailable();
     }
@@ -83,7 +83,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands() throws IOException
+    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands()
     {
         // Given
         // an empty database
@@ -145,7 +145,7 @@ public class StartClientIT extends AbstractShellIT
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
-                                                                            String configFile ) throws RemoteException
+                                                                            String configFile )
             {
                 return databaseShellServer;
             }
@@ -160,7 +160,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldReportEditionThroughDbInfoApp() throws Exception
+    public void shouldReportEditionThroughDbInfoApp()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -178,7 +178,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldPrintVersionAndExit() throws Exception
+    public void shouldPrintVersionAndExit()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();

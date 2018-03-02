@@ -46,21 +46,21 @@ public class CausalClusteringService implements AdvertisableService
     }
 
     @GET
-    public Response discover() throws BadInputException
+    public Response discover()
     {
         return status.discover();
     }
 
     @GET
     @Path( WRITABLE )
-    public Response isWritable() throws BadInputException
+    public Response isWritable()
     {
         return status.writable();
     }
 
     @GET
     @Path( READ_ONLY )
-    public Response isReadOnly() throws BadInputException
+    public Response isReadOnly()
     {
         return status.readonly();
     }

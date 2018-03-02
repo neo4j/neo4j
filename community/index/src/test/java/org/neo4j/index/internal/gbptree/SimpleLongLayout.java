@@ -25,31 +25,91 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
+class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
 {
     private final int keyPadding;
     private String customNameAsMetaData;
+    private final boolean fixedSize;
+    private final int identifier;
+    private final int majorVersion;
+    private final int minorVersion;
 
-    SimpleLongLayout( int keyPadding, String customNameAsMetaData )
+    static class Builder
+    {
+        private int keyPadding;
+        private int identifier = 999;
+        private int majorVersion;
+        private int minorVersion;
+        private String customNameAsMetaData = "test";
+        private boolean fixedSize = true;
+
+        Builder withKeyPadding( int keyPadding )
+        {
+            this.keyPadding = keyPadding;
+            return this;
+        }
+
+        Builder withIdentifier( int identifier )
+        {
+            this.identifier = identifier;
+            return this;
+        }
+
+        Builder withMajorVersion( int majorVersion )
+        {
+            this.majorVersion = majorVersion;
+            return this;
+        }
+
+        Builder withMinorVersion( int minorVersion )
+        {
+            this.minorVersion = minorVersion;
+            return this;
+        }
+
+        Builder withCustomerNameAsMetaData( String customNameAsMetaData )
+        {
+            this.customNameAsMetaData = customNameAsMetaData;
+            return this;
+        }
+
+        Builder withFixedSize( boolean fixedSize )
+        {
+            this.fixedSize = fixedSize;
+            return this;
+        }
+
+        SimpleLongLayout build()
+        {
+            return new SimpleLongLayout( keyPadding, customNameAsMetaData, fixedSize, identifier, majorVersion, minorVersion );
+        }
+    }
+
+    static Builder longLayout()
+    {
+        return new Builder();
+    }
+
+    SimpleLongLayout( int keyPadding, String customNameAsMetaData, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
     {
         this.keyPadding = keyPadding;
         this.customNameAsMetaData = customNameAsMetaData;
-    }
-
-    SimpleLongLayout( int keyPadding )
-    {
-        this( keyPadding, "test" );
-    }
-
-    SimpleLongLayout()
-    {
-        this( 0 );
+        this.fixedSize = fixedSize;
+        this.identifier = identifier;
+        this.majorVersion = majorVersion;
+        this.minorVersion = minorVersion;
     }
 
     @Override
     public int compare( MutableLong o1, MutableLong o2 )
     {
         return Long.compare( o1.longValue(), o2.longValue() );
+    }
+
+    @Override
+    int compareValue( MutableLong v1, MutableLong v2 )
+    {
+        return compare( v1, v2 );
     }
 
     @Override
@@ -72,14 +132,14 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
-    public int keySize()
+    public int keySize( MutableLong key )
     {
         // pad the key here to affect the max key count, useful to get odd or even max key count
         return Long.BYTES + keyPadding;
     }
 
     @Override
-    public int valueSize()
+    public int valueSize( MutableLong value )
     {
         return Long.BYTES;
     }
@@ -97,33 +157,39 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
-    public void readKey( PageCursor cursor, MutableLong into )
+    public void readKey( PageCursor cursor, MutableLong into, int keySize )
     {
         into.setValue( cursor.getLong() );
     }
 
     @Override
-    public void readValue( PageCursor cursor, MutableLong into )
+    public void readValue( PageCursor cursor, MutableLong into, int valueSize )
     {
         into.setValue( cursor.getLong() );
+    }
+
+    @Override
+    public boolean fixedSize()
+    {
+        return fixedSize;
     }
 
     @Override
     public long identifier()
     {
-        return 999;
+        return identifier;
     }
 
     @Override
     public int majorVersion()
     {
-        return 0;
+        return majorVersion;
     }
 
     @Override
     public int minorVersion()
     {
-        return 0;
+        return minorVersion;
     }
 
     @Override
@@ -179,5 +245,33 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
         byte[] bytes = new byte[length];
         cursor.getBytes( bytes );
         return new String( bytes, UTF_8 );
+    }
+
+    @Override
+    public MutableLong key( long seed )
+    {
+        MutableLong key = newKey();
+        key.setValue( seed );
+        return key;
+    }
+
+    @Override
+    public MutableLong value( long seed )
+    {
+        MutableLong value = newValue();
+        value.setValue( seed );
+        return value;
+    }
+
+    @Override
+    public long keySeed( MutableLong key )
+    {
+        return key.getValue();
+    }
+
+    @Override
+    public long valueSeed( MutableLong value )
+    {
+        return value.getValue();
     }
 }

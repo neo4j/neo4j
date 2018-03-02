@@ -19,11 +19,13 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.memory.MemoryAllocationTracker;
+
 public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
 {
-    public LongKeyLongValueUnsafeTable( int capacity )
+    public LongKeyLongValueUnsafeTable( int capacity, MemoryAllocationTracker allocationTracker )
     {
-        super( capacity, 16, new long[1] );
+        super( capacity, 16, new long[1], allocationTracker );
     }
 
     @Override
@@ -77,6 +79,6 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     @Override
     protected Table<long[]> newInstance( int newCapacity )
     {
-        return new LongKeyLongValueUnsafeTable( newCapacity );
+        return new LongKeyLongValueUnsafeTable( newCapacity, allocationTracker );
     }
 }

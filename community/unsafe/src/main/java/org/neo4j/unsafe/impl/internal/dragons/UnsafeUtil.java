@@ -38,8 +38,11 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.MemoryAllocationTracker;
+
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * Always check that the Unsafe utilities are available with the {@link UnsafeUtil#assertHasUnsafe} method, before
@@ -52,8 +55,9 @@ public final class UnsafeUtil
 {
     /**
      * Whether or not to explicitly dirty the allocated memory. This is off by default.
-     * The {@link UnsafeUtil#allocateMemory(long)} method is not guaranteed to allocate zeroed out memory, but might
-     * often do so by pure chance.
+     * The {@link UnsafeUtil#allocateMemory(long, MemoryAllocationTracker)} method is not guaranteed to allocate
+     * zeroed out memory, but might often do so by pure chance.
+     * <p>
      * Enabling this feature will make sure that the allocated memory is full of random data, such that we can test
      * and verify that our code does not assume that memory is clean when allocated.
      */
@@ -67,7 +71,7 @@ public final class UnsafeUtil
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
 
-    private static final Class<?> directByteBufferClass;
+    public static final Class<?> directByteBufferClass;
     private static final Constructor<?> directByteBufferCtor;
     private static final long directByteBufferMarkOffset;
     private static final long directByteBufferPositionOffset;
@@ -134,8 +138,8 @@ public final class UnsafeUtil
         // See java.nio.Bits.unaligned() and its uses.
         String alignmentProperty = System.getProperty( allowUnalignedMemoryAccessProperty );
         if ( alignmentProperty != null &&
-                (alignmentProperty.equalsIgnoreCase( "true" )
-                        || alignmentProperty.equalsIgnoreCase( "false" )) )
+             (alignmentProperty.equalsIgnoreCase( "true" )
+              || alignmentProperty.equalsIgnoreCase( "false" )) )
         {
             allowUnalignedMemoryAccess = Boolean.parseBoolean( alignmentProperty );
         }
@@ -320,6 +324,32 @@ public final class UnsafeUtil
     }
 
     /**
+     * Atomically exchanges provided <code>newValue</code> with the current value of field or array element, with
+     * provided <code>offset</code>.
+     */
+    public static long getAndSetLong( Object object, long offset, long newValue )
+    {
+        return unsafe.getAndSetLong( object, offset, newValue );
+    }
+
+    /**
+     * Atomically set field or array element to a maximum between current value and provided <code>newValue</code>
+     */
+    public static void compareAndSetMaxLong( Object object, long fieldOffset, long newValue )
+    {
+        long currentValue;
+        do
+        {
+            currentValue = UnsafeUtil.getLongVolatile( object, fieldOffset );
+            if ( currentValue >= newValue )
+            {
+                return;
+            }
+        }
+        while ( !UnsafeUtil.compareAndSwapLong( object, fieldOffset, currentValue, newValue ) );
+    }
+
+    /**
      * Create a string with a char[] that you know is not going to be modified, so avoid the copy constructor.
      *
      * @param chars array that will back the new string
@@ -344,13 +374,18 @@ public final class UnsafeUtil
         }
     }
 
+    public static long allocateMemory( long sizeInBytes )
+    {
+        return allocateMemory( sizeInBytes, GlobalMemoryTracker.INSTANCE );
+    }
+
     /**
      * Allocate a block of memory of the given size in bytes, and return a pointer to that memory.
      * <p>
      * The memory is aligned such that it can be used for any data type.
      * The memory is uninitialised, so it may contain random garbage, or it may not.
      */
-    public static long allocateMemory( long sizeInBytes )
+    public static long allocateMemory( long sizeInBytes, MemoryAllocationTracker allocationTracker )
     {
         final long pointer = unsafe.allocateMemory( sizeInBytes );
         if ( DIRTY_MEMORY )
@@ -358,6 +393,7 @@ public final class UnsafeUtil
             setMemory( pointer, sizeInBytes, (byte) 0xA5 );
         }
         addAllocatedPointer( pointer, sizeInBytes );
+        allocationTracker.allocate( sizeInBytes );
         return pointer;
     }
 
@@ -367,7 +403,7 @@ public final class UnsafeUtil
      * The given pointer should be allocated with at least the requested size + {@code alignBy - 1},
      * where the additional bytes will serve as padding for the worst case where the start of the usable
      * area of the allocated memory will need to be shifted at most {@code alignBy - 1} bytes to the right.
-     *
+     * <p>
      * <pre><code>
      * 0   4   8   12  16  20        ; 4-byte alignments
      * |---|---|---|---|---|         ; memory
@@ -375,7 +411,7 @@ public final class UnsafeUtil
      *         ^------^              ; used memory
      * </code></pre>
      *
-     * @param pointer pointer to allocated memory from {@link #allocateMemory(long)}.
+     * @param pointer pointer to allocated memory from {@link #allocateMemory(long, MemoryAllocationTracker)} )}.
      * @param alignBy power-of-two size to align to, e.g. 4 or 8.
      * @return pointer to place inside the allocated memory to consider the effective start of the
      * memory, which from that point is aligned by {@code alignBy}.
@@ -391,10 +427,11 @@ public final class UnsafeUtil
     /**
      * Free the memory that was allocated with {@link #allocateMemory}.
      */
-    public static void free( long pointer )
+    public static void free( long pointer, long bytes, MemoryAllocationTracker allocationTracker )
     {
         checkFree( pointer );
         unsafe.freeMemory( pointer );
+        allocationTracker.deallocate( bytes );
     }
 
     private static final class FreeTrace extends Throwable implements Comparable<FreeTrace>
@@ -431,7 +468,7 @@ public final class UnsafeUtil
         }
     }
 
-    private static final ConcurrentSkipListMap<Long, Long> pointers = new ConcurrentSkipListMap<>();
+    private static final ConcurrentSkipListMap<Long,Long> pointers = new ConcurrentSkipListMap<>();
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeTraceCounter = new AtomicLong();
 
@@ -938,6 +975,19 @@ public final class UnsafeUtil
     }
 
     /**
+     * Read the value of the address field in the (assumed to be) DirectByteBuffer.
+     * <p>
+     * <strong>NOTE:</strong> calling this method on a non-direct ByteBuffer is undefined behaviour.
+     *
+     * @param dbb The direct byte buffer to read the address field from.
+     * @return The native memory address in the given direct byte buffer.
+     */
+    public static long getDirectByteBufferAddress( ByteBuffer dbb )
+    {
+        return unsafe.getLong( dbb, directByteBufferAddressOffset );
+    }
+
+    /**
      * Change if native access checking is enabled by setting it to the given new setting, and returning the old
      * setting.
      * <p>
@@ -970,7 +1020,7 @@ public final class UnsafeUtil
      */
     public static short getShortByteWiseLittleEndian( long p )
     {
-        short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
+        short a = (short) (UnsafeUtil.getByte( p ) & 0xFF);
         short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
         return (short) ((b << 8) | a);
     }
@@ -986,7 +1036,7 @@ public final class UnsafeUtil
      */
     public static int getIntByteWiseLittleEndian( long p )
     {
-        int a = UnsafeUtil.getByte( p     ) & 0xFF;
+        int a = UnsafeUtil.getByte( p ) & 0xFF;
         int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
         int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
@@ -1004,7 +1054,7 @@ public final class UnsafeUtil
      */
     public static long getLongByteWiseLittleEndian( long p )
     {
-        long a = UnsafeUtil.getByte( p     ) & 0xFF;
+        long a = UnsafeUtil.getByte( p ) & 0xFF;
         long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
         long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
@@ -1042,9 +1092,9 @@ public final class UnsafeUtil
     public static void putIntByteWiseLittleEndian( long p, int value )
     {
         UnsafeUtil.putByte( p, (byte) value );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
+        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+        UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
+        UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
     }
 
     /**
@@ -1059,12 +1109,12 @@ public final class UnsafeUtil
     public static void putLongByteWiseLittleEndian( long p, long value )
     {
         UnsafeUtil.putByte( p, (byte) value );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 4, (byte)( value >> 32 ) );
-        UnsafeUtil.putByte( p + 5, (byte)( value >> 40 ) );
-        UnsafeUtil.putByte( p + 6, (byte)( value >> 48 ) );
-        UnsafeUtil.putByte( p + 7, (byte)( value >> 56 ) );
+        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+        UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
+        UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
+        UnsafeUtil.putByte( p + 4, (byte) (value >> 32) );
+        UnsafeUtil.putByte( p + 5, (byte) (value >> 40) );
+        UnsafeUtil.putByte( p + 6, (byte) (value >> 48) );
+        UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
     }
 }

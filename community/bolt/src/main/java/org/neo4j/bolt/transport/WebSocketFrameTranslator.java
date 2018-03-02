@@ -32,7 +32,7 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 public class WebSocketFrameTranslator extends ChannelDuplexHandler
 {
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
         if ( msg instanceof BinaryWebSocketFrame )
         {
@@ -45,7 +45,7 @@ public class WebSocketFrameTranslator extends ChannelDuplexHandler
     }
 
     @Override
-    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
+    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
     {
         if ( msg instanceof ByteBuf )
         {

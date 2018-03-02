@@ -40,7 +40,7 @@ import static org.neo4j.graphdb.traversal.Evaluation.ofIncludes;
 public class TestBranchState extends TraversalTestBase
 {
     @Test
-    public void depthAsState() throws Exception
+    public void depthAsState()
     {
         /*
          * (a) -> (b) -> (c) -> (d)
@@ -60,7 +60,7 @@ public class TestBranchState extends TraversalTestBase
     }
 
     @Test
-    public void everyOtherDepthAsState() throws Exception
+    public void everyOtherDepthAsState()
     {
         /*
          * (a) -> (b) -> (c) -> (e)
@@ -81,7 +81,7 @@ public class TestBranchState extends TraversalTestBase
     }
 
     @Test
-    public void evaluateState() throws Exception
+    public void evaluateState()
     {
         /*
          * (a)-1->(b)-2->(c)-3->(d)

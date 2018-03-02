@@ -36,10 +36,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -280,7 +280,7 @@ public class NeoStoreIndexStoreViewTest
         private final Set<EntityUpdates> updates = new HashSet<>();
 
         @Override
-        public boolean visit( EntityUpdates propertyUpdates ) throws Exception
+        public boolean visit( EntityUpdates propertyUpdates )
         {
             updates.add( propertyUpdates );
             return false;

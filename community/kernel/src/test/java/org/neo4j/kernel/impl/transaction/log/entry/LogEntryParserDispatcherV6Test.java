@@ -143,7 +143,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenParsingUnknownEntry() throws IOException
+    public void shouldThrowWhenParsingUnknownEntry()
     {
         // when
         version.entryParser( (byte)42 ); // unused, at lest for now

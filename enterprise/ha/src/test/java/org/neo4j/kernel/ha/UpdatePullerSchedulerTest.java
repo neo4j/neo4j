@@ -22,8 +22,8 @@ package org.neo4j.kernel.ha;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertNotNull;
@@ -43,7 +43,7 @@ public class UpdatePullerSchedulerTest
     }
 
     @Test
-    public void skipUpdatePullingSchedulingWithZeroInterval() throws Throwable
+    public void skipUpdatePullingSchedulingWithZeroInterval()
     {
         JobScheduler jobScheduler = mock( JobScheduler.class );
         UpdatePullerScheduler pullerScheduler =

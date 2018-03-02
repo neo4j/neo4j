@@ -54,7 +54,7 @@ public class ThirdPartyJAXRSModuleTest
         when( neoServer.getDatabase() ).thenReturn( mock(Database.class));
 
         Config config = mock( Config.class );
-        List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
+        List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<>();
         String path = "/third/party/package";
         jaxRsPackages.add( new ThirdPartyJaxRsPackage( "org.example.neo4j", path ) );
         when( config.get( ServerSettings.third_party_packages ) ).thenReturn( jaxRsPackages );

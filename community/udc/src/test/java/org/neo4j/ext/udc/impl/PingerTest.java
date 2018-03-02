@@ -135,7 +135,7 @@ public class PingerTest extends LocalServerTestBase
     public void shouldPingServer()
     {
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<String,String>();
+        final Map<String,String> udcFields = new HashMap<>();
         udcFields.put( ID, EXPECTED_STORE_ID );
         udcFields.put( UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
 
@@ -163,7 +163,7 @@ public class PingerTest extends LocalServerTestBase
     {
         final int EXPECTED_PING_COUNT = 16;
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<String,String>();
+        final Map<String,String> udcFields = new HashMap<>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
         for ( int i = 0; i < EXPECTED_PING_COUNT; i++ )
@@ -182,14 +182,14 @@ public class PingerTest extends LocalServerTestBase
     {
         int[] expectedSequence = {1, 2, 3, 4};
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<String,String>();
+        final Map<String,String> udcFields = new HashMap<>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
-        for ( int i = 0; i < expectedSequence.length; i++ )
+        for ( int s : expectedSequence )
         {
             p.ping();
             int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
-            assertEquals( expectedSequence[i], count );
+            assertEquals( s, count );
         }
     }
 
@@ -198,14 +198,14 @@ public class PingerTest extends LocalServerTestBase
     {
         int[] expectedSequence = {-1, 2, 3, 4};
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<String,String>();
+        final Map<String,String> udcFields = new HashMap<>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ).withCrash() );
-        for ( int i = 0; i < expectedSequence.length; i++ )
+        for ( int s : expectedSequence )
         {
             p.ping();
             int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
-            assertEquals( expectedSequence[i], count );
+            assertEquals( s, count );
         }
     }
 }

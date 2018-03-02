@@ -48,7 +48,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldFillGapInBeginning() throws Exception
+    public void shouldFillGapInBeginning()
     {
         // given
         int[] ranges = array( EMPTY_RANGE, EMPTY_RANGE, NON_EMPTY_RANGE );
@@ -62,7 +62,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillGapInEnd() throws Exception
+    public void shouldFillGapInEnd()
     {
         // given
         int[] ranges = array( NON_EMPTY_RANGE, EMPTY_RANGE, EMPTY_RANGE );
@@ -76,7 +76,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillGapInMiddle() throws Exception
+    public void shouldFillGapInMiddle()
     {
         // given
         int[] ranges = array( EMPTY_RANGE, NON_EMPTY_RANGE, EMPTY_RANGE );
@@ -90,7 +90,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldFillRandomGaps() throws Exception
+    public void shouldFillRandomGaps()
     {
         // given
         int numberOfRanges = random.intBetween( 50, 100 );
@@ -144,7 +144,7 @@ public class GapFreeAllEntriesLabelScanReaderTest
         return new AllEntriesLabelScanReader()
         {
             @Override
-            public void close() throws Exception
+            public void close()
             {   // Nothing to close
             }
 

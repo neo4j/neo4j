@@ -29,7 +29,7 @@ public class CypherQueriesIT extends EnterpriseVersionIT
 {
 
     @Test
-    public void runningInCompiledRuntime() throws Exception
+    public void runningInCompiledRuntime()
     {
         // Given
         String uri = functionalTestHelper.dataUri() + "transaction/commit";

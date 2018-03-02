@@ -44,14 +44,22 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
+import static org.neo4j.index.internal.gbptree.TreeNode.keyCount;
+import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class CrashGenerationCleanerTest
 {
-    private FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
-    private RandomRule randomRule = new RandomRule();
+    private final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
+    private final RandomRule randomRule = new RandomRule();
     @Rule
     public RuleChain ruleChain = RuleChain
             .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
@@ -60,22 +68,19 @@ public class CrashGenerationCleanerTest
     private static final int PAGE_SIZE = 256;
 
     private PagedFile pagedFile;
-    private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final CorruptableTreeNode corruptableTreeNode = new CorruptableTreeNode( PAGE_SIZE, layout );
+    private final Layout<MutableLong,MutableLong> layout = longLayout().build();
+    private final CorruptibleTreeNode corruptibleTreeNode = new CorruptibleTreeNode( PAGE_SIZE, layout );
     private final int oldStableGeneration = 9;
     private final int stableGeneration = 10;
     private final int unstableGeneration = 12;
     private final int crashGeneration = 11;
-    private final int firstChildPos = 0;
-    private final int middleChildPos = corruptableTreeNode.internalMaxKeyCount() / 2;
-    private final int lastChildPos = corruptableTreeNode.internalMaxKeyCount();
     private final List<PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
             crashed( successor() ),
-            crashed( child( firstChildPos ) ),
-            crashed( child( middleChildPos ) ),
-            crashed( child( lastChildPos ) )
+            crashed( firstChild() ),
+            crashed( middleChild() ),
+            crashed( lastChild() )
     );
     private final List<PageCorruption> possibleCorruptionsInLeaf = Arrays.asList(
             crashed( leftSibling() ),
@@ -151,9 +156,9 @@ public class CrashGenerationCleanerTest
                 internalWith( crashed( successor() ) ),
 
                 /* child */
-                internalWith( crashed( child( firstChildPos ) ) ),
-                internalWith( crashed( child( middleChildPos ) ) ),
-                internalWith( crashed( child( lastChildPos ) ) )
+                internalWith( crashed( firstChild() ) ),
+                internalWith( crashed( middleChild() ) ),
+                internalWith( crashed( lastChild() ) )
         );
         initializeFile( pagedFile, pages );
 
@@ -179,9 +184,9 @@ public class CrashGenerationCleanerTest
                         crashed( leftSibling() ),
                         crashed( rightSibling() ),
                         crashed( successor() ),
-                        crashed( child( firstChildPos ) ),
-                        crashed( child( middleChildPos ) ),
-                        crashed( child( lastChildPos ) ) )
+                        crashed( firstChild() ),
+                        crashed( middleChild() ),
+                        crashed( lastChild() ) )
         );
         initializeFile( pagedFile, pages );
 
@@ -222,7 +227,7 @@ public class CrashGenerationCleanerTest
     private CrashGenerationCleaner crashGenerationCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId,
             SimpleCleanupMonitor monitor )
     {
-        return new CrashGenerationCleaner( pagedFile, corruptableTreeNode, lowTreeNodeId, highTreeNodeId,
+        return new CrashGenerationCleaner( pagedFile, corruptibleTreeNode, lowTreeNodeId, highTreeNodeId,
                 stableGeneration, unstableGeneration, monitor );
     }
 
@@ -233,7 +238,7 @@ public class CrashGenerationCleanerTest
             for ( Page page : pages )
             {
                 cursor.next();
-                page.write( cursor, corruptableTreeNode, stableGeneration, unstableGeneration, crashGeneration );
+                page.write( cursor, corruptibleTreeNode, layout, stableGeneration, unstableGeneration, crashGeneration );
             }
         }
     }
@@ -317,10 +322,10 @@ public class CrashGenerationCleanerTest
             this.pageCorruptions = pageCorruptions;
         }
 
-        private void write( PageCursor cursor, CorruptableTreeNode node, int stableGeneration, int unstableGeneration,
-                int crashGeneration ) throws IOException
+        private void write( PageCursor cursor, CorruptibleTreeNode node, Layout<MutableLong,MutableLong> layout, int stableGeneration, int unstableGeneration,
+                int crashGeneration )
         {
-            type.write( cursor, node, oldStableGeneration, stableGeneration );
+            type.write( cursor, node, layout, oldStableGeneration, stableGeneration );
             Arrays.stream( pageCorruptions )
                     .forEach( pc -> pc.corrupt( cursor, node, stableGeneration, unstableGeneration, crashGeneration ) );
         }
@@ -331,32 +336,33 @@ public class CrashGenerationCleanerTest
         LEAF
                 {
                     @Override
-                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
-                            int unstableGeneration )
+                    void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode, Layout<MutableLong,MutableLong> layout,
+                            int stableGeneration, int unstableGeneration )
                     {
-                        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+                        corruptibleTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
                     }
                 },
         INTERNAL
                 {
                     @Override
-                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
-                            int unstableGeneration )
+                    void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode, Layout<MutableLong,MutableLong> layout,
+                            int stableGeneration, int unstableGeneration )
                     {
-                        TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                        int maxKeyCount = corruptableTreeNode.internalMaxKeyCount();
+                        corruptibleTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                         long base = IdSpace.MIN_TREE_NODE_ID;
-                        for ( int i = 0; i <= maxKeyCount; i++ )
+                        int keyCount;
+                        for ( keyCount = 0; corruptibleTreeNode.internalOverflow( cursor, keyCount, layout.newKey() ) == Overflow.NO;
+                              keyCount++ )
                         {
-                            long child = base + i;
-                            corruptableTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
+                            long child = base + keyCount;
+                            corruptibleTreeNode.setChildAt( cursor, child, keyCount, stableGeneration, unstableGeneration );
                         }
-                        TreeNode.setKeyCount( cursor, maxKeyCount );
+                        setKeyCount( cursor, keyCount );
                     }
                 };
 
-        abstract void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode,
-                int stableGeneration, int unstableGeneration );
+        abstract void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode,
+                Layout<MutableLong,MutableLong> layout, int stableGeneration, int unstableGeneration );
     }
 
     /* GSPPType */
@@ -375,14 +381,9 @@ public class CrashGenerationCleanerTest
         return SimpleGSPPType.SUCCESSOR;
     }
 
-    private GSPPType child( int pos )
-    {
-        return childGSPPType( pos );
-    }
-
     interface GSPPType
     {
-        int offset( TreeNode node );
+        int offset( PageCursor cursor, TreeNode node );
     }
 
     enum SimpleGSPPType implements GSPPType
@@ -390,50 +391,68 @@ public class CrashGenerationCleanerTest
         LEFT_SIBLING
                 {
                     @Override
-                    public int offset( TreeNode node )
+                    public int offset( PageCursor cursor, TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_LEFTSIBLING;
+                        return BYTE_POS_LEFTSIBLING;
                     }
                 },
         RIGHT_SIBLING
                 {
                     @Override
-                    public int offset( TreeNode node )
+                    public int offset( PageCursor cursor, TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_RIGHTSIBLING;
+                        return BYTE_POS_RIGHTSIBLING;
                     }
                 },
         SUCCESSOR
                 {
                     @Override
-                    public int offset( TreeNode node )
+                    public int offset( PageCursor cursor, TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_SUCCESSOR;
+                        return BYTE_POS_SUCCESSOR;
                     }
                 }
     }
 
-    private GSPPType childGSPPType( int pos )
+    private GSPPType firstChild()
     {
-        return node -> node.childOffset( pos );
+        return ( cursor, node ) -> node.childOffset( 0 );
+    }
+
+    private GSPPType middleChild()
+    {
+        return ( cursor, node ) ->
+        {
+            int keyCount = keyCount( cursor );
+            return node.childOffset( keyCount / 2 );
+        };
+    }
+
+    private GSPPType lastChild()
+    {
+        return ( cursor, node ) ->
+        {
+            int keyCount = keyCount( cursor );
+            return node.childOffset( keyCount );
+        };
     }
 
     /* PageCorruption */
     private PageCorruption crashed( GSPPType gsppType )
     {
         return ( pageCursor, node, stableGeneration, unstableGeneration, crashGeneration ) ->
-                node.crashGSPP( pageCursor, gsppType.offset( node ), crashGeneration );
+                node.crashGSPP( pageCursor, gsppType.offset( pageCursor, node ), crashGeneration );
     }
 
     private interface PageCorruption
     {
-        void corrupt( PageCursor pageCursor, CorruptableTreeNode node, int stableGeneration,
+        void corrupt( PageCursor pageCursor, CorruptibleTreeNode node, int stableGeneration,
                 int unstableGeneration, int crashGeneration );
     }
 
-    class CorruptableTreeNode extends TreeNode<MutableLong,MutableLong>
+    class CorruptibleTreeNode extends TreeNodeFixedSize<MutableLong,MutableLong>
     {
-        CorruptableTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
+        CorruptibleTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
         {
             super( pageSize, layout );
         }

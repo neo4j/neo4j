@@ -68,6 +68,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
       case (planAcc, expression: PatternComprehension) =>
         val (newPlan, newExpression) = patternComprehensionSolver.solveUsingRollUpApply(planAcc, expression, None, context)
         expressionBuild += newExpression
+        solveds.copy(source.id, newPlan.id)
         newPlan
 
       case (planAcc, inExpression) =>

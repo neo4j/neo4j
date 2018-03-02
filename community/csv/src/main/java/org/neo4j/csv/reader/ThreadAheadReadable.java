@@ -71,7 +71,7 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
     }
 
     @Override
-    public int read( char[] into, int offset, int length ) throws IOException
+    public int read( char[] into, int offset, int length )
     {
         throw new UnsupportedOperationException( "Unsupported for now" );
     }

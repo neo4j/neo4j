@@ -41,7 +41,7 @@ public class OwningNodeRelationshipChain
     public RecordSet<RelationshipRecord> findRelationshipChainsThatThisRecordShouldBelongTo(
             RelationshipRecord relationship )
     {
-        RecordSet<RelationshipRecord> records = new RecordSet<RelationshipRecord>();
+        RecordSet<RelationshipRecord> records = new RecordSet<>();
         for ( RelationshipNodeField field : RelationshipNodeField.values() )
         {
             long nodeId = field.get( relationship );

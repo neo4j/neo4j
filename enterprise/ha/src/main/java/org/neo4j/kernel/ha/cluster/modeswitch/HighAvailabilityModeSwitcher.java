@@ -134,7 +134,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     }
 
     @Override
-    public synchronized void init() throws Throwable
+    public synchronized void init()
     {
         modeSwitcherExecutor = createExecutor();
 
@@ -142,13 +142,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public synchronized void start()
     {
         haCommunicationLife.start();
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public synchronized void stop()
     {
         haCommunicationLife.stop();
     }

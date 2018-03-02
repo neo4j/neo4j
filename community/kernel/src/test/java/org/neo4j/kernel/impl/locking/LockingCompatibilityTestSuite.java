@@ -163,7 +163,7 @@ public abstract class LockingCompatibilityTestSuite
             }
 
             @Override
-            public Object doWork( Void state ) throws Exception
+            public Object doWork( Void state )
             {
                 doWork( client );
                 return null;

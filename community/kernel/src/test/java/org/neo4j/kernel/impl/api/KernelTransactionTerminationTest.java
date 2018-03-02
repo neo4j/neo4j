@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -43,7 +44,8 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.DefaultCursors;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -344,8 +346,9 @@ public class KernelTransactionTerminationTest
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
-                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( Cursors.class ),
-                    AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
+                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( KernelToken.class ),
+                    mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
+                    EmptyVersionContextSupplier.EMPTY );
 
             this.monitor = monitor;
         }

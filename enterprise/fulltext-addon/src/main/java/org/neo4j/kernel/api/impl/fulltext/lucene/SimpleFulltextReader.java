@@ -28,8 +28,6 @@ import org.apache.lucene.search.Sort;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
@@ -68,7 +66,7 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( String queryString )
+    public ScoreEntityIterator query( String queryString )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         Query query;
@@ -79,18 +77,18 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         catch ( ParseException e )
         {
             assert false;
-            return PrimitiveLongCollections.emptyIterator();
+            return ScoreEntityIterator.emptyIterator();
         }
         return indexQuery( query );
     }
 
-    private PrimitiveLongIterator indexQuery( Query query )
+    private ScoreEntityIterator indexQuery( Query query )
     {
         try
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getSortedValuesIterator( FIELD_ENTITY_ID, Sort.RELEVANCE );
+            return new ScoreEntityIterator( docValuesCollector.getSortedValuesIterator( FIELD_ENTITY_ID, Sort.RELEVANCE ) );
         }
         catch ( IOException e )
         {

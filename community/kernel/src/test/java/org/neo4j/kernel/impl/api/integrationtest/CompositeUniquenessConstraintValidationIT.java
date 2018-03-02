@@ -34,14 +34,14 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.Values;
@@ -63,7 +63,7 @@ public class CompositeUniquenessConstraintValidationIT
     private final Object[] bValues;
 
     @Parameterized.Parameters( name = "{index}: {0}" )
-    public static Iterable<TestParams> parameterValues() throws IOException
+    public static Iterable<TestParams> parameterValues()
     {
         return Arrays.asList(
                 param( values( 10 ), values( 10d ) ),
@@ -319,7 +319,7 @@ public class CompositeUniquenessConstraintValidationIT
         {
             fail( "tx already opened" );
         }
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
         statement = transaction.acquireStatement();
     }
 

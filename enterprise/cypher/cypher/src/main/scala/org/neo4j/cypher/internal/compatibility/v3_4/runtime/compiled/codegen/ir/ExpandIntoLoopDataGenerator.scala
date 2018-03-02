@@ -28,13 +28,12 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
   extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.createRelExtractor(relVar.name)
     types.foreach {
       case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }
   }
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     if(types.isEmpty)
       generator.connectingRelationships(iterVar, fromVar.name, fromVar.codeGenType, dir, toVar.name, toVar.codeGenType)
     else
@@ -42,11 +41,11 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
+  override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                         (implicit context: CodeGenContext) = {
     generator.incrementDbHits()
     generator.nextRelationship(iterVar, dir, relVar.name)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextRelationship(iterVar)
+  override def checkNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceRelationshipSelectionCursor(iterVar)
 }

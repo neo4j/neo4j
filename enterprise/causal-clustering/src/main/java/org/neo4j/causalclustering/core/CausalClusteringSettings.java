@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -101,9 +102,27 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Integer> raft_in_queue_max_batch =
             setting( "causal_clustering.raft_in_queue_max_batch", INTEGER, "64" );
 
-    @Description( "Expected number of Core machines in the cluster" )
+    @Description( "Expected number of Core machines in the cluster before startup" )
+    @Deprecated
+    @ReplacedBy( "minimum_core_cluster_size_at_startup and minimum_core_cluster_size_at_runtime" )
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "causal_clustering.expected_core_cluster_size", INTEGER, "3" );
+
+    @Description( "Minimum number of Core machines in the cluster at formation. The expected_core_cluster size setting is used when bootstrapping the " +
+            "cluster on first formation. A cluster will not form without the configured amount of cores and this should in general be configured to the" +
+            " full and fixed amount." )
+    public static final Setting<Integer> minimum_core_cluster_size_at_formation =
+            buildSetting( "causal_clustering.minimum_core_cluster_size_at_formation", INTEGER, expected_core_cluster_size.getDefaultValue() )
+                    .constraint( min( 2 ) ).build();
+
+    @Description( "Minimum number of Core machines required to be available at runtime. The consensus group size (core machines successfully voted into the " +
+            "Raft) can shrink and grow dynamically but bounded on the lower end at this number. The intention is in almost all cases for users to leave this " +
+            "setting alone. If you have 5 machines then you can survive failures down to 3 remaining, e.g. with 2 dead members. The three remaining can " +
+            "still vote another replacement member in successfully up to a total of 6 (2 of which are still dead) and then after this, one of the " +
+            "superfluous dead members will be immediately and automatically voted out (so you are left with 5 members in the consensus group, 1 of which " +
+            "is currently dead). Operationally you can now bring the last machine up by bringing in another replacement or repairing the dead one." )
+    public static final Setting<Integer> minimum_core_cluster_size_at_runtime =
+            buildSetting( "causal_clustering.minimum_core_cluster_size_at_runtime", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
     @Description( "Network interface and port for the transaction shipping server to listen on." )
     public static final Setting<ListenSocketAddress> transaction_listen_address =
@@ -404,6 +423,10 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "The load balancing plugin to use." )
     public static final Setting<String> load_balancing_plugin =
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
+
+    @Description( "Time out for protocol negotiation handshake" )
+    public static final Setting<Duration> handshake_timeout =
+            setting( "causal_clustering.handshake_timeout", DURATION, "5000ms" );
 
     static BaseSetting<String> prefixSetting( final String name, final Function<String, String> parser,
                                               final String defaultValue )

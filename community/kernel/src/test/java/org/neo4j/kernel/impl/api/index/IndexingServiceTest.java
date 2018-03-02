@@ -48,13 +48,13 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -430,7 +430,7 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        verify( provider ).getPopulationFailure( 3 );
+        verify( provider ).getPopulationFailure( 3, failedIndex.getIndexDescriptor() );
         logProvider.assertAtLeastOnce(
                 logMatch.debug( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
                 logMatch.debug( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
@@ -1033,12 +1033,12 @@ public class IndexingServiceTest
                 return indexMap;
             } );
             throw new RuntimeException( "Index deleted." );
-        } ).when( deletedIndexProxy ).force();
+        } ).when( deletedIndexProxy ).force( any( IOLimiter.class ) );
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll();
-        verify( validIndex, times( 4 ) ).force();
+        indexingService.forceAll( IOLimiter.unlimited() );
+        verify( validIndex, times( 4 ) ).force( IOLimiter.unlimited() );
     }
 
     @Test
@@ -1054,7 +1054,7 @@ public class IndexingServiceTest
             indexMap.putIndexProxy( 3, strangeIndexProxy );
             indexMap.putIndexProxy( 4, validIndex );
             indexMap.putIndexProxy( 5, validIndex );
-            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force();
+            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
             return indexMap;
         } );
 
@@ -1062,7 +1062,7 @@ public class IndexingServiceTest
 
         expectedException.expectMessage( "Unable to force" );
         expectedException.expect( UnderlyingStorageException.class );
-        indexingService.forceAll();
+        indexingService.forceAll( IOLimiter.unlimited() );
     }
 
     @Test
@@ -1140,13 +1140,12 @@ public class IndexingServiceTest
 
         @Override
         public void add( Collection<? extends IndexEntryUpdate<?>> updates )
-                throws IndexEntryConflictException, IOException
         {
             latch.waitForAllToStart();
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        public void close( boolean populationCompletedSuccessfully )
         {
             latch.finish();
         }
@@ -1209,7 +1208,6 @@ public class IndexingServiceTest
         data.getsProcessedByStoreScanFrom( storeView );
         when( indexProvider.getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
-        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyResourceIterator() );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
@@ -1257,7 +1255,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation ) throws Throwable
+        public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation )
         {
             final Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitor =
                     visitor( invocation.getArgument( 2 ) );
@@ -1324,7 +1322,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public String answer( InvocationOnMock invocation ) throws Throwable
+        public String answer( InvocationOnMock invocation )
         {
             int id = invocation.getArgument( 0 );
             return kind + "[" + id + "]";

@@ -78,7 +78,7 @@ public class RaftMachineTest
     private RaftLog raftLog = new InMemoryRaftLog();
 
     @Test
-    public void shouldAlwaysStartAsFollower() throws Exception
+    public void shouldAlwaysStartAsFollower()
     {
         // when
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -548,7 +548,7 @@ public class RaftMachineTest
         }
 
         @Override
-        public long readEntryTerm( long logIndex ) throws IOException
+        public long readEntryTerm( long logIndex )
         {
             return -1;
         }

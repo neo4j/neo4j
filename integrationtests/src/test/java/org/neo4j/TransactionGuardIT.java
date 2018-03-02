@@ -19,6 +19,10 @@
  */
 package org.neo4j;
 
+import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -33,10 +37,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.driver.v1.Driver;
@@ -423,7 +423,7 @@ public class TransactionGuardIT
     }
 
     @Test
-    public void changeTimeoutAtRuntime() throws Exception
+    public void changeTimeoutAtRuntime()
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
@@ -738,7 +738,8 @@ public class TransactionGuardIT
 
         CustomClockEnterpriseFacadeFactory()
         {
-            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>()
+            // XXX: This has to be a Function, JVM crashes with ClassFormatError if you pass a lambda here
+            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>() // Don't make a lambda
             {
                 @Override
                 public EditionModule apply( PlatformModule platformModule )

@@ -28,8 +28,7 @@ import org.neo4j.consistency.RecordType;
 
 public class ConsistencySummaryStatistics
 {
-    private final Map<RecordType, AtomicInteger> inconsistentRecordCount =
-            new EnumMap<RecordType, AtomicInteger>( RecordType.class );
+    private final Map<RecordType, AtomicInteger> inconsistentRecordCount = new EnumMap<>( RecordType.class );
     private final AtomicInteger totalInconsistencyCount = new AtomicInteger();
     private final AtomicLong errorCount = new AtomicLong();
     private final AtomicLong warningCount = new AtomicLong();

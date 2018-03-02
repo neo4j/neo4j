@@ -105,14 +105,14 @@ public class IndexBatchTransactionApplierTest
         }
 
         @Override
-        public void write( NodeLabelUpdate update ) throws IOException
+        public void write( NodeLabelUpdate update )
         {
             assertEquals( expectedNodeIds[cursor], update.getNodeId() );
             cursor++;
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             assertEquals( cursor, expectedNodeIds.length );
         }

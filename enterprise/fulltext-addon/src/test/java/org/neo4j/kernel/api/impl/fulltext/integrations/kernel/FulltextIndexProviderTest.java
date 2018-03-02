@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -199,7 +199,7 @@ public class FulltextIndexProviderTest
         }
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "value" );
+            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next() );
             assertFalse( result.hasNext() );
@@ -221,7 +221,7 @@ public class FulltextIndexProviderTest
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "value" );
+            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next() );
             assertFalse( result.hasNext() );
@@ -267,7 +267,7 @@ public class FulltextIndexProviderTest
         }
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
+            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next() );
             assertFalse( result.hasNext() );
@@ -289,7 +289,7 @@ public class FulltextIndexProviderTest
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
+            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next() );
             assertFalse( result.hasNext() );
@@ -334,7 +334,7 @@ public class FulltextIndexProviderTest
         }
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "value" );
+            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next() );
             assertFalse( result.hasNext() );
@@ -356,7 +356,7 @@ public class FulltextIndexProviderTest
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "value" );
+            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next() );
             assertFalse( result.hasNext() );

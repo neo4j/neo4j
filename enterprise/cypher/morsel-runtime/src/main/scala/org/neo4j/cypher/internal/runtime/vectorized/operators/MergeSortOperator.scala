@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import java.util.{Comparator, PriorityQueue}
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.ColumnOrder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.slotted.pipes.ColumnOrder
 import org.neo4j.cypher.internal.runtime.vectorized._
 
 // This operator takes pre-sorted inputs, and merges them together, producing a stream of Morsels with the sorted data
@@ -47,13 +47,15 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) ext
     message match {
       case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
-        sortedInputs = new PriorityQueue[MorselWithReadPos](inputs.size, comparator)
+        sortedInputs = new PriorityQueue[MorselWithReadPos](inputs.length, comparator)
         inputs.foreach { morsel =>
           if (morsel.validRows > 0) sortedInputs.add(new MorselWithReadPos(morsel, 0))
         }
-      case ContinueLoopWith(ContinueWithSource(inputs: PriorityQueue[MorselWithReadPos], is, _)) =>
-        sortedInputs = inputs
+      case ContinueLoopWith(ContinueWithSource(inputs: PriorityQueue[_], is, _)) =>
+        sortedInputs = inputs.asInstanceOf[PriorityQueue[MorselWithReadPos]]
         iterationState = is
+      case _ => throw new IllegalStateException()
+
     }
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
@@ -89,7 +91,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) ext
   private def createComparator(order: ColumnOrder): Comparator[MorselWithReadPos] = order.slot match {
     case LongSlot(offset, _, _) =>
       new Comparator[MorselWithReadPos] {
-        override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos) = {
+        override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos): Int = {
           val longs = slots.numberOfLongs
           val aIdx = longs * m1.pos + offset
           val bIdx = longs * m2.pos + offset
@@ -100,7 +102,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) ext
       }
     case RefSlot(offset, _, _) =>
       new Comparator[MorselWithReadPos] {
-        override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos) = {
+        override def compare(m1: MorselWithReadPos, m2: MorselWithReadPos): Int = {
           val refs = slots.numberOfReferences
           val aIdx = refs * m1.pos + offset
           val bIdx = refs * m2.pos + offset

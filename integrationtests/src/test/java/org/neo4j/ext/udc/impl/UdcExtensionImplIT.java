@@ -405,7 +405,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldMatchAllValidVersions() throws Exception
+    public void shouldMatchAllValidVersions()
     {
         assertTrue( "1.8.M07".matches( VersionPattern ) );
         assertTrue( "1.8.RC1".matches( VersionPattern ) );
@@ -421,14 +421,14 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldFilterPlusBuildNumbers() throws Exception
+    public void shouldFilterPlusBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9.0-M01+00001" ),
                 is( equalTo( "1.9.0-M01" ) ) );
     }
 
     @Test
-    public void shouldNotFilterSnapshotBuildNumbers() throws Exception
+    public void shouldNotFilterSnapshotBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "2.0-SNAPSHOT" ),
                 is( equalTo( "2.0-SNAPSHOT" ) ) );
@@ -436,13 +436,13 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldNotFilterReleaseBuildNumbers() throws Exception
+    public void shouldNotFilterReleaseBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
     }
 
     @Test
-    public void shouldUseTheCustomConfiguration() throws Exception
+    public void shouldUseTheCustomConfiguration()
     {
         // Given
         config.put( UdcSettings.udc_source.name(), "my_source" );
@@ -488,17 +488,17 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         fail();
     }
 
-    private GraphDatabaseService createDatabase() throws IOException
+    private GraphDatabaseService createDatabase()
     {
         return createDatabase( null, null );
     }
 
-    private GraphDatabaseService createDatabase( Map<String,String> config ) throws IOException
+    private GraphDatabaseService createDatabase( Map<String,String> config )
     {
         return createDatabase( null, config );
     }
 
-    private GraphDatabaseService createDatabase( File storeDir, Map<String,String> config ) throws IOException
+    private GraphDatabaseService createDatabase( File storeDir, Map<String,String> config )
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         GraphDatabaseBuilder graphDatabaseBuilder =

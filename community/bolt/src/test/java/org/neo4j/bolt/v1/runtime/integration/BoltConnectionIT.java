@@ -396,7 +396,7 @@ public class BoltConnectionIT
             }
 
             @Override
-            public void onRecords( BoltResult result, boolean pull ) throws Exception
+            public void onRecords( BoltResult result, boolean pull )
             {
                 throw new RuntimeException( "Ooopsies!" );
             }

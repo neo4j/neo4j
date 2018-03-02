@@ -88,7 +88,7 @@ public class SchemaRecoveryIT
         private volatile boolean started;
 
         @Override
-        protected void startup( File storeDir ) throws Throwable
+        protected void startup( File storeDir )
         {
             GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             try ( Transaction transaction = database.beginTx() )

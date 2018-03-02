@@ -650,7 +650,7 @@ public class NeoStoreTransactionApplierTest
 
     @Test
     public void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem()
-            throws IOException, IndexNotFoundKernelException,
+            throws IndexNotFoundKernelException,
             IndexPopulationFailedKernelException, IndexActivationFailedKernelException
     {
         // given

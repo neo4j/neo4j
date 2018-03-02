@@ -98,7 +98,7 @@ public class CsvOutput implements Lifecycle, EventReporter
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
         csvReporter.stop();
     }
@@ -119,8 +119,7 @@ public class CsvOutput implements Lifecycle, EventReporter
     private BiFunction<File,RotatingFileOutputStreamSupplier.RotationListener,RotatingFileOutputStreamSupplier> getFileRotatingFileOutputStreamSupplier(
             Long rotationThreshold, Integer maxArchives )
     {
-        return ( File file, RotatingFileOutputStreamSupplier.RotationListener listener ) ->
-        {
+        return ( file, listener ) -> {
             try
             {
                 return new RotatingFileOutputStreamSupplier( fileSystem, file, rotationThreshold, 0, maxArchives,

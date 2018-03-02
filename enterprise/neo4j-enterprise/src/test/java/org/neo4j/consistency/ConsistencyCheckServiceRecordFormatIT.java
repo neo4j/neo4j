@@ -73,7 +73,7 @@ public class ConsistencyCheckServiceRecordFormatIT
     }
 
     @Before
-    public void configureRecordFormat() throws Exception
+    public void configureRecordFormat()
     {
         db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
     }

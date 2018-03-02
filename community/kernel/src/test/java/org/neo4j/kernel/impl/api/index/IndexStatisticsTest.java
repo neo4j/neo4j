@@ -46,10 +46,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -75,6 +75,31 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 
+/**
+ * This test validates that we count the correct amount of index updates.
+ * <p>
+ * We build the index async with a node scan in the background and consume transactions to keep the index updated. Once
+ * the index is build and becomes online, we save the index size(number of entries) and begin tracking updates. These
+ * values can then then be used to determine when to resample the index for example.
+ *
+ * <pre>
+ *                online
+ *    index size    |      updates
+ *                  v
+ *  |----------------T--------------> stream of transactions
+ *                    ^
+ *    during          |    after
+ *                 observed
+ * </pre>
+ *
+ * Since we observe the index online event without strict synchronization, we cannot determine what transactions are
+ * before and after that event. This is illustrated in the drawing above where transaction {@code T} is counted as
+ * occurring during the population and not after, which is incorrect.
+ * <p>
+ * That is why we allow a difference of {@link IndexStatisticsTest#MISSED_UPDATES_TOLERANCE}, to exists. This threshold
+ * is the number of updates in the larges transaction and that should be the larges error since we check if the index is
+ * online between each transaction.
+ */
 @RunWith( Parameterized.class )
 public class IndexStatisticsTest
 {
@@ -277,7 +302,29 @@ public class IndexStatisticsTest
         double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
-        assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
+        int expectedIndexUpdates = updatesTracker.createdAfterPopulation() + updatesTracker.updatedAfterPopulation();
+        assertCorrectIndexUpdates( expectedIndexUpdates, indexUpdates( index ) );
+    }
+
+    @Test
+    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChangesAndDeletions() throws Exception
+    {
+        // given some initial data
+        long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER );
+        int initialNodes = nodes.length;
+
+        // when populating while creating
+        SchemaIndexDescriptor index = createIndex( "Person", "name" );
+        UpdatesTracker updatesTracker = executeCreationsDeletionsAndUpdates( nodes, index, CREATION_MULTIPLIER );
+        awaitIndexesOnline();
+
+        // then
+        int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation() - updatesTracker.deletedDuringPopulation();
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
+        int expectedIndexUpdates = updatesTracker.deletedAfterPopulation() + updatesTracker.createdAfterPopulation() + updatesTracker.updatedAfterPopulation();
+        assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
+        assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
+        assertCorrectIndexUpdates( expectedIndexUpdates, indexUpdates( index ) );
     }
 
     @Test
@@ -334,14 +381,16 @@ public class IndexStatisticsTest
         }
     }
 
-    private boolean changeName( long nodeId, String propertyKeyName, Object newValue ) throws KernelException
+    private boolean changeName( long nodeId, String propertyKeyName, Object newValue )
     {
         boolean changeIndexedNode = false;
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.getNodeById( nodeId );
-            if ( node.hasProperty( propertyKeyName ) )
+            Object oldValue = node.getProperty( propertyKeyName );
+            if ( !oldValue.equals( newValue ) )
             {
+                // Changes are only propagated when the value actually change
                 changeIndexedNode = true;
             }
             node.setProperty( propertyKeyName, newValue );
@@ -524,7 +573,7 @@ public class IndexStatisticsTest
 
     private void awaitIndexesOnline()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             db.schema().awaitIndexesOnline(3, TimeUnit.MINUTES );
         }
@@ -573,7 +622,7 @@ public class IndexStatisticsTest
             notifyIfPopulationCompleted( index, updatesTracker );
 
             // delete if allowed
-            if ( allowDeletions && updatesTracker.created() % 5 == 0 )
+            if ( allowDeletions && updatesTracker.created() % 24 == 0 )
             {
                 long nodeId = nodes[random.nextInt( nodes.length )];
                 try
@@ -589,17 +638,17 @@ public class IndexStatisticsTest
             }
 
             // update if allowed
-            if ( allowUpdates && updatesTracker.created() % 5 == 0 )
+            if ( allowUpdates && updatesTracker.created() % 24 == 0 )
             {
                 int randomIndex = random.nextInt( nodes.length );
                 try
                 {
-                    if ( changeName( nodes[randomIndex], "name", NAMES[randomIndex % NAMES.length] ) )
+                    if ( changeName( nodes[randomIndex], "name", NAMES[random.nextInt( NAMES.length )] ) )
                     {
                         updatesTracker.increaseUpdated( 1 );
                     }
                 }
-                catch ( EntityNotFoundException | NotFoundException ex )
+                catch ( NotFoundException ex )
                 {
                     // ignore
                 }

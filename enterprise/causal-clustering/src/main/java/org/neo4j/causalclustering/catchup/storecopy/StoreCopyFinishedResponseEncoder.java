@@ -26,7 +26,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class StoreCopyFinishedResponseEncoder extends MessageToByteEncoder<StoreCopyFinishedResponse>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, StoreCopyFinishedResponse msg, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, StoreCopyFinishedResponse msg, ByteBuf out )
     {
         out.writeInt( msg.status().ordinal() );
         out.writeLong( msg.lastCommittedTxBeforeStoreCopy() );

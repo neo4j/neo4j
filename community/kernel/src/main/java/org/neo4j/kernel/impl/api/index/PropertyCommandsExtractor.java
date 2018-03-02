@@ -61,7 +61,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         nodeCommandsById.clear();
         relationshipCommandsById.clear();
@@ -70,7 +70,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitNodeCommand( NodeCommand command ) throws IOException
+    public boolean visitNodeCommand( NodeCommand command )
     {
         nodeCommandsById.put( command.getKey(), command );
         if ( !hasUpdates && mayResultInIndexUpdates( command ) )
@@ -99,7 +99,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+    public boolean visitPropertyCommand( PropertyCommand command )
     {
         if ( command.getAfter().isNodeSet() )
         {

@@ -35,7 +35,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -157,13 +156,13 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             catch ( Exception e )
             {
                 controls.close();
-                throw Exceptions.launderedException( e );
+                throw e;
             }
             return controls;
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -295,7 +294,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         @Override
         public Lifecycle newInstance( KernelContext context,
-                Dependencies dependencies ) throws Throwable
+                Dependencies dependencies )
         {
             return new LifecycleAdapter()
             {

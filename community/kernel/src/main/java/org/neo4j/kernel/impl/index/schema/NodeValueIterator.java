@@ -62,6 +62,12 @@ public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBas
     }
 
     @Override
+    public boolean needsValues()
+    {
+        return false;
+    }
+
+    @Override
     public void close()
     {
         if ( !closed )

@@ -62,7 +62,7 @@ public class NativeLabelScanStoreUpdateIT
     }
 
     @Test
-    public void shouldGetNodesWithCreatedLabel() throws Exception
+    public void shouldGetNodesWithCreatedLabel()
     {
         // GIVEN
         Node node1 = createLabeledNode( First );
@@ -84,7 +84,7 @@ public class NativeLabelScanStoreUpdateIT
     }
 
     @Test
-    public void shouldGetNodesWithAddedLabel() throws Exception
+    public void shouldGetNodesWithAddedLabel()
     {
         // GIVEN
         Node node1 = createLabeledNode( First );
@@ -110,7 +110,7 @@ public class NativeLabelScanStoreUpdateIT
     }
 
     @Test
-    public void shouldGetNodesAfterDeletedNodes() throws Exception
+    public void shouldGetNodesAfterDeletedNodes()
     {
         // GIVEN
         Node node1 = createLabeledNode( First, Second );
@@ -131,7 +131,7 @@ public class NativeLabelScanStoreUpdateIT
     }
 
     @Test
-    public void shouldGetNodesAfterRemovedLabels() throws Exception
+    public void shouldGetNodesAfterRemovedLabels()
     {
         // GIVEN
         Node node1 = createLabeledNode( First, Second );
@@ -173,7 +173,7 @@ public class NativeLabelScanStoreUpdateIT
     }
 
     @Test
-    public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() throws Exception
+    public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx()
     {
         // Given
         GraphDatabaseService db = dbRule;

@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -36,11 +35,9 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
@@ -52,7 +49,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
  * @param <KEY> type of {@link NativeSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndex<KEY,VALUE> implements IndexPopulator
 {
     static final byte BYTE_FAILED = 0;
@@ -74,7 +71,12 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
-        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
+        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger.Check<>();
+    }
+
+    public void clear() throws IOException
+    {
+        gbpTreeFileUtil.deleteFileIfPresent( storeFile );
     }
 
     @Override
@@ -108,35 +110,34 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
     {
         applyWithWorkSync( updates );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-            throws IndexEntryConflictException, IOException
     {
         // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    public NativePopulatingUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        return new IndexUpdater()
+        return new NativePopulatingUpdater()
         {
             private boolean closed;
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
-            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+            public void process( IndexEntryUpdate<?> update )
             {
                 assertOpen();
                 updates.add( update );
             }
 
             @Override
-            public void close() throws IOException, IndexEntryConflictException
+            public void close() throws IOException
             {
                 applyWithWorkSync( updates );
                 closed = true;
@@ -189,7 +190,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
         }
         catch ( ExecutionException e )
         {
-            throw Exceptions.launderedException( IOException.class, e );
+            throw new IOException( e );
         }
     }
 
@@ -202,7 +203,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
     }
 
     @Override
-    public void markAsFailed( String failure ) throws IOException
+    public void markAsFailed( String failure )
     {
         failureBytes = failure.getBytes( StandardCharsets.UTF_8 );
     }
@@ -242,7 +243,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
         singleTreeWriter = closeIfPresent( singleTreeWriter );
     }
 
-    private static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
     {
         private final KEY treeKey;
         private final VALUE treeValue;
@@ -264,7 +265,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
         }
     }
 
-    private static class IndexUpdateWork<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateWork<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
             implements Work<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>>
     {
         private final Collection<? extends IndexEntryUpdate<?>> updates;

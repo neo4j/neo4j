@@ -42,7 +42,7 @@ public class ExecutingQueryStatusTest
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-16T16:14:12+01:00" ) );
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInRunningState() throws Exception
+    public void shouldProduceSensibleMapRepresentationInRunningState()
     {
         // when
         String status = SimpleState.running().name();
@@ -52,7 +52,7 @@ public class ExecutingQueryStatusTest
     }
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInPlanningState() throws Exception
+    public void shouldProduceSensibleMapRepresentationInPlanningState()
     {
         // when
         String status = SimpleState.planning().name();
@@ -62,7 +62,7 @@ public class ExecutingQueryStatusTest
     }
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInWaitingOnLockState() throws Exception
+    public void shouldProduceSensibleMapRepresentationInWaitingOnLockState()
     {
         // given
         long[] resourceIds = {17};
@@ -88,7 +88,7 @@ public class ExecutingQueryStatusTest
     }
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInWaitingOnQueryState() throws Exception
+    public void shouldProduceSensibleMapRepresentationInWaitingOnQueryState()
     {
         // given
         WaitingOnQuery status =

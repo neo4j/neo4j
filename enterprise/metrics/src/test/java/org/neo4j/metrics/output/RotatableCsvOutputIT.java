@@ -52,7 +52,7 @@ public class RotatableCsvOutputIT
     private GraphDatabaseService database;
 
     @Before
-    public void setup() throws Throwable
+    public void setup()
     {
         outputPath = testDirectory.directory( "metrics" );
         database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -63,7 +63,7 @@ public class RotatableCsvOutputIT
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         database.shutdown();
     }
@@ -81,13 +81,15 @@ public class RotatableCsvOutputIT
                 ( newValue, currentValue ) -> newValue >= currentValue );
         assertEquals( 1, committedTransactions );
 
-        File metricsFile2 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
+        metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode();
             transaction.success();
         }
-        long oldCommittedTransactions = readLongValueAndAssert( metricsFile2,
+        // Since we rotated twice, file 3 is actually the original file
+        File metricsFile3 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 2 );
+        long oldCommittedTransactions = readLongValueAndAssert( metricsFile3,
                 ( newValue, currentValue ) -> newValue >= currentValue );
         assertEquals( 1, oldCommittedTransactions );
     }

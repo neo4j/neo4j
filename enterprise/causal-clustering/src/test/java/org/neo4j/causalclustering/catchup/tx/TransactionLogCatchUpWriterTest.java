@@ -97,7 +97,7 @@ public class TransactionLogCatchUpWriterTest
     }
 
     @Before
-    public void setup() throws IOException
+    public void setup()
     {
         storeDir = dir.directory( "graph.db" );
         fs = fsRule.get();

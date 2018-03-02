@@ -43,7 +43,7 @@ public class ClusterClientPaddingIT
     private ManagedCluster cluster;
 
     @Before
-    public void setUp() throws Throwable
+    public void setUp()
     {
         cluster = clusterRule.withCluster( clusterWithAdditionalClients( 2, 1 ) )
                 .withAvailabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
@@ -51,7 +51,7 @@ public class ClusterClientPaddingIT
     }
 
     @Test
-    public void additionalClusterClientCanHelpBreakTiesWhenMasterIsShutDown() throws Throwable
+    public void additionalClusterClientCanHelpBreakTiesWhenMasterIsShutDown()
     {
         HighlyAvailableGraphDatabase sittingMaster = cluster.getMaster();
         cluster.shutdown( sittingMaster );
@@ -59,7 +59,7 @@ public class ClusterClientPaddingIT
     }
 
     @Test
-    public void additionalClusterClientCanHelpBreakTiesWhenMasterFails() throws Throwable
+    public void additionalClusterClientCanHelpBreakTiesWhenMasterFails()
     {
         HighlyAvailableGraphDatabase sittingMaster = cluster.getMaster();
         cluster.fail( sittingMaster );

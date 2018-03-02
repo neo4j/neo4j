@@ -29,17 +29,20 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 
 class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
 
   override def entityAccessor: EmbeddedProxySPI = inner.entityAccessor
+
+  override def withActiveRead: QueryContext = inner.withActiveRead
 
   override def resources: CloseableResource = inner.resources
 
@@ -78,9 +81,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(inner.removeLabelsFromNode(node, labelIds))
-
-  override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
-    translateException(inner.getPropertiesForRelationship(relId))
 
   override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(inner.getPropertyKeyName(propertyKeyId))
@@ -154,7 +154,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args, allowed))
 
-  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     translateException(inner.callFunction(name, args, allowed))
 
 
@@ -203,6 +203,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
     translateException(inner.getRelationshipsForIdsPrimitive(node, dir, types))
+
+  override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor =
+    translateException(inner.getRelationshipsCursor(node, dir, types))
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))

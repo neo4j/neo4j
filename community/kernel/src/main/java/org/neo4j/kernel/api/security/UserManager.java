@@ -47,19 +47,18 @@ public interface UserManager
     {
         @Override
         public User newUser( String username, String initialPassword, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
         {
             return null;
         }
 
         @Override
-        public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
+        public boolean deleteUser( String username )
         {
             return false;
         }
 
         @Override
-        public User getUser( String username ) throws InvalidArgumentsException
+        public User getUser( String username )
         {
             return null;
         }
@@ -72,7 +71,6 @@ public interface UserManager
 
         @Override
         public void setUserPassword( String username, String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
         {
         }
 

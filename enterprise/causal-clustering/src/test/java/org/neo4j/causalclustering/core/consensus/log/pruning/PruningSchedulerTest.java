@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.core.consensus.log.pruning;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,7 +48,7 @@ public class PruningSchedulerTest
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
 
     @Test
-    public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
+    public void shouldScheduleTheCheckPointerJobOnStart()
     {
         // given
         PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
@@ -89,7 +88,7 @@ public class PruningSchedulerTest
     }
 
     @Test
-    public void shouldNotRescheduleAJobWhenStopped() throws Throwable
+    public void shouldNotRescheduleAJobWhenStopped()
     {
         // given
         PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
@@ -135,7 +134,7 @@ public class PruningSchedulerTest
         RaftLogPruner logPruner = new RaftLogPruner( null, null, Clock.systemUTC() )
         {
             @Override
-            public void prune() throws IOException
+            public void prune()
             {
                 checkPointerLatch.startAndWaitForAllToStart();
                 checkPointerLatch.waitForAllToFinish();
@@ -147,33 +146,21 @@ public class PruningSchedulerTest
         // when
         scheduler.start();
 
-        Thread runCheckPointer = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                jobScheduler.runJob();
-            }
-        };
+        Thread runCheckPointer = new Thread( jobScheduler::runJob );
         runCheckPointer.start();
 
         checkPointerLatch.waitForAllToStart();
 
-        Thread stopper = new Thread()
-        {
-            @Override
-            public void run()
+        Thread stopper = new Thread( () -> {
+            try
             {
-                try
-                {
-                    scheduler.stop();
-                }
-                catch ( Throwable throwable )
-                {
-                    ex.set( throwable );
-                }
+                scheduler.stop();
             }
-        };
+            catch ( Throwable throwable )
+            {
+                ex.set( throwable );
+            }
+        } );
 
         stopper.start();
 

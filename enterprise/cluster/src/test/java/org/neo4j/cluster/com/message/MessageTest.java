@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 public class MessageTest
 {
     @Test
-    public void respondingToInternalMessageShouldProduceCorrectMessage() throws Exception
+    public void respondingToInternalMessageShouldProduceCorrectMessage()
     {
         // Given
         final Object payload = new Object();
@@ -48,7 +48,7 @@ public class MessageTest
     }
 
     @Test
-    public void respondingToExternalMessageShouldProperlySetToHeaders() throws Exception
+    public void respondingToExternalMessageShouldProperlySetToHeaders()
     {
         // Given
         final Object payload = new Object();
@@ -56,14 +56,14 @@ public class MessageTest
         URI to = URI.create( "cluster://to" );
         URI from = URI.create( "cluster://from" );
         Message incoming = Message.to( type, to, payload );
-        incoming.setHeader( Message.FROM, from.toString() );
+        incoming.setHeader( Message.HEADER_FROM, from.toString() );
 
         // When
         Message response = Message.respond( type, incoming, payload );
 
         // Then
         assertFalse( response.isInternal() );
-        assertEquals( from.toString(), response.getHeader( Message.TO ) );
+        assertEquals( from.toString(), response.getHeader( Message.HEADER_TO ) );
         assertEquals( payload, response.getPayload() );
         assertEquals( type, response.getMessageType() );
     }

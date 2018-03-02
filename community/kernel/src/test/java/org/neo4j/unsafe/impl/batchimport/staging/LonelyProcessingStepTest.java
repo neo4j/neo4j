@@ -36,7 +36,7 @@ public class LonelyProcessingStepTest
     public static SuppressOutput mute = SuppressOutput.suppressAll();
 
     @Test
-    public void issuePanicBeforeCompletionOnError() throws Exception
+    public void issuePanicBeforeCompletionOnError()
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
         BinaryLatch endOfUpstreamLatch = new BinaryLatch();

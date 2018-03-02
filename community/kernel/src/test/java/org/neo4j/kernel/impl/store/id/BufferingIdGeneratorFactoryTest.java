@@ -45,7 +45,7 @@ public class BufferingIdGeneratorFactoryTest
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldDelayFreeingOfAggressivelyReusedIds() throws Exception
+    public void shouldDelayFreeingOfAggressivelyReusedIds()
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
@@ -73,7 +73,7 @@ public class BufferingIdGeneratorFactoryTest
     }
 
     @Test
-    public void shouldDelayFreeingOfAggressivelyReusedIdsConsideringTimeAsWell() throws Exception
+    public void shouldDelayFreeingOfAggressivelyReusedIdsConsideringTimeAsWell()
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();

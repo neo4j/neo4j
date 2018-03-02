@@ -155,25 +155,25 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         throw new UnsupportedOperationException();
     }
@@ -218,7 +218,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
 
         @Override
-        public void waitTermination() throws InterruptedException, ExecutionException
+        public void waitTermination()
         {
             throw new UnsupportedOperationException();
         }

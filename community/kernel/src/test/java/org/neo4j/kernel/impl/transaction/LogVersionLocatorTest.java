@@ -55,7 +55,7 @@ public class LogVersionLocatorTest
     }
 
     @Test
-    public void shouldNotFindLogPosition() throws NoSuchTransactionException
+    public void shouldNotFindLogPosition()
     {
         // given
         final long txId = 1L;
@@ -87,7 +87,7 @@ public class LogVersionLocatorTest
     }
 
     @Test
-    public void shouldAlwaysThrowIfVisitIsNotCalled() throws NoSuchTransactionException
+    public void shouldAlwaysThrowIfVisitIsNotCalled()
     {
         // given
         final long txId = 1L;

@@ -68,7 +68,7 @@ public class TestIndexProviderStore
     }
 
     @Test
-    public void lastCommitedTxGetsStoredBetweenSessions() throws Exception
+    public void lastCommitedTxGetsStoredBetweenSessions()
     {
         IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
         store.setVersion( 5 );
@@ -101,7 +101,7 @@ public class TestIndexProviderStore
     }
 
     @Test( expected = NotCurrentStoreVersionException.class )
-    public void shouldFailToGoBackToOlderVersion() throws Exception
+    public void shouldFailToGoBackToOlderVersion()
     {
         String newerVersion = "3.5";
         String olderVersion = "3.1";
@@ -121,7 +121,7 @@ public class TestIndexProviderStore
     }
 
     @Test( expected = NotCurrentStoreVersionException.class )
-    public void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade() throws Exception
+    public void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade()
     {
         String newerVersion = "3.5";
         String olderVersion = "3.1";

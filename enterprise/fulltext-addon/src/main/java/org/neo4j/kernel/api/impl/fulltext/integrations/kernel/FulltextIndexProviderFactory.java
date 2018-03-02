@@ -58,7 +58,7 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
     }
 
     @Override
-    public FulltextIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public FulltextIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         Config config = dependencies.getConfig();
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );

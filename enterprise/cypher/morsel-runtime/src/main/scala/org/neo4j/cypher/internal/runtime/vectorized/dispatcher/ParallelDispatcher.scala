@@ -82,7 +82,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
 
             case Some(eagerConsumingPipeline) =>
               query.eagerReceiver = None
-              val startEager = StartLoopWithEagerData(query.eagerData.asScala.toSeq, incoming.iterationState)
+              val startEager = StartLoopWithEagerData(query.eagerData.asScala.toArray, incoming.iterationState)
               executor.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
           }
 
@@ -109,7 +109,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
         query.eagerData.add(data)
 
       case Some(mother) if mother.dependency.isInstanceOf[Eager] =>
-        throw new InternalException("This is not the same eager receiver as I want to us")
+        throw new InternalException("This is not the same eager receiver as I want to use")
 
       case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
         val nextStep = StartLoopWithSingleMorsel(data, message.iterationState)

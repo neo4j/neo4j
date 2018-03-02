@@ -51,7 +51,7 @@ public class TestPlaceboTransaction
     private ReadOperations readOps;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
         when( bridge.get() ).thenReturn( mock( Statement.class ) );
@@ -111,7 +111,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void canAcquireReadLock() throws Exception
+    public void canAcquireReadLock()
     {
         // when
         placeboTx.acquireReadLock( resource );
@@ -121,7 +121,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void canAcquireWriteLock() throws Exception
+    public void canAcquireWriteLock()
     {
         // when
         placeboTx.acquireWriteLock( resource );

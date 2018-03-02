@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-abstract class IntegralArray extends NumberArray
+public abstract class IntegralArray extends NumberArray
 {
     abstract long longValue( int offset );
 

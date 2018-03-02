@@ -46,7 +46,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     private final long[] EMPTY_META = new long[]{42L};
 
     @Test
-    public void shouldExposeGapFreeSequenceSingleThreaded() throws Exception
+    public void shouldExposeGapFreeSequenceSingleThreaded()
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0L, 10, new long[1] );
@@ -80,7 +80,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void shouldExtendArrayIfNeedBe() throws Exception
+    public void shouldExtendArrayIfNeedBe()
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0L, 5, new long[1] );
@@ -100,7 +100,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void shouldDealWithThisScenario() throws Exception
+    public void shouldDealWithThisScenario()
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0, 5, new long[1] );
@@ -142,19 +142,14 @@ public class ArrayQueueOutOfOrderSequenceTest
         Thread[] threads = new Thread[1];
         for ( int i = 0; i < threads.length; i++ )
         {
-            threads[i] = new Thread()
-            {
-                @Override
-                public void run()
+            threads[i] = new Thread( () -> {
+                await( startSignal );
+                while ( !end.get() )
                 {
-                    await( startSignal );
-                    while ( !end.get() )
-                    {
-                        long number = numberSource.incrementAndGet();
-                        offer( sequence, number, new long[]{number + 2} );
-                    }
+                    long number = numberSource.incrementAndGet();
+                    offer( sequence, number, new long[]{number + 2} );
                 }
-            };
+            } );
         }
 
         // WHEN

@@ -88,7 +88,7 @@ public class BoltFailuresIT
     public void throwsWhenWorkerCreationFails()
     {
         WorkerFactory workerFactory = mock( WorkerFactory.class );
-        when( workerFactory.newWorker( any() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
+        when( workerFactory.newWorker( any(), any() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
 
         BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
 

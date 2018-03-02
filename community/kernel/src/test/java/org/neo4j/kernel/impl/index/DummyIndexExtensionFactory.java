@@ -28,7 +28,7 @@ import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies>
 {
     public static final String IDENTIFIER = "test-dummy-neo-index";
-    public static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
+    static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
 
     public DummyIndexExtensionFactory()
     {
@@ -41,7 +41,7 @@ public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyInde
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         IndexProviders indexProviders = dependencies.getIndexProviders();
         return new Extension( indexProviders );
@@ -57,13 +57,13 @@ public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyInde
         }
 
         @Override
-        public void init() throws Throwable
+        public void init()
         {
             indexProviders.registerIndexProvider( IDENTIFIER, new DummyIndexImplementation() );
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
             indexProviders.unregisterIndexProvider( IDENTIFIER );
         }

@@ -49,6 +49,7 @@
     <test.runner.jvm.settings.additional>
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
     </test.runner.jvm.settings.additional>
+    <moduleName>org.neo4j.server</moduleName>
   </properties>
 
   <scm>
@@ -218,12 +219,6 @@
       <artifactId>bcpkix-jdk15on</artifactId>
     </dependency>
 
-    <!-- File uploads -->
-    <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-multipart</artifactId>
-    </dependency>
-
     <!-- Test dependencies -->
     <dependency>
       <groupId>com.sun.jersey</groupId>
@@ -298,22 +293,18 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-library</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

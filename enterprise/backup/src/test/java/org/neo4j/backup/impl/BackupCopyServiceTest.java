@@ -59,7 +59,7 @@ public class BackupCopyServiceTest
     }
 
     @Test
-    public void logicForMovingBackupsIsDelegatedToFileMovePropagator() throws CommandFailed, IOException
+    public void logicForMovingBackupsIsDelegatedToFileMovePropagator() throws IOException
     {
         // given
         Path parentDirectory = testDirectory.directory( "parent" ).toPath();

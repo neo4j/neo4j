@@ -38,13 +38,13 @@ public interface RaftLogCursor extends RawCursor<RaftLogEntry,Exception>
         return new RaftLogCursor()
         {
             @Override
-            public boolean next() throws IOException
+            public boolean next()
             {
                 return false;
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
 

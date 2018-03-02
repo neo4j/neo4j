@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
+import static org.neo4j.util.FeatureToggles.getInteger;
 
 /**
  * This is a specialized UTF-8 encoder that solves two predicaments:

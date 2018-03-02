@@ -235,7 +235,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void populationsRemovedDuringFlip() throws Exception
+    public void populationsRemovedDuringFlip()
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();

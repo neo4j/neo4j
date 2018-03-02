@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.util.Arrays;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -47,12 +48,9 @@ public class RoleRecord
     public RoleRecord( String name, String... users )
     {
         this.name = name;
-        this.users = new TreeSet<String>();
+        this.users = new TreeSet<>();
 
-        for ( String user : users )
-        {
-            this.users.add( user );
-        }
+        this.users.addAll( Arrays.asList( users ) );
     }
 
     public String name()

@@ -43,7 +43,7 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
     }
 
     @Test
-    public void shouldListLocksHeldByTheCurrentClient() throws Exception
+    public void shouldListLocksHeldByTheCurrentClient()
     {
         // given
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1, 2, 3 );
@@ -65,7 +65,7 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
     }
 
     @Test
-    public void shouldCountNumberOfActiveLocks() throws Exception
+    public void shouldCountNumberOfActiveLocks()
     {
         // given
         clientA.acquireShared( LockTracer.NONE, LABEL, 0 );

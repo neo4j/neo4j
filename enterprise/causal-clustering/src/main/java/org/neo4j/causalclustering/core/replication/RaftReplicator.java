@@ -142,7 +142,7 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         progressTracker.triggerReplicationEvent();
     }
 
-    private void assertDatabaseNotShutdown() throws InterruptedException
+    private void assertDatabaseNotShutdown()
     {
         if ( availabilityGuard.isShutdown() )
         {

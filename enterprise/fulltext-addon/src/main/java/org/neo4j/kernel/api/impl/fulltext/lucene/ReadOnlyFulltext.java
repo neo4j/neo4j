@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-
 public interface ReadOnlyFulltext extends AutoCloseable
 {
     //TODO javadoc
-    PrimitiveLongIterator query( String query );
+    ScoreEntityIterator query( String query );
 
     @Override
     void close();

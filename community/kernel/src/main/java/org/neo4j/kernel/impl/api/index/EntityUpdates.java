@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveArrays;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -38,6 +37,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.SCHEMA_ALL;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.NoValue;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.UnChanged;
@@ -140,11 +140,11 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         return PrimitiveArrays.intersect( entityTokensBefore, entityTokensAfter );
     }
 
-    PrimitiveIntCollection propertiesChanged()
+    PrimitiveIntSet propertiesChanged()
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
                                                 "properties have already been loaded.";
-        return knownProperties;
+        return asSet( knownProperties.iterator() );
     }
 
     @Override
@@ -393,10 +393,10 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             result.append( ", " );
             result.append( key );
             result.append( " -> " );
-            result.append( propertyValue.toString() );
+            result.append( propertyValue );
             return false;
         } );
-        return result.append( "]" ).toString();
+        return result.append( ']' ).toString();
     }
 
     @Override

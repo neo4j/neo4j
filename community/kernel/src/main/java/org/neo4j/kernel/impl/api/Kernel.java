@@ -21,9 +21,10 @@ package org.neo4j.kernel.impl.api;
 
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.NewKernel;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -78,7 +80,8 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     private final NewKernel newKernel;
 
     public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
-            TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine )
+            TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine,
+            KernelToken token )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
@@ -86,22 +89,22 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( engine, this );
+        this.newKernel = new NewKernel( engine, token, this );
     }
 
     @Override
-    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext )
+    public KernelTransaction newTransaction( Transaction.Type type, LoginContext loginContext )
             throws TransactionFailureException
     {
-        return newTransaction( type, securityContext, config.get( transaction_timeout ).toMillis() );
+        return newTransaction( type, loginContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext, long timeout ) throws
+    public KernelTransaction newTransaction( Transaction.Type type, LoginContext loginContext, long timeout ) throws
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type, securityContext, timeout );
+        KernelTransaction transaction = transactions.newInstance( type, loginContext, timeout );
         transactionMonitor.transactionStarted();
         return transaction;
     }
@@ -131,13 +134,13 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         newKernel.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         newKernel.stop();
     }
@@ -149,8 +152,14 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
-    public Session beginSession( SecurityContext securityContext )
+    public Session beginSession( LoginContext loginContext )
     {
-        return newKernel.beginSession( securityContext );
+        return newKernel.beginSession( loginContext );
+    }
+
+    @Override
+    public Modes modes()
+    {
+        return newKernel;
     }
 }

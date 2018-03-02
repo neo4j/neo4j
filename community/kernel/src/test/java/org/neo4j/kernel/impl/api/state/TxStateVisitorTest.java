@@ -78,7 +78,7 @@ public class TxStateVisitorTest
     private final Collection<Integer> noRemoved = Collections.emptySet();
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         state = new TxState();
     }

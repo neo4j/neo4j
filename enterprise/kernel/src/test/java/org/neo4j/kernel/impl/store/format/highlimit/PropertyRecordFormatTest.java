@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
@@ -63,7 +62,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void writeAndReadRecordWithRelativeReferences() throws IOException
+    public void writeAndReadRecordWithRelativeReferences()
     {
         int recordSize = recordFormat.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
         long recordId = 0xF1F1F1F1F1F1L;
@@ -91,7 +90,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void readWriteFixedReferencesRecord() throws Exception
+    public void readWriteFixedReferencesRecord()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -104,7 +103,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenNextPropertyIsMissing() throws IOException
+    public void useFixedReferenceFormatWhenNextPropertyIsMissing()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -117,7 +116,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenPreviousPropertyIsMissing() throws IOException
+    public void useFixedReferenceFormatWhenPreviousPropertyIsMissing()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -130,7 +129,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenPreviousPropertyReferenceTooBig() throws IOException
+    public void useVariableLengthFormatWhenPreviousPropertyReferenceTooBig()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -143,7 +142,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenNextPropertyReferenceTooBig() throws IOException
+    public void useVariableLengthFormatWhenNextPropertyReferenceTooBig()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -156,7 +155,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    public void useVariableLengthFormatWhenRecordSizeIsTooSmall()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -169,7 +168,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -182,7 +181,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    public void readSingleUnitRecordStoredNotInFixedReferenceFormat()
     {
         PropertyRecord oldFormatRecord = new PropertyRecord( 1 );
         PropertyRecord newFormatRecord = new PropertyRecord( 1 );
@@ -197,7 +196,7 @@ public class PropertyRecordFormatTest
         verifySameReferences( oldFormatRecord, newFormatRecord );
     }
 
-    private void writeRecordWithOldFormat( PropertyRecord oldFormatRecord ) throws IOException
+    private void writeRecordWithOldFormat( PropertyRecord oldFormatRecord )
     {
         int oldRecordSize = PropertyRecordFormatV3_0_0.RECORD_SIZE;
         PropertyRecordFormatV3_0_0 recordFormatV30 = new PropertyRecordFormatV3_0_0();
@@ -218,13 +217,12 @@ public class PropertyRecordFormatTest
         assertNotEquals( recordA.getPrevProp(), recordB.getPrevProp() );
     }
 
-    private void writeReadRecord( PropertyRecord source, PropertyRecord target ) throws java.io.IOException
+    private void writeReadRecord( PropertyRecord source, PropertyRecord target )
     {
         writeReadRecord( source, target, PropertyRecordFormat.RECORD_SIZE );
     }
 
     private void writeReadRecord( PropertyRecord source, PropertyRecord target, int recordSize )
-            throws java.io.IOException
     {
         recordFormat.prepare( source, recordSize, idSequence );
         recordFormat.write( source, pageCursor, recordSize );

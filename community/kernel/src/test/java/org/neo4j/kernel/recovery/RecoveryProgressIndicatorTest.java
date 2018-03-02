@@ -124,7 +124,7 @@ public class RecoveryProgressIndicatorTest
         }
 
         @Override
-        public Boolean answer( InvocationOnMock invocationOnMock ) throws Throwable
+        public Boolean answer( InvocationOnMock invocationOnMock )
         {
             invocations++;
             return invocations <= expectedTransactionsToRecover;

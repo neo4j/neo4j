@@ -53,7 +53,7 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectTwoClientExclusiveDeadlock() throws Exception
+    public void shouldDetectTwoClientExclusiveDeadlock()
     {
         assertDetectsDeadlock(
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
@@ -64,7 +64,7 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectThreeClientExclusiveDeadlock() throws Exception
+    public void shouldDetectThreeClientExclusiveDeadlock()
     {
         assertDetectsDeadlock(
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
@@ -77,7 +77,7 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectMixedExclusiveAndSharedDeadlock() throws Exception
+    public void shouldDetectMixedExclusiveAndSharedDeadlock()
     {
         assertDetectsDeadlock(
 

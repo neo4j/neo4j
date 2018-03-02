@@ -30,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -38,6 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -67,13 +70,13 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.RandomEntityDataGenerator;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
-
 import static java.lang.Integer.parseInt;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
-
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -118,10 +121,12 @@ public class CsvInputEstimateCalculationIT
                 format, NO_MONITOR ).doImport( input );
 
         // then compare estimates with actual disk sizes
+        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL,
-                      PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
+                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                .getOrCreatePageCache();
               NeoStores stores = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                      NullLogProvider.getInstance() ).openAllNeoStores() )
+                      NullLogProvider.getInstance(), contextSupplier ).openAllNeoStores() )
         {
             assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
             assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );
@@ -129,6 +134,31 @@ public class CsvInputEstimateCalculationIT
                     calculateNumberOfProperties( stores.getPropertyStore() ) );
         }
         assertRoughlyEqual( propertyStorageSize(), estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() );
+    }
+
+    @Test
+    public void shouldCalculateCorrectEstimatesOnEmptyData() throws Exception
+    {
+        // given
+        Groups groups = new Groups();
+        Collection<DataFactory> nodeData = asList( generateData( defaultFormatNodeFileHeader(), new MutableLong(), 0, 0, ":ID", "nodes-1.csv", groups ) );
+        Collection<DataFactory> relationshipData = asList( generateData( defaultFormatRelationshipFileHeader(), new MutableLong(),
+                0, 0, ":START_ID,:TYPE,:END_ID", "rels-1.csv", groups ) );
+        Input input = new CsvInput( nodeData, defaultFormatNodeFileHeader(), relationshipData, defaultFormatRelationshipFileHeader(),
+                IdType.INTEGER, COMMAS, Collector.EMPTY, groups );
+
+        // when
+        Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
+                LATEST_RECORD_FORMATS.property().getRecordSize( NO_STORE_HEADER ),
+                parseInt( GraphDatabaseSettings.string_block_size.getDefaultValue() ), 0,
+                parseInt( GraphDatabaseSettings.array_block_size.getDefaultValue() ), 0 ) );
+
+        // then
+        assertEquals( 0, estimates.numberOfNodes() );
+        assertEquals( 0, estimates.numberOfRelationships() );
+        assertEquals( 0, estimates.numberOfRelationshipProperties() );
+        assertEquals( 0, estimates.numberOfNodeProperties() );
+        assertEquals( 0, estimates.numberOfNodeLabels() );
     }
 
     private long propertyStorageSize()

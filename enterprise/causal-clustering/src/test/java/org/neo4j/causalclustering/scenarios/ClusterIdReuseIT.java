@@ -188,7 +188,7 @@ public class ClusterIdReuseIT
         assertEquals( second.longValue(), node2id.longValue() );
     }
 
-    private void idMaintenanceOnLeader( CoreClusterMember leader ) throws TimeoutException
+    private void idMaintenanceOnLeader( CoreClusterMember leader )
     {
         IdController idController = resolveDependency( leader, IdController.class );
         idController.maintenance();

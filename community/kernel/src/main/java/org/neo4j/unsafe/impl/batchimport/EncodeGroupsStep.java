@@ -41,7 +41,7 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
     {
         int groupStartIndex = 0;
         for ( int i = 0; i < batch.length; i++ )

@@ -73,9 +73,9 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
-        return actual.getPopulationFailure( indexId );
+        return actual.getPopulationFailure( indexId, descriptor );
     }
 
     @Override

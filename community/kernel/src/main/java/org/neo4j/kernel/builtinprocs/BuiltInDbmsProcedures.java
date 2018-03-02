@@ -23,9 +23,9 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -121,16 +121,18 @@ public class BuiltInDbmsProcedures
         public final String name;
         public final String signature;
         public final String description;
+        public final String mode;
 
         private ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
         }
     }
 
-    public class StringResult
+    public static class StringResult
     {
         public final String value;
 

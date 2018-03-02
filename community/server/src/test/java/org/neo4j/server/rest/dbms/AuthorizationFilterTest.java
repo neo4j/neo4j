@@ -38,7 +38,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicSecurityContext;
+import org.neo4j.server.security.auth.BasicLoginContext;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.hamcrest.Matchers.containsString;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
@@ -69,7 +69,7 @@ public class AuthorizationFilterTest
         when( servletResponse.getOutputStream() ).thenReturn( new ServletOutputStream()
         {
             @Override
-            public void write( int b ) throws IOException
+            public void write( int b )
             {
                 outputStream.write( b );
             }
@@ -170,14 +170,14 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
+        BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( servletRequest.getRemoteAddr() ).thenReturn( "remote_ip_address" );
-        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
+        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( loginContext );
+        when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
         // When
@@ -201,13 +201,13 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
+        BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/user/foo" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
+        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( loginContext );
+        when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         // When
@@ -224,15 +224,15 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
+        BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
         when( servletRequest.getRequestURI() ).thenReturn( "/db/data/" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
+        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( loginContext );
+        when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         // When
@@ -256,13 +256,13 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
+        BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
+        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( loginContext );
+        when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // When
@@ -285,13 +285,13 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
+        BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
-        when( securityContext.subject() ).thenReturn( authSubject );
+        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( loginContext );
+        when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // When

@@ -21,17 +21,17 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEventOpportunity;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * The PageList maintains the off-heap meta-data for the individual memory pages.
@@ -42,10 +42,10 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
  *     <tr><th>Bytes</th><th>Use</th></tr>
  *     <tr><td>8</td><td>Sequence lock word.</td></tr>
  *     <tr><td>8</td><td>Pointer to the memory page.</td></tr>
- *     <tr><td>8</td><td>File page id.</td></tr>
- *     <tr><td>4</td><td>Page swapper id.</td></tr>
+ *     <tr><td>8</td><td>Last modified transaction id.</td></tr>
+ *     <tr><td>5</td><td>File page id.</td></tr>
  *     <tr><td>1</td><td>Usage stamp. Optimistically incremented; truncated to a max of 4.</td></tr>
- *     <tr><td>3</td><td>Padding.</td></tr>
+ *     <tr><td>2</td><td>Page swapper id.</td></tr>
  * </table>
  */
 class PageList
@@ -54,15 +54,21 @@ class PageList
 
     public static final int META_DATA_BYTES_PER_PAGE = 32;
     public static final long MAX_PAGES = Integer.MAX_VALUE;
+
+    private static final int UNBOUND_LAST_MODIFIED_TX_ID = -1;
+    private static final int UNSIGNED_BYTE_MASK = 0xFF;
+    private static final long UNSIGNED_INT_MASK = 0xFFFFFFFFL;
+
+    // 40 bits for file page id
+    private static final long MAX_FILE_PAGE_ID = 0b11111111_11111111_11111111_11111111_11111111L;
+
     private static final int OFFSET_LOCK_WORD = 0; // 8 bytes
     private static final int OFFSET_ADDRESS = 8; // 8 bytes
-    private static final int OFFSET_FILE_PAGE_ID = 16; // 8 bytes
-    private static final int OFFSET_SWAPPER_ID = 24; // 4 bytes
-    private static final int OFFSET_USAGE_COUNTER = 28; // 1 byte
-    // todo it's possible to reduce the overhead of the individual page to just 24 bytes,
-    // todo because the file page id can be represented with 5 bytes (enough to address 8-4 PBs),
-    // todo and then the usage counter can use the high bits of that word, and the swapper id
-    // todo can use the rest (2 bytes or 20 bits).
+    private static final int OFFSET_LAST_TX_ID = 16; // 8 bytes
+    private static final int OFFSET_FILE_PAGE_ID = 24; // 5 bytes
+    private static final int OFFSET_USAGE_COUNTER = 29; // 1 byte
+    private static final int OFFSET_SWAPPER_ID = 30; // 2 bytes
+
     // todo we can alternatively also make use of the lower 12 bits of the address field, because
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
 
@@ -169,10 +175,10 @@ class PageList
         long initialLockWord = OffHeapPageLock.initialLockWordWithExclusiveLock();
         for ( long i = 0; i < pageCount; i++ )
         {
-            UnsafeUtil.putLong( address += Long.BYTES, initialLockWord );
-            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // page buffer address pointer
-            UnsafeUtil.putLong( address += Long.BYTES, PageCursor.UNBOUND_PAGE_ID ); // file page id
-            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // rest
+            UnsafeUtil.putLong( address += Long.BYTES, initialLockWord ); // lock word
+            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // pointer
+            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // last tx id
+            UnsafeUtil.putLong( address += Long.BYTES, MAX_FILE_PAGE_ID );
         }
     }
 
@@ -224,6 +230,11 @@ class PageList
     {
         // >> 5 is equivalent to dividing by 32, META_DATA_BYTES_PER_PAGE.
         return (int) ((pageRef - baseAddress) >> 5);
+    }
+
+    private long offLastModifiedTransactionId( long pageRef )
+    {
+        return pageRef + OFFSET_LAST_TX_ID;
     }
 
     private long offLock( long pageRef )
@@ -376,22 +387,50 @@ class PageList
 
     public long getFilePageId( long pageRef )
     {
-        return UnsafeUtil.getLong( offFilePageId( pageRef ) );
+        int highByte = UnsafeUtil.getByte( offFilePageId( pageRef ) ) & UNSIGNED_BYTE_MASK;
+        long lowInt = UnsafeUtil.getInt( offFilePageId( pageRef ) + Byte.BYTES ) & UNSIGNED_INT_MASK;
+        long filePageId = (((long) highByte) << Integer.SIZE) | lowInt;
+        return filePageId == MAX_FILE_PAGE_ID ? PageCursor.UNBOUND_PAGE_ID : filePageId;
     }
 
     private void setFilePageId( long pageRef, long filePageId )
     {
-        UnsafeUtil.putLong( offFilePageId( pageRef ), filePageId );
+        if ( filePageId > MAX_FILE_PAGE_ID )
+        {
+            throw new IllegalArgumentException(
+                    format( "File page id: %s is bigger then max supported value %s.", filePageId, MAX_FILE_PAGE_ID ) );
+        }
+        byte highByte = (byte) (filePageId >> Integer.SIZE);
+        UnsafeUtil.putByte( offFilePageId( pageRef ), highByte );
+        UnsafeUtil.putInt( offFilePageId( pageRef ) + Byte.BYTES, (int) filePageId );
     }
 
-    public int getSwapperId( long pageRef )
+    long getLastModifiedTxId( long pageRef )
     {
-        return UnsafeUtil.getInt( offSwapperId( pageRef ) );
+        return UnsafeUtil.getLongVolatile( offLastModifiedTransactionId( pageRef ) );
     }
 
-    private void setSwapperId( long pageRef, int swapperId )
+    /**
+     * @return return last modifier transaction id and resets it to {@link #UNBOUND_LAST_MODIFIED_TX_ID}
+     */
+    long getAndResetLastModifiedTransactionId( long pageRef )
     {
-        UnsafeUtil.putInt( offSwapperId( pageRef ), swapperId );
+        return UnsafeUtil.getAndSetLong( null, offLastModifiedTransactionId( pageRef ), UNBOUND_LAST_MODIFIED_TX_ID );
+    }
+
+    void setLastModifiedTxId( long pageRef, long modifierTxId )
+    {
+        UnsafeUtil.compareAndSetMaxLong( null, offLastModifiedTransactionId( pageRef ), modifierTxId );
+    }
+
+    public short getSwapperId( long pageRef )
+    {
+        return UnsafeUtil.getShort( offSwapperId( pageRef ) );
+    }
+
+    private void setSwapperId( long pageRef, short swapperId )
+    {
+        UnsafeUtil.putShort( offSwapperId( pageRef ), swapperId );
     }
 
     public boolean isLoaded( long pageRef )
@@ -399,12 +438,12 @@ class PageList
         return getFilePageId( pageRef ) != PageCursor.UNBOUND_PAGE_ID;
     }
 
-    public boolean isBoundTo( long pageRef, int swapperId, long filePageId )
+    public boolean isBoundTo( long pageRef, short swapperId, long filePageId )
     {
         return getSwapperId( pageRef ) == swapperId && getFilePageId( pageRef ) == filePageId;
     }
 
-    public void fault( long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event )
+    public void fault( long pageRef, PageSwapper swapper, short swapperId, long filePageId, PageFaultEvent event )
             throws IOException
     {
         if ( swapper == null )
@@ -437,7 +476,7 @@ class PageList
         return new IllegalArgumentException( "swapper cannot be null" );
     }
 
-    private static IllegalStateException cannotFaultException( long pageRef, PageSwapper swapper, int swapperId,
+    private static IllegalStateException cannotFaultException( long pageRef, PageSwapper swapper, short swapperId,
                                                         long filePageId, int currentSwapper, long currentFilePageId )
     {
         String msg = format(
@@ -470,7 +509,7 @@ class PageList
         long filePageId = getFilePageId( pageRef );
         evictionEvent.setFilePageId( filePageId );
         evictionEvent.setCachePageId( pageRef );
-        int swapperId = getSwapperId( pageRef );
+        short swapperId = getSwapperId( pageRef );
         if ( swapperId != 0 )
         {
             // If the swapper id is non-zero, then the page was not only loaded, but also bound, and possibly modified.
@@ -517,7 +556,7 @@ class PageList
     protected void clearBinding( long pageRef )
     {
         setFilePageId( pageRef, PageCursor.UNBOUND_PAGE_ID );
-        setSwapperId( pageRef, 0 );
+        setSwapperId( pageRef, (short) 0 );
     }
 
     public String toString( long pageRef )

@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -46,7 +46,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public abstract class KernelIntegrationTest
 {
@@ -65,9 +65,9 @@ public abstract class KernelIntegrationTest
     private Statement statement;
     private DbmsOperations dbmsOperations;
 
-    protected Statement statementInNewTransaction( SecurityContext securityContext ) throws KernelException
+    protected Statement statementInNewTransaction( LoginContext loginContext ) throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, securityContext );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, loginContext );
         statement = transaction.acquireStatement();
         return statement;
     }
@@ -105,6 +105,11 @@ public abstract class KernelIntegrationTest
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
         statement = transaction.acquireStatement();
         return statement.readOperations();
+    }
+
+    protected KernelTransaction newTransaction() throws TransactionFailureException
+    {
+        return kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
     }
 
     protected DbmsOperations dbmsOperations()

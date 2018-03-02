@@ -187,12 +187,12 @@ public class JshExecutor extends ScriptExecutor
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
 
         @Override
-        public void flush() throws IOException
+        public void flush()
         {
         }
 

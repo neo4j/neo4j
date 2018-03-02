@@ -497,7 +497,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) AS nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
@@ -512,7 +512,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) as nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
       Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
@@ -530,7 +530,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) as nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
       Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
@@ -741,6 +741,16 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         |RETURN length(path)""".stripMargin)
     // Then
     result.toList should equal(List(Map("length(path)" -> 2)))
+  }
+
+  test("should not require named nodes in shortest path") {
+    graph.execute("CREATE (a:Person)-[:WATCH]->(b:Movie)")
+
+    val query =
+      """MATCH p=shortestPath( (:Person)-[*1..4]->(:Movie) )
+        |RETURN length(p)
+      """.stripMargin
+    graph.execute(query).columnAs[Int]("length(p)").next() should be (1)
   }
 
   private def createLdbc14Model(): Unit = {

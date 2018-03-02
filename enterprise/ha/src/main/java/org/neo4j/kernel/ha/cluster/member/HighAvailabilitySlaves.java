@@ -47,7 +47,7 @@ import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
 public class HighAvailabilitySlaves implements Lifecycle, Slaves
 {
     private final LifeSupport life = new LifeSupport();
-    private final Map<ClusterMember, Slave> slaves = new CopyOnWriteHashMap<ClusterMember, Slave>();
+    private final Map<ClusterMember, Slave> slaves = new CopyOnWriteHashMap<>();
     private final ClusterMembers clusterMembers;
     private final Cluster cluster;
     private final SlaveFactory slaveFactory;
@@ -69,13 +69,7 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
         {
             synchronized ( HighAvailabilitySlaves.this )
             {
-                Slave presentSlave = slaves.get( from );
-                if ( presentSlave == null )
-                {
-                    presentSlave = slaveFactory.newSlave( life, from, me.getHost(), me.getPort() );
-                    slaves.put( from, presentSlave );
-                }
-                return presentSlave;
+                return slaves.computeIfAbsent( from, f -> slaveFactory.newSlave( life, f, me.getHost(), me.getPort() ) );
             }
         };
     }
@@ -110,19 +104,19 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         cluster.removeClusterListener( clusterListener );
 

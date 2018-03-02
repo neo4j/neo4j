@@ -23,8 +23,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.URISyntaxException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 /**
  * TODO
@@ -34,7 +32,7 @@ public class ClusterMembershipTest
 {
     @Test
     public void threeNodesJoinAndThenLeave()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 70 ).
@@ -49,7 +47,7 @@ public class ClusterMembershipTest
 
     @Test
     public void threeNodesJoinAndThenLeaveInOriginalOrder()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 100 ).
@@ -66,7 +64,7 @@ public class ClusterMembershipTest
 
     @Test
     public void noobTest()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 1, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 3 ).
@@ -78,7 +76,7 @@ public class ClusterMembershipTest
 
     @Test
     public void sevenNodesJoinAndThenLeave()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 7, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 500 ).
@@ -101,7 +99,7 @@ public class ClusterMembershipTest
 
     @Test
     public void oneNodeJoinThenTwoJoinRoughlyAtSameTime()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 500 ).
@@ -115,7 +113,7 @@ public class ClusterMembershipTest
 
     @Test
     public void oneNodeJoinThenThreeJoinRoughlyAtSameTime2()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 4, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 800 ).
@@ -130,7 +128,7 @@ public class ClusterMembershipTest
 
     @Test
     public void twoNodesJoinThenOneLeavesAsThirdJoins()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 820 ).
@@ -145,7 +143,7 @@ public class ClusterMembershipTest
     @Test
     @Ignore( "instance 1 is in start, 2 in discovery. Correct but we don't have a way to verify it yet" )
     public void oneNodeCreatesClusterAndThenAnotherJoinsAsFirstLeaves()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
@@ -157,7 +155,7 @@ public class ClusterMembershipTest
 
     @Test
     public void threeNodesJoinAndThenFirstLeavesAsFourthJoins()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 4, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 200 ).
@@ -172,7 +170,7 @@ public class ClusterMembershipTest
 
     @Test
     public void threeNodesJoinAndThenFirstLeavesAsFourthJoins2()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 5, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 200 ).
@@ -190,7 +188,7 @@ public class ClusterMembershipTest
     @Ignore( "Ignore until fix available" )
     @Test
     public void threeNodesJoinAtSameTime()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 400 ).

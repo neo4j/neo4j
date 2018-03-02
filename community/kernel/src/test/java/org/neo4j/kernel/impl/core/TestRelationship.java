@@ -321,7 +321,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         relationship.delete();
         try
         {
-            relationship.setProperty( "key1", new Integer( 1 ) );
+            relationship.setProperty( "key1", 1 );
             fail( "Adding property to deleted rel should throw exception." );
         }
         catch ( Exception e )
@@ -376,10 +376,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
 
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         // add property
         rel1.setProperty( key1, int1 );
@@ -403,10 +403,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelationshipRemoveProperty()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -470,10 +470,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelationshipChangeProperty()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -510,12 +510,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelationshipChangeProperty2()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
-        Boolean bool1 = new Boolean( true );
-        Boolean bool2 = new Boolean( false );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -528,9 +526,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         rel1.setProperty( key1, string2 );
         assertEquals( string2, rel1.getProperty( key1 ) );
         rel1.removeProperty( key1 );
-        rel1.setProperty( key1, bool1 );
-        rel1.setProperty( key1, bool2 );
-        assertEquals( bool2, rel1.getProperty( key1 ) );
+        rel1.setProperty( key1, true );
+        rel1.setProperty( key1, false );
+        assertEquals( false, rel1.getProperty( key1 ) );
         rel1.removeProperty( key1 );
 
         rel1.delete();
@@ -541,9 +539,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelGetProperties()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string = new String( "3" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string = "3";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -587,8 +585,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
 
         try
         {
-            String[] names = null;
-            node1.getProperties( names );
+            node1.getProperties( (String[]) null );
             fail();
         }
         catch ( NullPointerException e )
@@ -716,7 +713,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         assertTrue( rel.isType( MyRelTypes.TEST ) );
-        assertTrue( rel.isType( () -> MyRelTypes.TEST.name() ) );
+        assertTrue( rel.isType( MyRelTypes.TEST::name ) );
         assertFalse( rel.isType( MyRelTypes.TEST_TRAVERSAL ) );
         rel.delete();
         node1.delete();
@@ -857,42 +854,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void deleteRelsWithCommitInMiddle() throws Exception
-    {
-        Node node = getGraphDb().createNode();
-        Node otherNode = getGraphDb().createNode();
-        RelationshipType[] types =
-                new RelationshipType[]{withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )};
-        int count = 30; // 30*4 > 100 (rel grabSize)
-        for ( int i = 0; i < types.length * count; i++ )
-        {
-            node.createRelationshipTo( otherNode, types[i % types.length] );
-        }
-        newTransaction();
-        int delCount = 0;
-        int loopCount = 0;
-        while ( delCount < count )
-        {
-            loopCount++;
-            ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) node.getRelationships( types[1] );
-            ResourceIterator<Relationship> iterator = relationships.iterator();
-            while ( iterator.hasNext() )
-            {
-                Relationship rel = iterator.next();
-                rel.delete();
-                if ( ++delCount == count / 2 )
-                {
-                    iterator.close();
-                    newTransaction();
-                }
-            }
-        }
-        assertEquals( 1, loopCount );
-        assertEquals( count, delCount );
-    }
-
-    @Test
-    public void getAllRelationships() throws Exception
+    public void getAllRelationships()
     {
         Set<Relationship> existingRelationships =
                 Iterables.addToCollection( getGraphDb().getAllRelationships(), new HashSet<>() );
@@ -928,7 +890,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void setPropertyAndClearCacheBeforeCommit() throws Exception
+    public void setPropertyAndClearCacheBeforeCommit()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "name", "Test" );
@@ -936,7 +898,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotGetTheSameRelationshipMoreThanOnceWhenAskingForTheSameTypeMultipleTimes() throws Exception
+    public void shouldNotGetTheSameRelationshipMoreThanOnceWhenAskingForTheSameTypeMultipleTimes()
     {
         // given
         Node node = getGraphDb().createNode();
@@ -950,7 +912,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldLoadAllRelationships() throws Exception
+    public void shouldLoadAllRelationships()
     {
         // GIVEN
         GraphDatabaseService db = getGraphDbAPI();

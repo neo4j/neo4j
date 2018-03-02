@@ -50,7 +50,7 @@ public class CoreStatusTest
     }
 
     @Test
-    public void testAnswersWhenLeader() throws Exception
+    public void testAnswersWhenLeader()
     {
         // given
         when( db.getRole() ).thenReturn( Role.LEADER );
@@ -72,7 +72,7 @@ public class CoreStatusTest
     }
 
     @Test
-    public void testAnswersWhenCandidate() throws Exception
+    public void testAnswersWhenCandidate()
     {
         // given
         when( db.getRole() ).thenReturn( Role.CANDIDATE );
@@ -94,7 +94,7 @@ public class CoreStatusTest
     }
 
     @Test
-    public void testAnswersWhenFollower() throws Exception
+    public void testAnswersWhenFollower()
     {
         // given
         when( db.getRole() ).thenReturn( Role.FOLLOWER );

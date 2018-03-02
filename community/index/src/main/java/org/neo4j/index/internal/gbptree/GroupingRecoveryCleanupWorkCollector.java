@@ -46,7 +46,7 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         jobs.clear();
     }
@@ -58,18 +58,18 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         jobScheduler.schedule( recoveryCleanup, allJobs() );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {   // no-op
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {   // no-op
     }
 

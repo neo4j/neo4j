@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 public class RecentKTest
 {
     @Test
-    public void shouldEvictOnOverflow() throws Throwable
+    public void shouldEvictOnOverflow()
     {
         // When & Then
         assertThat( appendSequence( 1, 1, 1, 1, 1, 1, 1 ), yieldsSet( 1 ) );

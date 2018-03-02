@@ -59,7 +59,7 @@ public class ProtocolServer
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         msgLog = null;
     }

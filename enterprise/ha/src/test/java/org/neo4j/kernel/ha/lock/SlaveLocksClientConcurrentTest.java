@@ -127,7 +127,7 @@ public class SlaveLocksClientConcurrentTest
         }
 
         @Override
-        public Object answer( InvocationOnMock invocation ) throws Throwable
+        public Object answer( InvocationOnMock invocation )
         {
             return lockResult;
         }

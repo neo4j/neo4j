@@ -158,25 +158,26 @@ trait MethodStructure[E] {
   def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection, typeVars: Seq[String]): Unit
   def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, toNode:String, toNodeType: CodeGenType)
   def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, types: Seq[String], toNode: String, toNodeType: CodeGenType)
-  def nextNode(targetVar: String, iterVar: String): Unit
+  def nodeFromNodeValueIndexCursor(targetVar: String, iterVar: String): Unit
   def nodeFromNodeCursor(targetVar: String, iterVar: String): Unit
   def nodeFromNodeLabelIndexCursor(targetVar: String, iterVar: String): Unit
   def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
   def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
-  def hasNextNode(iterVar: String): E
+
   def advanceNodeCursor(iterVar: String): E
   def advanceNodeLabelIndexCursor(iterVar: String): E
-  def hasNextRelationship(iterVar: String): E
+  def advanceRelationshipSelectionCursor(iterVar: String): E
+  def advanceNodeValueIndexCursor(iterVar: String): E
+
   def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
   def nodeIdSeek(nodeIdVar: String, expression: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
-  def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
-  def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
+  def relationshipGetPropertyById(relIdVar: String, relVarType: CodeGenType, propId: Int, propValueVar: String): Unit
+  def relationshipGetPropertyForVar(relIdVar: String, relVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
   def indexSeek(iterVar: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
   def relType(relIdVar: String, typeVar: String): Unit
-  def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
-  def createRelExtractor(extractorName: String): Unit
+  def newIndexReference(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def nodeCountFromCountStore(expression: E): E
   def relCountFromCountStore(start: E, end: E, types: E*): E
   def token(t: Int): E

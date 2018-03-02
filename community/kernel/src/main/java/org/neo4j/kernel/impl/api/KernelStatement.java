@@ -34,6 +34,8 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
@@ -55,8 +57,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.toggle;
+import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.toggle;
 
 /**
  * A resource efficient implementation of {@link Statement}. Designed to be reused within a
@@ -77,7 +79,7 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.toggle;
  * instance again, when it's initialized.</li>
  * </ol>
  */
-public class KernelStatement implements TxStateHolder, Statement, AssertOpen
+public class KernelStatement extends CloseableResourceManager implements TxStateHolder, Statement, AssertOpen
 {
     private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", false );
     private static final boolean RECORD_STATEMENTS_TRACES = flag( KernelStatement.class, "recordStatementsTraces", false );
@@ -95,6 +97,8 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     private volatile ExecutingQueryList executingQueryList;
     private final LockTracer systemLockTracer;
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
+    private final ClockContext clockContext;
+    private final VersionContextSupplier versionContextSupplier;
 
     public KernelStatement( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
@@ -102,7 +106,9 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
                             Procedures procedures,
                             AccessCapability accessCapability,
                             LockTracer systemLockTracer,
-                            StatementOperationParts statementOperations )
+                            StatementOperationParts statementOperations,
+                            ClockContext clockContext,
+                            VersionContextSupplier versionContextSupplier )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
@@ -112,6 +118,8 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
+        this.clockContext = clockContext;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     @Override
@@ -208,16 +216,17 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         }
 
         Optional<Status> terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        terminationReason.ifPresent( status ->
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
-        }
+            throw new TransactionTerminatedException( status );
+        } );
     }
 
     public void initialize( StatementLocks statementLocks, PageCursorTracer pageCursorCounters )
     {
         this.statementLocks = statementLocks;
         this.pageCursorTracer = pageCursorCounters;
+        this.clockContext.initializeTransaction();
     }
 
     public StatementLocks locks()
@@ -241,6 +250,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         if ( referenceCount++ == 0 )
         {
             storeStatement.acquire();
+            clockContext.initializeStatement();
         }
         recordOpenCloseMethods();
     }
@@ -307,11 +317,17 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         // closing is done by KTI
         storeStatement.release();
         executingQueryList = ExecutingQueryList.EMPTY;
+        closeAllCloseableResources();
     }
 
     public KernelTransactionImplementation getTransaction()
     {
         return transaction;
+    }
+
+    public VersionContext getVersionContext()
+    {
+        return versionContextSupplier.getVersionContext();
     }
 
     void assertAllows( Function<AccessMode,Boolean> allows, String mode )
@@ -336,6 +352,11 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             statementOpenCloseCalls.add( Arrays.copyOfRange(stackTrace, 2, stackTrace.length) );
         }
+    }
+
+    public ClockContext clocks()
+    {
+        return clockContext;
     }
 
     static class StatementNotClosedException extends IllegalStateException

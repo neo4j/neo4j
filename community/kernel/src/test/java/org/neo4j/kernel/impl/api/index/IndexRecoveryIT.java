@@ -375,7 +375,7 @@ public class IndexRecoveryIT
             return new CollectingIndexUpdater()
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                     switch ( mode )
                     {

@@ -37,16 +37,15 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -62,7 +61,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -461,7 +460,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans() throws Exception
+    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans()
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -501,7 +500,7 @@ public class KernelIT extends KernelIntegrationTest
         commit();
 
         // WHEN
-        createIndex( statementInNewTransaction( SecurityContext.AUTH_DISABLED ) );
+        createIndex( statementInNewTransaction( AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
@@ -519,7 +518,7 @@ public class KernelIT extends KernelIntegrationTest
     public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
-        SchemaIndexDescriptor idx = createIndex( statementInNewTransaction( SecurityContext.AUTH_DISABLED ) );
+        SchemaIndexDescriptor idx = createIndex( statementInNewTransaction( AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )

@@ -37,7 +37,7 @@ public class ArbiterEntryPoint
     {
     }
 
-    public static void main( String[] argv ) throws IOException
+    public static void main( String[] argv )
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
         if ( args.version() )

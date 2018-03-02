@@ -40,7 +40,6 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexSamplingConfig samplingConfig;
     private NonUniqueIndexSampler sampler;
-    private boolean updateSampling;
 
     public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
@@ -50,13 +49,13 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor )
     {
         // no constraints to verify so do nothing
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
     {
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }

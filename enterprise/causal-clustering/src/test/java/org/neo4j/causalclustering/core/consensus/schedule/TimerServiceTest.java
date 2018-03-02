@@ -250,10 +250,7 @@ public class TimerServiceTest
             finished.await();
         };
 
-        TimeoutHandler handlerB = timer ->
-        {
-            finished.countDown();
-        };
+        TimeoutHandler handlerB = timer -> finished.countDown();
 
         Timer timerA = timerService.create( Timers.TIMER_A, group, handlerA );
         timerA.set( fixedTimeout( 0, SECONDS ) );

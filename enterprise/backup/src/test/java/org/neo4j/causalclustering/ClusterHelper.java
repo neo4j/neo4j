@@ -20,9 +20,6 @@
 package org.neo4j.causalclustering;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
-import org.neo4j.causalclustering.core.consensus.roles.Role;
-import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

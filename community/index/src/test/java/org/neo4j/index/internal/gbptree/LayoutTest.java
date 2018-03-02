@@ -27,7 +27,7 @@ import static org.junit.Assert.fail;
 public class LayoutTest
 {
     @Test
-    public void shouldCreateDifferentIdentifierWithDifferentName() throws Exception
+    public void shouldCreateDifferentIdentifierWithDifferentName()
     {
         // GIVEN
         String firstName = "one";
@@ -43,7 +43,7 @@ public class LayoutTest
     }
 
     @Test
-    public void shouldCreateDifferentIdentifierWithDifferentChecksums() throws Exception
+    public void shouldCreateDifferentIdentifierWithDifferentChecksums()
     {
         // GIVEN
         String name = "name";
@@ -59,7 +59,7 @@ public class LayoutTest
     }
 
     @Test
-    public void shouldFailOnTooLongName() throws Exception
+    public void shouldFailOnTooLongName()
     {
         // WHEN
         try

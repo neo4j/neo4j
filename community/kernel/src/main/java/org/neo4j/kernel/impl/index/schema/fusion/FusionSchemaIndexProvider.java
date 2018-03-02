@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -41,6 +43,9 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+
 /**
  * This {@link IndexProvider index provider} act as one logical index but is backed by two physical
  * indexes, the native index and the lucene index. All index entries that can be handled by the native index will be directed
@@ -48,22 +53,33 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
-    public interface Selector
+    interface Selector
     {
-        <T> T select( T nativeInstance, T luceneInstance, Value... values );
+        <T> T select( T nativeInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values );
     }
 
-    private final IndexProvider nativeProvider;
+    private final IndexProvider numberProvider;
+    private final IndexProvider spatialProvider;
+    private final IndexProvider temporalProvider;
     private final IndexProvider luceneProvider;
     private final Selector selector;
     private final DropAction dropAction;
 
-    public FusionSchemaIndexProvider( IndexProvider nativeProvider,
-            IndexProvider luceneProvider, Selector selector, IndexProvider.Descriptor descriptor,
-            int priority, IndexDirectoryStructure.Factory directoryStructure, FileSystemAbstraction fs )
+    public FusionSchemaIndexProvider(
+            IndexProvider numberProvider,
+            IndexProvider spatialProvider,
+            IndexProvider temporalProvider,
+            IndexProvider luceneProvider,
+            Selector selector,
+            Descriptor descriptor,
+            int priority,
+            IndexDirectoryStructure.Factory directoryStructure,
+            FileSystemAbstraction fs )
     {
         super( descriptor, priority, directoryStructure );
-        this.nativeProvider = nativeProvider;
+        this.numberProvider = numberProvider;
+        this.spatialProvider = spatialProvider;
+        this.temporalProvider = temporalProvider;
         this.luceneProvider = luceneProvider;
         this.selector = selector;
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
@@ -79,7 +95,9 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new FusionIndexPopulator(
-                nativeProvider.getPopulator( indexId, descriptor, samplingConfig ),
+                numberProvider.getPopulator( indexId, descriptor, samplingConfig ),
+                spatialProvider.getPopulator( indexId, descriptor, samplingConfig ),
+                temporalProvider.getPopulator( indexId, descriptor, samplingConfig ),
                 luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector, indexId, dropAction );
     }
 
@@ -88,62 +106,72 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new FusionIndexAccessor(
-                nativeProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
+                numberProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
+                spatialProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
+                temporalProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
                 luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, descriptor, dropAction );
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
-        String nativeFailure = null;
-        try
+        StringBuilder builder = new StringBuilder();
+        writeFailure( "number", builder, numberProvider, indexId, descriptor );
+        writeFailure( "spatial", builder, spatialProvider, indexId, descriptor );
+        writeFailure( "temporal", builder, temporalProvider, indexId, descriptor );
+        writeFailure( "lucene", builder, luceneProvider, indexId, descriptor );
+        String failure = builder.toString();
+        if ( !failure.isEmpty() )
         {
-            nativeFailure = nativeProvider.getPopulationFailure( indexId );
-        }
-        catch ( IllegalStateException e )
-        {   // Just catch
-        }
-        String luceneFailure = null;
-        try
-        {
-            luceneFailure = luceneProvider.getPopulationFailure( indexId );
-        }
-        catch ( IllegalStateException e )
-        {   // Just catch
-        }
-
-        if ( nativeFailure != null || luceneFailure != null )
-        {
-            return "native: " + nativeFailure + " lucene: " + luceneFailure;
+            return failure;
         }
         throw new IllegalStateException( "None of the indexes were in a failed state" );
+    }
+
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, SchemaIndexDescriptor descriptor )
+    {
+        try
+        {
+            String failure = provider.getPopulationFailure( indexId, descriptor );
+            builder.append( indexName );
+            builder.append( ": " );
+            builder.append( failure );
+            builder.append( ' ' );
+        }
+        catch ( IllegalStateException e )
+        {   // Just catch
+        }
     }
 
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
-        InternalIndexState nativeState = nativeProvider.getInitialState( indexId, descriptor );
+        InternalIndexState numberState = numberProvider.getInitialState( indexId, descriptor );
+        InternalIndexState spatialState = spatialProvider.getInitialState( indexId, descriptor );
+        InternalIndexState temporalState = temporalProvider.getInitialState( indexId, descriptor );
         InternalIndexState luceneState = luceneProvider.getInitialState( indexId, descriptor );
-        if ( nativeState == InternalIndexState.FAILED || luceneState == InternalIndexState.FAILED )
+        if ( numberState == FAILED || spatialState == FAILED  || temporalState == FAILED || luceneState == FAILED )
         {
             // One of the state is FAILED, the whole state must be considered FAILED
-            return InternalIndexState.FAILED;
+            return FAILED;
         }
-        if ( nativeState == InternalIndexState.POPULATING || luceneState == InternalIndexState.POPULATING )
+        if ( numberState == POPULATING || spatialState == POPULATING || temporalState == POPULATING || luceneState == POPULATING )
         {
             // No state is FAILED and one of the state is POPULATING, the whole state must be considered POPULATING
-            return InternalIndexState.POPULATING;
+            return POPULATING;
         }
-        // This means that both states are ONLINE
-        return nativeState;
+        // This means that all parts are ONLINE
+        return InternalIndexState.ONLINE;
     }
 
     @Override
     public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability nativeCapability = nativeProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability numberCapability = numberProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability spatialCapability = spatialProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability temporalCapability = temporalProvider.getCapability( schemaIndexDescriptor );
         IndexCapability luceneCapability = luceneProvider.getCapability( schemaIndexDescriptor );
-        return new UnionIndexCapability( nativeCapability, luceneCapability )
+        return new UnionIndexCapability( numberCapability, spatialCapability, temporalCapability, luceneCapability )
         {
             @Override
             public IndexOrder[] orderCapability( ValueGroup... valueGroups )
@@ -162,7 +190,8 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
     @Override
     public boolean compatible( IndexDescriptor indexDescriptor )
     {
-        return nativeProvider.compatible( indexDescriptor ) && luceneProvider.compatible( indexDescriptor );
+        return Stream.of( luceneProvider, numberProvider, spatialProvider, temporalProvider )
+                     .allMatch( p -> p.compatible( indexDescriptor ) );
     }
 
     @Override
@@ -172,12 +201,12 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    static IndexSample combineSamples( IndexSample first, IndexSample other )
+    static IndexSample combineSamples( IndexSample... samples )
     {
-        return new IndexSample(
-                first.indexSize() + other.indexSize(),
-                first.uniqueValues() + other.uniqueValues(),
-                first.sampleSize() + other.sampleSize() );
+        long indexSize = Arrays.stream(samples).mapToLong( IndexSample::indexSize ).sum();
+        long uniqueValues = Arrays.stream(samples).mapToLong( IndexSample::uniqueValues ).sum();
+        long sampleSize = Arrays.stream(samples).mapToLong( IndexSample::sampleSize ).sum();
+        return new IndexSample( indexSize, uniqueValues, sampleSize );
     }
 
     /**

@@ -33,6 +33,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -65,14 +66,14 @@ public class TestGraphProperties
     private TestGraphDatabaseFactory factory;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         factory = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
     }
 
     @Test
-    public void basicProperties() throws Exception
+    public void basicProperties()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
@@ -106,7 +107,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void getNonExistentGraphPropertyWithDefaultValue() throws Exception
+    public void getNonExistentGraphPropertyWithDefaultValue()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
@@ -118,7 +119,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void setManyGraphProperties() throws Exception
+    public void setManyGraphProperties()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
 
@@ -145,7 +146,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void setBigArrayGraphProperty() throws Exception
+    public void setBigArrayGraphProperty()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         long[] array = new long[1000];
@@ -171,7 +172,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void firstRecordOtherThanZeroIfNotFirst() throws Exception
+    public void firstRecordOtherThanZeroIfNotFirst()
     {
         File storeDir = new File( "/store/dir" ).getAbsoluteFile();
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
@@ -191,7 +192,7 @@ public class TestGraphProperties
 
         Config config = Config.defaults();
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores();
         long prop = neoStores.getMetaDataStore().getGraphNextProp();
         assertTrue( prop != 0 );
@@ -371,7 +372,7 @@ public class TestGraphProperties
             } );
         }
 
-        Future<Void> setProperty( final String key, final Object value ) throws Exception
+        Future<Void> setProperty( final String key, final Object value )
         {
             return executeDontWait( state ->
             {

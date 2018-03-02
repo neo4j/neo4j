@@ -126,7 +126,7 @@ public class SchemaStorageTest
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndPropertyComposite() throws Exception
+    public void shouldReturnIndexRuleForLabelAndPropertyComposite()
     {
         String a = "a";
         String b = "b";
@@ -134,11 +134,8 @@ public class SchemaStorageTest
         String d = "d";
         String e = "e";
         String f = "f";
-        createSchema( db ->
-        {
-            db.schema().indexFor( Label.label( LABEL1 ) )
-              .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create();
-        } );
+        createSchema( db -> db.schema().indexFor( Label.label( LABEL1 ) )
+          .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
         IndexRule rule = storage.indexGetForSchema( SchemaIndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );
@@ -155,7 +152,7 @@ public class SchemaStorageTest
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite() throws Exception
+    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite()
     {
         String[] props = "abcdefghijklmnopqrstuvwxyzABCDEFGHJILKMNOPQRSTUVWXYZ".split( "\\B" );
         createSchema( db ->

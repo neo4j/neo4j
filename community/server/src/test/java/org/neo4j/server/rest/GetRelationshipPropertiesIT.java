@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import org.hamcrest.MatcherAssert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
-
-import org.hamcrest.MatcherAssert;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -40,7 +40,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
@@ -51,7 +50,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     private static GraphDbHelper helper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
@@ -61,7 +60,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     private static void setupTheDatabase()
     {
         long relationship = helper.createRelationship( "LIKES" );
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "foo", "bar" );
         helper.setRelationshipProperties( relationship, map );
         baseRelationshipUri = functionalTestHelper.dataUri() + "relationship/" + relationship + "/properties/";
@@ -123,7 +122,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldBeValidJSONOnResponse() throws JsonParseException
+    public void shouldBeValidJSONOnResponse()
     {
         JaxRsResponse response = RestRequest.req().get( getPropertyUri( "foo" ) );
         assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
@@ -132,7 +131,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldReturnEmptyMapForEmptyProperties() throws Exception
+    public void shouldReturnEmptyMapForEmptyProperties()
     {
         // Given
         String node = HTTP.POST( server().baseUri().resolve( "db/data/node" ).toString() ).location();

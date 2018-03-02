@@ -155,12 +155,9 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
             for ( MemberId validCore : validCores )
             {
                 Optional<CoreServerInfo> coreServerInfo = coreTopology.find( validCore );
-                if ( coreServerInfo.isPresent() )
-                {
-                    CoreServerInfo serverInfo = coreServerInfo.get();
-                    possibleReaders.add(
-                            new ServerInfo( serverInfo.connectors().boltAddress(), validCore, serverInfo.groups() ) );
-                }
+                coreServerInfo.ifPresent(
+                        coreServerInfo1 -> possibleReaders.add(
+                                new ServerInfo( coreServerInfo1.connectors().boltAddress(), validCore, coreServerInfo1.groups() ) ) );
             }
         }
 

@@ -47,11 +47,7 @@ public class StackTraceElementGuardedAdversary implements Adversary
     @Override
     public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
     {
-        if ( enabled && calledFromVictimStackTraceElement() )
-        {
-            return delegateFailureOrMischiefInjection( failureTypes );
-        }
-        return false;
+        return enabled && calledFromVictimStackTraceElement() && delegateFailureOrMischiefInjection( failureTypes );
     }
 
     protected void delegateFailureInjection( Class<? extends Throwable>[] failureTypes )

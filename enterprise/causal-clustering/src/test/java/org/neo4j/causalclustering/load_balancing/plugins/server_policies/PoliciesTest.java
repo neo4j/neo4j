@@ -63,7 +63,7 @@ public class PoliciesTest
     }
 
     @Test
-    public void shouldThrowExceptionOnUnknownPolicyName() throws Exception
+    public void shouldThrowExceptionOnUnknownPolicyName()
     {
         // given
         Policies policies = new Policies( log );
@@ -82,7 +82,7 @@ public class PoliciesTest
     }
 
     @Test
-    public void shouldThrowExceptionOnSelectionOfUnregisteredDefault() throws Exception
+    public void shouldThrowExceptionOnSelectionOfUnregisteredDefault()
     {
         Policies policies = new Policies( log );
 

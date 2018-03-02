@@ -40,7 +40,7 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
     }
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
         if ( protocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) )
         {

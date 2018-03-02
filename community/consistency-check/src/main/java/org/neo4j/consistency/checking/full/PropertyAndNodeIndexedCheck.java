@@ -246,7 +246,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                     Arrays.toString( query ) ), e );
         }
 
-        return reader.hasFullNumberPrecision( query )
+        return reader.hasFullValuePrecision( query )
                 ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
     }
 

@@ -113,9 +113,8 @@ class SharedLock implements ForsetiLockManager.Lock
     @Override
     public void copyHolderWaitListsInto( SimpleBitSet waitList )
     {
-        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
+        for ( AtomicReferenceArray<ForsetiClient> holders : clientsHoldingThisLock )
         {
-            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
             for ( int j = 0; holders != null && j < holders.length(); j++ )
             {
                 ForsetiClient client = holders.get( j );
@@ -130,9 +129,8 @@ class SharedLock implements ForsetiLockManager.Lock
     @Override
     public int detectDeadlock( int clientId )
     {
-        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
+        for ( AtomicReferenceArray<ForsetiClient> holders : clientsHoldingThisLock )
         {
-            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
             for ( int j = 0; holders != null && j < holders.length(); j++ )
             {
                 ForsetiClient client = holders.get( j );
@@ -197,9 +195,8 @@ class SharedLock implements ForsetiLockManager.Lock
     public String describeWaitList()
     {
         StringBuilder sb = new StringBuilder( "SharedLock[" );
-        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
+        for ( AtomicReferenceArray<ForsetiClient> holders : clientsHoldingThisLock )
         {
-            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
             boolean first = true;
             for ( int j = 0; holders != null && j < holders.length(); j++ )
             {
@@ -257,9 +254,8 @@ class SharedLock implements ForsetiLockManager.Lock
 
     private void removeClientHoldingLock( ForsetiClient client )
     {
-        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
+        for ( AtomicReferenceArray<ForsetiClient> holders : clientsHoldingThisLock )
         {
-            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
             if ( holders == null )
             {
                 break;
@@ -355,9 +351,8 @@ class SharedLock implements ForsetiLockManager.Lock
 
     private boolean clientHoldsThisLock( ForsetiClient client )
     {
-        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
+        for ( AtomicReferenceArray<ForsetiClient> holders : clientsHoldingThisLock )
         {
-            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
             for ( int j = 0; holders != null && j < holders.length(); j++ )
             {
                 ForsetiClient current = holders.get( j );

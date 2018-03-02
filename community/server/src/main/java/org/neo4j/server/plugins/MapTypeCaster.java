@@ -34,7 +34,7 @@ public class MapTypeCaster extends TypeCaster
 
     @Override
     Object[] getList( GraphDatabaseAPI graphDb, ParameterList parameters,
-            String name ) throws BadInputException
+            String name )
     {
         // TODO Not done yet!
         return null;

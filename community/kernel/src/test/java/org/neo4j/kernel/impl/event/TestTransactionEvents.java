@@ -436,7 +436,6 @@ public class TestTransactionEvents
 
         @Override
         public Object beforeCommit( TransactionData data )
-                throws Exception
         {
             return null;
         }
@@ -593,7 +592,7 @@ public class TestTransactionEvents
         }
 
         @Override
-        public T beforeCommit( TransactionData data ) throws Exception
+        public T beforeCommit( TransactionData data )
         {
             assertNotNull( data );
             this.receivedTransactionData = data;
@@ -640,7 +639,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void modifiedPropertyCanByFurtherModifiedInBeforeCommit() throws Exception
+    public void modifiedPropertyCanByFurtherModifiedInBeforeCommit()
     {
         // Given
         // -- create node and set property on it in one transaction
@@ -659,7 +658,7 @@ public class TestTransactionEvents
         TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data ) throws Exception
+            public Void beforeCommit( TransactionData data )
             {
                 Node modifiedNode = data.assignedNodeProperties().iterator().next().entity();
                 assertEquals( node, modifiedNode );
@@ -681,7 +680,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty() throws Exception
+    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty()
     {
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -696,7 +695,7 @@ public class TestTransactionEvents
         db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
         {
             @Override
-            public Object beforeCommit( TransactionData data ) throws Exception
+            public Object beforeCommit( TransactionData data )
             {
                 Iterator<Node> nodes = data.createdNodes().iterator();
                 if ( nodes.hasNext() )
@@ -726,7 +725,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel() throws Exception
+    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel()
     {
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -741,7 +740,7 @@ public class TestTransactionEvents
         db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
         {
             @Override
-            public Object beforeCommit( TransactionData data ) throws Exception
+            public Object beforeCommit( TransactionData data )
             {
                 Iterator<Node> nodes = data.createdNodes().iterator();
                 if ( nodes.hasNext() )
@@ -772,7 +771,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAccessAssignedLabels() throws Exception
+    public void shouldAccessAssignedLabels()
     {
         // given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -805,7 +804,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAccessRemovedLabels() throws Exception
+    public void shouldAccessRemovedLabels()
     {
         // given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -852,7 +851,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAccessRelationshipDataInAfterCommit() throws Exception
+    public void shouldAccessRelationshipDataInAfterCommit()
     {
         // GIVEN
         final GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -965,7 +964,7 @@ public class TestTransactionEvents
         db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data ) throws Exception
+            public Void beforeCommit( TransactionData data )
             {
                 for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
                 {
@@ -989,7 +988,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldNotFireEventForReadOnlyTransaction() throws Exception
+    public void shouldNotFireEventForReadOnlyTransaction()
     {
         // GIVEN
         Node root = createTree( 3, 3 );
@@ -1005,14 +1004,14 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldNotFireEventForNonDataTransactions() throws Exception
+    public void shouldNotFireEventForNonDataTransactions()
     {
         // GIVEN
         final AtomicInteger counter = new AtomicInteger();
         dbRule.getGraphDatabaseAPI().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data ) throws Exception
+            public Void beforeCommit( TransactionData data )
             {
                 assertTrue( "Expected only transactions that had nodes or relationships created",
                         data.createdNodes().iterator().hasNext() ||
@@ -1070,7 +1069,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldBeAbleToTouchDataOutsideTxDataInAfterCommit() throws Exception
+    public void shouldBeAbleToTouchDataOutsideTxDataInAfterCommit()
     {
         // GIVEN
         final Node node = createNode( "one", "Two", "three", "Four" );
@@ -1100,7 +1099,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldAllowToStringOnCreatedRelationshipInAfterCommit() throws Exception
+    public void shouldAllowToStringOnCreatedRelationshipInAfterCommit()
     {
         // GIVEN
         Relationship relationship;
@@ -1142,7 +1141,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed() throws Exception
+    public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed()
     {
         // given
         CapturingEventHandler<Integer> firstWorkingHandler = new CapturingEventHandler<>( () -> 5 );
@@ -1228,7 +1227,7 @@ public class TestTransactionEvents
         private boolean active;
 
         @Override
-        public Void beforeCommit( TransactionData data ) throws Exception
+        public Void beforeCommit( TransactionData data )
         {
             if ( active )
             {
@@ -1322,7 +1321,7 @@ public class TestTransactionEvents
         }
 
         @Override
-        public T beforeCommit( TransactionData data ) throws Exception
+        public T beforeCommit( TransactionData data )
         {
             beforeCommitCalled = true;
             return stateSource.get();

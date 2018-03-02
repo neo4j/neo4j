@@ -208,7 +208,7 @@ public class HostnamePort
         boolean isIPv6HostPort = hostnamePort.startsWith( "[" ) && hostnamePort.contains( "]" );
         if ( isIPv6HostPort )
         {
-            int splitIndex = hostnamePort.indexOf( "]" ) + 1;
+            int splitIndex = hostnamePort.indexOf( ']' ) + 1;
 
             String host = hostnamePort.substring( 0, splitIndex );
             String port = hostnamePort.substring( splitIndex );

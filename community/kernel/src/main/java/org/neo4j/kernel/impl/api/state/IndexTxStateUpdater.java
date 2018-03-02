@@ -26,7 +26,6 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -65,7 +64,6 @@ public class IndexTxStateUpdater
     }
 
     public void onLabelChange( KernelStatement state, int labelId, NodeItem node, LabelChangeType changeType )
-            throws EntityNotFoundException
     {
         assert noSchemaChangedInTx( state );
         PrimitiveIntSet nodePropertyIds = Primitive.intSet();
@@ -104,7 +102,6 @@ public class IndexTxStateUpdater
     // PROPERTY CHANGES
 
     public void onPropertyAdd( KernelStatement state, NodeItem node, int propertyKeyId, Value value )
-            throws EntityNotFoundException
     {
         assert noSchemaChangedInTx( state );
         Iterator<IndexDescriptor> indexes =
@@ -120,7 +117,6 @@ public class IndexTxStateUpdater
     }
 
     public void onPropertyRemove( KernelStatement state, NodeItem node, int propertyKeyId, Value value )
-            throws EntityNotFoundException
     {
         assert noSchemaChangedInTx( state );
         Iterator<IndexDescriptor> indexes =
@@ -135,7 +131,6 @@ public class IndexTxStateUpdater
     }
 
     public void onPropertyChange( KernelStatement state, NodeItem node, int propertyKeyId, Value beforeValue, Value afterValue )
-            throws EntityNotFoundException
     {
         assert noSchemaChangedInTx( state );
         Iterator<IndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );

@@ -24,9 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,20 +34,22 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -75,7 +76,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     }
 
     @Override
-    public void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
+    public final void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
     {
         this.id = id;
         this.type = type;
@@ -132,18 +133,19 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public void delete()
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try
         {
-            statement.dataWriteOperations().relationshipDelete( getId() );
+            boolean deleted = transaction.dataWrite().relationshipDelete( id );
+            if ( !deleted )
+            {
+                throw new NotFoundException( "Unable to delete relationship[" +
+                                             getId() + "] since it is already deleted." );
+            }
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Unable to delete relationship[" +
-                                             getId() + "] since it is already deleted." );
         }
         catch ( AutoIndexingKernelException e )
         {
@@ -220,88 +222,103 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        List<String> keys = new ArrayList<>();
+        try
         {
-            List<String> keys = new ArrayList<>();
-            PrimitiveIntIterator properties = statement.readOperations().relationshipGetPropertyKeys( getId() );
-            while ( properties.hasNext() )
+            RelationshipScanCursor relationships = transaction.relationshipCursor();
+            PropertyCursor properties = transaction.propertyCursor();
+            singleRelationship( transaction, relationships );
+            TokenRead token = transaction.tokenRead();
+            relationships.properties( properties );
+            while ( properties.next() )
             {
-                keys.add( statement.readOperations().propertyKeyGetName( properties.next() ) );
-            }
-            return keys;
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Relationship not found", e );
-        }
-        catch ( PropertyKeyIdNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Property key retrieved through kernel API should exist." );
-        }
-    }
-
-    @Override
-    public Map<String, Object> getProperties( String... keys )
-    {
-        if ( keys == null )
-        {
-            throw new NullPointerException( "keys" );
-        }
-
-        if ( keys.length == 0 )
-        {
-            return Collections.emptyMap();
-        }
-
-        try ( Statement statement = actions.statement() )
-        {
-            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
-            {
-                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations()
-                        .relationshipGetProperties( relationship.get() ) )
-                {
-                    return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
-                }
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new NotFoundException( "Relationship not found", e );
-            }
-        }
-    }
-
-    @Override
-    public Map<String, Object> getAllProperties()
-    {
-        try ( Statement statement = actions.statement() )
-        {
-            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
-            {
-                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations()
-                        .relationshipGetProperties( relationship.get() ) )
-                {
-                    Map<String,Object> properties = new HashMap<>();
-
-                    // Get all properties
-                    while ( propertyCursor.next() )
-                    {
-                        String name =
-                                statement.readOperations().propertyKeyGetName( propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value().asObjectCopy() );
-                    }
-
-                    return properties;
-                }
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new NotFoundException( "Relationship not found", e );
+                keys.add( token.propertyKeyName( properties.propertyKey() ));
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
+        return keys;
+    }
+
+    @Override
+    public Map<String, Object> getProperties( String... keys )
+    {
+        Objects.requireNonNull( keys, "Properties keys should be not null array." );
+
+        if ( keys.length == 0 )
+        {
+            return Collections.emptyMap();
+        }
+
+        KernelTransaction transaction = safeAcquireTransaction();
+
+        int itemsToReturn = keys.length;
+        Map<String,Object> properties = new HashMap<>( itemsToReturn );
+        TokenRead token = transaction.tokenRead();
+
+        //Find ids, note we are betting on that the number of keys
+        //is small enough not to use a set here.
+        int[] propertyIds = new int[itemsToReturn];
+        for ( int i = 0; i < itemsToReturn; i++ )
+        {
+            String key = keys[i];
+            if ( key == null )
+            {
+                throw new NullPointerException( String.format( "Key %d was null", i ) );
+            }
+            propertyIds[i] = token.propertyKey( key );
+        }
+
+        RelationshipScanCursor relationships = transaction.relationshipCursor();
+        PropertyCursor propertyCursor = transaction.propertyCursor();
+        singleRelationship( transaction, relationships );
+        relationships.properties( propertyCursor );
+        int propertiesToFind = itemsToReturn;
+        while ( propertiesToFind > 0 && propertyCursor.next() )
+        {
+            //Do a linear check if this is a property we are interested in.
+            int currentKey = propertyCursor.propertyKey();
+            for ( int i = 0; i < itemsToReturn; i++ )
+            {
+                if ( propertyIds[i] == currentKey )
+                {
+                    properties.put( keys[i],
+                            propertyCursor.propertyValue().asObjectCopy() );
+                    propertiesToFind--;
+                    break;
+                }
+            }
+        }
+        return properties;
+    }
+
+    @Override
+    public Map<String, Object> getAllProperties()
+    {
+        KernelTransaction transaction = safeAcquireTransaction();
+        Map<String,Object> properties = new HashMap<>();
+
+        try
+        {
+            RelationshipScanCursor relationships = transaction.relationshipCursor();
+            PropertyCursor propertyCursor = transaction.propertyCursor();
+            TokenRead token = transaction.tokenRead();
+            singleRelationship( transaction, relationships );
+            relationships.properties( propertyCursor );
+            while ( propertyCursor.next() )
+            {
+                properties.put( token.propertyKeyName( propertyCursor.propertyKey() ),
+                        propertyCursor.propertyValue().asObjectCopy() );
+            }
+        }
+        catch ( PropertyKeyIdNotFoundKernelException e )
+        {
+            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
+        }
+        return properties;
     }
 
     @Override
@@ -311,32 +328,30 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        int propertyKey = transaction.tokenRead().propertyKey( key );
+        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
-            try
+            throw new NotFoundException( format( "No such property, '%s'.", key ) );
+        }
+
+        RelationshipScanCursor relationships = transaction.relationshipCursor();
+        PropertyCursor properties = transaction.propertyCursor();
+        singleRelationship( transaction, relationships );
+        relationships.properties( properties );
+        while ( properties.next() )
+        {
+            if ( propertyKey == properties.propertyKey() )
             {
-                int propertyId = statement.readOperations().propertyKeyGetForName( key );
-                if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-                {
-                    throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
-                }
-
-                Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
-
+                Value value = properties.propertyValue();
                 if ( value == Values.NO_VALUE )
                 {
-                    throw new PropertyNotFoundException( propertyId, EntityType.RELATIONSHIP, getId() );
+                    throw new NotFoundException( format( "No such property, '%s'.", key ) );
                 }
-
                 return value.asObjectCopy();
             }
-            catch ( EntityNotFoundException | PropertyNotFoundException e )
-            {
-                throw new NotFoundException(
-                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-            }
         }
+        throw new NotFoundException( format( "No such property, '%s'.", key ) );
     }
 
     @Override
@@ -346,17 +361,25 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        RelationshipScanCursor relationships = transaction.relationshipCursor();
+        PropertyCursor properties = transaction.propertyCursor();
+        int propertyKey = transaction.tokenRead().propertyKey( key );
+        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
-            int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
-            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
+            return defaultValue;
         }
-        catch ( EntityNotFoundException e )
+        singleRelationship( transaction, relationships );
+        relationships.properties( properties );
+        while ( properties.next() )
         {
-            throw new NotFoundException( e );
+            if ( propertyKey == properties.propertyKey() )
+            {
+                Value value = properties.propertyValue();
+                return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
+            }
         }
+        return defaultValue;
     }
 
     @Override
@@ -367,26 +390,44 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             return false;
         }
 
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        int propertyKey = transaction.tokenRead().propertyKey( key );
+        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
-            int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
-                   statement.readOperations().relationshipHasProperty( getId(), propertyId );
+            return false;
         }
-        catch ( EntityNotFoundException e )
+
+        RelationshipScanCursor relationships = transaction.relationshipCursor();
+        PropertyCursor properties = transaction.propertyCursor();
+        singleRelationship( transaction, relationships );
+        relationships.properties( properties );
+        while ( properties.next() )
         {
-            throw new NotFoundException( e );
+            if ( propertyKey == properties.propertyKey() )
+            {
+                return true;
+            }
         }
+        return false;
     }
 
     @Override
     public void setProperty( String key, Object value )
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = actions.kernelTransaction();
+        int propertyKeyId;
+        try
         {
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            statement.dataWriteOperations()
-                    .relationshipSetProperty( getId(), propertyKeyId, Values.of( value, false ) );
+            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
+        }
+        catch ( IllegalTokenNameException e )
+        {
+            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
+        }
+
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            transaction.dataWrite().relationshipSetProperty( id, propertyKeyId, Values.of( value, false ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -398,11 +439,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new NotFoundException( e );
         }
-        catch ( IllegalTokenNameException e )
-        {
-            // TODO: Maybe throw more context-specific error than just IllegalArgument
-            throw new IllegalArgumentException( e );
-        }
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
@@ -412,15 +448,17 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             throw new IllegalStateException( "Auto indexing encountered a failure while setting property: "
                                              + e.getMessage(), e );
         }
+
     }
 
     @Override
     public Object removeProperty( String key )
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = actions.kernelTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).asObjectCopy();
+            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
+            return transaction.dataWrite().relationshipRemoveProperty( id, propertyKeyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -428,8 +466,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         catch ( IllegalTokenNameException e )
         {
-            // TODO: Maybe throw more context-specific error than just IllegalArgument
-            throw new IllegalArgumentException( e );
+            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -486,8 +523,29 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         return format( "(?)-[%s,%d]->(?)", relType, getId() );
     }
 
+    private KernelTransaction safeAcquireTransaction()
+    {
+        KernelTransaction transaction = actions.kernelTransaction();
+        if ( transaction.isTerminated() )
+        {
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
+        }
+        return transaction;
+    }
+
+    private void singleRelationship( KernelTransaction transaction, RelationshipScanCursor relationships )
+    {
+        transaction.dataRead().singleRelationship( id, relationships );
+        if ( !relationships.next() )
+        {
+            throw new NotFoundException( new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
+        }
+    }
+
     private void assertInUnterminatedTransaction()
     {
         actions.assertInUnterminatedTransaction();
     }
+
 }

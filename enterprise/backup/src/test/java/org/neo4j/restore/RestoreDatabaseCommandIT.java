@@ -67,7 +67,7 @@ public class RestoreDatabaseCommandIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void forceShouldRespectStoreLock() throws Exception
+    public void forceShouldRespectStoreLock()
     {
         String databaseName = "to";
         Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
@@ -275,7 +275,7 @@ public class RestoreDatabaseCommandIT
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "Restore a backed up database.%n" +

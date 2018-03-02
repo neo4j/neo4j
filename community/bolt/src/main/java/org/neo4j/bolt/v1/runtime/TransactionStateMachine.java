@@ -20,9 +20,8 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
-import java.util.regex.Pattern;
-import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
@@ -31,12 +30,12 @@ import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
 
@@ -196,7 +195,7 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         if ( BEGIN.matcher( statement ).matches() )
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
+                            ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
 
                             Bookmark bookmark = Bookmark.fromParamsOrNull( params );
                             if ( bookmark != null )
@@ -242,7 +241,7 @@ public class TransactionStateMachine implements StatementProcessor
                             }
                             else
                             {
-                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
+                                ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
                                 BoltResultHandle resultHandle = execute( ctx, spi, statement, params );
                                 ctx.currentResultHandle = resultHandle;
                                 ctx.currentResult = resultHandle.start();
@@ -255,14 +254,9 @@ public class TransactionStateMachine implements StatementProcessor
                      * In AUTO_COMMIT we must make sure to fail, close and set the current
                      * transaction to null.
                      */
-                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi,
-                            String statement, MapValue params )
-                            throws TransactionFailureException, QueryExecutionKernelException
+                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
                     {
-                        return executeQuery( ctx, spi, statement, params, () ->
-                        {
-                           closeTransaction( ctx, false );
-                        } );
+                        return executeQuery( ctx, spi, statement, params, () -> closeTransaction( ctx, false ) );
                     }
 
                     @Override
@@ -326,9 +320,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                     }
 
-                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi,
-                            String statement, MapValue params )
-                            throws QueryExecutionKernelException
+                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
                     {
                         return executeQuery( ctx, spi, statement, params,
                                 () ->
@@ -409,9 +401,8 @@ public class TransactionStateMachine implements StatementProcessor
 
     private static BoltResultHandle executeQuery( MutableTransactionState ctx, SPI spi, String statement,
                                                   MapValue params, ThrowingAction<KernelException> onFail )
-            throws QueryExecutionKernelException
     {
-        return spi.executeQuery( ctx.querySource, ctx.securityContext, statement, params, onFail );
+        return spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params, onFail );
     }
 
     /**
@@ -428,7 +419,7 @@ public class TransactionStateMachine implements StatementProcessor
     static class MutableTransactionState
     {
         /** The current session security context to be used for starting transactions */
-        final SecurityContext securityContext;
+        final LoginContext loginContext;
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
@@ -459,7 +450,7 @@ public class TransactionStateMachine implements StatementProcessor
         private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
         {
             this.clock = clock;
-            this.securityContext = authenticationResult.getSecurityContext();
+            this.loginContext = authenticationResult.getLoginContext();
         }
     }
 
@@ -469,7 +460,7 @@ public class TransactionStateMachine implements StatementProcessor
 
         long newestEncounteredTxId();
 
-        KernelTransaction beginTransaction( SecurityContext securityContext );
+        KernelTransaction beginTransaction( LoginContext loginContext );
 
         void bindTransactionToCurrentThread( KernelTransaction tx );
 
@@ -478,9 +469,9 @@ public class TransactionStateMachine implements StatementProcessor
         boolean isPeriodicCommit( String query );
 
         BoltResultHandle executeQuery( BoltQuerySource querySource,
-                SecurityContext securityContext,
+                LoginContext loginContext,
                 String statement,
                 MapValue params,
-                ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException;
+                ThrowingAction<KernelException> onFail );
     }
 }

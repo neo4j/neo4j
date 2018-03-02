@@ -129,7 +129,7 @@ public class InputCacheTest
             } );
         }
         List<InputEntity> allReadEntities = new ArrayList<>();
-        this.<List<InputEntity>>results( chunk -> allReadEntities.addAll( chunk ) );
+        this.<List<InputEntity>>results( allReadEntities::addAll );
         return allReadEntities;
     }
 

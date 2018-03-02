@@ -28,9 +28,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -178,7 +178,7 @@ public final class IndexMap implements Cloneable
      * @param entityType
      * @return set of LabelSchemaDescriptors describing the potentially affected indexes
      */
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntCollection properties,
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntSet properties,
             EntityType entityType )
     {
         if ( entityType == EntityType.NODE )
@@ -343,7 +343,7 @@ public final class IndexMap implements Cloneable
      */
     private Set<SchemaDescriptor> getDescriptorsByProperties(
             long[] unchangedLabels,
-            PrimitiveIntCollection properties )
+            PrimitiveIntSet properties )
     {
         int nIndexesForLabels = countIndexesByLabels( unchangedLabels );
         int nIndexesForProperties = countIndexesByProperties( properties );
@@ -362,7 +362,7 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    private Set<SchemaDescriptor> getRelDescriptorsByProperties( long[] unchangedReltypes, PrimitiveIntCollection properties )
+    private Set<SchemaDescriptor> getRelDescriptorsByProperties( long[] unchangedReltypes, PrimitiveIntSet properties )
     {
         int nIndexesForReltype = countIndexesByReltype( unchangedReltypes );
         int nIndexesForProperties = countRelationshipIndexesByProperties( properties );
@@ -441,7 +441,7 @@ public final class IndexMap implements Cloneable
         return count;
     }
 
-    private Set<SchemaDescriptor> extractIndexesByProperties( PrimitiveIntCollection properties )
+    private Set<SchemaDescriptor> extractIndexesByProperties( PrimitiveIntSet properties )
     {
         Set<SchemaDescriptor> set = new HashSet<>();
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
@@ -455,7 +455,7 @@ public final class IndexMap implements Cloneable
         return set;
     }
 
-    private Set<SchemaDescriptor> extractRelationshipIndexesByProperties( PrimitiveIntCollection properties )
+    private Set<SchemaDescriptor> extractRelationshipIndexesByProperties( PrimitiveIntSet properties )
     {
         Set<SchemaDescriptor> set = new HashSet<>();
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
@@ -469,7 +469,7 @@ public final class IndexMap implements Cloneable
         return set;
     }
 
-    private int countIndexesByProperties( PrimitiveIntCollection properties )
+    private int countIndexesByProperties( PrimitiveIntSet properties )
     {
         int count = 0;
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
@@ -483,7 +483,7 @@ public final class IndexMap implements Cloneable
         return count;
     }
 
-    private int countRelationshipIndexesByProperties( PrimitiveIntCollection properties )
+    private int countRelationshipIndexesByProperties( PrimitiveIntSet properties )
     {
         int count = 0;
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )

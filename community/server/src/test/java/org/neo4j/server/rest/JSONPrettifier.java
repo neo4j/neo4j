@@ -77,7 +77,7 @@ public class JSONPrettifier
         return result;
     }
 
-    private static String gsonPrettyPrint( final String json ) throws Exception
+    private static String gsonPrettyPrint( final String json )
     {
         JsonElement element = JSON_PARSER.parse( json );
         return GSON.toJson( element );

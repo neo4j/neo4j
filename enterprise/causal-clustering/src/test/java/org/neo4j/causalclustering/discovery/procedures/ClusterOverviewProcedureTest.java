@@ -23,7 +23,6 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
-import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForCore;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ClusterOverviewProcedureTest
@@ -64,9 +63,9 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, adressesForCore( 0 ) );
-        coreMembers.put( follower1, adressesForCore( 1 ) );
-        coreMembers.put( follower2, adressesForCore( 2 ) );
+        coreMembers.put( theLeader, addressesForCore( 0 ) );
+        coreMembers.put( follower1, addressesForCore( 1 ) );
+        coreMembers.put( follower2, addressesForCore( 2 ) );
 
         Map<MemberId,ReadReplicaInfo> replicaMembers = new HashMap<>();
         MemberId replica4 = new MemberId( UUID.randomUUID() );
@@ -85,7 +84,7 @@ public class ClusterOverviewProcedureTest
                 new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
-        final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0] );
+        final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0], null );
 
         assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, Role.LEADER, asSet( "core", "core0" ) ) );
         assertThat( members.next(),

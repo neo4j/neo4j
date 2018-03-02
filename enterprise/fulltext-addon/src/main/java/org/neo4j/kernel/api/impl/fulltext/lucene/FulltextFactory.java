@@ -55,7 +55,7 @@ public class FulltextFactory
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
      * @throws IOException
      */
-    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName ) throws IOException
+    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName )
     {
         this.analyzer = getAnalyzer( analyzerClassName );
         this.fileSystem = fileSystem;

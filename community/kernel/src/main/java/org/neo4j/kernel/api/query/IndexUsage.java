@@ -23,22 +23,12 @@ import java.util.Map;
 
 public abstract class IndexUsage
 {
-    public static IndexUsage schemaIndexUsage( String identifier, int labelId, String label, String... propertyKeys )
-    {
-        return new SchemaIndexUsage( identifier, labelId, label, propertyKeys );
-    }
-
-    public static IndexUsage explicitIndexUsage( String identifier, String entityType, String index )
-    {
-        return new ExplicitIndexUsage( identifier, index, entityType );
-    }
-
-    public abstract Map<String,String> asMap();
-
-    final String identifier;
+    protected final String identifier;
 
     IndexUsage( String identifier )
     {
         this.identifier = identifier;
     }
+
+    public abstract Map<String,String> asMap();
 }

@@ -88,7 +88,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldScanRelationships() throws Exception
+    public void shouldScanRelationships()
     {
         // given
         List<Long> ids = new ArrayList<>();
@@ -106,7 +106,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldAccessRelationshipByReference() throws Exception
+    public void shouldAccessRelationshipByReference()
     {
         // given
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
@@ -125,7 +125,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldNotAccessDeletedRelationship() throws Exception
+    public void shouldNotAccessDeletedRelationship()
     {
         // given
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
@@ -139,7 +139,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldAccessRelationshipLabels() throws Exception
+    public void shouldAccessRelationshipLabels()
     {
         // given
         Map<Integer,Integer> counts = new HashMap<>();
@@ -167,7 +167,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldAccessNodes() throws Exception
+    public void shouldAccessNodes()
     {
         // given
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )

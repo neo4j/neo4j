@@ -68,11 +68,11 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager()
         {
-            public void checkClientTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
+            public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
             {
             }
 
-            public void checkServerTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
+            public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
             {
             }
 
@@ -90,7 +90,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void serverShouldSupportSsl() throws Exception
+    public void serverShouldSupportSsl()
     {
         // When
         server.start();

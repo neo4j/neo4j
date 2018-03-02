@@ -32,9 +32,11 @@ import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.impl.index.schema.NumberSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TemporalSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector;
+import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -46,7 +48,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 public class NativeLuceneFusionSchemaIndexProviderFactory
         extends KernelExtensionFactory<NativeLuceneFusionSchemaIndexProviderFactory.Dependencies>
 {
-    public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NumberIndexProvider.KEY;
+    public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NumberSchemaIndexProvider.KEY;
     private static final int PRIORITY = LuceneSchemaIndexProvider.PRIORITY + 1;
 
     public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
@@ -64,7 +66,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     }
 
     @Override
-    public FusionSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public FusionSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
         File storeDir = context.storeDir();
@@ -85,14 +87,18 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = isReadOnly( config, operationalMode );
-        NumberIndexProvider nativeProvider =
-                new NumberIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        NumberSchemaIndexProvider nativeProvider =
+                new NumberSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        SpatialFusionSchemaIndexProvider spatialProvider =
+                new SpatialFusionSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        TemporalSchemaIndexProvider temporalProvider =
+                new TemporalSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
                 operationalMode );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
         return new FusionSchemaIndexProvider( nativeProvider,
-                luceneProvider, new NativeSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+                spatialProvider, temporalProvider, luceneProvider, new FusionSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )

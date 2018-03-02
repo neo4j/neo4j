@@ -20,6 +20,7 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.Statement;
@@ -46,7 +48,6 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -130,7 +131,6 @@ public class EnterpriseBuiltInDbmsProcedures
      */
     //@Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException, IOException
     {
         assertAdminOrSelf( username );
 
@@ -154,7 +154,6 @@ public class EnterpriseBuiltInDbmsProcedures
 
     //@Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException
     {
         assertAdminOrSelf( username );
 
@@ -215,12 +214,14 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String signature;
         public final String description;
         public final List<String> roles;
+        public final String mode;
 
         public ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
             roles = new ArrayList<>();
             switch ( signature.mode() )
             {
@@ -280,17 +281,19 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
-    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
+    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
+
         EmbeddedProxySPI nodeManager = resolver.resolveDependency( EmbeddedProxySPI.class );
+        ZoneId zoneId = getConfiguredTimeZone();
         try
         {
             return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
                     .filter( query -> isAdminOrSelf( query.username() ) )
                     .map( catchThrown( InvalidArgumentsException.class,
-                            query -> new QueryStatusResult( query, nodeManager ) ) );
+                            query -> new QueryStatusResult( query, nodeManager, zoneId ) ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -315,10 +318,13 @@ public class EnterpriseBuiltInDbmsProcedures
 
             TransactionDependenciesResolver transactionBlockerResolvers =
                     new TransactionDependenciesResolver( handleQuerySnapshotsMap );
+
+            ZoneId zoneId = getConfiguredTimeZone();
+
             return handles.stream()
                     .map( catchThrown( InvalidArgumentsException.class,
                             tx -> new TransactionStatusResult( tx, transactionBlockerResolvers,
-                                    handleQuerySnapshotsMap ) ) );
+                                    handleQuerySnapshotsMap, zoneId ) ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -355,7 +361,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try
@@ -379,7 +385,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
-    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try
@@ -395,7 +401,7 @@ public class EnterpriseBuiltInDbmsProcedures
             {
                 for ( String id : idTexts )
                 {
-                    if ( !terminatedQuerys.stream().anyMatch( query -> query.queryId.equals( id ) ) )
+                    if ( terminatedQuerys.stream().noneMatch( query -> query.queryId.equals( id ) ) )
                     {
                         terminatedQuerys.add( new QueryFailedTerminationResult( fromExternalString( id ) ) );
                     }
@@ -520,6 +526,12 @@ public class EnterpriseBuiltInDbmsProcedures
             .map( entry -> new ConnectionResult( entry.getKey(), entry.getValue() ) );
     }
 
+    private ZoneId getConfiguredTimeZone()
+    {
+        Config config = resolver.resolveDependency( Config.class );
+        return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+    }
+
     private boolean isAdmin()
     {
         return securityContext.isAdmin();
@@ -539,7 +551,6 @@ public class EnterpriseBuiltInDbmsProcedures
     }
 
     private void assertAdminOrSelf( String username )
-            throws InvalidArgumentsException
     {
         if ( !isAdminOrSelf( username ) )
         {

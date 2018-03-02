@@ -35,7 +35,7 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 public class CombiningResourceIteratorTest
 {
     @Test
-    public void shouldNotCloseDuringIteration() throws Exception
+    public void shouldNotCloseDuringIteration()
     {
         // Given
         ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
@@ -51,7 +51,7 @@ public class CombiningResourceIteratorTest
     }
 
     @Test
-    public void closesAllIteratorsOnShutdown() throws Exception
+    public void closesAllIteratorsOnShutdown()
     {
         // Given
         ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
@@ -74,7 +74,7 @@ public class CombiningResourceIteratorTest
     }
 
     @Test
-    public void shouldHandleSingleItemIterators() throws Exception
+    public void shouldHandleSingleItemIterators()
     {
         // Given
         ResourceIterator<Long> it1 = asResourceIterator( iterator( 1L ) );

@@ -19,30 +19,48 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.concurrent.Runnables;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConcurrentMapStateTest
 {
 
-    private final ReadableState<?> store = mock( ReadableState.class );
+    private final ReadableState<String> store = mock( ReadableState.class );
     private final File file = mock( File.class );
     private final Lock lock = mock( Lock.class );
 
+    @Before
+    public void setUp() throws Exception
+    {
+        KeyFormat keyFormat = mock( KeyFormat.class );
+        when( keyFormat.valueSize() ).thenReturn( Long.BYTES );
+        when( store.keyFormat() ).thenReturn( keyFormat );
+    }
+
     @Test
-    public void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate() throws Exception
+    public void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate()
     {
         // given
         long initialVersion = 42;
         when( store.version() ).thenReturn( initialVersion );
-        ConcurrentMapState<?> state = new ConcurrentMapState<>( store, file );
+        ConcurrentMapState<?> state = createMapState();
 
         // when
         long updateVersion = 43;
@@ -55,12 +73,12 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap() throws Exception
+    public void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap()
     {
         // given
         long initialVersion = 42;
         when( store.version() ).thenReturn( initialVersion );
-        ConcurrentMapState<?> state = new ConcurrentMapState<>( store, file );
+        ConcurrentMapState<?> state = createMapState();
 
         // when
         long updateVersion = 45;
@@ -74,12 +92,12 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder() throws Exception
+    public void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder()
     {
         // given
         long initialVersion = 42;
         when( store.version() ).thenReturn( initialVersion );
-        ConcurrentMapState<?> state = new ConcurrentMapState<>( store, file );
+        ConcurrentMapState<?> state = createMapState();
 
         // when
         EntryUpdater<?> updater;
@@ -103,12 +121,12 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder() throws Exception
+    public void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder()
     {
         // given
         long initialVersion = 42;
         when( store.version() ).thenReturn( initialVersion );
-        ConcurrentMapState<?> state = new ConcurrentMapState<>( store, file );
+        ConcurrentMapState<?> state = createMapState();
 
         // when
         EntryUpdater<?> updater;
@@ -132,12 +150,12 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion() throws Exception
+    public void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion()
     {
         // given
         long initialVersion = 42;
         when( store.version() ).thenReturn( initialVersion );
-        ConcurrentMapState<?> state = new ConcurrentMapState<>( store, file );
+        ConcurrentMapState<?> state = createMapState();
 
         // when
         EntryUpdater<?> updater = state.updater( initialVersion, lock );
@@ -145,5 +163,99 @@ public class ConcurrentMapStateTest
         // expected
         assertEquals( "Empty updater should be used for version less or equal to initial",
                 EntryUpdater.noUpdates(), updater );
+    }
+
+    @Test
+    public void markDirtyVersionLookupOnKeyUpdate() throws IOException
+    {
+        long updaterVersionTxId = 25;
+        long lastClosedTxId = 20;
+        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        versionContextSupplier.init( () -> lastClosedTxId );
+        ConcurrentMapState<String> mapState = createMapState( versionContextSupplier );
+        VersionContext versionContext = versionContextSupplier.getVersionContext();
+        try ( EntryUpdater<String> updater = mapState.updater( updaterVersionTxId, lock ) )
+        {
+            updater.apply( "a", new SimpleValueUpdate( 1 ) );
+            updater.apply( "b", new SimpleValueUpdate( 2 ) );
+        }
+
+        assertEquals( updaterVersionTxId, mapState.version() );
+        versionContext.initRead();
+        mapState.lookup( "a", new EmptyValueSink() );
+        assertTrue( versionContext.isDirty() );
+    }
+
+    @Test
+    public void markDirtyVersionLookupOnKeyReset() throws IOException
+    {
+        long updaterVersionTxId = 25;
+        long lastClosedTxId = 20;
+        when( store.version() ).thenReturn( updaterVersionTxId );
+        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        versionContextSupplier.init( () -> lastClosedTxId );
+        VersionContext versionContext = versionContextSupplier.getVersionContext();
+
+        ConcurrentMapState<String> mapState = createMapState( versionContextSupplier );
+
+        versionContext.initRead();
+        mapState.resettingUpdater( lock, Runnables.EMPTY_RUNNABLE ).apply( "a", new SimpleValueUpdate( 1 ) );
+        mapState.lookup( "a", new EmptyValueSink() );
+        assertTrue( versionContext.isDirty() );
+    }
+
+    @Test
+    public void doNotMarkVersionAsDirtyOnAnotherKeyUpdate() throws IOException
+    {
+        long updaterVersionTxId = 25;
+        long lastClosedTxId = 20;
+        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        versionContextSupplier.init( () -> lastClosedTxId );
+        ConcurrentMapState<String> mapState = createMapState( versionContextSupplier );
+        VersionContext versionContext = versionContextSupplier.getVersionContext();
+        try ( EntryUpdater<String> updater = mapState.updater( updaterVersionTxId, lock ) )
+        {
+            updater.apply( "b", new SimpleValueUpdate( 2 ) );
+        }
+
+        assertEquals( updaterVersionTxId, mapState.version() );
+        versionContext.initRead();
+        mapState.lookup( "a", new EmptyValueSink() );
+        assertFalse( versionContext.isDirty() );
+    }
+
+    private ConcurrentMapState<String> createMapState()
+    {
+        return createMapState( EmptyVersionContextSupplier.EMPTY );
+    }
+
+    private ConcurrentMapState<String> createMapState( VersionContextSupplier versionContextSupplier )
+    {
+        return new ConcurrentMapState<>( store, file, versionContextSupplier );
+    }
+
+    private static class SimpleValueUpdate implements ValueUpdate
+    {
+        private final long value;
+
+        SimpleValueUpdate( long value )
+        {
+            this.value = value;
+        }
+
+        @Override
+        public void update( WritableBuffer target )
+        {
+            target.putLong( 0, value );
+        }
+    }
+
+    private static class EmptyValueSink extends ValueSink
+    {
+        @Override
+        protected void value( ReadableBuffer value )
+        {
+
+        }
     }
 }

@@ -22,10 +22,9 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.storageengine.api.StorageEngine;
 
 /**
  * Implements a Kernel API Session.
@@ -33,14 +32,14 @@ import org.neo4j.storageengine.api.StorageEngine;
 class KernelSession implements Session
 {
     private final InwardKernel kernel;
-    private final SecurityContext securityContext;
+    private final LoginContext loginContext;
     private final KernelToken token;
 
-    KernelSession( StorageEngine engine, InwardKernel kernel, SecurityContext securityContext )
+    KernelSession( KernelToken token, InwardKernel kernel, LoginContext loginContext )
     {
         this.kernel = kernel;
-        this.securityContext = securityContext;
-        this.token = new KernelToken( engine );
+        this.loginContext = loginContext;
+        this.token = token;
     }
 
     @Override
@@ -52,11 +51,11 @@ class KernelSession implements Session
     @Override
     public Transaction beginTransaction( KernelTransaction.Type type ) throws KernelException
     {
-        return kernel.newTransaction( type, securityContext );
+        return kernel.newTransaction( type, loginContext );
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Token token()
+    public KernelToken token()
     {
         return token;
     }

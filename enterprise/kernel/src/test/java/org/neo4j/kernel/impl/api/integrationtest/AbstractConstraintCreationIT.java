@@ -64,6 +64,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public abstract class AbstractConstraintCreationIT<Constraint extends ConstraintDescriptor, DESCRIPTOR extends SchemaDescriptor>
         extends KernelIntegrationTest
@@ -113,7 +114,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     public void shouldBeAbleToStoreAndRetrieveConstraint() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( AUTH_DISABLED );
 
         // when
         ConstraintDescriptor constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
@@ -137,7 +138,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     public void shouldBeAbleToStoreAndRetrieveConstraintAfterRestart() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( AUTH_DISABLED );
 
         // when
         ConstraintDescriptor constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
@@ -182,7 +183,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     public void shouldNotStoreConstraintThatIsRemovedInTheSameTransaction() throws Exception
     {
         // given
-        try ( Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED ) )
+        try ( Statement statement = statementInNewTransaction( AUTH_DISABLED ) )
         {
 
             Constraint constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
@@ -368,7 +369,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotLeaveAnyStateBehindAfterFailingToCreateConstraint() throws Exception
+    public void shouldNotLeaveAnyStateBehindAfterFailingToCreateConstraint()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -437,7 +438,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void changedConstraintsShouldResultInTransientFailure() throws InterruptedException
+    public void changedConstraintsShouldResultInTransientFailure()
     {
         // Given
         Runnable constraintCreation = () ->

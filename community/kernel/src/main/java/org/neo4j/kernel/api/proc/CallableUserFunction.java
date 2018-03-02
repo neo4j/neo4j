@@ -20,11 +20,12 @@
 package org.neo4j.kernel.api.proc;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.values.AnyValue;
 
 public interface CallableUserFunction
 {
     UserFunctionSignature signature();
-    Object apply( Context ctx, Object[] input ) throws ProcedureException;
+    AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException;
 
     abstract class BasicUserFunction implements CallableUserFunction
     {
@@ -42,6 +43,6 @@ public interface CallableUserFunction
         }
 
         @Override
-        public abstract Object apply( Context ctx, Object[] input ) throws ProcedureException;
+        public abstract AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException;
     }
 }

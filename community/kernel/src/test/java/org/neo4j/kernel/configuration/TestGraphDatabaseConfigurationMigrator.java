@@ -78,7 +78,7 @@ public class TestGraphDatabaseConfigurationMigrator
     }
 
     @Test
-    public void migrateRestTransactionTimeoutIfPresent() throws Exception
+    public void migrateRestTransactionTimeoutIfPresent()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.transaction_timeout", "120s" ), getLog() );
         assertEquals( "Old property should be migrated to new",
@@ -156,7 +156,7 @@ public class TestGraphDatabaseConfigurationMigrator
     }
 
     @Test
-    public void migrateAllowFormatMigration() throws Exception
+    public void migrateAllowFormatMigration()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.allow_format_migration", "true" ), getLog() );
         assertEquals( "Old property should be migrated to new",

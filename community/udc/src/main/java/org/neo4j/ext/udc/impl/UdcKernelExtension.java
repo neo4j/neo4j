@@ -60,12 +60,12 @@ public class UdcKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         if ( !config.get( UdcSettings.udc_enabled ) )
         {
@@ -84,7 +84,7 @@ public class UdcKernelExtension implements Lifecycle
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         if ( timer != null )
         {
@@ -94,7 +94,7 @@ public class UdcKernelExtension implements Lifecycle
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 }

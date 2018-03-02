@@ -51,13 +51,13 @@ import static org.neo4j.cluster.com.message.Message.internal;
 public class StateMachinesTest
 {
     @Test
-    public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder() throws Exception
+    public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder()
     {
         // Given
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ),
                 Mockito.mock( MessageSender.class ), Mockito.mock( Timeouts.class ),
-                Mockito.mock( DelayedDirectExecutor.class ), command -> command.run(), mock( InstanceId.class )
+                Mockito.mock( DelayedDirectExecutor.class ), Runnable::run, mock( InstanceId.class )
         );
 
         ArrayList<TestMessage> handleOrder = new ArrayList<>();
@@ -73,10 +73,10 @@ public class StateMachinesTest
     }
 
     @Test
-    public void shouldAlwaysAddItsInstanceIdToOutgoingMessages() throws Exception
+    public void shouldAlwaysAddItsInstanceIdToOutgoingMessages()
     {
         InstanceId me = new InstanceId( 42 );
-        final List<Message> sentOut = new LinkedList<Message>();
+        final List<Message> sentOut = new LinkedList<>();
 
         /*
          * Lots of setup required. Must have a sender that keeps messages so we can see what the machine sent out.
@@ -98,7 +98,7 @@ public class StateMachinesTest
                 mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), Runnable::run, me
         );
 
-        // The state machine, which has a TestMessage message type and simply adds a TO header to the messages it
+        // The state machine, which has a TestMessage message type and simply adds a HEADER_TO header to the messages it
         // is handed to handle.
         StateMachine machine = mock( StateMachine.class );
         when( machine.getMessageType() ).then( (Answer<Object>) invocation -> TestMessage.class );
@@ -106,7 +106,7 @@ public class StateMachinesTest
         {
             Message message = invocation.getArgument( 0 );
             MessageHolder holder = invocation.getArgument( 1 );
-            message.setHeader( Message.TO, "to://neverland" );
+            message.setHeader( Message.HEADER_TO, "to://neverland" );
             holder.offer( message );
             return null;
         } ).when( machine ).handle( any( Message.class ), any( MessageHolder.class ) );
@@ -118,9 +118,9 @@ public class StateMachinesTest
         // Then
         assertEquals( "StateMachines should not make up messages from thin air", 1, sentOut.size() );
         Message sent = sentOut.get( 0 );
-        assertTrue( "StateMachines should add the instance-id header", sent.hasHeader( Message.INSTANCE_ID ) );
+        assertTrue( "StateMachines should add the instance-id header", sent.hasHeader( Message.HEADER_INSTANCE_ID ) );
         assertEquals( "StateMachines should add instance-id header that has the correct value",
-                me.toString(), sent.getHeader( Message.INSTANCE_ID ) );
+                me.toString(), sent.getHeader( Message.HEADER_INSTANCE_ID ) );
     }
 
     public enum TestMessage
@@ -135,8 +135,8 @@ public class StateMachinesTest
         test
                 {
                     @Override
-                    public State<?, ?> handle( List context, Message<TestMessage> message,
-                                               MessageHolder outgoing ) throws Throwable
+                    public TestState handle( List context, Message<TestMessage> message,
+                                               MessageHolder outgoing )
                     {
                         context.add( message.getMessageType() );
 

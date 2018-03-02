@@ -38,7 +38,7 @@ class DoubleTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    double[] convert( Object[] data ) throws BadInputException
+    double[] convert( Object[] data )
     {
         Double[] incoming = (Double[]) data;
         double[] result = new double[incoming.length];

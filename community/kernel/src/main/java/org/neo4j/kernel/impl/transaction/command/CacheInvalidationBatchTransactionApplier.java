@@ -40,7 +40,7 @@ public class CacheInvalidationBatchTransactionApplier extends BatchTransactionAp
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction )
     {
         return new CacheInvalidationTransactionApplier( neoStores, cacheAccess );
     }

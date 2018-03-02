@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -150,7 +147,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                 }
 
                 @Override
-                public String getPopulationFailure( long indexId ) throws IllegalStateException
+                public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
                 {
                     throw new IllegalStateException();
                 }
@@ -223,12 +220,16 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
      *
      * Implementations are expected to persist this failure
+     * @param indexId the id of the index.
+     * @param descriptor {@link IndexDescriptor} of the index.
+     * @return failure, in the form of a stack trace, that happened during population.
+     * @throws IllegalStateException If there was no failure during population.
      */
-    public abstract String getPopulationFailure( long indexId ) throws IllegalStateException;
+    public abstract String getPopulationFailure( long indexId, DESCRIPTOR descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(long)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(long, IndexDescriptor)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
@@ -241,8 +242,8 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
      */
     public abstract IndexCapability getCapability( DESCRIPTOR indexDescriptor );
 
-
     public abstract boolean compatible( IndexDescriptor indexDescriptor );
+
     /**
      * @return a description of this index provider
      */
@@ -294,16 +295,6 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
 
     public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
 
-    /**
-     * Provides a snapshot of meta files about this index provider, not the indexes themselves.
-     *
-     * @return {@link ResourceIterator} over all meta files for this index provider.
-     */
-    public ResourceIterator<File> snapshotMetaFiles()
-    {
-        return Iterators.emptyResourceIterator();
-    }
-
     public static class Descriptor
     {
         private final String key;
@@ -347,7 +338,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
         @Override
         public boolean equals( Object obj )
         {
-            if ( obj != null && obj instanceof Descriptor )
+            if ( obj instanceof Descriptor )
             {
                 Descriptor otherDescriptor = (Descriptor) obj;
                 return key.equals( otherDescriptor.getKey() ) && version.equals( otherDescriptor.getVersion() );

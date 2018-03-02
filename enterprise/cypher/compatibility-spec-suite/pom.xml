@@ -24,6 +24,10 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <moduleName>org.neo4j.internal.cypher.compatibility.spec.suite</moduleName>
+  </properties>
+
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
@@ -57,6 +61,12 @@
 
     <!-- shared versions are defined in the parent pom -->
 
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>tck</artifactId>
+      <version>${opencypher.version}</version>
+    </dependency>
+
     <!-- scala -->
 
     <dependency>
@@ -69,28 +79,38 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
       <artifactId>scalautils_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scalap</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-runner</artifactId>
+      <version>${junit-plattform-runner.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
 

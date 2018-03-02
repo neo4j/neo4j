@@ -20,13 +20,12 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.values.storable.Value;
 
 public interface DataWriteOperations extends ExplicitIndexWrite
@@ -44,7 +43,7 @@ public interface DataWriteOperations extends ExplicitIndexWrite
             throws KernelException;
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
+            throws EntityNotFoundException;
 
     void relationshipDelete( long relationshipId )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;
@@ -107,7 +106,7 @@ public interface DataWriteOperations extends ExplicitIndexWrite
 
     @Override
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     @Override
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
@@ -115,15 +114,15 @@ public interface DataWriteOperations extends ExplicitIndexWrite
 
     @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
 

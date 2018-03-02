@@ -160,6 +160,14 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        byte[] byteArray = new byte[bytes];
+        Arrays.fill( byteArray, value );
+        buffer.put( byteArray );
+    }
+
+    @Override
     public short getShort()
     {
         return buffer.getShort();
@@ -220,13 +228,13 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         return pageId == 0;
     }
@@ -237,7 +245,7 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
+    public boolean shouldRetry()
     {
         return false;
     }
@@ -246,6 +254,24 @@ public class ByteArrayPageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        int currentOffset = getOffset();
+        setOffset( sourceOffset );
+        byte[] bytes = new byte[length];
+        getBytes( bytes );
+        setOffset( sourceOffset + shift );
+        putBytes( bytes );
+        setOffset( currentOffset );
     }
 
     @Override

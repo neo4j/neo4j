@@ -303,12 +303,8 @@ public final class PathImpl implements Path
         else if ( obj instanceof Path )
         {
             Path other = (Path) obj;
-            if ( !start.equals( other.startNode() ) )
-            {
-                return false;
-            }
-
-            return iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
+            return start.equals( other.startNode() ) &&
+                    iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
         }
         else
         {

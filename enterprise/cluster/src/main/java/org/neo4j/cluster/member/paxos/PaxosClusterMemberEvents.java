@@ -122,7 +122,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
     @Override
     public void init()
-            throws Throwable
     {
         serializer = new AtomicBroadcastSerializer( lenientObjectInputStream, lenientObjectOutputStream );
 
@@ -140,19 +139,16 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
     @Override
     public void start()
-            throws Throwable
     {
     }
 
     @Override
     public void stop()
-            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-            throws Throwable
     {
         snapshot.setSnapshotProvider( null );
 
@@ -209,9 +205,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                                                   final MemberIsAvailable newMessage )
         {
             return Iterables.append( newMessage, Iterables.filter( item ->
-            {
-                return in( newMessage.getInstanceId() ).negate().test( item.getInstanceId() );
-            }, previousSnapshot ) );
+                    in( newMessage.getInstanceId() ).negate().test( item.getInstanceId() ), previousSnapshot ) );
         }
     }
 
@@ -258,10 +252,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         public Iterable<MemberIsAvailable> getCurrentAvailable( final InstanceId memberId )
         {
-            return asList( Iterables.filter( item ->
-            {
-                return item.getInstanceId().equals( memberId );
-            }, availableMembers ) );
+            return asList( Iterables.filter( item -> item.getInstanceId().equals( memberId ), availableMembers ) );
         }
 
     }

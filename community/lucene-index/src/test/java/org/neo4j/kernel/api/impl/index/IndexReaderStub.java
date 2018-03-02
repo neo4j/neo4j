@@ -114,43 +114,43 @@ public class IndexReaderStub extends LeafReader
     }
 
     @Override
-    public NumericDocValues getNumericDocValues( String field ) throws IOException
+    public NumericDocValues getNumericDocValues( String field )
     {
         return ndvs.apply( field );
     }
 
     @Override
-    public BinaryDocValues getBinaryDocValues( String field ) throws IOException
+    public BinaryDocValues getBinaryDocValues( String field )
     {
         return DocValues.emptyBinary();
     }
 
     @Override
-    public SortedDocValues getSortedDocValues( String field ) throws IOException
+    public SortedDocValues getSortedDocValues( String field )
     {
         return DocValues.emptySorted();
     }
 
     @Override
-    public SortedNumericDocValues getSortedNumericDocValues( String field ) throws IOException
+    public SortedNumericDocValues getSortedNumericDocValues( String field )
     {
         return DocValues.emptySortedNumeric( elements.length );
     }
 
     @Override
-    public SortedSetDocValues getSortedSetDocValues( String field ) throws IOException
+    public SortedSetDocValues getSortedSetDocValues( String field )
     {
         return DocValues.emptySortedSet();
     }
 
     @Override
-    public Bits getDocsWithField( String field ) throws IOException
+    public Bits getDocsWithField( String field )
     {
         throw new RuntimeException( "Not yet implemented." );
     }
 
     @Override
-    public NumericDocValues getNormValues( String field ) throws IOException
+    public NumericDocValues getNormValues( String field )
     {
         return DocValues.emptyNumeric();
     }
@@ -185,12 +185,12 @@ public class IndexReaderStub extends LeafReader
     }
 
     @Override
-    public void checkIntegrity() throws IOException
+    public void checkIntegrity()
     {
     }
 
     @Override
-    public Fields getTermVectors( int docID ) throws IOException
+    public Fields getTermVectors( int docID )
     {
         throw new RuntimeException( "Not yet implemented." );
     }
@@ -214,7 +214,7 @@ public class IndexReaderStub extends LeafReader
     }
 
     @Override
-    protected void doClose() throws IOException
+    protected void doClose()
     {
     }
 

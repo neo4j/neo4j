@@ -77,7 +77,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldRemoveUpTo() throws Exception
+    public void shouldRemoveUpTo()
     {
         // given
         int cacheSize = 100;
@@ -107,7 +107,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldRemoveUpwardsFrom() throws Exception
+    public void shouldRemoveUpwardsFrom()
     {
         // given
         int cacheSize = 100;
@@ -137,7 +137,7 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldAcceptAndReturnIndexesInRangeJustDeleted() throws Exception
+    public void shouldAcceptAndReturnIndexesInRangeJustDeleted()
     {
         // given
         int cacheSize = 100;

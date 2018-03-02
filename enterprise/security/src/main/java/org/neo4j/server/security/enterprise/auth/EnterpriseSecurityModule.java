@@ -25,9 +25,10 @@ import org.apache.shiro.realm.Realm;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,9 +36,9 @@ import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
@@ -107,11 +108,10 @@ public class EnterpriseSecurityModule extends SecurityModule
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
-                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ), true );
+                    ctx -> authManager.getUserManager( ctx.get( SECURITY_CONTEXT ).subject(), ctx.get( SECURITY_CONTEXT ).isAdmin() ), true );
             if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
             {
-                procedures.registerProcedure( UserManagementProcedures.class, true,
-                        Optional.of( "%s only applies to native users." ) );
+                procedures.registerProcedure( UserManagementProcedures.class, true, "%s only applies to native users."  );
             }
             else
             {
@@ -171,7 +171,8 @@ public class EnterpriseSecurityModule extends SecurityModule
         }
 
         return new MultiRealmAuthManager( internalRealm, orderedActiveRealms, createCacheManager( config ),
-                securityLog, config.get( SecuritySettings.security_log_successful_authentication ) );
+                securityLog, config.get( SecuritySettings.security_log_successful_authentication ),
+                securityConfig.propertyAuthorization, securityConfig.propertyBlacklist );
     }
 
     private static List<Realm> selectOrderedActiveRealms( List<String> configuredRealms, List<Realm> availableRealms )
@@ -277,7 +278,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
         for ( String pluginRealmName : securityConfig.pluginAuthProviders )
         {
-            if ( !availablePluginRealms.stream().anyMatch( r -> r.getName().equals( pluginRealmName ) ) )
+            if ( availablePluginRealms.stream().noneMatch( r -> r.getName().equals( pluginRealmName ) ) )
             {
                 throw illegalConfiguration( format( "Failed to load auth plugin '%s'.", pluginRealmName ) );
             }
@@ -289,9 +290,9 @@ public class EnterpriseSecurityModule extends SecurityModule
                         .collect( Collectors.toList() );
 
         boolean missingAuthenticatingRealm =
-                securityConfig.onlyPluginAuthentication() && !realms.stream().anyMatch( PluginRealm::canAuthenticate );
+                securityConfig.onlyPluginAuthentication() && realms.stream().noneMatch( PluginRealm::canAuthenticate );
         boolean missingAuthorizingRealm =
-                securityConfig.onlyPluginAuthorization() && !realms.stream().anyMatch( PluginRealm::canAuthorize );
+                securityConfig.onlyPluginAuthorization() && realms.stream().noneMatch( PluginRealm::canAuthorize );
 
         if ( missingAuthenticatingRealm || missingAuthorizingRealm )
         {
@@ -318,12 +319,12 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new FileUserRepository( fileSystem, getDefaultAdminRepositoryFile( config ), logProvider );
     }
 
-    public static File getRoleRepositoryFile( Config config )
+    private static File getRoleRepositoryFile( Config config )
     {
         return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ), ROLE_STORE_FILENAME );
     }
 
-    public static File getDefaultAdminRepositoryFile( Config config )
+    private static File getDefaultAdminRepositoryFile( Config config )
     {
         return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
                 DEFAULT_ADMIN_STORE_FILENAME );
@@ -334,7 +335,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new IllegalArgumentException( "Illegal configuration: " + message );
     }
 
-    class SecurityConfig
+    static class SecurityConfig
     {
         final List<String> authProviders;
         final boolean hasNativeProvider;
@@ -346,6 +347,9 @@ public class EnterpriseSecurityModule extends SecurityModule
         final boolean ldapAuthorization;
         final boolean pluginAuthentication;
         final boolean pluginAuthorization;
+        final boolean propertyAuthorization;
+        private final String propertyAuthMapping;
+        final Map<String,List<String>> propertyBlacklist = new HashMap<>();
 
         SecurityConfig( Config config )
         {
@@ -362,6 +366,8 @@ public class EnterpriseSecurityModule extends SecurityModule
             ldapAuthorization = config.get( SecuritySettings.ldap_authorization_enabled );
             pluginAuthentication = config.get( SecuritySettings.plugin_authentication_enabled );
             pluginAuthorization = config.get( SecuritySettings.plugin_authorization_enabled );
+            propertyAuthorization = config.get( SecuritySettings.property_level_authorization_enabled );
+            propertyAuthMapping = config.get( SecuritySettings.property_level_authorization_permissions );
         }
 
         void validate()
@@ -393,6 +399,48 @@ public class EnterpriseSecurityModule extends SecurityModule
                 throw illegalConfiguration(
                         "Plugin auth provider configured, but both authentication and authorization are disabled." );
             }
+            if ( propertyAuthorization && !parsePropertyPermissions() )
+            {
+                throw illegalConfiguration(
+                        "Property level authorization is enabled but there is a error in the permissions mapping." );
+            }
+        }
+
+        private boolean parsePropertyPermissions()
+        {
+            if ( propertyAuthMapping != null && !propertyAuthMapping.isEmpty() )
+            {
+                String rolePattern = "\\s*[a-zA-Z0-9_]+\\s*";
+                String propertyPattern = "\\s*[a-zA-Z0-9_]+\\s*";
+                String roleToPerm = rolePattern + "=" + propertyPattern + "(," + propertyPattern + ")*";
+                String multiLine = roleToPerm + "(;" + roleToPerm + ")*";
+
+                boolean valid = propertyAuthMapping.matches( multiLine );
+                if ( !valid )
+                {
+                    return false;
+                }
+
+                for ( String rolesAndPermissions : propertyAuthMapping.split( ";" ) )
+                {
+                    if ( !rolesAndPermissions.isEmpty() )
+                    {
+                        String[] split = rolesAndPermissions.split( "=" );
+                        String role = split[0].trim();
+                        String permissions = split[1];
+                        List<String> permissionsList = new ArrayList<>();
+                        for ( String perm : permissions.split( "," ) )
+                        {
+                            if ( !perm.isEmpty() )
+                            {
+                                permissionsList.add( perm.trim() );
+                            }
+                        }
+                        propertyBlacklist.put( role, permissionsList );
+                    }
+                }
+            }
+            return true;
         }
 
         public boolean onlyPluginAuthentication()

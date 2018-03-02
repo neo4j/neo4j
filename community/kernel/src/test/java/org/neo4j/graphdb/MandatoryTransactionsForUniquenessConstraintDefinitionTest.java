@@ -29,13 +29,13 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTest
     extends AbstractMandatoryTransactionsTest<ConstraintDefinition>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnUniquenessConstraintDefinitions() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnUniquenessConstraintDefinitions()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }

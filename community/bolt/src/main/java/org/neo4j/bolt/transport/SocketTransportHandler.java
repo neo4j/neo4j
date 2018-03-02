@@ -77,21 +77,21 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
     }
 
     @Override
-    public void channelInactive( ChannelHandlerContext ctx ) throws Exception
+    public void channelInactive( ChannelHandlerContext ctx )
     {
         close( ctx );
     }
 
     @Override
-    public void handlerRemoved( ChannelHandlerContext ctx ) throws Exception
+    public void handlerRemoved( ChannelHandlerContext ctx )
     {
         close( ctx );
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
-        log.error( "Fatal error occurred when handling a client connection: " + cause.getMessage(), cause );
+        log.error( "Fatal error occurred when handling a client connection: " + ctx.channel(), cause );
         close( ctx );
     }
 

@@ -1,8 +1,10 @@
 This file contains the full license text of the included third party
 libraries. For an overview of the licenses see the NOTICE.txt file.
 
+
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons Compress
   Apache Commons Lang
   Caffeine cache
   ConcurrentLinkedHashMap
@@ -14,6 +16,7 @@ Apache Software License, Version 2.0
   Lucene Memory
   Lucene QueryParsers
   Netty/All-in-One
+  Objenesis
   opencsv
   parboiled-core
   parboiled-scala
@@ -222,6 +225,7 @@ Apache Software License, Version 2.0
    limitations under the License.
 
 
+
 ------------------------------------------------------------------------------
 BSD - Scala License
   Scala Library
@@ -264,6 +268,7 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 
 
+
 ------------------------------------------------------------------------------
 BSD License
   ASM Analysis
@@ -303,6 +308,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+
 ------------------------------------------------------------------------------
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
@@ -335,6 +341,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+
 ------------------------------------------------------------------------------
 MIT License
   scallop
@@ -361,6 +368,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
 
 
 ------------------------------------------------------------------------------
@@ -741,6 +749,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
+
 
 
 

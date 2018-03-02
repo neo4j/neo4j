@@ -48,7 +48,7 @@ import static org.junit.Assert.fail;
 public class PrimitiveLongIntMapRIT
 {
     @Test
-    public void thoroughlyTestIt() throws Exception
+    public void thoroughlyTestIt()
     {
         long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
         while ( currentTimeMillis() < endTime )
@@ -101,7 +101,7 @@ public class PrimitiveLongIntMapRIT
 
     private TargetFactory<Maps> mapFactory()
     {
-        return () -> new Maps();
+        return Maps::new;
     }
 
     protected Action<Maps,String> generateAction( Random random, Maps from )

@@ -65,13 +65,13 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         client = locks.newClient();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         client.close();
     }
@@ -99,7 +99,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void mustNotReleaseLocksAfterPrepareOnStop() throws Exception
+    public void mustNotReleaseLocksAfterPrepareOnStop()
     {
         // Given
         clientA.acquireShared( TRACER, NODE, 1L );
@@ -116,7 +116,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void mustReleaseUnpreparedLocksOnStop() throws Exception
+    public void mustReleaseUnpreparedLocksOnStop()
     {
         // Given
         clientA.acquireShared( TRACER, NODE, 1L );
@@ -151,7 +151,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void prepareMustAllowAcquiringNewLocksAfterStop() throws Exception
+    public void prepareMustAllowAcquiringNewLocksAfterStop()
     {
         // Given
         clientA.prepare();
@@ -168,7 +168,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test( expected = LockClientStoppedException.class )
-    public void prepareMustThrowWhenClientStopped() throws Exception
+    public void prepareMustThrowWhenClientStopped()
     {
         stoppedClient().prepare();
     }

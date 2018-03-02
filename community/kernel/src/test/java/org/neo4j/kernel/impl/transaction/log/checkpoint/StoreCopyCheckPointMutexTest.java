@@ -281,7 +281,7 @@ public class StoreCopyCheckPointMutexTest
         }
 
         @Override
-        public void apply() throws IOException
+        public void apply()
         {
             assertNull( lock );
             lock = mutex.checkPoint();
@@ -300,7 +300,7 @@ public class StoreCopyCheckPointMutexTest
         private final AtomicInteger count = new AtomicInteger();
 
         @Override
-        public void apply() throws IOException
+        public void apply()
         {
             parkARandomWhile();
             count.incrementAndGet();

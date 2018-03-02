@@ -28,7 +28,7 @@ import org.neo4j.string.UTF8;
 public class FileHeaderEncoder extends MessageToByteEncoder<FileHeader>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, FileHeader msg, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, FileHeader msg, ByteBuf out )
     {
         String name = msg.fileName();
         byte[] bytes = UTF8.encode( name );

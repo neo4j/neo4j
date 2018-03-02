@@ -136,14 +136,9 @@ public class DefaultCacheAccess implements CacheAccess
         @Override
         public boolean withinBounds( long id )
         {
-            if ( recordsPerCPU == 0 )
-            {
-                // We haven't split the id space into segments per thread
-                return true;
-            }
-
-            return id >= threadIndex * recordsPerCPU &&
-                   id < (threadIndex + 1) * recordsPerCPU;
+            return recordsPerCPU == 0 ||  // We haven't split the id space into segments per thread
+                    id >= threadIndex * recordsPerCPU &&
+                    id < (threadIndex + 1) * recordsPerCPU;
         }
 
         @Override

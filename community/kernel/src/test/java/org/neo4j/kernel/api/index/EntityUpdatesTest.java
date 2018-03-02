@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyLoader;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -50,17 +51,21 @@ public class EntityUpdatesTest
     private static final int labelId = 0;
     private static final int propertyKeyId1 = 0;
     private static final int propertyKeyId2 = 1;
+    private static final int propertyKeyId3 = 2;
     private static final long[] labels = new long[]{labelId};
     private static final long[] empty = new long[]{};
 
     private static final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1 );
     private static final LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
-    private static final LabelSchemaDescriptor index12 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 );
-    private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index12 );
+    private static final LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId3 );
+    private static final LabelSchemaDescriptor index123
+            = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+    private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index123 );
 
     private static final StorageProperty property1 = new PropertyKeyValue( propertyKeyId1, Values.of( "Neo" ) );
     private static final StorageProperty property2 = new PropertyKeyValue( propertyKeyId2, Values.of( 100L ) );
-    private static final Value[] values12 = new Value[]{property1.value(), property2.value()};
+    private static final StorageProperty property3 = new PropertyKeyValue( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) );
+    private static final Value[] values123 = new Value[]{property1.value(), property2.value(), property3.value()};
 
     @Test
     public void shouldNotGenerateUpdatesForEmptyNodeUpdates()
@@ -79,6 +84,7 @@ public class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
                 .existing( propertyKeyId1, Values.of( "Neo" ) )
                 .existing( propertyKeyId2, Values.of( 100L ) )
+                .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
                 .build();
 
         // Then
@@ -117,15 +123,17 @@ public class EntityUpdatesTest
                 EntityUpdates.forEntity( nodeId, empty, labels )
                         .existing( propertyKeyId1, Values.of( "Neo" ) )
                         .existing( propertyKeyId2, Values.of( 100L ) )
+                        .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
                         .build();
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ), EntityType.NODE ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.add( nodeId, index2, property2.value() ),
-                        IndexEntryUpdate.add( nodeId, index12, values12 )
+                        IndexEntryUpdate.add( nodeId, index3, property3.value() ),
+                        IndexEntryUpdate.add( nodeId, index123, values123 )
                 ) );
     }
 
@@ -163,11 +171,12 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ), EntityType.NODE ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.remove( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.remove( nodeId, index2, property2.value() ),
-                        IndexEntryUpdate.remove( nodeId, index12, values12 )
+                        IndexEntryUpdate.remove( nodeId, index3, property3.value() ),
+                        IndexEntryUpdate.remove( nodeId, index123, values123 )
                 ) );
     }
 
@@ -206,15 +215,17 @@ public class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
+                .added( property3.propertyKeyId(), property3.value() )
                 .build();
 
         // Then
         assertThat(
-                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ), EntityType.NODE ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2, property3 ), EntityType.NODE ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.add( nodeId, index2, property2.value() ),
-                        IndexEntryUpdate.add( nodeId, index12, values12 )
+                        IndexEntryUpdate.add( nodeId, index3, property3.value() ),
+                        IndexEntryUpdate.add( nodeId, index123, values123 )
                 ) );
     }
 
@@ -225,6 +236,7 @@ public class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels )
                 .removed( property1.propertyKeyId(), property1.value() )
                 .removed( property2.propertyKeyId(), property2.value() )
+                .removed( property3.propertyKeyId(), property3.value() )
                 .build();
 
         // Then
@@ -238,6 +250,7 @@ public class EntityUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels, empty )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
+                .added( property3.propertyKeyId(), property3.value() )
                 .build();
 
         // Then

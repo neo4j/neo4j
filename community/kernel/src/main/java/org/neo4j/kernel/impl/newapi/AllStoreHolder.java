@@ -28,25 +28,25 @@ import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -70,8 +70,10 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
-public class AllStoreHolder extends Read implements Token
+public class AllStoreHolder extends Read
 {
     private final StorageStatement.Nodes nodes;
     private final StorageStatement.Groups groups;
@@ -85,7 +87,7 @@ public class AllStoreHolder extends Read implements Token
     public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors,
+            DefaultCursors cursors,
             ExplicitIndexStore explicitIndexStore )
     {
         super( cursors, ktx );
@@ -101,23 +103,106 @@ public class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    public boolean nodeExists( long id )
+    public boolean nodeExists( long reference )
     {
         ktx.assertOpen();
 
         if ( hasTxStateWithChanges() )
         {
             TransactionState txState = txState();
-            if ( txState.nodeIsDeletedInThisTx( id ) )
+            if ( txState.nodeIsDeletedInThisTx( reference ) )
             {
                 return false;
             }
-            else if ( txState.nodeIsAddedInThisTx( id ) )
+            else if ( txState.nodeIsAddedInThisTx( reference ) )
             {
                 return true;
             }
         }
-        return storeReadLayer.nodeExists( id );
+        return storeReadLayer.nodeExists( reference );
+    }
+
+    @Override
+    public long countsForNode( int labelId )
+    {
+        long count = countsForNodeWithoutTxState( labelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            CountsRecordState counts = new CountsRecordState();
+            try
+            {
+                TransactionState txState = ktx.txState();
+                txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
+                        statement, txState, counts ) );
+                if ( counts.hasChanges() )
+                {
+                    count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
+                }
+            }
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public long countsForNodeWithoutTxState( int labelId )
+    {
+        return storeReadLayer.countsForNode( labelId );
+    }
+
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            CountsRecordState counts = new CountsRecordState();
+            try
+            {
+                TransactionState txState = ktx.txState();
+                txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
+                       statement, txState, counts ) );
+                if ( counts.hasChanges() )
+                {
+                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
+                            .readSecond();
+                }
+            }
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        return storeReadLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+    }
+
+    @Override
+    public boolean relationshipExists( long reference )
+    {
+        ktx.assertOpen();
+
+        if ( hasTxStateWithChanges() )
+        {
+            TransactionState txState = txState();
+            if ( txState.relationshipIsDeletedInThisTx( reference ) )
+            {
+                return false;
+            }
+            else if ( txState.relationshipIsAddedInThisTx( reference ) )
+            {
+                return true;
+            }
+        }
+        return storeReadLayer.relationshipExists( reference );
     }
 
     @Override
@@ -127,19 +212,12 @@ public class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
+    IndexReader indexReader( IndexReference index ) throws IndexNotFoundKernelException
     {
-        try
-        {
-            SchemaIndexDescriptor schemaIndexDescriptor = index.isUnique() ?
-                                                          SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
-                                                          SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
-            return statement.getIndexReader( schemaIndexDescriptor );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new IllegalStateException( e );
-        }
+        IndexDescriptor indexDescriptor = index.isUnique() ?
+                                          SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
+                                          SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
+        return statement.getIndexReader( indexDescriptor );
     }
 
     @Override
@@ -280,78 +358,6 @@ public class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    public int labelGetOrCreateForName( String labelName ) throws KernelException
-    {
-        return storeReadLayer.labelGetOrCreateForName( checkValidTokenName( labelName ) );
-    }
-
-    @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
-    {
-        return storeReadLayer.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
-    }
-
-    @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void labelCreateForName( String labelName, int id ) throws KernelException
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public String labelGetName( int token ) throws LabelNotFoundKernelException
-    {
-        return storeReadLayer.labelGetName( token );
-    }
-
-    @Override
-    public int labelGetForName( String name )
-    {
-        return storeReadLayer.labelGetForName( name );
-    }
-
-    @Override
-    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws KernelException
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public int nodeLabel( String name )
-    {
-        return storeReadLayer.labelGetForName( name );
-    }
-
-    @Override
-    public int relationshipType( String name )
-    {
-        return storeReadLayer.relationshipTypeGetForName( name );
-    }
-
-    @Override
-    public int propertyKey( String name )
-    {
-        return storeReadLayer.propertyKeyGetForName( name );
-    }
-
-    @Override
-    public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
-    {
-        return storeReadLayer.propertyKeyGetName( propertyKeyId );
-    }
-
-    @Override
     PageCursor nodePage( long reference )
     {
         return nodes.openPageCursorForReading( reference );
@@ -402,21 +408,37 @@ public class AllStoreHolder extends Read implements Token
     @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
+        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
         relationships.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+    }
+
+    @Override
+    void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
+    {
+        // We need to load forcefully for relationship chain traversal since otherwise we cannot
+        // traverse over relationship records which have been concurrently deleted
+        // (flagged as inUse = false).
+        // see
+        //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
+        //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
+        relationships.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
     @Override
     void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
-        //We need to load forcefully here since otherwise we can have inconsistent reads
-        //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
+        // We need to load forcefully here since otherwise we can have inconsistent reads
+        // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
         properties.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
     @Override
     void group( RelationshipGroupRecord record, long reference, PageCursor page )
     {
-        groups.getRecordByCursor( reference, record, RecordLoad.NORMAL, page );
+        // We need to load forcefully here since otherwise we cannot traverse over groups
+        // records which have been concurrently deleted (flagged as inUse = false).
+        // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
+        groups.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
     }
 
     @Override
@@ -432,7 +454,7 @@ public class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    TextValue string( PropertyCursor cursor, long reference, PageCursor page )
+    TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = properties.loadString( reference, cursor.buffer, page );
         buffer.flip();
@@ -440,7 +462,7 @@ public class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    ArrayValue array( PropertyCursor cursor, long reference, PageCursor page )
+    ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = properties.loadArray( reference, cursor.buffer, page );
         buffer.flip();
@@ -460,15 +482,6 @@ public class AllStoreHolder extends Read implements Token
     void getOrCreateRelationshipIndexConfig( String indexName, Map<String,String> customConfig )
     {
         explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
-    }
-
-    private String checkValidTokenName( String name ) throws IllegalTokenNameException
-    {
-        if ( name == null || name.isEmpty() )
-        {
-            throw new IllegalTokenNameException( name );
-        }
-        return name;
     }
 
     String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException

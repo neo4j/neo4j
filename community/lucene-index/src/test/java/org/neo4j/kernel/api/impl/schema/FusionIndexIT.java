@@ -33,14 +33,13 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.NumberSchemaIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure;
 
 public class FusionIndexIT
@@ -62,13 +61,13 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfNativePartIsMissing() throws Exception
+    public void mustRebuildFusionIndexIfNativePartIsMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
 
         // when
-        IndexProvider.Descriptor descriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProvider.Descriptor descriptor = NumberSchemaIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -77,7 +76,7 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfLucenePartIsMissing() throws Exception
+    public void mustRebuildFusionIndexIfLucenePartIsMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
@@ -92,14 +91,14 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfCompletelyMissing() throws Exception
+    public void mustRebuildFusionIndexIfCompletelyMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
 
         // when
         IndexProvider.Descriptor luceneDescriptor = LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
-        IndexProvider.Descriptor nativeDescriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProvider.Descriptor nativeDescriptor = NumberSchemaIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( luceneDescriptor );
         deleteIndexFilesFor( nativeDescriptor );
 

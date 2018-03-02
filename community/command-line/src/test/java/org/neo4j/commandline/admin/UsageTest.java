@@ -47,7 +47,7 @@ public class UsageTest
     }
 
     @Test
-    public void shouldPrintUsageForACommand() throws Exception
+    public void shouldPrintUsageForACommand()
     {
         // given
         AdminCommand.Provider commandProvider = mockCommand( "bam", "A summary", AdminCommandSection.general() );
@@ -65,6 +65,8 @@ public class UsageTest
         ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
+        ordered.verify( out ).accept( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
+        ordered.verify( out ).accept( "                  Takes a number and a unit, for example 512m." );
         ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "description" );
     }
@@ -87,6 +89,8 @@ public class UsageTest
         ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
+        ordered.verify( out ).accept( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
+        ordered.verify( out ).accept( "                  Takes a number and a unit, for example 512m." );
         ordered.verify( out ).accept( "" );
 
         ordered.verify( out ).accept( "available commands:" );
@@ -117,6 +121,8 @@ public class UsageTest
         ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
+        ordered.verify( out ).accept( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
+        ordered.verify( out ).accept( "                  Takes a number and a unit, for example 512m." );
         ordered.verify( out ).accept( "" );
 
         ordered.verify( out ).accept( "available commands:" );

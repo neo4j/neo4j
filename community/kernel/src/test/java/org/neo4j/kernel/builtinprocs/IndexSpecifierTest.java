@@ -21,10 +21,7 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.array;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;

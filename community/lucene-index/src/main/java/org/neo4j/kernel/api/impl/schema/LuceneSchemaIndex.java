@@ -72,7 +72,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
         this.samplingConfig = samplingConfig;
     }
 
-    public LuceneIndexWriter getIndexWriter( WritableDatabaseSchemaIndex writableLuceneSchemaIndex ) throws IOException
+    public LuceneIndexWriter getIndexWriter( WritableDatabaseSchemaIndex writableLuceneSchemaIndex )
     {
         ensureOpen();
         return new PartitionedIndexWriter( writableLuceneSchemaIndex );

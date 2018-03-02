@@ -35,7 +35,6 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 

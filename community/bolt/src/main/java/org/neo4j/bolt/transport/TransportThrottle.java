@@ -35,8 +35,9 @@ public interface TransportThrottle
      * Apply throttling logic for the given channel..
      *
      * @param channel the netty channel to which this throttling logic should be applied
+     * @throws TransportThrottleException when throttle decides this connection should be halted
      */
-    void acquire( Channel channel );
+    void acquire( Channel channel ) throws TransportThrottleException;
 
     /**
      * Release throttling for the given channel (if applied)..

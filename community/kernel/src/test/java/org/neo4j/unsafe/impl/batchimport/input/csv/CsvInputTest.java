@@ -53,6 +53,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -64,9 +65,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -459,7 +457,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnArrayDelimiterBeingSameAsDelimiter() throws Exception
+    public void shouldFailOnArrayDelimiterBeingSameAsDelimiter()
     {
         // WHEN
         try
@@ -476,7 +474,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnQuotationCharacterBeingSameAsDelimiter() throws Exception
+    public void shouldFailOnQuotationCharacterBeingSameAsDelimiter()
     {
         // WHEN
         try
@@ -494,7 +492,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnQuotationCharacterBeingSameAsArrayDelimiter() throws Exception
+    public void shouldFailOnQuotationCharacterBeingSameAsArrayDelimiter()
     {
         // WHEN
         try
@@ -756,7 +754,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnUnparsableNodeHeader() throws Exception
+    public void shouldFailOnUnparsableNodeHeader()
     {
         // given
         Iterable<DataFactory> data = datas( data( ":SOMETHING,abcde#rtg:123," ) );
@@ -776,7 +774,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnUnparsableRelationshipHeader() throws Exception
+    public void shouldFailOnUnparsableRelationshipHeader()
     {
         // given
         Iterable<DataFactory> data = datas( data( ":SOMETHING,abcde#rtg:123," ) );
@@ -796,7 +794,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnUndefinedGroupInRelationshipHeader() throws Exception
+    public void shouldFailOnUndefinedGroupInRelationshipHeader()
     {
         // given
         Iterable<DataFactory> nodeData = datas( data( ":ID(left)" ), data( ":ID(right)" ) );
@@ -817,7 +815,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader() throws Exception
+    public void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader()
     {
         // given
         Iterable<DataFactory> nodeData = datas( data( ":ID(left)" ), data( ":ID(right)" ) );
@@ -993,10 +991,9 @@ public class CsvInputTest
         return wrap( data );
     }
 
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
     private Iterable<DataFactory> dataIterable( DataFactory... data )
     {
-        return Iterables.<DataFactory,DataFactory>iterable( data );
+        return Iterables.iterable( data );
     }
 
     private static class CapturingDataFactories implements Iterable<DataFactory>

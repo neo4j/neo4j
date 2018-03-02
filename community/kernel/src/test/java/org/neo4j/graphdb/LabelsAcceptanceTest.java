@@ -100,7 +100,7 @@ public class LabelsAcceptanceTest
 
     /** https://github.com/neo4j/neo4j/issues/1279 */
     @Test
-    public void shouldInsertLabelsWithoutDuplicatingThem() throws Exception
+    public void shouldInsertLabelsWithoutDuplicatingThem()
     {
         final Node node = dbRule.executeAndCommit(
                 (Function<GraphDatabaseService,Node>) GraphDatabaseService::createNode );
@@ -138,7 +138,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
+    public void addingALabelUsingAValidIdentifierShouldSucceed()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -159,7 +159,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void addingALabelUsingAnInvalidIdentifierShouldFail() throws Exception
+    public void addingALabelUsingAnInvalidIdentifierShouldFail()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -186,7 +186,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void addingALabelThatAlreadyExistsBehavesAsNoOp() throws Exception
+    public void addingALabelThatAlreadyExistsBehavesAsNoOp()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -208,7 +208,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void oversteppingMaxNumberOfLabelsShouldFailGracefully() throws Exception
+    public void oversteppingMaxNumberOfLabelsShouldFailGracefully()
     {
         // Given
         GraphDatabaseService graphDatabase = beansAPIWithNoMoreLabelIds();
@@ -227,7 +227,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingCommittedLabel() throws Exception
+    public void removingCommittedLabel()
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
@@ -246,7 +246,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void createNodeWithLabels() throws Exception
+    public void createNodeWithLabels()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -266,7 +266,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingNonExistentLabel() throws Exception
+    public void removingNonExistentLabel()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -286,7 +286,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingExistingLabelFromUnlabeledNode() throws Exception
+    public void removingExistingLabelFromUnlabeledNode()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -306,7 +306,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void removingUncommittedLabel() throws Exception
+    public void removingUncommittedLabel()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -328,7 +328,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldBeAbleToListLabelsForANode() throws Exception
+    public void shouldBeAbleToListLabelsForANode()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -348,7 +348,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldReturnEmptyListIfNoLabels() throws Exception
+    public void shouldReturnEmptyListIfNoLabels()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -359,7 +359,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void getNodesWithLabelCommitted() throws Exception
+    public void getNodesWithLabelCommitted()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -379,7 +379,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void getNodesWithLabelsWithTxAddsAndRemoves() throws Exception
+    public void getNodesWithLabelsWithTxAddsAndRemoves()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -406,7 +406,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldListAllExistingLabels() throws Exception
+    public void shouldListAllExistingLabels()
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -425,7 +425,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldListAllLabelsInUse() throws Exception
+    public void shouldListAllLabelsInUse()
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -450,7 +450,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void deleteAllNodesAndTheirLabels() throws Exception
+    public void deleteAllNodesAndTheirLabels()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -524,7 +524,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldCreateNodeWithLotsOfLabelsAndThenRemoveMostOfThem() throws Exception
+    public void shouldCreateNodeWithLotsOfLabelsAndThenRemoveMostOfThem()
     {
         // given
         final int TOTAL_NUMBER_OF_LABELS = 200;

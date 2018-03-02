@@ -38,9 +38,9 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ru
 
   def setupModel(db: GraphDatabaseCypherService) {
     db.inTx {
-      val a = db.createNode()
-      val b = db.createNode()
-      val c = db.createNode()
+      val a = db.getGraphDatabaseService.createNode()
+      val b = db.getGraphDatabaseService.createNode()
+      val c = db.getGraphDatabaseService.createNode()
       a.createRelationshipTo(b, RelationshipType.withName("KNOWS"))
       b.createRelationshipTo(c, RelationshipType.withName("KNOWS"))
     }

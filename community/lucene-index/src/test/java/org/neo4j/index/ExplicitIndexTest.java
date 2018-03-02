@@ -283,7 +283,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void relationshipIndexShouldBeAbleToReindexInSameTransaction() throws Exception
+    public void relationshipIndexShouldBeAbleToReindexInSameTransaction()
     {
         // Create relationship and index
         Node startNode;
@@ -320,7 +320,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void getSingleMustNotCloseStatementTwice() throws Exception
+    public void getSingleMustNotCloseStatementTwice()
     {
         // given
         String indexName = "index";

@@ -217,7 +217,7 @@ class Segments implements AutoCloseable
     }
 
     @Override
-    public synchronized void close() throws DisposedException
+    public synchronized void close()
     {
         RuntimeException error = null;
         for ( SegmentFile segment : allSegments )

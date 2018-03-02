@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -42,6 +44,8 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
 public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 {
+    private final ResourceTracker resourceTracker = new StubResourceManager();
+
     @Test
     public void listConfig() throws Exception
     {
@@ -49,7 +53,8 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
                         Arrays.asList( "" ).toArray(),
-                        SecurityContext.AUTH_DISABLED );
+                        SecurityContext.AUTH_DISABLED,
+                        resourceTracker );
 
         // Then
         List<Object[]> config = asList( stream );
@@ -75,7 +80,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
                         Arrays.asList( GraphDatabaseSettings.strict_config_validation.name() ).toArray(),
-                        SecurityContext.AUTH_DISABLED );
+                        SecurityContext.AUTH_DISABLED, resourceTracker );
 
         // Then
         List<Object[]> config = asList( stream );
@@ -95,7 +100,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
                         Collections.singletonList( GraphDatabaseSettings.transaction_timeout.name() ).toArray(),
-                        SecurityContext.AUTH_DISABLED );
+                        SecurityContext.AUTH_DISABLED, resourceTracker );
 
         // Then
         List<Object[]> config = asList( stream );

@@ -68,7 +68,7 @@ public class LearnerStateTest
 
         // When
         Message<LearnerMessage> message = Message.to( LearnerMessage.catchUp, new URI( "c:/2" ), 2L )
-                .setHeader( Message.FROM, "c:/2" ).setHeader( Message.INSTANCE_ID, "2" );
+                .setHeader( Message.HEADER_FROM, "c:/2" ).setHeader( Message.HEADER_INSTANCE_ID, "2" );
         State newState = state.handle( ctx, message, outgoing );
 
         // Then
@@ -91,7 +91,7 @@ public class LearnerStateTest
         // The instance will be asked for paxos instance 4...
         InstanceId paxosInstanceIdIDontHave = new InstanceId( 4 );
         Message<LearnerMessage> messageRequestingId = Message.to( LearnerMessage.learnRequest, URI.create( "c:/1" ) )
-                .setHeader( Message.FROM, "c:/2" )
+                .setHeader( Message.HEADER_FROM, "c:/2" )
                 .setHeader( InstanceId.INSTANCE, "4" );
         // ...but it does not have it yet
         when( ctx.getPaxosInstance( paxosInstanceIdIDontHave ) )
@@ -119,7 +119,7 @@ public class LearnerStateTest
         MessageHolder outgoing = mock( MessageHolder.class );
         InstanceId paxosInstanceIdIAskedFor = new InstanceId( 4 );
         Message<LearnerMessage> theLearnFailure = Message.to( LearnerMessage.learnFailed, URI.create( "c:/1" ) )
-                .setHeader( Message.FROM, "c:/2" )
+                .setHeader( Message.HEADER_FROM, "c:/2" )
                 .setHeader( InstanceId.INSTANCE, "4" );
         when( ctx.getPaxosInstance( paxosInstanceIdIAskedFor ) )
                 .thenReturn( new PaxosInstance( mock( PaxosInstanceStore.class ), paxosInstanceIdIAskedFor ) );
@@ -138,7 +138,7 @@ public class LearnerStateTest
     {
         // Given
 
-        List<URI> allMembers = new ArrayList<URI>( 3 );
+        List<URI> allMembers = new ArrayList<>( 3 );
         URI instance1 = URI.create( "c:/1" ); // this one is failed
         URI instance2 = URI.create( "c:/2" ); // this one is ok and will respond
         URI instance3 = URI.create( "c:/3" ); // this one is the requesting instance
@@ -148,7 +148,7 @@ public class LearnerStateTest
         allMembers.add( instance3 );
         allMembers.add( instance4 );
 
-        Set<org.neo4j.cluster.InstanceId> aliveInstanceIds = new HashSet<org.neo4j.cluster.InstanceId>();
+        Set<org.neo4j.cluster.InstanceId> aliveInstanceIds = new HashSet<>();
         org.neo4j.cluster.InstanceId id2 = new org.neo4j.cluster.InstanceId( 2 );
         org.neo4j.cluster.InstanceId id4 = new org.neo4j.cluster.InstanceId( 4 );
         aliveInstanceIds.add( id2 );
@@ -201,8 +201,8 @@ public class LearnerStateTest
         @SuppressWarnings( "unchecked" )
         Message<LearnerMessage> message = mock( Message.class );
         when( message.getMessageType() ).thenReturn( LearnerMessage.catchUp );
-        when( message.hasHeader( Message.INSTANCE_ID )).thenReturn( false );
-        when( message.getHeader( Message.INSTANCE_ID ) ).thenThrow( new IllegalArgumentException() );
+        when( message.hasHeader( Message.HEADER_INSTANCE_ID )).thenReturn( false );
+        when( message.getHeader( Message.HEADER_INSTANCE_ID ) ).thenThrow( new IllegalArgumentException() );
         when( message.getPayload() ).thenReturn( payload );
 
         // When

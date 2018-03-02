@@ -148,7 +148,7 @@ public class InternalFlatFileRealmIT
     }
 
     @Test
-    public void shouldEventuallyFailReloadAttempts() throws Exception
+    public void shouldEventuallyFailReloadAttempts()
     {
         // the roles file has non-existent users
         fs.addUserRoleFilePair(

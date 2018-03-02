@@ -123,11 +123,11 @@ public class Format
         {
             if ( size < stride )
             {
-                return String.format( Locale.ROOT, "%.2f %s", Double.valueOf( size ), suffix );
+                return String.format( Locale.ROOT, "%.2f %s", size, suffix );
             }
             size /= stride;
         }
-        return String.format( Locale.ROOT, "%.2f TB", Double.valueOf( size ) );
+        return String.format( Locale.ROOT, "%.2f TB", size );
     }
 
     public static String duration( long durationMillis )
@@ -144,7 +144,7 @@ public class Format
         boolean use = false;
         for ( TimeUnit unit : units )
         {
-            if ( unit.equals( highestGranularity ) )
+            if ( unit == highestGranularity )
             {
                 use = true;
             }
@@ -152,11 +152,18 @@ public class Format
             if ( use )
             {
                 durationMillis = extractFromDuration( durationMillis, unit, builder );
-                if ( unit.equals( lowestGranularity ) )
+                if ( unit == lowestGranularity )
                 {
                     break;
                 }
             }
+        }
+
+        if ( builder.length() == 0 )
+        {
+            // The value is too low to extract any meaningful numbers with the given unit brackets.
+            // So we append a zero of the lowest unit.
+            builder.append( "0" ).append( shortName( lowestGranularity ) );
         }
 
         return builder.toString();

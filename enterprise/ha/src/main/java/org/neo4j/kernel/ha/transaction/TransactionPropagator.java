@@ -318,7 +318,7 @@ public class TransactionPropagator implements Lifecycle
             context.future.get();
             return true;
         }
-        catch ( InterruptedException e )
+        catch ( InterruptedException | CancellationException e )
         {
             return false;
         }
@@ -328,10 +328,6 @@ public class TransactionPropagator implements Lifecycle
             slaveCommitFailureLogger.error( "Slave " + context.slave.getServerId() + ": Replication commit threw" +
                                             (context.throwable instanceof ComException ? " communication" : "") +
                                             " exception:", context.throwable );
-            return false;
-        }
-        catch ( CancellationException e )
-        {
             return false;
         }
     }

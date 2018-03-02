@@ -43,11 +43,6 @@ public enum Capability
     RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
-     * Store has version trailers in the end of cleanly shut down store
-     */
-    VERSION_TRAILERS( CapabilityType.STORE ),
-
-    /**
      * Lucene version 3.x
      */
     LUCENE_3( CapabilityType.INDEX ),
@@ -61,6 +56,11 @@ public enum Capability
      * Point Geometries are an addition to the format, not a change
      */
     POINT_PROPERTIES( CapabilityType.STORE ),
+
+    /**
+     * Temporal types are an addition to the format, not a change
+     */
+    TEMPORAL_PROPERTIES( CapabilityType.STORE ),
 
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).

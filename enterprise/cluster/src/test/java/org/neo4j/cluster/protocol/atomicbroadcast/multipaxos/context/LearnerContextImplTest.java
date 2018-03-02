@@ -37,7 +37,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class LearnerContextImplTest
 {
     @Test
-    public void shouldOnlyLogLearnMissOnce() throws Exception
+    public void shouldOnlyLogLearnMissOnce()
     {
         // Given
         final AssertableLogProvider logProvider = new AssertableLogProvider();

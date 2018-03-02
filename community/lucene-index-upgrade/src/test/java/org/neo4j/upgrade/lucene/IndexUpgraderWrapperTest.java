@@ -57,7 +57,7 @@ public class IndexUpgraderWrapperTest
         verify( jarLoader ).close();
     }
 
-    private IndexUpgraderWrapper getIndexUpgrader( EmbeddedJarLoader jarLoader ) throws ClassNotFoundException, IOException
+    private IndexUpgraderWrapper getIndexUpgrader( EmbeddedJarLoader jarLoader )
     {
         return new IndexUpgraderWrapper( () -> jarLoader );
     }

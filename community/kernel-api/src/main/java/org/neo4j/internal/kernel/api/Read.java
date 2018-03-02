@@ -26,6 +26,9 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
  */
 public interface Read
 {
+    int ANY_LABEL = -1;
+    int ANY_RELATIONSHIP_TYPE = -1;
+
     /**
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
@@ -75,10 +78,131 @@ public interface Read
 
     /**
      * Checks if a node exists in the database
-     * @param id The id of the node to check
-     * @return <tt>true</tt> if the node exists, otherwise <tt>false</tt>
+     *
+     * @param reference The reference of the node to check
+     * @return {@code true} if the node exists, otherwise {@code false}
      */
-    boolean nodeExists( long id );
+    boolean nodeExists( long reference );
+
+    /**
+     * The number of nodes in the graph, including anything changed in the transaction state.
+     *
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
+     * {@code MATCH (n) RETURN count(n)}.
+     *
+     * If the label parameter is set to any other value, this method returns the number of nodes that has that label,
+     * i.e. {@code MATCH (n:LBL) RETURN count(n)}.
+     *
+     * @param labelId the label to get the count for, or {@link #ANY_LABEL} to get the total number of nodes.
+     * @return the number of matching nodes in the graph.
+     */
+    long countsForNode( int labelId );
+
+    /**
+     * The number of nodes in the graph, without taking into account anything in the transaction state.
+     *
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
+     * {@code MATCH (n) RETURN count(n)}.
+     *
+     * If the label parameter is set to any other value, this method returns the number of nodes that has that label,
+     * i.e. {@code MATCH (n:LBL) RETURN count(n)}.
+     *
+     * @param labelId the label to get the count for, or {@link #ANY_LABEL} to get the total number of nodes.
+     * @return the number of matching nodes in the graph.
+     */
+    long countsForNodeWithoutTxState( int labelId );
+
+    /**
+     * The number of relationships in the graph, including anything changed in the transaction state.
+     *
+     * Returns the number of relationships in the graph that matches the specified pattern,
+     * {@code (:startLabelId)-[:typeId]->(:endLabelId)}, like so:
+     *
+     * <table>
+     * <thead>
+     * <tr><th>{@code startLabelId}</th><th>{@code typeId}</th>                  <th>{@code endLabelId}</th>
+     * <td></td>                 <th>Pattern</th>                       <td></td></tr>
+     * </thead>
+     * <tdata>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->()}</td>            <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->(:RHS)}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r:REL]->()}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->(:RHS)}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * </tdata>
+     * </table>
+     *
+     * @param startLabelId the label of the start node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @param typeId       the type of relationships to get a count for, or {@link #ANY_RELATIONSHIP_TYPE}.
+     * @param endLabelId   the label of the end node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @return the number of matching relationships in the graph.
+     */
+    long countsForRelationship( int startLabelId, int typeId, int endLabelId );
+
+    /**
+     * The number of relationships in the graph, without taking into account anything in the transaction state.
+     *
+     * Returns the number of relationships in the graph that matches the specified pattern,
+     * {@code (:startLabelId)-[:typeId]->(:endLabelId)}, like so:
+     *
+     * <table>
+     * <thead>
+     * <tr><th>{@code startLabelId}</th><th>{@code typeId}</th>                  <th>{@code endLabelId}</th>
+     * <td></td>                 <th>Pattern</th>                       <td></td></tr>
+     * </thead>
+     * <tdata>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->()}</td>            <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->(:RHS)}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r:REL]->()}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->(:RHS)}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * </tdata>
+     * </table>
+     *
+     * @param startLabelId the label of the start node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @param typeId       the type of relationships to get a count for, or {@link #ANY_RELATIONSHIP_TYPE}.
+     * @param endLabelId   the label of the end node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @return the number of matching relationships in the graph.
+     */
+    long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
 
     /**
      * @param reference
@@ -87,6 +211,14 @@ public interface Read
      *         the cursor to use for consuming the results.
      */
     void singleRelationship( long reference, RelationshipScanCursor cursor );
+
+    /**
+     * Checks if a relationship exists in the database
+     *
+     * @param reference The reference of the relationship to check
+     * @return <tt>true</tt> if the relationship exists, otherwise <tt>false</tt>
+     */
+    boolean relationshipExists( long reference );
 
     void allRelationshipsScan( RelationshipScanCursor cursor );
 

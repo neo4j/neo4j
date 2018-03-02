@@ -70,10 +70,10 @@ class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
         this.debugLog = debugLog;
     }
 
-    synchronized void init() throws IOException
+    synchronized void init()
     {
         // This set of settings are currently not dynamic:
-        currentLogTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        currentLogTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         logBuilder = FormattedLog.withZoneId( currentLogTimeZone );
         currentQueryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
 
@@ -194,7 +194,7 @@ class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
         closable = logOutputStream;
     }
 
-    synchronized void close() throws IOException
+    synchronized void close()
     {
         // Disabling log_queries will implicitly close and release all associated resources.
         config.updateDynamicSetting( GraphDatabaseSettings.log_queries.name(), "false", "lifecycle" );

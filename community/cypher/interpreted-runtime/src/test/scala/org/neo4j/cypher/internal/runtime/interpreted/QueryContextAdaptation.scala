@@ -28,10 +28,11 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -55,8 +56,6 @@ trait QueryContextAdaptation {
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = ???
 
   override def getOrCreateRelTypeId(relTypeName: String): Int = ???
-
-  override def getPropertiesForRelationship(relId: Long): scala.Iterator[Int] = ???
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit = ???
 
@@ -82,6 +81,8 @@ trait QueryContextAdaptation {
 
   override def entityAccessor: EmbeddedProxySPI = ???
 
+  override def withActiveRead: QueryContext = ???
+
   override def resources: CloseableResource = ???
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int = ???
@@ -95,6 +96,8 @@ trait QueryContextAdaptation {
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[RelationshipValue] = ???
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator = ???
+
+  override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor = ???
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue = ???
 
@@ -153,7 +156,7 @@ trait QueryContextAdaptation {
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
-  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
+  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
 
   override def aggregateFunction(name: QualifiedName,
                                  allowed: Array[String]): UserDefinedAggregator = ???

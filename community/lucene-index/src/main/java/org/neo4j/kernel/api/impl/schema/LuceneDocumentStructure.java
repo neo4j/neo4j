@@ -49,7 +49,7 @@ import org.apache.lucene.util.StringHelper;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.lucene.document.Field.Store.YES;
@@ -247,7 +247,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            protected AcceptStatus accept( BytesRef term ) throws IOException
+            protected AcceptStatus accept( BytesRef term )
             {
                 return StringHelper.startsWith( term, prefix ) ? AcceptStatus.YES : AcceptStatus.END;
             }

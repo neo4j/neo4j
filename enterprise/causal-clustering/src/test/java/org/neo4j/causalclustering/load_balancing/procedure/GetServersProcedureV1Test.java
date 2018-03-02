@@ -61,7 +61,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_routing_ttl;
 import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
-import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForCore;
 import static org.neo4j.causalclustering.discovery.TestTopology.readReplicaInfoMap;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -112,7 +112,7 @@ public class GetServersProcedureV1Test
                 new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
-        List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+        List<Object[]> results = asList( proc.apply( null, new Object[0], null ) );
 
         // then
         Object[] rows = results.get( 0 );
@@ -121,7 +121,7 @@ public class GetServersProcedureV1Test
     }
 
     @Test
-    public void shouldHaveCorrectSignature() throws Exception
+    public void shouldHaveCorrectSignature()
     {
         // given
         final LegacyGetServersProcedure proc = new LegacyGetServersProcedure( null, null, config, getInstance() );
@@ -144,7 +144,7 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), adressesForCore( 0 ) );
+        coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
@@ -158,8 +158,8 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -174,9 +174,9 @@ public class GetServersProcedureV1Test
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), adressesForCore( 0 ) );
-        coreMembers.put( member( 1 ), adressesForCore( 1 ) );
-        coreMembers.put( member( 2 ), adressesForCore( 2 ) );
+        coreMembers.put( member( 0 ), addressesForCore( 0 ) );
+        coreMembers.put( member( 1 ), addressesForCore( 1 ) );
+        coreMembers.put( member( 2 ), addressesForCore( 2 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
@@ -190,12 +190,12 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.readAddress( adressesForCore( 1 ).connectors().boltAddress() );
-        builder.readAddress( adressesForCore( 2 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 1 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 2 ).connectors().boltAddress() );
+        builder.writeAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( addressesForCore( 1 ).connectors().boltAddress() );
+        builder.readAddress( addressesForCore( 2 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 1 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 2 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -210,7 +210,7 @@ public class GetServersProcedureV1Test
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), adressesForCore( 0 ) );
+        coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
@@ -224,9 +224,9 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.writeAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -239,7 +239,7 @@ public class GetServersProcedureV1Test
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
-        coreMembers.put( theLeader, adressesForCore( 0 ) );
+        coreMembers.put( theLeader, addressesForCore( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicaInfoMap( 1 ) ) );
@@ -255,13 +255,13 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.writeAddress( addressesForCore( 0 ).connectors().boltAddress() );
         if ( expectFollowersAsReadEndPoints )
         {
-            builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
+            builder.readAddress( addressesForCore( 0 ).connectors().boltAddress() );
         }
         builder.readAddress( addressesForReadReplica( 1 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -274,7 +274,7 @@ public class GetServersProcedureV1Test
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
-        coreMembers.put( theLeader, adressesForCore( 0 ) );
+        coreMembers.put( theLeader, addressesForCore( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
@@ -290,9 +290,9 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.writeAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -304,7 +304,7 @@ public class GetServersProcedureV1Test
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), adressesForCore( 0 ) );
+        coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
@@ -320,8 +320,8 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -333,7 +333,7 @@ public class GetServersProcedureV1Test
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), adressesForCore( 0 ) );
+        coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
@@ -350,8 +350,8 @@ public class GetServersProcedureV1Test
         // then
 
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( addressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( addressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -359,7 +359,7 @@ public class GetServersProcedureV1Test
     @SuppressWarnings( "unchecked" )
     private ClusterView run( LegacyGetServersProcedure proc ) throws ProcedureException
     {
-        final Object[] rows = asList( proc.apply( null, new Object[0] ) ).get( 0 );
+        final Object[] rows = asList( proc.apply( null, new Object[0], null ) ).get( 0 );
         assertEquals( config.get( cluster_routing_ttl ).getSeconds(), /* ttl */(long) rows[0] );
         return ClusterView.parse( (List<Map<String,Object>>) rows[1] );
     }
@@ -418,8 +418,7 @@ public class GetServersProcedureV1Test
         {
             List<AdvertisedSocketAddress> list =
                     Stream.of( addresses ).map( address -> parse( (String) address ) ).collect( toList() );
-            Set<AdvertisedSocketAddress> set = new HashSet<>();
-            set.addAll( list );
+            Set<AdvertisedSocketAddress> set = new HashSet<>( list );
             assertEquals( list.size(), set.size() );
             return set;
         }
@@ -455,12 +454,7 @@ public class GetServersProcedureV1Test
 
             private void addAddress( Role role, AdvertisedSocketAddress address )
             {
-                Set<AdvertisedSocketAddress> advertisedSocketAddresses = view.get( role );
-                if ( advertisedSocketAddresses == null )
-                {
-                    advertisedSocketAddresses = new HashSet<>();
-                    view.put( role, advertisedSocketAddresses );
-                }
+                Set<AdvertisedSocketAddress> advertisedSocketAddresses = view.computeIfAbsent( role, k -> new HashSet<>() );
                 advertisedSocketAddresses.add( address );
             }
 

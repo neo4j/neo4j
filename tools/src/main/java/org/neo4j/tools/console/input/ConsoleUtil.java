@@ -41,7 +41,7 @@ public class ConsoleUtil
     {   // Do nothing
     };
 
-    public static final Listener<PrintStream> staticPrompt( final String prompt )
+    public static Listener<PrintStream> staticPrompt( final String prompt )
     {
         return out -> out.print( prompt );
     }

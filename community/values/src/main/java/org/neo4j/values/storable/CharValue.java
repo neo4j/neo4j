@@ -19,6 +19,10 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
 import static java.lang.String.format;
@@ -185,6 +189,18 @@ public final class CharValue extends TextValue
     public int compareTo( TextValue other )
     {
         return TextValues.compareCharToString( value, other.stringValue() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapChar( this );
+    }
+
+    @Override
+    Matcher matcher( Pattern pattern )
+    {
+        return pattern.matcher( "" + value ); // TODO: we should be able to do this without allocation
     }
 
     @Override

@@ -25,15 +25,10 @@ class DistanceTest extends FunctionTestBase("distance")  {
     testValidTypes(CTPoint, CTGeometry)(CTFloat)
     testValidTypes(CTGeometry, CTPoint)(CTFloat)
     testValidTypes(CTPoint, CTPoint)(CTFloat)
-  }
-
-  test("should fail type check for incompatible arguments") {
-    testInvalidApplication(CTList(CTAny), CTList(CTAny))(
-      "Type mismatch: expected Point or Geometry but was List<Any>"
-    )
-    testInvalidApplication(CTString, CTString)(
-      "Type mismatch: expected Point or Geometry but was String"
-    )
+    // Distance produces null for invalid arguments, but never throws exceptions
+    testValidTypes(CTPoint, CTInteger)(CTFloat)
+    testValidTypes(CTInteger, CTPoint)(CTFloat)
+    testValidTypes(CTInteger, CTInteger)(CTFloat)
   }
 
   test("should fail if wrong number of arguments") {

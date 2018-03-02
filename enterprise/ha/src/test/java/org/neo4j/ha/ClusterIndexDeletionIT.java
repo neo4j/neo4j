@@ -41,7 +41,7 @@ public class ClusterIndexDeletionIT
             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     @Test
-    public void givenClusterWithCreatedIndexWhenDeleteIndexOnMasterThenIndexIsDeletedOnSlave() throws Throwable
+    public void givenClusterWithCreatedIndexWhenDeleteIndexOnMasterThenIndexIsDeletedOnSlave()
     {
         ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();

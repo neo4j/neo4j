@@ -35,7 +35,7 @@ public class CloseTrackingFileSystem implements FileSystemAbstraction.ThirdParty
     }
 
     @Override
-    public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
+    public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
     {
     }
 

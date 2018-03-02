@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -34,6 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
@@ -70,7 +70,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
 
     FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory, FileSystemAbstraction fileSystem,
             Config config, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder, DirectoryFactory directoryFactory ) throws IOException
+            RelationshipTypeTokenHolder relationshipTypeTokenHolder, DirectoryFactory directoryFactory )
     {
         super( descriptor, priority, directoryStructureFactory );
         this.config = config;
@@ -86,7 +86,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         accessorsByName = new HashMap<>();
     }
 
-    public PrimitiveLongIterator query( IndexDescriptor descriptor, String query ) throws IOException
+    public ScoreEntityIterator query( IndexDescriptor descriptor, String query ) throws IOException
     {
         return accessors.get( descriptor ).query( query );
     }
@@ -124,7 +124,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, FulltextIndexDescriptor descriptor ) throws IllegalStateException
     {
         //TODO properly handle index failures
         return "TODO Failure";
@@ -217,7 +217,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     }
 
     @Override
-    public PrimitiveLongIterator query( String indexName, String queryString ) throws IOException, IndexNotFoundKernelException
+    public ScoreEntityIterator query( String indexName, String queryString ) throws IOException, IndexNotFoundKernelException
     {
         FulltextIndexAccessor fulltextIndexAccessor = accessorsByName.get( indexName );
         if ( fulltextIndexAccessor == null )

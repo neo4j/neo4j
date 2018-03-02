@@ -50,11 +50,10 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -74,7 +73,7 @@ public class ServerPoliciesLoadBalancingIT
     private Cluster cluster;
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( cluster != null )
         {
@@ -221,7 +220,7 @@ public class ServerPoliciesLoadBalancingIT
     private LoadBalancingResult getServers( CoreGraphDatabase db, Map<String,String> context )
     {
         LoadBalancingResult lbResult = null;
-        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.explicit, EnterpriseSecurityContext.AUTH_DISABLED ) )
+        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.explicit, EnterpriseLoginContext.AUTH_DISABLED ) )
         {
             Map<String,Object> parameters = MapUtil.map( ParameterNames.CONTEXT.parameterName(), context );
             try ( Result result = db.execute( tx, "CALL " + GET_SERVERS_V2.callName(), ValueUtils.asMapValue( parameters )) )

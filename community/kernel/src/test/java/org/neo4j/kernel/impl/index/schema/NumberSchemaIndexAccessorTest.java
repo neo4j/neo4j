@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,15 +37,14 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
-public abstract class NumberSchemaIndexAccessorTest<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndexAccessorTest<KEY,VALUE>
+public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<NumberSchemaKey,NativeSchemaValue>
 {
-    NativeSchemaIndexAccessor<KEY,VALUE> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    @Override
+    NumberSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor<>( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Test
@@ -60,7 +60,7 @@ public abstract class NumberSchemaIndexAccessorTest<KEY extends NumberSchemaKey,
         IndexQuery.NumberRangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
-        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
+        for ( IndexOrder supportedOrder : NumberSchemaIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
         {
             if ( supportedOrder == IndexOrder.ASCENDING )
             {
@@ -78,7 +78,31 @@ public abstract class NumberSchemaIndexAccessorTest<KEY extends NumberSchemaKey,
             {
                 assertEquals( "values in order", expectedValues[i++], client.values[0] );
             }
-            assertTrue( "found all values", i == expectedValues.length );
+            assertEquals( "found all values", i, expectedValues.length );
         }
     }
+
+    // <READER ordering>
+
+    @Test
+    public void throwForUnsupportedIndexOrder() throws Exception
+    {
+        // given
+        // Unsupported index order for query
+        IndexReader reader = accessor.newReader();
+        IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
+        IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, "Legolas" );
+
+        // then
+        expected.expect( UnsupportedOperationException.class );
+        expected.expectMessage( Matchers.allOf(
+                Matchers.containsString( "unsupported order" ),
+                Matchers.containsString( unsupportedOrder.toString() ),
+                Matchers.containsString( unsupportedQuery.toString() ) ) );
+
+        // when
+        reader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
+    }
+
+    // </READER ordering>
 }

@@ -50,7 +50,7 @@ public class ReplicationBenchmarkProcedure
 
     @Description( "Start the benchmark." )
     @Procedure( name = "dbms.cluster.benchmark.start", mode = DBMS )
-    public synchronized void start( @Name( "nThreads" ) Long nThreads, @Name( "blockSize" ) Long blockSize ) throws InvalidArgumentsException, IOException
+    public synchronized void start( @Name( "nThreads" ) Long nThreads, @Name( "blockSize" ) Long blockSize )
     {
         if ( workers != null )
         {
@@ -72,7 +72,7 @@ public class ReplicationBenchmarkProcedure
 
     @Description( "Stop a running benchmark." )
     @Procedure( name = "dbms.cluster.benchmark.stop", mode = DBMS )
-    public synchronized Stream<BenchmarkResult> stop() throws InvalidArgumentsException, IOException, InterruptedException
+    public synchronized Stream<BenchmarkResult> stop() throws InterruptedException
     {
         if ( workers == null )
         {
@@ -147,7 +147,7 @@ public class ReplicationBenchmarkProcedure
             }
         }
 
-        void stop() throws InterruptedException
+        void stop()
         {
             stopped = true;
         }

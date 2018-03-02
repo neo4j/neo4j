@@ -29,32 +29,24 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
-import org.neo4j.values.storable.Values;
 
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class GraphDatabaseFacadeTest
 {
@@ -89,7 +81,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void beginTransactionWithCustomTimeout() throws Exception
+    public void beginTransactionWithCustomTimeout()
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 
@@ -131,21 +123,5 @@ public class GraphDatabaseFacadeTest
 
         long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
         verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout );
-    }
-
-    @Test
-    public void multipleNodesFoundExceptionMessageContainsLabelAndPropertyData() throws EntityNotFoundException
-    {
-        Label label = Label.label( "test label" );
-        String propertyName = "test property";
-        String propertyValue = "testValue";
-        when( readOperations.nodesGetForLabel( 0 ) ).thenReturn( resourceIterator( iterator( 1, 2 ), null ) );
-        when( readOperations.nodeGetProperty( anyLong(), eq( 0 ) ) ).thenReturn( Values.stringValue(propertyValue) );
-
-        expectedException.expect( MultipleFoundException.class );
-        expectedException.expectMessage( "Found multiple nodes with label: 'test label', property name: 'test " +
-                "property' and property value: 'testValue' while only one was expected." );
-
-        graphDatabaseFacade.findNode( label, propertyName, propertyValue );
     }
 }

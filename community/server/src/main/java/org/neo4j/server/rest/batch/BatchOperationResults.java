@@ -44,7 +44,7 @@ public class BatchOperationResults
 
     private StringWriter results = new StringWriter();
     private boolean firstResult = true;
-    private Map<Integer, String> locations = new HashMap<Integer, String>();
+    private Map<Integer, String> locations = new HashMap<>();
 
     public BatchOperationResults()
     {

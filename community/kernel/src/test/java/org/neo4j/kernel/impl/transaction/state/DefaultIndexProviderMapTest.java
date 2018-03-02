@@ -33,7 +33,7 @@ import static java.util.Arrays.asList;
 public class DefaultIndexProviderMapTest
 {
     @Test
-    public void shouldNotSupportMultipleProvidersWithSameDescriptor() throws Exception
+    public void shouldNotSupportMultipleProvidersWithSameDescriptor()
     {
         // given
         IndexProvider.Descriptor descriptor = new IndexProvider.Descriptor( "provider", "1.2" );
@@ -55,7 +55,7 @@ public class DefaultIndexProviderMapTest
     }
 
     @Test
-    public void shouldThrowOnLookupOnUnknownProvider() throws Exception
+    public void shouldThrowOnLookupOnUnknownProvider()
     {
         // given
         IndexProvider provider = mock( IndexProvider.class );

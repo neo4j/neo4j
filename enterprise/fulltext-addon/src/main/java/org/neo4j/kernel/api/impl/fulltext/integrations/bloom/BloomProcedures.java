@@ -20,14 +20,12 @@
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -36,6 +34,8 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator.ScoreEntry;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextQueryHelper;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -62,9 +62,11 @@ public class BloomProcedures
     @Context
     public FulltextAccessor accessor;
 
+    private static final Function<ScoreEntry,EntityOutput> QUERY_RESULT_MAPPER = result -> new EntityOutput( result.entityId(), result.score() );
+
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "bloom.awaitPopulation", mode = READ )
-    public void awaitPopulation() throws Exception
+    public void awaitPopulation() throws IndexPopulationFailedKernelException
     {
         await( BLOOM_NODES );
         await( BLOOM_RELATIONSHIPS );
@@ -96,7 +98,7 @@ public class BloomProcedures
 
     @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws SchemaRuleNotFoundException
     {
         try ( Statement stmt = tx.acquireStatement() )
         {
@@ -127,7 +129,7 @@ public class BloomProcedures
 
     @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws SchemaRuleNotFoundException
     {
         try ( Statement stmt = tx.acquireStatement() )
         {
@@ -159,17 +161,19 @@ public class BloomProcedures
 
     @Description( "Check the status of the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.indexStatus", mode = READ )
-    public Stream<StatusOutput> indexStatus() throws Exception
+    public Stream<StatusOutput> indexStatus() throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        InternalIndexState nodeIndexState;
-        InternalIndexState relationshipIndexState;
         try ( Statement stmt = tx.acquireStatement() )
         {
             ReadOperations readOperations = stmt.readOperations();
-            nodeIndexState = readOperations.indexGetState( readOperations.indexGetForName( BLOOM_NODES ) );
-            relationshipIndexState = readOperations.indexGetState( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) );
+            InternalIndexState internalNodeIndexState =
+                    readOperations.indexGetState( readOperations.indexGetForName( BLOOM_NODES ) );
+            InternalIndexState internalRelationshipIndexState =
+                    readOperations.indexGetState( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) );
+            StatusOutput nodeIndexState = new StatusOutput( BLOOM_NODES, internalNodeIndexState );
+            StatusOutput relationshipIndexState = new StatusOutput( BLOOM_RELATIONSHIPS, internalRelationshipIndexState );
+            return Stream.of( nodeIndexState, relationshipIndexState );
         }
-        return Stream.of( nodeIndexState, relationshipIndexState ).map( StatusOutput::new );
     }
 
     @Description( "Query the Bloom fulltext index for nodes" )
@@ -191,18 +195,21 @@ public class BloomProcedures
     private Stream<EntityOutput> queryAsStream( List<String> terms, String indexName, boolean fuzzy, boolean matchAll )
             throws IOException, IndexNotFoundKernelException
     {
+        terms = terms.stream().flatMap( s -> Arrays.stream( s.split( "\\s+" ) ) ).collect( Collectors.toList() );
         String query = FulltextQueryHelper.createQuery( terms, fuzzy, matchAll );
-        Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, accessor.query( indexName, query ) );
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
+        ScoreEntityIterator resultIterator = accessor.query( indexName, query );
+        return resultIterator.stream().map( QUERY_RESULT_MAPPER );
     }
 
     public static class EntityOutput
     {
         public final long entityid;
+        public final double score;
 
-        public EntityOutput( long entityid )
+        EntityOutput( long entityid, float score )
         {
             this.entityid = entityid;
+            this.score = score;
         }
     }
 
@@ -210,18 +217,20 @@ public class BloomProcedures
     {
         public final String propertyKey;
 
-        public PropertyOutput( String propertykey )
+        PropertyOutput( String propertykey )
         {
             this.propertyKey = propertykey;
         }
     }
 
-    public class StatusOutput
+    public static class StatusOutput
     {
+        public final String name;
         public final String state;
 
-        public StatusOutput( InternalIndexState internalIndexState )
+        StatusOutput( String name, InternalIndexState internalIndexState )
         {
+            this.name = name;
             switch ( internalIndexState )
             {
             case POPULATING:

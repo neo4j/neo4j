@@ -134,7 +134,7 @@ public class TestStartTransactionDuringLogRotation
     }
 
     @Test( timeout = 10000 )
-    public void logRotationMustNotObstructStartingReadTransaction() throws InterruptedException
+    public void logRotationMustNotObstructStartingReadTransaction()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -145,7 +145,7 @@ public class TestStartTransactionDuringLogRotation
     }
 
     @Test( timeout = 10000 )
-    public void logRotationMustNotObstructStartingWriteTransaction() throws InterruptedException
+    public void logRotationMustNotObstructStartingWriteTransaction()
     {
         try ( Transaction tx = db.beginTx() )
         {

@@ -29,7 +29,7 @@ public class ExponentialBackoffStrategyTest
     private static final int NUMBER_OF_ACCESSES = 5;
 
     @Test
-    public void shouldDoubleEachTime() throws Exception
+    public void shouldDoubleEachTime()
     {
         // given
         ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
@@ -46,7 +46,7 @@ public class ExponentialBackoffStrategyTest
     }
 
     @Test
-    public void shouldProvidePreviousTimeout() throws Exception
+    public void shouldProvidePreviousTimeout()
     {
         // given
         ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
@@ -63,7 +63,7 @@ public class ExponentialBackoffStrategyTest
     }
 
     @Test
-    public void shouldRespectUpperBound() throws Exception
+    public void shouldRespectUpperBound()
     {
         // given
         long upperBound = (1 << NUMBER_OF_ACCESSES) - 5;

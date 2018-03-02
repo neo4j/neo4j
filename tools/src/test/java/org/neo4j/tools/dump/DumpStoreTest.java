@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 public class DumpStoreTest
 {
     @Test
-    public void dumpStoreShouldPrintBufferWithContent() throws Exception
+    public void dumpStoreShouldPrintBufferWithContent()
     {
         // Given
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -56,7 +56,7 @@ public class DumpStoreTest
     }
 
     @Test
-    public void dumpStoreShouldPrintShorterMessageForAllZeroBuffer() throws Exception
+    public void dumpStoreShouldPrintShorterMessageForAllZeroBuffer()
     {
         // Given
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();

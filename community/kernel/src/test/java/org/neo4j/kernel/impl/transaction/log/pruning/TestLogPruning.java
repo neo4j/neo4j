@@ -171,7 +171,7 @@ public class TestLogPruning
         assertThat( transactionCount(), greaterThanOrEqualTo( 1 ) );
     }
 
-    private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions ) throws IOException
+    private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
     {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();

@@ -80,7 +80,7 @@ public class AccessExplicitIndexReadOnlyIT
     }
 
     @Test
-    public void shouldNotCreateIndexesForReadOnlyDb() throws Exception
+    public void shouldNotCreateIndexesForReadOnlyDb()
     {
         // given
         db.ensureStarted( GraphDatabaseSettings.read_only.name(), TRUE.toString() );

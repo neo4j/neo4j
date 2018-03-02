@@ -30,7 +30,7 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.proc.Neo4jValue.ntMap;
+import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntMap;
 
 public class MapConverterTest
 {
@@ -46,7 +46,7 @@ public class MapConverterTest
         String mapString = "null";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( null ) ) );
@@ -59,7 +59,7 @@ public class MapConverterTest
         String mapString = "{}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( emptyMap() ) ) );
@@ -72,7 +72,7 @@ public class MapConverterTest
         String mapString = " {  }  ";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( emptyMap() ) ) );
@@ -85,7 +85,7 @@ public class MapConverterTest
         String mapString = "{key: 'value'}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
@@ -98,7 +98,7 @@ public class MapConverterTest
         String mapString = "{key: 'va\'lue'}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "va\'lue" ) ) ) );
@@ -111,7 +111,7 @@ public class MapConverterTest
         String mapString = "{key: \"va\'lue\"}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "va\'lue" ) ) ) );
@@ -124,7 +124,7 @@ public class MapConverterTest
         String mapString = "{key: \"va\"lue\"}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "va\"lue" ) ) ) );
@@ -137,7 +137,7 @@ public class MapConverterTest
         String mapString = "{key: 'va\"lue'}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "va\"lue" ) ) ) );
@@ -150,7 +150,7 @@ public class MapConverterTest
         String mapString = "{key: \"value\"}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
@@ -163,7 +163,7 @@ public class MapConverterTest
         String mapString = "{'key;: 'value'}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
@@ -176,7 +176,7 @@ public class MapConverterTest
         String mapString = "{\"key\": \"value\"}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
@@ -189,7 +189,7 @@ public class MapConverterTest
         String mapString = "{\"k\'ey\": \"value\"}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "k\'ey", "value" ) ) ) );
@@ -202,7 +202,7 @@ public class MapConverterTest
         String mapString = "{\"k\"ey\": \"value\"}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "k\"ey", "value" ) ) ) );
@@ -215,7 +215,7 @@ public class MapConverterTest
         String mapString = "{key: 1337}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", 1337L ) ) ) );
@@ -228,7 +228,7 @@ public class MapConverterTest
         String mapString = "{key: 2.718281828}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", 2.718281828 ) ) ) );
@@ -241,7 +241,7 @@ public class MapConverterTest
         String mapString = "{key: null}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", null ) ) ) );
@@ -254,7 +254,7 @@ public class MapConverterTest
         String mapString = "{key: false}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", false ) ) ) );
@@ -267,7 +267,7 @@ public class MapConverterTest
         String mapString = "{key: true}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", true ) ) ) );
@@ -280,7 +280,7 @@ public class MapConverterTest
         String mapString = "{k1: 2.718281828, k2: 'e'}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "k1", 2.718281828, "k2", "e" ) ) ) );
@@ -308,7 +308,7 @@ public class MapConverterTest
         String mapString = "{k1: 1337, k2: { k1 : 1337, k2: {k1: 1337}}}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         Map<String,Object> map1 = (Map<String,Object>) converted.value();
@@ -341,7 +341,7 @@ public class MapConverterTest
         String mapString = "{k1: [1337, 42]}";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         Map<String,Object> map1 = (Map<String,Object>) converted.value();

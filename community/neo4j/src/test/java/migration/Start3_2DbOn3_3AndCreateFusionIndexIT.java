@@ -81,7 +81,6 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
         {
             db.shutdown();
         }
-        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
     }
 
     @Test

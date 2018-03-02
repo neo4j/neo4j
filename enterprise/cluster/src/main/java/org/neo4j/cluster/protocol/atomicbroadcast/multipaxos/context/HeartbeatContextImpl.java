@@ -318,13 +318,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
 
     private Set<InstanceId> suspicionsFor( InstanceId instanceId )
     {
-        Set<InstanceId> serverSuspicions = nodeSuspicions.get( instanceId );
-        if ( serverSuspicions == null )
-        {
-            serverSuspicions = new HashSet<>();
-            nodeSuspicions.put( instanceId, serverSuspicions );
-        }
-        return serverSuspicions;
+        return nodeSuspicions.computeIfAbsent( instanceId, k -> new HashSet<>() );
     }
 
     @Override

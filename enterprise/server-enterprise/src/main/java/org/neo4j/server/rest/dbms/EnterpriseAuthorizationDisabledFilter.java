@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 
 public class EnterpriseAuthorizationDisabledFilter extends AuthorizationDisabledFilter
 {
     @Override
-    protected SecurityContext getAuthDisabledSecurityContext()
+    protected EnterpriseLoginContext getAuthDisabledLoginContext()
     {
-        return EnterpriseSecurityContext.AUTH_DISABLED;
+        return EnterpriseLoginContext.AUTH_DISABLED;
     }
 }

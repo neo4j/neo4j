@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Label;
@@ -73,7 +71,6 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
         }
         NodeConstraintDefinition that = (NodeConstraintDefinition) o;
         return label.name().equals( that.label.name() ) && Arrays.equals( propertyKeys, that.propertyKeys );
-
     }
 
     protected String propertyText()

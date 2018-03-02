@@ -133,7 +133,7 @@ public class BackupProtocolServiceIT
     private static final OutputStream NULL_OUTPUT = new OutputStream()
     {
         @Override
-        public void write( int b ) throws IOException
+        public void write( int b )
         {
         }
     };
@@ -204,7 +204,7 @@ public class BackupProtocolServiceIT
     }
 
     @Test
-    public void shouldPrintThatFullBackupIsPerformed() throws Exception
+    public void shouldPrintThatFullBackupIsPerformed()
     {
         defaultBackupPortHostParams();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -279,7 +279,7 @@ public class BackupProtocolServiceIT
     }
 
     @Test
-    public void shouldThrowUsefulMessageWhenCannotConnectDuringFullBackup() throws Exception
+    public void shouldThrowUsefulMessageWhenCannotConnectDuringFullBackup()
     {
         try
         {
@@ -295,7 +295,7 @@ public class BackupProtocolServiceIT
     }
 
     @Test
-    public void shouldThrowUsefulMessageWhenCannotConnectDuringIncrementalBackup() throws Exception
+    public void shouldThrowUsefulMessageWhenCannotConnectDuringIncrementalBackup()
     {
         defaultBackupPortHostParams();
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
@@ -381,7 +381,7 @@ public class BackupProtocolServiceIT
     }
 
     @Test
-    public void shouldRemoveTempDirectory() throws Throwable
+    public void shouldRemoveTempDirectory()
     {
         // given
         defaultBackupPortHostParams();
@@ -843,7 +843,7 @@ public class BackupProtocolServiceIT
     }
 
     @Test
-    public void shouldDoFullBackupOnIncrementalFallbackToFullIfNoBackupFolderExists() throws Exception
+    public void shouldDoFullBackupOnIncrementalFallbackToFullIfNoBackupFolderExists()
     {
         // Given
         defaultBackupPortHostParams();

@@ -23,8 +23,8 @@ import java.util.Arrays;
 
 public class Envelope
 {
-    private double[] min;
-    private double[] max;
+    private final double[] min;
+    private final double[] max;
 
     /**
      * Copy constructor
@@ -45,7 +45,7 @@ public class Envelope
         this.max = max.clone();
         if ( !isValid() )
         {
-            throw new RuntimeException( "Invalid envelope created " + toString() );
+            throw new IllegalArgumentException( "Invalid envelope created " + toString() );
         }
     }
 
@@ -60,8 +60,6 @@ public class Envelope
     {
         this( new double[] { xmin, ymin }, new double[] { xmax, ymax } );
     }
-
-    // Public methods
 
     public double[] getMin()
     {
@@ -266,7 +264,7 @@ public class Envelope
     private boolean isValid()
     {
         boolean valid = min != null && max != null && min.length == max.length;
-        for ( int i = 0; i < min.length && valid; i++ )
+        for ( int i = 0; valid && i < min.length; i++ )
         {
             valid = min[i] <= max[i];
         }
@@ -286,22 +284,22 @@ public class Envelope
         }
     }
 
+    @Override
     public String toString()
     {
         return "Envelope: min=" + makeString(min) + ", max=" + makeString(max);
     }
 
-    // Private method
     private static String makeString( double[] vals )
     {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if ( vals == null )
         {
             sb.append("null");
         }
         else
         {
-            for ( int i = 0; i < vals.length; i++ )
+            for ( double val : vals )
             {
                 if ( sb.length() > 0 )
                 {
@@ -311,7 +309,7 @@ public class Envelope
                 {
                     sb.append( "(" );
                 }
-                sb.append(vals[i]);
+                sb.append( val );
             }
             if ( sb.length() > 0 )
             {

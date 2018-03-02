@@ -65,7 +65,7 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         DependencyResolver dependencyResolver = gds.getDependencyResolver();
         queryExecutionEngine = dependencyResolver.resolveDependency( QueryExecutionEngine.class );
@@ -74,7 +74,7 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         queryExecutionEngine = null;
         queryService = null;

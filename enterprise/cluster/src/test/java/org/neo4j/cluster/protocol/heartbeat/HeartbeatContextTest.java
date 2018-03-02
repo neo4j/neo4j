@@ -78,7 +78,7 @@ public class HeartbeatContextTest
     @Before
     public void setup()
     {
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>(  );
+        Map<InstanceId, URI> members = new HashMap<>();
         for ( int i = 0; i < instanceIds.length; i++ )
         {
             members.put( instanceIds[i], URI.create( initialHosts[i] ) );
@@ -149,7 +149,7 @@ public class HeartbeatContextTest
         // Now two instances suspect it, it should be reported failed
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( newSuspiciousBastard ) );
-        List<InstanceId> suspiciousBastards = new ArrayList<InstanceId>( 2 );
+        List<InstanceId> suspiciousBastards = new ArrayList<>( 2 );
         suspiciousBastards.add( context.getMyId() );
         suspiciousBastards.add( newSuspiciousBastard );
         assertEquals( suspiciousBastards, toTest.getSuspicionsOf( suspect ) );
@@ -226,7 +226,7 @@ public class HeartbeatContextTest
         assertFalse( toTest.isFailed( instanceC ) );
     }
     @Test
-    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers() throws Exception
+    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers()
     {
         // Given
         InstanceId notInCluster = new InstanceId( -1 ); // backup, for example

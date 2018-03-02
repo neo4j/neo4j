@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 

@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class ClientConnectionInfoTest
 {
     @Test
-    public void connectionDetailsForBoltQuerySource() throws Exception
+    public void connectionDetailsForBoltQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection = new BoltConnectionInfo(
@@ -54,7 +54,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForHttpQuerySource() throws Exception
+    public void connectionDetailsForHttpQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection =
@@ -72,7 +72,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForEmbeddedQuerySource() throws Exception
+    public void connectionDetailsForEmbeddedQuerySource()
     {
         // when
         String connectionDetails = ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails();
@@ -82,7 +82,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForShellSession() throws Exception
+    public void connectionDetailsForShellSession()
     {
         // given
         ClientConnectionInfo clientConnection = new ShellConnectionInfo( 1 ).withUsername( "FULL" );

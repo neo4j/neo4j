@@ -29,7 +29,7 @@ import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>>
 {
     private final LocalDatabase localDatabase;
     private final Log log;
@@ -49,7 +49,7 @@ public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.
     }
 
     @Override
-    public synchronized void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage wrappedMessage )
+    public synchronized void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> wrappedMessage )
     {
         try
         {

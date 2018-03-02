@@ -134,7 +134,7 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     {
         Set<Capability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
         myCapabilities.add( Capability.SECONDARY_RECORD_UNITS );
-        return myCapabilities.stream().toArray( Capability[]::new );
+        return myCapabilities.toArray( new Capability[0] );
     }
 
     @Override

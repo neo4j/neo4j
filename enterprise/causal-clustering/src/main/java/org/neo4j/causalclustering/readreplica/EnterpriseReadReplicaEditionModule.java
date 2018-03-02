@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -49,9 +50,9 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -90,6 +91,7 @@ import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -121,7 +123,7 @@ import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.cho
  */
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
-    EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
+    public EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
                                         final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
         LogService logging = platformModule.logging;
@@ -191,19 +193,20 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         TopologyService topologyService =
                 discoveryServiceFactory.topologyService( config, logProvider, platformModule.jobScheduler, myself,
-                        hostnameResolver, resolveStrategy( config ) );
+                        hostnameResolver, resolveStrategy( config, logProvider ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
         dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
 
-        PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
-        PipelineHandlerAppender handlerAppender = appenderFactory.create( config, dependencies, logProvider );
+        DuplexPipelineWrapperFactory pipelineWrapperFactory = pipelineWrapperFactory();
+        PipelineWrapper serverPipelineWrapper = pipelineWrapperFactory.forServer( config, dependencies, logProvider );
+        PipelineWrapper clientPipelineWrapper = pipelineWrapperFactory.forClient( config, dependencies, logProvider );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient =
-                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender ) );
+                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, clientPipelineWrapper ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -215,7 +218,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         int maxBatchSize = config.get( CausalClusteringSettings.read_replica_transaction_applier_batch_size );
         BatchingTxApplier batchingTxApplier = new BatchingTxApplier(
                 maxBatchSize, dependencies.provideDependency( TransactionIdStore.class ), writableCommitProcess,
-                platformModule.monitors, platformModule.tracers.pageCursorTracerSupplier, logProvider );
+                platformModule.monitors, platformModule.tracers.pageCursorTracerSupplier,
+                platformModule.versionContextSupplier, logProvider );
 
         TimerService timerService = new TimerService( platformModule.jobScheduler, logProvider );
 
@@ -276,7 +280,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                         platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                         null, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
-                        platformModule.storeCopyCheckPointMutex, handlerAppender );
+                        platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
 
         servicesToStopOnStoreCopy.add( catchupServer );
 
@@ -290,9 +294,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     {
     }
 
-    protected PipelineHandlerAppenderFactory appenderFactory()
+    protected DuplexPipelineWrapperFactory pipelineWrapperFactory()
     {
-        return new NoOpPipelineHandlerAppenderFactory();
+        return new VoidPipelineWrapperFactory();
     }
 
     static Predicate<String> fileWatcherFileNameFilter()
@@ -300,7 +304,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         return Predicates.any( fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
-                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ),
+                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF ),
+                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF_TMP ) );
     }
 
     @Override
@@ -359,19 +365,19 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 @Override
                 public UpstreamDatabaseSelectionStrategy next()
                 {
-                    return null;
+                    throw new NoSuchElementException();
                 }
             };
         }
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )
     {
         long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
     private static Map<String,String> backupDisabledSettings()

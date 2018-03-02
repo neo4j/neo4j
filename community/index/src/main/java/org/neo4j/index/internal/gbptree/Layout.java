@@ -40,6 +40,9 @@ import static java.lang.String.format;
  */
 public interface Layout<KEY, VALUE> extends Comparator<KEY>
 {
+    int FIXED_SIZE_KEY = -1;
+    int FIXED_SIZE_VALUE = -1;
+
     /**
      * @return new key instance.
      */
@@ -60,14 +63,16 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     VALUE newValue();
 
     /**
-     * @return size, in bytes, of a key.
+     * @param key for which to give size.
+     * @return size, in bytes, of given key.
      */
-    int keySize();
+    int keySize( KEY key );
 
     /**
-     * @return size, in bytes, of a value.
+     * @param value for which to give size.
+     * @return size, in bytes, of given value.
      */
-    int valueSize();
+    int valueSize( VALUE value );
 
     /**
      * Writes contents of {@code key} into {@code cursor} at its current offset.
@@ -87,20 +92,25 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
 
     /**
      * Reads key contents at {@code cursor} at its current offset into {@code key}.
-     *
      * @param cursor {@link PageCursor} to read from, at current offset.
      * @param into key instances to read into.
+     * @param keySize size of key to read or {@link #FIXED_SIZE_KEY} if key is fixed size.
      */
-    void readKey( PageCursor cursor, KEY into );
+    void readKey( PageCursor cursor, KEY into, int keySize );
 
     /**
      * Reads value contents at {@code cursor} at its current offset into {@code value}.
-     *
      * @param cursor {@link PageCursor} to read from, at current offset.
      * @param into value instances to read into.
+     * @param valueSize size of key to read or {@link #FIXED_SIZE_VALUE} if value is fixed size.
      */
-    void readValue( PageCursor cursor, VALUE into );
+    void readValue( PageCursor cursor, VALUE into, int valueSize );
 
+    /**
+     * Indicate if keys and values are fixed or dynamix size.
+     * @return true if keys and values are fixed size, otherwise true.
+     */
+    boolean fixedSize();
     /**
      * Used as verification when loading an index after creation, to verify that the same layout is used,
      * as the one it was initially created with.
@@ -200,101 +210,15 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         @Override
         public String toString()
         {
-            return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
+            return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d, fixedSize:%b]",
                     getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
-                    keySize(), valueSize() );
+                    keySize( null ), valueSize( null ), fixedSize() );
         }
 
         @Override
         public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
         {
             return layoutIdentifier == identifier() && majorVersion == majorVersion() && minorVersion == minorVersion();
-        }
-    }
-
-    /**
-     * Abstract {@link Layout} for read-only scenarios. Mainly used for reading header off of a closed
-     * {@link GBPTree}.
-     */
-    @SuppressWarnings( "rawtypes" )
-    abstract class ReadOnlyMetaLayout implements Layout
-    {
-        @Override
-        public Object newKey()
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public Object copyKey( Object key, Object into )
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public Object newValue()
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public int keySize()
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public int valueSize()
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public void writeKey( PageCursor cursor, Object key )
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public void writeValue( PageCursor cursor, Object value )
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public void readKey( PageCursor cursor, Object into )
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public void readValue( PageCursor cursor, Object into )
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public long identifier()
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public int majorVersion()
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public int minorVersion()
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
-        }
-
-        @Override
-        public int compare( Object o1, Object o2 )
-        {
-            throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
     }
 }

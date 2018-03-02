@@ -95,7 +95,7 @@ public interface PageSwapperFactory
      * mapped files, then call <code>syncDevice</code> on the PageSwapperFactory. This way, the writes are always made
      * durable regardless of which method that does the forcing.
      */
-    void syncDevice() throws IOException;
+    void syncDevice();
 
     /**
      * Close and release any resources associated with this PageSwapperFactory, that it may have opened or acquired

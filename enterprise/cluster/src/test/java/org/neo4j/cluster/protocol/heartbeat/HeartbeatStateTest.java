@@ -88,7 +88,7 @@ public class HeartbeatStateTest
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
                 new HeartbeatMessage.SuspicionsState( asSet( iterable( instanceId ) ) ) );
-        received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
+        received.setHeader( Message.HEADER_FROM, "cluster://2" ).setHeader( Message.HEADER_INSTANCE_ID, "2" );
 
         // When
         heartbeat.handle( heartbeatContext, received, mock( MessageHolder.class ) );
@@ -122,7 +122,7 @@ public class HeartbeatStateTest
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
                 new HeartbeatMessage.SuspicionsState( asSet( iterable( myId, foreignId ) ) ) );
-        received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
+        received.setHeader( Message.HEADER_FROM, "cluster://2" ).setHeader( Message.HEADER_INSTANCE_ID, "2" );
 
         // When
         heartbeat.handle( heartbeatContext, received, mock( MessageHolder.class ) );
@@ -168,7 +168,7 @@ public class HeartbeatStateTest
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.i_am_alive,
                 new HeartbeatMessage.IAmAliveState( otherInstance ) );
-        received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" )
+        received.setHeader( Message.HEADER_FROM, "cluster://2" ).setHeader( Message.HEADER_INSTANCE_ID, "2" )
                 .setHeader( "last-learned", Integer.toString( lastDeliveredInstanceId ) );
 
         // When
@@ -177,11 +177,11 @@ public class HeartbeatStateTest
 
         // Then
         verify( holder, times( 1 ) ).offer( ArgumentMatchers.argThat( new MessageArgumentMatcher<LearnerMessage>()
-                .onMessageType( LearnerMessage.catchUp ).withHeader( Message.INSTANCE_ID, "2" ) ) );
+                .onMessageType( LearnerMessage.catchUp ).withHeader( Message.HEADER_INSTANCE_ID, "2" ) ) );
     }
 
     @Test
-    public void shouldLogFirstHeartbeatAfterTimeout() throws Throwable
+    public void shouldLogFirstHeartbeatAfterTimeout()
     {
         // given
         InstanceId instanceId = new InstanceId( 1 );
@@ -216,7 +216,7 @@ public class HeartbeatStateTest
                 mock( MessageSender.class ),
                 timeouts,
                 mock( DelayedDirectExecutor.class ),
-                command -> command.run(),
+                Runnable::run,
                 instanceId );
         stateMachines.addStateMachine(
                 new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,
@@ -229,7 +229,7 @@ public class HeartbeatStateTest
         stateMachines.process( Message.internal( HeartbeatMessage.join ) );
         stateMachines.process(
                 Message.internal( HeartbeatMessage.i_am_alive, new HeartbeatMessage.IAmAliveState( otherInstance ) )
-                        .setHeader( Message.CREATED_BY, otherInstance.toString() ) );
+                        .setHeader( Message.HEADER_CREATED_BY, otherInstance.toString() ) );
         for ( int i = 1; i <= 15; i++ )
         {
             timeouts.tick( i );
@@ -248,7 +248,7 @@ public class HeartbeatStateTest
         // when
         stateMachines.process(
                 Message.internal( HeartbeatMessage.i_am_alive, new HeartbeatMessage.IAmAliveState( otherInstance ) )
-                        .setHeader( Message.CREATED_BY, otherInstance.toString() ) );
+                        .setHeader( Message.HEADER_CREATED_BY, otherInstance.toString() ) );
 
         // then
         internalLog.assertExactly( inLog( HeartbeatState.class ).debug( "Received i_am_alive[2] after missing 3 (15ms)" ) );

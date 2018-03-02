@@ -30,8 +30,8 @@ import java.util.Set;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -164,7 +164,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
                     private boolean first = skipFirst;
 
                     @Override
-                    public Cursor<RelationshipItem> answer( InvocationOnMock invocation ) throws Throwable
+                    public Cursor<RelationshipItem> answer( InvocationOnMock invocation )
                     {
                         try
                         {
@@ -246,7 +246,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
         public final Set<Long> set = new HashSet<>();
 
         @Override
-        public void accept( Long input ) throws KernelException
+        public void accept( Long input )
         {
             assertNotNull( input );
             set.add( input );

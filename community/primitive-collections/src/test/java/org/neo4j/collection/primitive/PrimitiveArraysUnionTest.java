@@ -78,7 +78,7 @@ public class PrimitiveArraysUnionTest
     }
 
     @Test
-    public void testUnion() throws Exception
+    public void testUnion()
     {
         int[] actual = union( lhs, rhs );
         if ( lhs == expected || rhs == expected )

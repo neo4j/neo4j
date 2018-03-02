@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.core.consensus.log;
 
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.LongPredicate;
 
@@ -68,16 +67,7 @@ public class RaftLogMetadataCache
 
     private void remove( LongPredicate predicate )
     {
-        Iterator<Long> keys = raftLogEntryCache.keySet().iterator();
-
-        while ( keys.hasNext() )
-        {
-            Long key = keys.next();
-            if ( predicate.test( key ) )
-            {
-                keys.remove();
-            }
-        }
+        raftLogEntryCache.keySet().removeIf( predicate::test );
     }
 
     public static class RaftLogEntryMetadata

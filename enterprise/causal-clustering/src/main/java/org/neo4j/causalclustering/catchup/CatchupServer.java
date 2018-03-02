@@ -19,13 +19,9 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.net.BindException;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -38,20 +34,25 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
+import java.net.BindException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 import org.neo4j.causalclustering.catchup.storecopy.FileChunkEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderEncoder;
-import org.neo4j.causalclustering.catchup.storecopy.StoreResourceStreamFactory;
-import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProtocol;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponseEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponseEncoder;
+import org.neo4j.causalclustering.catchup.storecopy.StoreResourceStreamFactory;
+import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProcess;
+import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProtocol;
 import org.neo4j.causalclustering.catchup.tx.TxPullRequestDecoder;
 import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
@@ -64,7 +65,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -95,7 +96,7 @@ public class CatchupServer extends LifecycleAdapter
     private final BooleanSupplier dataSourceAvailabilitySupplier;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final PipelineHandlerAppender pipelineAppender;
+    private final PipelineWrapper pipelineWrapper;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
@@ -112,7 +113,7 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
                           CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
                           FileSystemAbstraction fs, PageCache pageCache,
-                          StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineHandlerAppender pipelineAppender )
+                          StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineWrapper pipelineWrapper )
     {
         this.snapshotService = snapshotService;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
@@ -129,11 +130,11 @@ public class CatchupServer extends LifecycleAdapter
         this.checkPointerSupplier = checkPointerSupplier;
         this.fs = fs;
         this.pageCache = pageCache;
-        this.pipelineAppender = pipelineAppender;
+        this.pipelineWrapper = pipelineWrapper;
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public synchronized void start()
     {
         if ( channel != null )
         {
@@ -153,7 +154,10 @@ public class CatchupServer extends LifecycleAdapter
 
                         ChannelPipeline pipeline = ch.pipeline();
 
-                        pipelineAppender.addPipelineHandlerForServer( pipeline, ch );
+                        for ( ChannelHandler handler : pipelineWrapper.handlersFor( ch ) )
+                        {
+                            pipeline.addLast( handler );
+                        }
 
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
@@ -232,7 +236,7 @@ public class CatchupServer extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public synchronized void stop()
     {
         if ( channel == null )
         {

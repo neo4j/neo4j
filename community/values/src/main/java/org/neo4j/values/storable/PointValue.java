@@ -25,12 +25,13 @@ import java.util.List;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.PrettyPrinter;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 
-public class PointValue extends ScalarValue implements Comparable<PointValue>, Point
+public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
@@ -68,36 +69,6 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     }
 
     @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( long x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( double x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
     public boolean equals( Value other )
     {
         if ( other instanceof PointValue )
@@ -132,13 +103,10 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     @Override
     public boolean eq( Object other )
     {
-        return other != null &&
-               (
-                       (other instanceof Value && equals( (Value) other )) ||
-                       (other instanceof Point && equals( (Point) other ))
-               );
+        return other != null && ((other instanceof Value && equals( (Value) other )) || (other instanceof Point && equals( (Point) other )));
     }
 
+    @Override
     public int compareTo( PointValue other )
     {
         int cmpCRS = this.crs.getCode() - other.crs.getCode();
@@ -158,7 +126,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
 
         for ( int i = 0; i < coordinate.length; i++ )
         {
-            int cmpVal = (int) (this.coordinate[i] - other.coordinate[i]);
+            int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
             if ( cmpVal != 0 )
             {
                 return cmpVal;
@@ -168,9 +136,42 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     }
 
     @Override
-    public Object asObjectCopy()
+    int unsafeCompareTo( Value otherValue )
     {
-        return new PointValue( this.crs, this.coordinate );
+        return compareTo( (PointValue) otherValue );
+    }
+
+    @Override
+    Integer unsafeTernaryCompareTo( Value otherValue )
+    {
+        PointValue other = (PointValue) otherValue;
+
+        if ( this.crs.getCode() != other.crs.getCode() || this.coordinate.length != other.coordinate.length )
+        {
+            return null;
+        }
+
+        int result = 0;
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
+            if ( cmpVal != 0 && cmpVal != result )
+            {
+                if ( (cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0) )
+                {
+                    return null;
+                }
+                result = cmpVal;
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public Point asObjectCopy()
+    {
+        return this;
     }
 
     public CoordinateReferenceSystem getCoordinateReferenceSystem()
@@ -196,6 +197,12 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     }
 
     @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapPoint( this );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Point{ %s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
@@ -211,5 +218,41 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     public CRS getCRS()
     {
         return crs;
+    }
+
+    public boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
+    {
+        boolean checkLower = lower != null;
+        boolean checkUpper = upper != null;
+
+        if ( checkLower && this.crs.getCode() != lower.crs.getCode() )
+        {
+            return false;
+        }
+        if ( checkUpper && this.crs.getCode() != upper.crs.getCode() )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            if ( checkLower )
+            {
+                int compareLower = Double.compare( this.coordinate[i], lower.coordinate[i] );
+                if ( compareLower < 0 || compareLower == 0 && !includeLower )
+                {
+                    return false;
+                }
+            }
+            if ( checkUpper )
+            {
+                int compareUpper = Double.compare( this.coordinate[i], upper.coordinate[i] );
+                if ( compareUpper > 0 || compareUpper == 0 && !includeUpper )
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

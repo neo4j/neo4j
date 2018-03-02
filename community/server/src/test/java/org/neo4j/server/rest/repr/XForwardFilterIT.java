@@ -46,7 +46,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     private static GraphDbHelper helper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
@@ -59,7 +59,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseXForwardedHostHeaderWhenPresent() throws Exception
+    public void shouldUseXForwardedHostHeaderWhenPresent()
     {
         // when
         ClientResponse response = client.resource( getManageUri() )
@@ -74,7 +74,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseXForwardedProtoHeaderWhenPresent() throws Exception
+    public void shouldUseXForwardedProtoHeaderWhenPresent()
     {
         // when
         ClientResponse response = client.resource( getManageUri() )
@@ -89,7 +89,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldPickFirstXForwardedHostHeaderValueFromCommaOrCommaAndSpaceSeparatedList() throws Exception
+    public void shouldPickFirstXForwardedHostHeaderValueFromCommaOrCommaAndSpaceSeparatedList()
     {
         // when
         ClientResponse response = client.resource( getManageUri() )
@@ -104,7 +104,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseBaseUriOnBadXForwardedHostHeader() throws Exception
+    public void shouldUseBaseUriOnBadXForwardedHostHeader()
     {
         // when
         ClientResponse response = client.resource( getManageUri() )
@@ -118,7 +118,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseBaseUriIfFirstAddressInXForwardedHostHeaderIsBad() throws Exception
+    public void shouldUseBaseUriIfFirstAddressInXForwardedHostHeaderIsBad()
     {
         // when
         ClientResponse response = client.resource( getManageUri() )
@@ -132,7 +132,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseBaseUriOnBadXForwardedProtoHeader() throws Exception
+    public void shouldUseBaseUriOnBadXForwardedProtoHeader()
     {
         // when
         ClientResponse response = client.resource( getManageUri() )
@@ -146,7 +146,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseXForwardedHostAndXForwardedProtoHeadersWhenPresent() throws Exception
+    public void shouldUseXForwardedHostAndXForwardedProtoHeadersWhenPresent()
     {
         // when
         ClientResponse response = client.resource( getManageUri() )

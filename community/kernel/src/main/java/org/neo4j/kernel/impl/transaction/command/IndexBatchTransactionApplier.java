@@ -172,7 +172,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         }
 
         @Override
-        public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
+        public boolean visitNodeCommand( Command.NodeCommand command )
         {
             // for label store updates
             NodeRecord before = command.getBefore();
@@ -206,7 +206,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         }
 
         @Override
-        public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+        public boolean visitPropertyCommand( PropertyCommand command )
         {
             return indexUpdatesExtractor.visitPropertyCommand( command );
         }

@@ -101,7 +101,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void noLogFilesFound() throws Throwable
+    public void noLogFilesFound()
     {
         // given no files
         setupLogFiles();
@@ -114,7 +114,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void oneLogFileNoCheckPoints() throws Throwable
+    public void oneLogFileNoCheckPoints()
     {
         // given
         setupLogFiles( logFile() );
@@ -127,7 +127,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void oneLogFileNoCheckPointsOneStart() throws Throwable
+    public void oneLogFileNoCheckPointsOneStart()
     {
         // given
         long txId = 10;
@@ -141,7 +141,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void twoLogFilesNoCheckPoints() throws Throwable
+    public void twoLogFilesNoCheckPoints()
     {
         // given
         setupLogFiles( logFile(), logFile() );
@@ -154,7 +154,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void twoLogFilesNoCheckPointsOneStart() throws Throwable
+    public void twoLogFilesNoCheckPointsOneStart()
     {
         // given
         long txId = 21;
@@ -168,7 +168,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void twoLogFilesNoCheckPointsOneStartWithoutCommit() throws Throwable
+    public void twoLogFilesNoCheckPointsOneStartWithoutCommit()
     {
         // given
         setupLogFiles( logFile(), logFile( start() ) );
@@ -181,7 +181,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void twoLogFilesNoCheckPointsTwoCommits() throws Throwable
+    public void twoLogFilesNoCheckPointsTwoCommits()
     {
         // given
         long txId = 21;
@@ -195,7 +195,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void twoLogFilesCheckPointTargetsPrevious() throws Exception
+    public void twoLogFilesCheckPointTargetsPrevious()
     {
         // given
         long txId = 6;
@@ -213,7 +213,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void twoLogFilesStartAndCommitInDifferentFiles() throws Exception
+    public void twoLogFilesStartAndCommitInDifferentFiles()
     {
         // given
         long txId = 6;
@@ -229,7 +229,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void latestLogFileContainingACheckPointOnly() throws Throwable
+    public void latestLogFileContainingACheckPointOnly()
     {
         // given
         setupLogFiles( logFile( checkPoint() ) );
@@ -242,7 +242,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void latestLogFileContainingACheckPointAndAStartBefore() throws Throwable
+    public void latestLogFileContainingACheckPointAndAStartBefore()
     {
         // given
         setupLogFiles( logFile( start(), checkPoint() ) );
@@ -302,7 +302,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void latestLogFileContainingACheckPointAndAStartAfter() throws Throwable
+    public void latestLogFileContainingACheckPointAndAStartAfter()
     {
         // given
         long txId = 35;
@@ -317,7 +317,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void latestLogFileContainingACheckPointAndAStartWithoutCommitAfter() throws Throwable
+    public void latestLogFileContainingACheckPointAndAStartWithoutCommitAfter()
     {
         // given
         StartEntry start = start();
@@ -331,7 +331,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void latestLogFileContainingMultipleCheckPointsOneStartInBetween() throws Throwable
+    public void latestLogFileContainingMultipleCheckPointsOneStartInBetween()
     {
         // given
         setupLogFiles( logFile( checkPoint(), start(), checkPoint() ) );
@@ -344,7 +344,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth() throws Throwable
+    public void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth()
     {
         // given
         long txId = 11;
@@ -358,7 +358,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void olderLogFileContainingACheckPointAndNewerFileContainingAStart() throws Throwable
+    public void olderLogFileContainingACheckPointAndNewerFileContainingAStart()
     {
         // given
         long txId = 11;
@@ -373,7 +373,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void olderLogFileContainingACheckPointAndNewerFileIsEmpty() throws Throwable
+    public void olderLogFileContainingACheckPointAndNewerFileIsEmpty()
     {
         // given
         StartEntry start = start();
@@ -387,7 +387,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStart() throws Throwable
+    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStart()
     {
         // given
         long txId = 123;
@@ -403,7 +403,6 @@ public class LogTailScannerTest
 
     @Test
     public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStartWithoutCommit()
-            throws Throwable
     {
         // given
         StartEntry start = start();
@@ -417,7 +416,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToALaterPositionThanStart() throws Throwable
+    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToALaterPositionThanStart()
     {
         // given
         PositionEntry position = position();
@@ -431,7 +430,7 @@ public class LogTailScannerTest
     }
 
     @Test
-    public void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog() throws Throwable
+    public void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog()
     {
         // given
         long txId = 432;
@@ -446,7 +445,7 @@ public class LogTailScannerTest
 
     // === Below is code for helping the tests above ===
 
-    private void setupLogFiles( LogCreator... logFiles ) throws IOException
+    private void setupLogFiles( LogCreator... logFiles )
     {
         Map<Entry,LogPosition> positions = new HashMap<>();
         long version = endLogVersion - logFiles.length;
@@ -521,7 +520,7 @@ public class LogTailScannerTest
 
     interface LogCreator
     {
-        void create( long version, Map<Entry,LogPosition> positions ) throws IOException;
+        void create( long version, Map<Entry,LogPosition> positions );
     }
 
     // Marker interface, helping compilation/test creation

@@ -22,7 +22,6 @@ package org.neo4j.graphalgo.impl.path;
 import org.apache.commons.lang3.mutable.MutableDouble;
 
 import java.util.Collections;
-import java.util.Iterator;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.PathFinder;

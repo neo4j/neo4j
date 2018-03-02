@@ -42,6 +42,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -98,7 +99,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.RECOVERY_PREVENTING_COLLECTOR;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
 
@@ -173,7 +173,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Config config = Config.defaults();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
             StoreFactory storeFactory = new StoreFactory(
-                    directory, config, idGeneratorFactory, pageCache, fileSystem, logProvider );
+                    directory, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
             neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
@@ -227,7 +227,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         LabelTokenHolder labelTokenHolder = life.add( new DelegatingLabelTokenHolder( tokenCreator ) );
         RelationshipTypeTokenHolder relationshipTypeTokenHolder = life.add( new DelegatingRelationshipTypeTokenHolder( tokenCreator ) );
         KernelExtensions extensions = life.add(
-                instantiateKernelExtensions( storeDir, fileSystem, config, logService, pageCache, RECOVERY_PREVENTING_COLLECTOR, DatabaseInfo.COMMUNITY,
+                instantiateKernelExtensions( storeDir, fileSystem, config, logService, pageCache, RecoveryCleanupWorkCollector.IGNORE, DatabaseInfo.COMMUNITY,
                         monitors, propkeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder ) );
         return loadSchemaIndexProviders( extensions );
     }

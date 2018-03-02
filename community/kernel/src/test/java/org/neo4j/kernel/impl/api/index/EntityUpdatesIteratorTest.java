@@ -38,7 +38,7 @@ public class EntityUpdatesIteratorTest
 {
 
     @Test
-    public void iterateOverEmptyNodeIds() throws Exception
+    public void iterateOverEmptyNodeIds()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         PrimitiveLongIterator emptyIterator = PrimitiveLongCollections.emptyIterator();
@@ -47,7 +47,7 @@ public class EntityUpdatesIteratorTest
     }
 
     @Test
-    public void iterateOverUpdatesWithNext() throws Exception
+    public void iterateOverUpdatesWithNext()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         EntityUpdates entityUpdates1 = EntityUpdates.forEntity( 1 ).build();

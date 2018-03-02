@@ -36,7 +36,7 @@ import static org.junit.Assert.assertThat;
 public class PropertyContainerStateImplTest
 {
     @Test
-    public void shouldListAddedProperties() throws Exception
+    public void shouldListAddedProperties()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
@@ -53,7 +53,7 @@ public class PropertyContainerStateImplTest
     }
 
     @Test
-    public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced() throws Exception
+    public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
@@ -73,7 +73,7 @@ public class PropertyContainerStateImplTest
     }
 
     @Test
-    public void shouldConvertAddRemoveToChange() throws Exception
+    public void shouldConvertAddRemoveToChange()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );

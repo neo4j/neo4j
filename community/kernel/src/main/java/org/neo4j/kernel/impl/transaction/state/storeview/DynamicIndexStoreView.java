@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -40,7 +40,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
 /**

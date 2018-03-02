@@ -32,7 +32,6 @@ public class DurableStateStorageImporter<STATE> extends DurableStateStorage<STAT
     public DurableStateStorageImporter( FileSystemAbstraction fileSystemAbstraction, File stateDir, String name,
                                         StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
                                         Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
-            throws IOException
     {
         super( fileSystemAbstraction, stateDir, name, marshal, numberOfEntriesBeforeRotation, logProvider );
     }

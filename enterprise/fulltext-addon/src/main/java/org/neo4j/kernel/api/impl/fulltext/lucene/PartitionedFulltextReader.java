@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
@@ -55,12 +53,12 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( String query )
+    public ScoreEntityIterator query( String query )
     {
         return partitionedOperation( reader -> innerQuery( reader, query ) );
     }
 
-    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, String query )
+    private ScoreEntityIterator innerQuery( ReadOnlyFulltext reader, String query )
     {
 
         return reader.query( query );
@@ -79,8 +77,8 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         }
     }
 
-    private PrimitiveLongIterator partitionedOperation( Function<ReadOnlyFulltext,PrimitiveLongIterator> readerFunction )
+    private ScoreEntityIterator partitionedOperation( Function<ReadOnlyFulltext,ScoreEntityIterator> readerFunction )
     {
-        return PrimitiveLongCollections.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
+        return ScoreEntityIterator.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
     }
 }

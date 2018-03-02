@@ -26,5 +26,5 @@ public enum NumberType
 {
     NO_NUMBER,
     INTEGRAL,
-    FLOATING_POINT;
+    FLOATING_POINT
 }

@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class SizeBasedLogPruningStrategyTest extends PruningStrategyTest
 {
     @Test
-    public void indexToKeepTest() throws Exception
+    public void indexToKeepTest()
     {
         // given
         int segmentFilesCount = 14;

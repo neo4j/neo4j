@@ -25,6 +25,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -50,13 +51,13 @@ public class FreeIdsAfterRecoveryTest
             .around( pageCacheRule );
 
     @Test
-    public void shouldCompletelyRebuildIdGeneratorsAfterCrash() throws Exception
+    public void shouldCompletelyRebuildIdGeneratorsAfterCrash()
     {
         // GIVEN
         StoreFactory storeFactory = new StoreFactory(
                 directory.directory(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {

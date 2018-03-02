@@ -77,7 +77,6 @@ public class StateMachineProxyFactory
     }
 
     Object invoke( StateMachine stateMachine, Method method, Object arg )
-            throws Throwable
     {
         if ( method.getName().equals( "toString" ) )
         {
@@ -93,14 +92,13 @@ public class StateMachineProxyFactory
 
         try
         {
-            Class<? extends MessageType> messageType = stateMachine.getMessageType();
-            MessageType typeAsEnum = (MessageType) Enum.valueOf( (Class<? extends Enum>) messageType, method.getName() );
+            MessageType typeAsEnum = (MessageType) Enum.valueOf( stateMachine.getMessageType(), method.getName() );
             Message<?> message = Message.internal( typeAsEnum, arg );
             if ( me != null )
             {
                 message.
-                    setHeader( Message.CONVERSATION_ID, conversationId ).
-                    setHeader( Message.CREATED_BY,me.toString() );
+                    setHeader( Message.HEADER_CONVERSATION_ID, conversationId ).
+                    setHeader( Message.HEADER_CREATED_BY,me.toString() );
             }
 
             if ( method.getReturnType().equals( Void.TYPE ) )
@@ -125,13 +123,13 @@ public class StateMachineProxyFactory
     }
 
     @Override
-    public boolean process( Message message )
+    public boolean process( Message<?> message )
     {
         if ( !responseFutureMap.isEmpty() )
         {
-            if ( !message.hasHeader( Message.TO ) )
+            if ( !message.hasHeader( Message.HEADER_TO ) )
             {
-                String conversationId = message.getHeader( Message.CONVERSATION_ID );
+                String conversationId = message.getHeader( Message.HEADER_CONVERSATION_ID );
                 ResponseFuture future = responseFutureMap.get( conversationId );
                 if ( future != null )
                 {
@@ -170,7 +168,7 @@ public class StateMachineProxyFactory
 
                 try
                 {
-                    Enum.valueOf( (Class<? extends Enum>) stateMachine.getMessageType(), method.getName() );
+                    Enum.valueOf( stateMachine.getMessageType(), method.getName() );
 
                     // Ok!
                     foundMatch = true;

@@ -19,16 +19,18 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
+
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class MultiRetryStrategyTest
 {
     private static final Predicate<Integer> ALWAYS_VALID = i -> true;
@@ -52,18 +54,15 @@ public class MultiRetryStrategyTest
     public void successOnRetryCausesNoDelay()
     {
         // given
-        int delay = 1000;
+        CountingSleeper countingSleeper = new CountingSleeper();
         int retries = 10;
-        MultiRetryStrategy<Integer,Integer> subject = new MultiRetryStrategy<>( delay, retries );
+        MultiRetryStrategy<Integer,Integer> subject = new MultiRetryStrategy<>( 0, retries, NullLogProvider.getInstance(), countingSleeper );
 
         // when
-        long startTime = System.currentTimeMillis();
         Integer result = subject.apply( 3, Function.identity(), ALWAYS_VALID );
-        long endTime = System.currentTimeMillis();
 
         // then
-        long duration = endTime - startTime;
-        assertTrue( "First execution should not be called after delay", duration < delay );
+        assertEquals( 0, countingSleeper.invocationCount() );
         assertEquals( "Function identity should be used to retrieve the expected value", 3, result.intValue() );
     }
 
@@ -71,41 +70,44 @@ public class MultiRetryStrategyTest
     public void numberOfIterationsDoesNotExceedMaximum()
     {
         // given
-        int delay = 200;
+        CountingSleeper countingSleeper = new CountingSleeper();
         int retries = 5;
-        MultiRetryStrategy<Integer,Integer> subject = new MultiRetryStrategy<>( delay, retries );
+        MultiRetryStrategy<Integer,Integer> subject = new MultiRetryStrategy<>( 0, retries, NullLogProvider.getInstance(), countingSleeper );
 
         // when
-        long startTime = System.currentTimeMillis();
-        Integer result = subject.apply( 3, Function.identity(), NEVER_VALID );
-        long endTime = System.currentTimeMillis();
+        subject.apply( 3, Function.identity(), NEVER_VALID );
 
         // then
-        long duration = endTime - startTime;
-        double durationInSeconds = duration / 1000.0;
-        double expectedDurationInSeconds = (delay * retries) / 1000.0;
-        double marginOfErrorInSeconds = (delay / 1000.0) / 2;
-        assertEquals( expectedDurationInSeconds, durationInSeconds, marginOfErrorInSeconds );
+        assertEquals( retries, countingSleeper.invocationCount() );
     }
 
     @Test
     public void successfulRetriesBreakTheRetryLoop()
     {
-        // given
-        int delay = 200;
-        int retries = 10;
-        MultiRetryStrategy<Integer,Integer> subject = new MultiRetryStrategy<>( delay, retries );
+        CountingSleeper countingSleeper = new CountingSleeper();
+        int retries = 5;
+        MultiRetryStrategy<Integer,Integer> subject = new MultiRetryStrategy<>( 0, retries, NullLogProvider.getInstance(), countingSleeper );
 
         // when
-        long startTime = System.currentTimeMillis();
-        Integer result = subject.apply( 3, Function.identity(), VALID_ON_SECOND_TIME );
-        long endTime = System.currentTimeMillis();
+        subject.apply( 3, Function.identity(), VALID_ON_SECOND_TIME );
 
         // then
-        long duration = endTime - startTime;
-        double durationInSeconds = duration / 1000.0;
-        double expectedDurationInSeconds = delay / 1000.0;
-        double marginOfErrorInSeconds = (delay / 1000.0) / 4;
-        assertEquals( expectedDurationInSeconds, durationInSeconds, marginOfErrorInSeconds );
+        assertEquals( 1, countingSleeper.invocationCount() );
+    }
+
+    private class CountingSleeper implements LongConsumer
+    {
+        private int counter;
+
+        @Override
+        public void accept( long l )
+        {
+            counter++;
+        }
+
+        public int invocationCount()
+        {
+            return counter;
+        }
     }
 }

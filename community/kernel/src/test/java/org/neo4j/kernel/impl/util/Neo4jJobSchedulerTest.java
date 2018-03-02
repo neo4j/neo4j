@@ -35,6 +35,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
+
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +48,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 import static org.neo4j.test.ReflectionUtil.replaceValueInPrivateField;
 
@@ -57,21 +57,10 @@ public class Neo4jJobSchedulerTest
     private final LifeSupport life = new LifeSupport();
     private final Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
 
-    private final Runnable countInvocationsJob = () ->
-    {
-        try
-        {
-            invocations.incrementAndGet();
-        }
-        catch ( Throwable e )
-        {
-            e.printStackTrace();
-            throw launderedException( e );
-        }
-    };
+    private final Runnable countInvocationsJob = invocations::incrementAndGet;
 
     @After
-    public void stopScheduler() throws Throwable
+    public void stopScheduler()
     {
         life.shutdown();
     }
@@ -182,7 +171,7 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void shouldNotifyCancelListeners() throws Exception
+    public void shouldNotifyCancelListeners()
     {
         // GIVEN
         Neo4jJobScheduler neo4jJobScheduler = new Neo4jJobScheduler();

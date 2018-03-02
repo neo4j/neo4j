@@ -124,7 +124,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         Config config = dependencies.config();
         GraphDatabaseService gdb = dependencies.db();
@@ -148,7 +148,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
-        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config );
+        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
         BoltProtocolHandlerFactory handlerFactory = createHandlerFactory( workerFactory, throttleGroup, logService );
 
         Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
@@ -192,12 +192,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         if ( !connectors.isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
-            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors, connectionRegister ) );
+            NettyServer server = new NettyServer( scheduler.threadFactory( boltNetworkIO ),
+                                                  connectors, connectionRegister,
+                                                  logService.getUserLog( WorkerFactory.class ) );
+            life.add( server );
             log.info( "Bolt Server extension loaded." );
-            for ( ProtocolInitializer connector : connectors.values() )
-            {
-                logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
-            }
         }
 
         return life;

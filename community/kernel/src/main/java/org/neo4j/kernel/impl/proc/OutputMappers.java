@@ -83,7 +83,7 @@ public class OutputMappers
         }
     }
 
-    public static OutputMapper VOID_MAPPER = new OutputMapper( new FieldSignature[0], new FieldMapper[0] )
+    private static final OutputMapper VOID_MAPPER = new OutputMapper( new FieldSignature[0], new FieldMapper[0] )
     {
         @Override
         public List<FieldSignature> signature()
@@ -98,18 +98,18 @@ public class OutputMappers
     private static class FieldMapper
     {
         private final MethodHandle getter;
-        private final TypeMappers.NeoValueConverter mapper;
+        private final TypeMappers.TypeChecker checker;
 
-        FieldMapper( MethodHandle getter, TypeMappers.NeoValueConverter mapper )
+        FieldMapper( MethodHandle getter, TypeMappers.TypeChecker checker )
         {
             this.getter = getter;
-            this.mapper = mapper;
+            this.checker = checker;
         }
 
         Object apply( Object record ) throws ProcedureException
         {
             Object invoke = getValue( record );
-            return mapper.toNeoValue( invoke );
+            return checker.typeCheck( invoke );
         }
 
         private Object getValue( Object record ) throws ProcedureException
@@ -196,12 +196,12 @@ public class OutputMappers
 
             try
             {
-                TypeMappers.NeoValueConverter mapper = typeMappers.converterFor( field.getGenericType() );
+                TypeMappers.TypeChecker checker = typeMappers.checkerFor( field.getGenericType() );
                 MethodHandle getter = lookup.unreflectGetter( field );
-                FieldMapper fieldMapper = new FieldMapper( getter, mapper );
+                FieldMapper fieldMapper = new FieldMapper( getter, checker );
 
                 fieldMappers[i] = fieldMapper;
-                signature[i] = FieldSignature.outputField( field.getName(), mapper.type(), field.isAnnotationPresent( Deprecated.class ) );
+                signature[i] = FieldSignature.outputField( field.getName(), checker.type(), field.isAnnotationPresent( Deprecated.class ) );
             }
             catch ( ProcedureException e )
             {

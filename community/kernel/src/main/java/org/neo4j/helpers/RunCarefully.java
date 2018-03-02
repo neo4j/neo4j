@@ -19,7 +19,9 @@
  */
 package org.neo4j.helpers;
 
-import static org.neo4j.helpers.Exceptions.combine;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.neo4j.helpers.collection.Iterables.asArray;
 
 public class RunCarefully
@@ -38,7 +40,7 @@ public class RunCarefully
 
     public void run()
     {
-        Throwable error = null;
+        List<Throwable> errors = new ArrayList<>();
 
         for ( Runnable o : operations )
         {
@@ -48,13 +50,15 @@ public class RunCarefully
             }
             catch ( RuntimeException e )
             {
-                error = combine( error, e );
+                errors.add( e );
             }
         }
 
-        if ( error != null )
+        if ( !errors.isEmpty() )
         {
-            throw new RuntimeException( error );
+            RuntimeException exception = new RuntimeException();
+            errors.forEach( exception::addSuppressed );
+            throw exception;
         }
     }
 }

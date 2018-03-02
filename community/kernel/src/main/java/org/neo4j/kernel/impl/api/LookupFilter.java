@@ -27,7 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.storageengine.api.NodeItem;
@@ -59,18 +59,18 @@ public class LookupFilter
             return indexedNodeIds;
         }
 
-        IndexQuery[] numericPredicates =
+        IndexQuery[] filteredPredicates =
                 Arrays.stream( predicates )
-                        .filter( LookupFilter::isNumericPredicate )
+                        .filter( LookupFilter::isNumericOrGeometricPredicate )
                         .toArray( IndexQuery[]::new );
 
-        if ( numericPredicates.length > 0 )
+        if ( filteredPredicates.length > 0 )
         {
             LongPredicate combinedPredicate = nodeId ->
             {
                 try
                 {
-                    for ( IndexQuery predicate : numericPredicates )
+                    for ( IndexQuery predicate : filteredPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
                         Value value = accessor.getPropertyValue( nodeId, propertyKeyId );
@@ -110,19 +110,19 @@ public class LookupFilter
             return indexedNodeIds;
         }
 
-        IndexQuery[] numericPredicates =
+        IndexQuery[] filteredPredicates =
                 Arrays.stream( predicates )
-                        .filter( LookupFilter::isNumericPredicate )
+                        .filter( LookupFilter::isNumericOrGeometricPredicate )
                         .toArray( IndexQuery[]::new );
 
-        if ( numericPredicates.length > 0 )
+        if ( filteredPredicates.length > 0 )
         {
             LongPredicate combinedPredicate = nodeId ->
             {
                 try ( Cursor<NodeItem> node = operations.nodeCursorById( state, nodeId ) )
                 {
                     NodeItem nodeItem = node.get();
-                    for ( IndexQuery predicate : numericPredicates )
+                    for ( IndexQuery predicate : filteredPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
                         Value value = operations.nodeGetProperty( state, nodeItem, propertyKeyId );
@@ -144,26 +144,26 @@ public class LookupFilter
         return indexedNodeIds;
     }
 
-    private static boolean isNumericPredicate( IndexQuery predicate )
+    private static boolean isNumericOrGeometricPredicate( IndexQuery predicate )
     {
 
         if ( predicate.type() == IndexQuery.IndexQueryType.exact )
         {
             IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
-            if ( isNumberOrArray( exactPredicate.value() ) )
+            if ( isNumberGeometryOrArray( exactPredicate.value() ) )
             {
                 return true;
             }
         }
-        else if ( predicate.type() == IndexQuery.IndexQueryType.rangeNumeric )
+        else if ( predicate.type() == IndexQuery.IndexQueryType.rangeNumeric || predicate.type() == IndexQuery.IndexQueryType.rangeGeometric )
         {
             return true;
         }
         return false;
     }
 
-    private static boolean isNumberOrArray( Value value )
+    private static boolean isNumberGeometryOrArray( Value value )
     {
-        return Values.isNumberValue( value ) || Values.isArrayValue( value );
+        return Values.isNumberValue( value ) || Values.isGeometryValue( value ) || Values.isArrayValue( value );
     }
 }

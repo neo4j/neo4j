@@ -68,15 +68,16 @@
     <lucene.version>5.5.5</lucene.version>
     <bouncycastle.version>1.59</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
+    <java9.exports/>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
       -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
-      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
+      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java9.exports} ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
-    <jetty.version>9.2.22.v20170606</jetty.version>
+    <jetty.version>9.4.8.v20171121</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>
@@ -89,7 +90,10 @@
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>6.0</asm.version>
     <metrics.version>4.0.2</metrics.version>
+    <scala.target.vm>1.8</scala.target.vm>
     <scala.java9.arg/>
+    <jersey.version>1.19.3</jersey.version>
+    <checkstyle.strict>true</checkstyle.strict>
   </properties>
 
   <modules>
@@ -236,7 +240,7 @@
         <plugin>
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.9.5</version>
+          <version>0.10.0</version>
           <configuration>
             <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
             <analysisConfiguration>
@@ -296,6 +300,27 @@
                   <class>org.neo4j.graphalgo.WeightedPath</class>
                   <justification>Cleanup accidental Path exposure as a Resource.</justification>
                 </item>
+                <item>
+                  <code>java.class.removed</code>
+                  <old>interface org.neo4j.management.Cache</old>
+                  <classSimpleName>Cache</classSimpleName>
+                  <package>org.neo4j.management</package>
+                  <elementKind>interface</elementKind>
+                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
+                </item>
+                <item>
+                  <code>java.method.removed</code>
+                  <classSimpleName>Neo4jManager</classSimpleName>
+                  <methodName>getCacheBeans</methodName>
+                  <package>org.neo4j.management</package>
+                  <elementKind>method</elementKind>
+                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
+                </item>
+                <item>
+                  <code>java.class.removed</code>
+                  <class>org.neo4j.helpers.FailableConcurrentTransfer</class>
+                  <justification>Class is never used</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
@@ -315,12 +340,12 @@
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
-              <version>0.14.4</version>
+              <version>0.15.1</version>
             </dependency>
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-basic-features</artifactId>
-              <version>0.6.3</version>
+              <version>0.7.0</version>
             </dependency>
           </dependencies>
           <executions>
@@ -395,6 +420,7 @@
                   </manifest>
                   <manifestEntries>
                     <Url>${project.organization.url}</Url>
+                    <Automatic-Module-Name>${moduleName}</Automatic-Module-Name>
                   </manifestEntries>
                 </archive>
               </configuration>
@@ -436,7 +462,7 @@
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>licensing-maven-plugin</artifactId>
-          <version>1.7.5</version>
+          <version>1.7.6</version>
           <configuration>
             <failIfDisliked>true</failIfDisliked>
             <failIfMissing>true</failIfMissing>
@@ -490,7 +516,7 @@
               <arg>-Xmax-classfile-name</arg>
               <arg>100</arg>
               <arg>-Xlint</arg>
-              <arg>-target:jvm-${maven.compiler.target}</arg>
+              <arg>-target:jvm-${scala.target.vm}</arg>
               <arg>${scala.java9.arg}</arg>
             </args>
             <jvmArgs>
@@ -519,15 +545,39 @@
           </executions>
         </plugin>
 
+        <!-- Enforce naming if packages -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.0.0-M1</version>
+          <configuration>
+            <rules>
+              <evaluateBeanshell>
+                <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
+                <condition>String s = "${project.groupId}"; s.startsWith("org.neo4j")</condition>
+              </evaluateBeanshell>
+              <requireFilesDontExist>
+                <message>You are not allowed to have classes in "com" package</message>
+                <files>
+                  <file>${project.build.sourceDirectory}/com</file>
+                  <file>${project.build.testSourceDirectory}/com</file>
+                </files>
+              </requireFilesDontExist>
+            </rules>
+            <fail>true</fail>
+          </configuration>
+        </plugin>
+
         <!-- Plugin version management -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.7.0</version>
           <configuration>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
+            <compilerArgument>${java9.exports}</compilerArgument>
           </configuration>
-          <version>3.7.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -621,20 +671,20 @@
       <!-- Checkstyle is always validated -->
       <plugin>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>2.17</version>
+        <version>3.0.0</version>
         <configuration>
           <configLocation>build/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
+          <failsOnError>${checkstyle.strict}</failsOnError>
+          <failOnViolation>${checkstyle.strict}</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <dependencies>
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.3</version>
+            <version>8.8</version>
           </dependency>
         </dependencies>
         <executions>
@@ -711,6 +761,19 @@
             <inceptionYear>${project.inceptionYear}</inceptionYear>
           </properties>
         </configuration>
+      </plugin>
+
+      <!-- Always enforce -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>
@@ -847,6 +910,7 @@
         <jdk>9</jdk>
       </activation>
       <properties>
+        <java9.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</java9.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java9.arg>-nobootcp</scala.java9.arg>
       </properties>
@@ -1007,6 +1071,62 @@
         <version>${scala.version}</version>
       </dependency>
 
+      <!-- scala test dependencies -->
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.11</artifactId>
+        <version>2.2.5</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalautils</groupId>
+        <artifactId>scalautils_2.11</artifactId>
+        <version>2.1.7</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalacheck</groupId>
+        <artifactId>scalacheck_2.11</artifactId>
+        <version>1.12.5</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.novus</groupId>
+        <artifactId>salat-core_2.11</artifactId>
+        <version>1.9.9</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scalap</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
       <!-- other -->
       <dependency>
         <groupId>com.google.code.gson</groupId>
@@ -1082,18 +1202,13 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.17.Final</version>
+        <version>4.1.21.Final</version>
       </dependency>
 
       <dependency>
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
         <version>1.2.17</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.janino</groupId>
-        <artifactId>janino</artifactId>
-        <version>3.0.8</version>
       </dependency>
       <dependency>
         <groupId>net.sf.opencsv</groupId>
@@ -1103,7 +1218,7 @@
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-client</artifactId>
-        <version>1.19</version>
+        <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
@@ -1114,7 +1229,7 @@
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-server</artifactId>
-        <version>1.19</version>
+        <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
@@ -1125,18 +1240,13 @@
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-servlet</artifactId>
-        <version>1.19</version>
+        <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
             <artifactId>jsr311-api</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>com.sun.jersey.contribs</groupId>
-        <artifactId>jersey-multipart</artifactId>
-        <version>1.19</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>

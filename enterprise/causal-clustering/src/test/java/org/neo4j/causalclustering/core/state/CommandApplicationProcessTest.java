@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core.state;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.function.Consumer;

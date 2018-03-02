@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 public class UTF8EncoderTest
 {
     @Test
-    public void shouldEncodeDecode() throws Throwable
+    public void shouldEncodeDecode()
     {
         assertEncodes( "" );
         assertEncodes( "a" );

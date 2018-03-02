@@ -79,13 +79,13 @@ public class IdReusabilityStressTesting
     private static final RelationshipType RELATIONSHIP_TYPE = RelationshipType.withName( "testType" );
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule();
+    public final ClusterRule clusterRule = new ClusterRule().withNoTimeout();
 
     private final DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
     private DefaultFileSystemAbstraction fs;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         fs = defaultFileSystemRule.get();
     }
@@ -206,21 +206,13 @@ public class IdReusabilityStressTesting
 
     private static boolean isTransient( Throwable e )
     {
-        if ( e == null )
-        {
-            return false;
-        }
-
-        if ( e instanceof  TimeoutException ||
-                e instanceof DatabaseShutdownException ||
-                e instanceof TransactionFailureException ||
-                e instanceof AcquireLockTimeoutException ||
-                e instanceof TransientTransactionFailureException )
-        {
-            return true;
-        }
-
-        return isInterrupted( e.getCause() );
+        return e != null &&
+               ( e instanceof TimeoutException ||
+                 e instanceof DatabaseShutdownException ||
+                 e instanceof TransactionFailureException ||
+                 e instanceof AcquireLockTimeoutException ||
+                 e instanceof TransientTransactionFailureException ||
+                 isInterrupted( e.getCause() ) );
     }
 
     private static boolean isInterrupted( Throwable e )

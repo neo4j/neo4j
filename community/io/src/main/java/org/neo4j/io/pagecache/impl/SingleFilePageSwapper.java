@@ -728,7 +728,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long getLastPageId() throws IOException
+    public long getLastPageId()
     {
         long channelSize = getCurrentFileSize();
         if ( channelSize == 0 )

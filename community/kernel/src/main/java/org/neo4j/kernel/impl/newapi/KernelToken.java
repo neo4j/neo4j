@@ -20,67 +20,44 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 public class KernelToken implements Token
 {
     private final StoreReadLayer store;
 
-    public KernelToken( StorageEngine engine )
+    public KernelToken( StoreReadLayer store )
     {
-        store = engine.storeReadLayer();
+        this.store = store;
     }
 
     @Override
-    public int labelGetOrCreateForName( String labelName ) throws KernelException
+    public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
-        return store.labelGetOrCreateForName( labelName );
+        return store.labelGetOrCreateForName( checkValidTokenName( labelName ) );
     }
 
     @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
+    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
-        return store.propertyKeyGetOrCreateForName( propertyKeyName );
+        return store.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
     }
 
     @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException
+    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return store.relationshipTypeGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
     }
 
     @Override
-    public void labelCreateForName( String labelName, int id ) throws KernelException
+    public String nodeLabelName( int labelId ) throws LabelNotFoundKernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public String labelGetName( int token ) throws LabelNotFoundKernelException
-    {
-        return store.labelGetName( token );
-    }
-
-    @Override
-    public int labelGetForName( String name )
-    {
-        return store.labelGetForName( name );
-    }
-
-    @Override
-    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws KernelException
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+        return store.labelGetName( labelId );
     }
 
     @Override
@@ -96,14 +73,29 @@ public class KernelToken implements Token
     }
 
     @Override
+    public String relationshipTypeName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
+    {
+        return store.relationshipTypeGetName( relationshipTypeId );
+    }
+
+    @Override
     public int propertyKey( String name )
     {
         return store.propertyKeyGetForName( name );
     }
 
     @Override
-    public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
+    public String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
     {
         return store.propertyKeyGetName( propertyKeyId );
+    }
+
+    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
     }
 }

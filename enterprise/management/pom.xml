@@ -17,6 +17,10 @@
 
   <packaging>jar</packaging>
 
+  <properties>
+    <moduleName>org.neo4j.management</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -67,7 +71,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -102,11 +105,10 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-      <dependency>
-          <groupId>org.mockito</groupId>
-          <artifactId>mockito-core</artifactId>
-          <scope>test</scope>
-      </dependency>
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+    </dependency>
   </dependencies>
 
 </project>

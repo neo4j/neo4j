@@ -42,7 +42,7 @@ public class TwoInstanceClusterIT
     private ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.read_timeout, "1s" )

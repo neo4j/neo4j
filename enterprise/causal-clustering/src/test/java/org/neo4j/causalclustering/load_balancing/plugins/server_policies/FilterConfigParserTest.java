@@ -31,7 +31,7 @@ import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.
 public class FilterConfigParserTest
 {
     @Test
-    public void shouldThrowExceptionOnInvalidConfig() throws Exception
+    public void shouldThrowExceptionOnInvalidConfig()
     {
         String[] invalidConfigs = {
                 "",
@@ -90,7 +90,7 @@ public class FilterConfigParserTest
     }
 
     @Test
-    public void shouldParseValidConfigs() throws Exception
+    public void shouldParseValidConfigs()
     {
         Object[][] validConfigs = {
                 {

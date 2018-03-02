@@ -107,7 +107,7 @@ public enum GeometryType
                     }
                     else
                     {
-                        throw new RuntimeException(
+                        throw new InvalidRecordException(
                                 "Point array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: FloatingPointArray." );
                     }
                 }
@@ -218,7 +218,7 @@ public enum GeometryType
 
     private static GeometryType find( int gtype )
     {
-        if ( gtype < TYPES.length )
+        if ( gtype < TYPES.length && gtype >= 0 )
         {
             return TYPES[gtype];
         }
@@ -226,19 +226,6 @@ public enum GeometryType
         {
             // Kernel code requires no exceptions in deeper PropertyChain processing of corrupt/invalid data
             return GEOMETRY_INVALID;
-        }
-    }
-
-    public static GeometryType find( String name )
-    {
-        GeometryType table = all.get( name );
-        if ( table != null )
-        {
-            return table;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No known Geometry Type: " + name );
         }
     }
 

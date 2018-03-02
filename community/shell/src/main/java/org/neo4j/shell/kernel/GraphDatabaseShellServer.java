@@ -123,7 +123,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    public void registerTopLevelTransactionInProgress( Serializable clientId ) throws ShellException
+    public void registerTopLevelTransactionInProgress( Serializable clientId )
     {
         if ( !clients.containsKey( clientId ) )
         {
@@ -264,7 +264,6 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     {
         @Override
         public String getReplacement( ShellServer server, Session session )
-                throws ShellException
         {
             try
             {

@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.File;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.values.storable.Value;
 
 public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
@@ -32,5 +34,11 @@ public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSui
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         return new InMemoryIndexProvider();
+    }
+
+    @Override
+    public Iterable<Value> getSupportedValues()
+    {
+        return Iterables.concat( commonValues, spatialValues, temporalValues );
     }
 }

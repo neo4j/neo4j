@@ -93,13 +93,13 @@ public class PruningScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         handle = scheduler.schedule( raftLogPruning, job, recurringPeriodMillis, MILLISECONDS );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         log.info( "PruningScheduler stopping" );
         stopped = true;

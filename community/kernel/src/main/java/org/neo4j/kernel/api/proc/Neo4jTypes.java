@@ -40,6 +40,12 @@ public class Neo4jTypes
     public static final PathType NTPath = new PathType();
     public static final GeometryType NTGeometry = new GeometryType();
     public static final PointType NTPoint = new PointType();
+    public static final DateTimeType NTDateTime = new DateTimeType();
+    public static final LocalDateTimeType NTLocalDateTime = new LocalDateTimeType();
+    public static final DateType NTDate = new DateType();
+    public static final TimeType NTTime = new TimeType();
+    public static final LocalTimeType NTLocalTime = new LocalTimeType();
+    public static final DurationType NTDuration = new DurationType();
 
     private Neo4jTypes()
     {
@@ -123,7 +129,7 @@ public class Neo4jTypes
 
         public ListType( AnyType innerType )
         {
-            super( "LIST? OF " + innerType.toString() );
+            super( "LIST? OF " + innerType );
             this.innerType = innerType;
         }
 
@@ -204,6 +210,54 @@ public class Neo4jTypes
         public PointType()
         {
             super( "POINT?" );
+        }
+    }
+
+    public static class DateTimeType extends AnyType
+    {
+        public DateTimeType()
+        {
+            super( "DATETIME?" );
+        }
+    }
+
+    public static class LocalDateTimeType extends AnyType
+    {
+        public LocalDateTimeType()
+        {
+            super( "LOCALDATETIME?" );
+        }
+    }
+
+    public static class DateType extends AnyType
+    {
+        public DateType()
+        {
+            super( "DATE?" );
+        }
+    }
+
+    public static class TimeType extends AnyType
+    {
+        public TimeType()
+        {
+            super( "TIME?" );
+        }
+    }
+
+    public static class LocalTimeType extends AnyType
+    {
+        public LocalTimeType()
+        {
+            super( "LOCALTIME?" );
+        }
+    }
+
+    public static class DurationType extends AnyType
+    {
+        public DurationType()
+        {
+            super( "DURATION?" );
         }
     }
 }

@@ -37,10 +37,10 @@ import javax.ws.rs.core.HttpHeaders;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
@@ -130,8 +130,8 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType )
             throws Throwable
     {
-        SecurityContext securityContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getLocalGraph().beginTransaction( txType, securityContext );
+        LoginContext loginContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
+        return getLocalGraph().beginTransaction( txType, loginContext );
     }
 
     @Override
@@ -160,9 +160,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public RESTSubject login( String username, String password ) throws Exception
+    public RESTSubject login( String username, String password )
     {
-        String principalCredentials = challengeResponse( username, password );
+        String principalCredentials = basicAuthHeader( username, password );
         return new RESTSubject( username, password, principalCredentials );
     }
 
@@ -174,7 +174,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     @Override
     public void updateAuthToken( RESTSubject subject, String username, String password )
     {
-        subject.principalCredentials = challengeResponse( username, password );
+        subject.principalCredentials = basicAuthHeader( username, password );
     }
 
     @Override
@@ -200,7 +200,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public void assertPasswordChangeRequired( RESTSubject subject ) throws Exception
+    public void assertPasswordChangeRequired( RESTSubject subject )
     {
         HTTP.Response response = authenticate( subject.principalCredentials );
         assertThat( response.status(), equalTo( 403 ) );

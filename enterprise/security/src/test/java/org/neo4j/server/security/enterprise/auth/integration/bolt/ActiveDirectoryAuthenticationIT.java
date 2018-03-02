@@ -25,11 +25,11 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -72,7 +72,6 @@ public class ActiveDirectoryAuthenticationIT
             new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), asSettings( getSettingsFunction() ) );
 
     private void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
-            throws IOException
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( overrideSettingsFunction ) );
@@ -126,13 +125,15 @@ public class ActiveDirectoryAuthenticationIT
     public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
 
     private HostnamePort address;
-    protected TransportConnection client;
+    private TransportConnection client;
+    private TransportTestUtil util;
 
     @Before
     public void setup()
     {
         this.client = cf.newInstance();
         this.address = server.lookupDefaultConnector();
+        this.util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -278,11 +279,11 @@ public class ActiveDirectoryAuthenticationIT
     private void assertAuth( String username, String password, String realm ) throws Exception
     {
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken( username, password, realm ) ) ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( init( "TestClient/1.1", authToken( username, password, realm ) ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
     private Map<String,Object> authToken( String username, String password, String realm )
@@ -300,36 +301,36 @@ public class ActiveDirectoryAuthenticationIT
     private void assertAuthFail( String username, String password ) throws Exception
     {
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", map( "principal", username,
                                 "credentials", password, "scheme", "basic" ) ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
     }
 
     protected void assertReadSucceeds() throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     protected void assertReadFails( String username ) throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
                         String.format( "Read operations are not allowed for user %s.", username ) ) ) );
     }
@@ -337,23 +338,23 @@ public class ActiveDirectoryAuthenticationIT
     protected void assertWriteSucceeds() throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CREATE ()" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     protected void assertWriteFails( String username ) throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CREATE ()" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
                         String.format( "Write operations are not allowed for user %s.", username ) ) ) );
     }

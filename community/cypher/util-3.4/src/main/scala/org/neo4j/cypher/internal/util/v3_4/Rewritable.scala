@@ -38,6 +38,7 @@ object RewriterWithArgs {
       // We need to dup anything not matched by f given the children
       case (p: Product, children) => Rewritable.dupProduct(p, children).asInstanceOf[AnyRef]
       case (a: AnyRef, children) => Rewritable.dupAny(a, children)
+      case (null, _) => null
     }))
 }
 

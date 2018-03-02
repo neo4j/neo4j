@@ -87,14 +87,7 @@ public class ResponsePacker
     protected Visitor<CommittedTransactionRepresentation,Exception> filterVisitor(
             final Visitor<CommittedTransactionRepresentation,Exception> delegate, final long txToEndAt )
     {
-        return element ->
-        {
-            if ( element.getCommitEntry().getTxId() > txToEndAt )
-            {
-                return false;
-            }
-            return delegate.visit( element );
-        };
+        return element -> element.getCommitEntry().getTxId() <= txToEndAt && delegate.visit( element );
     }
 
     protected void extractTransactions( long startingAtTransactionId,

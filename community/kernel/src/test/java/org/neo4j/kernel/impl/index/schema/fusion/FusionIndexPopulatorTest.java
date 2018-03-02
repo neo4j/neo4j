@@ -24,16 +24,15 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertThat;
@@ -51,8 +50,11 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.veri
 
 public class FusionIndexPopulatorTest
 {
-    private IndexPopulator nativePopulator;
+    private IndexPopulator numberPopulator;
+    private IndexPopulator spatialPopulator;
+    private IndexPopulator temporalPopulator;
     private IndexPopulator lucenePopulator;
+    private IndexPopulator[] allPopulators;
     private FusionIndexPopulator fusionIndexPopulator;
     private final long indexId = 8;
     private final DropAction dropAction = mock( DropAction.class );
@@ -60,9 +62,13 @@ public class FusionIndexPopulatorTest
     @Before
     public void mockComponents()
     {
-        nativePopulator = mock( IndexPopulator.class );
+        numberPopulator = mock( IndexPopulator.class );
+        spatialPopulator = mock( IndexPopulator.class );
+        temporalPopulator = mock( IndexPopulator.class );
         lucenePopulator = mock( IndexPopulator.class );
-        fusionIndexPopulator = new FusionIndexPopulator( nativePopulator, lucenePopulator, new NativeSelector(), indexId, dropAction );
+        allPopulators = new IndexPopulator[]{numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator};
+        fusionIndexPopulator =
+                new FusionIndexPopulator( numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator, new FusionSelector(), indexId, dropAction );
     }
 
     /* create */
@@ -74,8 +80,10 @@ public class FusionIndexPopulatorTest
         fusionIndexPopulator.create();
 
         // then
-        verify( nativePopulator, times( 1 ) ).create();
-        verify( lucenePopulator, times( 1 ) ).create();
+        for ( IndexPopulator populator : allPopulators )
+        {
+            verify( populator, times( 1 ) ).create();
+        }
     }
 
     @Test
@@ -83,7 +91,35 @@ public class FusionIndexPopulatorTest
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).create();
+        doThrow( failure ).when( numberPopulator ).create();
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.create();
+            return null;
+        } );
+    }
+
+    @Test
+    public void createMustThrowIfCreateSpatialThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( spatialPopulator ).create();
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.create();
+            return null;
+        } );
+    }
+
+    @Test
+    public void createMustThrowIfCreateTemporalThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( temporalPopulator ).create();
 
         verifyCallFail( failure, () ->
         {
@@ -109,14 +145,16 @@ public class FusionIndexPopulatorTest
     /* drop */
 
     @Test
-    public void dropMustDropBothNativeAndLucene() throws Exception
+    public void dropMustDropAll() throws Exception
     {
         // when
         fusionIndexPopulator.drop();
 
         // then
-        verify( nativePopulator, times( 1 ) ).drop();
-        verify( lucenePopulator, times( 1 ) ).drop();
+        for ( IndexPopulator populator : allPopulators )
+        {
+            verify( populator, times( 1 ) ).drop();
+        }
         verify( dropAction ).drop( indexId );
     }
 
@@ -125,7 +163,35 @@ public class FusionIndexPopulatorTest
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).drop();
+        doThrow( failure ).when( numberPopulator ).drop();
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.drop();
+            return null;
+        } );
+    }
+
+    @Test
+    public void dropMustThrowIfDropSpatialThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( spatialPopulator ).drop();
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.drop();
+            return null;
+        } );
+    }
+
+    @Test
+    public void dropMustThrowIfDropTemporalThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( temporalPopulator ).drop();
 
         verifyCallFail( failure, () ->
         {
@@ -155,19 +221,33 @@ public class FusionIndexPopulatorTest
     {
         // given
         Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] spatialValues = FusionIndexTestHelp.valuesSupportedBySpatial();
+        Value[] temporalValues = FusionIndexTestHelp.valuesSupportedByTemporal();
+        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
         // Add with native for number values
         for ( Value numberValue : numberValues )
         {
-            verifyAddWithCorrectPopulator( nativePopulator, lucenePopulator, numberValue );
+            verifyAddWithCorrectPopulator( numberPopulator, numberValue );
+        }
+
+        // Add with spatial for geometric values
+        for ( Value spatialValue : spatialValues )
+        {
+            verifyAddWithCorrectPopulator( spatialPopulator, spatialValue );
+        }
+
+        // Add with temporal for temporal values
+        for ( Value temporalValue : temporalValues )
+        {
+            verifyAddWithCorrectPopulator( temporalPopulator, temporalValue );
         }
 
         // Add with lucene for other values
         for ( Value otherValue : otherValues )
         {
-            verifyAddWithCorrectPopulator( lucenePopulator, nativePopulator, otherValue );
+            verifyAddWithCorrectPopulator( lucenePopulator, otherValue );
         }
 
         // All composite values should go to lucene
@@ -175,18 +255,24 @@ public class FusionIndexPopulatorTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectPopulator( lucenePopulator, nativePopulator, firstValue, secondValue );
+                verifyAddWithCorrectPopulator( lucenePopulator, firstValue, secondValue );
             }
         }
     }
 
-    private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, IndexPopulator wrongPopulator, Value... numberValues )
+    private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = asList( add( numberValues ) );
+        Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = Collections.singletonList( add( numberValues ) );
         fusionIndexPopulator.add( update );
         verify( correctPopulator, times( 1 ) ).add( update );
-        verify( wrongPopulator, times( 0 ) ).add( update );
+        for ( IndexPopulator populator : allPopulators )
+        {
+            if ( populator != correctPopulator )
+            {
+                verify( populator, times( 0 ) ).add( update );
+            }
+        }
     }
 
     /* verifyDeferredConstraints */
@@ -196,7 +282,35 @@ public class FusionIndexPopulatorTest
     {
         // given
         IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
-        doThrow( failure ).when( nativePopulator ).verifyDeferredConstraints( any() );
+        doThrow( failure ).when( numberPopulator ).verifyDeferredConstraints( any() );
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.verifyDeferredConstraints( null );
+            return null;
+        } );
+    }
+
+    @Test
+    public void verifyDeferredConstraintsMustThrowIfSpatialThrow() throws Exception
+    {
+        // given
+        IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
+        doThrow( failure ).when( spatialPopulator ).verifyDeferredConstraints( any() );
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.verifyDeferredConstraints( null );
+            return null;
+        } );
+    }
+
+    @Test
+    public void verifyDeferredConstraintsMustThrowIfTemporalThrow() throws Exception
+    {
+        // given
+        IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
+        doThrow( failure ).when( temporalPopulator ).verifyDeferredConstraints( any() );
 
         verifyCallFail( failure, () ->
         {
@@ -222,27 +336,28 @@ public class FusionIndexPopulatorTest
     /* close */
 
     @Test
-    public void successfulCloseMustCloseBothNativeAndLucene() throws Exception
+    public void successfulCloseMustCloseAll() throws Exception
     {
         // when
-        closeAndVerifyPropagation( nativePopulator, lucenePopulator, fusionIndexPopulator, true );
+        closeAndVerifyPropagation( true );
     }
 
     @Test
-    public void unsuccessfulCloseMustCloseBothNativeAndLucene() throws Exception
+    public void unsuccessfulCloseMustCloseAll() throws Exception
     {
         // when
-        closeAndVerifyPropagation( nativePopulator, lucenePopulator, fusionIndexPopulator, false );
+        closeAndVerifyPropagation( false );
     }
 
-    private void closeAndVerifyPropagation( IndexPopulator nativePopulator, IndexPopulator lucenePopulator,
-            FusionIndexPopulator fusionIndexPopulator, boolean populationCompletedSuccessfully ) throws IOException
+    private void closeAndVerifyPropagation( boolean populationCompletedSuccessfully ) throws IOException
     {
         fusionIndexPopulator.close( populationCompletedSuccessfully );
 
         // then
-        verify( nativePopulator, times( 1 ) ).close( populationCompletedSuccessfully );
-        verify( lucenePopulator, times( 1 ) ).close( populationCompletedSuccessfully );
+        for ( IndexPopulator populator : allPopulators )
+        {
+            verify( populator, times( 1 ) ).close( populationCompletedSuccessfully );
+        }
     }
 
     @Test
@@ -250,7 +365,35 @@ public class FusionIndexPopulatorTest
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).close( anyBoolean() );
+        doThrow( failure ).when( numberPopulator ).close( anyBoolean() );
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.close( anyBoolean() );
+            return null;
+        } );
+    }
+
+    @Test
+    public void closeMustThrowIfCloseSpatialThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( spatialPopulator ).close( anyBoolean() );
+
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.close( anyBoolean() );
+            return null;
+        } );
+    }
+
+    @Test
+    public void closeMustThrowIfCloseTemporalThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( temporalPopulator ).close( anyBoolean() );
 
         verifyCallFail( failure, () ->
         {
@@ -273,17 +416,17 @@ public class FusionIndexPopulatorTest
         } );
     }
 
-    @Test
-    public void closeMustCloseNativeIfLuceneThrow() throws Exception
+    private static void verifyOtherCloseOnThrow( IndexPopulator throwingPopulator, FusionIndexPopulator fusionPopulator, IndexPopulator... populators )
+            throws Exception
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( lucenePopulator ).close( anyBoolean() );
+        doThrow( failure ).when( throwingPopulator ).close( anyBoolean() );
 
         // when
         try
         {
-            fusionIndexPopulator.close( true );
+            fusionPopulator.close( true );
             fail( "Should have failed" );
         }
         catch ( IOException ignore )
@@ -291,37 +434,47 @@ public class FusionIndexPopulatorTest
         }
 
         // then
-        verify( nativePopulator, times( 1 ) ).close( true );
+        for ( IndexPopulator populator : populators )
+        {
+            verify( populator, times( 1 ) ).close( true );
+        }
     }
 
     @Test
-    public void closeMustCloseLuceneIfNativeThrow() throws Exception
+    public void closeMustCloseOthersIfLuceneThrow() throws Exception
     {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).close( anyBoolean() );
-
-        // when
-        try
-        {
-            fusionIndexPopulator.close( true );
-            fail( "Should have failed" );
-        }
-        catch ( IOException ignore )
-        {
-        }
-
-        // then
-        verify( lucenePopulator, times( 1 ) ).close( true );
+        verifyOtherCloseOnThrow( lucenePopulator, fusionIndexPopulator, numberPopulator, spatialPopulator, temporalPopulator );
     }
 
     @Test
-    public void closeMustThrowIfBothThrow() throws Exception
+    public void closeMustCloseOthersIfSpatialThrow() throws Exception
+    {
+        verifyOtherCloseOnThrow( spatialPopulator, fusionIndexPopulator, numberPopulator, temporalPopulator, lucenePopulator );
+    }
+
+    @Test
+    public void closeMustCloseOthersIfTemporalThrow() throws Exception
+    {
+        verifyOtherCloseOnThrow( temporalPopulator, fusionIndexPopulator, numberPopulator, spatialPopulator, lucenePopulator );
+    }
+
+    @Test
+    public void closeMustCloseOthersIfNumberThrow() throws Exception
+    {
+        verifyOtherCloseOnThrow( numberPopulator, fusionIndexPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
+    }
+
+    @Test
+    public void closeMustThrowIfAllThrow() throws Exception
     {
         // given
         IOException nativeFailure = new IOException( "native" );
+        IOException spatialFailure = new IOException( "spatial" );
+        IOException temporalFailure = new IOException( "temporal" );
         IOException luceneFailure = new IOException( "lucene" );
-        doThrow( nativeFailure ).when( nativePopulator ).close( anyBoolean() );
+        doThrow( nativeFailure ).when( numberPopulator ).close( anyBoolean() );
+        doThrow( spatialFailure ).when( spatialPopulator ).close( anyBoolean() );
+        doThrow( temporalFailure ).when( temporalPopulator ).close( anyBoolean() );
         doThrow( luceneFailure ).when( lucenePopulator).close( anyBoolean() );
 
         try
@@ -333,22 +486,28 @@ public class FusionIndexPopulatorTest
         catch ( IOException e )
         {
             // then
-            assertThat( e, anyOf( sameInstance( nativeFailure ), sameInstance( luceneFailure ) ) );
+            assertThat( e, anyOf(
+                    sameInstance( nativeFailure ),
+                    sameInstance( spatialFailure ),
+                    sameInstance( temporalFailure ),
+                    sameInstance( luceneFailure ) ) );
         }
     }
 
     /* markAsFailed */
 
     @Test
-    public void markAsFailedMustMarkBothNativeAndLucene() throws Exception
+    public void markAsFailedMustMarkAll() throws Exception
     {
         // when
         String failureMessage = "failure";
         fusionIndexPopulator.markAsFailed( failureMessage );
 
         // then
-        verify( nativePopulator, times( 1 ) ).markAsFailed( failureMessage );
-        verify( lucenePopulator, times( 1 ) ).markAsFailed( failureMessage );
+        for ( IndexPopulator populator : allPopulators )
+        {
+            verify( populator, times( 1 ) ).markAsFailed( failureMessage );
+        }
     }
 
     @Test
@@ -356,7 +515,37 @@ public class FusionIndexPopulatorTest
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).markAsFailed( anyString() );
+        doThrow( failure ).when( numberPopulator ).markAsFailed( anyString() );
+
+        // then
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.markAsFailed( anyString() );
+            return null;
+        } );
+    }
+
+    @Test
+    public void markAsFailedMustThrowIfSpatialThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( spatialPopulator ).markAsFailed( anyString() );
+
+        // then
+        verifyCallFail( failure, () ->
+        {
+            fusionIndexPopulator.markAsFailed( anyString() );
+            return null;
+        } );
+    }
+
+    @Test
+    public void markAsFailedMustThrowIfTemporalThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( temporalPopulator ).markAsFailed( anyString() );
 
         // then
         verifyCallFail( failure, () ->
@@ -382,32 +571,31 @@ public class FusionIndexPopulatorTest
     }
 
     @Test
-    public void shouldIncludeSampleOnCorrectPopulator() throws Exception
+    public void shouldIncludeSampleOnCorrectPopulator()
     {
         // given
         Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] spatialValues = FusionIndexTestHelp.valuesSupportedBySpatial();
+        Value[] temporalValues = FusionIndexTestHelp.valuesSupportedByTemporal();
+        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
 
-        for ( Value value : numberValues )
+        verifySampleToCorrectPopulator( numberValues, numberPopulator );
+        verifySampleToCorrectPopulator( spatialValues, spatialPopulator );
+        verifySampleToCorrectPopulator( temporalValues, temporalPopulator );
+        verifySampleToCorrectPopulator( otherValues, lucenePopulator );
+    }
+
+    private void verifySampleToCorrectPopulator( Value[] values, IndexPopulator populator )
+    {
+        for ( Value value : values )
         {
             // when
             IndexEntryUpdate<LabelSchemaDescriptor> update = add( value );
             fusionIndexPopulator.includeSample( update );
 
             // then
-            verify( nativePopulator ).includeSample( update );
-            reset( nativePopulator );
-        }
-
-        for ( Value value : otherValues )
-        {
-            // when
-            IndexEntryUpdate<LabelSchemaDescriptor> update = add( value );
-            fusionIndexPopulator.includeSample( update );
-
-            // then
-            verify( lucenePopulator ).includeSample( update );
-            reset( lucenePopulator );
+            verify( populator ).includeSample( update );
+            reset( populator );
         }
     }
 }

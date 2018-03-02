@@ -35,7 +35,7 @@ import org.neo4j.helpers.collection.IterableWrapper;
 public class TestTraversalWithIterable extends TraversalTestBase
 {
     @Test
-    public void traverseWithIterableForStartNodes() throws Exception
+    public void traverseWithIterableForStartNodes()
     {
         /*
          * (a)-->(b)-->(c)
@@ -61,7 +61,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
     }
 
     @Test
-    public void useTraverserInsideTraverser() throws Exception
+    public void useTraverserInsideTraverser()
     {
         /*
          * (a)-->(b)-->(c)

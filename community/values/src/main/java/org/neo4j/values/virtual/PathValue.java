@@ -24,6 +24,7 @@ import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
 public final class PathValue extends VirtualValue
@@ -86,6 +87,12 @@ public final class PathValue extends VirtualValue
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
         writer.writePath( nodes, relationships );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapPath( this );
     }
 
     @Override

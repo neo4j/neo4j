@@ -66,7 +66,7 @@ public class IntegrityValidatorTest
     }
 
     @Test
-    public void deletingNodeWithRelationshipsIsNotAllowed() throws Exception
+    public void deletingNodeWithRelationshipsIsNotAllowed()
     {
         // Given
         NeoStores store = mock( NeoStores.class );
@@ -89,7 +89,7 @@ public class IntegrityValidatorTest
     }
 
     @Test
-    public void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed() throws Exception
+    public void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed()
     {
         // Given
         NeoStores store = mock( NeoStores.class );

@@ -124,7 +124,7 @@ class MessageProcessingHandler implements BoltResponseHandler
         metadata.clear();
     }
 
-    private void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error ) throws IOException
+    private void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error )
     {
         try
         {

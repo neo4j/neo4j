@@ -199,14 +199,14 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode() throws Exception
+    public void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
         store.getRecord( 5, new IntRecord( 5 ), CHECK );
     }
 
     @Test
-    public void getRecordMustNotThrowOnPageOverflowWithForceLoadMode() throws Exception
+    public void getRecordMustNotThrowOnPageOverflowWithForceLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
@@ -225,14 +225,14 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode() throws Exception
+    public void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode()
     {
         prepareStoreForCursorError();
         store.getRecord( 5, new IntRecord( 5 ), CHECK );
     }
 
     @Test
-    public void getRecordMustNotThrowOnCursorErrorWithForceLoadMode() throws Exception
+    public void getRecordMustNotThrowOnCursorErrorWithForceLoadMode()
     {
         prepareStoreForCursorError();
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
@@ -251,7 +251,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void pageCursorErrorsMustNotLingerInRecordCursor() throws Exception
+    public void pageCursorErrorsMustNotLingerInRecordCursor()
     {
         createStore();
         RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 1 ) ).acquire( 1, FORCE );
@@ -263,7 +263,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void shouldReadTheCorrectRecordWhenGivenAnExplicitIdAndNotUseTheCurrentIdPointer() throws Exception
+    public void shouldReadTheCorrectRecordWhenGivenAnExplicitIdAndNotUseTheCurrentIdPointer()
     {
         createStore();
         IntRecord record42 = new IntRecord( 42 );
@@ -289,7 +289,7 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void shouldJumpAroundPageIds() throws Exception
+    public void shouldJumpAroundPageIds()
     {
         createStore();
         IntRecord record42 = new IntRecord( 42 );
@@ -321,7 +321,7 @@ public class CommonAbstractStoreBehaviourTest
     {
         config.augment( CommonAbstractStore.Configuration.rebuild_idgenerators_fast, "false" );
         createStore();
-        store.setStoreNotOk( new Exception() );
+        store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
         record.value = 0xCAFEBABE;
         store.updateRecord( record );
@@ -333,7 +333,7 @@ public class CommonAbstractStoreBehaviourTest
     public void scanForHighIdMustThrowOnPageOverflow() throws Exception
     {
         createStore();
-        store.setStoreNotOk( new Exception() );
+        store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
         record.value = 0xCAFEBABE;
         store.updateRecord( record );
@@ -412,7 +412,6 @@ public class CommonAbstractStoreBehaviourTest
 
         @Override
         public void read( IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
-                throws IOException
         {
             for ( int i = 0; i < intsPerRecord; i++ )
             {
@@ -431,7 +430,7 @@ public class CommonAbstractStoreBehaviourTest
         }
 
         @Override
-        public void write( IntRecord record, PageCursor cursor, int recordSize ) throws IOException
+        public void write( IntRecord record, PageCursor cursor, int recordSize )
         {
             for ( int i = 0; i < intsPerRecord; i++ )
             {

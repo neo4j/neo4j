@@ -34,7 +34,7 @@ public class UtilsTest
 {
 
     @Test
-    public void shouldDetectCollisions() throws Exception
+    public void shouldDetectCollisions()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -48,7 +48,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldNotReportDisjointArraysAsCollision() throws Exception
+    public void shouldNotReportDisjointArraysAsCollision()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -62,7 +62,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldBeCorrectForSomeRandomBatches() throws Exception
+    public void shouldBeCorrectForSomeRandomBatches()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
@@ -73,20 +73,19 @@ public class UtilsTest
         }
 
         // WHEN
-        for ( int i = 0; i < batches.length; i++ )
+        for ( long[] rBatch : batches )
         {
-            for ( int j = 0; j < batches.length; j++ )
+            for ( long[] lBatch : batches )
             {
                 // THEN
-                assertEquals(
-                        actuallyCollides( batches[i], batches[j] ),
-                        Utils.anyIdCollides( batches[i], batches[i].length, batches[j], batches[j].length ) );
+                assertEquals( actuallyCollides( rBatch, lBatch ),
+                        Utils.anyIdCollides( rBatch, rBatch.length, lBatch, lBatch.length ) );
             }
         }
     }
 
     @Test
-    public void shouldMergeIdsInto() throws Exception
+    public void shouldMergeIdsInto()
     {
         // GIVEN
         long[] values = new long[]{2, 4, 10, 11, 14};
@@ -102,7 +101,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldMergeSomeRandomIdsInto() throws Exception
+    public void shouldMergeSomeRandomIdsInto()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();

@@ -35,7 +35,7 @@ import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIt
 public class ResourceIterableTest
 {
     @Test
-    public void streamShouldCloseSingleOnCompleted() throws Throwable
+    public void streamShouldCloseSingleOnCompleted()
     {
         // Given
         AtomicBoolean closed = new AtomicBoolean( false );
@@ -52,7 +52,7 @@ public class ResourceIterableTest
     }
 
     @Test
-    public void streamShouldCloseMultipleOnCompleted() throws Throwable
+    public void streamShouldCloseMultipleOnCompleted()
     {
         // Given
         AtomicInteger closed = new AtomicInteger();

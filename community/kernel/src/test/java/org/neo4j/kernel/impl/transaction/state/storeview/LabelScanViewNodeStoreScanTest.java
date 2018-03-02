@@ -59,7 +59,7 @@ public class LabelScanViewNodeStoreScanTest
     }
 
     @Test
-    public void iterateOverLabeledNodeIds() throws Exception
+    public void iterateOverLabeledNodeIds()
     {
         PrimitiveLongResourceIterator labeledNodes = PrimitiveLongResourceCollections.iterator( null, 1, 2, 4, 8 );
 

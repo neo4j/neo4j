@@ -30,6 +30,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -47,7 +49,7 @@ public class CompositeCountsTest
     public final DatabaseRule db = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel() throws Exception
+    public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -80,7 +82,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipCreate() throws Exception
+    public void shouldMaintainCountsOnRelationshipCreate()
     {
         // given
         Node foo;
@@ -109,7 +111,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipDelete() throws Exception
+    public void shouldMaintainCountsOnRelationshipDelete()
     {
         // given
         Relationship relationship;
@@ -137,7 +139,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAdd() throws Exception
+    public void shouldMaintainCountsOnLabelAdd()
     {
         // given
         Node foo;
@@ -167,7 +169,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemove() throws Exception
+    public void shouldMaintainCountsOnLabelRemove()
     {
         // given
         Node foo;
@@ -197,7 +199,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipCreate() throws Exception
+    public void shouldMaintainCountsOnLabelAddAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -228,7 +230,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete() throws Exception
+    public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -261,7 +263,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipDelete() throws Exception
+    public void shouldMaintainCountsOnLabelAddAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -294,7 +296,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate() throws Exception
+    public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -325,7 +327,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction() throws Exception
+    public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction()
     {
         // given
         Node foo;
@@ -393,9 +395,10 @@ public class CompositeCountsTest
      */
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
-        try ( Statement statement = statementSupplier.get() )
+        KernelTransaction transaction = transactionSupplier.get();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            ReadOperations read = statement.readOperations();
+            TokenRead tokenRead = transaction.tokenRead();
             int startId;
             int typeId;
             int endId;
@@ -406,7 +409,7 @@ public class CompositeCountsTest
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+                if ( KeyReadOperations.NO_SUCH_LABEL == (startId = tokenRead.nodeLabel( start.name() )) )
                 {
                     return 0;
                 }
@@ -418,7 +421,7 @@ public class CompositeCountsTest
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+                if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = tokenRead.relationshipType( type.name() )) )
                 {
                     return 0;
                 }
@@ -430,21 +433,21 @@ public class CompositeCountsTest
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+                if ( KeyReadOperations.NO_SUCH_LABEL == (endId = tokenRead.nodeLabel( end.name() )) )
                 {
                     return 0;
                 }
             }
-            return read.countsForRelationship( startId, typeId, endId );
+            return transaction.dataRead().countsForRelationship( startId, typeId, endId );
         }
     }
 
-    private Supplier<Statement> statementSupplier;
+    private Supplier<KernelTransaction> transactionSupplier;
 
     @Before
     public void exposeGuts()
     {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                              .resolveDependency( ThreadToStatementContextBridge.class );
+        transactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
+                              .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 }

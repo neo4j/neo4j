@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.helper;
 
-import java.util.concurrent.CancellationException;
-
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;

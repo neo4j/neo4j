@@ -39,7 +39,7 @@ public class PropertyValueRecordSizeCalculatorTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldIncludePropertyRecordSize() throws Exception
+    public void shouldIncludePropertyRecordSize()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -52,7 +52,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldIncludeDynamicRecordSizes() throws Exception
+    public void shouldIncludeDynamicRecordSizes()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -65,7 +65,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldSpanMultiplePropertyRecords() throws Exception
+    public void shouldSpanMultiplePropertyRecords()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();

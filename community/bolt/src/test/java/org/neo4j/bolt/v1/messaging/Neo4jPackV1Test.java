@@ -47,8 +47,8 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
@@ -257,10 +257,5 @@ public class Neo4jPackV1Test
 
         // Then
         assertThat( unpacked, equalTo( textValue ) );
-    }
-
-    private static class Unpackable
-    {
-
     }
 }

@@ -38,7 +38,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     private static GraphDbHelper helper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
@@ -53,7 +53,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     public void shouldReturn204WhenPropertiesAreRemoved()
     {
         long nodeId = helper.createNode();
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
         JaxRsResponse response = removeNodePropertiesOnServer(nodeId);
@@ -66,7 +66,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     public void shouldReturn204WhenAllPropertiesAreRemoved()
     {
         long nodeId = helper.createNode();
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
         gen.get().expectedStatus( 204 )
@@ -92,7 +92,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     public void delete_a_named_property_from_a_node()
     {
         long nodeId = helper.createNode();
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "name", "tobias" );
         helper.setNodeProperties( nodeId, map );
         gen.get()
@@ -104,7 +104,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     public void shouldReturn404WhenRemovingNonExistingNodeProperty()
     {
         long nodeId = helper.createNode();
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
         JaxRsResponse response = removeNodePropertyOnServer(nodeId, "foo");

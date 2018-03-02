@@ -37,7 +37,7 @@ public class InMemoryStateStorage<STATE> implements StateStorage<STATE>
     }
 
     @Override
-    public void persistStoreData( STATE state ) throws IOException
+    public void persistStoreData( STATE state )
     {
         this.state = state;
     }

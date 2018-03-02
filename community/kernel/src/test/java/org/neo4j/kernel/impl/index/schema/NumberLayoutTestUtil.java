@@ -19,28 +19,52 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.List;
+import java.util.Set;
+
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
 {
-    NumberLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
+    private static final Number[] ALL_EXTREME_VALUES = new Number[]
+            {
+                    Byte.MAX_VALUE,
+                    Byte.MIN_VALUE,
+                    Short.MAX_VALUE,
+                    Short.MIN_VALUE,
+                    Integer.MAX_VALUE,
+                    Integer.MIN_VALUE,
+                    Long.MAX_VALUE,
+                    Long.MIN_VALUE,
+                    Float.MAX_VALUE,
+                    -Float.MAX_VALUE,
+                    Double.MAX_VALUE,
+                    -Double.MAX_VALUE,
+                    Double.POSITIVE_INFINITY,
+                    Double.NEGATIVE_INFINITY,
+                    0,
+                    // These two values below coerce to the same double
+                    1234567890123456788L,
+                    1234567890123456789L
+            };
+
+    NumberLayoutTestUtil( SchemaIndexDescriptor indexDescriptor )
     {
-        super( schemaIndexDescriptor );
+        super( indexDescriptor );
     }
 
     @Override
-    IndexQuery rangeQuery( Number from, boolean fromInclusive, Number to, boolean toInclusive )
+    IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive )
     {
-        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
-    }
-
-    @Override
-    Value asValue( Number value )
-    {
-        return Values.of( value );
+        return IndexQuery.range( 0, (Number) from, fromInclusive, (Number) to, toInclusive );
     }
 
     @Override
@@ -52,5 +76,32 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
             return Long.compare( key1.rawValueBits, key2.rawValueBits );
         }
         return typeCompare;
+    }
+
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    {
+        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
+    }
+
+    @Override
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    {
+        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
+    }
+
+    @Override
+    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    {
+        Number value;
+        Double compareValue;
+        do
+        {
+            value = random.numberPropertyValue();
+            compareValue = value.doubleValue();
+        }
+        while ( !uniqueCompareValues.add( compareValue ) );
+        Value storableValue = Values.of( value );
+        uniqueValues.add( storableValue );
+        return storableValue;
     }
 }

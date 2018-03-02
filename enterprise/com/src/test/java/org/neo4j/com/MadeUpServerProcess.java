@@ -80,22 +80,17 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
                 throw new RuntimeException( throwable );
             }
         }
-        new Thread()
-        {
-            @Override
-            public void run()
+        new Thread( () -> {
+            try
             {
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.interrupted();
-                }
-                shutdownProcess();
+                Thread.sleep( 100 );
             }
-        }.start();
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+            shutdownProcess();
+        } ).start();
     }
 
     protected void shutdownProcess()

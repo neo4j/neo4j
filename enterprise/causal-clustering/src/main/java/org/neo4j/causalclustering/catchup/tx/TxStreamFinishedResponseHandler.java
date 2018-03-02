@@ -39,7 +39,7 @@ public class TxStreamFinishedResponseHandler extends SimpleChannelInboundHandler
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, TxStreamFinishedResponse msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, TxStreamFinishedResponse msg )
     {
         handler.onTxStreamFinishedResponse( msg );
         protocol.expect( State.MESSAGE_TYPE );

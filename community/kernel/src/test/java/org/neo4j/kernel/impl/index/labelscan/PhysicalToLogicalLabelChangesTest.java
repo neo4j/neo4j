@@ -30,7 +30,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class PhysicalToLogicalLabelChangesTest
 {
     @Test
-    public void shouldSeeSimpleAddition() throws Exception
+    public void shouldSeeSimpleAddition()
     {
         convertAndAssert(
                 // before/after
@@ -40,7 +40,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSimpleRemoval() throws Exception
+    public void shouldSeeSimpleRemoval()
     {
         convertAndAssert(
                 // before/after
@@ -50,7 +50,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAdded() throws Exception
+    public void shouldSeeSomeAdded()
     {
         convertAndAssert(
                 // before/after
@@ -60,7 +60,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeRemoved() throws Exception
+    public void shouldSeeSomeRemoved()
     {
         convertAndAssert(
                 // before/after
@@ -70,7 +70,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAddedAndSomeRemoved() throws Exception
+    public void shouldSeeSomeAddedAndSomeRemoved()
     {
         convertAndAssert(
                 // before/after

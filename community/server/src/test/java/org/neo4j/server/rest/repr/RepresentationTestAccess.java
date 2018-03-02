@@ -74,7 +74,7 @@ public class RepresentationTestAccess
 
     public static Map<String, Object> serialize( URI baseUri, MappingRepresentation repr )
     {
-        Map<String, Object> result = new HashMap<String, Object>();
+        Map<String, Object> result = new HashMap<>();
         repr.serialize( new MappingSerializer( new MapWrappingWriter( result ), baseUri, null ) );
         return result;
     }
@@ -86,7 +86,7 @@ public class RepresentationTestAccess
 
     public static List<Object> serialize( URI baseUri, ListRepresentation repr )
     {
-        List<Object> result = new ArrayList<Object>();
+        List<Object> result = new ArrayList<>();
         repr.serialize( new ListSerializer( new ListWrappingWriter( result ), baseUri, null ) );
         return result;
     }

@@ -78,7 +78,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedRuleShouldBeVisibleInTx() throws Exception
+    public void addedRuleShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -97,7 +97,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedRulesShouldBeVisibleInTx() throws Exception
+    public void addedRulesShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -120,7 +120,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedAdditionalRuleShouldBeVisibleInTx() throws Exception
+    public void addedAdditionalRuleShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -145,7 +145,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldReturnNonExistentRuleAddedInTransaction() throws Exception
+    public void shouldReturnNonExistentRuleAddedInTransaction()
     {
         // GIVEN
         // -- non-existent rule added in the transaction
@@ -162,7 +162,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldReturnNonExistentRuleAddedInTransactionFromLookup() throws Exception
+    public void shouldReturnNonExistentRuleAddedInTransactionFromLookup()
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
@@ -182,7 +182,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup() throws Exception
+    public void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup()
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
@@ -204,7 +204,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldNotReturnExistentRuleDroppedInTransaction() throws Exception
+    public void shouldNotReturnExistentRuleDroppedInTransaction()
     {
         // GIVEN
         // -- a rule that exists in the store
@@ -236,7 +236,7 @@ public class SchemaTransactionStateTest
     private StoreStatement storeStatement;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
@@ -275,7 +275,7 @@ public class SchemaTransactionStateTest
         return new Labels( nodeId, labelIds );
     }
 
-    private void commitLabels( Labels... labels ) throws Exception
+    private void commitLabels( Labels... labels )
     {
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
@@ -298,12 +298,12 @@ public class SchemaTransactionStateTest
         }
     }
 
-    private void commitNoLabels() throws Exception
+    private void commitNoLabels()
     {
         commitLabels( new int[0] );
     }
 
-    private void commitLabels( int... labels ) throws Exception
+    private void commitLabels( int... labels )
     {
         commitLabels( labels( nodeId, labels ) );
     }

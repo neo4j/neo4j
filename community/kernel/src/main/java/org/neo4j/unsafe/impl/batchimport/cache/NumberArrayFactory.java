@@ -22,15 +22,16 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
@@ -79,19 +80,19 @@ public interface NumberArrayFactory
         @Override
         public IntArray newIntArray( long length, int defaultValue, long base )
         {
-            return new OffHeapIntArray( length, defaultValue, base );
+            return new OffHeapIntArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
         }
 
         @Override
         public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            return new OffHeapLongArray( length, defaultValue, base );
+            return new OffHeapLongArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
         }
 
         @Override
         public ByteArray newByteArray( long length, byte[] defaultValue, long base )
         {
-            return new OffHeapByteArray( length, defaultValue, base );
+            return new OffHeapByteArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
         }
 
         @Override
@@ -138,7 +139,7 @@ public interface NumberArrayFactory
      */
     static NumberArrayFactory[] allocationAlternatives( boolean allowHeapAllocation, NumberArrayFactory... additional )
     {
-        List<NumberArrayFactory> result = new ArrayList<>( asList( OFF_HEAP ) );
+        List<NumberArrayFactory> result = new ArrayList<>( Collections.singletonList( OFF_HEAP ) );
         if ( allowHeapAllocation )
         {
             result.add( HEAP );
@@ -164,14 +165,39 @@ public interface NumberArrayFactory
         @Override
         public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            Throwable error = null;
+            return tryAllocate( length, 8, f -> f.newLongArray( length, defaultValue, base ) );
+        }
+
+        @Override
+        public IntArray newIntArray( long length, int defaultValue, long base )
+        {
+            return tryAllocate( length, 4, f -> f.newIntArray( length, defaultValue, base ) );
+        }
+
+        @Override
+        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        {
+            return tryAllocate( length, defaultValue.length, f -> f.newByteArray( length, defaultValue, base ) );
+        }
+
+        private <T extends NumberArray<? extends T>> T tryAllocate( long length, int itemSize,
+                Function<NumberArrayFactory,T> allocator )
+        {
+            OutOfMemoryError error = null;
             for ( NumberArrayFactory candidate : candidates )
             {
                 try
                 {
-                    return candidate.newLongArray( length, defaultValue, base );
+                    try
+                    {
+                        return allocator.apply( candidate );
+                    }
+                    catch ( ArithmeticException e )
+                    {
+                        throw new OutOfMemoryError( e.getMessage() );
+                    }
                 }
-                catch ( Throwable e )
+                catch ( OutOfMemoryError e )
                 {   // Alright let's try the next one
                     if ( error == null )
                     {
@@ -184,45 +210,10 @@ public interface NumberArrayFactory
                     }
                 }
             }
-            throw launderedException( error( length, 8, error ) );
+            throw error( length, itemSize, error );
         }
 
-        @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
-        {
-            Throwable error = null;
-            for ( NumberArrayFactory candidate : candidates )
-            {
-                try
-                {
-                    return candidate.newIntArray( length, defaultValue, base );
-                }
-                catch ( Throwable e )
-                {   // Allright let's try the next one
-                    error = e;
-                }
-            }
-            throw launderedException( error( length, 4, error ) );
-        }
-
-        @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
-        {
-            Throwable error = null;
-            for ( NumberArrayFactory candidate : candidates )
-            {
-                try
-                {
-                    return candidate.newByteArray( length, defaultValue, base );
-                }
-                catch ( Throwable e )
-                {   // Allright let's try the next one
-                    error = e;
-                }
-            }
-            throw launderedException( error( length, defaultValue.length, error ) );
-        }
-        private Throwable error( long length, int itemSize, Throwable error )
+        private OutOfMemoryError error( long length, int itemSize, OutOfMemoryError error )
         {
             return Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
                     error.getMessage(), bytes( length * itemSize ), Arrays.toString( candidates ) ) );

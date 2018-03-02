@@ -390,7 +390,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogFailedAuthenticationQueries() throws Exception
+    public void shouldLogFailedAuthenticationQueries()
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
@@ -412,7 +412,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogSuccessfulAuthorizationQueries() throws Exception
+    public void shouldLogSuccessfulAuthorizationQueries()
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
@@ -429,7 +429,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogFailedAuthorizationQueries() throws Exception
+    public void shouldLogFailedAuthorizationQueries()
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
@@ -483,7 +483,7 @@ public class LdapRealmTest
         }
     }
 
-    private void makeAndInit() throws Exception
+    private void makeAndInit()
     {
         try
         {

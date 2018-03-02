@@ -117,7 +117,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin__execute__rollback() throws Exception
+    public void begin__execute__rollback()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -226,7 +226,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_and_commit() throws Exception
+    public void begin_and_execute_and_commit()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -261,7 +261,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_and_commit_with_badly_escaped_statement() throws Exception
+    public void begin_and_execute_and_commit_with_badly_escaped_statement()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
         String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM " +
@@ -395,7 +395,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_invalid_query_and_commit() throws Exception
+    public void begin_and_execute_invalid_query_and_commit()
     {
         // begin and execute and commit
         Response response = http.POST(
@@ -560,7 +560,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin__rollback__execute() throws Exception
+    public void begin__rollback__execute()
     {
         // begin
         Response begin = http.POST( "db/data/transaction" );
@@ -633,7 +633,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void status_codes_should_appear_in_response() throws Exception
+    public void status_codes_should_appear_in_response()
     {
         Response response = http.POST( "db/data/transaction/commit",
                 quotedJson( "{ 'statements': [ { 'statement': 'RETURN {n}' } ] }" ) );
@@ -892,7 +892,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
+    public void correctStatusCodeWhenUsingHintWithoutAnyIndex()
     {
         // begin and execute and commit
         Response begin = http.POST( "db/data/transaction/commit",

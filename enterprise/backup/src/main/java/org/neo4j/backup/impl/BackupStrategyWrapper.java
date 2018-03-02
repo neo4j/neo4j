@@ -137,14 +137,7 @@ class BackupStrategyWrapper
     {
         Path userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
         Path temporaryFullBackupLocation;
-        try
-        {
-            temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
-        }
-        catch ( IOException e )
-        {
-            return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
-        }
+        temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
 
         OptionalHostnamePort address = onlineBackupContext.getRequiredArguments().getAddress();
         Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, config, address );

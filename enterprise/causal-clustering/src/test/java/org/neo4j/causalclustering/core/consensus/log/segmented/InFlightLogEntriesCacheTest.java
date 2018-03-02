@@ -31,7 +31,7 @@ import static org.junit.Assert.fail;
 public class InFlightLogEntriesCacheTest
 {
     @Test
-    public void shouldNotCacheUntilEnabled() throws Exception
+    public void shouldNotCacheUntilEnabled()
     {
         InFlightMap<Object> cache = new InFlightMap<>();
         Object entry = new Object();
@@ -45,7 +45,7 @@ public class InFlightLogEntriesCacheTest
     }
 
     @Test
-    public void shouldRegisterAndUnregisterValues() throws Exception
+    public void shouldRegisterAndUnregisterValues()
     {
         InFlightMap<Object> entries = new InFlightMap<>();
         entries.enable();
@@ -76,7 +76,7 @@ public class InFlightLogEntriesCacheTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldNotReinsertValues() throws Exception
+    public void shouldNotReinsertValues()
     {
         InFlightMap<Object> entries = new InFlightMap<>();
         entries.enable();
@@ -86,7 +86,7 @@ public class InFlightLogEntriesCacheTest
     }
 
     @Test
-    public void shouldNotReplaceRegisteredValues() throws Exception
+    public void shouldNotReplaceRegisteredValues()
     {
         InFlightMap<Object> cache = new InFlightMap<>();
         cache.enable();

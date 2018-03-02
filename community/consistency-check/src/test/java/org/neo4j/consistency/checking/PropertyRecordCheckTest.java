@@ -40,7 +40,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForPropertyRecordNotInUse() throws Exception
+    public void shouldNotReportAnythingForPropertyRecordNotInUse()
     {
         // given
         PropertyRecord property = notInUse( new PropertyRecord( 42 ) );
@@ -53,7 +53,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForPropertyWithoutBlocksThatDoesNotReferenceAnyOtherRecords() throws Exception
+    public void shouldNotReportAnythingForPropertyWithoutBlocksThatDoesNotReferenceAnyOtherRecords()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -66,7 +66,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportPropertyKeyNotInUse() throws Exception
+    public void shouldReportPropertyKeyNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -83,7 +83,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportPreviousPropertyNotInUse() throws Exception
+    public void shouldReportPreviousPropertyNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -99,7 +99,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportNextPropertyNotInUse() throws Exception
+    public void shouldReportNextPropertyNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -115,7 +115,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportPreviousPropertyNotReferringBack() throws Exception
+    public void shouldReportPreviousPropertyNotReferringBack()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -131,7 +131,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportNextPropertyNotReferringBack() throws Exception
+    public void shouldReportNextPropertyNotReferringBack()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -147,7 +147,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportStringRecordNotInUse() throws Exception
+    public void shouldReportStringRecordNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -164,7 +164,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportArrayRecordNotInUse() throws Exception
+    public void shouldReportArrayRecordNotInUse()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -182,7 +182,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportEmptyStringRecord() throws Exception
+    public void shouldReportEmptyStringRecord()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );
@@ -200,7 +200,7 @@ public class PropertyRecordCheckTest
     }
 
     @Test
-    public void shouldReportEmptyArrayRecord() throws Exception
+    public void shouldReportEmptyArrayRecord()
     {
         // given
         PropertyRecord property = inUse( new PropertyRecord( 42 ) );

@@ -28,7 +28,7 @@ import static org.junit.Assert.assertThat;
 public class MovingAverageTest
 {
     @Test
-    public void shouldHaveAverageMovingWithChanges() throws Exception
+    public void shouldHaveAverageMovingWithChanges()
     {
         // GIVEN
         MovingAverage average = new MovingAverage( 5 );

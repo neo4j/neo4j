@@ -39,7 +39,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatErrorForRecord() throws Exception
+    public void shouldFormatErrorForRecord()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
@@ -59,7 +59,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFlattenAMultiLineMessageToASingleLine() throws Exception
+    public void shouldFlattenAMultiLineMessageToASingleLine()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2 );
@@ -71,7 +71,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatWarningForRecord() throws Exception
+    public void shouldFormatWarningForRecord()
     {
         // when
         logger.warning( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
@@ -83,7 +83,7 @@ public class MessageConsistencyLoggerTest
     }
 
     @Test
-    public void shouldFormatLogForChangedRecord() throws Exception
+    public void shouldFormatLogForChangedRecord()
     {
         // when
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), new NeoStoreRecord(), "sample message", 1, 2 );

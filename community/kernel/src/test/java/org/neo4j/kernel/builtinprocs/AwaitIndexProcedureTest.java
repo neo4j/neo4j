@@ -63,7 +63,7 @@ public class AwaitIndexProcedureTest
     private final SchemaIndexDescriptor anyIndex = SchemaIndexDescriptorFactory.forSchema( anyDescriptor );
 
     @Test
-    public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
+    public void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
         when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
 
@@ -79,7 +79,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist() throws ProcedureException
+    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
         when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
 
@@ -131,7 +131,7 @@ public class AwaitIndexProcedureTest
 
     @Test
     public void shouldThrowAnExceptionIfTheIndexDoesNotExist()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException
 
     {
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );

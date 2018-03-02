@@ -66,7 +66,7 @@ public class DeferringLocksIT
     private GraphDatabaseService db;
 
     @Before
-    public void initDb() throws Exception
+    public void initDb()
     {
         dbRule.setConfig( DeferringStatementLocksFactory.deferred_locks_enabled, Settings.TRUE );
         db = dbRule.getGraphDatabaseAPI();
@@ -239,7 +239,7 @@ public class DeferringLocksIT
     }
 
     @Test( timeout = TEST_TIMEOUT )
-    public void readOwnChangesWithoutIndex() throws Exception
+    public void readOwnChangesWithoutIndex()
     {
         // WHEN
         try ( Transaction tx = db.beginTx() )

@@ -36,13 +36,13 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -122,19 +122,6 @@ import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor
  */
 public class GBPTree<KEY,VALUE> implements Closeable
 {
-    /**
-     * Version of the format that makes up the tree. This includes:
-     * <ul>
-     * <li>{@link TreeNode} format, header, keys, children, values</li>
-     * <li>{@link GenerationSafePointer} and {@link GenerationSafePointerPair}</li>
-     * <li>{@link IdSpace} i.e. which pages are fixed</li>
-     * <li>{@link TreeState} and {@link TreeStatePair}</li>
-     * </ul>
-     * If any of the above changes the on-page format then this version should be bumped, so that opening
-     * an index on wrong format version fails and user will need to rebuild.
-     */
-    static final int FORMAT_VERSION = 2;
-
     /**
      * For monitoring {@link GBPTree}.
      */
@@ -335,6 +322,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private boolean clean;
 
     /**
+     * True if initial tree state was dirty
+     */
+    private boolean dirtyOnStartup;
+
+    /**
      * State of cleanup job.
      */
     private final CleanupJob cleaning;
@@ -343,7 +335,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * {@link Consumer} to hand out to others who want to decorate information about this tree
      * to exceptions thrown out from its surface.
      */
-    private final Consumer<Throwable> exceptionDecorator = t -> appendTreeInformation( t );
+    private final Consumer<Throwable> exceptionDecorator = this::appendTreeInformation;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -419,12 +411,25 @@ public class GBPTree<KEY,VALUE> implements Closeable
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
 
+        boolean success = false;
         try
         {
-            this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
+            this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize );
             this.pageSize = pagedFile.pageSize();
             closed = false;
-            this.bTreeNode = new TreeNode<>( pageSize, layout );
+            TreeNodeSelector.Factory format;
+            if ( created )
+            {
+                format = TreeNodeSelector.selectByLayout( layout );
+                writeMeta( layout, format, pagedFile );
+            }
+            else
+            {
+                Meta meta = readMeta( layout, pagedFile );
+                meta.verify( layout );
+                format = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
+            }
+            this.bTreeNode = format.create( pageSize, layout );
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
@@ -440,33 +445,30 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.monitor.startupState( clean );
 
             // Prepare tree for action
-            boolean needsCleaning = !clean;
+            dirtyOnStartup = !clean;
             clean = false;
             bumpUnstableGeneration();
             forceState();
-            cleaning = createCleanupJob( needsCleaning );
+            cleaning = createCleanupJob( dirtyOnStartup );
             recoveryCleanupWorkCollector.add( cleaning );
+            success = true;
         }
         catch ( Throwable t )
         {
             appendTreeInformation( t );
-            try
+            throw t;
+        }
+        finally
+        {
+            if ( !success )
             {
                 close();
             }
-            catch ( Throwable e )
-            {
-                t.addSuppressed( e );
-            }
-            throw t;
         }
     }
 
     private void initializeAfterCreation( Layout<KEY,VALUE> layout, Consumer<PageCursor> headerWriter ) throws IOException
     {
-        // Initialize meta
-        writeMeta( layout, pagedFile );
-
         // Initialize state
         try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
@@ -478,7 +480,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             long stableGeneration = stableGeneration( generation );
             long unstableGeneration = unstableGeneration( generation );
-            TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             checkOutOfBounds( cursor );
         }
 
@@ -492,11 +494,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
-            int pageSizeForCreation, Layout<KEY,VALUE> layout ) throws IOException
+            int pageSizeForCreation ) throws IOException
     {
         try
         {
-            return openExistingIndexFile( pageCache, indexFile, layout );
+            return openExistingIndexFile( pageCache, indexFile );
         }
         catch ( NoSuchFileException e )
         {
@@ -504,29 +506,30 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private static <KEY, VALUE> PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout )
-            throws IOException
+    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile ) throws IOException
     {
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
         // This index already exists, verify meta data aligns with expectations
 
+        boolean success = false;
         try
         {
-            int pageSize = readMeta( layout, pagedFile );
-            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, pageSize );
+            // We're only interested in the page size really, so don't involve layout at this point
+            Meta meta = readMeta( null, pagedFile );
+            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize() );
+            success = true;
             return pagedFile;
         }
-        catch ( Throwable t )
+        catch ( IllegalStateException e )
         {
-            try
+            throw new IOException( "Index is not fully initialized since it's missing the meta page", e );
+        }
+        finally
+        {
+            if ( !success )
             {
                 pagedFile.close();
             }
-            catch ( IOException e )
-            {
-                t.addSuppressed( e );
-            }
-            throw t;
         }
     }
 
@@ -551,7 +554,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void loadState( PagedFile pagedFile, Header.Reader headerReader ) throws IOException
     {
-        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
         TreeState state = TreeStatePair.selectNewestValidState( states );
         try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -583,15 +586,24 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public static void readHeader( PageCache pageCache, File indexFile, Layout<?,?> layout, Header.Reader headerReader ) throws IOException
     {
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, layout ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile ) )
         {
-            Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+            readMeta( layout, pagedFile ).verify( layout );
+            Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
             TreeState state = TreeStatePair.selectNewestValidState( states );
             try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
             {
                 PageCursorUtil.goTo( cursor, "header data", state.pageId() );
                 doReadHeader( headerReader, cursor );
             }
+        }
+        catch ( Throwable t )
+        {
+            // Decorate outgoing exceptions with basic tree information. This is similar to how the constructor
+            // appends its information, but the constructor has read more information at that point so this one
+            // is a bit more sparse on information.
+            withMessage( t, t.getMessage() + " | " + format( "GBPTree[file:%s, layout:%s]", indexFile, layout ) );
+            throw t;
         }
     }
 
@@ -675,6 +687,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return states.getLeft() == state ? states.getRight() : states.getLeft();
     }
 
+    /**
+     * Basically {@link #readStatePages(PagedFile)} with some more checks, suitable for when first opening an index file,
+     * not while running it and check pointing.
+     *
+     * @param pagedFile {@link PagedFile} to read the state pages from.
+     * @return both read state pages.
+     * @throws IOException if state pages are missing (file is smaller than that) or if they are both empty.
+     */
+    private static Pair<TreeState,TreeState> loadStatePages( PagedFile pagedFile ) throws IOException
+    {
+        try
+        {
+            Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+            if ( states.getLeft().isEmpty() && states.getRight().isEmpty() )
+            {
+                throw new IOException( "Index is not fully initialized since its state pages are empty" );
+            }
+            return states;
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new IOException( "Index is not fully initialized since it's missing state pages", e );
+        }
+    }
+
     private static Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile ) throws IOException
     {
         Pair<TreeState,TreeState> states;
@@ -693,66 +730,21 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return metaCursor;
     }
 
-    private static <KEY,VALUE> int readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
+    private static <KEY,VALUE> Meta readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
             throws IOException
     {
-        // Read meta
-        int formatVersion;
-        int pageSize;
-        long layoutIdentifier;
-        int majorVersion;
-        int minorVersion;
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            do
-            {
-                formatVersion = metaCursor.getInt();
-                pageSize = metaCursor.getInt();
-                layoutIdentifier = metaCursor.getLong();
-                majorVersion = metaCursor.getInt();
-                minorVersion = metaCursor.getInt();
-                layout.readMetaData( metaCursor );
-            }
-            while ( metaCursor.shouldRetry() );
-            checkOutOfBounds( metaCursor );
-            metaCursor.checkAndClearCursorException();
+            return Meta.read( metaCursor, layout );
         }
-        catch ( CursorException e )
-        {
-            throw new MetadataMismatchException( e,
-                    "Tried to open, but caught an error while reading meta data. " +
-                    "File is expected to be corrupt, try to rebuild." );
-        }
-
-        if ( formatVersion != FORMAT_VERSION )
-        {
-            throw new MetadataMismatchException(
-                    "Tried to open with a different format version than " +
-                    "what it was created with. Created with %d, opened with %d",
-                    formatVersion, FORMAT_VERSION );
-        }
-        if ( !layout.compatibleWith( layoutIdentifier, majorVersion, minorVersion ) )
-        {
-            throw new MetadataMismatchException(
-                    "Tried to open using layout not compatible with " +
-                    "what the index was created with. Created with: layoutIdentifier=%d,majorVersion=%d,minorVersion=%d. " +
-                    "Opened with layoutIdentifier=%d,majorVersion=%d,minorVersion=%d",
-                    layoutIdentifier, majorVersion, minorVersion, layout.identifier(), layout.majorVersion(), layout.minorVersion() );
-        }
-        return pageSize;
     }
 
-    private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
+    private void writeMeta( Layout<KEY,VALUE> layout, TreeNodeSelector.Factory format, PagedFile pagedFile ) throws IOException
     {
+        Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), pageSize, layout );
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            metaCursor.putInt( FORMAT_VERSION );
-            metaCursor.putInt( pageSize );
-            metaCursor.putLong( layout.identifier() );
-            metaCursor.putInt( layout.majorVersion() );
-            metaCursor.putInt( layout.minorVersion() );
-            layout.writeMetaData( metaCursor );
-            checkOutOfBounds( metaCursor );
+            meta.write( metaCursor, layout );
         }
     }
 
@@ -762,7 +754,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // This index was created with another page size, re-open with that actual page size
         if ( pageSize != pageCache.pageSize() )
         {
-            if ( pageSize > pageCache.pageSize() )
+            if ( pageSize > pageCache.pageSize() || pageSize < 0 )
             {
                 throw new MetadataMismatchException(
                         "Tried to create tree with page size %d, but page cache used to open it this time " +
@@ -947,7 +939,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void internalIndexClose() throws IOException
     {
-        if ( !changesSinceLastCheckpoint && !cleaning.needed() )
+        if ( cleaning != null && !changesSinceLastCheckpoint && !cleaning.needed() )
         {
             clean = true;
             forceState();
@@ -986,7 +978,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @throws IOException on {@link PageCache} error.
      */
-    private void bumpUnstableGeneration() throws IOException
+    private void bumpUnstableGeneration()
     {
         generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
     }
@@ -1009,7 +1001,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @throws IOException on {@link PageCache} error.
      */
-    private CleanupJob createCleanupJob( boolean needsCleaning ) throws IOException
+    private CleanupJob createCleanupJob( boolean needsCleaning )
     {
         if ( !needsCleaning )
         {
@@ -1033,7 +1025,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     void printTree() throws IOException
     {
-        printTree( true, true, true );
+        printTree( false, false, false, false );
     }
 
     // Utility method
@@ -1043,14 +1035,36 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param printValues whether or not to print values in the leaf nodes.
      * @param printPosition whether or not to print position for each key.
      * @param printState whether or not to print the tree state.
+     * @param printHeader
      * @throws IOException on I/O error.
      */
-    public void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
+    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
             new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
-                .printTree( cursor, cursor, System.out, printValues, printPosition, printState );
+                .printTree( cursor, writer.cursor, System.out, printValues, printPosition, printState, printHeader );
+        }
+    }
+    // Utility method
+    /**
+     * Print node with given id to System.out, if node with id exists.
+     * @param id the page id of node to print
+     */
+    void printNode( int id ) throws IOException
+    {
+        if ( id < freeList.lastId() )
+        {
+            // Use write lock to avoid adversary interference
+            try ( PageCursor cursor = pagedFile.io( id, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                cursor.next();
+                byte nodeType = TreeNode.nodeType( cursor );
+                if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
+                {
+                    bTreeNode.printNode( cursor, false, true, stableGeneration( generation ), unstableGeneration( generation ) );
+                }
+            }
         }
     }
 
@@ -1184,26 +1198,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 throw e;
             }
 
-            if ( structurePropagation.hasRightKeyInsert )
-            {
-                // New root
-                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
-                PageCursorUtil.goTo( cursor, "new root", newRootId );
-
-                TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
-                TreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
-                        stableGeneration, unstableGeneration );
-                bTreeNode.setChildAt( cursor, structurePropagation.rightChild, 1,
-                        stableGeneration, unstableGeneration );
-                setRoot( newRootId );
-            }
-            else if ( structurePropagation.hasMidChildUpdate )
-            {
-                setRoot( structurePropagation.midChild );
-            }
-            structurePropagation.clear();
+            handleStructureChanges();
 
             checkOutOfBounds( cursor );
         }
@@ -1230,18 +1225,37 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 throw e;
             }
 
-            if ( structurePropagation.hasMidChildUpdate )
-            {
-                setRoot( structurePropagation.midChild );
-            }
-            structurePropagation.clear();
+            handleStructureChanges();
 
             checkOutOfBounds( cursor );
             return result;
         }
 
+        private void handleStructureChanges() throws IOException
+        {
+            if ( structurePropagation.hasRightKeyInsert )
+            {
+                // New root
+                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
+                PageCursorUtil.goTo( cursor, "new root", newRootId );
+
+                bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
+                        stableGeneration, unstableGeneration );
+                bTreeNode.insertKeyAndRightChildAt( cursor, structurePropagation.rightKey, structurePropagation.rightChild, 0, 0,
+                        stableGeneration, unstableGeneration );
+                TreeNode.setKeyCount( cursor, 1 );
+                setRoot( newRootId );
+            }
+            else if ( structurePropagation.hasMidChildUpdate )
+            {
+                setRoot( structurePropagation.midChild );
+            }
+            structurePropagation.clear();
+        }
+
         @Override
-        public void close() throws IOException
+        public void close()
         {
             if ( !writerTaken.compareAndSet( true, false ) )
             {
@@ -1260,5 +1274,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 cursor = null;
             }
         }
+    }
+
+    public boolean wasDirtyOnStartup()
+    {
+        return dirtyOnStartup;
     }
 }

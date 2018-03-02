@@ -35,6 +35,9 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 
 public class PageCacheRule extends ExternalResource
 {
@@ -49,6 +52,7 @@ public class PageCacheRule extends ExternalResource
         protected PageCacheTracer tracer;
         protected PageCursorTracerSupplier pageCursorTracerSupplier;
         private boolean accessChecks;
+        private String memory;
 
         private PageCacheConfig()
         {
@@ -131,6 +135,18 @@ public class PageCacheRule extends ExternalResource
             this.accessChecks = accessChecks;
             return this;
         }
+
+        /**
+         * Overrides default memory setting, which is a standard test size of '8 MiB'.
+         *
+         * @param memory memory setting to use for this page cache.
+         * @return this instance.
+         */
+        public PageCacheConfig withMemory( String memory )
+        {
+            this.memory = memory;
+            return this;
+        }
     }
 
     /**
@@ -180,14 +196,17 @@ public class PageCacheRule extends ExternalResource
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fs, Configuration.EMPTY );
 
-        MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB" );
+        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
+        MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
+                new LocalMemoryTracker() );
         if ( pageSize != null )
         {
-            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier );
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier,
+                    contextSupplier );
         }
         else
         {
-            pageCache = new MuninnPageCache( factory, mman, cacheTracer, cursorTracerSupplier );
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, cursorTracerSupplier, contextSupplier );
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;

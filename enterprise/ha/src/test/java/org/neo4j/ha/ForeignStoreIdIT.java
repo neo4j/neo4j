@@ -51,7 +51,7 @@ public class ForeignStoreIdIT
     private GraphDatabaseService foreignInstance;
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( foreignInstance != null )
         {
@@ -64,7 +64,7 @@ public class ForeignStoreIdIT
     }
 
     @Test
-    public void emptyForeignDbShouldJoinAfterHavingItsEmptyDbDeleted() throws Exception
+    public void emptyForeignDbShouldJoinAfterHavingItsEmptyDbDeleted()
     {
         // GIVEN
         // -- one instance running
@@ -99,7 +99,7 @@ public class ForeignStoreIdIT
     }
 
     @Test
-    public void nonEmptyForeignDbShouldNotBeAbleToJoin() throws Exception
+    public void nonEmptyForeignDbShouldNotBeAbleToJoin()
     {
         // GIVEN
         // -- one instance running

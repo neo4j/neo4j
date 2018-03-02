@@ -55,7 +55,7 @@ public class IndexUpdaterMapTest
     private IndexUpdaterMap updaterMap;
 
     @Before
-    public void before() throws IOException
+    public void before()
     {
         indexMap = new IndexMap();
 
@@ -81,7 +81,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldRetrieveUpdaterFromIndexMapForExistingIndex() throws Exception
+    public void shouldRetrieveUpdaterFromIndexMapForExistingIndex()
     {
         // given
         indexMap.putIndexProxy( 0, indexProxy1 );
@@ -108,7 +108,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldRetrieveSameUpdaterFromIndexMapForExistingIndexWhenCalledTwice() throws Exception
+    public void shouldRetrieveSameUpdaterFromIndexMapForExistingIndexWhenCalledTwice()
     {
         // given
         indexMap.putIndexProxy( 0, indexProxy1 );
@@ -123,7 +123,7 @@ public class IndexUpdaterMapTest
     }
 
     @Test
-    public void shouldRetrieveNoUpdaterForNonExistingIndex() throws Exception
+    public void shouldRetrieveNoUpdaterForNonExistingIndex()
     {
         // when
         IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );

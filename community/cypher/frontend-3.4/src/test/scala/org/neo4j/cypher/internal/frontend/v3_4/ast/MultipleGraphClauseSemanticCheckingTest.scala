@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.parser.ParserTest
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast, parser}
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.parboiled.scala.Rule1
 
 class MultipleGraphClauseSemanticCheckingTest
@@ -1253,6 +1254,8 @@ class MultipleGraphClauseSemanticCheckingTest
     override def withSemanticState(s: SemanticState) = ???
 
     override def withParams(p: Map[String, Any]) = ???
+
+    override def initialFields: Map[String, CypherType] = Map.empty
   }
 
   //noinspection TypeAnnotation

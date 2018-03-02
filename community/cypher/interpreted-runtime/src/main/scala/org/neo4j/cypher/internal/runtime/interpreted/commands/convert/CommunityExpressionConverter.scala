@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.v3_4.functions._
 import org.neo4j.cypher.internal.v3_4.functions
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
-import org.neo4j.cypher.internal.v3_4.logical.plans.{InequalitySeekRangeWrapper, NestedPlanExpression, PrefixSeekRangeWrapper, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 object CommunityExpressionConverter extends ExpressionConverter {
 
@@ -96,6 +96,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
         case e: ast.GetDegree => getDegree(e, self)
         case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range.map(self.toCommandExpression))
         case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(self.toCommandExpression))
+        case e: PointDistanceSeekRangeWrapper => PointDistanceSeekRangeExpression(e.range.map(self.toCommandExpression))
         case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(variable(e.variable), toCommandProperty(e.property, self), e.inequalities.map(e => inequalityExpression(e, self)))
         case e: DesugaredMapProjection => commandexpressions.DesugaredMapProjection(e.name.name, e.includeAllProps, mapProjectionItems(e.items, self))
         case e: ResolvedFunctionInvocation =>

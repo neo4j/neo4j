@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class LabelScanValueTest
 {
     @Test
-    public void shouldAddBits() throws Exception
+    public void shouldAddBits()
     {
         // GIVEN
         LabelScanValue value = new LabelScanValue();
@@ -42,7 +42,7 @@ public class LabelScanValueTest
     }
 
     @Test
-    public void shouldRemoveBits() throws Exception
+    public void shouldRemoveBits()
     {
         // GIVEN
         LabelScanValue value = new LabelScanValue();

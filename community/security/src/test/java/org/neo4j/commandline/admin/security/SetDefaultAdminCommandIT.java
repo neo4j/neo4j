@@ -104,7 +104,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldErrorWithNoSuchUser() throws Throwable
+    public void shouldErrorWithNoSuchUser()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "bob" );
         verify( out ).stdErrLine( "command failed: no such user: 'bob'" );
@@ -127,7 +127,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1() throws Throwable
+    public void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
         assertNoAuthIniFile();
@@ -140,7 +140,7 @@ public class SetDefaultAdminCommandIT
         verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
         verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine(
                 String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
@@ -151,7 +151,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    public void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
         assertNoAuthIniFile();
@@ -164,7 +164,7 @@ public class SetDefaultAdminCommandIT
         verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
         verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine(
                 String.format( "Sets the user to become admin if users but no roles are present, for example%n" +

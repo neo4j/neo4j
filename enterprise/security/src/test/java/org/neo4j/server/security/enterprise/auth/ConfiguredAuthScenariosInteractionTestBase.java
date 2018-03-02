@@ -46,7 +46,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
     @Override
-    public void setUp() throws Throwable
+    public void setUp()
     {
         // tests are required to setup database with specific configs
     }
@@ -69,7 +69,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( userList ) ) );
         GraphDatabaseFacade localGraph = neo.getLocalGraph();
         InternalTransaction transaction = localGraph
-                .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
+                .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseLoginContext.AUTH_DISABLED );
         Result result =
                 localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", EMPTY_MAP );
         String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),
@@ -87,7 +87,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( userList ) ) );
         GraphDatabaseFacade localGraph = neo.getLocalGraph();
         InternalTransaction transaction = localGraph
-                .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
+                .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseLoginContext.AUTH_DISABLED );
         Result result =
                 localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", EMPTY_MAP );
         String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),

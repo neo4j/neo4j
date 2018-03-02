@@ -61,7 +61,7 @@ public class WritableIndexReferenceFactoryTest
     private IndexConfigStore indexStore;
 
     @Before
-    public void setUp() throws IOException
+    public void setUp()
     {
         setupIndexInfrastructure();
     }
@@ -119,7 +119,7 @@ public class WritableIndexReferenceFactoryTest
                 new IndexTypeCache( indexStore ) );
     }
 
-    private void setupIndexInfrastructure() throws IOException
+    private void setupIndexInfrastructure()
     {
         File storeDir = getStoreDir();
         indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );

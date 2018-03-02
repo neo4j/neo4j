@@ -28,6 +28,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -45,9 +46,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
- * Rule for opening a {@link NeoStores}, either via {@link #open(String...)}, which just uses an in-memory
- * file system, or via {@link #open(FileSystemAbstraction, PageCache, RecordFormats, Function, String...)}
- * which is suitable in an environment where you already have an fs and page cache available.
+ * Rule for opening a {@link NeoStores}.
  */
 public class NeoStoresRule extends ExternalResource
 {
@@ -80,7 +79,7 @@ public class NeoStoresRule extends ExternalResource
         File storeDir = testDirectory.makeGraphDbDir();
         Config configuration = configOf( config );
         StoreFactory storeFactory = new StoreFactory( storeDir, configuration, idGeneratorFactory.apply( fs ),
-                pageCache, fs, format, NullLogProvider.getInstance() );
+                pageCache, fs, format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
                 : storeFactory.openNeoStores( true, stores );
@@ -106,7 +105,7 @@ public class NeoStoresRule extends ExternalResource
     {
         Log log = NullLog.getInstance();
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, NULL,
-                PageCursorTracerSupplier.NULL, log );
+                PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
         return pageCacheFactory.getOrCreatePageCache();
     }
 
@@ -169,7 +168,7 @@ public class NeoStoresRule extends ExternalResource
             }
             if ( idGeneratorFactory == null )
             {
-                idGeneratorFactory = fs -> new DefaultIdGeneratorFactory( fs );
+                idGeneratorFactory = DefaultIdGeneratorFactory::new;
             }
             return open( fs, pageCache, format, idGeneratorFactory, config );
         }

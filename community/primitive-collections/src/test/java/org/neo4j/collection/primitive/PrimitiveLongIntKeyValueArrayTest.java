@@ -30,7 +30,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     private static final int DEFAULT_VALUE = -1;
 
     @Test
-    public void testEnsureCapacity() throws Exception
+    public void testEnsureCapacity()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         assertThat( map.capacity(), equalTo( PrimitiveLongIntKeyValueArray.DEFAULT_INITIAL_CAPACITY
@@ -48,7 +48,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testSize() throws Exception
+    public void testSize()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         assertThat( map.size(), equalTo( 0 ) );
@@ -61,7 +61,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testGetOrDefault() throws Exception
+    public void testGetOrDefault()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         map.putIfAbsent( 1, 100 );
@@ -76,7 +76,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testPutIfAbsent() throws Exception
+    public void testPutIfAbsent()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
 
@@ -98,7 +98,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testReset() throws Exception
+    public void testReset()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         map.putIfAbsent( 1, 100 );
@@ -112,7 +112,7 @@ public class PrimitiveLongIntKeyValueArrayTest
     }
 
     @Test
-    public void testKeys() throws Exception
+    public void testKeys()
     {
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         map.putIfAbsent( 1, 100 );

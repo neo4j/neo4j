@@ -24,9 +24,11 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.stream.LongStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -34,6 +36,8 @@ import org.neo4j.logging.NullLogProvider;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -42,9 +46,12 @@ import static org.mockito.Mockito.when;
 
 public class LogPruningTest
 {
+    private final Config config = Config.defaults();
     private FileSystemAbstraction fs;
     private LogFiles logFiles;
     private LogProvider logProvider;
+    private Clock clock;
+    private LogPruneStrategyFactory factory;
 
     @Before
     public void setUp()
@@ -54,13 +61,16 @@ public class LogPruningTest
         doAnswer( inv -> new File( String.valueOf( inv.getArguments()[0] ) ) )
                 .when( logFiles ).getLogFileForVersion( anyLong() );
         logProvider = NullLogProvider.getInstance();
+        clock = mock( Clock.class );
+        factory = mock( LogPruneStrategyFactory.class );
     }
 
     @Test
-    public void mustDeleteLogFilesThatCanBePruned() throws Exception
+    public void mustDeleteLogFilesThatCanBePruned()
     {
-        LogPruneStrategy strategy = upTo -> LongStream.range( 3, upTo );
-        LogPruning pruning = new LogPruningImpl( fs, strategy, logFiles, logProvider );
+        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
+                .thenReturn( upTo -> LongStream.range( 3, upTo ) );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles,logProvider,factory, clock, config );
         pruning.pruneLogs( 5 );
         InOrder order = inOrder( fs );
         order.verify( fs ).deleteFile( new File( "3" ) );
@@ -70,19 +80,21 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustHaveLogFilesToPruneIfStrategyFindsFiles() throws Exception
+    public void mustHaveLogFilesToPruneIfStrategyFindsFiles()
     {
-        LogPruneStrategy strategy = upTo -> LongStream.range( 3, upTo );
+        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
+                .thenReturn(  upTo -> LongStream.range( 3, upTo ) );
         when( logFiles.getHighestLogVersion() ).thenReturn( 4L );
-        LogPruning pruning = new LogPruningImpl( fs, strategy, logFiles, logProvider );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         assertTrue( pruning.mightHaveLogsToPrune() );
     }
 
     @Test
-    public void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles() throws Exception
+    public void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles()
     {
-        LogPruneStrategy strategy = x -> LongStream.empty();
-        LogPruning pruning = new LogPruningImpl( fs, strategy, logFiles, logProvider );
+        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
+                .thenReturn(  x -> LongStream.empty() );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         assertFalse( pruning.mightHaveLogsToPrune() );
     }
 }

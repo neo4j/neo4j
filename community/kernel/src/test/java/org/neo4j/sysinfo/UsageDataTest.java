@@ -32,7 +32,7 @@ import static org.neo4j.udc.UsageDataKey.key;
 public class UsageDataTest
 {
     @Test
-    public void shouldPutAndRetrieve() throws Throwable
+    public void shouldPutAndRetrieve()
     {
         // Given
         UsageData ms = new UsageData( mock( JobScheduler.class ) );

@@ -544,7 +544,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotRecordGraphSetPropertyOnSameValue() throws Exception
+    public void shouldNotRecordGraphSetPropertyOnSameValue()
     {
         // GIVEN
         int propertyKeyId = 5;
@@ -579,7 +579,7 @@ public class StateHandlingStatementOperationsTest
         } );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
         IndexReader indexReader = mock( IndexReader.class );
-        when( indexReader.hasFullNumberPrecision( any() ) ).thenReturn( true );
+        when( indexReader.hasFullValuePrecision( any() ) ).thenReturn( true );
         when( indexReader.query( any() ) )
                 .thenAnswer( invocation -> PrimitiveLongResourceCollections.iterator( null, nodeId ) );
         when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );

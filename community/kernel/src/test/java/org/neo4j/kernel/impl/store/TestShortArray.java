@@ -33,7 +33,7 @@ public class TestShortArray
     private static final int DEFAULT_PAYLOAD_SIZE = PropertyType.getPayloadSize();
 
     @Test
-    public void canEncodeSomeSampleArraysWithDefaultPayloadSize() throws Exception
+    public void canEncodeSomeSampleArraysWithDefaultPayloadSize()
     {
         assertCanEncodeAndDecodeToSameValue( new boolean[]{true, false, true,
                 true, true, true, true, true, true, true, false, true} );
@@ -51,14 +51,14 @@ public class TestShortArray
     }
 
     @Test
-    public void testCannotEncodeMarginal() throws Exception
+    public void testCannotEncodeMarginal()
     {
         assertCanNotEncode( new long[]{1L << 15, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1} );
     }
 
     @Test
-    public void canEncodeBiggerArraysWithBiggerPayloadSize() throws Exception
+    public void canEncodeBiggerArraysWithBiggerPayloadSize()
     {
         int[] intArray = intArray( 10, 2600 );
         assertCanEncodeAndDecodeToSameValue( intArray, 32 );

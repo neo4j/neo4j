@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -127,14 +128,14 @@ public class ManyPropertyKeysIT
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() );
     }
 
-    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
+    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
     {
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         StoreFactory storeFactory = new StoreFactory(
                 storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ), pageCache,
                 fileSystemRule.get(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

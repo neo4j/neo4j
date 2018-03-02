@@ -21,14 +21,17 @@ in the LICENSE.txt file.
 
 Full license texts are found in LICENSES.txt.
 
+
 Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Compress
   Apache Commons Lang
   Lucene Core
   Lucene Memory
   Netty/All-in-One
+  Objenesis
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

@@ -38,9 +38,16 @@ public class ExceptionMonitoringHandler  extends ChannelHandlerAdapter
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
-        monitor.exceptionCaught( ctx == null ? null : ctx.channel(), cause );
-        ctx.fireExceptionCaught( cause );
+        if ( ctx != null )
+        {
+            monitor.exceptionCaught( ctx.channel(), cause );
+            ctx.fireExceptionCaught( cause );
+        }
+        else
+        {
+            monitor.exceptionCaught( null, cause );
+        }
     }
 }

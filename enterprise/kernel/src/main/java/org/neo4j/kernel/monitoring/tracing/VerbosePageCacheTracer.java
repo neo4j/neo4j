@@ -35,8 +35,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
+import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.getInteger;
 
 public class VerbosePageCacheTracer extends DefaultPageCacheTracer
 {

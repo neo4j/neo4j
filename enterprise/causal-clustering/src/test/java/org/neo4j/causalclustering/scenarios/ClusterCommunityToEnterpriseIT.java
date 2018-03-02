@@ -55,7 +55,7 @@ public class ClusterCommunityToEnterpriseIT
     public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         fsa = fileSystemRule.get();
 
@@ -65,7 +65,7 @@ public class ClusterCommunityToEnterpriseIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( cluster != null )
         {

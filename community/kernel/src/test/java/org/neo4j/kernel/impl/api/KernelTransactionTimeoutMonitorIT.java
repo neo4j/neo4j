@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -35,13 +36,17 @@ import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class KernelTransactionTimeoutMonitorIT
@@ -62,13 +67,13 @@ public class KernelTransactionTimeoutMonitorIT
     }
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         executor = Executors.newSingleThreadExecutor();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         executor.shutdown();
     }
@@ -106,7 +111,7 @@ public class KernelTransactionTimeoutMonitorIT
         }
         Future<?> locker = executor.submit( () ->
         {
-            try ( Transaction tx = database.beginTx( 100, TimeUnit.MILLISECONDS ) )
+            try ( Transaction tx = database.beginTx() )
             {
                 Node node = database.getNodeById( nodeId );
                 tx.acquireReadLock( node );
@@ -123,9 +128,8 @@ public class KernelTransactionTimeoutMonitorIT
         }
         while ( !proceed );
 
-        Thread.sleep( 150 ); // locker transaction is definitely past its allocated time now
-        // make sure it's terminated; we call this explicitly so we don't have to wait for the scheduler to run
-        database.resolveDependency( KernelTransactionTimeoutMonitor.class ).run();
+        terminateOngoingTransaction();
+
         assertFalse( lockerDone.get() ); // but the thread should still be blocked on the latch
         // Yet we should be able to proceed and grab the locks they once held
         try ( Transaction tx = database.beginTx() )
@@ -140,12 +144,23 @@ public class KernelTransactionTimeoutMonitorIT
         assertTrue( lockerDone.get() );
     }
 
+    private void terminateOngoingTransaction()
+    {
+        Set<KernelTransactionHandle> kernelTransactionHandles =
+                database.resolveDependency( KernelTransactions.class ).activeTransactions();
+        assertThat( kernelTransactionHandles, hasSize( 1 ) );
+        for ( KernelTransactionHandle kernelTransactionHandle : kernelTransactionHandles )
+        {
+            kernelTransactionHandle.markForTermination( Status.Transaction.Terminated );
+        }
+    }
+
     private Runnable startAnotherTransaction()
     {
         return () ->
         {
-            try ( InternalTransaction transaction = database
-                    .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED, 1,
+            try ( InternalTransaction ignored = database
+                    .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED, 1,
                             TimeUnit.SECONDS ) )
             {
                 Node node = database.getNodeById( NODE_ID );

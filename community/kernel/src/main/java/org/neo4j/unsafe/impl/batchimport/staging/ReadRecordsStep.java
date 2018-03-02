@@ -67,7 +67,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     }
 
     @Override
-    protected void process( PrimitiveLongIterator idRange, BatchSender sender ) throws Throwable
+    protected void process( PrimitiveLongIterator idRange, BatchSender sender )
     {
         if ( !idRange.hasNext() )
         {

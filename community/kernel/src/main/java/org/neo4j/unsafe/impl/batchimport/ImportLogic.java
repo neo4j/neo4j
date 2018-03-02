@@ -66,7 +66,6 @@ import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
@@ -92,6 +91,12 @@ public class ImportLogic implements Closeable
         void mayExceedNodeIdCapacity( long capacity, long estimatedCount );
 
         void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount );
+
+        void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize );
+
+        void abundantHeapSize( long optimalMinimalHeapSize, long heapSize );
+
+        void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory );
     }
 
     public static final Monitor NO_MONITOR = new Monitor()
@@ -108,6 +113,21 @@ public class ImportLogic implements Closeable
 
         @Override
         public void doubleRelationshipRecordUnitsEnabled()
+        {   // no-op
+        }
+
+        @Override
+        public void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize )
+        {   // no-op
+        }
+
+        @Override
+        public void abundantHeapSize( long optimalMinimalHeapSize, long heapSize )
+        {   // no-op
+        }
+
+        @Override
+        public void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory )
         {   // no-op
         }
     };
@@ -179,7 +199,13 @@ public class ImportLogic implements Closeable
         idMapper = input.idMapper( numberArrayFactory );
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
         Estimates inputEstimates = input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() );
-        sanityCheckEstimatesWithRecordFormat( inputEstimates );
+
+        // Sanity checking against estimates
+        new EstimationSanityChecker( recordFormats, monitor ).sanityCheck( inputEstimates );
+        new HeapSizeSanityChecker( monitor ).sanityCheck( inputEstimates, recordFormats, neoStore,
+                nodeRelationshipCache.memoryEstimation( inputEstimates.numberOfNodes() ),
+                idMapper.memoryEstimation( inputEstimates.numberOfNodes() ) );
+
         dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache );
 
         if ( neoStore.determineDoubleRelationshipRecordUnits( inputEstimates ) )
@@ -188,11 +214,6 @@ public class ImportLogic implements Closeable
         }
 
         executionMonitor.initialize( dependencies );
-    }
-
-    private void sanityCheckEstimatesWithRecordFormat( Estimates inputEstimates )
-    {
-        new EstimationSanityChecker( recordFormats, monitor ).sanityCheck( inputEstimates );
     }
 
     /**
@@ -248,7 +269,7 @@ public class ImportLogic implements Closeable
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
             LongFunction<Object> inputIdLookup = new NodeInputIdPropertyLookup( neoStore.getTemporaryPropertyStore() );
             executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup, badCollector, memoryUsageStats ) );
-            PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
+            PrimitiveLongIterator duplicateNodeIds = idMapper.leftOverDuplicateNodesIds();
             if ( duplicateNodeIds.hasNext() )
             {
                 executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore, storeUpdateMonitor ) );
@@ -483,7 +504,7 @@ public class ImportLogic implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;

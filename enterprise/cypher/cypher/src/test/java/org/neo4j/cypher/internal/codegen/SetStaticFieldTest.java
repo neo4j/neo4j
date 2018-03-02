@@ -34,7 +34,7 @@ public class SetStaticFieldTest
         setStaticField.apply( Apa.class, "X", "HELLO WORLD!" );
 
         // then
-        assertEquals( Apa.X, "HELLO WORLD!" );
+        assertEquals( "HELLO WORLD!", Apa.X );
     }
 
     public static class Apa

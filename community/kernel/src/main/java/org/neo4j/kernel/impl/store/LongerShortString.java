@@ -734,14 +734,7 @@ public enum LongerShortString
         int maxBytes = PropertyType.getPayloadSize();
         if ( stringLength <= maxBytes - 5 )
         {
-            if ( encodeLatin1( keyId, string, target ) )
-            {
-                return true;
-            }
-            if ( encodeUTF8( keyId, string, target, payloadSize ) )
-            {
-                return true;
-            }
+            return encodeLatin1( keyId, string, target ) || encodeUTF8( keyId, string, target, payloadSize );
         }
         return false;
     }

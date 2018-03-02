@@ -55,7 +55,7 @@ public class RoleSerialization extends FileRepositorySerializer<RoleRecord>
                 .build();
     }
 
-    private SortedSet<String> deserializeUsers( String part ) throws FormatException
+    private SortedSet<String> deserializeUsers( String part )
     {
         String[] splits = part.split( userSeparator, -1 );
 

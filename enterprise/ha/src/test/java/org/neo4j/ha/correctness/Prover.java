@@ -90,14 +90,14 @@ public class Prover
         );
 
         state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.create,
-                new URI( instance3 ), "defaultcluster" ).setHeader( Message.CONVERSATION_ID,
-                "-1" ).setHeader( Message.FROM, instance3 ) ) );
+                new URI( instance3 ), "defaultcluster" ).setHeader( Message.HEADER_CONVERSATION_ID,
+                "-1" ).setHeader( Message.HEADER_FROM, instance3 ) ) );
         state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join,
                 new URI( instance2 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader(
-                Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance2 ) ) );
+                Message.HEADER_CONVERSATION_ID, "-1" ).setHeader( Message.HEADER_FROM, instance2 ) ) );
         state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join,
                 new URI( instance1 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader(
-                Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance1 ) ) );
+                Message.HEADER_CONVERSATION_ID, "-1" ).setHeader( Message.HEADER_FROM, instance1 ) ) );
 
         state.addPendingActions( new InstanceCrashedAction( instance3 ) );
 

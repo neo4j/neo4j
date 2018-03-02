@@ -32,11 +32,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
@@ -84,10 +81,10 @@ public class ClusterMockTest
         );
     }
 
-    List<TestProtocolServer> servers = new ArrayList<TestProtocolServer>();
-    List<Cluster> out = new ArrayList<Cluster>();
-    List<Cluster> in = new ArrayList<Cluster>();
-    Map<Integer, URI> members = new HashMap<Integer, URI>();
+    List<TestProtocolServer> servers = new ArrayList<>();
+    List<Cluster> out = new ArrayList<>();
+    List<Cluster> in = new ArrayList<>();
+    Map<Integer, URI> members = new HashMap<>();
 
     @Rule
     public LoggerRule logger = new LoggerRule( Level.OFF );
@@ -113,7 +110,7 @@ public class ClusterMockTest
 
     protected void testCluster( int nrOfServers, NetworkMock mock,
                                 ClusterTestScript script )
-            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+            throws URISyntaxException
     {
         int[] serverIds = new int[nrOfServers];
         for ( int i = 1; i <= nrOfServers; i++ )
@@ -125,7 +122,7 @@ public class ClusterMockTest
 
     protected void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock,
                                 ClusterTestScript script )
-            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+            throws URISyntaxException
     {
         this.script = script;
 
@@ -168,11 +165,7 @@ public class ClusterMockTest
                     {
                         logger.getLogger().fine( uri + " received: " + serializer.receive( value ) );
                     }
-                    catch ( IOException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( ClassNotFoundException e )
+                    catch ( IOException | ClassNotFoundException e )
                     {
                         e.printStackTrace();
                     }
@@ -207,7 +200,7 @@ public class ClusterMockTest
         logger.getLogger().fine( "All nodes leave" );
 
         // All leave
-        for ( Cluster cluster : new ArrayList<Cluster>( in ) )
+        for ( Cluster cluster : new ArrayList<>( in ) )
         {
             logger.getLogger().fine( "Leaving:" + cluster );
             cluster.leave();
@@ -280,7 +273,7 @@ public class ClusterMockTest
         Map<String, InstanceId> roles;
         Set<InstanceId> failed;
 
-        List<AssertionError> errors = new LinkedList<AssertionError>();
+        List<AssertionError> errors = new LinkedList<>();
 
         List<TestProtocolServer> protocolServers = network.getServers();
 
@@ -335,7 +328,7 @@ public class ClusterMockTest
         Map<String, InstanceId> roles = null;
         Set<InstanceId> failed = null;
 
-        List<AssertionError> errors = new LinkedList<AssertionError>();
+        List<AssertionError> errors = new LinkedList<>();
 
         List<TestProtocolServer> protocolServers = network.getServers();
 
@@ -405,9 +398,8 @@ public class ClusterMockTest
         ClusterConfiguration clusterConfiguration = context.getConfiguration();
         try
         {
-            assertEquals( "Config for server" + myId + " is wrong", new HashSet<URI>( members ),
-                    new HashSet<URI>( clusterConfiguration
-                            .getMemberURIs() )
+            assertEquals( "Config for server" + myId + " is wrong", new HashSet<>( members ),
+                    new HashSet<>( clusterConfiguration.getMemberURIs() )
             );
         }
         catch ( AssertionError e )
@@ -449,7 +441,7 @@ public class ClusterMockTest
             public long time;
         }
 
-        private final Queue<ClusterAction> actions = new LinkedList<ClusterAction>();
+        private final Queue<ClusterAction> actions = new LinkedList<>();
         private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer( new ObjectStreamFactory()
                 , new ObjectStreamFactory() );
 
@@ -705,7 +697,7 @@ public class ClusterMockTest
                 @Override
                 public void run()
                 {
-                    HashMap<String, InstanceId> roles = new HashMap<String, InstanceId>();
+                    HashMap<String, InstanceId> roles = new HashMap<>();
                     ClusterMockTest.this.getRoles( roles );
                     InstanceId oldCoordinator = comparedTo.get( ClusterConfiguration.COORDINATOR );
                     InstanceId newCoordinator = roles.get( ClusterConfiguration.COORDINATOR );
@@ -714,91 +706,6 @@ public class ClusterMockTest
                     assertTrue( "Should have elected a new coordinator", !oldCoordinator.equals( newCoordinator ) );
                 }
             }, 0 );
-        }
-    }
-
-    public class ClusterTestScriptRandom
-            implements ClusterTestScript
-    {
-        private final long seed;
-        private final Random random;
-
-        public ClusterTestScriptRandom( long seed )
-        {
-            if ( seed == -1 )
-            {
-                seed = System.nanoTime();
-            }
-            this.seed = seed;
-            random = new Random( seed );
-        }
-
-        @Override
-        public int rounds()
-        {
-            return 300;
-        }
-
-        @Override
-        public void tick( long time )
-        {
-            if ( time >= (rounds() - 100) * 10 )
-            {
-                return;
-            }
-
-            if ( time == 0 )
-            {
-                logger.getLogger().fine( "Random seed:" + seed + "L" );
-            }
-
-            if ( random.nextDouble() >= 0.8 )
-            {
-                double inOrOut = (in.size() - out.size()) / ((double) servers.size());
-                double whatToDo = random.nextDouble() + inOrOut;
-                logger.getLogger().fine( "What to do:" + whatToDo );
-
-                if ( whatToDo < 0.5 && !out.isEmpty() )
-                {
-                    int idx = random.nextInt( out.size() );
-                    final Cluster cluster = out.remove( idx );
-
-                    if ( in.isEmpty() )
-                    {
-                        cluster.create( "default" );
-                    }
-                    else
-                    {
-                        final Future<ClusterConfiguration> result = cluster.join( "default",
-                                URI.create( in.get( 0 ).toString() ) );
-                        Runnable joiner = () ->
-                        {
-                            try
-                            {
-                                ClusterConfiguration clusterConfiguration = result.get();
-                                logger.getLogger().fine( "**** Cluster configuration:" +
-                                        clusterConfiguration );
-                            }
-                            catch ( Exception e )
-                            {
-                                logger.getLogger().fine( "**** Node could not join cluster:" + e
-                                        .getMessage() );
-                                out.add( cluster );
-                            }
-                        };
-                        network.addFutureWaiter( result, joiner );
-                    }
-                    logger.getLogger().fine( "Enter cluster:" + cluster.toString() );
-
-                }
-                else if ( !in.isEmpty() )
-                {
-                    int idx = random.nextInt( in.size() );
-                    Cluster cluster = in.remove( idx );
-                    cluster.leave();
-                    logger.getLogger().fine( "Leave cluster:" + cluster.toString() );
-                }
-            }
         }
     }
 

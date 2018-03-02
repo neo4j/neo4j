@@ -58,7 +58,7 @@ public interface RoleRepository extends Lifecycle
      * @throws InvalidArgumentsException if any role name is not valid
      * @throws IOException if the underlying storage for roles fails
      */
-    void setRoles( ListSnapshot<RoleRecord> roles ) throws InvalidArgumentsException, IOException;
+    void setRoles( ListSnapshot<RoleRecord> roles ) throws InvalidArgumentsException;
 
     /**
      * Update a role, given that the role token is unique.

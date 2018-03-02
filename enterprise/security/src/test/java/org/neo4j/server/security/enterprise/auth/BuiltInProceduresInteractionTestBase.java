@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
-import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.newapi.Operations;
@@ -76,7 +76,6 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.enterprise.builtinprocs.ProceduresTimeFormatHelper.UTC_ZONE_ID;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
@@ -135,7 +134,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     private void waitTransactionToStartWaitingForTheLock() throws InterruptedException
     {
-        while ( !Thread.getAllStackTraces().keySet().stream().anyMatch(
+        while ( Thread.getAllStackTraces().keySet().stream().noneMatch(
                 ThreadingRule.waitingWhileIn( Operations.class, "acquireExclusiveNodeLock" ) ) )
         {
             TimeUnit.MILLISECONDS.sleep( 10 );
@@ -275,7 +274,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String listQueriesQuery = "CALL dbms.listQueries()";
 
         DoubleLatch latch = new DoubleLatch( 2 );
-        OffsetDateTime startTime = now( UTC_ZONE_ID );
+        OffsetDateTime startTime = now( ZoneOffset.UTC );
 
         ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
         tx.execute( threading, writeSubject, setMetaDataQuery, matchQuery );
@@ -581,7 +580,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
-    public void shouldSelfKillQuery() throws Throwable
+    public void shouldSelfKillQuery()
     {
         String result = neo.executeQuery(
                 readSubject,
@@ -755,7 +754,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     //---------- set tx meta data -----------
 
     @Test
-    public void shouldHaveSetTXMetaDataProcedure() throws Throwable
+    public void shouldHaveSetTXMetaDataProcedure()
     {
         assertEmpty( writeSubject, "CALL dbms.setTXMetaData( { aKey: 'aValue' } )" );
     }
@@ -794,7 +793,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     //---------- config manipulation -----------
 
     @Test
-    public void setConfigValueShouldBeAccessibleOnlyToAdmins() throws Exception
+    public void setConfigValueShouldBeAccessibleOnlyToAdmins()
     {
         String call = "CALL dbms.setConfigValue('dbms.logs.query.enabled', 'false')";
         assertFail( writeSubject, call, PERMISSION_DENIED );
@@ -1044,7 +1043,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldClearQueryCachesIfAdmin()
     {
-        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", r -> r.close());
+        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", ResourceIterator::close );
         // any answer is okay, as long as it isn't denied. That is why we don't care about the actual result here
     }
 
@@ -1129,7 +1128,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     //@Test
-    public void shouldNotTerminateTerminationTransaction() throws InterruptedException, ExecutionException
+    public void shouldNotTerminateTerminationTransaction()
     {
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'adminSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "adminSubject", "0" ) ) );
@@ -1169,7 +1168,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     //@Test
-    public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
+    public void shouldNotTerminateTransactionsIfNonExistentUser()
     {
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )", "User '' does not exist" );
@@ -1436,6 +1435,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     private static OffsetDateTime getStartTime()
     {
-        return ofInstant( Instant.ofEpochMilli( now().toEpochSecond() ), UTC_ZONE_ID );
+        return ofInstant( Instant.ofEpochMilli( now().toEpochSecond() ), ZoneOffset.UTC );
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.management.repr;
 
 import java.util.ArrayList;
-
 import javax.management.openmbean.CompositeData;
 
 import org.neo4j.server.rest.repr.ListRepresentation;
@@ -66,7 +65,7 @@ public class JmxAttributeRepresentationDispatcher extends RepresentationDispatch
 
     private Representation dispatchCompositeDataArray( CompositeData[] property, String param )
     {
-        ArrayList<Representation> values = new ArrayList<Representation>();
+        ArrayList<Representation> values = new ArrayList<>();
         for ( CompositeData value : property )
         {
             values.add( new JmxCompositeDataRepresentation( value ) );

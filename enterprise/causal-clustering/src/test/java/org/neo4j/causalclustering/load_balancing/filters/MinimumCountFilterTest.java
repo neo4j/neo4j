@@ -30,7 +30,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class MinimumCountFilterTest
 {
     @Test
-    public void shouldFilterBelowCount() throws Exception
+    public void shouldFilterBelowCount()
     {
         // given
         MinimumCountFilter<Integer> minFilter = new MinimumCountFilter<>( 3 );
@@ -45,7 +45,7 @@ public class MinimumCountFilterTest
     }
 
     @Test
-    public void shouldPassAtCount() throws Exception
+    public void shouldPassAtCount()
     {
         // given
         MinimumCountFilter<Integer> minFilter = new MinimumCountFilter<>( 3 );
@@ -60,7 +60,7 @@ public class MinimumCountFilterTest
     }
 
     @Test
-    public void shouldPassAboveCount() throws Exception
+    public void shouldPassAboveCount()
     {
         // given
         MinimumCountFilter<Integer> minFilter = new MinimumCountFilter<>( 3 );

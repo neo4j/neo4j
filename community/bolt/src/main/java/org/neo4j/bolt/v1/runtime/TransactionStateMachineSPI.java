@@ -28,12 +28,12 @@ import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.ThrowingAction;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -97,9 +97,9 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( SecurityContext securityContext )
+    public KernelTransaction beginTransaction( LoginContext loginContext )
     {
-        db.beginTransaction( KernelTransaction.Type.explicit, securityContext );
+        db.beginTransaction( KernelTransaction.Type.explicit, loginContext );
         return txBridge.getKernelTransactionBoundToThisThread( false );
     }
 
@@ -123,11 +123,11 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
 
     @Override
     public BoltResultHandle executeQuery( BoltQuerySource querySource,
-            SecurityContext securityContext,
+            LoginContext loginContext,
             String statement,
-            MapValue params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
+            MapValue params, ThrowingAction<KernelException> onFail )
     {
-        InternalTransaction internalTransaction = queryService.beginTransaction( implicit, securityContext );
+        InternalTransaction internalTransaction = queryService.beginTransaction( implicit, loginContext );
         ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,
                 querySource.clientName,
                 querySource.connectionDescriptor.clientAddress(),

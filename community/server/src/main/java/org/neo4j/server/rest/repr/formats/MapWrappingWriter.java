@@ -52,7 +52,7 @@ public class MapWrappingWriter extends MappingWriter
     @Override
     protected ListWriter newList( String type, String key )
     {
-        List<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<>();
         data.put( key, list );
         return new ListWrappingWriter( list, interactive );
     }
@@ -60,7 +60,7 @@ public class MapWrappingWriter extends MappingWriter
     @Override
     protected MappingWriter newMapping( String type, String key )
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         data.put( key, map );
         return new MapWrappingWriter( map, interactive );
     }

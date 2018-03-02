@@ -38,7 +38,7 @@ import static org.neo4j.helpers.collection.Iterables.iterable;
 public class KernelExtensionsTest
 {
     @Test
-    public void shouldConsultUnsatisfiedDependencyHandler() throws Exception
+    public void shouldConsultUnsatisfiedDependencyHandler()
     {
         // GIVEN
         KernelContext context = mock( KernelContext.class );
@@ -83,7 +83,7 @@ public class KernelExtensionsTest
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context, TestingDependencies dependencies ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, TestingDependencies dependencies )
         {
             return new TestingExtension( dependencies.jobScheduler() );
         }

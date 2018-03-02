@@ -29,7 +29,6 @@ import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
-import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
 
 /**
  * Schema Lucene index writer implementation that supports writing into multiple partitions and creates partitions
@@ -48,7 +47,7 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
             IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10) );
 
-    public PartitionedIndexWriter( WritableAbstractDatabaseIndex index ) throws IOException
+    public PartitionedIndexWriter( WritableAbstractDatabaseIndex index )
     {
         this.index = index;
     }

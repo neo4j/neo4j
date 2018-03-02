@@ -53,6 +53,7 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -164,20 +165,25 @@ public class CoreStateMachinesModule
         ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine =
                 new ReplicatedLockTokenStateMachine( lockTokenState );
 
+        VersionContextSupplier versionContextSupplier = platformModule.versionContextSupplier;
         ReplicatedTokenStateMachine<Token> labelTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( labelTokenRegistry, new Token.Factory(), logProvider );
+                new ReplicatedTokenStateMachine<>( labelTokenRegistry, new Token.Factory(), logProvider,
+                        versionContextSupplier );
 
         ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( propertyKeyTokenRegistry, new Token.Factory(), logProvider );
+                new ReplicatedTokenStateMachine<>( propertyKeyTokenRegistry, new Token.Factory(), logProvider,
+                        versionContextSupplier );
 
         ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine =
                 new ReplicatedTokenStateMachine<>( relationshipTypeTokenRegistry, new RelationshipTypeToken.Factory(),
-                        logProvider );
+                        logProvider, versionContextSupplier );
 
         PageCursorTracerSupplier cursorTracerSupplier = platformModule.tracers.pageCursorTracerSupplier;
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
-                new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine, config.get( state_machine_apply_max_batch_size ),
-                        logProvider, cursorTracerSupplier, dependencies.provideDependency( RecordStorageEngine.class ).get().commandReaderFactory() );
+                new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine,
+                        config.get( state_machine_apply_max_batch_size ), logProvider, cursorTracerSupplier,
+                        versionContextSupplier,
+                        dependencies.provideDependency( RecordStorageEngine.class ).get().commandReaderFactory() );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 

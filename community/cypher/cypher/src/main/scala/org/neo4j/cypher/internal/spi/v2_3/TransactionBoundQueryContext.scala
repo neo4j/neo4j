@@ -41,13 +41,14 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.{IndexQuery, InternalIndexState}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory
-import org.neo4j.kernel.api.{exceptions, _}
+import org.neo4j.kernel.api.{SilentTokenNameLookup, StatementConstants}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.storable.Values
 
@@ -88,14 +89,14 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   override def createNode(): Node =
-    tc.graph.createNode()
+    proxySpi.newNodeProxy(tc.statement.dataWriteOperations().nodeCreate())
 
-  override def createRelationship(start: Node, end: Node, relType: String) =
+  override def createRelationship(start: Node, end: Node, relType: String): Relationship =
     start.createRelationshipTo(end, withName(relType))
 
-  def createRelationship(start: Long, end: Long, relType: Int) = {
+  def createRelationship(start: Long, end: Long, relType: Int): Relationship = {
     val relId = tc.statement.dataWriteOperations().relationshipCreate(relType, start, end)
-    relationshipOps.getById(relId)
+    proxySpi.newRelationshipProxy(relId, start, relType, end)
   }
 
   def getOrCreateRelTypeId(relTypeName: String): Int =
@@ -128,7 +129,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScalaENFXSafe(
-      tc.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, Values.of(value))))(nodeOps.getById)
+      tc.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, Values.of(value))))(nodeOps.getByIdIfExists)
 
   def indexSeekByRange(index: SchemaTypes.IndexDescriptor, value: Any) = value match {
 
@@ -192,7 +193,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, prefix: String): scala.Iterator[Node] = {
     val indexedNodes = tc.statement.readOperations().indexQuery(index, IndexQuery.stringPrefix(index.propertyId, prefix))
-    JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getByIdIfExists)
   }
 
   private def indexSeekByNumericalRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
@@ -216,7 +217,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
-    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getByIdIfExists)
   }
 
   private def indexSeekByStringRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
@@ -241,11 +242,11 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
 
-    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getByIdIfExists)
   }
 
   def indexScan(index: SchemaTypes.IndexDescriptor) =
-    JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getByIdIfExists)
 
   override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(cypherToKernel(index), IndexQuery.exact(index.propertyId, Values.of(value)))
@@ -258,7 +259,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def getNodesByLabel(id: Int): Iterator[Node] =
-    JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetForLabel(id))(nodeOps.getByIdIfExists)
 
   def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
     tc.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
@@ -273,7 +274,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       try {
         tc.statement.dataWriteOperations().nodeDelete(obj.getId)
       } catch {
-        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
@@ -281,7 +282,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       try {
         tc.statement.dataWriteOperations().nodeDetachDelete(obj.getId)
       } catch {
-        case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+        case _: api.exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
           0
       }
     }
@@ -297,51 +298,57 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
         override def next(): Int = try {
           inner.next()
         } catch {
-          case _: exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+          case _: api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
         }
       }
     } catch {
-      case _: exceptions.EntityNotFoundException => Iterator.empty
+      case _: api.exceptions.EntityNotFoundException => Iterator.empty
     }
 
     def getProperty(id: Long, propertyKeyId: Int): Any = try {
       tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
     } catch {
-      case _: exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+      case _: api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
     }
 
     def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       tc.statement.readOperations().nodeHasProperty(id, propertyKey)
     } catch {
-      case _: exceptions.EntityNotFoundException => false
+      case _: api.exceptions.EntityNotFoundException => false
     }
 
     def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
       tc.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
     } catch {
-      case _: exceptions.EntityNotFoundException => //ignore
+      case _: api.exceptions.EntityNotFoundException => //ignore
     }
 
     def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = try {
       tc.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
     } catch {
-      case _: exceptions.EntityNotFoundException => //ignore
+      case _: api.exceptions.EntityNotFoundException => //ignore
     }
 
-    override def getById(id: Long) = try {
-      tc.graph.getNodeById(id)
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-    }
+    override def getById(id: Long): Node =
+      if (tc.statement.readOperations().nodeExists(id))
+        proxySpi.newNodeProxy(id)
+      else
+        throw new EntityNotFoundException(s"Node with id $id")
+
+    def getByIdIfExists(id: Long): Option[Node] =
+      if (tc.statement.readOperations().nodeExists(id))
+        Some(proxySpi.newNodeProxy(id))
+      else
+        None
 
     def all: Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetAll())(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetAll())(getByIdIfExists)
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getByIdIfExists)
 
     def indexQuery(name: String, query: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeExplicitIndexQuery(name, query))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeExplicitIndexQuery(name, query))(getByIdIfExists)
 
     def isDeleted(n: Node): Boolean =
       tc.stateView.hasTxStateWithChanges && tc.stateView.txState().nodeIsDeletedInThisTx(n.getId)
@@ -352,7 +359,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       try {
         tc.statement.dataWriteOperations().relationshipDelete(obj.getId)
       } catch {
-        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
@@ -367,52 +374,63 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
           override def next(): Int = try {
             inner.next()
           } catch {
-            case _: exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+            case _: api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
           }
         }
       } catch {
-        case _: exceptions.EntityNotFoundException => Iterator.empty
+        case _: api.exceptions.EntityNotFoundException => Iterator.empty
       }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
     } catch {
-      case _: exceptions.EntityNotFoundException => null
+      case _: api.exceptions.EntityNotFoundException => null
     }
 
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       tc.statement.readOperations().relationshipHasProperty(id, propertyKey)
     } catch {
-      case _: exceptions.EntityNotFoundException => false
+      case _: api.exceptions.EntityNotFoundException => false
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
       tc.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
     } catch {
-      case _: exceptions.EntityNotFoundException => //ignore
+      case _: api.exceptions.EntityNotFoundException => //ignore
     }
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = try {
       tc.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
     } catch {
-      case _: exceptions.EntityNotFoundException => //ignore
+      case _: api.exceptions.EntityNotFoundException => //ignore
     }
 
-    override def getById(id: Long) = try {
-      tc.graph.getRelationshipById(id)
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
-    }
+    override def getById(id: Long): Relationship =
+      try {
+        tc.statement.readOperations().relationshipCursorById(id)
+        proxySpi.newRelationshipProxy(id)
+      } catch {
+        case e: api.exceptions.EntityNotFoundException =>
+          throw new EntityNotFoundException(s"Relationship with id $id", e)
+      }
+
+    def getByIdIfExists(id: Long): Option[Relationship] =
+      try {
+        tc.statement.readOperations().relationshipCursorById(id)
+        Some(proxySpi.newRelationshipProxy(id))
+      } catch {
+        case e: api.exceptions.EntityNotFoundException => None
+      }
 
     override def all: Iterator[Relationship] = {
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipsGetAll())(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipsGetAll())(getByIdIfExists)
     }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getByIdIfExists)
 
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getByIdIfExists)
 
     override def isDeleted(r: Relationship): Boolean =
       tc.stateView.hasTxStateWithChanges && tc.stateView.txState().relationshipIsDeletedInThisTx(r.getId)
@@ -518,7 +536,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   def relationshipEndNode(rel: Relationship) = rel.getEndNode
 
-  private val tokenNameLookup = new StatementTokenNameLookup(tc.statement.readOperations())
+  private val tokenNameLookup = new SilentTokenNameLookup(tc.tokenRead)
 
   override def commitAndRestartTx() { tc.commitAndRestartTx() }
 
@@ -614,7 +632,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     try {
       tc.statement.dataWriteOperations().nodeDetachDelete(node.getId)
     } catch {
-      case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+      case _: api.exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
         0
     }
   }

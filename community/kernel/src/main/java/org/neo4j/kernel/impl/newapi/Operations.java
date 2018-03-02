@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
@@ -42,7 +43,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -60,6 +61,8 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -77,34 +80,38 @@ public class Operations implements Write, ExplicitIndexWrite
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final KernelToken token;
     private final StorageStatement statement;
     private final AutoIndexing autoIndexing;
-    private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
+    private DefaultNodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
-    private PropertyCursor propertyCursor;
-    private final Cursors cursors;
-    private final NodeSchemaMatcher schemaMatcher;
+    private DefaultPropertyCursor propertyCursor;
+    private DefaultRelationshipScanCursor relationshipCursor;
+    private final DefaultCursors cursors;
 
     public Operations(
             AllStoreHolder allStoreHolder,
             IndexTxStateUpdater updater,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors, AutoIndexing autoIndexing, NodeSchemaMatcher schemaMatcher )
+            KernelToken token,
+            DefaultCursors cursors,
+            AutoIndexing autoIndexing )
     {
+        this.token = token;
         this.autoIndexing = autoIndexing;
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
         this.statement = statement;
         this.updater = updater;
         this.cursors = cursors;
-        this.schemaMatcher = schemaMatcher;
     }
 
     public void initialize()
     {
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
+        this.relationshipCursor = cursors.allocateRelationshipScanCursor();
     }
 
     @Override
@@ -149,17 +156,56 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode )
+    public long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        sharedRelationshipTypeLock( relationshipType );
+        lockRelationshipNodes( sourceNode, targetNode );
+
+        assertNodeExists( sourceNode );
+        assertNodeExists( targetNode );
+
+        long id = statement.reserveRelationship();
+        ktx.txState().relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
+        return id;
     }
 
     @Override
-    public void relationshipDelete( long relationship )
+    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
+
+        if ( relationshipCursor.next() )
+        {
+            lockRelationshipNodes( relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            acquireExclusiveRelationshipLock( relationship );
+            if ( !allStoreHolder.relationshipExists( relationship ) )
+            {
+                return false;
+            }
+
+            ktx.assertOpen();
+
+            autoIndexing.relationships().entityRemoved( this, relationship );
+
+            TransactionState txState = ktx.txState();
+            if ( txState.relationshipIsAddedInThisTx( relationship ) )
+            {
+                txState.relationshipDoDeleteAddedInThisTx( relationship );
+            }
+            else
+            {
+                txState.relationshipDoDelete( relationship, relationshipCursor.getType(),
+                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            }
+            return true;
+        }
+
+        // tried to delete relationship that does not exist
+        return false;
     }
 
     @Override
@@ -208,6 +254,15 @@ public class Operations implements Write, ExplicitIndexWrite
         if ( !nodeCursor.next() )
         {
             throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+    }
+
+    private void singleRelationship( long relationship ) throws EntityNotFoundException
+    {
+        allStoreHolder.singleRelationship( relationship, relationshipCursor);
+        if ( !relationshipCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationship );
         }
     }
 
@@ -262,7 +317,7 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
     ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try ( NodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
+        try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
         {
             SchemaIndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( schemaIndexDescriptor );
@@ -320,7 +375,8 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public Value nodeSetProperty( long node, int propertyKey, Value value )
-            throws KernelException
+            throws EntityNotFoundException, ConstraintValidationException, AutoIndexingKernelException
+
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
@@ -333,7 +389,7 @@ public class Operations implements Write, ExplicitIndexWrite
         Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
                 new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
 
-        schemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, propertyKey,
+        NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, propertyKey,
                 ( constraint, propertyIds ) ->
                 {
                     if ( propertyIds.contains( propertyKey ) )
@@ -383,7 +439,6 @@ public class Operations implements Write, ExplicitIndexWrite
 
         if ( existingValue != NO_VALUE )
         {
-            //no existing value, we just add it
             autoIndexing.nodes().propertyRemoved( this, node, propertyKey);
             ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue);
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
@@ -394,16 +449,47 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public Value relationshipSetProperty( long relationship, int propertyKey, Value value )
+            throws EntityNotFoundException, AutoIndexingKernelException
     {
+        acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        singleRelationship( relationship );
+        Value existingValue = readRelationshipProperty( propertyKey );
+        if ( existingValue == NO_VALUE )
+        {
+            autoIndexing.relationships().propertyAdded( this, relationship, propertyKey, value );
+            ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, NO_VALUE, value );
+            return NO_VALUE;
+        }
+        else
+        {
+            if ( propertyHasChanged( existingValue, value ) )
+            {
+                autoIndexing.relationships().propertyChanged( this, relationship, propertyKey, existingValue, value );
+
+                ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
+            }
+
+            return existingValue;
+        }
     }
 
     @Override
-    public Value relationshipRemoveProperty( long node, int propertyKey )
+    public Value relationshipRemoveProperty( long relationship, int propertyKey )
+            throws EntityNotFoundException, AutoIndexingKernelException
     {
+        acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        singleRelationship( relationship );
+        Value existingValue = readRelationshipProperty( propertyKey );
+
+        if ( existingValue != NO_VALUE )
+        {
+            autoIndexing.relationships().propertyRemoved( this, relationship, propertyKey);
+            ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey, existingValue);
+        }
+
+        return existingValue;
     }
 
     @Override
@@ -422,7 +508,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ktx.explicitIndexTxState().nodeChanges( indexName ).addNode( node, key, value );
@@ -467,14 +553,24 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            throws KernelException
     {
-        throw new UnsupportedOperationException(  );
+        ktx.assertOpen();
+        allStoreHolder.singleRelationship( relationship, relationshipCursor );
+        if ( relationshipCursor.next() )
+        {
+            ktx.explicitIndexTxState().relationshipChanges( indexName ).addRelationship( relationship, key, value,
+                    relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() ) ;
+        }
+        else
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationship );
+        }
     }
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
@@ -482,7 +578,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
 
@@ -490,7 +586,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship );
     }
@@ -526,6 +622,23 @@ public class Operations implements Write, ExplicitIndexWrite
         return existingValue;
     }
 
+    private Value readRelationshipProperty( int propertyKey )
+    {
+        relationshipCursor.properties( propertyCursor );
+
+        //Find out if the property had a value
+        Value existingValue = NO_VALUE;
+        while ( propertyCursor.next() )
+        {
+            if ( propertyCursor.propertyKey() == propertyKey )
+            {
+                existingValue = propertyCursor.propertyValue();
+                break;
+            }
+        }
+        return existingValue;
+    }
+
     public CursorFactory cursors()
     {
         return cursors;
@@ -543,11 +656,18 @@ public class Operations implements Write, ExplicitIndexWrite
             propertyCursor.close();
             propertyCursor = null;
         }
+        if ( relationshipCursor != null )
+        {
+            relationshipCursor.close();
+            relationshipCursor = null;
+        }
+
+        cursors.release();
     }
 
     public Token token()
     {
-        return allStoreHolder;
+        return token;
     }
 
     private void acquireExclusiveNodeLock( long node )
@@ -558,9 +678,32 @@ public class Operations implements Write, ExplicitIndexWrite
         }
     }
 
+    private void acquireExclusiveRelationshipLock( long relationshipId )
+    {
+        if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
+        {
+            ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+        }
+    }
+
     private void acquireSharedLabelLock( int labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+    }
+
+    private void sharedRelationshipTypeLock( long typeId )
+    {
+        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void lockRelationshipNodes( long startNodeId, long endNodeId )
+    {
+        // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
+        acquireExclusiveNodeLock( min( startNodeId, endNodeId ) );
+        if ( startNodeId != endNodeId )
+        {
+            acquireExclusiveNodeLock( max( startNodeId, endNodeId ) );
+        }
     }
 
     private boolean propertyHasChanged( Value lhs, Value rhs )
@@ -569,6 +712,22 @@ public class Operations implements Write, ExplicitIndexWrite
         //so by only checking for equality users cannot change type of property without also "changing" the value.
         //Hence the extra type check here.
         return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
+    }
+
+    private void assertNodeExists( long sourceNode ) throws EntityNotFoundException
+    {
+        if ( !allStoreHolder.nodeExists( sourceNode ) )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, sourceNode );
+        }
+    }
+
+    private void assertRelationshipExists( long relationship ) throws EntityNotFoundException
+    {
+        if ( !allStoreHolder.relationshipExists( relationship ) )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationship );
+        }
     }
 
     public ExplicitIndexRead indexRead()
@@ -586,12 +745,17 @@ public class Operations implements Write, ExplicitIndexWrite
         return allStoreHolder;
     }
 
-    public NodeCursor nodeCursor()
+    public DefaultNodeCursor nodeCursor()
     {
         return nodeCursor;
     }
 
-    public PropertyCursor propertyCursor()
+    public DefaultRelationshipScanCursor relationshipCursor()
+    {
+        return relationshipCursor;
+    }
+
+    public DefaultPropertyCursor propertyCursor()
     {
         return propertyCursor;
     }

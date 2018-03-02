@@ -79,7 +79,7 @@ import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;

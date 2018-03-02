@@ -885,7 +885,6 @@ public class CheckTxLogsTest
         checker.scan( getLogFiles(), handler, CHECK_TYPES );
 
         // then
-        System.out.println( handler.txIdSequenceInconsistencies );
         assertEquals( 1, handler.txIdSequenceInconsistencies.size() );
         assertEquals( 42, handler.txIdSequenceInconsistencies.get( 0 ).lastSeenTxId );
         assertEquals( 44, handler.txIdSequenceInconsistencies.get( 0 ).currentTxId );
@@ -1013,7 +1012,7 @@ public class CheckTxLogsTest
         }
 
         @Override
-        LogEntryCursor openLogEntryCursor( LogFiles logFiles ) throws IOException
+        LogEntryCursor openLogEntryCursor( LogFiles logFiles )
         {
             return logEntryCursor;
         }

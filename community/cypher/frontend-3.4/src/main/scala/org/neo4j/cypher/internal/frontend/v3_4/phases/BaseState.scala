@@ -20,11 +20,13 @@ import org.neo4j.cypher.internal.util.v3_4.{InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 
 trait BaseState {
   def queryText: String
   def startPosition: Option[InputPosition]
   def plannerName: PlannerName
+  def initialFields: Map[String, CypherType]
   def maybeStatement: Option[Statement]
   def maybeSemantics: Option[SemanticState]
   def maybeExtractedParams: Option[Map[String, Any]]
@@ -50,4 +52,23 @@ trait BaseState {
   def withSemanticTable(s: SemanticTable): BaseState
   def withSemanticState(s: SemanticState): BaseState
   def withParams(p: Map[String, Any]): BaseState
+}
+
+case class InitialState(queryText: String,
+  startPosition: Option[InputPosition],
+  plannerName: PlannerName,
+  initialFields: Map[String, CypherType] = Map.empty,
+  maybeStatement: Option[Statement] = None,
+  maybeSemantics: Option[SemanticState] = None,
+  maybeExtractedParams: Option[Map[String, Any]] = None,
+  maybeSemanticTable: Option[SemanticTable] = None,
+  accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+
+  override def withStatement(s: Statement): InitialState = copy(maybeStatement = Some(s))
+
+  override def withSemanticTable(s: SemanticTable): InitialState = copy(maybeSemanticTable = Some(s))
+
+  override def withSemanticState(s: SemanticState): InitialState = copy(maybeSemantics = Some(s))
+
+  override def withParams(p: Map[String, Any]): InitialState = copy(maybeExtractedParams = Some(p))
 }

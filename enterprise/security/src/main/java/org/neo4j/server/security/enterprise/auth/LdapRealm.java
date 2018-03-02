@@ -546,16 +546,8 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
                 }
                 else
                 {
-                    try
-                    {
-                        LdapContext ctx2 = ldapContextFactory.getLdapContext( loginUser, credentials );
-                        LdapUtils.closeContext( ctx2 );
-                    }
-                    catch ( Exception ex )
-                    {
-                        // We have to rethrow the exception, to indicate invalid login
-                        throw ex;
-                    }
+                    LdapContext ctx2 = ldapContextFactory.getLdapContext( loginUser, credentials );
+                    LdapUtils.closeContext( ctx2 );
                 }
             }
             else
@@ -673,7 +665,7 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
     }
 
     @Override
-    public void initialize() throws Throwable
+    public void initialize()
     {
         if ( authorizationEnabled )
         {
@@ -683,17 +675,17 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 

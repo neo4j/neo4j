@@ -37,14 +37,14 @@ public class LeaseTest
     private static final long SIXTY_SECONDS = 60;
 
     @Test
-    public void shouldReturnHexIdentifierString() throws Exception
+    public void shouldReturnHexIdentifierString()
     {
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, Clocks.fakeClock() );
         assertThat( lease.getId(), containsOnlyHex() );
     }
 
     @Test( expected = LeaseAlreadyExpiredException.class )
-    public void shouldNotAllowLeasesInThePast() throws Exception
+    public void shouldNotAllowLeasesInThePast()
     {
         FakeClock clock = Clocks.fakeClock();
         new Lease( mock( PagedTraverser.class ), oneMinuteInThePast(), clock );
@@ -56,7 +56,7 @@ public class LeaseTest
     }
 
     @Test
-    public void leasesShouldExpire() throws Exception
+    public void leasesShouldExpire()
     {
         FakeClock clock = Clocks.fakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );

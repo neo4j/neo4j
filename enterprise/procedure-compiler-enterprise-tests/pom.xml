@@ -15,6 +15,10 @@
     <description>Neo4j Stored Procedure compile-time annotation processor</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+    <properties>
+        <moduleName>org.neo4j.tooling.procedure.enterprise.tests</moduleName>
+    </properties>
+
     <licenses>
         <license>
             <name>GNU Affero General Public License, Version 3</name>
@@ -52,7 +56,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.testing.compile</groupId>

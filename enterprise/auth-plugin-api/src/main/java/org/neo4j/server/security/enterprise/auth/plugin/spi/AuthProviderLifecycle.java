@@ -24,9 +24,9 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperatio
 public interface AuthProviderLifecycle
 {
     void initialize( AuthProviderOperations authProviderOperations ) throws Throwable;
-    void start() throws Throwable;
-    void stop() throws Throwable;
-    void shutdown() throws Throwable;
+    void start();
+    void stop();
+    void shutdown();
 
     class Adapter implements AuthProviderLifecycle
     {
@@ -36,17 +36,17 @@ public interface AuthProviderLifecycle
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop()
         {
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
         }
     }

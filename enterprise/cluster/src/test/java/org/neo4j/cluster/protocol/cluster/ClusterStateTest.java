@@ -68,7 +68,7 @@ public class ClusterStateTest
         when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Message<ClusterMessage> message = to( configurationRequest, uri( 1 ), configuration( 2 ) )
-                .setHeader( Message.FROM, uri( 2 ).toString() );
+                .setHeader( Message.HEADER_FROM, uri( 2 ).toString() );
 
         // WHEN an instance responds to a join request, responding that the joining instance cannot join
         ClusterState.entered.handle( context, message, outgoing );
@@ -113,7 +113,7 @@ public class ClusterStateTest
 
         // WHEN the join denial actually takes effect (signaled by a join timeout locally)
         ClusterState.joining.handle( context, to( ClusterMessage.joiningTimeout, uri( 2 ) )
-                .setHeader( Message.CONVERSATION_ID, "bla" ), outgoing );
+                .setHeader( Message.HEADER_CONVERSATION_ID, "bla" ), outgoing );
 
         // THEN assert that the failure contains the received configuration
         Message<? extends MessageType> response = outgoing.single();
@@ -134,7 +134,7 @@ public class ClusterStateTest
         when( context.getUriForId( id( 2 ) ) ).thenReturn( uri( 2 ) );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Message<ClusterMessage> message = to( configurationRequest, uri( 1 ), configuration( 2 ) )
-                .setHeader( Message.FROM, uri( 2 ).toString() );
+                .setHeader( Message.HEADER_FROM, uri( 2 ).toString() );
 
         // WHEN the join denial actually takes effect (signaled by a join timeout locally)
         ClusterState.entered.handle( context, message, outgoing );
@@ -159,7 +159,7 @@ public class ClusterStateTest
         MessageHolder outgoing = mock( MessageHolder.class );
         ConfigurationRequestState configurationRequestFromTwo = configuration( 2 );
         Message<ClusterMessage> message = to( configurationRequest, uri( 1 ), configurationRequestFromTwo )
-                .setHeader( Message.FROM, uri( 2 ).toString() );
+                .setHeader( Message.HEADER_FROM, uri( 2 ).toString() );
 
         // WHEN
         // We receive a configuration request from an instance which we haven't contacted
@@ -193,10 +193,10 @@ public class ClusterStateTest
         MessageHolder outgoing = mock( MessageHolder.class );
         ConfigurationRequestState configurationRequestFromTwo = configuration( 2 );
         Message<ClusterMessage> messageFromTwo = to( configurationRequest, uri( 1 ), configurationRequestFromTwo )
-                .setHeader( Message.FROM, uri( 2 ).toString() );
+                .setHeader( Message.HEADER_FROM, uri( 2 ).toString() );
         ConfigurationRequestState configurationRequestFromThree = configuration( 3 );
         Message<ClusterMessage> messageFromThree = to( configurationRequest, uri( 1 ), configurationRequestFromThree )
-                .setHeader( Message.FROM, uri( 3 ).toString() );
+                .setHeader( Message.HEADER_FROM, uri( 3 ).toString() );
 
         // WHEN
         // We receive a configuration request from an instance which we haven't contacted

@@ -463,12 +463,7 @@ public class Schema extends TransactionProvidingApp
 
     private boolean isMatchingConstraint( ConstraintDefinition constraint, final String property )
     {
-        if ( property == null )
-        {
-            return true;
-        }
-
-        return indexOf( property, constraint.getPropertyKeys() ) != -1;
+        return property == null || indexOf( property, constraint.getPropertyKeys() ) != -1;
     }
 
     private Iterable<IndexDefinition> indexesByLabel( org.neo4j.graphdb.schema.Schema schema, Label[] labels )

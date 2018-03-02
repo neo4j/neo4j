@@ -61,29 +61,18 @@
       <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.3.1</version>
-          <executions>
-              <execution>
-                  <id>enforce-dont-exist</id>
-                  <goals>
-                      <goal>enforce</goal>
-                  </goals>
-                  <configuration>
-                      <rules>
-                          <requireFilesDontExist>
-                              <files>
-                                  <file>cypher-compiler-3.3</file>
-                                  <file>cypher-compiler-3.2</file>
-                                  <file>cypher-compiler-3.1</file>
-                                  <file>cypher-compiler-3.0</file>
-                                  <file>cypher-compiler-2.3</file>
-                              </files>
-                          </requireFilesDontExist>
-                      </rules>
-                      <fail>true</fail>
-                  </configuration>
-              </execution>
-          </executions>
+          <configuration>
+              <rules combine.children="append">
+                  <requireFilesDontExist>
+                      <files>
+                          <file>cypher-compiler-3.2</file>
+                          <file>cypher-compiler-3.1</file>
+                          <file>cypher-compiler-3.0</file>
+                          <file>cypher-compiler-2.3</file>
+                      </files>
+                  </requireFilesDontExist>
+              </rules>
+          </configuration>
       </plugin>
     </plugins>
 
@@ -130,22 +119,18 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-library</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
     </dependency>
 
   </dependencies>
@@ -154,47 +139,6 @@
 
   <dependencyManagement>
     <dependencies>
-
-      <!-- scala test dependencies -->
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest_2.11</artifactId>
-        <version>2.2.5</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <artifactId>scala-library</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-          <exclusion>
-            <artifactId>scala-reflect</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.scalautils</groupId>
-        <artifactId>scalautils_2.11</artifactId>
-        <version>2.1.7</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <artifactId>scala-library</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-          <exclusion>
-            <artifactId>scala-reflect</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.scalacheck</groupId>
-        <artifactId>scalacheck_2.11</artifactId>
-        <version>1.12.5</version>
-        <scope>test</scope>
-      </dependency>
-
       <!-- neo4j -->
       <dependency>
         <groupId>org.neo4j</groupId>

@@ -41,15 +41,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -98,7 +97,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -140,7 +139,7 @@ public class IndexPopulationJobTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }
@@ -303,7 +302,7 @@ public class IndexPopulationJobTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
-                ArgumentMatchers.<Visitor<EntityUpdates,RuntimeException>>any(),
+                ArgumentMatchers.any(),
                 ArgumentMatchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean() ) )
                 .thenReturn(storeScan );
 
@@ -486,7 +485,7 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate<?> update )
                 {
                     switch ( update.updateMode() )
                     {
@@ -500,7 +499,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                 }
             };
@@ -557,7 +556,7 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate<?> update )
                 {
                     switch ( update.updateMode() )
                     {
@@ -574,7 +573,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                 }
             };
@@ -627,7 +626,7 @@ public class IndexPopulationJobTest
     private SchemaIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = tx.acquireStatement() )
         {
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
