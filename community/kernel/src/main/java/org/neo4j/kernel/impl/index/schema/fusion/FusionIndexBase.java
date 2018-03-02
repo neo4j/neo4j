@@ -19,16 +19,62 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
+import javax.print.attribute.standard.MediaSize;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
- * Utility methods for working with multiple sub-components within the Fusion Index system
+ * Acting as a simplifier for the multiplexing that is going in inside a fusion index. A fusion index consists of multiple parts,
+ * each handling one or more value groups. Each instance, be it a reader, populator or accessor should extend this class
+ * to get that multiplexing at a low cost. All parts will live in an array with specific slot constants to each specific part.
+ *
+ * @param <T> type of instances
  */
-public abstract class FusionIndexUtils
+public abstract class FusionIndexBase<T>
 {
+    static final int INSTANCE_COUNT = 5;
+
+    static final int STRING = 0;
+    static final int NUMBER = 1;
+    static final int SPATIAL = 2;
+    static final int TEMPORAL = 3;
+    static final int LUCENE = 4;
+    static final String[] NAMES = { "string", "number", "spatial", "temporal", "lucene" };
+
+    final T[] instances;
+    final FusionIndexProvider.Selector selector;
+
+    FusionIndexBase( T[] instances, FusionIndexProvider.Selector selector )
+    {
+        assert instances.length == INSTANCE_COUNT;
+        this.instances = instances;
+        this.selector = selector;
+    }
+
+    <R,E extends Exception> R[] instancesAs( Class<R> cls, ThrowingFunction<T,R,E> converter ) throws E
+    {
+        return instancesAs( instances, cls, converter );
+    }
+
+    static <T,R,E extends Exception> R[] instancesAs( T[] instances, Class<R> cls, ThrowingFunction<T,R,E> converter ) throws E
+    {
+        R[] result = (R[]) Array.newInstance( cls, instances.length );
+        for ( int i = 0; i < instances.length; i++ )
+        {
+            result[i] = converter.apply( instances[i] );
+        }
+        return result;
+    }
+
+    static String nameOf( int slot )
+    {
+        return NAMES[slot];
+    }
+
     /**
      * NOTE: duplicate of {@link #forAll(ThrowingConsumer, Iterable)} to avoid having to wrap subjects of one form into another.
      * There are some real use cases for passing in an array instead of {@link Iterable} out there...
@@ -78,7 +124,7 @@ public abstract class FusionIndexUtils
     }
 
     /**
-     * See {@link FusionIndexUtils#forAll(ThrowingConsumer, Iterable)}
+     * See {@link #forAll(ThrowingConsumer, Iterable)}
      * NOTE: duplicate of {@link #forAll(ThrowingConsumer, Object[])} to avoid having to wrap subjects of one form into another.
      * There are some real use cases for passing in an Iterable instead of array out there...
      *
@@ -124,13 +170,5 @@ public abstract class FusionIndexUtils
         {
             throw exception;
         }
-    }
-
-    static IndexSample combineSamples( IndexSample... samples )
-    {
-        return new IndexSample(
-                Arrays.stream( samples ).mapToLong( IndexSample::indexSize ).sum(),
-                Arrays.stream( samples ).mapToLong( IndexSample::uniqueValues ).sum(),
-                Arrays.stream( samples ).mapToLong( IndexSample::sampleSize ).sum() );
     }
 }

@@ -42,39 +42,21 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class FusionIndexAccessor implements IndexAccessor
+class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final IndexAccessor stringAccessor;
-    private final IndexAccessor numberAccessor;
-    private final IndexAccessor spatialAccessor;
-    private final IndexAccessor temporalAccessor;
-    private final IndexAccessor luceneAccessor;
-    private final IndexAccessor[] accessors;
-    private final Selector selector;
     private final long indexId;
     private final SchemaIndexDescriptor descriptor;
     private final DropAction dropAction;
 
-    FusionIndexAccessor(
-            IndexAccessor stringAccessor,
-            IndexAccessor numberAccessor,
-            IndexAccessor spatialAccessor,
-            IndexAccessor temporalAccessor,
-            IndexAccessor luceneAccessor,
+    FusionIndexAccessor( IndexAccessor[] accessors,
             Selector selector,
             long indexId,
             SchemaIndexDescriptor descriptor,
             DropAction dropAction )
     {
-        this.stringAccessor = stringAccessor;
-        this.numberAccessor = numberAccessor;
-        this.spatialAccessor = spatialAccessor;
-        this.temporalAccessor = temporalAccessor;
-        this.luceneAccessor = luceneAccessor;
-        this.accessors = array( stringAccessor, numberAccessor, spatialAccessor, temporalAccessor, luceneAccessor );
-        this.selector = selector;
+        super( accessors, selector );
         this.indexId = indexId;
         this.descriptor = descriptor;
         this.dropAction = dropAction;
@@ -83,72 +65,57 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexAccessor::drop, accessors );
+        forAll( IndexAccessor::drop, instances );
         dropAction.drop( indexId );
     }
 
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return new FusionIndexUpdater(
-                stringAccessor.newUpdater( mode ),
-                numberAccessor.newUpdater( mode ),
-                spatialAccessor.newUpdater( mode ),
-                temporalAccessor.newUpdater( mode ),
-                luceneAccessor.newUpdater( mode ), selector );
+        return new FusionIndexUpdater( instancesAs( IndexUpdater.class, accessor -> accessor.newUpdater( mode ) ), selector );
     }
 
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        forAll( accessor -> accessor.force( ioLimiter ), accessors );
+        forAll( accessor -> accessor.force( ioLimiter ), instances );
     }
 
     @Override
     public void refresh() throws IOException
     {
-        forAll( IndexAccessor::refresh, accessors );
+        forAll( IndexAccessor::refresh, instances );
     }
 
     @Override
     public void close() throws IOException
     {
-        forAll( IndexAccessor::close, accessors );
+        forAll( IndexAccessor::close, instances );
     }
 
     @Override
     public IndexReader newReader()
     {
-        return new FusionIndexReader(
-                stringAccessor.newReader(),
-                numberAccessor.newReader(),
-                spatialAccessor.newReader(),
-                temporalAccessor.newReader(),
-                luceneAccessor.newReader(),
-                selector,
-                descriptor );
+        return new FusionIndexReader( instancesAs( IndexReader.class, accessor -> accessor.newReader() ), selector, descriptor );
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        BoundedIterable<Long> stringAllEntries = stringAccessor.newAllEntriesReader();
-        BoundedIterable<Long> numberAllEntries = numberAccessor.newAllEntriesReader();
-        BoundedIterable<Long> spatialAllEntries = spatialAccessor.newAllEntriesReader();
-        BoundedIterable<Long> temporalAllEntries = temporalAccessor.newAllEntriesReader();
-        BoundedIterable<Long> luceneAllEntries = luceneAccessor.newAllEntriesReader();
+        BoundedIterable<Long>[] entries = instancesAs( BoundedIterable.class, IndexAccessor::newAllEntriesReader );
         return new BoundedIterable<Long>()
         {
             @Override
             public long maxCount()
             {
-                long stringMaxCount = stringAllEntries.maxCount();
-                long numberMaxCount = numberAllEntries.maxCount();
-                long spatialMaxCount = spatialAllEntries.maxCount();
-                long temporalMaxCount = temporalAllEntries.maxCount();
-                long luceneMaxCount = luceneAllEntries.maxCount();
-                return existsUnknownMaxCount( stringMaxCount, numberMaxCount, spatialMaxCount, temporalMaxCount, luceneMaxCount ) ?
-                       UNKNOWN_MAX_COUNT : stringMaxCount + numberMaxCount + spatialMaxCount + temporalMaxCount + luceneMaxCount;
+                long[] maxCounts = new long[entries.length];
+                long sum = 0;
+                for ( int i = 0; i < entries.length; i++ )
+                {
+                    maxCounts[i] = entries[i].maxCount();
+                    sum += maxCounts[i];
+                }
+                return existsUnknownMaxCount( maxCounts ) ? UNKNOWN_MAX_COUNT : sum;
             }
 
             private boolean existsUnknownMaxCount( long... maxCounts )
@@ -167,13 +134,13 @@ class FusionIndexAccessor implements IndexAccessor
             @Override
             public void close() throws Exception
             {
-                forAll( BoundedIterable::close, stringAllEntries, numberAllEntries, spatialAllEntries, temporalAllEntries, luceneAllEntries );
+                forAll( BoundedIterable::close, entries );
             }
 
             @Override
             public Iterator<Long> iterator()
             {
-                return Iterables.concat( stringAllEntries, numberAllEntries, spatialAllEntries, temporalAllEntries, luceneAllEntries ).iterator();
+                return Iterables.concat( entries ).iterator();
             }
         };
     }
@@ -182,7 +149,7 @@ class FusionIndexAccessor implements IndexAccessor
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         List<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexAccessor accessor : accessors )
+        for ( IndexAccessor accessor : instances )
         {
             snapshots.add( accessor.snapshotFiles() );
         }
@@ -193,7 +160,7 @@ class FusionIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        for ( IndexAccessor accessor : accessors )
+        for ( IndexAccessor accessor : instances )
         {
             accessor.verifyDeferredConstraints( propertyAccessor );
         }
@@ -202,6 +169,6 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public boolean isDirty()
     {
-        return Arrays.stream( accessors ).anyMatch( IndexAccessor::isDirty );
+        return Arrays.stream( instances ).anyMatch( IndexAccessor::isDirty );
     }
 }

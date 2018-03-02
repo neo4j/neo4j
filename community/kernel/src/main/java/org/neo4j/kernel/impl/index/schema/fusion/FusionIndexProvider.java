@@ -41,6 +41,8 @@ import org.neo4j.values.storable.ValueGroup;
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instancesAs;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.nameOf;
 
 /**
  * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
@@ -50,19 +52,20 @@ public class FusionIndexProvider extends IndexProvider
 {
     interface Selector
     {
-        <T> T select( T stringInstance, T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values );
+        int selectSlot( Value... values );
+
+        default <T> T select( T[] instances, Value... values )
+        {
+            return instances[selectSlot( values )];
+        }
     }
 
-    private final IndexProvider stringProvider;
-    private final IndexProvider numberProvider;
-    private final IndexProvider spatialProvider;
-    private final IndexProvider temporalProvider;
-    private final IndexProvider luceneProvider;
     private final IndexProvider[] providers;
     private final Selector selector;
     private final DropAction dropAction;
 
     public FusionIndexProvider(
+            // good to be strict with specific providers here since this is dev facing
             IndexProvider stringProvider,
             IndexProvider numberProvider,
             IndexProvider spatialProvider,
@@ -75,11 +78,6 @@ public class FusionIndexProvider extends IndexProvider
             FileSystemAbstraction fs )
     {
         super( descriptor, priority, directoryStructure );
-        this.stringProvider = stringProvider;
-        this.numberProvider = numberProvider;
-        this.spatialProvider = spatialProvider;
-        this.temporalProvider = temporalProvider;
-        this.luceneProvider = luceneProvider;
         this.providers = array( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
         this.selector = selector;
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
@@ -88,12 +86,8 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return new FusionIndexPopulator(
-                stringProvider.getPopulator( indexId, descriptor, samplingConfig ),
-                numberProvider.getPopulator( indexId, descriptor, samplingConfig ),
-                spatialProvider.getPopulator( indexId, descriptor, samplingConfig ),
-                temporalProvider.getPopulator( indexId, descriptor, samplingConfig ),
-                luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector, indexId, dropAction );
+        return new FusionIndexPopulator( instancesAs( providers, IndexPopulator.class,
+                provider -> provider.getPopulator( indexId, descriptor, samplingConfig ) ), selector, indexId, dropAction );
     }
 
     @Override
@@ -101,22 +95,18 @@ public class FusionIndexProvider extends IndexProvider
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new FusionIndexAccessor(
-                stringProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                numberProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                spatialProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                temporalProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, descriptor, dropAction );
+                instancesAs( providers, IndexAccessor.class, provider -> provider.getOnlineAccessor( indexId, descriptor, samplingConfig ) ),
+                selector, indexId, descriptor, dropAction );
     }
 
     @Override
     public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
-        writeFailure( "string", builder, stringProvider, indexId, descriptor );
-        writeFailure( "number", builder, numberProvider, indexId, descriptor );
-        writeFailure( "spatial", builder, spatialProvider, indexId, descriptor );
-        writeFailure( "temporal", builder, temporalProvider, indexId, descriptor );
-        writeFailure( "lucene", builder, luceneProvider, indexId, descriptor );
+        for ( int i = 0; i < providers.length; i++ )
+        {
+            writeFailure( nameOf( i ), builder, providers[i], indexId, descriptor );
+        }
         String failure = builder.toString();
         if ( !failure.isEmpty() )
         {

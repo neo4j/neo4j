@@ -78,8 +78,7 @@ public class FusionIndexAccessorTest
         temporalAccessor = mock( IndexAccessor.class );
         luceneAccessor = mock( IndexAccessor.class );
         allAccessors = array( stringAccessor, numberAccessor, spatialAccessor, temporalAccessor, luceneAccessor );
-        fusionIndexAccessor = new FusionIndexAccessor( stringAccessor, numberAccessor, spatialAccessor, temporalAccessor, luceneAccessor,
-                new FusionSelector(), indexId, mock( SchemaIndexDescriptor.class ), dropAction );
+        fusionIndexAccessor = new FusionIndexAccessor( allAccessors, new FusionSelector(), indexId, mock( SchemaIndexDescriptor.class ), dropAction );
     }
 
     /* drop */

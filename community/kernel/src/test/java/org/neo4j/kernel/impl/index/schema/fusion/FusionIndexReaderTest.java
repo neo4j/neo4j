@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
@@ -75,8 +72,7 @@ public class FusionIndexReaderTest
         temporalReader = mock( IndexReader.class );
         luceneReader = mock( IndexReader.class );
         allReaders = array( stringReader, numberReader, spatialReader, temporalReader, luceneReader );
-        fusionIndexReader = new FusionIndexReader( stringReader, numberReader, spatialReader, temporalReader, luceneReader, new FusionSelector(),
-                SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+        fusionIndexReader = new FusionIndexReader( allReaders, new FusionSelector(), SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     /* close */

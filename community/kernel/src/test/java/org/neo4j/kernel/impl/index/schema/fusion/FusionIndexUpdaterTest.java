@@ -68,7 +68,7 @@ public class FusionIndexUpdaterTest
         temporalUpdater = mock( IndexUpdater.class );
         luceneUpdater = mock( IndexUpdater.class );
         allUpdaters = array( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater );
-        fusionIndexUpdater = new FusionIndexUpdater( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, new FusionSelector() );
+        fusionIndexUpdater = new FusionIndexUpdater( allUpdaters, new FusionSelector() );
     }
 
     /* process */

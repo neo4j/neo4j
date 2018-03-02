@@ -71,8 +71,7 @@ public class FusionIndexPopulatorTest
         temporalPopulator = mock( IndexPopulator.class );
         lucenePopulator = mock( IndexPopulator.class );
         allPopulators = array( stringPopulator, numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
-        fusionIndexPopulator = new FusionIndexPopulator( stringPopulator, numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator,
-                new FusionSelector(), indexId, dropAction );
+        fusionIndexPopulator = new FusionIndexPopulator( allPopulators, new FusionSelector(), indexId, dropAction );
     }
 
     /* create */

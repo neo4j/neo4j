@@ -90,7 +90,7 @@ public class FusionIndexProviderTest
             for ( Value value : group )
             {
                 // when
-                IndexProvider selected = selector.select( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider, value );
+                IndexProvider selected = selector.select( providers, value );
 
                 // then
                 assertSame( providers[i], selected );
@@ -103,8 +103,7 @@ public class FusionIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                IndexProvider selected = selector.select( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider,
-                        firstValue, secondValue );
+                IndexProvider selected = selector.select( providers, firstValue, secondValue );
 
                 // then
                 assertSame( luceneProvider, selected );
@@ -132,7 +131,7 @@ public class FusionIndexProviderTest
         }
 
         // when
-        IndexSample fusionSample = FusionIndexUtils.combineSamples( samples );
+        IndexSample fusionSample = FusionIndexSampler.combineSamples( samples );
 
         // then
         assertEquals( sumIndexSize, fusionSample.indexSize() );
