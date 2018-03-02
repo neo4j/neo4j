@@ -58,10 +58,12 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.harness.junit.EnterpriseNeo4jRule;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.rule.VerboseTimeout;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static java.util.Collections.newSetFromMap;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -101,7 +103,7 @@ public class SessionResetIT
     private static final String[] STRESS_IT_QUERIES = {SHORT_QUERY_1, SHORT_QUERY_2, LONG_QUERY};
 
     private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 3, MINUTES ).build();
-    private final Neo4jRule db = new EnterpriseNeo4jRule();
+    private final Neo4jRule db = new EnterpriseNeo4jRule().withConfig( ServerSettings.script_enabled, Settings.TRUE );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( timeout ).around( db );

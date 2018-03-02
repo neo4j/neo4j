@@ -54,9 +54,11 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -71,6 +73,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -518,10 +521,11 @@ public class TransactionGuardIntegrationTest
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
             BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
-                    .withProperty( boltConnector.enabled.name(), "true" )
+                    .withProperty( boltConnector.enabled.name(), Settings.TRUE )
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
-                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
+                    .withProperty( ServerSettings.script_enabled.name(), Settings.TRUE )
+                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
             neoServer.start();
@@ -536,9 +540,10 @@ public class TransactionGuardIntegrationTest
                 transaction_timeout, DEFAULT_TIMEOUT,
                 boltConnector.address, "localhost:0",
                 boltConnector.type, "BOLT",
-                boltConnector.enabled, "true",
+                boltConnector.enabled, Settings.TRUE,
                 boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
-                GraphDatabaseSettings.auth_enabled, "false" );
+                ServerSettings.script_enabled, Settings.TRUE,
+                GraphDatabaseSettings.auth_enabled, Settings.FALSE );
     }
 
     private Map<Setting<?>,String> getSettingsWithoutTransactionTimeout()

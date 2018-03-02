@@ -43,6 +43,7 @@ public class BatchEndpointIT
             .withConfig( GraphDatabaseSettings.logs_directory,
                     getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.logs_directory ) )
             .withConfig( ServerSettings.http_logging_enabled, "true" )
+            .withConfig( ServerSettings.script_enabled, "true" )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" );
 
     @Test

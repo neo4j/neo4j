@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.CleanupRule;
@@ -113,6 +114,7 @@ public class TransactionTerminationIT
         ServerControls server = cleanupRule.add( TestServerBuilders.newInProcessBuilder()
                 .withConfig( GraphDatabaseSettings.auth_enabled, Settings.FALSE )
                 .withConfig( GraphDatabaseFacadeFactory.Configuration.lock_manager, lockManagerName )
+                .withConfig( ServerSettings.script_enabled, Settings.TRUE )
                 .newServer() );
 
         GraphDatabaseService db = server.graph();
