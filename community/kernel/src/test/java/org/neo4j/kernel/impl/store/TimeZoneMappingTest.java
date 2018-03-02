@@ -124,7 +124,7 @@ public class TimeZoneMappingTest
     {
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZoneMapping.class.getResourceAsStream( "/TZIDS" ) ) ) )
         {
-            String text = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
+            String text = reader.lines().collect( Collectors.joining( "\n" ) );
             MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
             byte[] hash = digest.digest( text.getBytes( StandardCharsets.UTF_8 ) );
             assertThat( hash, equalTo(
