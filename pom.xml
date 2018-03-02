@@ -69,6 +69,7 @@
     <bouncycastle.version>1.59</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <java9.exports/>
+    <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
       -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true
@@ -371,6 +372,7 @@
               <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
             </systemPropertyVariables>
+            <jvm>${test.runner.jvm}</jvm>
           </configuration>
         </plugin>
         <plugin>
@@ -387,6 +389,7 @@
               <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
             </systemPropertyVariables>
+            <jvm>${test.runner.jvm}</jvm>
           </configuration>
           <executions>
             <execution>
