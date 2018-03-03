@@ -27,9 +27,8 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -226,12 +225,12 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     inner.callDbmsProcedure(name, args, allowed)
 
-  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
-    singleDbHit(inner.callFunction(name, args, allowed))
+  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+    singleDbHit(inner.callFunction(id, args, allowed))
 
-  override def aggregateFunction(name: QualifiedName,
+  override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator =
-    singleDbHit(inner.aggregateFunction(name, allowed))
+    singleDbHit(inner.aggregateFunction(id, allowed))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
     inner.isGraphKernelResultValue(v)

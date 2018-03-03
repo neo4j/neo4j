@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -194,9 +193,9 @@ trait QueryContext extends TokenContext {
 
   def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue
+  def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue
 
-  def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
+  def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
 
     // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database

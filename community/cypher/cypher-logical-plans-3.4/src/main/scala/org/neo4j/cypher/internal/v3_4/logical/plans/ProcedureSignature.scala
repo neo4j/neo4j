@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import java.util
-
-import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UnresolvedCall
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 
 case class ProcedureSignature(name: QualifiedName,
@@ -44,6 +42,7 @@ case class ProcedureSignature(name: QualifiedName,
 }
 
 case class UserFunctionSignature(name: QualifiedName,
+                                 id: Int,
                                  inputSignature: IndexedSeq[FieldSignature],
                                  outputType: CypherType,
                                  deprecationInfo: Option[String],

@@ -45,13 +45,12 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api
-import org.neo4j.internal.kernel.api.{IndexQuery, InternalIndexState}
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.{IndexQuery, InternalIndexState, procs}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.dbms.DbmsOperations
-import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
-import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
@@ -612,8 +611,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
-  type KernelFunctionCall = (KernelQualifiedName, Array[AnyValue]) => AnyValue
+  type KernelProcedureCall = (procs.QualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
+  type KernelFunctionCall = (procs.QualifiedName, Array[AnyValue]) => AnyValue
 
   private def shouldElevate(allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
@@ -656,7 +655,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     val read = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
@@ -676,7 +675,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   private def callFunction(name: QualifiedName, args: Seq[Any],
                            call: KernelFunctionCall) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val argArray = args.map(ValueUtils.of).toArray
     val result = call(kn, argArray)
     result.map(txContext.statement.procedureCallOperations.valueMapper)

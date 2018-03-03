@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.{Label, Node, Relationship}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 

@@ -27,13 +27,12 @@ import org.neo4j.cypher.internal.planner.v3_4.spi._
 import org.neo4j.cypher.internal.util.v3_4.CypherExecutionException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
-import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
-import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
+import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
+import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
-import org.neo4j.kernel.impl.proc.DefaultParameterValue
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
@@ -131,7 +130,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedName) = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala
       .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
@@ -147,20 +146,26 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val maybeFunction = tc.statement.readOperations().functionGet(kn)
-    val (fcn, aggregation) = if (maybeFunction.isPresent) (Some(maybeFunction.get), false)
-    else (asOption(tc.statement.readOperations().aggregationFunctionGet(kn)), true)
-    fcn.map(f => {
-      val input = f.inputSignature().asScala
+    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
+    val procedures = tc.tc.kernelTransaction().procedures()
+    val func = procedures.functionGet(kn)
+
+    val (fcn, aggregation) = if (func != null) (func, false)
+    else (procedures.aggregationFunctionGet(kn), true)
+    if (fcn == null) None
+    else {
+      val signature = fcn.signature()
+      val input = signature.inputSignature().asScala
         .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
         .toIndexedSeq
-      val output = asCypherType(f.outputType())
-      val deprecationInfo = asOption(f.deprecated())
-      val description = asOption(f.description())
+      val output = asCypherType(signature.outputType())
+      val deprecationInfo = asOption(signature.deprecated())
+      val description = asOption(signature.description())
 
-      UserFunctionSignature(name, input, output, deprecationInfo, f.allowed(), description, isAggregate = aggregation)
-    })
+
+      Some(UserFunctionSignature(name, fcn.id(), input, output, deprecationInfo,
+                                 signature.allowed(), description, isAggregate = aggregation))
+    }
   }
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None

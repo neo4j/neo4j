@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.v3_4.logical.plans.UserFunctionSignature
 import org.neo4j.values._
 
@@ -32,7 +32,7 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
     val argValues = arguments.map(arg => {
       arg(ctx, state)
     })
-    query.callFunction(signature.name, argValues, signature.allowed)
+    query.callFunction(signature.id, argValues, signature.allowed)
   }
 
   override def rewrite(f: (Expression) => Expression) =

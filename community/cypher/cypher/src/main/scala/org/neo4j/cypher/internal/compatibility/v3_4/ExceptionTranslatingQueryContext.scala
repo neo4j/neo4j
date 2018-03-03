@@ -154,13 +154,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args, allowed))
 
-  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
-    translateException(inner.callFunction(name, args, allowed))
+  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+    translateException(inner.callFunction(id, args, allowed))
 
 
-  override def aggregateFunction(name: QualifiedName,
+  override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator =
-    translateException(inner.aggregateFunction(name, allowed))
+    translateException(inner.aggregateFunction(id, allowed))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
     translateException(inner.isGraphKernelResultValue(v))

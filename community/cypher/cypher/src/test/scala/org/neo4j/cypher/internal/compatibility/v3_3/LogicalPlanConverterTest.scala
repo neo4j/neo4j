@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.lang.reflect.Modifier
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+
+import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
-import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, NonEmptyList, symbols => symbolsV3_4}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
@@ -422,7 +423,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val name3_4 = plansV3_4.QualifiedName(Seq.empty, "foo")
     val call3_4 = plansV3_4.ResolvedFunctionInvocation(name3_4,
-      Some(plansV3_4.UserFunctionSignature(name3_4, Vector(plansV3_4.FieldSignature("input", symbolsV3_4.CTAny,
+      Some(plansV3_4.UserFunctionSignature(name3_4, 0,Vector(plansV3_4.FieldSignature("input", symbolsV3_4.CTAny,
         default = Some(plansV3_4.CypherValue(null, symbolsV3_4.CTAny)))),
         symbolsV3_4.CTAny, None, allowed, None, isAggregate = false)), Vector())(InputPosition(1, 2, 3))
 

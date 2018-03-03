@@ -156,9 +156,10 @@ trait QueryContextAdaptation {
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
-  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
 
-  override def aggregateFunction(name: QualifiedName,
+  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
+
+  override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
