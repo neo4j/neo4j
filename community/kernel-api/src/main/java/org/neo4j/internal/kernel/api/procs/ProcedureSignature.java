@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.proc;
+package org.neo4j.internal.kernel.api.procs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,9 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 import org.neo4j.procedure.Mode;
-
 import static java.util.Collections.unmodifiableList;
 
 /**
@@ -43,19 +41,19 @@ public class ProcedureSignature
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
-    private final Optional<String> deprecated;
+    private final String deprecated;
     private final String[] allowed;
-    private final Optional<String> description;
-    private final Optional<String> warning;
+    private final String description;
+    private final String warning;
 
     public ProcedureSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
             List<FieldSignature> outputSignature,
             Mode mode,
-            Optional<String> deprecated,
+            String deprecated,
             String[] allowed,
-            Optional<String> description,
-            Optional<String> warning )
+            String description,
+            String warning )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -79,7 +77,7 @@ public class ProcedureSignature
 
     public Optional<String> deprecated()
     {
-        return deprecated;
+        return Optional.ofNullable( deprecated );
     }
 
     public String[] allowed()
@@ -104,12 +102,12 @@ public class ProcedureSignature
 
     public Optional<String> description()
     {
-        return description;
+        return Optional.ofNullable( description );
     }
 
     public Optional<String> warning()
     {
-        return warning;
+        return Optional.ofNullable( warning );
     }
 
     @Override
@@ -156,10 +154,10 @@ public class ProcedureSignature
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private List<FieldSignature> outputSignature = new LinkedList<>();
         private Mode mode = Mode.READ;
-        private Optional<String> deprecated = Optional.empty();
+        private String deprecated;
         private String[] allowed = new String[0];
-        private Optional<String> description = Optional.empty();
-        private Optional<String> warning = Optional.empty();
+        private String description;
+        private String warning;
 
         public Builder( String[] namespace, String name )
         {
@@ -174,25 +172,25 @@ public class ProcedureSignature
 
         public Builder description( String description )
         {
-            this.description = Optional.of( description );
+            this.description = description;
             return this;
         }
 
         public Builder deprecatedBy( String deprecated )
         {
-            this.deprecated = Optional.of( deprecated );
+            this.deprecated = deprecated;
             return this;
         }
 
         /** Define an input field */
-        public Builder in( String name, AnyType type )
+        public Builder in( String name, Neo4jTypes.AnyType type )
         {
             inputSignature.add( FieldSignature.inputField( name, type ) );
             return this;
         }
 
         /** Define an output field */
-        public Builder out( String name, AnyType type )
+        public Builder out( String name, Neo4jTypes.AnyType type )
         {
             outputSignature.add( FieldSignature.outputField( name, type ) );
             return this;
@@ -212,7 +210,7 @@ public class ProcedureSignature
 
         public Builder warning( String warning )
         {
-            this.warning = Optional.of( warning );
+            this.warning =  warning;
             return this;
         }
 

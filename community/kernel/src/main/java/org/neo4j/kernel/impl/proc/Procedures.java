@@ -26,16 +26,18 @@ import java.util.Set;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -152,7 +154,7 @@ public class Procedures extends LifecycleAdapter
      */
     public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
     {
-        registerProcedure( proc, overrideCurrentImplementation, Optional.empty() );
+        registerProcedure( proc, overrideCurrentImplementation, null );
     }
 
     /**
@@ -162,13 +164,6 @@ public class Procedures extends LifecycleAdapter
      * @param warning the warning the procedure should generate when called
      */
     public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, String warning ) throws KernelException
-    {
-        registerProcedure( proc, overrideCurrentImplementation, Optional.of( warning ) );
-    }
-
-    private void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, Optional<String> warning )
-            throws
-            KernelException
     {
         for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning, true ) )
         {
@@ -263,12 +258,12 @@ public class Procedures extends LifecycleAdapter
         return registry.procedure( name );
     }
 
-    public Optional<UserFunctionSignature> function( QualifiedName name )
+    public UserFunctionHandle function( QualifiedName name )
     {
         return registry.function( name );
     }
 
-    public Optional<UserFunctionSignature> aggregationFunction( QualifiedName name )
+    public UserFunctionHandle aggregationFunction( QualifiedName name )
     {
         return registry.aggregationFunction( name );
     }
@@ -294,9 +289,19 @@ public class Procedures extends LifecycleAdapter
         return registry.callFunction( ctx, name, input );
     }
 
-    public CallableUserAggregationFunction.Aggregator createAggregationFunction( Context ctx, QualifiedName name ) throws ProcedureException
+    public AnyValue callFunction( Context ctx, int id, AnyValue[] input ) throws ProcedureException
+    {
+        return registry.callFunction( ctx, id, input );
+    }
+
+    public UserAggregator createAggregationFunction( Context ctx, QualifiedName name ) throws ProcedureException
     {
         return registry.createAggregationFunction( ctx, name );
+    }
+
+    public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException
+    {
+        return registry.createAggregationFunction( ctx, id );
     }
 
     public ValueMapper<Object> valueMapper()

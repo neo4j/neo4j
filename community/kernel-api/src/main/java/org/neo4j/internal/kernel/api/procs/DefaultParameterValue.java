@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.proc;
+package org.neo4j.internal.kernel.api.procs;
 
 import java.util.List;
 import java.util.Map;
-
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 
 public class DefaultParameterValue
 {
@@ -50,27 +48,27 @@ public class DefaultParameterValue
         return new DefaultParameterValue( value, Neo4jTypes.NTString );
     }
 
-    static DefaultParameterValue ntInteger( long value )
+    public static DefaultParameterValue ntInteger( long value )
     {
         return new DefaultParameterValue( value, Neo4jTypes.NTInteger );
     }
 
-    static DefaultParameterValue ntFloat( double value )
+    public static DefaultParameterValue ntFloat( double value )
     {
         return new DefaultParameterValue( value, Neo4jTypes.NTFloat );
     }
 
-    static DefaultParameterValue ntBoolean( boolean value )
+    public static DefaultParameterValue ntBoolean( boolean value )
     {
         return new DefaultParameterValue( value, Neo4jTypes.NTBoolean );
     }
 
-    static DefaultParameterValue ntMap( Map<String,Object> value )
+    public static DefaultParameterValue ntMap( Map<String,Object> value )
     {
         return new DefaultParameterValue( value, Neo4jTypes.NTMap );
     }
 
-    static DefaultParameterValue ntList( List<?> value, Neo4jTypes.AnyType inner )
+    public static DefaultParameterValue ntList( List<?> value, Neo4jTypes.AnyType inner )
     {
         return new DefaultParameterValue( value, Neo4jTypes.NTList( inner ) );
     }

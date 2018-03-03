@@ -27,11 +27,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 public class AuthProceduresTest extends KernelIntegrationTest
 {

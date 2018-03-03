@@ -17,21 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.internal.kernel.api.procs;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 
-public class ProcedureException extends KernelException
+public interface UserAggregator
 {
-    public ProcedureException( Status statusCode, Throwable cause,
-                               String message, Object... parameters )
-    {
-        super( statusCode, cause, message, parameters );
-    }
+    void update( Object[] input ) throws ProcedureException;
 
-    public ProcedureException( Status statusCode, String message,
-                               Object... parameters )
-    {
-        super( statusCode, message, parameters );
-    }
+    Object result() throws ProcedureException;
 }

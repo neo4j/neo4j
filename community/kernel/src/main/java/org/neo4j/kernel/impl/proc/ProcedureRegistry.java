@@ -19,34 +19,34 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.values.AnyValue;
 
 public class ProcedureRegistry
 {
-    private final Map<QualifiedName,CallableProcedure> procedures = new HashMap<>();
-    private final Map<QualifiedName,CallableUserFunction> functions = new HashMap<>();
-    private final Map<QualifiedName,CallableUserAggregationFunction> aggregationFunctions = new HashMap<>();
+
+    private final ProcedureHolder<CallableProcedure> procedures = new ProcedureHolder<>();
+    private final ProcedureHolder<CallableUserFunction> functions = new ProcedureHolder<>();
+    private final ProcedureHolder<CallableUserAggregationFunction> aggregationFunctions = new ProcedureHolder<>();
 
     /**
      * Register a new procedure.
@@ -172,24 +172,24 @@ public class ProcedureRegistry
         return proc.signature();
     }
 
-    public Optional<UserFunctionSignature> function( QualifiedName name )
+    public UserFunctionHandle function( QualifiedName name )
     {
         CallableUserFunction func = functions.get( name );
         if ( func == null )
         {
-            return Optional.empty();
+            return null;
         }
-        return Optional.of( func.signature() );
+        return new UserFunctionHandle( func.signature(), functions.idOf( name) );
     }
 
-    public Optional<UserFunctionSignature> aggregationFunction( QualifiedName name )
+    public UserFunctionHandle aggregationFunction( QualifiedName name )
     {
         CallableUserAggregationFunction func = aggregationFunctions.get( name );
         if ( func == null )
         {
-            return Optional.empty();
+            return null;
         }
-        return Optional.of( func.signature() );
+        return new UserFunctionHandle( func.signature(), aggregationFunctions.idOf( name) );
     }
 
     public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input, ResourceTracker resourceTracker )
@@ -207,20 +207,34 @@ public class ProcedureRegistry
             throws ProcedureException
     {
         CallableUserFunction func = functions.get( name );
-        if ( func == null )
-        {
-            throw noSuchFunction( name );
-        }
         return func.apply( ctx, input );
     }
 
-    public CallableUserAggregationFunction.Aggregator createAggregationFunction( Context ctx, QualifiedName name )
+    public AnyValue callFunction( Context ctx, int functionId, AnyValue[] input )
+            throws ProcedureException
+    {
+        CallableUserFunction func = functions.get( functionId );
+        return func.apply( ctx, input );
+    }
+
+    public UserAggregator createAggregationFunction( Context ctx, QualifiedName name )
             throws ProcedureException
     {
         CallableUserAggregationFunction func = aggregationFunctions.get( name );
         if ( func == null )
         {
             throw noSuchFunction( name );
+        }
+        return func.create(ctx);
+    }
+
+    public UserAggregator createAggregationFunction( Context ctx, int id )
+            throws ProcedureException
+    {
+        CallableUserAggregationFunction func = aggregationFunctions.get( id );
+        if ( func == null )
+        {
+            throw noSuchFunction( id );
         }
         return func.create(ctx);
     }
@@ -241,15 +255,21 @@ public class ProcedureRegistry
                 "function is properly deployed.", name );
     }
 
+    private ProcedureException noSuchFunction( int id )
+    {
+        return new ProcedureException( Status.Procedure.ProcedureNotFound,
+                "There is no function with the internal id `%d` registered for this database instance.", id );
+    }
+
     public Set<ProcedureSignature> getAllProcedures()
     {
-        return procedures.values().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
+        return procedures.all().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
     }
 
     public Set<UserFunctionSignature> getAllFunctions()
     {
-        return Stream.concat(functions.values().stream().map( CallableUserFunction::signature ),
-                aggregationFunctions.values().stream().map( CallableUserAggregationFunction::signature ))
+        return Stream.concat(functions.all().stream().map( CallableUserFunction::signature ),
+                aggregationFunctions.all().stream().map( CallableUserAggregationFunction::signature ))
                 .collect( Collectors.toSet() );
     }
 }
