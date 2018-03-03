@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.graphdb.QueryExecutionException
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -410,14 +411,14 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   // Arithmetic
 
-  ignore("subtracting temporal instants should give meaningful error message") {
+  test("subtracting temporal instants should give meaningful error message") {
     for (func <- Seq("date", "localtime", "time", "localdatetime", "datetime")) {
       val query = s"RETURN $func() - $func()"
-      val exception = intercept[IllegalArgumentException] {
+      val exception = intercept[QueryExecutionException] {
         println(graph.execute(query).next())
       }
-      exception.getMessage should be ("You cannot subtract temporal instant from one another. " +
-        " To obtain the duration, use 'duration.between(temporal1, temporal2) instead.")
+      exception.getMessage should be ("You cannot subtract a temporal instant from another. " +
+        "To obtain the duration, use 'duration.between(temporal1, temporal2)' instead.")
     }
   }
 

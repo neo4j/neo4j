@@ -22,23 +22,50 @@ package org.neo4j.bolt.v2.messaging;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
+import java.io.UncheckedIOException;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ValueRange;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
+import org.neo4j.kernel.impl.store.TimeZoneMapping;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.ListValue;
 
-import static java.util.stream.Collectors.toList;
+import static java.time.temporal.ChronoField.DAY_OF_MONTH;
+import static java.time.temporal.ChronoField.EPOCH_DAY;
+import static java.time.temporal.ChronoField.HOUR_OF_DAY;
+import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
+import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
+import static java.time.temporal.ChronoField.NANO_OF_DAY;
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
+import static java.time.temporal.ChronoField.YEAR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.epochDate;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.pointValue;
@@ -46,8 +73,15 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 
 public class Neo4jPackV2Test
 {
+    private static final String[] TIME_ZONE_NAMES =
+            TimeZoneMapping.supportedTimeZones().stream().filter( s -> ZoneId.getAvailableZoneIds().contains( s ) ).toArray( length -> new String[length] );
+
+    private static final int RANDOM_VALUES_TO_TEST = 1_000;
+    private static final int RANDOM_LISTS_TO_TEST = 1_000;
+    private static final int RANDOM_LIST_MAX_SIZE = 500;
+
     @Test
-    public void shouldFailToPackPointWithIllegalDimensions() throws IOException
+    public void shouldFailToPackPointWithIllegalDimensions()
     {
         testPackingPointsWithWrongDimensions( 0 );
         testPackingPointsWithWrongDimensions( 1 );
@@ -71,7 +105,7 @@ public class Neo4jPackV2Test
             unpack( output );
             fail( "Exception expected" );
         }
-        catch ( IOException ignore )
+        catch ( UncheckedIOException ignore )
         {
         }
     }
@@ -93,62 +127,136 @@ public class Neo4jPackV2Test
             unpack( output );
             fail( "Exception expected" );
         }
-        catch ( IOException ignore )
+        catch ( UncheckedIOException ignore )
         {
         }
     }
 
     @Test
-    public void shouldPackAndUnpack2DPoints() throws IOException
+    public void shouldPackAndUnpack2DPoints()
     {
-        testPackingAndUnpackingOfPoints( 2 );
+        testPackingAndUnpacking( this::randomPoint2D );
     }
 
     @Test
-    public void shouldPackAndUnpack3DPoints() throws IOException
+    public void shouldPackAndUnpack3DPoints()
     {
-        testPackingAndUnpackingOfPoints( 3 );
+        testPackingAndUnpacking( this::randomPoint3D );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOf2DPoints() throws IOException
+    public void shouldPackAndUnpackListsOf2DPoints()
     {
-        testPackingAndUnpackingOfListsOfPoints( 2 );
+        testPackingAndUnpacking( () -> randomList( this::randomPoint2D ) );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOf3DPoints() throws IOException
+    public void shouldPackAndUnpackListsOf3DPoints()
     {
-        testPackingAndUnpackingOfListsOfPoints( 3 );
+        testPackingAndUnpacking( () -> randomList( this::randomPoint3D ) );
     }
 
-    private static void testPackingAndUnpackingOfListsOfPoints( int pointDimension ) throws IOException
+    @Test
+    public void shouldPackAndUnpackDuration()
     {
-        List<ListValue> pointLists = IntStream.range( 0, 1000 )
-                .mapToObj( index -> randomListOfPoints( index, pointDimension ) )
-                .collect( toList() );
-
-        for ( ListValue original : pointLists )
-        {
-            ListValue unpacked = packAndUnpack( original );
-            assertEquals( "Failed on " + original, original, unpacked );
-        }
+        testPackingAndUnpacking( this::randomDuration );
     }
 
-    private static void testPackingAndUnpackingOfPoints( int dimension ) throws IOException
+    @Test
+    public void shouldPackAndUnpackListsOfDuration()
     {
-        List<PointValue> points = IntStream.range( 0, 1000 )
-                .mapToObj( index -> randomPoint( index, dimension ) )
-                .collect( toList() );
-
-        for ( PointValue original : points )
-        {
-            PointValue unpacked = packAndUnpack( original );
-            assertEquals( "Failed on " + original, original, unpacked );
-        }
+        testPackingAndUnpacking( () -> randomList( this::randomDuration ) );
     }
 
-    private static void testPackingPointsWithWrongDimensions( int dimensions ) throws IOException
+    @Test
+    public void shouldPackAndUnpackDate()
+    {
+        testPackingAndUnpacking( this::randomDate );
+    }
+
+    @Test
+    public void shouldPackAndUnpackListsOfDate()
+    {
+        testPackingAndUnpacking( () -> randomList( this::randomDate ) );
+    }
+
+    @Test
+    public void shouldPackAndUnpackLocalTime()
+    {
+        testPackingAndUnpacking( this::randomLocalTime );
+    }
+
+    @Test
+    public void shouldPackAndUnpackListsOfLocalTime()
+    {
+        testPackingAndUnpacking( () -> randomList( this::randomLocalTime ) );
+    }
+
+    @Test
+    public void shouldPackAndUnpackTime()
+    {
+        testPackingAndUnpacking( this::randomTime );
+    }
+
+    @Test
+    public void shouldPackAndUnpackListsOfTime()
+    {
+        testPackingAndUnpacking( () -> randomList( this::randomTime ) );
+    }
+
+    @Test
+    public void shouldPackAndUnpackLocalDateTime()
+    {
+        testPackingAndUnpacking( this::randomLocalDateTime );
+    }
+
+    @Test
+    public void shouldPackAndUnpackListsOfLocalDateTime()
+    {
+        testPackingAndUnpacking( () -> randomList( this::randomLocalDateTime ) );
+    }
+
+    @Test
+    public void shouldPackAndUnpackDateTimeWithTimeZoneName()
+    {
+        testPackingAndUnpacking( this::randomDateTimeWithTimeZoneName );
+    }
+
+    @Test
+    public void shouldPackAndUnpackListsOfDateTimeWithTimeZoneName()
+    {
+        testPackingAndUnpacking( () -> randomList( this::randomDateTimeWithTimeZoneName ) );
+    }
+
+    @Test
+    public void shouldPackAndUnpackDateTimeWithTimeZoneOffset()
+    {
+        testPackingAndUnpacking( this::randomDateTimeWithTimeZoneOffset );
+    }
+
+    @Test
+    public void shouldPackAndUnpackListsOfDateTimeWithTimeZoneOffset()
+    {
+        testPackingAndUnpacking( () -> randomList( this::randomDateTimeWithTimeZoneOffset ) );
+    }
+
+    private static <T extends AnyValue> void testPackingAndUnpacking( Supplier<T> randomValueGenerator )
+    {
+        testPackingAndUnpacking( index -> randomValueGenerator.get() );
+    }
+
+    private static <T extends AnyValue> void testPackingAndUnpacking( Function<Integer,T> randomValueGenerator )
+    {
+        IntStream.range( 0, RANDOM_VALUES_TO_TEST )
+                .mapToObj( index -> randomValueGenerator.apply( index ) )
+                .forEach( originalValue ->
+                {
+                    T unpackedValue = packAndUnpack( originalValue );
+                    assertEquals( originalValue, unpackedValue );
+                } );
+    }
+
+    private static void testPackingPointsWithWrongDimensions( int dimensions )
     {
         PointValue point = randomPoint( 0, dimensions );
         try
@@ -161,43 +269,142 @@ public class Neo4jPackV2Test
         }
     }
 
-    private static <T extends AnyValue> T packAndUnpack( T value ) throws IOException
+    private static <T extends AnyValue> T packAndUnpack( T value )
     {
         return unpack( pack( value ) );
     }
 
-    private static PackedOutputArray pack( AnyValue value ) throws IOException
+    private static PackedOutputArray pack( AnyValue value )
     {
-        Neo4jPackV2 neo4jPack = new Neo4jPackV2();
-        PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-        packer.pack( value );
-        return output;
+        try
+        {
+            Neo4jPackV2 neo4jPack = new Neo4jPackV2();
+            PackedOutputArray output = new PackedOutputArray();
+            Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+            packer.pack( value );
+            return output;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <T extends AnyValue> T unpack( PackedOutputArray output ) throws IOException
+    private static <T extends AnyValue> T unpack( PackedOutputArray output )
     {
-        Neo4jPackV2 neo4jPack = new Neo4jPackV2();
-        PackedInputArray input = new PackedInputArray( output.bytes() );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
-        AnyValue unpack = unpacker.unpack();
-        return (T) unpack;
+        try
+        {
+            Neo4jPackV2 neo4jPack = new Neo4jPackV2();
+            PackedInputArray input = new PackedInputArray( output.bytes() );
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+            AnyValue unpack = unpacker.unpack();
+            return (T) unpack;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
-    private static ListValue randomListOfPoints( int index, int pointDimension )
+    private static <T extends AnyValue> ListValue randomList( Supplier<T> randomValueGenerator )
     {
-        PointValue[] pointValues = ThreadLocalRandom.current()
-                .ints( 100, 1, 100 )
-                .mapToObj( i -> randomPoint( index, pointDimension ) )
-                .toArray( PointValue[]::new );
+        return randomList( index -> randomValueGenerator.get() );
+    }
 
-        return list( pointValues );
+    private static <T extends AnyValue> ListValue randomList( Function<Integer,T> randomValueGenerator )
+    {
+        AnyValue[] values = random().ints( RANDOM_LISTS_TO_TEST, 1, RANDOM_LIST_MAX_SIZE )
+                .mapToObj( index -> randomValueGenerator.apply( index ) )
+                .toArray( AnyValue[]::new );
+
+        return list( values );
+    }
+
+    private PointValue randomPoint2D( int index )
+    {
+        return randomPoint( index, 2 );
+    }
+
+    private PointValue randomPoint3D( int index )
+    {
+        return randomPoint( index, 3 );
     }
 
     private static PointValue randomPoint( int index, int dimension )
     {
         CoordinateReferenceSystem crs = index % 2 == 0 ? WGS84 : Cartesian;
-        return pointValue( crs, ThreadLocalRandom.current().doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
+        return pointValue( crs, random().doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
+    }
+
+    private DurationValue randomDuration( int index )
+    {
+        return duration( randomLong( index ), randomLong( index ), randomLong( index ), randomLong( index ) );
+    }
+
+    private DateValue randomDate()
+    {
+        return epochDate( random( EPOCH_DAY ) );
+    }
+
+    private LocalTimeValue randomLocalTime()
+    {
+        return localTime( random( NANO_OF_DAY ) );
+    }
+
+    private TimeValue randomTime()
+    {
+        return time( random( NANO_OF_DAY ), randomZoneOffset() );
+    }
+
+    private LocalDateTimeValue randomLocalDateTime()
+    {
+        return localDateTime( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
+                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ) );
+    }
+
+    private DateTimeValue randomDateTimeWithTimeZoneName()
+    {
+        return datetime( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
+                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ), randomZoneIdWithName() );
+    }
+
+    private DateTimeValue randomDateTimeWithTimeZoneOffset()
+    {
+        return datetime( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
+                random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ), randomZoneOffset() );
+    }
+
+    private static long randomLong( long origin )
+    {
+        return random().nextLong( origin, Long.MAX_VALUE );
+    }
+
+    private static int random( ChronoField chronoField )
+    {
+        ValueRange range = chronoField.range();
+        int min = (int) range.getMinimum();
+        int max = (int) range.getSmallestMaximum();
+        if ( max != range.getSmallestMaximum() )
+        {
+            max = Integer.MAX_VALUE;
+        }
+        return random().nextInt( min, max );
+    }
+
+    private static ZoneOffset randomZoneOffset()
+    {
+        return ZoneOffset.ofTotalSeconds( random().nextInt( ZoneOffset.MIN.getTotalSeconds(), ZoneOffset.MAX.getTotalSeconds() + 1 ) );
+    }
+
+    private static ZoneId randomZoneIdWithName()
+    {
+        String timeZoneName = TIME_ZONE_NAMES[random().nextInt( TIME_ZONE_NAMES.length )];
+        return ZoneId.of( timeZoneName );
+    }
+
+    private static ThreadLocalRandom random()
+    {
+        return ThreadLocalRandom.current();
     }
 }

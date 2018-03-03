@@ -404,6 +404,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public Iterator<CapableIndexReference> indexesGetForLabel( int labelId )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -423,6 +429,12 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

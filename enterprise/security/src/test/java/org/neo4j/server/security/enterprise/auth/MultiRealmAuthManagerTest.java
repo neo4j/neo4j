@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
+import java.util.function.Function;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -80,12 +80,11 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
     @Rule
     public ExpectedException expect = ExpectedException.none();
 
-    private Token token;
+    private Function<String, Integer> token = s -> -1;
 
     @Before
     public void setUp() throws Throwable
     {
-        token = mock( Token.class );
         config = Config.defaults();
         users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         authStrategy = mock( AuthenticationStrategy.class );

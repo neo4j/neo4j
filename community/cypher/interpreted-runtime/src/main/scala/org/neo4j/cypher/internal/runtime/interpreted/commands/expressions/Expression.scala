@@ -98,6 +98,10 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
     val aVal = left(ctx, state)
     val bVal = right(ctx, state)
 
+    applyWithValues(aVal, bVal)
+  }
+
+  protected def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (x: NumberValue, y: NumberValue) => calc(x, y)

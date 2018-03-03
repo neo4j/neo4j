@@ -59,7 +59,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         long r;
         try ( Transaction tx = session.beginTransaction() )
         {
-            int label = session.token().relationshipTypeGetOrCreateForName( "R" );
+            int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             r = tx.dataWrite().relationshipCreate( n1, label, n2 );
             tx.success();
         }
@@ -80,7 +80,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         {
             n1 = tx.dataWrite().nodeCreate();
             n2 = tx.dataWrite().nodeCreate();
-            int label = session.token().relationshipTypeGetOrCreateForName( "R" );
+            int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             r = tx.dataWrite().relationshipCreate( n1, label, n2 );
             tx.success();
         }
@@ -106,7 +106,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            int label = session.token().relationshipTypeGetOrCreateForName( "R" );
+            int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             tx.dataWrite().relationshipCreate( n1, label, n2 );
             tx.failure();
         }
@@ -175,7 +175,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            int label = session.token().relationshipTypeGetOrCreateForName( "R" );
+            int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
 
             assertTrue( tx.dataWrite().relationshipDelete( r ) );
@@ -207,7 +207,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
             tx.success();
         }
@@ -240,7 +240,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ),
                     equalTo( intValue( 42 ) ) );
             tx.success();
@@ -273,7 +273,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
                     equalTo( intValue( 42 ) ) );
             tx.success();
@@ -304,7 +304,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
                     equalTo( NO_VALUE ) );
             tx.success();
@@ -337,7 +337,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
                     equalTo( intValue( 42 ) ) );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
@@ -371,7 +371,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );

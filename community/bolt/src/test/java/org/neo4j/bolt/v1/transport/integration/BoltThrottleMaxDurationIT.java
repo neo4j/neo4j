@@ -44,6 +44,7 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
@@ -161,7 +162,7 @@ public class BoltThrottleMaxDurationIT
         }
         catch ( ExecutionException e )
         {
-            assertThat( e.getCause(), Matchers.instanceOf( SocketException.class ) );
+            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( SocketException.class ) );
         }
 
         logProvider.assertAtLeastOnce(

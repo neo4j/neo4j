@@ -208,7 +208,7 @@ public class AllStoreHolder extends Read
     @Override
     long graphPropertiesReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return statement.getGraphPropertyReference();
     }
 
     @Override
@@ -249,6 +249,20 @@ public class AllStoreHolder extends Read
         }
 
         return indexGetCapability( indexDescriptor );
+    }
+
+    @Override
+    public Iterator<CapableIndexReference> indexesGetForLabel( int labelId )
+    {
+        sharedOptimisticLock( ResourceTypes.LABEL, labelId );
+        ktx.assertOpen();
+
+        Iterator<IndexDescriptor> iterator = storeReadLayer.indexesGetForLabel( labelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
+        }
+        return Iterators.map( this::indexGetCapability, iterator );
     }
 
     CapableIndexReference indexGetCapability( IndexDescriptor indexDescriptor )
@@ -355,6 +369,19 @@ public class AllStoreHolder extends Read
             ktx.locks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
             return constraintDescriptor;
         }, constraints );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
+    {
+        sharedOptimisticLock( ResourceTypes.RELATIONSHIP_TYPE, typeId );
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetForRelationshipType( typeId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            return ktx.txState().constraintsChangesForRelationshipType( typeId ).apply( constraints );
+        }
+        return constraints;
     }
 
     @Override

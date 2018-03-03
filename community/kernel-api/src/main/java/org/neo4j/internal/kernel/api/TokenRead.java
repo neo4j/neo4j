@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Iterator;
+
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -79,4 +81,10 @@ public interface TokenRead
      * @throws PropertyKeyIdNotFoundKernelException if no key is associated with the id
      */
     String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
+
+    Iterator<NamedToken> labelsGetAllTokens();
+
+    Iterator<NamedToken> propertyKeyGetAllTokens();
+
+    Iterator<NamedToken> relationshipTypesGetAllTokens();
 }

@@ -25,14 +25,12 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
-import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
 public class AuthProceduresTest extends KernelIntegrationTest
@@ -57,7 +55,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         dbmsOperations()
                 .procedureCallDbms( procedureName( "dbms", "changePassword" ),
                                     inputArray,
-                                    AnonymousContext.none().authorize( mock( Token.class ) ),
+                                    AnonymousContext.none().authorize( s -> -1 ),
                                     resourceTracker );
     }
 
@@ -75,7 +73,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         // When
         dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ),
                                             inputArray,
-                                            AnonymousContext.none().authorize( mock( Token.class ) ),
+                                            AnonymousContext.none().authorize( s -> -1 ),
                                             resourceTracker );
     }
 

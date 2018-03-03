@@ -38,9 +38,8 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
       case (_, l:IntegralValue) if l.longValue() == 0L  => throw new ArithmeticException("/ by zero")
       case (_, l:DoubleValue) if l.doubleValue() == 0L  => throw new ArithmeticException("/ by zero")
       case (_, l:FloatValue) if l.doubleValue() == 0L  => throw new ArithmeticException("/ by zero")
-      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
-      case (x: NumberValue, y: NumberValue) => calc(x, y)
-      case _ => throwTypeError(bVal, aVal)
+      case (x: DurationValue, y: NumberValue) => x.div(y)
+      case _ => applyWithValues(aVal, bVal)
     }
   }
 

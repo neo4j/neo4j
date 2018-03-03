@@ -37,6 +37,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
+
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.server.configuration.ServerSettings;
@@ -52,6 +53,7 @@ public class DeleteUserStressIT
             .withConfig( GraphDatabaseSettings.auth_enabled, "true" )
             .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withConfig( ServerSettings.script_enabled.name(), Settings.TRUE );
+
     private Driver adminDriver;
     private final Set<Throwable> errors = ConcurrentHashMap.newKeySet();
 

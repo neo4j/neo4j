@@ -48,7 +48,7 @@ public class InitMessage implements RequestMessage
     }
 
     @Override
-    public <E extends Exception> void dispatch( BoltRequestMessageHandler<E> consumer ) throws E
+    public void dispatch( BoltRequestMessageHandler consumer )
     {
         consumer.onInit( userAgent, authToken );
     }

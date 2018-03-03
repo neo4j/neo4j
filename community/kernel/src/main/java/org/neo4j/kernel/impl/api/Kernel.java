@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.NewKernel;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -80,8 +79,7 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     private final NewKernel newKernel;
 
     public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
-            TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine,
-            KernelToken token )
+            TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
@@ -89,7 +87,7 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( engine, token, this );
+        this.newKernel = new NewKernel( engine, this );
     }
 
     @Override

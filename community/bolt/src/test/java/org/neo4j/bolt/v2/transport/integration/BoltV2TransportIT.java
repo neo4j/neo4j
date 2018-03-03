@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
@@ -38,7 +39,7 @@ import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -56,6 +57,12 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
@@ -119,13 +126,157 @@ public class BoltV2TransportIT
     }
 
     @Test
-    public void shouldSendPoints() throws Exception
+    public void shouldSendPoint2D() throws Exception
     {
-        PointValue point = pointValue( WGS84, 39.111748, -76.775635 );
+        testSendingOfBoltV2Value( pointValue( WGS84, 39.111748, -76.775635 ) );
+    }
 
+    @Test
+    public void shouldReceivePoint2D() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN point({x: 40.7624, y: 73.9738})", pointValue( Cartesian, 40.7624, 73.9738 ) );
+    }
+
+    @Test
+    public void shouldSendAndReceivePoint2D() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( pointValue( WGS84, 38.8719, 77.0563 ) );
+    }
+
+    @Test
+    public void shouldSendDuration() throws Exception
+    {
+        testSendingOfBoltV2Value( duration( 5, 3, 34, 0 ) );
+    }
+
+    @Test
+    public void shouldReceiveDuration() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN duration({months: 3, days: 100, seconds: 999, nanoseconds: 42})", duration( 3, 100, 999, 42 ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveDuration() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( duration( 17, 9, 2, 1_000_000 ) );
+    }
+
+    @Test
+    public void shouldSendDate() throws Exception
+    {
+        testSendingOfBoltV2Value( date( 1991, 8, 24 ) );
+    }
+
+    @Test
+    public void shouldReceiveDate() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN date('2015-02-18')", date( 2015, 2, 18 ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveDate() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( date( 2005, 5, 22 ) );
+    }
+
+    @Test
+    public void shouldSendLocalTime() throws Exception
+    {
+        testSendingOfBoltV2Value( localTime( 2, 35, 10, 1 ) );
+    }
+
+    @Test
+    public void shouldReceiveLocalTime() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN localtime('11:04:35')", localTime( 11, 04, 35, 0 ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveLocalTime() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( localTime( 22, 10, 10, 99 ) );
+    }
+
+    @Test
+    public void shouldSendTime() throws Exception
+    {
+        testSendingOfBoltV2Value( time( 424242, ZoneOffset.of( "+08:30" ) ) );
+    }
+
+    @Test
+    public void shouldReceiveTime() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN time('14:30+0100')", time( 14, 30, 0, 0, ZoneOffset.ofHours( 1 ) ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveTime() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( time( 19, 22, 44, 100, ZoneOffset.ofHours( -5 ) ) );
+    }
+
+    @Test
+    public void shouldSendLocalDateTime() throws Exception
+    {
+        testSendingOfBoltV2Value( localDateTime( 2002, 5, 22, 15, 15, 25, 0 ) );
+    }
+
+    @Test
+    public void shouldReceiveLocalDateTime() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN localdatetime('20150202T19:32:24')", localDateTime( 2015, 2, 2, 19, 32, 24, 0 ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveLocalDateTime() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( localDateTime( 1995, 12, 12, 10, 30, 0, 0 ) );
+    }
+
+    @Test
+    public void shouldSendDateTimeWithTimeZoneName() throws Exception
+    {
+        testSendingOfBoltV2Value( datetime( 1956, 9, 14, 11, 20, 25, 0, "Europe/Stockholm" ) );
+    }
+
+    @Test
+    public void shouldReceiveDateTimeWithTimeZoneName() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN datetime({year:1984, month:10, day:11, hour:21, minute:30, timezone:'Europe/London'})",
+                datetime( 1984, 10, 11, 21, 30, 0, 0, "Europe/London" ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveDateTimeWithTimeZoneName() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( datetime( 1984, 10, 11, 21, 30, 0, 0, "Europe/London" ) );
+    }
+
+    @Test
+    public void shouldSendDateTimeWithTimeZoneOffset() throws Exception
+    {
+        testSendingOfBoltV2Value( datetime( 424242, 0, ZoneOffset.ofHoursMinutes( -7, -15 ) ) );
+    }
+
+    @Test
+    public void shouldReceiveDateTimeWithTimeZoneOffset() throws Exception
+    {
+        testReceivingOfBoltV2Value( "RETURN datetime({year:2022, month:3, day:2, hour:19, minute:10, timezone:'+02:30'})",
+                datetime( 2022, 3, 2, 19, 10, 0, 0, ZoneOffset.ofHoursMinutes( 2, 30 ) ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveDateTimeWithTimeZoneOffset() throws Exception
+    {
+        testSendingAndReceivingOfBoltV2Value( datetime( 1899, 1, 1, 12, 12, 32, 0, ZoneOffset.ofHoursMinutes( -4, -15 ) ) );
+    }
+
+    private <T extends AnyValue> void testSendingOfBoltV2Value( T value ) throws Exception
+    {
         negotiateBoltV2();
+
         connection.send( util.chunk(
-                run( "CREATE (n: Object {location: $location}) RETURN 42", map( singletonMap( "location", point ) ) ),
+                run( "CREATE (n:Node {value: $value}) RETURN 42", map( singletonMap( "value", value ) ) ),
                 pullAll() ) );
 
         assertThat( connection, util.eventuallyReceives(
@@ -135,35 +286,33 @@ public class BoltV2TransportIT
                 msgSuccess() ) );
     }
 
-    @Test
-    public void shouldReceivePoints() throws Exception
+    private <T extends AnyValue> void testReceivingOfBoltV2Value( String query, T expectedValue ) throws Exception
     {
         negotiateBoltV2();
+
         connection.send( util.chunk(
-                run( "RETURN point({x: 40.7624, y: 73.9738})" ),
+                run( query ),
                 pullAll() ) );
 
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( pointValue( Cartesian, 40.7624, 73.9738 ) ) ) ),
+                msgRecord( eqRecord( equalTo( expectedValue ) ) ),
                 msgSuccess() ) );
     }
 
-    @Test
-    public void shouldSendAndReceivePoints() throws Throwable
+    private <T extends AnyValue> void testSendingAndReceivingOfBoltV2Value( T value ) throws Exception
     {
-        PointValue point = pointValue( WGS84, 38.8719, 77.0563 );
-
         negotiateBoltV2();
+
         connection.send( util.chunk(
-                run( "RETURN $point", map( singletonMap( "point", point ) ) ),
+                run( "RETURN $value", map( singletonMap( "value", value ) ) ),
                 pullAll() ) );
 
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( point ) ) ),
+                msgRecord( eqRecord( equalTo( value ) ) ),
                 msgSuccess() ) );
     }
 

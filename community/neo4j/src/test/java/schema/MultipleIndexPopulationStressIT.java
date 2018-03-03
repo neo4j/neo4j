@@ -93,7 +93,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 public class MultipleIndexPopulationStressIT
 {
     private static final String[] TOKENS = new String[]{"One", "Two", "Three", "Four"};
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
     private final CleanupRule cleanup = new CleanupRule();
@@ -304,23 +304,16 @@ public class MultipleIndexPopulationStressIT
         importer.doImport( new RandomDataInput( count ) );
     }
 
-    private int randomPropertyValue( Random random )
+    private static int randomPropertyValue( Random random )
     {
         return random.nextInt( 100 );
     }
 
     private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
     {
-        RandomNodeGenerator( int count )
+        RandomNodeGenerator( int count, Generator<Randoms> randomsGenerator )
         {
-            super( count, 1_000, new RandomsStates( random.seed() ), ( state, visitor, id ) -> {
-                String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-                for ( String key : keys )
-                {
-                    visitor.property( key, randomPropertyValue( state.random() ) );
-                }
-                visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
-            }, 0 );
+            super( count, 1_000, new RandomsStates( random.seed() ), randomsGenerator, 0 );
         }
     }
 
@@ -342,7 +335,14 @@ public class MultipleIndexPopulationStressIT
         @Override
         public InputIterable nodes()
         {
-            return InputIterable.replayable( () -> new RandomNodeGenerator( count ) );
+            return InputIterable.replayable( () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
+                String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+                for ( String key : keys )
+                {
+                    visitor.property( key, randomPropertyValue( state.random() ) );
+                }
+                visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
+            } ) );
         }
 
         @Override

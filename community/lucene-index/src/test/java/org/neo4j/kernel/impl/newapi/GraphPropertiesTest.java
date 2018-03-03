@@ -17,29 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging;
+package org.neo4j.kernel.impl.newapi;
 
-import java.util.Map;
+import org.neo4j.internal.kernel.api.GraphPropertiesTestBase;
 
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.values.virtual.MapValue;
-
-/**
- * Interface defining simple handler methods for each defined Bolt request message.
- */
-public interface BoltRequestMessageHandler
+public class GraphPropertiesTest extends GraphPropertiesTestBase<WriteTestSupport>
 {
-    void onInit( String userAgent, Map<String,Object> authToken );
+    @Override
+    public WriteTestSupport newTestSupport()
+    {
+        return new WriteTestSupport();
+    }
 
-    void onAckFailure();
-
-    void onReset();
-
-    void onRun( String statement, MapValue params );
-
-    void onDiscardAll();
-
-    void onPullAll();
-
-    void onExternalError( Neo4jError error );
 }

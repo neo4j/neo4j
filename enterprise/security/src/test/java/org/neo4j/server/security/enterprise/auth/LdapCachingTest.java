@@ -37,8 +37,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
@@ -62,12 +62,12 @@ public class LdapCachingTest
     private TestRealm testRealm;
     private FakeTicker fakeTicker;
 
-    private Token token;
+    private Function<String, Integer> token;
 
     @Before
     public void setup() throws Throwable
     {
-        token = mock( Token.class );
+        token = s -> -1;
         SecurityLog securityLog = mock( SecurityLog.class );
         InternalFlatFileRealm internalFlatFileRealm =
             new InternalFlatFileRealm(

@@ -21,6 +21,8 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
@@ -42,9 +44,10 @@ public class NodesTest
                 group().withOutCount( 3 ).withInCount( 1 ).withLoopCount( 1 ),
                 group().withOutCount( 5 ).withInCount( 1 ).withLoopCount( 1 )
         );
+        StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor );
 
         // When
-        int count = countOutgoing( NODE, groupCursor );
+        int count = countOutgoing( NODE, cursors );
 
         // Then
         assertThat( count, equalTo( 24 ) );
@@ -61,9 +64,10 @@ public class NodesTest
                 group().withOutCount( 3 ).withInCount( 1 ).withLoopCount( 1 ),
                 group().withOutCount( 5 ).withInCount( 1 ).withLoopCount( 1 )
         );
+        StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor );
 
         // When
-        int count = countIncoming( new StubNodeCursor(), groupCursor );
+        int count = countIncoming( new StubNodeCursor(), cursors );
 
         // Then
         assertThat( count, equalTo( 17 ) );
@@ -80,9 +84,10 @@ public class NodesTest
                 group().withOutCount( 3 ).withInCount( 1 ).withLoopCount( 1 ),
                 group().withOutCount( 5 ).withInCount( 1 ).withLoopCount( 1 )
         );
+        StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor );
 
         // When
-        int count = countAll( new StubNodeCursor(), groupCursor );
+        int count = countAll( new StubNodeCursor(), cursors );
 
         // Then
         assertThat( count, equalTo( 29 ) );
@@ -96,10 +101,11 @@ public class NodesTest
                 group( 1 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 5 ),
                 group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 )
         );
+        StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor, groupCursor );
 
         // Then
-        assertThat( countOutgoing( new StubNodeCursor(), groupCursor, 1 ), equalTo( 6 ) );
-        assertThat( countOutgoing( new StubNodeCursor(), groupCursor, 2 ), equalTo( 4 ) );
+        assertThat( countOutgoing( new StubNodeCursor(), cursors, 1 ), equalTo( 6 ) );
+        assertThat( countOutgoing( new StubNodeCursor(), cursors, 2 ), equalTo( 4 ) );
     }
 
     @Test
@@ -110,10 +116,11 @@ public class NodesTest
                 group( 1 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 5 ),
                 group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 )
         );
+        StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor, groupCursor );
 
         // Then
-        assertThat( countIncoming( new StubNodeCursor(), groupCursor, 1 ), equalTo( 6 ) );
-        assertThat( countIncoming( new StubNodeCursor(), groupCursor, 2 ), equalTo( 4 ) );
+        assertThat( countIncoming( new StubNodeCursor(), cursors, 1 ), equalTo( 6 ) );
+        assertThat( countIncoming( new StubNodeCursor(), cursors, 2 ), equalTo( 4 ) );
     }
 
     @Test
@@ -124,10 +131,11 @@ public class NodesTest
                 group( 1 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 5 ),
                 group( 2 ).withOutCount( 1 ).withInCount( 1 ).withLoopCount( 3 )
         );
+        StubCursorFactory cursors = new StubCursorFactory().withGroupCursors( groupCursor, groupCursor );
 
         // Then
-        assertThat( countAll( new StubNodeCursor(), groupCursor, 1 ), equalTo( 7 ) );
-        assertThat( countAll( new StubNodeCursor(), groupCursor, 2 ), equalTo( 5 ) );
+        assertThat( countAll( new StubNodeCursor(), cursors, 1 ), equalTo( 7 ) );
+        assertThat( countAll( new StubNodeCursor(), cursors, 2 ), equalTo( 5 ) );
     }
 
     private StubGroupCursor.GroupData group()

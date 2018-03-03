@@ -54,7 +54,7 @@ public class InMemoryTokenCache<TOKEN extends Token>
         idToToken.clear();
     }
 
-    private void putAndEnsureUnique( Map<String,Integer> nameToId, Token token, String tokenType )
+    private void putAndEnsureUnique( Map<String,Integer> nameToId, TOKEN token, String tokenType )
     {
         Integer previous = nameToId.putIfAbsent( token.name(), token.id() );
         if ( previous != null && previous != token.id() )

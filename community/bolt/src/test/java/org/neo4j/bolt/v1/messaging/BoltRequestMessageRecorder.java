@@ -32,22 +32,22 @@ import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.ResetMessage.reset;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 
-public class BoltRequestMessageRecorder extends MessageRecorder<RequestMessage> implements BoltRequestMessageHandler<RuntimeException>
+public class BoltRequestMessageRecorder extends MessageRecorder<RequestMessage> implements BoltRequestMessageHandler
 {
     @Override
-    public void onInit( String clientName, Map<String, Object> credentials ) throws RuntimeException
+    public void onInit( String clientName, Map<String,Object> credentials )
     {
         messages.add( init( clientName, credentials ) );
     }
 
     @Override
-    public void onAckFailure() throws RuntimeException
+    public void onAckFailure()
     {
         messages.add( ackFailure() );
     }
 
     @Override
-    public void onReset() throws RuntimeException
+    public void onReset()
     {
         messages.add( reset() );
     }
@@ -71,7 +71,7 @@ public class BoltRequestMessageRecorder extends MessageRecorder<RequestMessage> 
     }
 
     @Override
-    public void onExternalError( Neo4jError error ) throws RuntimeException
+    public void onExternalError( Neo4jError error )
     {
         //ignore
     }

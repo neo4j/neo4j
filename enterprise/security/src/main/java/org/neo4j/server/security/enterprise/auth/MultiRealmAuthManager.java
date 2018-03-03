@@ -50,8 +50,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
-import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -309,7 +307,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         return infoList;
     }
 
-    IntPredicate getPropertyPermissions( Set<String> roles, Token token )
+    IntPredicate getPropertyPermissions( Set<String> roles, Function<String, Integer> tokenLookup )
     {
         if ( propertyAuthorization )
         {
@@ -324,11 +322,10 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
 
                         try
                         {
-                            blackListed.add( token.propertyKeyGetOrCreateForName( propName ) );
+                            blackListed.add( tokenLookup.apply( propName ) );
                         }
-                        catch ( IllegalTokenNameException e )
+                        catch ( Exception e )
                         {
-                            // This can't happen since propName has already been checked to be valid
                             securityLog.error( "Error in setting up property permissions, '" + propName + "' is not a valid property name." );
                         }
                     }

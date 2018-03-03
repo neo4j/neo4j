@@ -54,7 +54,7 @@ public interface KeyReadOperations
     Iterator<Token> propertyKeyGetAllTokens( Statement state );
 
     /** Returns the labels currently stored in the database **/
-    Iterator<Token> labelsGetAllTokens( Statement state ); // TODO: Token is a store level concern, should not make it this far up the stack
+    Iterator<Token> labelsGetAllTokens( Statement state );
 
     /** Returns the relationship types currently stored in the database */
     Iterator<Token> relationshipTypesGetAllTokens( Statement state );

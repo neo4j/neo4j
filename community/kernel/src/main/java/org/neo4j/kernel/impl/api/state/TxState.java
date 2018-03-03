@@ -655,6 +655,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public GraphState getGraphState( )
+    {
+        return graphState;
+    }
+
+    @Override
     public Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId )
     {
         return hasChanges ? singleNodeCursor.get().init( cursor, nodeId ) : cursor;

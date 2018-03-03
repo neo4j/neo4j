@@ -23,7 +23,7 @@ import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public class ResetMessage implements RequestMessage
 {
-    private static ResetMessage INSTANCE = new ResetMessage();
+    private static final ResetMessage INSTANCE = new ResetMessage();
 
     /**
      * Factory method for obtaining RESET messages.
@@ -38,7 +38,7 @@ public class ResetMessage implements RequestMessage
     }
 
     @Override
-    public <E extends Exception> void dispatch( BoltRequestMessageHandler<E> consumer ) throws E
+    public void dispatch( BoltRequestMessageHandler consumer )
     {
         consumer.onReset();
     }

@@ -23,5 +23,5 @@ import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public interface RequestMessage
 {
-    <E extends Exception> void dispatch( BoltRequestMessageHandler<E> consumer ) throws E;
+    void dispatch( BoltRequestMessageHandler consumer );
 }
