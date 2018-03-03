@@ -31,7 +31,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDate;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDate;
 
 @Description( "Create a Date instant." )
 class DateFunction extends TemporalFunction<DateValue>

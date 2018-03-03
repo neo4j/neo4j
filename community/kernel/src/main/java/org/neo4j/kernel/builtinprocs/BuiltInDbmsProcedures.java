@@ -23,9 +23,9 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;

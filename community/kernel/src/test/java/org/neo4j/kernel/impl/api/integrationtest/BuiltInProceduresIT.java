@@ -31,11 +31,11 @@ import java.util.Set;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.internal.Version;
@@ -48,8 +48,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class BuiltInProceduresIT extends KernelIntegrationTest

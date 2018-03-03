@@ -27,14 +27,14 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,9 +42,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {

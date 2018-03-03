@@ -19,31 +19,31 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.impl.proc.TypeMappers.TypeChecker;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNumber;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
 @RunWith( Parameterized.class )
 public class TypeMappersTest

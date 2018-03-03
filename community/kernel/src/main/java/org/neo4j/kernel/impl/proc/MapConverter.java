@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.proc;
 
 import java.util.function.Function;
 
-import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntMap;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
 import static org.neo4j.kernel.impl.proc.ParseUtil.parseMap;
 
 /**

@@ -28,6 +28,10 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -46,6 +50,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -225,6 +230,42 @@ public class MockStore extends Read implements TestRule
     public boolean relationshipExists( long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public UserFunctionHandle functionGet( QualifiedName name )
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunction( int id ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
     }
 
     private abstract static class Record<R extends AbstractBaseRecord>

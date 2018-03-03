@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Context;
 
 /**

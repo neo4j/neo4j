@@ -25,15 +25,15 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
 public class OutputMappersTest
 {

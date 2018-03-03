@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.proc;
 
 import java.time.Clock;
 
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
 
 /**
  * The context in which a procedure is invoked. This is a read-only map-like structure.

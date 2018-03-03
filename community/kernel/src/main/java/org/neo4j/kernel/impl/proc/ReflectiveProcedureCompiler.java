@@ -30,18 +30,22 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -51,10 +55,6 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FailedLoadAggregatedFunction;
 import org.neo4j.kernel.api.proc.FailedLoadFunction;
 import org.neo4j.kernel.api.proc.FailedLoadProcedure;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Description;
@@ -214,8 +214,8 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    List<CallableProcedure> compileProcedure( Class<?> procDefinition, Optional<String> warning,
-            boolean fullAccess ) throws KernelException
+    List<CallableProcedure> compileProcedure( Class<?> procDefinition, String warning, boolean fullAccess )
+            throws KernelException
     {
         try
         {
@@ -262,13 +262,13 @@ class ReflectiveProcedureCompiler
     }
 
     private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning, boolean fullAccess, QualifiedName procName  )
+            String warning, boolean fullAccess, QualifiedName procName  )
             throws ProcedureException, IllegalAccessException
     {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
 
-        Optional<String> description = description( method );
+        String description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
         Mode mode = procedure.mode();
         if ( method.isAnnotationPresent( PerformsWrites.class ) )
@@ -284,7 +284,7 @@ class ReflectiveProcedureCompiler
             }
         }
 
-        Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
+        String deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
         List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
@@ -299,7 +299,7 @@ class ReflectiveProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
-                                Optional.empty(), new String[0], description, warning );
+                                null, new String[0], description, warning );
                 return new FailedLoadProcedure( signature );
             }
         }
@@ -310,14 +310,14 @@ class ReflectiveProcedureCompiler
         return new ReflectiveProcedure( signature, constructor, method, outputMapper, setters );
     }
 
-    private Optional<String> describeAndLogLoadFailure( QualifiedName name )
+    private String describeAndLogLoadFailure( QualifiedName name )
     {
         String nameStr = name.toString();
-        Optional<String> description = Optional.of(
+        String description =
                 nameStr + " is unavailable because it is sandboxed and has dependencies outside of the sandbox. " +
                 "Sandboxing is controlled by the " + procedure_unrestricted.name() + " setting. " +
-                "Only unrestrict procedures you can trust with access to database internals." );
-        log.warn( description.get() );
+                "Only unrestrict procedures you can trust with access to database internals.";
+        log.warn( description );
         return description;
     }
 
@@ -330,9 +330,9 @@ class ReflectiveProcedureCompiler
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
         TypeMappers.TypeChecker typeChecker = typeMappers.checkerFor( returnType );
-        Optional<String> description = description( method );
+        String description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
-        Optional<String> deprecated = deprecated( method, function::deprecatedBy,
+        String deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName );
 
         List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
@@ -435,10 +435,10 @@ class ReflectiveProcedureCompiler
         MethodHandle creator = lookup.unreflect( method );
         MethodHandle resultMethod = lookup.unreflect( result );
 
-        Optional<String> description = description( method );
+        String description = description( method );
         UserAggregationFunction function = method.getAnnotation( UserAggregationFunction.class );
 
-        Optional<String> deprecated = deprecated( method, function::deprecatedBy,
+        String deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName );
 
         List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( definition );
@@ -467,32 +467,32 @@ class ReflectiveProcedureCompiler
                 valueConverter, setters );
     }
 
-    private Optional<String> deprecated( Method method, Supplier<String> supplier, String warning )
+    private String deprecated( Method method, Supplier<String> supplier, String warning )
     {
         String deprecatedBy = supplier.get();
-        Optional<String> deprecated = Optional.empty();
+        String deprecated = null;
         if ( method.isAnnotationPresent( Deprecated.class ) )
         {
-            deprecated = Optional.of( deprecatedBy );
+            deprecated = deprecatedBy ;
         }
         else if ( !deprecatedBy.isEmpty() )
         {
             log.warn( warning );
-            deprecated = Optional.of( deprecatedBy );
+            deprecated = deprecatedBy;
         }
 
         return deprecated;
     }
 
-    private Optional<String> description( Method method )
+    private String description( Method method )
     {
         if ( method.isAnnotationPresent( Description.class ) )
         {
-            return Optional.of( method.getAnnotation( Description.class ).value() );
+           return method.getAnnotation( Description.class ).value();
         }
         else
         {
-            return Optional.empty();
+            return null;
         }
     }
 
@@ -852,7 +852,7 @@ class ReflectiveProcedureCompiler
         }
 
         @Override
-        public Aggregator create( Context ctx ) throws ProcedureException
+        public UserAggregator create( Context ctx ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
             // instances local to
@@ -865,7 +865,7 @@ class ReflectiveProcedureCompiler
                 inject( ctx, cls );
                 Object aggregator = creator.invoke( cls );
 
-                return new Aggregator()
+                return new UserAggregator()
                 {
                     @Override
                     public void update( Object[] input ) throws ProcedureException

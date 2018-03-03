@@ -29,7 +29,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.junit.Assert.assertFalse;

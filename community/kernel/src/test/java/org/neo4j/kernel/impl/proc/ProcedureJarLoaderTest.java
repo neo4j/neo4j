@@ -32,14 +32,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -59,9 +59,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.proc.ResourceInjectionTest.notAvailableMessage;
 
 @SuppressWarnings( "WeakerAccess" )

@@ -27,17 +27,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -46,7 +45,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class ReflectiveProcedureWithArgumentsTest
 {
@@ -221,6 +220,6 @@ public class ReflectiveProcedureWithArgumentsTest
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
         return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), new ComponentRegistry(),
-                NullLog.getInstance(), ProcedureConfig.DEFAULT ).compileProcedure( clazz, Optional.empty(), true );
+                NullLog.getInstance(), ProcedureConfig.DEFAULT ).compileProcedure( clazz, null, true );
     }
 }

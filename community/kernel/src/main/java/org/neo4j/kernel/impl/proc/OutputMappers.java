@@ -31,10 +31,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;

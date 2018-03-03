@@ -27,9 +27,9 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 

@@ -21,12 +21,14 @@ package org.neo4j.kernel.api.proc;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
-import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
-import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntString;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntString;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
 
 public class FieldSignatureTest
 {

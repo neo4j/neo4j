@@ -38,6 +38,7 @@ import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.emptyMap;
@@ -107,7 +108,7 @@ public class GetServersProcedureV1RoutingTest
     }
 
     private Object[] getEndpoints( LegacyGetServersProcedure proc )
-            throws org.neo4j.kernel.api.exceptions.ProcedureException
+            throws ProcedureException
     {
         List<Object[]> results = asList( proc.apply( null, new Object[0], null ) );
         Object[] rows = results.get( 0 );

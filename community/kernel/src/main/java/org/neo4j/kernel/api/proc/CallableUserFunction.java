@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.values.AnyValue;
 
 public interface CallableUserFunction

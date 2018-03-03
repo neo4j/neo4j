@@ -26,18 +26,17 @@ import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Key;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
@@ -48,8 +47,8 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
-import static org.neo4j.kernel.impl.proc.DefaultParameterValue.nullValue;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -91,8 +90,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         Description description = getClass().getAnnotation( Description.class );
         this.signature = new UserFunctionSignature(
                 new QualifiedName( new String[0], basename.toLowerCase() ),
-                INPUT_SIGNATURE, result, Optional.empty(), ALLOWED,
-                description == null ? Optional.empty() : Optional.of( description.value() ) );
+                INPUT_SIGNATURE, result, null, ALLOWED,
+                description == null ? null : description.value() );
     }
 
     private static void register( TemporalFunction<?> base, Procedures procedures ) throws ProcedureException
@@ -211,7 +210,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             this.function = base;
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {base.signature.name().name()}, name ),
-                    input, base.signature.outputType(), Optional.empty(), ALLOWED, Optional.of( description ) );
+                    input, base.signature.outputType(), null, ALLOWED,  description  );
         }
 
         @Override

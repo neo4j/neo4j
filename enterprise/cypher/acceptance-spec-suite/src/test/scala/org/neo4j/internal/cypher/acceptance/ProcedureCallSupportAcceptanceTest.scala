@@ -23,10 +23,11 @@ import java.util
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.helpers.collection.MapUtil.map
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.{FieldSignature, Neo4jTypes}
 import org.neo4j.kernel.api.ResourceTracker
-import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.{Context, FieldSignature, Neo4jTypes}
+import org.neo4j.kernel.api.proc.Context
 
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 

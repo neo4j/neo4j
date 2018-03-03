@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
-import org.neo4j.kernel.api.proc.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.kernel.impl.util.ValueUtils
 
 class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {

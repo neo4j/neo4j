@@ -25,16 +25,15 @@ import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
@@ -43,7 +42,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 
 @Description( "Construct a Duration value." )
 class DurationFunction implements CallableUserFunction
@@ -52,8 +51,8 @@ class DurationFunction implements CallableUserFunction
             new UserFunctionSignature(
                     new QualifiedName( new String[0], "duration" ),
                     Collections.singletonList( inputField( "input", Neo4jTypes.NTAny ) ),
-                    Neo4jTypes.NTDuration, Optional.empty(), new String[0],
-                    Optional.of( DurationFunction.class.getAnnotation( Description.class ).value() ) );
+                    Neo4jTypes.NTDuration, null, new String[0],
+                    DurationFunction.class.getAnnotation( Description.class ).value() );
 
     static void register( Procedures procedures ) throws ProcedureException
     {
@@ -107,9 +106,9 @@ class DurationFunction implements CallableUserFunction
         {
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {"duration"}, unit ),
-                    SIGNATURE, Neo4jTypes.NTDuration, Optional.empty(), new String[0],
-                    Optional.of( String.format(
-                            DESCRIPTION, "between".equals( unit ) ? "logical units" : unit ) ) );
+                    SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
+                    String.format(
+                            DESCRIPTION, "between".equals( unit ) ? "logical units" : unit ) );
             switch ( unit )
             {
             case "between":

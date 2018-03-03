@@ -24,17 +24,16 @@ import java.time.ZoneId;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
@@ -44,8 +43,8 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDateTime;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDateTime;
 
 @Description( "Create a DateTime instant." )
 class DateTimeFunction extends TemporalFunction<DateTimeValue>
@@ -123,8 +122,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         {
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {"datetime"}, "fromepoch" ),
-                    SIGNATURE, Neo4jTypes.NTDateTime, Optional.empty(), new String[0],
-                    Optional.of( DESCRIPTION ) );
+                    SIGNATURE, Neo4jTypes.NTDateTime, null, new String[0],
+                    DESCRIPTION );
         }
 
         @Override
@@ -161,8 +160,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         {
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {"datetime"}, "fromepochmillis" ),
-                    SIGNATURE, Neo4jTypes.NTDateTime, Optional.empty(), new String[0],
-                    Optional.of( DESCRIPTION ) );
+                    SIGNATURE, Neo4jTypes.NTDateTime, null, new String[0],
+                    DESCRIPTION );
         }
 
         @Override

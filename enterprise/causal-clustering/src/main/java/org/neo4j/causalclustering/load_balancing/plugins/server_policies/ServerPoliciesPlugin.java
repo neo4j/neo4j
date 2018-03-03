@@ -38,7 +38,7 @@ import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

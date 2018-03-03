@@ -44,9 +44,9 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Role;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 
@@ -60,14 +60,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_routing_ttl;
-import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
 import static org.neo4j.causalclustering.discovery.TestTopology.addressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
 import static org.neo4j.causalclustering.discovery.TestTopology.readReplicaInfoMap;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
 @RunWith( Parameterized.class )

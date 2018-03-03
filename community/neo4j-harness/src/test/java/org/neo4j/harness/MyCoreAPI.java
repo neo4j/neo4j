@@ -20,9 +20,9 @@
 package org.neo4j.harness;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;

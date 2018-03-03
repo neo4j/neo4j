@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
 interface NamingRestrictions
 {

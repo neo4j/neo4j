@@ -39,15 +39,15 @@ import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
 import static org.neo4j.causalclustering.discovery.TestTopology.addressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ClusterOverviewProcedureTest
