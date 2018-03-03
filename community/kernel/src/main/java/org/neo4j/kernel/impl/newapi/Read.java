@@ -72,7 +72,8 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
-        org.neo4j.internal.kernel.api.SchemaRead
+        org.neo4j.internal.kernel.api.SchemaRead,
+        org.neo4j.internal.kernel.api.Procedures
 {
     private final DefaultCursors cursors;
     final KernelTransactionImplementation ktx;

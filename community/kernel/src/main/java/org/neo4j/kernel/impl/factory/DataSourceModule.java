@@ -79,13 +79,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.ProcedureTransaction;
 
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPoint;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the

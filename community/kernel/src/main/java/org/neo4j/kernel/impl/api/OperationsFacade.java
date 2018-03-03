@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -40,12 +39,18 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -63,7 +68,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -77,11 +81,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
-import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
@@ -484,14 +484,14 @@ public class OperationsFacade
     }
 
     @Override
-    public Optional<UserFunctionSignature> functionGet( QualifiedName name )
+    public UserFunctionHandle functionGet( QualifiedName name )
     {
         statement.assertOpen();
         return procedures.function( name );
     }
 
     @Override
-    public Optional<UserFunctionSignature> aggregationFunctionGet( QualifiedName name )
+    public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
     {
         statement.assertOpen();
         return procedures.aggregationFunction( name );
@@ -1484,7 +1484,7 @@ public class OperationsFacade
     }
 
     @Override
-    public CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
     {
         if ( !tx.securityContext().mode().allowsReads() )
         {
@@ -1495,7 +1495,7 @@ public class OperationsFacade
     }
 
     @Override
-    public CallableUserAggregationFunction.Aggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
     {
         return aggregationFunction( name,
                 new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
@@ -1524,7 +1524,7 @@ public class OperationsFacade
         }
     }
 
-    private CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name, final AccessMode mode )
+    private UserAggregator aggregationFunction( QualifiedName name, final AccessMode mode )
             throws ProcedureException
     {
         statement.assertOpen();
