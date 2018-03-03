@@ -32,9 +32,9 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
@@ -137,7 +137,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
         UserFunctionSignature funcSig = procedures.function(
-                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
+                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).signature();
         assertThat( Arrays.asList( funcSig.allowed() ), containsInAnyOrder( "nonEmpty" ) );
     }
 
@@ -159,7 +159,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
         UserFunctionSignature funcSig = procedures.function(
-                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
+                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).signature();
         assertThat( Arrays.asList( funcSig.allowed() ), empty() );
     }
 
