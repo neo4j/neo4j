@@ -35,6 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.testing.Jobs;
+import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -54,6 +57,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -151,7 +156,7 @@ public class ExecutorBoltSchedulerTest
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
         Predicates.await( () -> boltScheduler.isActive( connection ), 1, MINUTES );
         exitCondition.set( true );
@@ -170,10 +175,10 @@ public class ExecutorBoltSchedulerTest
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
         Predicates.await( () -> boltScheduler.isActive( connection ), 1, MINUTES );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
         exitCondition.set( true );
         Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
 
@@ -183,15 +188,18 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void failingJobShouldLogAndStopConnection() throws Throwable
     {
+        AtomicBoolean stopped = new AtomicBoolean();
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
-        when( connection.processNextBatch() ).thenThrow( new RuntimeException( "some unexpected error" ) );
+        doThrow( new RuntimeException( "some unexpected error" ) ).when( connection ).processNextBatch();
+        doAnswer( inv -> stopped.getAndSet( true ) ).when( connection ).stop();
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
-        Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
+        Predicates.await( () -> stopped.get(), 1, MINUTES );
+
         assertFalse( boltScheduler.isActive( connection ) );
         verify( connection ).processNextBatch();
         verify( connection ).stop();
@@ -212,7 +220,7 @@ public class ExecutorBoltSchedulerTest
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
         Predicates.await( () -> counter.get() > 1, 1, MINUTES );
 
@@ -233,7 +241,7 @@ public class ExecutorBoltSchedulerTest
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
         Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
 
@@ -242,30 +250,33 @@ public class ExecutorBoltSchedulerTest
         Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
 
         assertFalse( boltScheduler.isActive( connection ) );
-        assertEquals( 1,processNextBatchCount.get() );
+        assertEquals( 1, processNextBatchCount.get() );
+
+        exitCondition.set( true );
     }
 
     @Test
     public void createdWorkerThreadsShouldContainConnectorName() throws Exception
     {
-        final AtomicReference<Thread> poolThread = new AtomicReference<>();
-        final AtomicReference<String> poolThreadName = new AtomicReference<>();
-
         AtomicInteger processNextBatchCount = new AtomicInteger();
+        AtomicReference<Thread> poolThread = new AtomicReference<>();
+        AtomicReference<String> poolThreadName = new AtomicReference<>();
+
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
         when( connection.processNextBatch() ).thenAnswer( inv ->
         {
             poolThread.set( Thread.currentThread() );
             poolThreadName.set( Thread.currentThread().getName() );
+            processNextBatchCount.incrementAndGet();
             return true;
         } );
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
-        Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
+        Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
 
         assertThat( poolThread.get().getName(), not( equalTo( poolThreadName.get() ) ) );
         assertThat( poolThread.get().getName(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
@@ -283,19 +294,21 @@ public class ExecutorBoltSchedulerTest
         AtomicBoolean exitCondition = new AtomicBoolean();
         when( connection.processNextBatch() ).thenAnswer( inv ->
         {
-            processNextBatchCount.incrementAndGet();
             capturedThreadName.set( Thread.currentThread().getName() );
+            processNextBatchCount.incrementAndGet();
             return awaitExit( exitCondition );
         } );
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, machine -> nothing() );
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
         Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
 
         assertThat( capturedThreadName.get(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
         assertThat( capturedThreadName.get(), containsString( String.format( "[%s]", connection.remoteAddress() ) ) );
+
+        exitCondition.set( true );
     }
 
     private BoltConnection newConnection( String id )
@@ -304,11 +317,6 @@ public class ExecutorBoltSchedulerTest
         when( result.id() ).thenReturn( id );
         when( result.remoteAddress() ).thenReturn( new InetSocketAddress( "localhost", 32_000 ) );
         return result;
-    }
-
-    private static void nothing()
-    {
-
     }
 
     private static boolean awaitExit( AtomicBoolean exitCondition )

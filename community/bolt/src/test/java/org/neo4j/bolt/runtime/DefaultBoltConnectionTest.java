@@ -32,6 +32,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
@@ -146,7 +147,7 @@ public class DefaultBoltConnectionTest
     @Test
     public void enqueuedShouldNotifyQueueMonitor()
     {
-        Job job = machine -> doNothing();
+        Job job = Jobs.noop();
         BoltConnection connection = newConnection();
 
         connection.enqueue( job );
@@ -157,7 +158,7 @@ public class DefaultBoltConnectionTest
     @Test
     public void enqueuedShouldQueueJob()
     {
-        Job job = machine -> doNothing();
+        Job job = Jobs.noop();
         BoltConnection connection = newConnection();
 
         connection.enqueue( job );
@@ -179,7 +180,7 @@ public class DefaultBoltConnectionTest
     public void processNextBatchShouldNotifyQueueMonitorAboutDrain()
     {
         List<Job> drainedJobs = new ArrayList<>();
-        Job job = machine -> doNothing();
+        Job job = Jobs.noop();
         BoltConnection connection = newConnection();
         doAnswer( inv -> drainedJobs.addAll( (Collection<Job>)inv.getArgument( 1 ) ) ).when( queueMonitor ).drained( same( connection ), anyCollection() );
 
@@ -201,7 +202,7 @@ public class DefaultBoltConnectionTest
         for ( int i = 0; i < 15; i++ )
         {
             final int x = i;
-            Job newJob = machine -> doNothing( x );
+            Job newJob = Jobs.noop();
             pushedJobs.add( newJob );
             connection.enqueue( newJob );
         }
@@ -314,16 +315,6 @@ public class DefaultBoltConnectionTest
     private DefaultBoltConnection newConnection( int maxBatchSize )
     {
         return new DefaultBoltConnection( boltChannel, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize );
-    }
-
-    private static void doNothing()
-    {
-
-    }
-
-    private static void doNothing( int i )
-    {
-
     }
 
 }

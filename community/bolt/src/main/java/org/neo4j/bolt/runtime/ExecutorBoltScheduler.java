@@ -181,7 +181,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
             else
             {
                 log.error( String.format( "Unexpected error during job scheduling for session '%s'.", connection.id() ), error );
-                connection.stop();
+                stopConnection( connection );
             }
         }
         else
