@@ -239,12 +239,12 @@ public class HaIdGeneratorFactoryTest
         IdRange idRange = new IdRange( defragIds, low, size );
 
         // WHEN
-        IdRangeIterator iterartor = idRange.iterator();
+        IdRangeIterator iterator = idRange.iterator();
 
         // THEN
         for ( long id : defragIds )
         {
-            assertEquals( id, iterartor.nextId() );
+            assertEquals( id, iterator.nextId() );
         }
 
         int expectedRangeSize = size - 1; // due to the forbidden id
@@ -255,11 +255,11 @@ public class HaIdGeneratorFactoryTest
                 expectedId++;
             }
 
-            long id = iterartor.nextId();
+            long id = iterator.nextId();
             assertNotEquals( IdGeneratorImpl.INTEGER_MINUS_ONE, id );
             assertEquals( expectedId, id );
         }
-        assertEquals( VALUE_REPRESENTING_NULL, iterartor.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, iterator.nextId() );
     }
 
     @SuppressWarnings( "unchecked" )

@@ -2022,7 +2022,7 @@ public class PageListTest
         long nextStamp = pageList.tryOptimisticReadLock( nextPageRef );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
-        pageList.unlockWrite( pageRef ); // page is now modifed
+        pageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
         assertTrue( pageList.validateReadLock( prevPageRef, prevStamp ) );
@@ -2048,7 +2048,7 @@ public class PageListTest
         long nextStamp = pageList.tryOptimisticReadLock( nextPageRef );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
-        pageList.unlockWrite( pageRef ); // page is now modifed
+        pageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( pageList.isModified( pageRef ) );
         try
         {

@@ -99,7 +99,7 @@ public class CodeDuplicationValidationTest
     {
         assertEquals( new DefaultManagementSupport().createMBeanQuery( "test-instance" ),
                 new CustomManagementSupport().createMBeanQuery( "test-instance" ) );
-        assertEquals( new DefaultManagementSupport().createObjectName( "test-instace", Kernel.class ),
-                new CustomManagementSupport().createObjectName( "test-instace", Kernel.class ) );
+        assertEquals( new DefaultManagementSupport().createObjectName( "test-instance", Kernel.class ),
+                new CustomManagementSupport().createObjectName( "test-instance", Kernel.class ) );
     }
 }

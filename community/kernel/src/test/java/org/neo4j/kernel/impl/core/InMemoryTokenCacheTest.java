@@ -33,7 +33,7 @@ public class InMemoryTokenCacheTest
     private static final String INBOUND2_TYPE = "inbound2";
     private static final String INBOUND1_TYPE = "inbound1";
     @Rule
-    public ExpectedException expectedEcxeption = ExpectedException.none();
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void addTokenWithDuplicatedNotAllowed()
@@ -42,8 +42,8 @@ public class InMemoryTokenCacheTest
         tokenCache.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         tokenCache.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
-        expectedEcxeption.expect( NonUniqueTokenException.class );
-        expectedEcxeption.expectMessage( "The testType \"inbound1\" is not unique" );
+        expectedException.expect( NonUniqueTokenException.class );
+        expectedException.expectMessage( "The testType \"inbound1\" is not unique" );
 
         tokenCache.put( new NamedToken( INBOUND1_TYPE, 3 ) );
     }

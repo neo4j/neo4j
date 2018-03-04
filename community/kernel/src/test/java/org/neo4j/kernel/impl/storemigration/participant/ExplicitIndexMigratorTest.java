@@ -160,20 +160,20 @@ public class ExplicitIndexMigratorTest
     private class TestExplicitIndexMigrator extends ExplicitIndexMigrator
     {
 
-        private final boolean successfullMigration;
+        private final boolean successfulMigration;
 
         TestExplicitIndexMigrator( FileSystemAbstraction fileSystem, ExplicitIndexProvider explicitIndexProvider,
-                LogProvider logProvider, boolean successfullMigration )
+                LogProvider logProvider, boolean successfulMigration )
         {
             super( fileSystem, explicitIndexProvider, logProvider );
-            this.successfullMigration = successfullMigration;
+            this.successfulMigration = successfulMigration;
         }
 
         @Override
         LuceneExplicitIndexUpgrader createLuceneExplicitIndexUpgrader( Path indexRootPath,
                 ProgressReporter progressReporter )
         {
-            return new HumbleExplicitIndexUpgrader( indexRootPath, successfullMigration );
+            return new HumbleExplicitIndexUpgrader( indexRootPath, successfulMigration );
         }
     }
 

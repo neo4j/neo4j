@@ -492,7 +492,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             }
             else
             {
-                fail( "There should be no incomming relationships " + rel );
+                fail( "There should be no incoming relationships " + rel );
             }
         }
         assertEquals( totalOneDirection, rels.size() );

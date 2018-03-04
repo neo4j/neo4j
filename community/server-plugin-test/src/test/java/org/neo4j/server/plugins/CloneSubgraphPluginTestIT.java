@@ -152,7 +152,7 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldAdvertiseExtenstionThatPluginCreates() throws JsonParseException, ClientHandlerException,
+    public void shouldAdvertiseExtensionThatPluginCreates() throws JsonParseException, ClientHandlerException,
             UniformInterfaceException
     {
         int originalCount = nodeCount();

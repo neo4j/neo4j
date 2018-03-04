@@ -387,7 +387,7 @@ public class CommunicationIT
         final String comExceptionMessage = "The ComException";
 
         MadeUpCommunicationInterface communication = mock( MadeUpCommunicationInterface.class,
-                (Answer<Response<?>>) ingored ->
+                (Answer<Response<?>>) ignored ->
                 {
                     throw new ComException( comExceptionMessage );
                 } );
@@ -464,12 +464,12 @@ public class CommunicationIT
         life.add( builder.server() );
         MadeUpClient client = life.add( builder.client() );
         life.start();
-        Response<Integer> respone = client.streamBackTransactions( value, txCount );
+        Response<Integer> response = client.streamBackTransactions( value, txCount );
         TransactionStreamVerifyingResponseHandler handler = new TransactionStreamVerifyingResponseHandler( txCount );
 
         // WHEN
-        respone.accept( handler );
-        int responseValue = respone.response();
+        response.accept( handler );
+        int responseValue = response.response();
 
         // THEN
         assertEquals( value, responseValue );
@@ -485,12 +485,12 @@ public class CommunicationIT
         life.add( builder.server() );
         MadeUpClient client = life.add( builder.client() );
         life.start();
-        Response<Integer> respone = client.informAboutTransactionObligations( value, desiredObligation );
+        Response<Integer> response = client.informAboutTransactionObligations( value, desiredObligation );
         TransactionObligationVerifyingResponseHandler handler = new TransactionObligationVerifyingResponseHandler();
 
         // WHEN
-        respone.accept( handler );
-        int responseValue = respone.response();
+        response.accept( handler );
+        int responseValue = response.response();
 
         // THEN
         assertEquals( value, responseValue );

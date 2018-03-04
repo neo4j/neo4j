@@ -509,7 +509,7 @@ public class BoltStateMachineTest
         statementProcessor.run( "RETURN 1", EMPTY_PARAMS );
         assertThat( statementProcessor.ctx.currentTransaction, notNullValue() );
 
-        // Then, when we close again we should make sure the transaction is closed againg
+        // Then, when we close again we should make sure the transaction is closed again
         machine.close();
         assertThat( statementProcessor.ctx.currentTransaction, nullValue() );
     }

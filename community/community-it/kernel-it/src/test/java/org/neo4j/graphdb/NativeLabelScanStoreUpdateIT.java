@@ -208,7 +208,7 @@ public class NativeLabelScanStoreUpdateIT
             for ( int l = labelsToAdd - 1; l >= labelsToRemove; l-- )
             {
                 Label label = label( "Label-" + l );
-                assertThat( "Should have founnd node when looking for label " + label,
+                assertThat( "Should have found node when looking for label " + label,
                         single( db.findNodes( label ) ), equalTo( node ) );
             }
         }

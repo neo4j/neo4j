@@ -105,7 +105,7 @@ public class NumbersTest
     }
 
     @Test
-    void castIntToUnsighedShort()
+    void castIntToUnsignedShort()
     {
         assertEquals(1, safeCastIntToUnsignedShort( 1 ));
         assertEquals(10, safeCastIntToUnsignedShort( 10 ));

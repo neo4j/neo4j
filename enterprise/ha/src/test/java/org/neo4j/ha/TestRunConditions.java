@@ -38,7 +38,7 @@ public class TestRunConditions
     private static final int MAX_WINDOWS_CLUSTER_SIZE = 3;
 
     /**
-     * Largest cluster size which can run without (many) problems on any plaform
+     * Largest cluster size which can run without (many) problems on any platform
      */
     private static final int MAX_CLUSTER_SIZE = 5;
 

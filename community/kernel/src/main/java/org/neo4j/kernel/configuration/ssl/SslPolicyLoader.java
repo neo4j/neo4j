@@ -141,15 +141,15 @@ public class SslPolicyLoader
     private SslPolicy loadOrCreateLegacyPolicy()
     {
         File privateKeyFile = config.get( LegacySslPolicyConfig.tls_key_file ).getAbsoluteFile();
-        File certficateFile = config.get( LegacySslPolicyConfig.tls_certificate_file ).getAbsoluteFile();
+        File certificateFile = config.get( LegacySslPolicyConfig.tls_certificate_file ).getAbsoluteFile();
 
-        if ( !privateKeyFile.exists() && !certficateFile.exists() )
+        if ( !privateKeyFile.exists() && !certificateFile.exists() )
         {
             String hostname = config.get( default_advertised_address );
 
             try
             {
-                pkiUtils.createSelfSignedCertificate( certficateFile, privateKeyFile, hostname );
+                pkiUtils.createSelfSignedCertificate( certificateFile, privateKeyFile, hostname );
             }
             catch ( Exception e )
             {
@@ -158,7 +158,7 @@ public class SslPolicyLoader
         }
 
         PrivateKey privateKey = loadPrivateKey( privateKeyFile, null );
-        X509Certificate[] keyCertChain = loadCertificateChain( certficateFile );
+        X509Certificate[] keyCertChain = loadCertificateChain( certificateFile );
 
         return new SslPolicy( privateKey, keyCertChain, TLS_VERSION_DEFAULTS, CIPHER_SUITES_DEFAULTS,
                 ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider );

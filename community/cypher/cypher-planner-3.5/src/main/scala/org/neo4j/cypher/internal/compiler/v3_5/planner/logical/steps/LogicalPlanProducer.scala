@@ -647,7 +647,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
 
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    annotate(SetRelationshipPropery(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
+    annotate(SetRelationshipProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
   }
 
   def planSetRelationshipPropertiesFromMap(inner: LogicalPlan,

@@ -77,11 +77,11 @@ object PatternConverters {
     def destructed: DestructResult = {
       pattern.patternParts.foldLeft(DestructResult.empty) {
         case (acc, NamedPatternPart(ident, sps@ShortestPaths(element, single))) =>
-          val desctructedElement: DestructResult = element.destructed
+          val destructedElement: DestructResult = element.destructed
           val pathName = ident.name
-          val newShortest = ShortestPathPattern(Some(pathName), desctructedElement.rels.head, single)(sps)
+          val newShortest = ShortestPathPattern(Some(pathName), destructedElement.rels.head, single)(sps)
           acc.
-            addNodeId(desctructedElement.nodeIds:_*).
+            addNodeId(destructedElement.nodeIds:_*).
             addShortestPaths(newShortest)
 
         case (acc, sps@ShortestPaths(element, single)) =>

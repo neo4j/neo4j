@@ -254,7 +254,7 @@ class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPl
         "r", "n", RelTypeName("T")(pos), "m", None)
 
     val onMatch =
-      SetRelationshipPropery(
+      SetRelationshipProperty(
         Argument(Set("n", "m", "r")),
         "r", PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("3")(pos)
       )

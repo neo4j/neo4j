@@ -25,7 +25,7 @@ Retrieves an environment variable value
 Retrieves an environment variable value.  This is a helper function which aids testing and mocking
 
 .PARAMETER Name
-Name of the environment vairable
+Name of the environment variable
 
 .EXAMPLE
 Get-Neo4jEnv 'Neo4jHome'

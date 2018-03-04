@@ -37,8 +37,8 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("should not close prematurely") {
     //Given
-    val wrapee   = Iterator(Map("k" -> intValue(42)))
-    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
+    val wrappee  = Iterator(Map("k" -> intValue(42)))
+    val iterator = new ClosingIterator(wrappee, taskCloser, exceptionDecorator)
     //When
     val result = iterator.next()
 
@@ -49,8 +49,8 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("should cleanup even for empty iterator") {
     //Given
-    val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
+    val wrappee  = Iterator.empty
+    val iterator = new ClosingIterator(wrappee, taskCloser, exceptionDecorator)
 
     //When
     val result = iterator.hasNext
@@ -62,8 +62,8 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("multiple has next should not close more than once") {
     //Given
-    val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
+    val wrappee  = Iterator.empty
+    val iterator = new ClosingIterator(wrappee, taskCloser, exceptionDecorator)
 
     //When
     val result = iterator.hasNext
@@ -79,9 +79,9 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("exception in hasNext should fail transaction") {
     //Given
-    val wrapee = mock[Iterator[Map[String, AnyValue]]]
-    when(wrapee.hasNext).thenThrow(new RuntimeException)
-    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
+    val wrappee = mock[Iterator[Map[String, AnyValue]]]
+    when(wrappee.hasNext).thenThrow(new RuntimeException)
+    val iterator = new ClosingIterator(wrappee, taskCloser, exceptionDecorator)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
@@ -92,11 +92,11 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("exception in next should fail transaction") {
     //Given
-    val wrapee = mock[Iterator[Map[String, AnyValue]]]
-    when(wrapee.hasNext).thenReturn(true)
-    when(wrapee.next()).thenThrow(new RuntimeException)
+    val wrappee = mock[Iterator[Map[String, AnyValue]]]
+    when(wrappee.hasNext).thenReturn(true)
+    when(wrappee.next()).thenThrow(new RuntimeException)
 
-    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
+    val iterator = new ClosingIterator(wrappee, taskCloser, exceptionDecorator)
 
     //When
     intercept[RuntimeException](iterator.next())
@@ -107,8 +107,8 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("close runs cleanup") {
     //Given
-    val wrapee   = Iterator(Map("k" -> intValue(42)), Map("k" -> intValue(43)))
-    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
+    val wrappee  = Iterator(Map("k" -> intValue(42)), Map("k" -> intValue(43)))
+    val iterator = new ClosingIterator(wrappee, taskCloser, exceptionDecorator)
 
     //When
     val result = iterator.next()

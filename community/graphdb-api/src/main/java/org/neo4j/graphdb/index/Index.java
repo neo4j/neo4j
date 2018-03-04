@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Relationship;
  * {@link Relationship}s) for fast lookup and querying. Any number of key/value
  * pairs can be associated with any number of entities using
  * {@link #add(PropertyContainer, String, Object)} and dissociated with
- * {@link #remove(PropertyContainer, String, Object)}. Querting is done using
+ * {@link #remove(PropertyContainer, String, Object)}. Querying is done using
  * {@link #get(String, Object)} for exact lookups and {@link #query(Object)} or
  * {@link #query(String, Object)} for more advanced querying, exposing querying
  * capabilities from the backend which is backing this particular index.

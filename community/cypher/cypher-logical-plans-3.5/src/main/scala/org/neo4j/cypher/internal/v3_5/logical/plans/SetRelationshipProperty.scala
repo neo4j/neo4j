@@ -30,7 +30,7 @@ import org.opencypher.v9_0.expressions.{Expression, PropertyKeyName}
   *
   *   produce row
   */
-case class SetRelationshipPropery(
+case class SetRelationshipProperty(
                                    source: LogicalPlan,
                                    idName: String,
                                    propertyKey: PropertyKeyName,

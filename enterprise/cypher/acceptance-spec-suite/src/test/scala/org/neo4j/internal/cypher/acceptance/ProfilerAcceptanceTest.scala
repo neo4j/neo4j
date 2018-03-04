@@ -681,7 +681,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   private def assertEstimatedRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(getArgument[EstimatedRows](plan).value === expectedRows , s" wrong estiamted row count for plan: ${plan.name}")
+      plan => assert(getArgument[EstimatedRows](plan).value === expectedRows , s" wrong estimated row count for plan: ${plan.name}")
     }
   }
 

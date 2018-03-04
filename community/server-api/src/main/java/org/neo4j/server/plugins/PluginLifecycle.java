@@ -37,7 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 public interface PluginLifecycle
 {
     /**
-     * Called at initialization time, before the plugin ressources are acutally loaded.
+     * Called at initialization time, before the plugin resources are actually loaded.
      * @param graphDatabaseService of the Neo4j service, use it to integrate it with custom configuration mechanisms
      * @param config server configuration
      * @return A list of {@link Injectable}s that will be available to resource dependency injection later

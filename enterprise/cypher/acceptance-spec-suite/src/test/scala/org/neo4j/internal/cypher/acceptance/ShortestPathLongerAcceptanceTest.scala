@@ -43,9 +43,9 @@ import scala.collection.mutable
 
 /*
  * This test class builds a complex but very regular model that can be easily debugged and visualized.
- * It is an n*n square latice with nodes in every cell position with both labels and properties that
- * identify the cell, row and column. If the latice is 10x10 then the nodeid is also a direction function
- * of the position in the latice, with node[54] meaning node in row 5 and column 4 (zero indexed).
+ * It is an n*n square lattice with nodes in every cell position with both labels and properties that
+ * identify the cell, row and column. If the lattice is 10x10 then the nodeid is also a direction function
+ * of the position in the lattice, with node[54] meaning node in row 5 and column 4 (zero indexed).
  *
  * A 5x5 matrix will allow exhaustive cypher searches to complete in 30s, and so that is the current
  * default.

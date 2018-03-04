@@ -103,7 +103,7 @@ public class CentralJobSchedulerTest
             jobHandle.waitTermination();
             fail( "Task should be terminated" );
         }
-        catch ( CancellationException ingored )
+        catch ( CancellationException ignored )
         {
             // task should be canceled
         }

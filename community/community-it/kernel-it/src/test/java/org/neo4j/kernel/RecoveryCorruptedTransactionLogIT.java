@@ -263,13 +263,13 @@ public class RecoveryCorruptedTransactionLogIT
     {
         GraphDatabaseAPI database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
-        long lastClosedTrandactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
+        long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
         generateTransactionsAndRotate( database, 3 );
         for ( int i = 0; i < 7; i++ )
         {
             generateTransaction( database );
         }
-        long numberOfTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTrandactionBeforeStart;
+        long numberOfTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
         database.shutdown();
 
         LogFiles logFiles = buildDefaultLogFiles();

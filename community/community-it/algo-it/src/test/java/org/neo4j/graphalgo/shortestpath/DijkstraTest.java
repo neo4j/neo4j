@@ -105,7 +105,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
      * /--2--A--7--B--2--\ S E \----7---C---7----/
      */
     @Test
-    public void testDijstraTraverserMeeting()
+    public void testDijkstraTraverserMeeting()
     {
         graph.makeEdge( "s", "c", "cost", (double) 7 );
         graph.makeEdge( "c", "e", "cost", (float) 7 );

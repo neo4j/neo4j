@@ -67,7 +67,7 @@ public class ServerSettings implements LoadableConfig
     public static final Setting<Integer> maximum_response_header_size =
             setting( "unsupported.dbms.max_http_response_header_size", INTEGER, "20480" );
 
-    @Description( "Comma-seperated list of custom security rules for Neo4j to use." )
+    @Description( "Comma-separated list of custom security rules for Neo4j to use." )
     public static final Setting<List<String>> security_rules =
             setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
@@ -112,16 +112,16 @@ public class ServerSettings implements LoadableConfig
                 @Override
                 public String toString()
                 {
-                    return "a comma-seperated list of <classname>=<mount point> strings";
+                    return "a comma-separated list of <classname>=<mount point> strings";
                 }
 
-                private ThirdPartyJaxRsPackage createThirdPartyJaxRsPackage( String packageAndMoutpoint )
+                private ThirdPartyJaxRsPackage createThirdPartyJaxRsPackage( String packageAndMountpoint )
                 {
-                    String[] parts = packageAndMoutpoint.split( "=" );
+                    String[] parts = packageAndMountpoint.split( "=" );
                     if ( parts.length != 2 )
                     {
                         throw new IllegalArgumentException( "config for " + ServerSettings.third_party_packages.name()
-                                + " is wrong: " + packageAndMoutpoint );
+                                + " is wrong: " + packageAndMountpoint );
                     }
                     String pkg = parts[0];
                     String mountPoint = parts[1];

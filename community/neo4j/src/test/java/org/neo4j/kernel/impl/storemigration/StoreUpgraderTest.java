@@ -206,7 +206,7 @@ public class StoreUpgraderTest
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         String versionToMigrateTo = upgradableDatabase.currentVersion();
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( dbDirectory ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( dbDirectory ).storeVersion();
 
         // GIVEN
         {

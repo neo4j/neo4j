@@ -232,7 +232,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     }
 
     @Test
-    public void shoulListCorrectRolesForDBMSProcedures() throws Throwable
+    public void shouldListCorrectRolesForDBMSProcedures() throws Throwable
     {
         configuredSetup( defaultConfiguration() );
 
@@ -349,12 +349,12 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         firstResultExpected.put( "queryId", valueOf( "query-9999999989" ) );
         firstResultExpected.put( "username", valueOf( "n/a" ) );
         firstResultExpected.put( "message", valueOf( "No Query found with this id" ) );
-        Map<String,Object> secoundResultExpected = new HashMap<>();
-        secoundResultExpected.put( "queryId", valueOf( "query-9999999999" ) );
-        secoundResultExpected.put( "username", valueOf( "n/a" ) );
-        secoundResultExpected.put( "message", valueOf( "No Query found with this id" ) );
+        Map<String,Object> secondResultExpected = new HashMap<>();
+        secondResultExpected.put( "queryId", valueOf( "query-9999999999" ) );
+        secondResultExpected.put( "username", valueOf( "n/a" ) );
+        secondResultExpected.put( "message", valueOf( "No Query found with this id" ) );
         expected.add( firstResultExpected );
-        expected.add( secoundResultExpected );
+        expected.add( secondResultExpected );
 
         //Then
         assertSuccess( adminSubject, query, r ->

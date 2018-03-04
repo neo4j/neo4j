@@ -202,7 +202,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
             "with the query." )
     @Title( "Create multiple nodes with properties" )
     @Graph
-    public void send_query_to_create_multipe_nodes_from_a_map()
+    public void send_query_to_create_multiple_nodes_from_a_map()
     {
         data.get();
         String script = "UNWIND {props} AS properties CREATE (n:Person) SET n = properties RETURN n";

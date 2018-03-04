@@ -42,7 +42,7 @@ import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 @SuppressWarnings( "WeakerAccess" )
 public class TransactionStatusResult
 {
-    private static final String RUNNINS_STATE = "Running";
+    private static final String RUNNING_STATE = "Running";
     private static final String TERMINATED_STATE = "Terminated with reason: %s";
 
     public final String transactionId;
@@ -123,6 +123,6 @@ public class TransactionStatusResult
             TransactionDependenciesResolver transactionDependenciesResolver )
     {
         return transactionDependenciesResolver.isBlocked( handle ) ? "Blocked by: " +
-                transactionDependenciesResolver.describeBlockingTransactions( handle ) : RUNNINS_STATE;
+                transactionDependenciesResolver.describeBlockingTransactions( handle ) : RUNNING_STATE;
     }
 }

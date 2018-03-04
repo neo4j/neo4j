@@ -86,14 +86,14 @@ Function Confirm-JavaVersion
       $javaVersion = $matches[1]
       Write-Verbose "Java Version detected as $javaVersion"
     } else {
-      Write-Verbose "Could not determing the Java Version"
+      Write-Verbose "Could not determine the Java Version"
       Write-Warning "Unable to determine Java Version"
       return $true
     }
     
     # Check for Java Version Compatibility
     # Anything less than Java 1.8 will block execution
-    # Note - This text comparsion will fail for '1.10.xxx' due to how string based comparisons of numbers works.
+    # Note - This text comparison will fail for '1.10.xxx' due to how string based comparisons of numbers works.
     if ($javaVersion -lt '1.8') {
       Write-Warning "ERROR! Neo4j cannot be started using java version $($javaVersion)"      
       Write-Warning $javaHelpText

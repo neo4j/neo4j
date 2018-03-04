@@ -45,7 +45,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     costFor(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(231))
   }
 
-  test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
+  test("should introduce increase cost when estimating an eager operator and laziness is preferred") {
     val cardinalities = new Cardinalities
     val plan = setC(NodeHashJoin(Set("a"),
       setC(NodeByLabelScan("a", lblName("A"), Set.empty), cardinalities, 10.0),
@@ -60,7 +60,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     costFor(plan, whatever, cardinalities) should be < costFor(plan, pleaseLazy, cardinalities)
   }
 
-  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when lazyness is preferred") {
+  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when laziness is preferred") {
     // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
     val lazyCardinalities = new Cardinalities
     val lazyPlan = setC(Projection(

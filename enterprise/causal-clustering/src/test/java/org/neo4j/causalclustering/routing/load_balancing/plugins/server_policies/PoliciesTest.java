@@ -107,11 +107,11 @@ public class PoliciesTest
     {
         Policies policies = new Policies( log );
 
-        String defaulyPolicyName = Policies.DEFAULT_POLICY_NAME;
+        String defaultPolicyName = Policies.DEFAULT_POLICY_NAME;
         Policy defaultPolicy = new FilteringPolicy( new AnyGroupFilter( "groupA", "groupB" ) );
 
         // when
-        policies.addPolicy( defaulyPolicyName, defaultPolicy );
+        policies.addPolicy( defaultPolicyName, defaultPolicy );
         Policy selectedPolicy = policies.selectFor( emptyMap() );
 
         // then

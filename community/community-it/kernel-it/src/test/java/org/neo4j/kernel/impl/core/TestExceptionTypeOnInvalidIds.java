@@ -41,13 +41,13 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class TestExceptionTypeOnInvalidIds
 {
-    private static final long SMALL_POSSITIVE_INTEGER = 5;
+    private static final long SMALL_POSITIVE_INTEGER = 5;
     private static final long SMALL_NEGATIVE_INTEGER = -5;
-    private static final long BIG_POSSITIVE_INTEGER = Integer.MAX_VALUE;
+    private static final long BIG_POSITIVE_INTEGER = Integer.MAX_VALUE;
     private static final long BIG_NEGATIVE_INTEGER = Integer.MIN_VALUE;
-    private static final long SMALL_POSSITIVE_LONG = ((long) Integer.MAX_VALUE) + 1;
+    private static final long SMALL_POSITIVE_LONG = ((long) Integer.MAX_VALUE) + 1;
     private static final long SMALL_NEGATIVE_LONG = -((long) Integer.MIN_VALUE) - 1;
-    private static final long BIG_POSSITIVE_LONG = Long.MAX_VALUE;
+    private static final long BIG_POSITIVE_LONG = Long.MAX_VALUE;
     private static final long BIG_NEGATIVE_LONG = Long.MIN_VALUE;
     private static GraphDatabaseService graphdb;
     private static GraphDatabaseService graphDbReadOnly;
@@ -93,10 +93,10 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test( expected = NotFoundException.class )
-    public void getNodeBySmallPossitiveInteger()
+    public void getNodeBySmallPositiveInteger()
     {
-        getNodeById( SMALL_POSSITIVE_INTEGER );
-        getNodeByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        getNodeById( SMALL_POSITIVE_INTEGER );
+        getNodeByIdReadOnly( SMALL_POSITIVE_INTEGER );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
@@ -109,10 +109,10 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test( expected = NotFoundException.class )
-    public void getNodeByBigPossitiveInteger()
+    public void getNodeByBigPositiveInteger()
     {
-        getNodeById( BIG_POSSITIVE_INTEGER );
-        getNodeByIdReadOnly( BIG_POSSITIVE_INTEGER );
+        getNodeById( BIG_POSITIVE_INTEGER );
+        getNodeByIdReadOnly( BIG_POSITIVE_INTEGER );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
@@ -125,10 +125,10 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test( expected = NotFoundException.class )
-    public void getNodeBySmallPossitiveLong()
+    public void getNodeBySmallPositiveLong()
     {
-        getNodeById( SMALL_POSSITIVE_LONG );
-        getNodeByIdReadOnly( SMALL_POSSITIVE_LONG );
+        getNodeById( SMALL_POSITIVE_LONG );
+        getNodeByIdReadOnly( SMALL_POSITIVE_LONG );
     }
 
     /* behaves as expected */
@@ -141,10 +141,10 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test( expected = NotFoundException.class )
-    public void getNodeByBigPossitiveLong()
+    public void getNodeByBigPositiveLong()
     {
-        getNodeById( BIG_POSSITIVE_LONG );
-        getNodeByIdReadOnly( BIG_POSSITIVE_LONG );
+        getNodeById( BIG_POSITIVE_LONG );
+        getNodeByIdReadOnly( BIG_POSITIVE_LONG );
     }
 
     /* finds the node with id=0, since that what the id truncates to */
@@ -157,10 +157,10 @@ public class TestExceptionTypeOnInvalidIds
 
     /* behaves as expected */
     @Test( expected = NotFoundException.class )
-    public void getRelationshipBySmallPossitiveInteger()
+    public void getRelationshipBySmallPositiveInteger()
     {
-        getRelationshipById( SMALL_POSSITIVE_INTEGER );
-        getRelationshipByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        getRelationshipById( SMALL_POSITIVE_INTEGER );
+        getRelationshipByIdReadOnly( SMALL_POSITIVE_INTEGER );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
@@ -168,15 +168,15 @@ public class TestExceptionTypeOnInvalidIds
     public void getRelationshipBySmallNegativeInteger()
     {
         getRelationshipById( SMALL_NEGATIVE_INTEGER );
-        getRelationshipByIdReadOnly( SMALL_POSSITIVE_INTEGER );
+        getRelationshipByIdReadOnly( SMALL_POSITIVE_INTEGER );
     }
 
     /* behaves as expected */
     @Test( expected = NotFoundException.class )
-    public void getRelationshipByBigPossitiveInteger()
+    public void getRelationshipByBigPositiveInteger()
     {
-        getRelationshipById( BIG_POSSITIVE_INTEGER );
-        getRelationshipByIdReadOnly( BIG_POSSITIVE_INTEGER );
+        getRelationshipById( BIG_POSITIVE_INTEGER );
+        getRelationshipByIdReadOnly( BIG_POSITIVE_INTEGER );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
@@ -189,10 +189,10 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test( expected = NotFoundException.class )
-    public void getRelationshipBySmallPossitiveLong()
+    public void getRelationshipBySmallPositiveLong()
     {
-        getRelationshipById( SMALL_POSSITIVE_LONG );
-        getRelationshipByIdReadOnly( SMALL_POSSITIVE_LONG );
+        getRelationshipById( SMALL_POSITIVE_LONG );
+        getRelationshipByIdReadOnly( SMALL_POSITIVE_LONG );
     }
 
     /* behaves as expected */
@@ -205,10 +205,10 @@ public class TestExceptionTypeOnInvalidIds
 
     /* throws IllegalArgumentException instead of NotFoundException */
     @Test( expected = NotFoundException.class )
-    public void getRelationshipByBigPossitiveLong()
+    public void getRelationshipByBigPositiveLong()
     {
-        getRelationshipById( BIG_POSSITIVE_LONG );
-        getRelationshipByIdReadOnly( BIG_POSSITIVE_LONG );
+        getRelationshipById( BIG_POSITIVE_LONG );
+        getRelationshipByIdReadOnly( BIG_POSITIVE_LONG );
     }
 
     /* behaves as expected */

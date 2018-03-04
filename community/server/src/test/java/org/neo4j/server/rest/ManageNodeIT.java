@@ -197,10 +197,10 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     public void shouldGetASingleContentLengthHeaderWhenCreatingANode()
     {
         JaxRsResponse response = sendCreateRequestToServer();
-        List<String> contentLentgthHeaders = response.getHeaders()
+        List<String> contentLengthHeaders = response.getHeaders()
                 .get( "Content-Length" );
-        assertNotNull( contentLentgthHeaders );
-        assertEquals( 1, contentLentgthHeaders.size() );
+        assertNotNull( contentLengthHeaders );
+        assertEquals( 1, contentLengthHeaders.size() );
     }
 
     @Test

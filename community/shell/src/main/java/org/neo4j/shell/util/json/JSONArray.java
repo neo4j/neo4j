@@ -118,12 +118,12 @@ public class JSONArray
     }
 
     /**
-     * Construct a JSONArray from a JSONTokener.
+     * Construct a JSONArray from a JSONTokenizer.
      *
-     * @param x A JSONTokener
+     * @param x A JSONTokenizer
      * @throws JSONException If there is a syntax error.
      */
-    public JSONArray( JSONTokener x ) throws JSONException
+    public JSONArray( JSONTokenizer x ) throws JSONException
     {
         this();
         char c = x.nextClean();
@@ -191,7 +191,7 @@ public class JSONArray
      */
     public JSONArray( String source ) throws JSONException
     {
-        this( new JSONTokener( source ) );
+        this( new JSONTokenizer( source ) );
     }
 
     /**
@@ -654,7 +654,7 @@ public class JSONArray
     /**
      * Get the optional string value associated with an index. It returns an
      * empty string if there is no value at that index. If the value
-     * is not a string and is not null, then it is coverted to a string.
+     * is not a string and is not null, then it is converted to a string.
      *
      * @param index The index must be between 0 and length() - 1.
      * @return A String value.

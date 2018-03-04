@@ -204,7 +204,7 @@ public class ImportTool
         BAD_TOLERANCE( "bad-tolerance", 1000,
                 "<max number of bad entries, or " + UNLIMITED + " for unlimited>",
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
-                        + "about relationships refering to missing nodes. Format errors in input data are "
+                        + "about relationships referring to missing nodes. Format errors in input data are "
                         + "still treated as errors" ),
         SKIP_BAD_ENTRIES_LOGGING( "skip-bad-entries-logging", Boolean.FALSE, "<true/false>",
                 "Whether or not to skip logging bad entries detected during import." ),
@@ -214,7 +214,7 @@ public class ImportTool
                         + "start or end node id/group referring to node that wasn't specified by the "
                         + "node input data. "
                         + "Skipped nodes will be logged"
-                        + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + ", unless "
+                        + ", containing at most number of entities specified by " + BAD_TOLERANCE.key() + ", unless "
                         + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + " option." ),
         SKIP_DUPLICATE_NODES( "skip-duplicate-nodes", Boolean.FALSE,
                 "<true/false>",

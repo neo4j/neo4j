@@ -53,7 +53,7 @@ public class RelationshipReferenceEncodingTest
     }
 
     @Test
-    public void relativeReferenceConvertion()
+    public void relativeReferenceConversion()
     {
         long basis = 0xBABE;
         long absoluteReference = 0xCAFEBABE;

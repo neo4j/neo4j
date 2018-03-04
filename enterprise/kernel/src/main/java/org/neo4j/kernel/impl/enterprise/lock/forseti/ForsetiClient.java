@@ -67,7 +67,7 @@ import static java.lang.String.format;
  * These clients act as agents against the lock manager. The clients hold and release locks.
  * <p/>
  * The Forseti client tracks which locks it already holds, and will only communicate with the global lock manager if
- * necessary. Grabbing the same lock multiple times will honor re-entrancy et cetera, but the client will track in
+ * necessary. Grabbing the same lock multiple times will honor reentrancy et cetera, but the client will track in
  * local fields how many times the lock has been grabbed, such that it will only grab and release the lock once from
  * the
  * global lock manager.
@@ -840,7 +840,7 @@ public class ForsetiClient implements Locks.Client
         else if ( lock instanceof SharedLock && ((SharedLock) lock).release( this ) )
         {
             // We were the last to hold this lock, it is now dead and we should remove it.
-            // Also cleaning updater referense that can hold lock in memory
+            // Also cleaning updater reference that can hold lock in memory
             ((SharedLock) lock).cleanUpdateHolder();
             lockMap.remove( resourceId );
         }

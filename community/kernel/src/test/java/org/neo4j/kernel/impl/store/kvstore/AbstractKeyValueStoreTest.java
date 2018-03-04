@@ -277,7 +277,7 @@ public class AbstractKeyValueStoreTest
     public void shouldPickTheUncorruptedStoreWhenTruncatingAfterTheHeader() throws IOException
     {
         /*
-         * The problem was that if we were succesfull in writing the header but failing immediately after, we would
+         * The problem was that if we were successful in writing the header but failing immediately after, we would
          *  read 0 as counter for entry data and pick the corrupted store thinking that it was simply empty.
          */
 

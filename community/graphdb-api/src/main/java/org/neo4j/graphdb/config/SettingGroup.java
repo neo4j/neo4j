@@ -41,7 +41,7 @@ public interface SettingGroup<T> extends SettingValidator
     Map<String,T> values( Map<String,String> validConfig );
 
     /**
-     * This will return a list of all settings beloning to this group based on the settings in {@code params}
+     * This will return a list of all settings belonging to this group based on the settings in {@code params}
      * @param params a map of all settings
      * @return a list of the settings this group contains.
      */

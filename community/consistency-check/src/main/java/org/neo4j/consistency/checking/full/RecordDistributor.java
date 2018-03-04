@@ -109,7 +109,7 @@ public class RecordDistributor
         void accept( RECORD record, int qIndex ) throws InterruptedException;
     }
 
-    public static long calculateRecodsPerCpu( long highId, int numberOfThreads )
+    public static long calculateRecordsPerCpu( long highId, int numberOfThreads )
     {
         boolean hasRest = highId % numberOfThreads > 0;
         long result = highId / numberOfThreads;

@@ -144,7 +144,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("start" -> start)))
   }
 
-  test("should allow for OPTONAL MATCH with horizon and aggregating function") {
+  test("should allow for OPTIONAL MATCH with horizon and aggregating function") {
     //This is a test to ensure that a bug does not return
     val query =
       """

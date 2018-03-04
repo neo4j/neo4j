@@ -50,7 +50,7 @@ public class JavaValueCompatibilityTest
     }
 
     @Test
-    public void collections_in_collections_look_aiight()
+    public void collections_in_collections_look_alright()
     {
         Result result = db.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
         Map<String, Object> next = result.next();

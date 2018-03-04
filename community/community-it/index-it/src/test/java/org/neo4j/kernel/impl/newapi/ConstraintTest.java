@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.ConstraintTestBase;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 
 public class ConstraintTest extends ConstraintTestBase<WriteTestSupport>
 {

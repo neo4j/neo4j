@@ -164,7 +164,7 @@ public class MethodTemplate
             return this;
         }
 
-        public Builder modiferes( int modifiers )
+        public Builder modifiers( int modifiers )
         {
             this.modifiers = modifiers;
             return this;

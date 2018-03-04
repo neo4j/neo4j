@@ -49,14 +49,14 @@ SOFTWARE.
 */
 
 /**
- * A JSONTokener takes a source string and extracts characters and tokens from
+ * A JSONTokenizer takes a source string and extracts characters and tokens from
  * it. It is used by the JSONObject and JSONArray constructors to parse
  * JSON source strings.
  *
  * @author JSON.org
  * @version 2008-09-18
  */
-public class JSONTokener
+public class JSONTokenizer
 {
 
     private int index;
@@ -65,11 +65,11 @@ public class JSONTokener
     private boolean useLastChar;
 
     /**
-     * Construct a JSONTokener from a string.
+     * Construct a JSONTokenizer from a string.
      *
      * @param reader A reader.
      */
-    public JSONTokener( Reader reader )
+    public JSONTokenizer( Reader reader )
     {
         this.reader = reader.markSupported() ? reader : new BufferedReader( reader );
         this.useLastChar = false;
@@ -77,11 +77,11 @@ public class JSONTokener
     }
 
     /**
-     * Construct a JSONTokener from a string.
+     * Construct a JSONTokenizer from a string.
      *
      * @param s A source string.
      */
-    public JSONTokener( String s )
+    public JSONTokenizer( String s )
     {
         this( new StringReader( s ) );
     }
@@ -481,7 +481,7 @@ public class JSONTokener
     }
 
     /**
-     * Make a printable string of this JSONTokener.
+     * Make a printable string of this JSONTokenizer.
      *
      * @return " at character [this.index]"
      */

@@ -99,7 +99,7 @@ import org.neo4j.storageengine.api.StorageEngine;
  * |bbbb|->|bbbb|->|bbbb|->|bbbb|
  * 1       2       3       4
  * </pre>
- * Example of how the safe zone window moves while appying a batch
+ * Example of how the safe zone window moves while applying a batch
  * <pre>
  * x---------------------------------------------------------------------------------->| TIME
  * |MASTER STATE

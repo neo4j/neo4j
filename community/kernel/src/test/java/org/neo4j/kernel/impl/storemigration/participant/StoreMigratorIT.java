@@ -120,7 +120,7 @@ public class StoreMigratorIT
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
@@ -162,7 +162,7 @@ public class StoreMigratorIT
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
@@ -201,7 +201,7 @@ public class StoreMigratorIT
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
@@ -239,7 +239,7 @@ public class StoreMigratorIT
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
@@ -266,7 +266,7 @@ public class StoreMigratorIT
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );

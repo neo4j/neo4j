@@ -72,7 +72,7 @@ public class ExceptionRepresentationTest
     }
 
     @Test
-    public void shoudExcludeLegacyFormatIfAsked() throws Exception
+    public void shouldExcludeLegacyFormatIfAsked() throws Exception
     {
         // Given
         ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )

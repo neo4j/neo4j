@@ -199,7 +199,7 @@ public class BranchedDataIT
         cluster.await( allSeesAllAsAvailable() );
         assertFalse( thor.isMaster() );
         assertTrue( "No store-copy performed", thorHasBranched.copyCompleted );
-        assertTrue( "Store-copy unsuccessful", thorHasBranched.copySucessful );
+        assertTrue( "Store-copy unsuccessful", thorHasBranched.copySuccessful );
 
         // Now do some more transactions on current master (odin) and have thor pull those
         for ( int i = 0; i < 3; i++ )
@@ -374,13 +374,13 @@ public class BranchedDataIT
     private static class BranchMonitor implements Monitor
     {
         private volatile boolean copyCompleted;
-        private volatile boolean copySucessful;
+        private volatile boolean copySuccessful;
 
         @Override
         public void storeCopyCompleted( boolean wasSuccessful )
         {
             copyCompleted = true;
-            copySucessful = wasSuccessful;
+            copySuccessful = wasSuccessful;
         }
     }
 }

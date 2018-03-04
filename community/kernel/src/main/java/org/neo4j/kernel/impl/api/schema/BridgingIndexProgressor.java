@@ -35,7 +35,7 @@ public class BridgingIndexProgressor implements IndexProgressor.NodeValueClient,
     private final NodeValueClient client;
     private final int[] keys;
     // This is a thread-safe queue because it can be used in parallel scenarios.
-    // The overhead of a concurrent queue in this case is negligable since typically there will be two or a very few number
+    // The overhead of a concurrent queue in this case is negligible since typically there will be two or a very few number
     // of progressors and each progressor has many results each
     private final Queue<IndexProgressor> progressors = new ConcurrentLinkedQueue<>();
     private IndexProgressor current;

@@ -246,7 +246,7 @@ class ByteUnitTest
     }
 
     @Test
-    void mustThrowWhenParsingNonNumbericTest()
+    void mustThrowWhenParsingNonNumericTest()
     {
         assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "abc" ) );
     }

@@ -270,7 +270,7 @@ public class RollingUpgradeIT
         debug( "Starting to roll over to current version" );
         Pair<LegacyDatabase, Integer> master = findOutWhoIsMaster();
         newDbs = new GraphDatabaseAPI[legacyDbs.length];
-        int authorativeSlaveId = -1;
+        int authoritativeSlaveId = -1;
         for ( int i = 0; i < legacyDbs.length; i++ )
         {
             LegacyDatabase legacyDb = legacyDbs[i];
@@ -280,16 +280,16 @@ public class RollingUpgradeIT
                 continue;
             }
 
-            rollOver( legacyDb, i, master.other(), authorativeSlaveId );
-            if ( authorativeSlaveId == -1 )
+            rollOver( legacyDb, i, master.other(), authoritativeSlaveId );
+            if ( authoritativeSlaveId == -1 )
             {
-                authorativeSlaveId = i;
+                authoritativeSlaveId = i;
             }
         }
         rollOver( master.first(), master.other(), master.other(), -2 );
     }
 
-    private void rollOver( LegacyDatabase legacyDb, int i, int masterServerId, int authorativeSlaveId )
+    private void rollOver( LegacyDatabase legacyDb, int i, int masterServerId, int authoritativeSlaveId )
             throws Exception
     {
         String storeDir = legacyDb.getStoreDir();
@@ -301,7 +301,7 @@ public class RollingUpgradeIT
 
         File storeDirFile = new File( storeDir );
         debug( "Starting " + i + " as current version" );
-        switch ( authorativeSlaveId )
+        switch ( authoritativeSlaveId )
         {
         case -1:
             break;
@@ -310,10 +310,10 @@ public class RollingUpgradeIT
             FileUtils.deleteRecursively( storeDirFile );
             break;
         default:
-            debug( "Consecutive slave starting, making it so that I will copy store from " + authorativeSlaveId );
+            debug( "Consecutive slave starting, making it so that I will copy store from " + authoritativeSlaveId );
             FileUtils.deleteRecursively( storeDirFile );
             storeDirFile.mkdirs();
-            backup( authorativeSlaveId, storeDirFile );
+            backup( authoritativeSlaveId, storeDirFile );
             break;
         }
 

@@ -78,7 +78,7 @@ public class DelayedBufferTest
             } );
         }
 
-        // WHEN (multi-threadded) offering of ids
+        // WHEN (multi-threaded) offering of ids
         adders.go();
         // ... ensuring the test is sane itself (did we really offer all these IDs?)
         for ( int i = 0; i < size; i++ )

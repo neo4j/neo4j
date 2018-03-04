@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 /**
  * A strategy pattern for deciding how retries will be handled.
  * <p>
- * Depending on the implementation, it is assumed the retriable function will be executed until conditions satisyfing desired output are met and then the latest
+ * Depending on the implementation, it is assumed the retriable function will be executed until conditions satisfying desired output are met and then the latest
  * (or most valid)
  * result will be returned
  * </p>

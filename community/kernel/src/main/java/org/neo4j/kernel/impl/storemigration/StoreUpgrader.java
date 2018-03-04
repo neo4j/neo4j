@@ -136,7 +136,7 @@ public class StoreUpgrader
         // and it's just a matter of moving over the files to the storeDir.
         if ( MigrationStatus.migrating.isNeededFor( migrationStatus ) )
         {
-            versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
+            versionToMigrateFrom = upgradableDatabase.checkUpgradable( storeDirectory ).storeVersion();
             cleanMigrationDirectory( migrationDirectory );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( storeDirectory, migrationDirectory, versionToMigrateFrom );

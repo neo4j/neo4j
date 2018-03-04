@@ -58,7 +58,7 @@ public class StubRead implements Read
     @Override
     public void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
     {
-        ((StubNodeLabelIndexCursor) cursor).initalize( label );
+        ((StubNodeLabelIndexCursor) cursor).initialize( label );
     }
 
     @Override

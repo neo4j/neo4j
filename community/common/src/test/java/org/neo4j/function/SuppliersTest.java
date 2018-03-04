@@ -65,7 +65,7 @@ class SuppliersTest
     }
 
     @Test
-    void adapedSupplierShouldOnlyCallAdaptorOnceForEachNewInstance()
+    void adaptedSupplierShouldOnlyCallAdaptorOnceForEachNewInstance()
     {
         Object o1 = new Object();
         Object o1a = new Object();

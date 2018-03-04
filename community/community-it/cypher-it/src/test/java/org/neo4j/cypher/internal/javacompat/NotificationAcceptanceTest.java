@@ -208,7 +208,7 @@ public class NotificationAcceptanceTest
         {
             for ( String query : queries )
             {
-                assertNotifications( version + query, containsNoItem( joinHintUnsuportedWarning ) );
+                assertNotifications( version + query, containsNoItem( joinHintUnsupportedWarning ) );
             }
         } );
     }
@@ -581,11 +581,11 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnBindingVariableLengthRelationship()
     {
-        assertNotifications( "CYPHER 3.5 explain MATCH ()-[rs*]-() RETURN rs", containsItem( depracatedBindingWarning
+        assertNotifications( "CYPHER 3.5 explain MATCH ()-[rs*]-() RETURN rs", containsItem( deprecatedBindingWarning
         ) );
 
         assertNotifications( "CYPHER 3.5 explain MATCH p = ()-[*]-() RETURN relationships(p) AS rs", containsNoItem(
-                depracatedBindingWarning ) );
+                deprecatedBindingWarning ) );
     }
 
     @Test
@@ -657,7 +657,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMissingLabelWithCommentInMiddel()
+    public void shouldWarnOnMissingLabelWithCommentInMiddle()
     {
         assertNotifications( "EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1", containsItem( unknownLabelWarning ) );
     }
@@ -998,7 +998,7 @@ public class NotificationAcceptanceTest
             notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning", containsString( "The query used a deprecated field from a procedure." ),
                     any( InputPosition.class ), SeverityLevel.WARNING );
 
-    private Matcher<Notification> depracatedBindingWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+    private Matcher<Notification> deprecatedBindingWarning = notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
             containsString( "Binding relationships to a list in a variable length pattern is deprecated." ), any( InputPosition.class ),
             SeverityLevel.WARNING );
 
@@ -1029,7 +1029,7 @@ public class NotificationAcceptanceTest
             containsString( "Using a dynamic property makes it impossible to use an index lookup for this query" ), any( InputPosition.class ),
             SeverityLevel.WARNING );
 
-    private Matcher<Notification> joinHintUnsuportedWarning = notification( "Neo.Status.Statement.JoinHintUnsupportedWarning",
+    private Matcher<Notification> joinHintUnsupportedWarning = notification( "Neo.Status.Statement.JoinHintUnsupportedWarning",
             containsString( "Using RULE planner is unsupported for queries with join hints, please use COST planner instead" ), any( InputPosition.class ),
             SeverityLevel.WARNING );
 }

@@ -413,7 +413,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, TEST );
-        // verify that we can rely on PL to reomve non existing properties
+        // verify that we can rely on PL to remove non existing properties
         try
         {
             if ( rel1.removeProperty( key1 ) != null )
@@ -498,7 +498,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             fail( "wrong exception" );
         }
 
-        // test type change of exsisting property
+        // test type change of existing property
         // cannot test this for now because of exceptions in PL
         rel2.setProperty( key1, int1 );
 
@@ -550,7 +550,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         try
         {
             rel1.getProperty( key1 );
-            fail( "get non existing property din't throw exception" );
+            fail( "get non existing property didn't throw exception" );
         }
         catch ( NotFoundException e )
         {   // OK
@@ -558,7 +558,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         try
         {
             rel1.getProperty( null );
-            fail( "get of null key din't throw exception" );
+            fail( "get of null key didn't throw exception" );
         }
         catch ( IllegalArgumentException e )
         {   // OK
@@ -676,7 +676,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testCreateRelationshipWithCommitts()// throws NotFoundException
+    public void testCreateRelationshipWithCommits()// throws NotFoundException
     {
         Node n1 = getGraphDb().createNode();
         newTransaction();

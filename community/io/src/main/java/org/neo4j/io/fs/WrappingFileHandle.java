@@ -57,9 +57,9 @@ class WrappingFileHandle implements FileHandle
     public void rename( File to, CopyOption... options ) throws IOException
     {
         File parentFile = file.getParentFile();
-        File cannonicalTarget = to.getCanonicalFile();
-        fs.mkdirs( cannonicalTarget.getParentFile() );
-        fs.renameFile( file, cannonicalTarget, options );
+        File canonicalTarget = to.getCanonicalFile();
+        fs.mkdirs( canonicalTarget.getParentFile() );
+        fs.renameFile( file, canonicalTarget, options );
         removeEmptyParent( parentFile );
     }
 

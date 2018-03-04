@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 //

@@ -1956,7 +1956,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void writesOfDifferentUnitsMustHaveCorrectEndianess()
+    void writesOfDifferentUnitsMustHaveCorrectEndianness()
     {
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {

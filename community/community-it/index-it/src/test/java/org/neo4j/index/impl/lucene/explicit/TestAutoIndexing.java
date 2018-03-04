@@ -354,7 +354,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDefaulIfOffIsForEverything()
+    public void testDefaultIfOffIsForEverything()
     {
         graphDb.index().getNodeAutoIndexer().setEnabled( true );
         newTransaction();

@@ -289,7 +289,7 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         SetPipe(source,
           SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
 
-      case SetRelationshipPropery(_, name, propertyKey, expression) =>
+      case SetRelationshipProperty(_, name, propertyKey, expression) =>
         val needsExclusiveLock = ASTExpression.hasPropertyReadDependency(name, expression, propertyKey)
         SetPipe(source,
           SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression), needsExclusiveLock))(id = id)

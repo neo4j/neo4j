@@ -38,7 +38,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
 
   override protected def stopTest(): Unit = ()
 
-  test("should match paths correctly with rule planner in compatiblity mode") {
+  test("should match paths correctly with rule planner in compatibility mode") {
     runWithConfig() {
       db =>
         // given

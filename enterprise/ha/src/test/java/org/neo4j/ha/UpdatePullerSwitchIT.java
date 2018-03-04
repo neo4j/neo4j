@@ -71,7 +71,7 @@ public class UpdatePullerSwitchIT
         // force update puller to work
         pullUpdatesOnSlave( cluster );
         // node should exist on slave now
-        checkLabeledNodeExistanceOnSlave( cluster, firstLabel );
+        checkLabeledNodeExistenceOnSlave( cluster, firstLabel );
         // verify that puller working on slave and not working on master
         verifyUpdatePullerThreads( cluster );
 
@@ -90,7 +90,7 @@ public class UpdatePullerSwitchIT
 
             // forcing updates pulling
             pullUpdatesOnSlave( cluster );
-            checkLabeledNodeExistanceOnSlave( cluster, currentLabel );
+            checkLabeledNodeExistenceOnSlave( cluster, currentLabel );
             // checking pulling threads
             verifyUpdatePullerThreads( cluster );
         }
@@ -133,7 +133,7 @@ public class UpdatePullerSwitchIT
         assertTrue( "We should always have some updates to pull", updatePuller.tryPullUpdates() );
     }
 
-    private void checkLabeledNodeExistanceOnSlave( ClusterManager.ManagedCluster cluster, Label label )
+    private void checkLabeledNodeExistenceOnSlave( ClusterManager.ManagedCluster cluster, Label label )
     {
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         try ( Transaction transaction = slave.beginTx() )
