@@ -395,7 +395,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
         |RETURN a, x""".stripMargin))
   }
 
-  test("should not inline relationship variables if not inlinging expressions") {
+  test("should not inline relationship variables if not inlining expressions") {
    val result = projectionInlinedAst("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel")
 
     result should equal(ast("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel"))

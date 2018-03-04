@@ -63,7 +63,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
                 .newGraphDatabase();
         Node node = createNodeWithRelationships( db );
 
-        checkStateToHelpDiagnoseFlakeyTest( db, node );
+        checkStateToHelpDiagnoseFlakyTest( db, node );
 
         long end = currentTimeMillis() + SECONDS.toMillis( 5 );
         int iterations = 0;
@@ -76,7 +76,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
         db.shutdown();
     }
 
-    private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
+    private void checkStateToHelpDiagnoseFlakyTest( GraphDatabaseAPI db, Node node )
     {
         loadNode( db, node );
         loadNode( db, node );

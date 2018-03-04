@@ -77,7 +77,7 @@ public class TransactionMonitorTest
     }
 
     @Test
-    public void shoulCountRolledBackTransactions() throws Exception
+    public void shouldCountRolledBackTransactions() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         try

@@ -342,7 +342,7 @@ return a""")
     result.columnAs[Node]("a").toList should equal(List(a))
   }
 
-  test("shouldReturnAnInterableWithAllRelationshipsFromAVarLength") {
+  test("shouldReturnAnIterableWithAllRelationshipsFromAVarLength") {
     val a = createNode()
     val b = createNode()
     val c = createNode()

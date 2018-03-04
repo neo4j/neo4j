@@ -92,7 +92,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private final RelGroupCache relGroupCache;
     private long highNodeId;
     // This cache participates in scans backwards and forwards, marking entities as changed in the process.
-    // When going forward (forward==true) changes are marked with a set bit, a cleared bit when going bachwards.
+    // When going forward (forward==true) changes are marked with a set bit, a cleared bit when going backwards.
     // This way there won't have to be a clearing of the change bits in between the scans.
     private volatile boolean forward = true;
     private final int chunkSize;

@@ -76,7 +76,7 @@ public class ValueContext
     }
 
     /**
-     * Convience method to add a numeric value to an index.
+     * Convenience method to add a numeric value to an index.
      * @param value The value to add
      * @return A ValueContext that can be used with
      * {@link org.neo4j.graphdb.index.Index#add(org.neo4j.graphdb.PropertyContainer, String, Object)}

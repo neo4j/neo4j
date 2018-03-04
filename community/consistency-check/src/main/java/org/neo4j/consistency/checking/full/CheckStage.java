@@ -29,7 +29,7 @@ public enum CheckStage implements Stage
 {
     Stage1_NS_PropsLabels( false, true, "NodeStore pass - check its properties, " +
             "check labels and cache them, skip relationships", 1, LABELS_SLOT_SIZE ),
-    Stage2_RS_Labels( false, true, "ReltionshipStore pass - check label counts using cached labels, check properties, " +
+    Stage2_RS_Labels( false, true, "RelationshipStore pass - check label counts using cached labels, check properties, " +
             "skip nodes and relationships", 1, LABELS_SLOT_SIZE ),
     Stage3_NS_NextRel( false, true, "NodeStore pass - just cache nextRel and inUse", 1, 1, ID_SLOT_SIZE ),
     Stage4_RS_NextRel( true, true, "RelationshipStore pass - check nodes inUse, FirstInFirst, " +

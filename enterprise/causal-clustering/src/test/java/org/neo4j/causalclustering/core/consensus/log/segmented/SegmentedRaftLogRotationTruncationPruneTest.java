@@ -83,7 +83,7 @@ public class SegmentedRaftLogRotationTruncationPruneTest
     public void shouldPruneAwaySingleEntriesAfterTruncationIfRotationHappenedEveryEntry() throws Exception
     {
         /**
-         * Given a log with many single-entry segments, a series of truncations at decending values followed by
+         * Given a log with many single-entry segments, a series of truncations at descending values followed by
          * pruning at more previous segments will maintain the correct prevIndex for the log.
          *
          * Initial Scenario:    [0][1][2][3][4][5][6][7][8][9]              prevIndex = 0

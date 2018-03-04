@@ -97,7 +97,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     result.size should equal(1)
   }
 
-  test("should find shortest path using Graph Algos Djikstra") {
+  test("should find shortest path using Graph Algos Dijkstra") {
     registerTestProcedures()
 
     graph.execute(
@@ -121,7 +121,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
         |""".stripMargin)
 
     val result = executeWith(expectSucceed,
-      "MATCH (s:Start),(e:End) CALL org.neo4j.graphAlgosDjikstra( s, e, 'Rel', 'weight' ) YIELD node RETURN node")
+      "MATCH (s:Start),(e:End) CALL org.neo4j.graphAlgosDijkstra( s, e, 'Rel', 'weight' ) YIELD node RETURN node")
 
     result.size should equal(5) // s -> n3 -> n4 -> n5 -> e
   }

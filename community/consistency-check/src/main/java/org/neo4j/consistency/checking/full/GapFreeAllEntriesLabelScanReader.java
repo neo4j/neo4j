@@ -74,10 +74,10 @@ class GapFreeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
         private NodeLabelRange nextFromSource;
         private long currentRangeId = -1;
 
-        GapFillingIterator( Iterator<NodeLabelRange> nodeLableRangeIterator, long highestRangeId, int rangeSize )
+        GapFillingIterator( Iterator<NodeLabelRange> nodeLabelRangeIterator, long highestRangeId, int rangeSize )
         {
             this.highestRangeId = highestRangeId;
-            this.source = nodeLableRangeIterator;
+            this.source = nodeLabelRangeIterator;
             this.emptyRangeData = new long[rangeSize][];
         }
 

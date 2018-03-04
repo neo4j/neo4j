@@ -37,7 +37,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestIndexDelectionFs
+public class TestIndexDeletionFs
 {
     private static GraphDatabaseAPI db;
 

@@ -232,7 +232,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                         baselineMemoryRequirement( neoStores ) +
                         defensivelyPadMemoryEstimate( idMapper.memoryEstimation( numberOfNodes ) ) ) );
 
-        // A difficulty with the goal here is that we don't know how much woek there is to be done in id mapper preparation stage.
+        // A difficulty with the goal here is that we don't know how much work there is to be done in id mapper preparation stage.
         // In addition to nodes themselves and SPLIT,SORT,DETECT there may be RESOLVE,SORT,DEDUPLICATE too, if there are collisions
         long goal = idMapper.needsPreparation()
                 ? numberOfNodes + weighted( IdMapperPreparationStage.NAME, numberOfNodes * 4 )

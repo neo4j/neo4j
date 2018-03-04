@@ -233,9 +233,9 @@ public abstract class MethodDeclaration
             newExceptions[i] = erase( exceptions[i], table );
         }
         String newName = name();
-        boolean newIsConstrucor = isConstructor();
+        boolean newIsConstructor = isConstructor();
 
-        return methodDeclaration( owner, newReturnType, newParameters, newExceptions, newName, newIsConstrucor,
+        return methodDeclaration( owner, newReturnType, newParameters, newExceptions, newName, newIsConstructor,
                 modifiers, typeParameters );
     }
 
@@ -290,14 +290,14 @@ public abstract class MethodDeclaration
 
     private static MethodDeclaration methodDeclaration( TypeReference owner, final TypeReference returnType,
             final Parameter[] parameters, final TypeReference[] exceptions, final String name,
-            final boolean isConstrucor, int modifiers, TypeParameter[] typeParameters )
+            final boolean isConstructor, int modifiers, TypeParameter[] typeParameters )
     {
         return new MethodDeclaration( owner, parameters, exceptions, modifiers, typeParameters )
         {
             @Override
             public boolean isConstructor()
             {
-                return isConstrucor;
+                return isConstructor;
             }
 
             @Override

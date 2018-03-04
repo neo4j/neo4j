@@ -38,7 +38,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
   // Not TCK material below; sending graph types or characters as parameters is not supported
 
-  test("ANY should be able to use varibels from the horizon") {
+  test("ANY should be able to use variables from the horizon") {
 
     val query =
       """ WITH 1 AS node, [] AS nodes1

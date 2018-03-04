@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class ArgsTest
 {
     @Test
-    public void shoulInterpretSingleDashAsValue()
+    public void shouldInterpretSingleDashAsValue()
     {
         // GIVEN
         Args args = Args.parse( "-test", "-" );

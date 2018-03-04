@@ -28,14 +28,14 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
 {
     private final RepresentationType extended;
     private final String name;
-    private final String desciption;
+    private final String description;
     private final List<ParameterRepresentation> parameters = new ArrayList<>();
 
-    public ExtensionPointRepresentation( String name, Class<?> extended, String desciption )
+    public ExtensionPointRepresentation( String name, Class<?> extended, String description )
     {
         super( RepresentationType.PLUGIN_DESCRIPTION );
         this.name = name;
-        this.desciption = desciption;
+        this.description = description;
         this.extended = RepresentationType.extended( extended );
     }
 
@@ -70,7 +70,7 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
     @Mapping( "description" )
     public ValueRepresentation description()
     {
-        return ValueRepresentation.string( desciption );
+        return ValueRepresentation.string( description );
     }
 
     @Mapping( "extends" )

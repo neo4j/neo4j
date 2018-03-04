@@ -50,11 +50,11 @@ public class SchemaRecordCheckTest
 
     public SchemaRecordCheckTest()
     {
-        super( new SchemaRecordCheck( configureSchemaStore(), configureIndexAcessors() ),
+        super( new SchemaRecordCheck( configureSchemaStore(), configureIndexAccessors() ),
                 ConsistencyReport.SchemaConsistencyReport.class, new int[0] );
     }
 
-    private static IndexAccessors configureIndexAcessors()
+    private static IndexAccessors configureIndexAccessors()
     {
         return mock( IndexAccessors.class );
     }

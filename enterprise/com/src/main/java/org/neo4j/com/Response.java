@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 /**
  * In response to a {@link Client#sendRequest(RequestType, RequestContext, Serializer, Deserializer) request}
  * which contains a response value (T), and optionally some sort of side-effect,
- * like {@link TransactionStreamResponse transaction stream} or {@link TransactionObligationResponse transaction oglibation}.
+ * like {@link TransactionStreamResponse transaction stream} or {@link TransactionObligationResponse transaction obligation}.
  */
 public abstract class Response<T> implements AutoCloseable
 {

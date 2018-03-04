@@ -115,7 +115,7 @@ public class CrashGenerationCleanerTest
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
-        assertPagesVisisted( monitor, pages.length );
+        assertPagesVisited( monitor, pages.length );
         assertCleanedCrashPointers( monitor, 0 );
     }
 
@@ -134,7 +134,7 @@ public class CrashGenerationCleanerTest
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
-        assertPagesVisisted( monitor, 2 );
+        assertPagesVisited( monitor, 2 );
         assertCleanedCrashPointers( monitor, 0 );
     }
 
@@ -167,7 +167,7 @@ public class CrashGenerationCleanerTest
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
-        assertPagesVisisted( monitor, pages.length );
+        assertPagesVisited( monitor, pages.length );
         assertCleanedCrashPointers( monitor, 9 );
     }
 
@@ -195,7 +195,7 @@ public class CrashGenerationCleanerTest
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
-        assertPagesVisisted( monitor, pages.length );
+        assertPagesVisited( monitor, pages.length );
         assertCleanedCrashPointers( monitor, 9 );
     }
 
@@ -220,7 +220,7 @@ public class CrashGenerationCleanerTest
         crashGenerationCleaner( pagedFile, 0, numberOfPages, monitor ).clean();
 
         // THEN
-        assertPagesVisisted( monitor, numberOfPages );
+        assertPagesVisited( monitor, numberOfPages );
         assertCleanedCrashPointers( monitor, totalNumberOfCorruptions.getValue() );
     }
 
@@ -252,7 +252,7 @@ public class CrashGenerationCleanerTest
                 expectedNumberOfCleanedCrashPointers, monitor.numberOfCleanedCrashPointers );
     }
 
-    private void assertPagesVisisted( SimpleCleanupMonitor monitor, int expectedNumberOfPagesVisited )
+    private void assertPagesVisited( SimpleCleanupMonitor monitor, int expectedNumberOfPagesVisited )
     {
         assertEquals( "Expected number of visited pages to be " + expectedNumberOfPagesVisited +
                         " but was " + monitor.numberOfPagesVisited,

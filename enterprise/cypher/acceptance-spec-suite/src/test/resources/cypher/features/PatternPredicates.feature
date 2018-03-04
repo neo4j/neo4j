@@ -426,7 +426,7 @@ Feature: PatternPredicates
       | null |
     And no side effects
 
-  Scenario: Pattern predicates and parametrised predicate
+  Scenario: Pattern predicates and parameterised predicate
     And having executed:
       """
       CREATE ({id: 0})-[:T]->({name: 'Neo'})

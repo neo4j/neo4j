@@ -85,7 +85,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      *
      * Further more, indexes that are POPULATING have two ways of ingesting data:
      *  - Through add()'ing existing data
-     *  - Through NodePropertyUpdates sent to a "populating udpater"
+     *  - Through NodePropertyUpdates sent to a "populating updater"
      *
      * Then, when we add data to an index, two outcomes are possible, depending on the
      * data:
@@ -114,7 +114,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      *
      * All in all, we have many cases to test for!
      *
-     * Still, it is possible to boild things down a little bit, because there are fewer
+     * Still, it is possible to boil things down a little bit, because there are fewer
      * outcomes than there are scenarios that lead to those outcomes. With a bit of
      * luck, we can abstract over the scenarios that lead to those outcomes, and then
      * only write a test per outcome. These are the outcomes I see:
@@ -403,7 +403,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         transaction( assertLookupNode( "a1", is( a ) ) );
     }
 
-    // Replaces UniqueIAC: shoouldRejectEntriesInSameTransactionWithDuplicateIndexedValue\
+    // Replaces UniqueIAC: shouldRejectEntriesInSameTransactionWithDuplicateIndexedValue\
     @Test( expected = ConstraintViolationException.class )
     public void onlineConstraintShouldRejectDuplicateEntriesAddedInSameTransaction()
     {

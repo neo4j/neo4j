@@ -181,7 +181,7 @@ public class IdGeneratorImplTest
         LongSupplier highId = mock( LongSupplier.class );
         when( highId.getAsLong() ).thenReturn( 0L ); // necessary, otherwise it runs into NPE in the constructor below
 
-        // Wheb
+        // When
         // The id generator is started
         IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, IdType.NODE, highId );
 

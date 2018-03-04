@@ -61,9 +61,9 @@ public class BatchInsertersTest
     public void providedFileSystemNotClosedAfterShutdown() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        vefiryProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs ), fs );
-        vefiryProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig() ), fs );
-        vefiryProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getKernelExtensions() ),
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig() ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getKernelExtensions() ),
                 fs );
     }
 
@@ -77,7 +77,7 @@ public class BatchInsertersTest
         return MapUtil.stringMap();
     }
 
-    private void vefiryProvidedFileSystemOpenAfterShutdown( BatchInserter inserter,
+    private void verifyProvidedFileSystemOpenAfterShutdown( BatchInserter inserter,
             EphemeralFileSystemAbstraction fileSystemAbstraction )
     {
         inserter.shutdown();

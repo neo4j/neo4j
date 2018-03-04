@@ -53,7 +53,7 @@ public interface InwardKernel extends Kernel
      *
      * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
      * @param loginContext transaction login context
-     * @param timeout transaction timeout in millisiseconds
+     * @param timeout transaction timeout in milliseconds
      */
     KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
             throws TransactionFailureException;

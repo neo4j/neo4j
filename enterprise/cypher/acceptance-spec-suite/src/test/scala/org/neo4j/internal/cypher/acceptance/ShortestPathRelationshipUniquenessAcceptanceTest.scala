@@ -27,7 +27,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite}
 
 class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFunSuite{
 
-  test("should not find shortest path due to relationship uniquess") {
+  test("should not find shortest path due to relationship uniqueness") {
     val p0 = createLabeledNode(Map("id" -> "2228"), "Model")
     val p1 = createLabeledNode(Map("id" -> "2246"), "Model")
     val p2 = createLabeledNode(Map("id" -> "2248"), "Model")

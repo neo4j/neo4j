@@ -54,7 +54,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     val query = """EXPLAIN
                   |WITH
                   |   ['Herfstvakantie Noord'] AS periodName
-                  |MATCH (perStart:Day)<-[:STARTS]-(per:Periode)-[:ENDS]->(perEnd:Day) WHERE per.naam=periodName
+                  |MATCH (perStart:Day)<-[:STARTS]-(per:Period)-[:ENDS]->(perEnd:Day) WHERE per.naam=periodName
                   |WITH perStart,perEnd
                   |
                   |MATCH perDays=shortestPath((perStart)-[:NEXT*]->(perEnd))

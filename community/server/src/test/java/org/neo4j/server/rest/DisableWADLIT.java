@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class DisableWADLIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void should404OnAnyUriEndinginWADL() throws Exception
+    public void should404OnAnyUriEndingInWADL() throws Exception
     {
         URI nodeUri = new URI( server().baseUri() + "db/data/application.wadl" );
 

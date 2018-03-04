@@ -110,7 +110,7 @@ public abstract class AbstractTestBase
 
         if ( !expected.isEmpty() )
         {
-            fail( "The exepected elements " + expected + " were not returned." );
+            fail( "The expected elements " + expected + " were not returned." );
         }
     }
 }

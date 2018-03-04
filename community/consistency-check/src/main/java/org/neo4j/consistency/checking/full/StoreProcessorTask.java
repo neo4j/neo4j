@@ -87,7 +87,7 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
                 {
                     highId = storeAccess.getNodeStore().getHighId();
                 }
-                long recordsPerCPU = RecordDistributor.calculateRecodsPerCpu( highId, numberOfThreads );
+                long recordsPerCPU = RecordDistributor.calculateRecordsPerCpu( highId, numberOfThreads );
                 QueueDistributor<R> distributor = distribution.distributor( recordsPerCPU, numberOfThreads );
                 processor.applyFilteredParallel( store, progressListener, numberOfThreads, recordsPerCPU, distributor );
             }

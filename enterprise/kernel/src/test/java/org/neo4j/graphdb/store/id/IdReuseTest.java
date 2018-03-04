@@ -171,7 +171,7 @@ public class IdReuseTest
 
             Relationship relationshipTo = node1.createRelationshipTo( node2, TestRelationshipType.MARKER );
 
-            assertNotEquals( "Relatioships should have different ids.", relationshipId, relationshipTo.getId() );
+            assertNotEquals( "Relationships should have different ids.", relationshipId, relationshipTo.getId() );
             transaction.success();
         }
     }

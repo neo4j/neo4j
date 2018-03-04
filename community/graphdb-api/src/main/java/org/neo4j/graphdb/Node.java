@@ -216,7 +216,7 @@ public interface Node extends Entity
     /**
      * Returns the only relationship of a given type and direction that is
      * attached to this node, or <code>null</code>. This is a convenience method
-     * that is used in the commonly occuring situation where a node has exactly
+     * that is used in the commonly occurring situation where a node has exactly
      * zero or one relationships of a given type and direction to another node.
      * Typically this invariant is maintained by the rest of the code: if at any
      * time more than one such relationships exist, it is a fatal error that

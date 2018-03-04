@@ -118,7 +118,7 @@ object SlotConfiguration {
       result.append("\n")
 
       // Dependencies:
-      result.append("Dependends on: ")
+      result.append("Depends on: ")
       pipeline.dependsOn.foreach(p => result.append("#").append(p.order))
 
       result.append("\n")

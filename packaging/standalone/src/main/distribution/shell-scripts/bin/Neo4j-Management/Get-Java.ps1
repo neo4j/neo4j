@@ -22,7 +22,7 @@
 Retrieves information about Java on the local machine to start Neo4j programs
 
 .DESCRIPTION
-Retrieves information about Java on the local machine to start Neo4j services and utilites, tailored to the type of Neo4j edition
+Retrieves information about Java on the local machine to start Neo4j services and utilities, tailored to the type of Neo4j edition
 
 .PARAMETER Neo4jServer
 An object representing a valid Neo4j Server object
@@ -39,7 +39,7 @@ The name of the starting class when invoking Java
 .EXAMPLE
 Get-Java -Neo4jServer $serverObject -ForServer
 
-Retrieves the Java comamnd line to start the Neo4j server for the instance in $serverObject.
+Retrieves the Java command line to start the Neo4j server for the instance in $serverObject.
 
 .OUTPUTS
 System.Collections.Hashtable

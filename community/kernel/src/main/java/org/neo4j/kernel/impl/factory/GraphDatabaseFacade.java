@@ -141,7 +141,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
     /**
-     * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
+     * This is what you need to implement to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
      * layer to make it easy to provide
      * alternate {@link org.neo4j.graphdb.GraphDatabaseService} instances without having to re-implement this whole API
      * implementation.

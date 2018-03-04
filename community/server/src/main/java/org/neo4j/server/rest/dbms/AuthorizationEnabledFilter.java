@@ -83,7 +83,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         if ( request.getMethod().equals( "OPTIONS" ) || whitelisted( path ) )
         {
             // NOTE: If starting transactions with access mode on whitelisted uris should be possible we need to
-            //       wrap servletRequest in an AuthorizedRequestWarpper here
+            //       wrap servletRequest in an AuthorizedRequestWrapper here
             filterChain.doFilter( servletRequest, servletResponse );
             return;
         }

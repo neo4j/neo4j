@@ -1860,7 +1860,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
+    public void writesOfDifferentUnitsMustHaveCorrectEndianness() throws Exception
     {
         configureStandardPageCache();
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), 23 ) )

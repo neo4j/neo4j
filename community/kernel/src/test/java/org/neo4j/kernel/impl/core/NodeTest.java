@@ -319,7 +319,7 @@ public class NodeTest
         try
         {
             node1.getProperty( key1 );
-            fail( "get non existing property din't throw exception" );
+            fail( "get non existing property didn't throw exception" );
         }
         catch ( NotFoundException ignored )
         {
@@ -327,7 +327,7 @@ public class NodeTest
         try
         {
             node1.getProperty( null );
-            fail( "get of null key din't throw exception" );
+            fail( "get of null key didn't throw exception" );
         }
         catch ( IllegalArgumentException ignored )
         {

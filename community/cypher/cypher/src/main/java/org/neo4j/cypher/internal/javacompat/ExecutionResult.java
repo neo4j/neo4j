@@ -252,7 +252,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
             {
                 innerIterator.close();
             }
-            // but we still need to close the underlying exetended execution result
+            // but we still need to close the underlying extended execution result
             inner.close();
         }
         catch ( CypherException e )

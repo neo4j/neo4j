@@ -98,7 +98,7 @@ public class RaftMembershipManagerTest
     }
 
     @Test
-    public void membershipManagerShouldRevertToEarlierAppendedMembershipSetAfterTruncationCausesLossOfLastAppened()
+    public void membershipManagerShouldRevertToEarlierAppendedMembershipSetAfterTruncationCausesLossOfLastAppended()
             throws Exception
     {
         // given

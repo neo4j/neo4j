@@ -372,7 +372,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     result should equal(Set(List(nodeA), List(nodeA, nodeB)))
   }
 
-  test("if asked for also return paths of length 0, even when no max length is speficied") {
+  test("if asked for also return paths of length 0, even when no max length is specified") {
     /*
        a-b-c
      */

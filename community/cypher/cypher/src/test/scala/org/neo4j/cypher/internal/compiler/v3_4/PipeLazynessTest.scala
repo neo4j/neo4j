@@ -36,7 +36,7 @@ import scala.collection.JavaConverters._
 This test fixture tries to assert that Pipe declaring that they are lazy
 in fact are lazy. Every Pipe should be represented here
  */
-class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
+class PipeLazinessTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
   test("test") {
     distinctPipe.!!()

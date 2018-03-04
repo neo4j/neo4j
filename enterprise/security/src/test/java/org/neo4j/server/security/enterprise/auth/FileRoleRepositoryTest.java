@@ -163,7 +163,7 @@ public class FileRoleRepositoryTest
     {
         // Given
         final IOException exception = new IOException( "simulated IO Exception on create" );
-        FileSystemAbstraction craschingFileSystem =
+        FileSystemAbstraction crashingFileSystem =
                 new DelegatingFileSystemAbstraction( fs )
                 {
                     @Override
@@ -178,7 +178,7 @@ public class FileRoleRepositoryTest
                     }
                 };
 
-        roleRepository = new FileRoleRepository( craschingFileSystem, roleFile, logProvider );
+        roleRepository = new FileRoleRepository( crashingFileSystem, roleFile, logProvider );
         roleRepository.start();
         RoleRecord role = new RoleRecord( "admin", "jake" );
 
@@ -194,8 +194,8 @@ public class FileRoleRepositoryTest
         }
 
         // Then
-        assertFalse( craschingFileSystem.fileExists( roleFile ) );
-        assertThat( craschingFileSystem.listFiles( roleFile.getParentFile() ).length, equalTo( 0 ) );
+        assertFalse( crashingFileSystem.fileExists( roleFile ) );
+        assertThat( crashingFileSystem.listFiles( roleFile.getParentFile() ).length, equalTo( 0 ) );
     }
 
     @Test

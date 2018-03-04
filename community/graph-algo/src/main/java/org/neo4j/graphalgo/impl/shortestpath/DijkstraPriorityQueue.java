@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Node;
  * Abstraction of the priority queue used by Dijkstra in order to make (testing
  * of) alternative implementations easier.
  * @param <CostType>
- *            The datatype the path weigths are represented by.
+ *            The datatype the path weights are represented by.
  */
 public interface DijkstraPriorityQueue<CostType>
 {

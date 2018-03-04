@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.store.record;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForLabel;
-import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.nodeKeyForLabel;
+import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
+import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class ConstraintRuleTest extends SchemaRuleTestBase

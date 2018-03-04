@@ -334,7 +334,7 @@ public class RecoveryTest
     }
 
     @Test
-    public void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfullRecovery() throws Exception
+    public void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfulRecovery() throws Exception
     {
         // GIVEN
         File file = logFiles.getLogFileForVersion( logVersion );
@@ -365,7 +365,7 @@ public class RecoveryTest
     }
 
     @Test
-    public void shouldTellTransactionIdStoreAfterSuccessfullRecovery() throws Exception
+    public void shouldTellTransactionIdStoreAfterSuccessfulRecovery() throws Exception
     {
         // GIVEN
         File file = logFiles.getLogFileForVersion( logVersion );

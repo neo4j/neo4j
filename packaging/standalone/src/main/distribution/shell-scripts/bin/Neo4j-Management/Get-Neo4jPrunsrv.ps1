@@ -22,7 +22,7 @@
 Retrieves information about PRunSrv on the local machine to start Neo4j programs
 
 .DESCRIPTION
-Retrieves information about PRunSrv (Apache Commons Daemon) on the local machine to start Neo4j services and utilites, tailored to the type of Neo4j edition
+Retrieves information about PRunSrv (Apache Commons Daemon) on the local machine to start Neo4j services and utilities, tailored to the type of Neo4j edition
 
 .PARAMETER Neo4jServer
 An object representing a valid Neo4j Server object
