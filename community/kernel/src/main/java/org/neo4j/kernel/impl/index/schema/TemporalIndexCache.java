@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -47,9 +49,12 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     private volatile T timeZoned;
     private volatile T duration;
 
+    private List<T> parts;
+
     TemporalIndexCache( Factory<T, E> factory )
     {
         this.factory = factory;
+        this.parts = new ArrayList<>();
     }
 
     /**
@@ -148,6 +153,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( date == null )
         {
             date = factory.newDate();
+            parts.add( date );
         }
         return date;
     }
@@ -157,6 +163,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( dateTime == null )
         {
             dateTime = factory.newDateTime();
+            parts.add( dateTime );
         }
         return dateTime;
     }
@@ -166,6 +173,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( dateTimeZoned == null )
         {
             dateTimeZoned = factory.newDateTimeZoned();
+            parts.add( dateTimeZoned );
         }
         return dateTimeZoned;
     }
@@ -175,6 +183,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( time == null )
         {
             time = factory.newTime();
+            parts.add( time );
         }
         return time;
     }
@@ -184,6 +193,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( timeZoned == null )
         {
             timeZoned = factory.newTimeZoned();
+            parts.add( timeZoned );
         }
         return timeZoned;
     }
@@ -193,6 +203,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( duration == null )
         {
             duration = factory.newDuration();
+            parts.add( duration );
         }
         return duration;
     }
@@ -200,8 +211,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return Iterators.filter(
-                Objects::nonNull, Iterators.iterator( date, dateTime, dateTimeZoned, time, timeZoned, duration ) );
+        return parts.iterator();
     }
 
     /**
