@@ -113,7 +113,7 @@ public class AllowedTypesValidator implements Predicate<TypeMirror>
                 List<? extends TypeMirror> typeArguments = map.getTypeArguments();
                 if ( typeArguments.size() != 2 )
                 {
-                    return false;
+                    return Boolean.FALSE;
                 }
 
                 TypeMirror key = typeArguments.get( 0 );

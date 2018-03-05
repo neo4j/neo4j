@@ -395,7 +395,7 @@ public class Args
 
     private static boolean isBoolean( String value )
     {
-        return ("true".equalsIgnoreCase( value ) || "false".equalsIgnoreCase( value ));
+        return "true".equalsIgnoreCase( value ) || "false".equalsIgnoreCase( value );
     }
 
     private static String stripOption( String arg )

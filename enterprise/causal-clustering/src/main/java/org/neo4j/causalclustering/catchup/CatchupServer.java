@@ -149,7 +149,7 @@ public class CatchupServer extends LifecycleAdapter
 
         ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup )
                 .channel( NioServerSocketChannel.class )
-                .option( ChannelOption.SO_REUSEADDR, true )
+                .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {
