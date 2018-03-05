@@ -379,7 +379,7 @@ public class ListQueriesProcedureTest
     public void shouldListIndexesUsedForScans() throws Exception
     {
         // given
-        String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
+        final String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label( "Node" ) ).on( "value" ).create();
@@ -517,7 +517,7 @@ public class ListQueriesProcedureTest
     private void shouldListUsedIndexes( String label, String property ) throws Exception
     {
         // given
-        String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
+        final String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
                 ") SET n." + property + " = 3";
         try ( Resource<Node> test = test( () ->
         {
@@ -541,7 +541,7 @@ public class ListQueriesProcedureTest
         }
 
         // given
-        String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
+        final String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
                 ") MATCH (u:" + label + "{" + property + ":4}) USING INDEX u:" + label + "(" + property +
                 ") CREATE (n)-[:KNOWS]->(u)";
         try ( Resource<Node> test = test( () ->

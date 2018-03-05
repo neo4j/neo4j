@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -774,16 +773,16 @@ public class DatabaseActionsTest
         // (Emil) (Peter) (Tobias)
 
         long startNode = graphdbHelper.createNode( MapUtil.map( "name", "Root" ), LABEL );
-        long child1_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Mattias" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", startNode, child1_l1 );
-        long child2_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Johan" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", startNode, child2_l1 );
-        long child1_l2 = graphdbHelper.createNode( MapUtil.map( "name", "Emil" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", child2_l1, child1_l2 );
-        long child1_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Peter" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", child1_l2, child1_l3 );
-        long child2_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Tobias" ), LABEL  );
-        graphdbHelper.createRelationship( "loves", child1_l2, child2_l3 );
+        long child1L1 = graphdbHelper.createNode( MapUtil.map( "name", "Mattias" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", startNode, child1L1 );
+        long child2L1 = graphdbHelper.createNode( MapUtil.map( "name", "Johan" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", startNode, child2L1 );
+        long child1L2 = graphdbHelper.createNode( MapUtil.map( "name", "Emil" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", child2L1, child1L2 );
+        long child1L3 = graphdbHelper.createNode( MapUtil.map( "name", "Peter" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", child1L2, child1L3 );
+        long child2L3 = graphdbHelper.createNode( MapUtil.map( "name", "Tobias" ), LABEL  );
+        graphdbHelper.createRelationship( "loves", child1L2, child2L3 );
         return startNode;
     }
 

@@ -49,12 +49,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Boolean.getBoolean;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
-
-import static java.lang.Boolean.getBoolean;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
@@ -320,12 +318,12 @@ public class UniquenessRecoveryTest
         ArrayList<Object[]> configurations = new ArrayList<>();
         if ( EXHAUSTIVE )
         {
-            for ( int kill_signal : KILL_SIGNALS )
+            for ( int killSignal : KILL_SIGNALS )
             {
                 configurations
-                        .add( new Configuration().force_create_constraint( true ).kill_signal( kill_signal ).build() );
+                        .add( new Configuration().force_create_constraint( true ).kill_signal( killSignal ).build() );
                 configurations
-                        .add( new Configuration().force_create_constraint( false ).kill_signal( kill_signal ).build() );
+                        .add( new Configuration().force_create_constraint( false ).kill_signal( killSignal ).build() );
             }
         }
         else

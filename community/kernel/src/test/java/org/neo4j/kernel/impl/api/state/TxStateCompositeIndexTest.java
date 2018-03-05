@@ -155,12 +155,12 @@ public class TxStateCompositeIndexTest
     public void shouldSeekInComplexMix()
     {
         // GIVEN
-        ValueTuple[] values2_1 = Iterators.array(
+        ValueTuple[] values21 = Iterators.array(
                 ValueTuple.of( "hi", 3 ),
                 ValueTuple.of( 9L, 33L ),
                 ValueTuple.of( "sneaker", false ) );
 
-        ValueTuple[] values2_2 = Iterators.array(
+        ValueTuple[] values22 = Iterators.array(
                 ValueTuple.of( true, false ),
                 ValueTuple.of( new int[]{ 10,100}, "array-buddy" ),
                 ValueTuple.of( 40.1, 40.2 ) );
@@ -170,12 +170,12 @@ public class TxStateCompositeIndexTest
                 ValueTuple.of( true, new long[]{4L}, 33L ),
                 ValueTuple.of( 2, false, 1 ) );
 
-        addEntries( indexOn_1_1_2, values2_1, 10 );
-        addEntries( indexOn_2_2_3, values2_2, 100 );
+        addEntries( indexOn_1_1_2, values21, 10 );
+        addEntries( indexOn_2_2_3, values22, 100 );
         addEntries( indexOn_2_2_3_4, values3, 1000 );
 
-        assertSeek( indexOn_1_1_2, values2_1, 10 );
-        assertSeek( indexOn_2_2_3, values2_2, 100 );
+        assertSeek( indexOn_1_1_2, values21, 10 );
+        assertSeek( indexOn_2_2_3, values22, 100 );
         assertSeek( indexOn_2_2_3_4, values3, 1000 );
     }
 

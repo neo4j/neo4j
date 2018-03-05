@@ -63,7 +63,7 @@ public class TestGrowingFileMemoryMapping
         assumeTrue( !SystemUtils.IS_OS_WINDOWS );
 
         // given
-        int NUMBER_OF_RECORDS = 1000000;
+        final int NUMBER_OF_RECORDS = 1000000;
 
         File storeDir = testDirectory.graphDbDir();
         Config config = Config.defaults( pagecache_memory, mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) );

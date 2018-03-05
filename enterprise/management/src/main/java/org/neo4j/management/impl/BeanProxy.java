@@ -61,8 +61,8 @@ public class BeanProxy
     {
         try
         {
-            Class<?> JMX = Class.forName( "javax.management.JMX" );
-            this.newMXBeanProxy = JMX.getMethod( "newMXBeanProxy", MBeanServerConnection.class, ObjectName.class, Class.class );
+            Class<?> jmx = Class.forName( "javax.management.JMX" );
+            this.newMXBeanProxy = jmx.getMethod( "newMXBeanProxy", MBeanServerConnection.class, ObjectName.class, Class.class );
         }
         catch ( ClassNotFoundException | NoSuchMethodException e )
         {
