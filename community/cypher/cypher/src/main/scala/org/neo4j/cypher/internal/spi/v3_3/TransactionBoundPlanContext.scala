@@ -190,6 +190,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     case Neo4jTypes.NTGeometry => symbols.CTGeometry
     case Neo4jTypes.NTMap => symbols.CTMap
     case Neo4jTypes.NTAny => symbols.CTAny
+    case Neo4jTypes.NTByteArray => symbols.CTList(symbols.CTInteger)
   }
 
   override def notificationLogger(): InternalNotificationLogger = logger

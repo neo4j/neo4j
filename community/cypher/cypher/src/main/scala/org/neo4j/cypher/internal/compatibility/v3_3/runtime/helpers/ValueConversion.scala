@@ -45,7 +45,10 @@ object ValueConversion {
       case symbols.CTString => l => Values.stringValue(l.asInstanceOf[String])
       case symbols.CTPath => p => ValueUtils.asPathValue(p.asInstanceOf[Path])
       case symbols.CTMap => m => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
-      case symbols.ListType(_)  => l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
+      case symbols.ListType(_) => {
+        case a: Array[Byte] => Values.byteArray(a)  // procedures can produce byte[] as a valid output type
+        case l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
+      }
       case symbols.CTAny => o => ValueUtils.of(o)
       case symbols.CTPoint => o => ValueUtils.asPointValue(o.asInstanceOf[Point])
       case symbols.CTGeometry => o => ValueUtils.asPointValue(o.asInstanceOf[Geometry])
@@ -74,7 +77,7 @@ object ValueConversion {
     case c: java.util.Collection[_] => ValueUtils.asListValue(c)
     case a: Array[_] =>
       a.getClass.getComponentType.getName match {
-      case "byte" => fromArray(byteArray(a.asInstanceOf[Array[Byte]]))
+      case "byte" => byteArray(a.asInstanceOf[Array[Byte]]) // byte[] is supported in procedures and BOLT
       case "short" => fromArray(Values.shortArray(a.asInstanceOf[Array[Short]]))
       case "char" => fromArray(Values.charArray(a.asInstanceOf[Array[Char]]))
       case "int" => fromArray(Values.intArray(a.asInstanceOf[Array[Int]]))

@@ -40,6 +40,7 @@ import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTByteArray;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
@@ -93,6 +94,7 @@ public class TypeMappers
         registerType( Map.class, TO_MAP );
         registerType( List.class, TO_LIST );
         registerType( Object.class, TO_ANY );
+        registerType( byte[].class, TO_BYTEARRAY );
     }
 
     public AnyType neoTypeFor( Type javaType ) throws ProcedureException
@@ -158,6 +160,7 @@ public class TypeMappers
             new SimpleConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean( s ) ) );
     private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class, new MapConverter() );
     private final NeoValueConverter TO_LIST = toList( TO_ANY, Object.class );
+    private final NeoValueConverter TO_BYTEARRAY = new SimpleConverter( NTByteArray, byte[].class, new ByteArrayConverter() );
 
     private NeoValueConverter toList( NeoValueConverter inner, Type type )
     {

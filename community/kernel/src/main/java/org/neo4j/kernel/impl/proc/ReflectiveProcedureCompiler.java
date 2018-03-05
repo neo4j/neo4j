@@ -588,6 +588,12 @@ class ReflectiveProcedureCompiler
                             numberOfDeclaredArguments, input.length );
                 }
 
+                // Some input fields are not supported by Cypher and need to be mapped
+                for ( int i = 0; i < input.length; i++ )
+                {
+                    input[i] = signature.inputSignature().get( i ).map( input[i] );
+                }
+
                 Object cls = constructor.invoke();
                 //API injection
                 inject( ctx, cls );

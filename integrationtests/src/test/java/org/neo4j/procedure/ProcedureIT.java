@@ -382,8 +382,7 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute(
-                    "CALL org.neo4j.procedure.listWithDefault" );
+            Result res = db.execute( "CALL org.neo4j.procedure.listWithDefault" );
 
             // Then
             assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
@@ -398,11 +397,55 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute(
-                    "CALL org.neo4j.procedure.genericListWithDefault" );
+            Result res = db.execute( "CALL org.neo4j.procedure.genericListWithDefault" );
 
             // Then
             assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithDefault() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.bytesWithDefault" );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{3, 2, 1} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.bytesWithDefault($param)", map( "param", new byte[]{4, 5, 6} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{4, 5, 6} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameterAndYield() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.bytesWithDefault([7,8,9]) YIELD bytes RETURN bytes" );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{7, 8, 9} ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -1354,6 +1397,16 @@ public class ProcedureIT
         }
     }
 
+    public static class BytesOutput
+    {
+        public byte[] bytes;
+
+        public BytesOutput( byte[] bytes )
+        {
+            this.bytes = bytes;
+        }
+    }
+
     public static class DoubleOutput
     {
         public double result;
@@ -1536,17 +1589,21 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]" ) List<Long>
-                list )
+        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]" ) List<Long> list )
         {
             return Stream.of( new ListOutput( list ) );
         }
 
         @Procedure
-        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" )
-                List<List<Long>> list )
+        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" ) List<List<Long>> list )
         {
             return Stream.of( new ListOutput( list == null ? null : list.get( 0 ) ) );
+        }
+
+        @Procedure
+        public Stream<BytesOutput> bytesWithDefault( @Name( value = "bytes", defaultValue = "[3, 2, 1]" ) byte[] bytes )
+        {
+            return Stream.of( new BytesOutput( bytes ) );
         }
 
         @Procedure
