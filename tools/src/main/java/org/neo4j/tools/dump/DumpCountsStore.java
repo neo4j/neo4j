@@ -208,7 +208,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             {
                 builder.append( "," );
             }
-            token( new StringBuilder(), labels, ":", "label", ids[i] ).toString();
+            token( builder, labels, ":", "label", ids[i] ).toString();
         }
         return builder.toString();
     }
