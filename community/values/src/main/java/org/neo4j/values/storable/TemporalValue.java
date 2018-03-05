@@ -180,12 +180,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     }
 
     @Override
-    public final String toString()
-    {
-        return getClass().getSimpleName() + "<" + prettyPrint() + ">";
-    }
-
-    @Override
     public final boolean equals( boolean x )
     {
         return false;
@@ -213,6 +207,12 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     public final boolean equals( String x )
     {
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return prettyPrint();
     }
 
     static <VALUE> VALUE parse( Class<VALUE> type, Pattern pattern, Function<Matcher,VALUE> parser, CharSequence text )

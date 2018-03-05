@@ -3,12 +3,6 @@ Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 
-Feature "TemporalToStringAcceptance": Scenario "Should serialize date"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize local time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize local date time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize date time"
-Feature "TemporalToStringAcceptance": Scenario "Should serialize duration"
 Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date"
 Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local time"
 Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for time"
