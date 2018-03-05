@@ -49,6 +49,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 public class DiscoveryServiceTest
 {
@@ -90,9 +91,13 @@ public class DiscoveryServiceTest
 
     private DiscoveryService testDiscoveryService() throws URISyntaxException
     {
-        Config mockConfig = mockConfig();
-        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
-                neoServer );
+        return testDiscoveryService( mockConfig() );
+    }
+
+    private DiscoveryService testDiscoveryService( Config config ) throws URISyntaxException
+    {
+        return new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
+                communityDiscoverableURIs( config, null ) );
     }
 
     @Test
@@ -124,6 +129,16 @@ public class DiscoveryServiceTest
     }
 
     @Test
+    public void shouldAllowOverridingBoltURI() throws Exception
+    {
+        Config config = mockConfig();
+        config.augment( ServerSettings.bolt_discoverable_address, "bolt+routing://hello.com:7687" );
+        Response response = testDiscoveryService( config ).getDiscoveryDocument( uriInfo( "localhost" ) );
+        String json = new String( (byte[]) response.getEntity() );
+        assertThat( json, containsString( "\"bolt\" : \"bolt+routing://hello.com:7687" ) );
+    }
+
+    @Test
     public void shouldReturnDataURI() throws Exception
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
@@ -142,13 +157,12 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
     {
-        Config mockConfig = mock( Config.class );
-        URI browserUri = new URI( "/browser/" );
-        when( mockConfig.get( ServerSettings.browser_path ) ).thenReturn( browserUri );
+        Config config = Config.defaults( ServerSettings.browser_path, "/browser/" );
 
         String baseUri = "http://www.example.com:5435";
-        DiscoveryService ds = new DiscoveryService( mockConfig,
-                new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ), neoServer );
+        DiscoveryService ds =
+                new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
+                        communityDiscoverableURIs( config, null ) );
 
         Response response = ds.redirectToBrowser();
 

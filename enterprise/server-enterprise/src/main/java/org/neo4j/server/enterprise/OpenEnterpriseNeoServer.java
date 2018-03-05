@@ -22,13 +22,13 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -36,6 +36,7 @@ import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -53,8 +54,10 @@ import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.enterprise.modules.EnterpriseAuthorizationModule;
 import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.AuthorizationModule;
+import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.DatabaseRoleInfoServerModule;
+import org.neo4j.server.rest.EnterpriseDiscoverableURIs;
 import org.neo4j.server.rest.MasterInfoService;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.Jetty9WebServer;
@@ -161,6 +164,14 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
     {
         return new EnterpriseAuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(),
                 getUriWhitelist() );
+    }
+
+    @Override
+    protected DBMSModule createDBMSModule()
+    {
+        ConnectorPortRegister ports = getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+        return new DBMSModule( webServer, getConfig(),
+                EnterpriseDiscoverableURIs.enterpriseDiscoverableURIs( getConfig(), ports ) );
     }
 
     @SuppressWarnings( "unchecked" )

@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -48,6 +49,7 @@ import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
+import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 public class CommunityNeoServer extends AbstractNeoServer
 {
@@ -74,7 +76,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     protected Iterable<ServerModule> createServerModules()
     {
         return Arrays.asList(
-                new DBMSModule( webServer, getConfig() ),
+                createDBMSModule(),
                 new RESTApiModule( webServer, getConfig(), getDependencyResolver(), logProvider ),
                 new ManagementApiModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), logProvider, this ),
@@ -98,6 +100,12 @@ public class CommunityNeoServer extends AbstractNeoServer
         toReturn.add( new JmxService( null, null ) );
 
         return toReturn;
+    }
+
+    protected DBMSModule createDBMSModule()
+    {
+        ConnectorPortRegister ports = getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+        return new DBMSModule( webServer, getConfig(), communityDiscoverableURIs( getConfig(), ports ) );
     }
 
     protected AuthorizationModule createAuthorizationModule()
