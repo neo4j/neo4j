@@ -485,8 +485,8 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
   }
 
-  private def shouldNotHaveAccessor(typ: String, accecssors: Seq[String], args: String = ""): Unit = {
-    for (acc <- accecssors) {
+  private def shouldNotHaveAccessor(typ: String, accessors: Seq[String], args: String = ""): Unit = {
+    for (acc <- accessors) {
       val query = s"RETURN $typ($args).$acc"
       withClue(s"Executing $query") {
         an[UnsupportedTemporalTypeException] shouldBe thrownBy {

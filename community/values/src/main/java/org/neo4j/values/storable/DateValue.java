@@ -217,7 +217,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
-        throw new IllegalArgumentException( String.format( "Cannot get the time zone of: %s", this ) );
+        throw new UnsupportedTemporalTypeException( String.format( "Cannot get the time zone of: %s", this ) );
     }
 
     @Override
