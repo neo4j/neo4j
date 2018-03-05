@@ -264,14 +264,11 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
     public static PointValue fromMap( MapValue map )
     {
-        AnyValue[] fields = new Value[PointValueField.__MAX_VALUE__.ordinal()];
+        AnyValue[] fields = new Value[PointValueField.values().length];
         for ( PointValueField f : PointValueField.values() )
         {
-            if ( f != PointValueField.__MAX_VALUE__ )
-            {
-                AnyValue fieldValue = map.get( f.name().toLowerCase() );
-                fields[f.ordinal()] = fieldValue != Values.NO_VALUE ? fieldValue : null;
-            }
+            AnyValue fieldValue = map.get( f.name().toLowerCase() );
+            fields[f.ordinal()] = fieldValue != Values.NO_VALUE ? fieldValue : null;
         }
         return fromInputFields( fields );
     }
@@ -305,7 +302,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             throw new IllegalArgumentException( errorMessage );
         }
 
-        Value[] fields = new Value[PointValueField.__MAX_VALUE__.ordinal()];
+        Value[] fields = new Value[PointValueField.values().length];
 
         do
         {
@@ -462,67 +459,24 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
     private enum PointValueField
     {
-        X
-                {
-                    @Override
-                    ValueGroup valueType()
-                    {
-                        return NUMBER;
-                    }
-                },
-        Y
-                {
-                    @Override
-                    ValueGroup valueType()
-                    {
-                        return NUMBER;
-                    }
-                },
-        Z
-                {
-                    @Override
-                    ValueGroup valueType()
-                    {
-                        return NUMBER;
-                    }
-                },
-        LATITUDE
-                {
-                    @Override
-                    ValueGroup valueType()
-                    {
-                        return NUMBER;
-                    }
-                },
-        LONGITUDE
-                {
-                    @Override
-                    ValueGroup valueType()
-                    {
-                        return NUMBER;
-                    }
-                },
-        HEIGHT
-                {
-                    @Override
-                    ValueGroup valueType()
-                    {
-                        return NUMBER;
-                    }
-                },
-        CRS
-                {
-                    @Override
-                    ValueGroup valueType()
-                    {
-                        return TEXT;
-                    }
-                },
-        __MAX_VALUE__; // This is just used to define array boundaries
+        X( NUMBER ),
+        Y( NUMBER ),
+        Z( NUMBER ),
+        LATITUDE( NUMBER ),
+        LONGITUDE( NUMBER ),
+        HEIGHT( NUMBER ),
+        CRS( TEXT );
+
+        PointValueField( ValueGroup valueType )
+        {
+            this.valueType = valueType;
+        }
 
         ValueGroup valueType()
         {
-            return ValueGroup.NO_VALUE;
+            return valueType;
         }
+
+        private ValueGroup valueType;
     }
 }

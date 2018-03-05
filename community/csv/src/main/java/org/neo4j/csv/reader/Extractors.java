@@ -90,7 +90,7 @@ public class Extractors
     private final Extractor<long[]> longArray;
     private final Extractor<float[]> floatArray;
     private final Extractor<double[]> doubleArray;
-    private final PointExtractor point_;
+    private final PointExtractor point;
 
     public Extractors( char arrayDelimiter )
     {
@@ -141,7 +141,7 @@ public class Extractors
             add( longArray = new LongArrayExtractor( arrayDelimiter ) );
             add( floatArray = new FloatArrayExtractor( arrayDelimiter ) );
             add( doubleArray = new DoubleArrayExtractor( arrayDelimiter ) );
-            add( point_ = new PointExtractor() );
+            add( point = new PointExtractor() );
         }
         catch ( IllegalAccessException e )
         {
@@ -249,9 +249,9 @@ public class Extractors
         return doubleArray;
     }
 
-    public PointExtractor point_()
+    public PointExtractor point()
     {
-        return point_;
+        return point;
     }
 
     private abstract static class AbstractExtractor<T> implements Extractor<T>

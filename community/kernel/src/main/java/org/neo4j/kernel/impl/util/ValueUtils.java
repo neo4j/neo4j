@@ -278,7 +278,8 @@ public final class ValueUtils
     /**
      * Creates a {@link Value} from the given object, or if it is already a Value it is returned as it is.
      * <p>
-     * This is different from {@link Values#of} which explicitly fails if given a Value.
+     * This is different from {@link Values#of} which often explicitly fails or creates a new copy
+     * if given a Value.
      */
     public static Value asValue( Object value )
     {
