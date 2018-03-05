@@ -45,8 +45,8 @@ trait Query extends Parser
   }
 
   def Clause: Rule1[ast.Clause] = (
-      Use
-    | Construct
+      UseGraph
+    | ConstructGraph
     | LoadCSV
     | Start
     | Match
