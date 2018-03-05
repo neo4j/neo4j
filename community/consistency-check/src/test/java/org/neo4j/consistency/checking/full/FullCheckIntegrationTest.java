@@ -68,7 +68,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -76,12 +75,10 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -136,6 +133,7 @@ import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.uniqueForLabel;
@@ -156,7 +154,7 @@ import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
-    private static final IndexProvider.Descriptor DESCRIPTOR = IndexProvider.NO_INDEX_PROVIDER.getProviderDescriptor();
+    private static final Descriptor DESCRIPTOR = new Descriptor( "lucene+native", "1.0" );
     private static final String PROP1 = "key1";
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
@@ -451,7 +449,7 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll();
+        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), storeAccess.indexes() ).indexesGetAll();
         while ( rules.hasNext() )
         {
             IndexRule rule = rules.next();
@@ -563,17 +561,15 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<IndexRule> indexRuleIterator =
-                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll();
-        NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
-                fixture.directStoreAccess().nativeStores().getRawNeoStores() );
+        DirectStoreAccess storeAccess = fixture.directStoreAccess();
+        Iterator<IndexRule> indexRuleIterator = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), storeAccess.indexes() ).indexesGetAll();
+        NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storeAccess.nativeStores().getRawNeoStores() );
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
             IndexDescriptor descriptor = indexRule.getIndexDescriptor();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
-                            indexRule.getId(), descriptor, samplingConfig );
+            IndexAccessor accessor = storeAccess.indexes().
+                    apply( indexRule.getProviderDescriptor() ).getOnlineAccessor( indexRule.getId(), descriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
@@ -582,6 +578,7 @@ public class FullCheckIntegrationTest
                     for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( descriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, descriptor, update.values() ) );
+                        System.out.println( "removed " + nodeId + " from " + indexRule );
                     }
                 }
             }
@@ -592,6 +589,10 @@ public class FullCheckIntegrationTest
         // when
         ConsistencySummaryStatistics stats = check();
 
+        for ( RecordType recordType : RecordType.values() )
+        {
+            System.out.println( recordType.toString() + stats.getInconsistencyCountForRecordType( recordType ) );
+        }
         // then
         on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
                    .andThatsAllFolks();
@@ -602,12 +603,12 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<IndexRule> indexRuleIterator =
-                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll();
+        DirectStoreAccess storeAccess = fixture.directStoreAccess();
+        Iterator<IndexRule> indexRuleIterator = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), storeAccess.indexes() ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().apply( indexRule.getProviderDescriptor() )
+            IndexAccessor accessor = storeAccess.indexes().apply( indexRule.getProviderDescriptor() )
                     .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
@@ -1065,9 +1066,6 @@ public class FullCheckIntegrationTest
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
 
-                assertEquals( asList( record1 ), records1 );
-                assertEquals( asList( record2 ), records2 );
-
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );
 
@@ -1109,9 +1107,6 @@ public class FullCheckIntegrationTest
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
-
-                assertEquals( asList( record1 ), records1 );
-                assertEquals( asList( record2 ), records2 );
 
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );

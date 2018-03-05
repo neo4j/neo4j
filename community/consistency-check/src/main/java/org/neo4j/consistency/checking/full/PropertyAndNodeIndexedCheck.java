@@ -37,7 +37,6 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.LookupFilter;
@@ -98,7 +97,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         for ( IndexRule indexRule : indexes.onlineRules() )
         {
             int[] labelIds = indexRule.schema().getEntityTokenIds();
-            if ( !Collections.disjoint( labels, Arrays.asList( labelIds ) ) )
+            if ( Arrays.stream( labelIds ).asLongStream().anyMatch( labels::contains ) )
             {
                 if ( nodePropertyMap == null )
                 {
