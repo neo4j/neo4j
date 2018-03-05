@@ -31,6 +31,10 @@ class MultipleGraphClausesParsingTest
 
   implicit val parser: Rule1[Clause] = Clause
 
+  test("USE GRAPH foo.bar") {
+    yields(ast.UseGraph(ast.QualifiedGraphName(List("foo", "bar"))))
+  }
+
   test("CONSTRUCT GRAPH { CREATE () }") {
     failsToParse
   }

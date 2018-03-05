@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.createGraphIntroducesHorizon
+//import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.createGraphIntroducesHorizon
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class createGraphIntroducesHorizonTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
 
-  override val rewriterUnderTest = createGraphIntroducesHorizon
+  override val rewriterUnderTest = ??? //createGraphIntroducesHorizon
 
   test("create x >> is rewritten") {
     assertRewrite(

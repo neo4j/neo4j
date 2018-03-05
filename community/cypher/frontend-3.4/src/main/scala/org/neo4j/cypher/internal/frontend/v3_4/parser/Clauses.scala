@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.v3_4.expressions.{Pattern => ASTPattern, Variable}
+import org.neo4j.cypher.internal.v3_4.expressions.{Pattern => ASTPattern}
 import org.parboiled.scala._
 
 trait Clauses extends Parser
@@ -38,6 +37,18 @@ trait Clauses extends Parser
       keyword("AS") ~~ Variable ~~
       optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~>>
       (ast.LoadCSV(_, _, _, _))
+  }
+
+  def Use = rule("USE") {
+    group(
+      keyword("USE GRAPH") ~~ QualifiedGraphName  ~~>> (ast.UseGraph(_))
+    )
+  }
+
+  def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
+    group(
+      SymbolicNameString ~~ zeroOrMore(operator(".") ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _))
+    )
   }
 
   def Start: Rule1[ast.Start] = rule("START") {
