@@ -602,6 +602,10 @@ return p""")
     resultWithAlias.close()
   }
 
+  test("remove property from null literal") {
+    executeWithAllPlannersAndCompatibilityMode("REMOVE null.p") should have size 0
+  }
+
   /**
    * Append variable to keys and transform value arrays to lists
    */
