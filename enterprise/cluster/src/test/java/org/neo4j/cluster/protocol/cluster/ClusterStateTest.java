@@ -19,15 +19,15 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
@@ -245,8 +245,8 @@ public class ClusterStateTest
 
     private ConfigurationResponseState configurationResponseState( Map<InstanceId, URI> existingMembers )
     {
-        return new ConfigurationResponseState( Collections.emptyMap(),
-                existingMembers, null, "ClusterStateTest" );
+        return new ConfigurationResponseState( Collections.emptyMap(), existingMembers, null,
+                Collections.emptySet(),  "ClusterStateTest" );
     }
 
     private ClusterConfiguration clusterConfiguration( Map<InstanceId, URI> members )

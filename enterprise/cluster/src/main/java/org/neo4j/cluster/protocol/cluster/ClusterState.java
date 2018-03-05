@@ -158,7 +158,7 @@ public enum ClusterState implements State<ClusterContext, ClusterMessage>
                             HashMap<InstanceId, URI> memberList = new HashMap<>( state.getMembers() );
                             context.discoveredLastReceivedInstanceId( state.getLatestReceivedInstanceId().getId() );
 
-                            context.acquiredConfiguration( memberList, state.getRoles() );
+                            context.acquiredConfiguration( memberList, state.getRoles(), state.getFailedMembers() );
 
                             if ( !memberList.containsKey( context.getMyId() ) ||
                                     !memberList.get( context.getMyId() ).equals( context.boundAt() ) )
@@ -505,6 +505,7 @@ public enum ClusterState implements State<ClusterContext, ClusterMessage>
                                                 .getRoles(), context.getConfiguration().getMembers(),
                                                 new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId(
                                                         context.getLastDeliveredInstanceId() ),
+                                                context.getFailedInstances(),
                                                 context.getConfiguration().getName() ) ) ) );
                             }
                             else
@@ -516,6 +517,7 @@ public enum ClusterState implements State<ClusterContext, ClusterMessage>
                                                 .getRoles(), context.getConfiguration().getMembers(),
                                                 new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId(
                                                         context.getLastDeliveredInstanceId() ),
+                                                context.getFailedInstances(),
                                                 context.getConfiguration().getName() ) ) ) );
                             }
                             break;
