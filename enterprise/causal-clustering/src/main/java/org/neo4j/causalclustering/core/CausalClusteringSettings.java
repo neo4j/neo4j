@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core;
 import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -40,6 +39,7 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
@@ -452,13 +452,9 @@ public class CausalClusteringSettings implements LoadableConfig
                     apply( rawConfig::get );
                     // only return if it was present though
 
-                    Map<String, String> validConfig = new HashMap<>();
-
-                    rawConfig.keySet().stream()
-                            .filter( key -> key.startsWith( name() ) )
-                            .forEach( key -> validConfig.put( key, rawConfig.get( key ) ) );
-
-                    return validConfig;
+                    return rawConfig.entrySet().stream()
+                            .filter( entry -> entry.getKey().startsWith( name() ) )
+                            .collect( CollectorsUtil.entriesToMap() );
                 }
                 catch ( RuntimeException e )
                 {
