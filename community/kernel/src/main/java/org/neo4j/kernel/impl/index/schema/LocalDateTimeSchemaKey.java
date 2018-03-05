@@ -21,53 +21,25 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 
 import static java.lang.String.format;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link LocalDateTimeValue}.
  */
-class LocalDateTimeSchemaKey extends ValueWriter.Adapter<RuntimeException> implements NativeSchemaKey
+class LocalDateTimeSchemaKey extends NativeSchemaKey
 {
     static final int SIZE =
             Long.BYTES +    /* epochSecond */
             Integer.BYTES + /* nanoOfSecond */
             Long.BYTES;     /* entityId */
 
-    private long entityId;
-    private boolean compareId;
-
     int nanoOfSecond;
     long epochSecond;
 
-    public void setCompareId( boolean compareId )
-    {
-        this.compareId = compareId;
-    }
-
-    public boolean getCompareId()
-    {
-        return compareId;
-    }
-
     @Override
-    public long getEntityId()
+    public void from( Value... values )
     {
-        return entityId;
-    }
-
-    @Override
-    public void setEntityId( long entityId )
-    {
-        this.entityId = entityId;
-    }
-
-    @Override
-    public void from( long entityId, Value... values )
-    {
-        this.entityId = entityId;
-        compareId = false;
         assertValidValue( values ).writeTo( this );
     }
 
@@ -90,33 +62,23 @@ class LocalDateTimeSchemaKey extends ValueWriter.Adapter<RuntimeException> imple
     }
 
     @Override
-    public String propertiesAsString()
-    {
-        return asValue().toString();
-    }
-
-    @Override
     public Value asValue()
     {
         return LocalDateTimeValue.localDateTime( epochSecond, nanoOfSecond );
     }
 
     @Override
-    public void initAsLowest()
+    public void initValueAsLowest()
     {
         epochSecond = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
-        entityId = Long.MIN_VALUE;
-        compareId = true;
     }
 
     @Override
-    public void initAsHighest()
+    public void initValueAsHighest()
     {
         epochSecond = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;
-        entityId = Long.MAX_VALUE;
-        compareId = true;
     }
 
     /**
@@ -139,7 +101,7 @@ class LocalDateTimeSchemaKey extends ValueWriter.Adapter<RuntimeException> imple
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,nanoOfDay=%s", asValue(), entityId, nanoOfSecond );
+        return format( "value=%s,entityId=%d,nanoOfDay=%s", asValue(), getEntityId(), nanoOfSecond );
     }
 
     @Override

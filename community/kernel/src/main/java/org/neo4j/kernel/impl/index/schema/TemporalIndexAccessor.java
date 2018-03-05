@@ -234,7 +234,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         }
 
         @Override
-        public PartAccessor<?> newDateTime()
+        public PartAccessor<?> newDateTime() throws IOException
         {
             return createPartAccessor( temporalIndexFiles.dateTime() );
         }
