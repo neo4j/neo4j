@@ -36,7 +36,6 @@ import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values._
 
 /**
@@ -101,7 +100,7 @@ class ProcedureExecutionResult(context: QueryContext,
         fieldArray(i) = mapping._3 match {
           case CTNode => transform(res(pos), fromNodeProxy)
           case CTRelationship => transform(res(pos), fromRelationshipProxy)
-          case CTPath => transform(res(pos), asPathValue)
+          case CTPath => transform(res(pos), fromPath)
           case CTInteger => transform(res(pos), longValue)
           case CTFloat => transform(res(pos), doubleValue)
           case CTNumber => transform(res(pos), numberValue)
