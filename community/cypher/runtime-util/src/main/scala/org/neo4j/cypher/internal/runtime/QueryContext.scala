@@ -228,10 +228,6 @@ trait Operations[T] {
 
   def getById(id: Long): T
 
-  def indexGet(name: String, key: String, value: Any): Iterator[T]
-
-  def indexQuery(name: String, query: Any): Iterator[T]
-
   def isDeletedInThisTx(id: Long): Boolean
 
   def all: Iterator[T]

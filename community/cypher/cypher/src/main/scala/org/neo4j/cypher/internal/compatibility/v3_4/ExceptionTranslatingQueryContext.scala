@@ -301,12 +301,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def removeProperty(id: Long, propertyKeyId: Int) =
       translateException(inner.removeProperty(id, propertyKeyId))
 
-    override def indexGet(name: String, key: String, value: Any): Iterator[T] =
-      translateException(inner.indexGet(name, key, value))
-
-    override def indexQuery(name: String, query: Any): Iterator[T] =
-      translateException(inner.indexQuery(name, query))
-
     override def all: Iterator[T] =
       translateException(inner.all)
 

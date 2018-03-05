@@ -282,10 +282,6 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
 
   override def removeProperty(obj: Long, propertyKeyId: Int): Unit = singleDbHit(inner.removeProperty(obj, propertyKeyId))
 
-  override def indexGet(name: String, key: String, value: Any): Iterator[T] = manyDbHits(inner.indexGet(name, key, value))
-
-  override def indexQuery(name: String, query: Any): Iterator[T] = manyDbHits(inner.indexQuery(name, query))
-
   override def all: Iterator[T] = manyDbHits(inner.all)
 
   override def allPrimitive: PrimitiveLongIterator = manyDbHits(inner.allPrimitive)

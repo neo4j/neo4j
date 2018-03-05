@@ -634,14 +634,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def indexGet(name: String, key: String, value: Any): Iterator[NodeValue] =
-      JavaConversionSupport
-        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getByIdIfExists)
-
-    override def indexQuery(name: String, query: Any): Iterator[NodeValue] =
-      JavaConversionSupport
-        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexQuery(name, query))(getByIdIfExists)
-
     override def isDeletedInThisTx(id: Long): Boolean = transactionalContext.stateView
       .hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
 
@@ -772,14 +764,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         override protected def close(): Unit = relCursor.close()
       }
     }
-
-    override def indexGet(name: String, key: String, value: Any): Iterator[RelationshipValue] =
-      JavaConversionSupport.mapToScalaENFXSafe(
-        transactionalContext.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getByIdIfExists)
-
-    override def indexQuery(name: String, query: Any): Iterator[RelationshipValue] =
-      JavaConversionSupport.mapToScalaENFXSafe(
-        transactionalContext.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getByIdIfExists)
 
     override def isDeletedInThisTx(id: Long): Boolean =
       transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState()
@@ -1152,6 +1136,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def allocateAndTraceNodeCursor() = {
     val cursor = transactionalContext.cursors.allocateNodeCursor()
+    resources.trace(cursor)
+    cursor
+  }
+
+  private def allocateAndTraceExplicitIndexCursor() = {
+    val cursor = transactionalContext.cursors.allocateNodeExplicitIndexCursor()
     resources.trace(cursor)
     cursor
   }
