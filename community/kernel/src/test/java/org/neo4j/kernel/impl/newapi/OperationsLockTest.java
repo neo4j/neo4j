@@ -93,7 +93,7 @@ public class OperationsLockTest
     {
         txState = Mockito.spy( new TxState() );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
-        when( transaction.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( transaction.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( transaction.dataWrite() ).thenReturn( write );
         when( transaction.isOpen() ).thenReturn( true );
         when( transaction.lockTracer() ).thenReturn( LockTracer.NONE );

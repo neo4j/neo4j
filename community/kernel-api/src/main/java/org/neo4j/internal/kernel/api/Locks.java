@@ -24,4 +24,27 @@ package org.neo4j.internal.kernel.api;
  */
 public interface Locks
 {
+    void acquireExclusiveNodeLock( long... ids );
+
+    void acquireExclusiveRelationshipLock( long... ids );
+
+    void acquireExclusiveExplicitIndexLock( long... ids );
+
+    void releaseExclusiveNodeLock( long... ids );
+
+    void releaseExclusiveRelationshipLock( long... ids );
+
+    void releaseExclusiveExplicitIndexLock( long... ids );
+
+    void acquireSharedNodeLock( long... ids );
+
+    void acquireSharedRelationshipLock( long... ids );
+
+    void acquireSharedExplicitIndexLock( long... ids );
+
+    void releaseSharedNodeLock( long... ids );
+
+    void releaseSharedRelationshipLock( long... ids );
+
+    void releaseSharedExplicitIndexLock( long... ids );
 }

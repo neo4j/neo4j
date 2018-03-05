@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -73,7 +74,8 @@ abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
         org.neo4j.internal.kernel.api.SchemaRead,
-        org.neo4j.internal.kernel.api.Procedures
+        org.neo4j.internal.kernel.api.Procedures,
+        org.neo4j.internal.kernel.api.Locks
 {
     private final DefaultCursors cursors;
     final KernelTransactionImplementation ktx;
@@ -555,8 +557,92 @@ abstract class Read implements TxStateHolder,
         return ktx.hasTxStateWithChanges();
     }
 
+    @Override
+    public void acquireExclusiveNodeLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireExclusiveRelationshipLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireExclusiveExplicitIndexLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveNodeLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseExclusive( ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveRelationshipLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseExclusive( ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveExplicitIndexLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseExclusive( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedNodeLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedRelationshipLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedExplicitIndexLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedNodeLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseShared( ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedRelationshipLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseShared( ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedExplicitIndexLock( long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseShared( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
     void sharedOptimisticLock( ResourceType resource, long resourceId )
     {
-        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
     }
 }
