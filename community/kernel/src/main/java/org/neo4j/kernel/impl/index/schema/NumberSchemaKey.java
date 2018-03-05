@@ -46,13 +46,14 @@ class NumberSchemaKey extends NativeSchemaKey
     long rawValueBits;
 
     @Override
-    protected void assertCorrectType( Value value )
+    protected Value assertCorrectType( Value value )
     {
         if ( !Values.isNumberValue( value ) )
         {
             throw new IllegalArgumentException(
                     "Key layout does only support numbers, tried to create key from " + value );
         }
+        return value;
     }
 
     @Override

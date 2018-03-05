@@ -1,0 +1,122 @@
+/*
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.index.schema;
+
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
+import org.neo4j.kernel.impl.store.TimeZoneMapping;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.Value;
+
+import static java.lang.String.format;
+
+/**
+ * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateTimeValue}.
+ *
+ * With these keys the DateTimeValues are sorted by UTC time, and then by time zone. Time zones are sorted so that
+ * DateTimeValues with zoneOffset come first (sorted by the zoneOffset), followed by DateTimeValues with zoneIds,
+ * sorted by zoneNumber.
+ */
+class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSchemaKey>
+{
+    static final int SIZE =
+            Long.BYTES +    /* epochSecond */
+            Integer.BYTES + /* nanoOfSecond */
+            Integer.BYTES + /* timeZone */
+            Long.BYTES;     /* entityId */
+
+    int nanoOfSecond;
+    long epochSecondUTC;
+    short zoneId;
+    int zoneOffsetSeconds;
+
+    @Override
+    public Value asValue()
+    {
+        return zoneId >= 0 ?
+            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneId.of( TimeZoneMapping.map( zoneId ) ) ) :
+            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
+    }
+
+    @Override
+    public void initValueAsLowest()
+    {
+        epochSecondUTC = Long.MIN_VALUE;
+        nanoOfSecond = Integer.MIN_VALUE;
+    }
+
+    @Override
+    public void initValueAsHighest()
+    {
+        epochSecondUTC = Long.MAX_VALUE;
+        nanoOfSecond = Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int compareValueTo( ZonedDateTimeSchemaKey other )
+    {
+        int compare = Long.compare( epochSecondUTC, other.epochSecondUTC );
+        if ( compare == 0 )
+        {
+            compare = Integer.compare( nanoOfSecond, other.nanoOfSecond );
+        }
+        if ( compare == 0 )
+        {
+            compare = zoneId >= 0 ? Integer.compare( zoneId, other.zoneId ) :
+                                    Integer.compare( zoneOffsetSeconds, zoneOffsetSeconds );
+        }
+        return compare;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "value=%s,entityId=%d,epochSecond=%d,nanoOfSecond=%d", asValue(), getEntityId(), epochSecondUTC, nanoOfSecond );
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds )
+    {
+        this.epochSecondUTC = epochSecondUTC;
+        this.nanoOfSecond = nano;
+        this.zoneOffsetSeconds = offsetSeconds;
+        this.zoneId = -1;
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, String zoneId )
+    {
+        this.epochSecondUTC = epochSecondUTC;
+        this.nanoOfSecond = nano;
+        this.zoneId = TimeZoneMapping.map( zoneId );
+    }
+
+    @Override
+    protected Value assertCorrectType( Value value )
+    {
+        if ( !(value instanceof DateTimeValue) )
+        {
+            throw new IllegalArgumentException(
+                    "Key layout does only support DateTimeValue, tried to create key from " + value );
+        }
+        return value;
+    }
+}

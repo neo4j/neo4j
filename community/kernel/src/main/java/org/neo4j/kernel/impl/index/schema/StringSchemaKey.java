@@ -47,13 +47,14 @@ class StringSchemaKey extends NativeSchemaKey
     }
 
     @Override
-    protected void assertCorrectType( Value value )
+    protected Value assertCorrectType( Value value )
     {
         if ( !Values.isTextValue( value ) )
         {
             throw new IllegalArgumentException(
                     "Key layout does only support strings, tried to create key from " + value );
         }
+        return value;
     }
 
     @Override

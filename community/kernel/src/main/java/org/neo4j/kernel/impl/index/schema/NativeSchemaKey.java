@@ -80,12 +80,10 @@ abstract class NativeSchemaKey extends ValueWriter.Adapter<RuntimeException>
         {
             throw new IllegalArgumentException( "Tried to create key without value" );
         }
-        Value value = values[0];
-        assertCorrectType( value );
-        return value;
+        return assertCorrectType( values[0] );
     }
 
-    protected abstract void assertCorrectType( Value value );
+    protected abstract Value assertCorrectType( Value value );
 
     String propertiesAsString()
     {

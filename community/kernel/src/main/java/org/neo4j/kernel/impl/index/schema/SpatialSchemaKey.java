@@ -96,13 +96,14 @@ class SpatialSchemaKey extends NativeSchemaKey
     }
 
     @Override
-    protected void assertCorrectType( Value value )
+    protected Value assertCorrectType( Value value )
     {
         if ( !Values.isGeometryValue( value ) )
         {
             throw new IllegalArgumentException(
                     "Key layout does only support geometries, tried to create key from " + value );
         }
+        return value;
     }
 
     /**

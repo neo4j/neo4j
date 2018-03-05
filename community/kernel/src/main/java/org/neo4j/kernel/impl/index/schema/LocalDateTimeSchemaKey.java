@@ -83,12 +83,13 @@ class LocalDateTimeSchemaKey extends ComparableNativeSchemaKey<LocalDateTimeSche
     }
 
     @Override
-    protected void assertCorrectType( Value value )
+    protected Value assertCorrectType( Value value )
     {
         if ( !(value instanceof LocalDateTimeValue) )
         {
             throw new IllegalArgumentException(
                     "Key layout does only support LocalDateTimeValue, tried to create key from " + value );
         }
+        return value;
     }
 }

@@ -72,12 +72,13 @@ class DateSchemaKey extends ComparableNativeSchemaKey<DateSchemaKey>
     }
 
     @Override
-    protected void assertCorrectType( Value value )
+    protected Value assertCorrectType( Value value )
     {
         if ( !(value instanceof DateValue) )
         {
             throw new IllegalArgumentException(
                     "Key layout does only support DateValue, tried to create key from " + value );
         }
+        return value;
     }
 }

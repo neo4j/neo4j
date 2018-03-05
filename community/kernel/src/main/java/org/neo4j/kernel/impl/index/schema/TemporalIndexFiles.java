@@ -34,7 +34,7 @@ class TemporalIndexFiles
     private final FileSystemAbstraction fs;
     private FileLayout<DateSchemaKey> date;
     private FileLayout<LocalDateTimeSchemaKey> localDateTime;
-    private FileLayout zonedDateTime;
+    private FileLayout<ZonedDateTimeSchemaKey> zonedDateTime;
     private FileLayout<LocalTimeSchemaKey> localTime;
     private FileLayout zonedTime;
     private FileLayout duration;
@@ -44,8 +44,9 @@ class TemporalIndexFiles
         this.fs = fs;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
         this.date = new FileLayout<>( new File( indexDirectory, "date" ), DateLayout.of( descriptor ), ValueGroup.DATE );
-        this.localTime = new FileLayout<>( new File( indexDirectory, "time" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
-        this.localDateTime = new FileLayout<>( new File( indexDirectory, "datetime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
+        this.localTime = new FileLayout<>( new File( indexDirectory, "localTime" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
+        this.localDateTime = new FileLayout<>( new File( indexDirectory, "localDateTime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
+        this.zonedDateTime = new FileLayout<>( new File( indexDirectory, "zonedDateTime" ), ZonedDateTimeLayout.of( descriptor ), ValueGroup.ZONED_DATE_TIME );
     }
 
     Iterable<FileLayout> existing()
@@ -81,6 +82,11 @@ class TemporalIndexFiles
     FileLayout<LocalDateTimeSchemaKey> localDateTime()
     {
         return localDateTime;
+    }
+
+    FileLayout<ZonedDateTimeSchemaKey> zonedDateTime()
+    {
+        return zonedDateTime;
     }
 
     private void addIfExists( List<FileLayout> existing, FileLayout fileLayout )

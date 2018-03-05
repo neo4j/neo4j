@@ -37,6 +37,7 @@ import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
@@ -96,7 +97,17 @@ public abstract class IndexProviderCompatibilityTestSuite
                     Arrays.asList(
                             DateValue.epochDate( 2 ),
                             LocalTimeValue.localTime( 100000 ),
-                            LocalDateTimeValue.localDateTime( 2018, 3, 1, 13, 50, 42, 1337 ) ),
+                            LocalDateTimeValue.localDateTime( 2018, 3, 1, 13, 50, 42, 1337 ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "UTC" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "Europe/Stockholm" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2015, 3, 25, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 4, 25, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 26, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 13, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 46, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7475, "+05:00" )),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
                                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
 
@@ -107,7 +118,8 @@ public abstract class IndexProviderCompatibilityTestSuite
                     Arrays.asList(
                             DateValue.epochDate( 42 ),
                             LocalTimeValue.localTime( 2000 ),
-                            LocalDateTimeValue.localDateTime( 2018, 2, 28, 11, 5, 1, 42 ) ),
+                            LocalDateTimeValue.localDateTime( 2018, 2, 28, 11, 5, 1, 42 ),
+                            DateTimeValue.datetime( 1999, 12, 31, 23, 59, 59, 123456789, "Europe/London" ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 10 ),
                             Values.pointValue( CoordinateReferenceSystem.WGS84, 87.21, 7.65 ) ) );
 

@@ -104,7 +104,7 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
         @Override
         public IndexUpdater newZonedDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.zonedDateTime().newPopulatingUpdater( propertyAccessor );
         }
 
         @Override

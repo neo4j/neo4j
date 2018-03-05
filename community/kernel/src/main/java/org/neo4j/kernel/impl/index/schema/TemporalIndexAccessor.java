@@ -242,7 +242,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         @Override
         public PartAccessor<?> newZonedDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "no comprende" );
+            return createPartAccessor( temporalIndexFiles.zonedDateTime() );
         }
 
         @Override
