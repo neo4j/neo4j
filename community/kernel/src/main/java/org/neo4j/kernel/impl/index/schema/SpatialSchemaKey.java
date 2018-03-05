@@ -51,12 +51,6 @@ class SpatialSchemaKey extends NativeSchemaKey
     }
 
     @Override
-    void from( Value... values )
-    {
-        extractRawBits( assertValidValue( values ) );
-    }
-
-    @Override
     public NumberValue asValue()
     {
         // This is used in the index sampler to estimate value diversity. Since the spatial index does not store values
@@ -71,17 +65,17 @@ class SpatialSchemaKey extends NativeSchemaKey
     {
         double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
-        writePoint( limit );
+        writePoint( crs, limit );
     }
 
     @Override
     void initValueAsHighest()
     {
-        // These coords will generate the largest value on the spacial curve
+        // These coordinates will generate the largest value on the spacial curve
         double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
         limit[0] = Double.POSITIVE_INFINITY;
-        writePoint( limit );
+        writePoint( crs, limit );
     }
 
     public void fromDerivedValue( long entityId, long derivedValue )
@@ -101,34 +95,21 @@ class SpatialSchemaKey extends NativeSchemaKey
         return Long.compare( rawValueBits, other.rawValueBits );
     }
 
-    private PointValue assertValidValue( Value... values )
+    @Override
+    protected void assertCorrectType( Value value )
     {
-        // TODO: support multiple values, right?
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        if ( !Values.isGeometryValue( values[0] ) )
+        if ( !Values.isGeometryValue( value ) )
         {
             throw new IllegalArgumentException(
-                    "Key layout does only support geometries, tried to create key from " + values[0] );
+                    "Key layout does only support geometries, tried to create key from " + value );
         }
-        return (PointValue) values[0];
-    }
-
-    private void extractRawBits( PointValue value )
-    {
-        writePoint( value.coordinate() );
     }
 
     /**
      * Extracts raw bits from a {@link PointValue} and store as state of this {@link SpatialSchemaKey} instance.
      */
-    private void writePoint( double[] coordinate )
+    @Override
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
         rawValueBits = curve.derivedValueFor( coordinate );
     }

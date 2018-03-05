@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.string.UTF8;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -48,27 +47,13 @@ class StringSchemaKey extends NativeSchemaKey
     }
 
     @Override
-    void from( Value... values )
+    protected void assertCorrectType( Value value )
     {
-        assertValidValue( values ).writeTo( this );
-    }
-
-    private TextValue assertValidValue( Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        if ( !Values.isTextValue( values[0] ) )
+        if ( !Values.isTextValue( value ) )
         {
             throw new IllegalArgumentException(
-                    "Key layout does only support strings, tried to create key from " + values[0] );
+                    "Key layout does only support strings, tried to create key from " + value );
         }
-        return (TextValue) values[0];
     }
 
     @Override

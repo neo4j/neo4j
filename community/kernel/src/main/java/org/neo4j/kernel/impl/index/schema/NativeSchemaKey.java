@@ -66,10 +66,26 @@ abstract class NativeSchemaKey extends ValueWriter.Adapter<RuntimeException>
     {
         compareId = DEFAULT_COMPARE_ID;
         this.entityId = entityId;
-        from( values );
+        // copy value state and store in this key instance
+        assertValidValue( values ).writeTo( this );
     }
 
-    abstract void from( Value[] values );
+    private Value assertValidValue( Value... values )
+    {
+        if ( values.length > 1 )
+        {
+            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
+        }
+        if ( values.length < 1 )
+        {
+            throw new IllegalArgumentException( "Tried to create key without value" );
+        }
+        Value value = values[0];
+        assertCorrectType( value );
+        return value;
+    }
+
+    protected abstract void assertCorrectType( Value value );
 
     String propertiesAsString()
     {

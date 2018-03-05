@@ -36,30 +36,6 @@ class DateSchemaKey extends NativeSchemaKey
     long epochDay;
 
     @Override
-    void from( Value... values )
-    {
-        assertValidValue( values ).writeTo( this );
-    }
-
-    private DateValue assertValidValue( Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        if ( !(values[0] instanceof DateValue) )
-        {
-            throw new IllegalArgumentException(
-                    "Key layout does only support DateValue, tried to create key from " + values[0] );
-        }
-        return (DateValue) values[0];
-    }
-
-    @Override
     public Value asValue()
     {
         return DateValue.epochDate( epochDay );
@@ -99,5 +75,15 @@ class DateSchemaKey extends NativeSchemaKey
     public void writeDate( long epochDay )
     {
         this.epochDay = epochDay;
+    }
+
+    @Override
+    protected void assertCorrectType( Value value )
+    {
+        if ( !(value instanceof DateValue) )
+        {
+            throw new IllegalArgumentException(
+                    "Key layout does only support DateValue, tried to create key from " + value );
+        }
     }
 }

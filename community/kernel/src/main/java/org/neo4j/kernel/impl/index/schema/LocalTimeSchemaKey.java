@@ -36,30 +36,6 @@ class LocalTimeSchemaKey extends NativeSchemaKey
     long nanoOfDay;
 
     @Override
-    public void from( Value... values )
-    {
-        assertValidValue( values ).writeTo( this );
-    }
-
-    private LocalTimeValue assertValidValue( Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        if ( !(values[0] instanceof LocalTimeValue) )
-        {
-            throw new IllegalArgumentException(
-                    "Key layout does only support LocalTimeValue, tried to create key from " + values[0] );
-        }
-        return (LocalTimeValue) values[0];
-    }
-
-    @Override
     public Value asValue()
     {
         return LocalTimeValue.localTime( nanoOfDay );
@@ -99,5 +75,15 @@ class LocalTimeSchemaKey extends NativeSchemaKey
     public void writeLocalTime( long nanoOfDay )
     {
         this.nanoOfDay = nanoOfDay;
+    }
+
+    @Override
+    protected void assertCorrectType( Value value )
+    {
+        if ( !(value instanceof LocalTimeValue) )
+        {
+            throw new IllegalArgumentException(
+                    "Key layout does only support LocalTimeValue, tried to create key from " + value );
+        }
     }
 }

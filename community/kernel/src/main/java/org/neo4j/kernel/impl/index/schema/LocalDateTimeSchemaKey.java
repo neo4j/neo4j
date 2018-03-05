@@ -38,30 +38,6 @@ class LocalDateTimeSchemaKey extends NativeSchemaKey
     long epochSecond;
 
     @Override
-    public void from( Value... values )
-    {
-        assertValidValue( values ).writeTo( this );
-    }
-
-    private LocalDateTimeValue assertValidValue( Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        if ( !(values[0] instanceof LocalDateTimeValue) )
-        {
-            throw new IllegalArgumentException(
-                    "Key layout does only support LocalDateTimeValue, tried to create key from " + values[0] );
-        }
-        return (LocalDateTimeValue) values[0];
-    }
-
-    @Override
     public Value asValue()
     {
         return LocalDateTimeValue.localDateTime( epochSecond, nanoOfSecond );
@@ -101,7 +77,8 @@ class LocalDateTimeSchemaKey extends NativeSchemaKey
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,nanoOfDay=%s", asValue(), getEntityId(), nanoOfSecond );
+        return format( "value=%s,entityId=%d,epochSecond=%d,nanoOfSecond=%d",
+                        asValue(), getEntityId(), epochSecond, nanoOfSecond );
     }
 
     @Override
@@ -109,5 +86,15 @@ class LocalDateTimeSchemaKey extends NativeSchemaKey
     {
         this.nanoOfSecond = nano;
         this.epochSecond = epochSecond;
+    }
+
+    @Override
+    protected void assertCorrectType( Value value )
+    {
+        if ( !(value instanceof LocalDateTimeValue) )
+        {
+            throw new IllegalArgumentException(
+                    "Key layout does only support LocalDateTimeValue, tried to create key from " + value );
+        }
     }
 }

@@ -120,7 +120,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
 
     private boolean validPredicates( IndexQuery[] predicates )
     {
-        return predicates[0] instanceof ExactPredicate || predicates[0] instanceof GeometryRangePredicate;
+        return predicates[0] instanceof ExactPredicate;
     }
 
     /**
