@@ -57,15 +57,15 @@ class MultipleGraphClausesParsingTest
   }
 
   test("RENAME GRAPH foo.bar TO foo.diff") {
-    failsToParse
+    yields(ast.RenameGraph(fooBarGraph, fooDiffGraph))
   }
 
   test("TRUNCATE GRAPH foo.bar") {
-    failsToParse
+    yields(ast.TruncateGraph(fooBarGraph))
   }
 
   test("DELETE GRAPH foo.bar") {
-    failsToParse
+    yields(ast.DeleteGraph(fooBarGraph))
   }
 
   private val nodePattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), None)(pos))))(pos)

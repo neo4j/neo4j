@@ -49,6 +49,9 @@ trait Query extends Parser
     | ConstructGraph
     | CreateGraph
     | CopyGraph
+    | RenameGraph
+    | TruncateGraph
+    | DeleteGraph
     | LoadCSV
     | Start
     | Match

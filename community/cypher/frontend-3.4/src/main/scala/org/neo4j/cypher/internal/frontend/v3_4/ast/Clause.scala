@@ -113,6 +113,33 @@ final case class CopyGraph(from: QualifiedGraphName, to: QualifiedGraphName)(val
       SemanticState.recordCurrentScope(this)
 }
 
+final case class RenameGraph(from: QualifiedGraphName, to: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "RENAME GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class TruncateGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "TRUNCATE GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class DeleteGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "DELETE GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 //final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
 //  extends MultipleGraphClause with UpdateClause {
 //

@@ -63,6 +63,26 @@ trait Clauses extends Parser
     )
   }
 
+  def RenameGraph = rule("RENAME GRAPH") {
+    group(
+      keyword("RENAME GRAPH") ~~ QualifiedGraphName ~~ keyword("TO") ~~ QualifiedGraphName ~~>> (ast.RenameGraph(_, _))
+    )
+  }
+
+  def TruncateGraph = rule("TRUNCATE GRAPH") {
+    group(
+      keyword("TRUNCATE GRAPH") ~~ QualifiedGraphName ~~>> (ast.TruncateGraph(_))
+    )
+  }
+
+  def DeleteGraph = rule("DELETE GRAPH") {
+    group(
+      keyword("DELETE GRAPH") ~~ QualifiedGraphName ~~>> (ast.DeleteGraph(_))
+    )
+  }
+
+  RenameGraph
+
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
     group(
       SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _))
