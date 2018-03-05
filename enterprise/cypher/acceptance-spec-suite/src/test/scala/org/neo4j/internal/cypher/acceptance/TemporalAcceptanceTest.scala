@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.format.DateTimeParseException
+
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
 
@@ -111,7 +113,8 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       "{year:1984, month: 2, quarter:11}", "{year:1984, month: 2, dayOfQuarter:11}",
       "{year:1984, week: 2, day:11}", "{year:1984, week: 2, quarter:11}", "{year:1984, week: 2, dayOfQuarter:11}",
       "{year:1984, quarter: 2, day:11}", "{year:1984, quarter: 2, dayOfWeek:6}", "{datetime: datetime(), date: date()}",
-      "{datetime: datetime(), time: time()}")
+      "{datetime: datetime(), time: time()}", "{datetime: datetime(), epoch: timestamp()}", "{date: date(), epoch: timestamp()}",
+      "{time: time(), epoch: timestamp()}")
     shouldNotConstructWithArg("datetime", queries)
   }
 
@@ -419,6 +422,18 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       }
       exception.getMessage should be ("You cannot subtract a temporal instant from another. " +
         "To obtain the duration, use 'duration.between(temporal1, temporal2)' instead.")
+    }
+  }
+
+  // Parsing
+
+  test("should not allow decimals on any but the least significant given value") {
+    for (arg <- Seq("P1.5Y1M", "P1Y1.5M1D", "P1Y1M1.5DT1H", "P1Y1M1DT1.5H1M", "P1Y1M1DT1H1.5M1S")) {
+      val query = s"RETURN duration('$arg')"
+      val exception = intercept[DateTimeParseException] {
+        println(graph.execute(query).next())
+      }
+      exception.getMessage should be ("Text cannot be parsed to a Duration")
     }
   }
 
