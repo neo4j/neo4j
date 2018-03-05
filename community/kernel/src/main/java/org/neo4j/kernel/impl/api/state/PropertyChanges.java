@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.util.VersionedHashMap;
-import org.neo4j.kernel.impl.util.diffsets.EmptyPrimitiveLongReadableDiffSets;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
@@ -31,7 +31,14 @@ import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
  */
 public class PropertyChanges
 {
+    private final CollectionsFactory collectionsFactory;
+
     private VersionedHashMap<Integer, Map<Object,PrimitiveLongDiffSets>> changes;
+
+    public PropertyChanges( CollectionsFactory collectionsFactory )
+    {
+        this.collectionsFactory = collectionsFactory;
+    }
 
     public PrimitiveLongReadableDiffSets changesForProperty( int propertyKeyId, Object value )
     {
@@ -47,7 +54,7 @@ public class PropertyChanges
                 }
             }
         }
-        return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
+        return PrimitiveLongReadableDiffSets.EMPTY;
     }
 
     public void changeProperty( long entityId, int propertyKeyId, Object oldValue, Object newValue )
@@ -79,6 +86,14 @@ public class PropertyChanges
 
     private PrimitiveLongDiffSets valueChanges( Object newValue, Map<Object, PrimitiveLongDiffSets> keyChanges )
     {
-        return keyChanges.computeIfAbsent( newValue, k -> new PrimitiveLongDiffSets() );
+        return keyChanges.computeIfAbsent( newValue, k -> collectionsFactory.newLongDiffSets() );
+    }
+
+    public void release()
+    {
+        for ( final Map<Object, PrimitiveLongDiffSets> map : changes.values() )
+        {
+            map.values().forEach( PrimitiveLongDiffSets::close );
+        }
     }
 }

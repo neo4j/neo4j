@@ -23,6 +23,7 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
@@ -37,7 +38,7 @@ public class PropertyChangesTest
     public void shouldListChanges()
     {
         // Given
-        PropertyChanges changes = new PropertyChanges();
+        PropertyChanges changes = new PropertyChanges( OnHeapCollectionsFactory.INSTANCE );
         changes.changeProperty( 1L, 2, "from", "to" );
         changes.addProperty( 1L, 3, "from" );
         changes.removeProperty( 2L, 2, "to" );
@@ -53,6 +54,6 @@ public class PropertyChangesTest
     @SuppressWarnings( "unchecked" )
     private Matcher<? super PrimitiveLongReadableDiffSets> isDiffSets( PrimitiveLongSet added, PrimitiveLongSet removed )
     {
-        return (Matcher) equalTo( new PrimitiveLongDiffSets( added, removed ) );
+        return (Matcher) equalTo( new PrimitiveLongDiffSets( added, removed, OnHeapCollectionsFactory.INSTANCE ) );
     }
 }

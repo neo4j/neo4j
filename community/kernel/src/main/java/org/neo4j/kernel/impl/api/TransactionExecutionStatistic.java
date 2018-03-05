@@ -27,7 +27,8 @@ public class TransactionExecutionStatistic
 {
     public static final TransactionExecutionStatistic NOT_AVAILABLE = new TransactionExecutionStatistic();
 
-    private final Long heapAllocateBytes;
+    private final Long heapAllocatedBytes;
+    private final Long directAllocatedBytes;
     private final Long cpuTimeMillis;
     private final long waitTimeMillis;
     private final long elapsedTimeMillis;
@@ -37,7 +38,8 @@ public class TransactionExecutionStatistic
 
     private TransactionExecutionStatistic()
     {
-        heapAllocateBytes = null;
+        heapAllocatedBytes = null;
+        directAllocatedBytes = null;
         cpuTimeMillis = null;
         waitTimeMillis = -1;
         elapsedTimeMillis = -1;
@@ -52,19 +54,23 @@ public class TransactionExecutionStatistic
         long nowNanos = clock.nanos();
         KernelTransactionImplementation.Statistics statistics = tx.getStatistics();
         this.waitTimeMillis = NANOSECONDS.toMillis( statistics.getWaitingTimeNanos( nowNanos ) );
-        long heapAllocateBytes = statistics.heapAllocateBytes();
-        this.heapAllocateBytes = heapAllocateBytes >= 0 ? heapAllocateBytes : null;
-        long cpuTimeMillis = statistics.cpuTimeMillis();
-        this.cpuTimeMillis = cpuTimeMillis >= 0 ? cpuTimeMillis : null;
+        this.heapAllocatedBytes = nullIfNegative( statistics.heapAllocatedBytes() );
+        this.directAllocatedBytes = nullIfNegative( statistics.heapAllocatedBytes() );
+        this.cpuTimeMillis = nullIfNegative( statistics.cpuTimeMillis() );
         this.pageFaults = statistics.totalTransactionPageCacheFaults();
         this.pageHits = statistics.totalTransactionPageCacheHits();
         this.elapsedTimeMillis = nowMillis - startTimeMillis;
         this.idleTimeMillis = this.cpuTimeMillis != null ? elapsedTimeMillis - this.cpuTimeMillis - waitTimeMillis : null;
     }
 
-    public Long getHeapAllocateBytes()
+    public Long getHeapAllocatedBytes()
     {
-        return heapAllocateBytes;
+        return heapAllocatedBytes;
+    }
+
+    public Long getDirectAllocatedBytes()
+    {
+        return directAllocatedBytes;
     }
 
     public Long getCpuTimeMillis()
@@ -95,5 +101,10 @@ public class TransactionExecutionStatistic
     public long getPageFaults()
     {
         return pageFaults;
+    }
+
+    private static Long nullIfNegative( long value )
+    {
+        return value >= 0 ? value : null;
     }
 }

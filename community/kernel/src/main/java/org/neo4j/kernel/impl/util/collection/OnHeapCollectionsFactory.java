@@ -17,64 +17,60 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.diffsets;
 
+package org.neo4j.kernel.impl.util.collection;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
-/**
- * Empty implementation of {@link PrimitiveLongDiffSets}.
- *
- * Use {@link #INSTANCE} to reference static singleton.
- */
-public class EmptyPrimitiveLongReadableDiffSets extends PrimitiveLongDiffSets
+public class OnHeapCollectionsFactory implements CollectionsFactory
 {
-    public static final PrimitiveLongDiffSets INSTANCE = new EmptyPrimitiveLongReadableDiffSets();
+    public static final CollectionsFactory INSTANCE = new OnHeapCollectionsFactory();
 
-    private EmptyPrimitiveLongReadableDiffSets()
+    private OnHeapCollectionsFactory()
     {
+        // nop
     }
 
     @Override
-    public boolean isAdded( long element )
+    public PrimitiveLongSet newLongSet()
+    {
+        return Primitive.longSet();
+    }
+
+    @Override
+    public <V> PrimitiveLongObjectMap<V> newLongObjectMap()
+    {
+        return Primitive.longObjectMap();
+    }
+
+    @Override
+    public <V> PrimitiveIntObjectMap<V> newIntObjectMap()
+    {
+        return Primitive.intObjectMap();
+    }
+
+    @Override
+    public PrimitiveLongDiffSets newLongDiffSets()
+    {
+        return new PrimitiveLongDiffSets( emptySet(), emptySet(), this );
+    }
+
+    @Override
+    public MemoryTracker getMemoryTracker()
+    {
+        return MemoryTracker.NONE;
+    }
+
+    @Override
+    public boolean collectionsMustBeReleased()
     {
         return false;
-    }
-
-    @Override
-    public boolean isRemoved( long element )
-    {
-        return false;
-    }
-
-    @Override
-    public PrimitiveLongSet getAdded()
-    {
-        return emptySet();
-    }
-
-    @Override
-    public PrimitiveLongSet getAddedSnapshot()
-    {
-        return emptySet();
-    }
-
-    @Override
-    public PrimitiveLongSet getRemoved()
-    {
-        return emptySet();
-    }
-
-    @Override
-    public boolean isEmpty()
-    {
-        return true;
-    }
-
-    @Override
-    public int delta()
-    {
-        return 0;
     }
 }

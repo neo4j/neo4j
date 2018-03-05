@@ -54,6 +54,7 @@ import org.neo4j.time.Clocks;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class KernelTransactionFactory
 {
@@ -102,7 +103,7 @@ public class KernelTransactionFactory
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite(), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
-                mock( ExplicitIndexStore.class), EmptyVersionContextSupplier.EMPTY );
+                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
