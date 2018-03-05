@@ -107,6 +107,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class KernelTransactionsTest
@@ -590,7 +591,7 @@ public class KernelTransactionsTest
                 mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), new CanWrite(),
                 DefaultCursors::new, AutoIndexing.UNSUPPORTED,
-                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY );
+                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -658,7 +659,7 @@ public class KernelTransactionsTest
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
                     indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                    accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier );
+                    accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier, ON_HEAP );
         }
 
         @Override

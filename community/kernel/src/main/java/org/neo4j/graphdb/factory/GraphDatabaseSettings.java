@@ -839,6 +839,19 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Duration> bookmark_ready_timeout = buildSetting(
             "dbms.transaction.bookmark_ready_timeout", DURATION, "30s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
 
+    public enum TransactionStateMemoryAllocation
+    {
+        ON_HEAP,
+        OFF_HEAP
+    }
+
+    @Internal
+    @Description( "[Experimental] Defines whether memory for transaction state should allocaten on- or off-heap." )
+    public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = buildSetting(
+            "unsupported.dbms.tx_state.memory_allocation",
+            options( TransactionStateMemoryAllocation.class, true ),
+            TransactionStateMemoryAllocation.ON_HEAP.name() ).build();
+
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final HttpConnectorValidator httpValidator = new HttpConnectorValidator();

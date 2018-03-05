@@ -65,6 +65,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class KernelTransactionTerminationTest
 {
@@ -347,7 +348,7 @@ public class KernelTransactionTerminationTest
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
                     mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
-                    EmptyVersionContextSupplier.EMPTY );
+                    EmptyVersionContextSupplier.EMPTY, ON_HEAP );
 
             this.monitor = monitor;
         }

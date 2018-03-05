@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -168,6 +170,7 @@ public class DataSourceModule
                 editionModule.relationshipTypeTokenHolder,
                 editionModule.propertyKeyTokenHolder );
 
+        final CollectionsFactorySupplier collectionsFactorySupplier = createCollectionsFactorySupplier( config );
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
                 storeDir,
                 config,
@@ -202,7 +205,8 @@ public class DataSourceModule
                 platformModule.recoveryCleanupWorkCollector,
                 editionModule.idController,
                 platformModule.databaseInfo.operationalMode,
-                platformModule.versionContextSupplier ) );
+                platformModule.versionContextSupplier,
+                collectionsFactorySupplier ) );
 
         dataSourceManager.register( neoStoreDataSource );
 
@@ -224,6 +228,20 @@ public class DataSourceModule
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, deps,
                 editionModule.coreAPIAvailabilityGuard, editionModule.relationshipTypeTokenHolder );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
+    }
+
+    private CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
+    {
+        final TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
+        switch ( allocation )
+        {
+        case ON_HEAP:
+            return CollectionsFactorySupplier.ON_HEAP;
+        case OFF_HEAP:
+            return CollectionsFactorySupplier.OFF_HEAP;
+        default:
+            throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
+        }
     }
 
     private Guard createGuard( Dependencies deps, Clock clock, LogService logging )

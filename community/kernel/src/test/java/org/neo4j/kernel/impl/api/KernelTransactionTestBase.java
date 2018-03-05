@@ -20,12 +20,16 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
+import org.mockito.Mockito;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -53,6 +57,10 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -91,12 +99,14 @@ public class KernelTransactionTestBase
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
     protected final StatementOperationParts statementOperations = mock( StatementOperationParts.class );
+    protected CollectionsFactory collectionsFactory;
 
     private final long defaultTransactionTimeoutMillis = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
 
     @Before
     public void before() throws Exception
     {
+        collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
         when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
@@ -154,7 +164,7 @@ public class KernelTransactionTestBase
                 transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
-                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY );
+                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess
@@ -170,6 +180,46 @@ public class KernelTransactionTestBase
             assert batch.next() == null : "Designed to only allow one transaction";
             transaction = batch.transactionRepresentation();
             return ++txId;
+        }
+    }
+
+    private class TestCollectionsFactory implements CollectionsFactory
+    {
+
+        @Override
+        public PrimitiveLongSet newLongSet()
+        {
+            return OnHeapCollectionsFactory.INSTANCE.newLongSet();
+        }
+
+        @Override
+        public <V> PrimitiveLongObjectMap<V> newLongObjectMap()
+        {
+            return OnHeapCollectionsFactory.INSTANCE.newLongObjectMap();
+        }
+
+        @Override
+        public <V> PrimitiveIntObjectMap<V> newIntObjectMap()
+        {
+            return OnHeapCollectionsFactory.INSTANCE.newIntObjectMap();
+        }
+
+        @Override
+        public PrimitiveLongDiffSets newLongDiffSets()
+        {
+            return OnHeapCollectionsFactory.INSTANCE.newLongDiffSets();
+        }
+
+        @Override
+        public MemoryTracker getMemoryTracker()
+        {
+            return OnHeapCollectionsFactory.INSTANCE.getMemoryTracker();
+        }
+
+        @Override
+        public boolean collectionsMustBeReleased()
+        {
+            return false;
         }
     }
 }

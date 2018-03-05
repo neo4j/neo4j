@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.memory;
+package org.neo4j.kernel.impl.util.collection;
 
-/**
- * Tracker that capable to report number of allocated bytes.
- * @see MemoryAllocationTracker
- */
-public interface MemoryTracker
+import org.neo4j.memory.LocalMemoryTracker;
+
+public interface CollectionsFactorySupplier
 {
-    MemoryTracker NONE = () -> 0;
+    CollectionsFactorySupplier ON_HEAP = () -> OnHeapCollectionsFactory.INSTANCE;
 
-    /**
-     * @return number of bytes of direct memory that are used
-     */
-    long usedDirectMemory();
+    CollectionsFactorySupplier OFF_HEAP = () -> new OffHeapCollectionsFactory( new LocalMemoryTracker() );
+
+    CollectionsFactory create();
 }
