@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
+import org.neo4j.cypher.internal.frontend.v3_4.ast.QualifiedGraphName
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.util.v3_4.symbols.{TypeSpec, _}
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator}
@@ -182,9 +183,6 @@ trait SemanticAnalysisTooling {
 
   def implicitVariable(v:LogicalVariable, possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(v, possibleType)
-
-  def declareGraph(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =
-    (_: SemanticState).declareGraph(v)
 
   def declareGraphMarkedAsGenerated(v:Variable): SemanticCheck = {
     val declare = (_: SemanticState).declareGraph(v)

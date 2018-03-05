@@ -108,9 +108,6 @@ object getChildren {
       case MapExpression(items) =>
         items.flatMap { case (pkn, exp) => Seq(pkn, exp) }
 
-      case GraphReturnItems(_, items) =>
-        items
-
       case FilterExpression(scope, expression) =>
         Seq(scope, expression)
 

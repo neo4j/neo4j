@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.semantics
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTGraphRef, CypherType, TypeSpec}
 import org.neo4j.cypher.internal.util.v3_4.{ASTNode, InputPosition, InternalException, Ref}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, QualifiedGraphName}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState.ScopeLocation

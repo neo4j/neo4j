@@ -189,7 +189,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
   private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
     val parsedAst = parser.parse(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeGraphReturnItems, normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState(features: _*))
     rewrittenAst
   }

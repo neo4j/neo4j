@@ -106,9 +106,6 @@ object copyNodeWith {
       case MapExpression(items) =>
         MapExpression(nc.ofTupledSeq(items))(node.position)
 
-      case GraphReturnItems(includeExisting, items) =>
-        GraphReturnItems(includeExisting, nc.ofSeq(items))(node.position)
-
       case FilterExpression(scope, expression) =>
         FilterExpression(nc.ofSingle(scope), nc.ofSingle(expression))(node.position)
 

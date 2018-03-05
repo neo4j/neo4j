@@ -68,17 +68,6 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
         acc => (acc ++ variables, Some(identity))
     }
 
-  private def extractGraphVars(items: Seq[GraphReturnItem]): Seq[Ref[LogicalVariable]] = {
-    items.flatMap { item =>
-      item.graphs.flatMap {
-        case g: GraphAs =>
-          Seq(g.ref, g.as.get).map(Ref[Variable])
-        case x =>
-          x.as.map(Ref[Variable])
-      }
-    }
-  }
-
   private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
                                 ambiguousNames: Set[String], protectedVariables: Set[Ref[LogicalVariable]]): VariableRenamings =
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {

@@ -127,9 +127,6 @@ object domainsOf {
       case MapExpression(items) =>
         ofTupledSeq(items, classOf[PropertyKeyName], classOf[Expression])
 
-      case GraphReturnItems(_, items) =>
-        ofSeq(items, classOf[GraphReturnItem])
-
       case FilterExpression(scope, expression) =>
         ofSingle(scope, classOf[FilterScope]) ++
         ofSingle(expression, classOf[Expression])

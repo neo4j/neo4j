@@ -22,7 +22,6 @@ import org.parboiled.scala._
 
 trait Clauses extends Parser
   with StartPoints
-  with Graphs
   with Patterns
   with Expressions
   with Base

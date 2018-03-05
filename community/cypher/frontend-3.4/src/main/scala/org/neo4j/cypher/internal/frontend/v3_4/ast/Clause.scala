@@ -57,7 +57,7 @@ case class LoadCSV(
     fieldTerminator match {
       case Some(literal) if literal.value.length != 1 =>
         error("CSV field terminator can only be one character wide", literal.position)
-      case _ => SemanticCheckResult.success
+      case _ => success
     }
   }
 
@@ -77,13 +77,14 @@ sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
     requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-final case class UseGraph(qualifiedName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
+final case class UseGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
 
     override def name = "USE GRAPH"
 
-    override def semanticCheck: SemanticCheck =
-      super.semanticCheck chain
-        SemanticState.recordCurrentScope(this)
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+
 }
 
 final case class ConstructGraph(graphName: Option[QualifiedGraphName], create: Clause)(val position: InputPosition) extends MultipleGraphClause {
@@ -92,7 +93,9 @@ final case class ConstructGraph(graphName: Option[QualifiedGraphName], create: C
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+      SemanticState.recordCurrentScope(this) chain
+      create.semanticCheck
+
 }
 
 final case class CreateGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
@@ -265,7 +268,7 @@ case class Match(
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
     }
-    error.getOrElse(SemanticCheckResult.success)
+    error.getOrElse(success)
   }
 
   private def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
@@ -361,7 +364,7 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Wher
       } else {
         SemanticError("Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?", rel.position)
       }
-      case _ => SemanticCheckResult.success
+      case _ => success
     }
 }
 
@@ -381,7 +384,7 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
       } else {
         SemanticError("Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?", rel.position)
       }
-      case _ => SemanticCheckResult.success
+      case _ => success
     }
 }
 
@@ -551,7 +554,7 @@ sealed trait ProjectionClause extends HorizonClause {
     s => limit.semanticCheck(SemanticState.clean).errors
 
   private def ignoreErrors(inner: SemanticCheck): SemanticCheck =
-    s => SemanticCheckResult.success(inner.apply(s).state)
+    s => success(inner.apply(s).state)
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate
@@ -625,5 +628,5 @@ case class PragmaWithout(excluded: Seq[LogicalVariable])(val position: InputPosi
   val excludedNames: Set[String] = excluded.map(_.name).toSet
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
-    SemanticCheckResult.success(s.importValuesFromScope(previousScope, excludedNames))
+    success(s.importValuesFromScope(previousScope, excludedNames))
 }

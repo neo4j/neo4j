@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, PassAllGraphReturnItems}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.parboiled.scala.Rule1
 
 class MultipleGraphsParserTest

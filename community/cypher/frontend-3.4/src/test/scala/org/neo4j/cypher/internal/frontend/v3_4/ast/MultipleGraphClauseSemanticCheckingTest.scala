@@ -35,14 +35,27 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Query] = Query
 
-  ignore("allows bound nodes in single node pattern GRAPH OF") {
-    parsing(
-      """MATCH (a:Swedish)
-        |RETURN GRAPH result OF (a)""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-
-      result.errors shouldBe empty
-    }
-  }
+//  test("sets the working with USE GRAPH") {
+//    parsing(
+//      """USE GRAPH foo.bar.baz
+//        |RETURN 1 as a
+//      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+//      result.state.workingGraph should equal(Some(ast.QualifiedGraphName(List("foo", "bar", "baz"))))
+//      result.errors shouldBe empty
+//    }
+//  }
+//
+//  test("sets the working with CONSTRUCT GRAPH") {
+//    parsing(
+//      """CONSTRUCT GRAPH foo.bar.baz {
+//        |  CREATE ()
+//        |}
+//        |RETURN 1 as a
+//      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+//      result.state.workingGraph should equal(Some(ast.QualifiedGraphName(List("foo", "bar", "baz"))))
+//      result.errors shouldBe empty
+//    }
+//  }
 
   ignore("allows bound relationships in GRAPH OF") {
     parsing(
