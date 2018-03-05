@@ -31,7 +31,7 @@ import static java.lang.String.format;
  *
  * With these keys the TimeValues are sorted by UTC time of day, and then by time zone.
  */
-class ZonedTimeSchemaKey extends TemporalSchemaKey implements ComparableNativeSchemaKey<ZonedTimeSchemaKey>
+class ZonedTimeSchemaKey extends ComparableNativeSchemaKey<ZonedTimeSchemaKey>
 {
     static final int SIZE =
             Long.BYTES +    /* nanosOfDayUTC */
@@ -48,17 +48,15 @@ class ZonedTimeSchemaKey extends TemporalSchemaKey implements ComparableNativeSc
     }
 
     @Override
-    public void initAsLowest()
+    public void initValueAsLowest()
     {
-        super.initAsLowest();
         nanosOfDayUTC = Long.MIN_VALUE;
         zoneOffsetSeconds = Integer.MIN_VALUE;
     }
 
     @Override
-    public void initAsHighest()
+    public void initValueAsHighest()
     {
-        super.initAsHighest();
         nanosOfDayUTC = Long.MAX_VALUE;
         zoneOffsetSeconds = Integer.MAX_VALUE;
     }
@@ -78,7 +76,7 @@ class ZonedTimeSchemaKey extends TemporalSchemaKey implements ComparableNativeSc
     public String toString()
     {
         return format( "value=%s,entityId=%d,nanosOfDayUTC=%d,zoneOffsetSeconds=%d",
-                        asValue(), entityId, nanosOfDayUTC, zoneOffsetSeconds );
+                        asValue(), getEntityId(), nanosOfDayUTC, zoneOffsetSeconds );
     }
 
     @Override

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Comparator;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -35,13 +33,12 @@ class DurationLayout extends BaseLayout<DurationSchemaKey>
         return descriptor.type() == IndexDescriptor.Type.UNIQUE ? DurationLayout.UNIQUE : DurationLayout.NON_UNIQUE;
     }
 
-    private static DurationLayout UNIQUE = new DurationLayout( "UTdu", 0, 1, ComparableNativeSchemaKey.UNIQUE() );
-    private static DurationLayout NON_UNIQUE = new DurationLayout( "NTdu", 0, 1, ComparableNativeSchemaKey.NON_UNIQUE() );
+    private static DurationLayout UNIQUE = new DurationLayout( "UTdu", 0, 1 );
+    private static DurationLayout NON_UNIQUE = new DurationLayout( "NTdu", 0, 1 );
 
-    private DurationLayout(
-            String layoutName, int majorVersion, int minorVersion, Comparator<DurationSchemaKey> comparator )
+    private DurationLayout( String layoutName, int majorVersion, int minorVersion )
     {
-        super( layoutName, majorVersion, minorVersion, comparator );
+        super( layoutName, majorVersion, minorVersion );
     }
 
     @Override

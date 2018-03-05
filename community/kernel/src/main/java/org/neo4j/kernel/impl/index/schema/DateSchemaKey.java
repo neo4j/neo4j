@@ -62,7 +62,7 @@ class DateSchemaKey extends ComparableNativeSchemaKey<DateSchemaKey>
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,epochDay=%s", asValue(), getEntityId(), epochDay );
+        return format( "value=%s,entityId=%d,epochDay=%d", asValue(), getEntityId(), epochDay );
     }
 
     @Override

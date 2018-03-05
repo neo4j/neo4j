@@ -30,7 +30,7 @@ import static java.lang.String.format;
  * Durations are tricky, because exactly how long a duration is depends on the start date. We therefore sort them by
  * average total time in seconds, but keep the original months and days so we can reconstruct the value.
  */
-class DurationSchemaKey extends TemporalSchemaKey implements ComparableNativeSchemaKey<DurationSchemaKey>
+class DurationSchemaKey extends ComparableNativeSchemaKey<DurationSchemaKey>
 {
     /**
      * An average month is 30 days, 10 hours and 30 minutes.
@@ -59,9 +59,8 @@ class DurationSchemaKey extends TemporalSchemaKey implements ComparableNativeSch
     }
 
     @Override
-    public void initAsLowest()
+    public void initValueAsLowest()
     {
-        super.initAsLowest();
         totalAvgSeconds = Long.MIN_VALUE;
         nanosOfSecond = Integer.MIN_VALUE;
         months = Long.MIN_VALUE;
@@ -69,9 +68,8 @@ class DurationSchemaKey extends TemporalSchemaKey implements ComparableNativeSch
     }
 
     @Override
-    public void initAsHighest()
+    public void initValueAsHighest()
     {
-        super.initAsHighest();
         totalAvgSeconds = Long.MAX_VALUE;
         nanosOfSecond = Integer.MAX_VALUE;
         months = Long.MAX_VALUE;
@@ -101,7 +99,7 @@ class DurationSchemaKey extends TemporalSchemaKey implements ComparableNativeSch
     public String toString()
     {
         return format( "value=%s,entityId=%d,totalAvgSeconds=%d,nanosOfSecond=%d,months=%d,days=%d",
-                asValue(), entityId, totalAvgSeconds, nanosOfSecond, months, days );
+                        asValue(), getEntityId(), totalAvgSeconds, nanosOfSecond, months, days );
     }
 
     @Override

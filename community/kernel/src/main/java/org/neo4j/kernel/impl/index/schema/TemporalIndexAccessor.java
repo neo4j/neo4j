@@ -258,7 +258,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         }
 
         @Override
-        public PartAccessor<?> newDuration()
+        public PartAccessor<?> newDuration() throws IOException
         {
             return createPartAccessor( temporalIndexFiles.duration() );
         }

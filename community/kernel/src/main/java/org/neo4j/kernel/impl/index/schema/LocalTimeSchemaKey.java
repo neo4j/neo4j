@@ -62,7 +62,7 @@ class LocalTimeSchemaKey extends ComparableNativeSchemaKey<LocalTimeSchemaKey>
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,nanoOfDay=%s", asValue(), getEntityId(), nanoOfDay );
+        return format( "value=%s,entityId=%d,nanoOfDay=%d", asValue(), getEntityId(), nanoOfDay );
     }
 
     @Override

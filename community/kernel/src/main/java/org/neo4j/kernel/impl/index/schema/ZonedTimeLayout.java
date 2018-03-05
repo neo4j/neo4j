@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Comparator;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -35,13 +33,12 @@ class ZonedTimeLayout extends BaseLayout<ZonedTimeSchemaKey>
         return descriptor.type() == IndexDescriptor.Type.UNIQUE ? ZonedTimeLayout.UNIQUE : ZonedTimeLayout.NON_UNIQUE;
     }
 
-    private static final ZonedTimeLayout UNIQUE = new ZonedTimeLayout( "UTzt", 0, 1, ComparableNativeSchemaKey.UNIQUE() );
-    private static final ZonedTimeLayout NON_UNIQUE = new ZonedTimeLayout( "NTzt", 0, 1, ComparableNativeSchemaKey.NON_UNIQUE() );
+    private static final ZonedTimeLayout UNIQUE = new ZonedTimeLayout( "UTzt", 0, 1 );
+    private static final ZonedTimeLayout NON_UNIQUE = new ZonedTimeLayout( "NTzt", 0, 1 );
 
-    private ZonedTimeLayout(
-            String layoutName, int majorVersion, int minorVersion, Comparator<ZonedTimeSchemaKey> comparator )
+    private ZonedTimeLayout( String layoutName, int majorVersion, int minorVersion )
     {
-        super( layoutName, majorVersion, minorVersion, comparator );
+        super( layoutName, majorVersion, minorVersion );
     }
 
     @Override
