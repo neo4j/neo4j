@@ -268,7 +268,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         @Override
         public PartPopulator<?> newZonedTime() throws IOException
         {
-            throw new UnsupportedOperationException( "not implementedur still" );
+            return create( temporalIndexFiles.zonedTime() );
         }
 
         @Override

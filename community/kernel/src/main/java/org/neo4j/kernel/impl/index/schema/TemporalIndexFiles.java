@@ -36,7 +36,7 @@ class TemporalIndexFiles
     private FileLayout<LocalDateTimeSchemaKey> localDateTime;
     private FileLayout<ZonedDateTimeSchemaKey> zonedDateTime;
     private FileLayout<LocalTimeSchemaKey> localTime;
-    private FileLayout zonedTime;
+    private FileLayout<ZonedTimeSchemaKey> zonedTime;
     private FileLayout duration;
 
     TemporalIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, IndexDescriptor descriptor, FileSystemAbstraction fs )
@@ -45,6 +45,7 @@ class TemporalIndexFiles
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
         this.date = new FileLayout<>( new File( indexDirectory, "date" ), DateLayout.of( descriptor ), ValueGroup.DATE );
         this.localTime = new FileLayout<>( new File( indexDirectory, "localTime" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
+        this.zonedTime = new FileLayout<>( new File( indexDirectory, "zonedTime" ), ZonedTimeLayout.of( descriptor ), ValueGroup.ZONED_TIME );
         this.localDateTime = new FileLayout<>( new File( indexDirectory, "localDateTime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
         this.zonedDateTime = new FileLayout<>( new File( indexDirectory, "zonedDateTime" ), ZonedDateTimeLayout.of( descriptor ), ValueGroup.ZONED_DATE_TIME );
     }
@@ -77,6 +78,11 @@ class TemporalIndexFiles
     FileLayout<LocalTimeSchemaKey> localTime()
     {
         return localTime;
+    }
+
+    FileLayout<ZonedTimeSchemaKey> zonedTime()
+    {
+        return zonedTime;
     }
 
     FileLayout<LocalDateTimeSchemaKey> localDateTime()

@@ -163,7 +163,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         @Override
         public TemporalIndexPartReader<?> newZonedTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.ZONED_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
