@@ -122,7 +122,7 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
         @Override
         public IndexUpdater newDuration() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.duration().newPopulatingUpdater( propertyAccessor );
         }
     }
 }

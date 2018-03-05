@@ -274,7 +274,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         @Override
         public PartPopulator<?> newDuration() throws IOException
         {
-            throw new UnsupportedOperationException( "not implementedur still" );
+            return create( temporalIndexFiles.duration() );
         }
 
         private <KEY extends NativeSchemaKey> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException

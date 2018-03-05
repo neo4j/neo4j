@@ -37,7 +37,7 @@ class TemporalIndexFiles
     private FileLayout<ZonedDateTimeSchemaKey> zonedDateTime;
     private FileLayout<LocalTimeSchemaKey> localTime;
     private FileLayout<ZonedTimeSchemaKey> zonedTime;
-    private FileLayout duration;
+    private FileLayout<DurationSchemaKey> duration;
 
     TemporalIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, IndexDescriptor descriptor, FileSystemAbstraction fs )
     {
@@ -48,6 +48,7 @@ class TemporalIndexFiles
         this.zonedTime = new FileLayout<>( new File( indexDirectory, "zonedTime" ), ZonedTimeLayout.of( descriptor ), ValueGroup.ZONED_TIME );
         this.localDateTime = new FileLayout<>( new File( indexDirectory, "localDateTime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
         this.zonedDateTime = new FileLayout<>( new File( indexDirectory, "zonedDateTime" ), ZonedDateTimeLayout.of( descriptor ), ValueGroup.ZONED_DATE_TIME );
+        this.duration = new FileLayout<>( new File( indexDirectory, "duration" ), DurationLayout.of( descriptor ), ValueGroup.DURATION );
     }
 
     Iterable<FileLayout> existing()
@@ -93,6 +94,11 @@ class TemporalIndexFiles
     FileLayout<ZonedDateTimeSchemaKey> zonedDateTime()
     {
         return zonedDateTime;
+    }
+
+    FileLayout<DurationSchemaKey> duration()
+    {
+        return duration;
     }
 
     private void addIfExists( List<FileLayout> existing, FileLayout fileLayout )

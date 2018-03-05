@@ -260,7 +260,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         @Override
         public PartAccessor<?> newDuration()
         {
-            throw new UnsupportedOperationException( "no comprende" );
+            return createPartAccessor( temporalIndexFiles.duration() );
         }
 
         private <KEY extends NativeSchemaKey> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException

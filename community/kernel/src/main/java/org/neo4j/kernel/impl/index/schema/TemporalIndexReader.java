@@ -169,7 +169,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         @Override
         public TemporalIndexPartReader<?> newDuration()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.DURATION, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
     }
 }

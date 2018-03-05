@@ -115,7 +115,7 @@ public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUp
         @Override
         public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDuration() throws IOException
         {
-            throw new UnsupportedOperationException( "ma-a-da dayo" );
+            return accessor.duration().newUpdater( mode );
         }
     }
 }

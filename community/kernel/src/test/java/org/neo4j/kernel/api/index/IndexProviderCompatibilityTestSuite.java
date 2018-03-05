@@ -41,6 +41,7 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.TimeValue;
@@ -114,7 +115,12 @@ public abstract class IndexProviderCompatibilityTestSuite
                             DateTimeValue.datetime( 2014, 3, 25, 13, 45, 13, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 46, 13, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7474, "+05:00" ),
-                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7475, "+05:00" )),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7475, "+05:00" ),
+                            DurationValue.duration( 10, 20, 30, 40 ),
+                            DurationValue.duration( 11, 20, 30, 40 ),
+                            DurationValue.duration( 10, 21, 30, 40 ),
+                            DurationValue.duration( 10, 20, 31, 40 ),
+                            DurationValue.duration( 10, 20, 30, 41 ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
                                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
 
@@ -127,7 +133,8 @@ public abstract class IndexProviderCompatibilityTestSuite
                             LocalTimeValue.localTime( 2000 ),
                             TimeValue.time( 100L, ZoneOffset.UTC ), // Just around midnight
                             LocalDateTimeValue.localDateTime( 2018, 2, 28, 11, 5, 1, 42 ),
-                            DateTimeValue.datetime( 1999, 12, 31, 23, 59, 59, 123456789, "Europe/London" ) ),
+                            DateTimeValue.datetime( 1999, 12, 31, 23, 59, 59, 123456789, "Europe/London" ),
+                            DurationValue.duration( 4, 3, 2, 1 ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 10 ),
                             Values.pointValue( CoordinateReferenceSystem.WGS84, 87.21, 7.65 ) ) );
 
