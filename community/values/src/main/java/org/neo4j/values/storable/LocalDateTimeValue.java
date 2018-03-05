@@ -32,14 +32,17 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.time.Instant.ofEpochSecond;
 import static java.time.LocalDateTime.ofInstant;
@@ -116,7 +119,28 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        Pair<LocalDate,LocalTime> pair = getTruncatedDateAndTime( unit, input, "local date time" );
+
+        LocalDate truncatedDate = pair.first();
+        LocalTime truncatedTime = pair.other();
+
+        LocalDateTime truncatedLDT = LocalDateTime.of( truncatedDate, truncatedTime );
+
+        if ( fields.size() == 0 )
+        {
+            return localDateTime( truncatedLDT );
+        }
+        else
+        {
+            Map<String,AnyValue> updatedFields = fields.getMapCopy();
+            truncatedLDT = updateFieldMapWithConflictingSubseconds( updatedFields, unit, truncatedLDT );
+            if ( updatedFields.size() == 0 )
+            {
+                return localDateTime( truncatedLDT );
+            }
+            updatedFields.put( "datetime", localDateTime( truncatedLDT ) );
+            return build( VirtualValues.map( updatedFields ), defaultZone );
+        }
     }
 
     static final LocalDateTime DEFAULT_LOCAL_DATE_TIME =
@@ -283,6 +307,12 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     public boolean hasTimeZone()
     {
         return false;
+    }
+
+    @Override
+    boolean hasTime()
+    {
+        return true;
     }
 
     @Override

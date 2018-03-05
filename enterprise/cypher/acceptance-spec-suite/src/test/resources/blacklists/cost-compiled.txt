@@ -251,6 +251,7 @@ Feature "TemporalTruncateAcceptance": Scenario "Should truncate to month with ti
 Feature "TemporalTruncateAcceptance": Scenario "Should truncate to week"
 Feature "TemporalTruncateAcceptance": Scenario "Should truncate to week with time zone"
 Feature "TemporalTruncateAcceptance": Scenario "Should truncate to day"
+Feature "TemporalTruncateAcceptance": Scenario "Should truncate time to day"
 Feature "TemporalTruncateAcceptance": Scenario "Should truncate to day with time zone"
 Feature "TemporalTruncateAcceptance": Scenario "Should truncate datetime to hour"
 Feature "TemporalTruncateAcceptance": Scenario "Should truncate localdatetime to hour"

@@ -29,15 +29,20 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
@@ -100,13 +105,51 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return builder( defaultZone ).selectTime( from );
     }
 
+    @Override
+    boolean hasTime()
+    {
+        return true;
+    }
+
     public static TimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        OffsetTime time = input.getTimePart( defaultZone );
+        OffsetTime truncatedOT = time.truncatedTo( unit );
+
+        if ( fields.size() == 0 )
+        {
+            return time( truncatedOT );
+        }
+        else
+        {
+            // Timezone needs some special handling, since the builder will shift keeping the instant instead of the local time
+            Map<String,AnyValue> updatedFields = new HashMap<>( fields.size() + 1 );
+            for ( Map.Entry<String,AnyValue> entry : fields.entrySet() )
+            {
+                if ( "timezone".equals( entry.getKey() ) )
+                {
+                    ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezoneOf( entry.getValue() ) ).getOffset();
+                    truncatedOT = truncatedOT.withOffsetSameLocal( currentOffset );
+                }
+                else
+                {
+                    updatedFields.put( entry.getKey(), entry.getValue() );
+                }
+            }
+
+            truncatedOT = updateFieldMapWithConflictingSubseconds( updatedFields, unit, truncatedOT );
+
+            if ( updatedFields.size() == 0 )
+            {
+                return time( truncatedOT );
+            }
+            updatedFields.put( "time", time( truncatedOT ) );
+            return build( VirtualValues.map( updatedFields ), defaultZone );
+        }
     }
 
     static OffsetTime defaultTime( ZoneId zoneId )
