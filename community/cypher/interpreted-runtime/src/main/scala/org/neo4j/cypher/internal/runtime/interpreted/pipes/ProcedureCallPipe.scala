@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ValueConversion}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {
@@ -65,7 +64,7 @@ case class ProcedureCallPipe(source: Pipe,
     builder.sizeHint(resultIndices.length)
     input flatMap { input =>
       val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
-      val results = callMode.callProcedure(qtx, signature.name, argValues)
+      val results = callMode.callProcedure(qtx, signature.id, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
           val javaValue = maybeConverter.get(k)(resultValues(k))
@@ -83,7 +82,7 @@ case class ProcedureCallPipe(source: Pipe,
     val qtx = state.query
     input map { input =>
       val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
-      val results = callMode.callProcedure(qtx, signature.name, argValues)
+      val results = callMode.callProcedure(qtx, signature.id, argValues)
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()
       input

@@ -25,10 +25,12 @@ import org.junit.runners.model.Statement;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -242,6 +244,55 @@ public class MockStore extends Read implements TestRule
     public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
     {
        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallRead( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

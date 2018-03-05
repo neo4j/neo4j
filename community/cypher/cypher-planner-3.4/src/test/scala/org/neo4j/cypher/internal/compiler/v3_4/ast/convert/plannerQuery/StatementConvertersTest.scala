@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{LogicalPlanningTestSupport, _}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Hint, UsingIndexHint}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
@@ -860,6 +860,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("CALL foo() YIELD all RETURN all") {
     val signature = ProcedureSignature(
       QualifiedName(Seq.empty, "foo"),
+      42,
       inputSignature = IndexedSeq.empty,
       deprecationInfo = None,
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),

@@ -131,18 +131,20 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def procedureSignature(name: QualifiedName) = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val ks = tc.statement.readOperations().procedureGet(kn)
-    val input = ks.inputSignature().asScala
+    val procedures = tc.tc.kernelTransaction().procedures()
+    val handle = procedures.procedureGet(kn)
+    val signature = handle.signature()
+    val input = signature.inputSignature().asScala
       .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
       .toIndexedSeq
-    val output = if (ks.isVoid) None else Some(
-      ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
-    val deprecationInfo = asOption(ks.deprecated())
-    val mode = asCypherProcMode(ks.mode(), ks.allowed())
-    val description = asOption(ks.description())
-    val warning = asOption(ks.warning())
+    val output = if (signature.isVoid) None else Some(
+      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
+    val deprecationInfo = asOption(signature.deprecated())
+    val mode = asCypherProcMode(signature.mode(), signature.allowed())
+    val description = asOption(signature.description())
+    val warning = asOption(signature.warning())
 
-    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
+    ProcedureSignature(name, handle.id(), input, output, deprecationInfo, mode, description, warning)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4
 
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{Namespace, ProcedureName}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -34,7 +34,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
   val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
 
-  val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty[String]))
+  val signature = ProcedureSignature(qualifiedName, 42, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty[String]))
   val procLookup: (QualifiedName) => ProcedureSignature = _ => signature
   val fcnLookup: (QualifiedName) => Option[UserFunctionSignature] = _ => None
 

@@ -54,6 +54,19 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     }
 
     @Override
+    public RawIterator<Object[],ProcedureException> procedureCallDbms(
+            int id,
+            Object[] input,
+            SecurityContext securityContext,
+            ResourceTracker resourceTracker
+    ) throws ProcedureException
+    {
+        BasicContext ctx = new BasicContext();
+        ctx.put( Context.SECURITY_CONTEXT, securityContext );
+        return procedures.callProcedure( ctx, id, input, resourceTracker );
+    }
+
+    @Override
     public AnyValue functionCallDbms(
             QualifiedName name,
             AnyValue[] input,

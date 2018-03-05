@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, anyInt}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{CloseableResource, NormalMode, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -62,7 +62,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     iteratorExhausted should equal(true)
   }
 
-  test("should not eagerize read procedure") {
+  test("should not eagerize readOperationsInNewTransaction procedure") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
@@ -85,6 +85,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   private val readSignature = ProcedureSignature(
     QualifiedName(IndexedSeq.empty, "foo"),
+    42,
     IndexedSeq(FieldSignature("a", CTInteger)),
     Some(IndexedSeq(FieldSignature("b", CTInteger))),
     None,
@@ -93,6 +94,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   private val writeSignature = ProcedureSignature(
     QualifiedName(Seq.empty, "foo"),
+    42,
     IndexedSeq(FieldSignature("a", CTInteger)),
     Some(IndexedSeq(FieldSignature("b", CTInteger))),
     None,
@@ -119,8 +121,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   }
 
   when(ctx.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-  when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
     override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArgument(0).asInstanceOf[LongValue].value()
   })

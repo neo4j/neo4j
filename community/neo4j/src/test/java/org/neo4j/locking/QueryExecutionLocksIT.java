@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -914,7 +915,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public ProcedureSignature procedureGet( QualifiedName name ) throws ProcedureException
+        public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
         {
             return readOperations.procedureGet( name );
         }

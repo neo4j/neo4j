@@ -64,8 +64,8 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         kernel.registerProcedure( procedure );
 
         // When
-        ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) );
+        ProcedureSignature found = procs()
+                .procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).signature();
 
         // Then
         assertThat( found, equalTo( signature ) );
@@ -76,8 +76,8 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public void shouldGetBuiltInProcedureByName() throws Throwable
     {
         // When
-        ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( procedureName( "db", "labels" ) );
+        ProcedureSignature found = procs()
+                .procedureGet( procedureName( "db", "labels" ) ).signature();
 
         // Then
         assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
@@ -125,8 +125,10 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         kernel.registerProcedure( procedure );
 
         // When
-        RawIterator<Object[], ProcedureException> found = procedureCallOpsInNewTx()
-                .procedureCallRead( new QualifiedName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
+        RawIterator<Object[],ProcedureException> found = procs()
+                .procedureCallRead(
+                        procs().procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).id(),
+                        new Object[]{1337} );
 
         // Then
         assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );
@@ -151,7 +153,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( signature.name(), new Object[]{""} );
+                procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new Object[]{""} );
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );

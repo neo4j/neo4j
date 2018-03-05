@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
@@ -477,7 +478,7 @@ public class OperationsFacade
     }
 
     @Override
-    public ProcedureSignature procedureGet( QualifiedName name ) throws ProcedureException
+    public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
     {
         statement.assertOpen();
         return procedures.procedure( name );

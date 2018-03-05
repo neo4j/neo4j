@@ -26,19 +26,20 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.internal.kernel.api.procs.FieldSignature;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.values.AnyValue;
 
 public class ProcedureRegistry
@@ -162,14 +163,14 @@ public class ProcedureRegistry
         }
     }
 
-    public ProcedureSignature procedure( QualifiedName name ) throws ProcedureException
+    public ProcedureHandle procedure( QualifiedName name ) throws ProcedureException
     {
         CallableProcedure proc = procedures.get( name );
         if ( proc == null )
         {
             throw noSuchProcedure( name );
         }
-        return proc.signature();
+        return new ProcedureHandle( proc.signature(), procedures.idOf( name ) );
     }
 
     public UserFunctionHandle function( QualifiedName name )
@@ -203,17 +204,44 @@ public class ProcedureRegistry
         return proc.apply( ctx, input, resourceTracker );
     }
 
+    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, int id, Object[] input, ResourceTracker resourceTracker )
+            throws ProcedureException
+    {
+        CallableProcedure proc = null;
+        try
+        {
+            proc = procedures.get( id );
+        }
+        catch ( IndexOutOfBoundsException e )
+        {
+            throw noSuchProcedure( id );
+        }
+        return proc.apply( ctx, input, resourceTracker );
+    }
+
     public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input )
             throws ProcedureException
     {
         CallableUserFunction func = functions.get( name );
+        if ( func == null )
+        {
+            throw noSuchProcedure( name );
+        }
         return func.apply( ctx, input );
     }
 
     public AnyValue callFunction( Context ctx, int functionId, AnyValue[] input )
             throws ProcedureException
     {
-        CallableUserFunction func = functions.get( functionId );
+        CallableUserFunction func = null;
+        try
+        {
+            func = functions.get( functionId );
+        }
+        catch ( IndexOutOfBoundsException e )
+        {
+            throw noSuchFunction( functionId );
+        }
         return func.apply( ctx, input );
     }
 
@@ -231,10 +259,14 @@ public class ProcedureRegistry
     public UserAggregator createAggregationFunction( Context ctx, int id )
             throws ProcedureException
     {
-        CallableUserAggregationFunction func = aggregationFunctions.get( id );
-        if ( func == null )
+        CallableUserAggregationFunction func = null;
+        try
         {
-            throw noSuchFunction( id );
+            func = aggregationFunctions.get( id );
+        }
+        catch ( IndexOutOfBoundsException e )
+        {
+           throw noSuchFunction( id );
         }
         return func.create(ctx);
     }
@@ -245,6 +277,12 @@ public class ProcedureRegistry
                 "There is no procedure with the name `%s` registered for this database instance. " +
                 "Please ensure you've spelled the procedure name correctly and that the " +
                 "procedure is properly deployed.", name );
+    }
+
+    private ProcedureException noSuchProcedure( int id )
+    {
+        return new ProcedureException( Status.Procedure.ProcedureNotFound,
+                "There is no procedure with the internal id `%d` registered for this database instance.", id );
     }
 
     private ProcedureException noSuchFunction( QualifiedName name )

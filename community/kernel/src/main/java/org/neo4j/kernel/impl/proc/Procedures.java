@@ -20,24 +20,24 @@
 package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -253,7 +253,7 @@ public class Procedures extends LifecycleAdapter
         allComponents.register( cls, provider );
     }
 
-    public ProcedureSignature procedure( QualifiedName name ) throws ProcedureException
+    public ProcedureHandle procedure( QualifiedName name ) throws ProcedureException
     {
         return registry.procedure( name );
     }
@@ -282,6 +282,12 @@ public class Procedures extends LifecycleAdapter
                                                            Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         return registry.callProcedure( ctx, name, input, resourceTracker );
+    }
+
+    public RawIterator<Object[], ProcedureException> callProcedure( Context ctx, int id,
+            Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+    {
+        return registry.callProcedure( ctx, id, input, resourceTracker );
     }
 
     public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input ) throws ProcedureException

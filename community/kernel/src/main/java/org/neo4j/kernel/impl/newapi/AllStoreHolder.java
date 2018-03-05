@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
@@ -33,6 +34,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -40,6 +42,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -537,10 +540,82 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
+    {
+        ktx.assertOpen();
+        return procedures.procedure( name );
+    }
+
+    @Override
     public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
     {
         ktx.assertOpen();
         return procedures.aggregationFunction( name );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallRead( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsReads() )
+        {
+            throw accessMode.onViolation( format( "Read operations are not allowed for %s.",
+                    ktx.securityContext().description() ) );
+        }
+        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static
+                .READ ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        return callProcedure( id, arguments,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsWrites() )
+        {
+            throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
+                    ktx.securityContext().description() ) );
+        }
+        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        return callProcedure( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsSchemaWrites() )
+        {
+            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.",
+                    ktx.securityContext().description() ) );
+        }
+        return callProcedure( id, arguments,
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        return callProcedure( id, arguments,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
     }
 
     @Override
@@ -580,7 +655,43 @@ public class AllStoreHolder extends Read
         return aggregationFunction( id,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
+    private RawIterator<Object[],ProcedureException> callProcedure(
+            int id, Object[] input, final AccessMode override  )
+            throws ProcedureException
+    {
+        ktx.assertOpen();
 
+        final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
+        final RawIterator<Object[],ProcedureException> procedureCall;
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext ) )
+        {
+            BasicContext ctx = new BasicContext();
+            ctx.put( Context.KERNEL_TRANSACTION, ktx );
+            ctx.put( Context.THREAD, Thread.currentThread() );
+            ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
+            procedureCall = procedures.callProcedure( ctx, id, input, ktx.acquireStatement() );
+        }
+        return new RawIterator<Object[],ProcedureException>()
+        {
+            @Override
+            public boolean hasNext() throws ProcedureException
+            {
+                try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext ) )
+                {
+                    return procedureCall.hasNext();
+                }
+            }
+
+            @Override
+            public Object[] next() throws ProcedureException
+            {
+                try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext ) )
+                {
+                    return procedureCall.next();
+                }
+            }
+        };
+    }
     private AnyValue callFunction( int id, AnyValue[] input, final AccessMode mode ) throws ProcedureException
     {
         ktx.assertOpen();

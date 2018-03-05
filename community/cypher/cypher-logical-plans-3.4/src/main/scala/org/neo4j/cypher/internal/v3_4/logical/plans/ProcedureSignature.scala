@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 
 case class ProcedureSignature(name: QualifiedName,
+                              id: Int,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],

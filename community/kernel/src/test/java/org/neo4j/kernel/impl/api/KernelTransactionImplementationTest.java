@@ -108,7 +108,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             }
         };
         return Arrays.asList(
-                new Object[]{readTxInitializer, false, "read"},
+                new Object[]{readTxInitializer, false, "readOperationsInNewTransaction"},
                 new Object[]{writeTxInitializer, true, "write"}
         );
     }

@@ -127,7 +127,7 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val ks = readOperationsSupplier().procedureGet(kn)
+    val ks = readOperationsSupplier().procedureGet(kn).signature()
     val input = ks.inputSignature().asScala
       .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
       .toIndexedSeq
