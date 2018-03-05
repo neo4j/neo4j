@@ -67,6 +67,7 @@ import org.neo4j.values.storable.Value;
  */
 public interface ReadOperations
 {
+    long UNLABELLED = Integer.MAX_VALUE + 1L;
     int ANY_LABEL = -1;
     int ANY_RELATIONSHIP_TYPE = -1;
 

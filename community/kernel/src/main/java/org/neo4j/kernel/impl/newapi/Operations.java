@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -118,6 +119,7 @@ public class Operations implements Write, ExplicitIndexWrite
     public long nodeCreate()
     {
         ktx.assertOpen();
+        acquireSharedLabelLock( ReadOperations.UNLABELLED );
         long nodeId = statement.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
         return nodeId;
@@ -718,7 +720,7 @@ public class Operations implements Write, ExplicitIndexWrite
         }
     }
 
-    private void acquireSharedLabelLock( int labelId )
+    private void acquireSharedLabelLock( long labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
     }

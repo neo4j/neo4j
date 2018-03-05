@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
@@ -784,9 +785,12 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void concurrentUpdatesAndIndexChangesShouldResultInValidState() throws Throwable
+    public void unlabelledConcurrentUpdatesAndIndexChangesShouldResultInValidState() throws Throwable
     {
-        final IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        String[] entityTokens = new String[0];
+        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, entityTokens, PROP );
+        IndexDescriptor newDescriptor =
+                fulltextAccessor.indexDescriptorFor( "nodes", NODE, entityTokens, "otherProp" );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -813,14 +817,12 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         {
             try
             {
-                IndexDescriptor newDescriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], "otherProp" );
                 try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
                 {
                     stmt.schemaWriteOperations().indexDrop( descriptor );
                     stmt.schemaWriteOperations().nonSchemaIndexCreate( newDescriptor );
                     transaction.success();
                 }
-                await( newDescriptor );
             }
             catch ( Exception e )
             {
@@ -842,7 +844,81 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         race.addContestant( changeConfig );
         race.addContestants( bobThreads, bobWork );
         race.go();
-        try ( Transaction tx = db.beginTx() )
+        await( newDescriptor );
+        try ( Transaction ignore = db.beginTx() )
+        {
+            ScoreEntityIterator bob = fulltextAccessor.query( "nodes", "bob" );
+            assertEquals( bobThreads * nodesCreatedPerThread, bob.stream().count() );
+            ScoreEntityIterator alice = fulltextAccessor.query( "nodes", "alice" );
+            assertEquals( 0, alice.stream().count() );
+        }
+    }
+
+    @Test
+    public void labelledConcurrentUpdatesAndIndexChangesShouldResultInValidState() throws Throwable
+    {
+        Label label = Label.label( "LABEL" );
+        String[] entityTokens = {label.name()};
+        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, entityTokens, PROP );
+        IndexDescriptor newDescriptor =
+                fulltextAccessor.indexDescriptorFor( "nodes", NODE, entityTokens, "otherProp" );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
+            transaction.success();
+        }
+        await( descriptor );
+
+        int aliceThreads = 10;
+        int bobThreads = 10;
+        int nodesCreatedPerThread = 10;
+        Race race = new Race();
+        Runnable aliceWork = () ->
+        {
+            for ( int i = 0; i < nodesCreatedPerThread; i++ )
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    long node = createNodeIndexableByPropertyValue( "alice" );
+                    db.getNodeById( node ).addLabel( label );
+                    tx.success();
+                }
+            }
+        };
+        Runnable changeConfig = () ->
+        {
+            try
+            {
+                try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+                {
+                    stmt.schemaWriteOperations().indexDrop( descriptor );
+                    stmt.schemaWriteOperations().nonSchemaIndexCreate( newDescriptor );
+                    transaction.success();
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new AssertionError( e );
+            }
+        };
+        Runnable bobWork = () ->
+        {
+            for ( int i = 0; i < nodesCreatedPerThread; i++ )
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    long node = createNodeWithProperty( "otherProp", "bob" );
+                    db.getNodeById( node ).addLabel( label );
+                    tx.success();
+                }
+            }
+        };
+        race.addContestants( aliceThreads, aliceWork );
+        race.addContestant( changeConfig );
+        race.addContestants( bobThreads, bobWork );
+        race.go();
+        await( newDescriptor );
+        try ( Transaction ignore = db.beginTx() )
         {
             ScoreEntityIterator bob = fulltextAccessor.query( "nodes", "bob" );
             assertEquals( bobThreads * nodesCreatedPerThread, bob.stream().count() );

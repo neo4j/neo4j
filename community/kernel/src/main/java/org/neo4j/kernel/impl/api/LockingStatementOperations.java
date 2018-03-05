@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.api;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Iterator;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
+import java.util.function.ObjLongConsumer;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -297,6 +298,7 @@ public class LockingStatementOperations implements
     @Override
     public long nodeCreate( KernelStatement statement )
     {
+        sharedLabelLock( statement, ReadOperations.UNLABELLED );
         return entityWriteDelegate.nodeCreate( statement );
     }
 
@@ -528,7 +530,7 @@ public class LockingStatementOperations implements
 
     private void lockSchemaExclusive( KernelStatement state, SchemaDescriptor schema )
     {
-        BiConsumer<KernelStatement,Integer> locker;
+        ObjLongConsumer<KernelStatement> locker;
         IntSupplier entityTokenHighId;
         if ( schema.entityType() == EntityType.NODE )
         {
@@ -547,15 +549,17 @@ public class LockingStatementOperations implements
             {
                 locker.accept( state, keyId++ );
             }
+            locker.accept( state, ReadOperations.UNLABELLED );
         }
         for ( int keyId : schema.getEntityTokenIds() )
         {
             locker.accept( state, keyId );
         }
     }
+
     private void lockSchemaShared( KernelStatement state, SchemaDescriptor schema )
     {
-        BiConsumer<KernelStatement,Integer> locker;
+        ObjLongConsumer<KernelStatement> locker;
         IntSupplier entityTokenHighId;
         if ( schema.entityType() == EntityType.NODE )
         {
@@ -574,6 +578,7 @@ public class LockingStatementOperations implements
             {
                 locker.accept( state, keyId++ );
             }
+            locker.accept( state, ReadOperations.UNLABELLED );
         }
         for ( int keyId : schema.getEntityTokenIds() )
         {
