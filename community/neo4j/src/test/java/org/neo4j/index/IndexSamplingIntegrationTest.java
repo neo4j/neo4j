@@ -51,7 +51,11 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class IndexSamplingIntegrationTest
 {
@@ -60,7 +64,7 @@ public class IndexSamplingIntegrationTest
 
     private final Label label = Label.label( "Person" );
     private final String property = "name";
-    private final int nodes = 1000;
+    private final long nodes = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
 
     @Test
@@ -121,12 +125,12 @@ public class IndexSamplingIntegrationTest
 
         // Then
 
-        // sampling will consider also the delete nodes till the next lucene compaction
+        // lucene will consider also the delete nodes, native won't
         DoubleLongRegister register = fetchIndexSamplingValues( db );
         assertEquals( names.length, register.readFirst() );
-        assertEquals( nodes, register.readSecond() );
+        assertThat( register.readSecond(), allOf( greaterThanOrEqualTo( nodes - deletedNodes ), lessThanOrEqualTo( nodes ) ) );
 
-        // but the deleted nodes should not be considered in the index size value
+        // but regardless, the deleted nodes should not be considered in the index size value
         DoubleLongRegister indexSizeRegister = fetchIndexSizeValues( db );
         assertEquals( 0, indexSizeRegister.readFirst() );
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
