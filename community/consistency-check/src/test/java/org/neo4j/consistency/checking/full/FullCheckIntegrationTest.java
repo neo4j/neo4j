@@ -578,7 +578,6 @@ public class FullCheckIntegrationTest
                     for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( descriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, descriptor, update.values() ) );
-                        System.out.println( "removed " + nodeId + " from " + indexRule );
                     }
                 }
             }
@@ -589,10 +588,6 @@ public class FullCheckIntegrationTest
         // when
         ConsistencySummaryStatistics stats = check();
 
-        for ( RecordType recordType : RecordType.values() )
-        {
-            System.out.println( recordType.toString() + stats.getInconsistencyCountForRecordType( recordType ) );
-        }
         // then
         on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
                    .andThatsAllFolks();
