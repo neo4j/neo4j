@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.IntPredicate;
 
@@ -76,12 +75,12 @@ public class RelationshipStoreScan<FAILURE extends Exception> implements StoreSc
     @Override
     public void run() throws FAILURE
     {
-        try ( PrimitiveLongResourceIterator nodeIds = getRelationshipIdIterator() )
+        try ( PrimitiveLongResourceIterator relIds = getRelationshipIdIterator() )
         {
             continueScanning = true;
-            while ( continueScanning && nodeIds.hasNext() )
+            while ( continueScanning && relIds.hasNext() )
             {
-                long id = nodeIds.next();
+                long id = relIds.next();
                 try ( Lock ignored = locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ) )
                 {
                     count++;
@@ -98,7 +97,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> implements StoreSc
     {
         int reltype = record.getType();
 
-        if ( propertyUpdatesVisitor != null && Arrays.stream( relationshipTypeIds ).anyMatch( type -> type == reltype ) )
+        if ( propertyUpdatesVisitor != null && containsAnyRelType( relationshipTypeIds, reltype ) )
         {
             // Notify the property update visitor
             // TODO: reuse object instead? Better in terms of speed and GC?
@@ -123,6 +122,23 @@ public class RelationshipStoreScan<FAILURE extends Exception> implements StoreSc
                 propertyUpdatesVisitor.visit( updates.build() );
             }
         }
+    }
+
+    private static boolean containsAnyRelType( int[] relTypeFilter, int relType )
+    {
+        // No relationship types means we take all relationship types:
+        if ( relTypeFilter.length == 0 )
+        {
+            return true;
+        }
+        for ( long candidate : relTypeFilter )
+        {
+            if ( candidate == relType )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Value valueOf( PropertyBlock property )

@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -41,39 +43,33 @@ import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexProviderFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.RepeatRule;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class LuceneFulltextTestSupport
 {
-    protected static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
-    protected static final Log LOG = NullLog.getInstance();
-    public static final String PROP = "prop";
-
-    @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule();
 
     protected static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
+    public static final String PROP = "prop";
 
-    protected String analyzer = ANALYZER;
+    public DatabaseRule db = new EmbeddedDatabaseRule();
+    public RepeatRule repeatRule = createRepeatRule();
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( repeatRule ).around( db );
+
     protected FulltextAccessor fulltextAccessor;
 
-//    @Before
-//    public void setUp() throws Throwable
-//    {
-//        db = dbRule.getGraphDatabaseAPI();
-//        scheduler = dbRule.resolveDependency( JobScheduler.class );
-//        fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-//        storeDir = dbRule.getStoreDir();
-//        transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
-//    }
+    protected RepeatRule createRepeatRule()
+    {
+        return new RepeatRule( false, 1 );
+    }
 
     @Before
     public void setUp()
@@ -174,7 +170,13 @@ public class LuceneFulltextTestSupport
             long next = result.next().entityId();
             assertTrue( String.format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
         }
-        assertTrue( "Number of results differ from expected", set.isEmpty() );
+        if ( !set.isEmpty() )
+        {
+            List<Long> list = new ArrayList<>();
+            set.visitKeys( k -> !list.add( k ) );
+            fail( "Number of results differ from expected. " + set.size() +
+                  " IDs were not found in the result: " + list );
+        }
     }
 
     protected void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )
@@ -212,7 +214,7 @@ public class LuceneFulltextTestSupport
     protected void await( IndexDescriptor fulltextIndexDescriptor ) throws IndexNotFoundKernelException
     {
         //TODO real await
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        try ( Transaction ignore = db.beginTx(); Statement stmt = db.statement() )
         {
             //noinspection StatementWithEmptyBody
             while ( stmt.readOperations().indexGetState( fulltextIndexDescriptor ) != InternalIndexState.ONLINE )
