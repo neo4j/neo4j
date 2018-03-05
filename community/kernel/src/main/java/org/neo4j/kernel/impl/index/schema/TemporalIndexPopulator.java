@@ -248,25 +248,25 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
 
         @Override
-        public PartPopulator<?> newDateTime() throws IOException
+        public PartPopulator<?> newLocalDateTime() throws IOException
         {
-            return create( temporalIndexFiles.dateTime() );
+            return create( temporalIndexFiles.localDateTime() );
         }
 
         @Override
-        public PartPopulator<?> newDateTimeZoned() throws IOException
+        public PartPopulator<?> newZonedDateTime() throws IOException
         {
             throw new UnsupportedOperationException( "not implementedur still" );
         }
 
         @Override
-        public PartPopulator<?> newTime() throws IOException
+        public PartPopulator<?> newLocalTime() throws IOException
         {
-            return create( temporalIndexFiles.time() );
+            return create( temporalIndexFiles.localTime() );
         }
 
         @Override
-        public PartPopulator<?> newTimeZoned() throws IOException
+        public PartPopulator<?> newZonedTime() throws IOException
         {
             throw new UnsupportedOperationException( "not implementedur still" );
         }

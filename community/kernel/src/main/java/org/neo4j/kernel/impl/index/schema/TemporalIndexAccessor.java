@@ -234,26 +234,25 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         }
 
         @Override
-        public PartAccessor<?> newDateTime() throws IOException
+        public PartAccessor<?> newLocalDateTime() throws IOException
         {
-            return createPartAccessor( temporalIndexFiles.dateTime() );
+            return createPartAccessor( temporalIndexFiles.localDateTime() );
         }
 
         @Override
-        public PartAccessor<?> newDateTimeZoned()
+        public PartAccessor<?> newZonedDateTime() throws IOException
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newTime() throws IOException
+        public PartAccessor<?> newLocalTime() throws IOException
         {
-            return createPartAccessor( temporalIndexFiles.time() );
-
+            return createPartAccessor( temporalIndexFiles.localTime() );
         }
 
         @Override
-        public PartAccessor<?> newTimeZoned()
+        public PartAccessor<?> newZonedTime() throws IOException
         {
             throw new UnsupportedOperationException( "no comprende" );
         }

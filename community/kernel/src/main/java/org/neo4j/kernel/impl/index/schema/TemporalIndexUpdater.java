@@ -65,7 +65,7 @@ public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUp
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IOException
     {
         FusionIndexUtils.forAll( NativeSchemaIndexUpdater::close, this );
     }
@@ -89,25 +89,25 @@ public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUp
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDateTime() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newLocalDateTime() throws IOException
         {
-            return accessor.dateTime().newUpdater( mode );
+            return accessor.localDateTime().newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDateTimeZoned() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newZonedDateTime() throws IOException
         {
             throw new UnsupportedOperationException( "ma-a-da dayo" );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newTime() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newLocalTime() throws IOException
         {
-            return accessor.time().newUpdater( mode );
+            return accessor.localTime().newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newTimeZoned() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newZonedTime() throws IOException
         {
             throw new UnsupportedOperationException( "ma-a-da dayo" );
         }

@@ -32,8 +32,8 @@ public class TemporalIndexCacheTest
     {
         // GIVEN
         TemporalIndexCache<String, Exception> cache = new TemporalIndexCache<>( new StringFactory() );
-        cache.dateTime();
-        cache.dateTimeZoned();
+        cache.localDateTime();
+        cache.zonedDateTime();
 
         // THEN
         assertEquals( Iterables.count( cache ), 2 );
@@ -48,27 +48,27 @@ public class TemporalIndexCacheTest
         }
 
         @Override
-        public String newDateTime() throws Exception
+        public String newLocalDateTime() throws Exception
         {
-            return "newDateTime";
+            return "newLocalDateTime";
         }
 
         @Override
-        public String newDateTimeZoned() throws Exception
+        public String newZonedDateTime() throws Exception
         {
-            return "newDateTimeZoned";
+            return "newZonedDateTime";
         }
 
         @Override
-        public String newTime() throws Exception
+        public String newLocalTime() throws Exception
         {
-            return "newTime";
+            return "newLocalTime";
         }
 
         @Override
-        public String newTimeZoned() throws Exception
+        public String newZonedTime() throws Exception
         {
-            return "newTimeZoned";
+            return "newZonedTime";
         }
 
         @Override

@@ -32,31 +32,31 @@ import org.neo4j.values.storable.ValueGroup;
 class TemporalIndexFiles
 {
     private final FileSystemAbstraction fs;
-    private FileLayout<DateSchemaKey> dateFileLayout;
-    private FileLayout<LocalDateTimeSchemaKey> dateTimeFileLayout;
-    private FileLayout dateTimeZonedFileLayout;
-    private FileLayout<LocalTimeSchemaKey> timeFileLayout;
-    private FileLayout timeZonedFileLayout;
-    private FileLayout durationFileLayout;
+    private FileLayout<DateSchemaKey> date;
+    private FileLayout<LocalDateTimeSchemaKey> localDateTime;
+    private FileLayout zonedDateTime;
+    private FileLayout<LocalTimeSchemaKey> localTime;
+    private FileLayout zonedTime;
+    private FileLayout duration;
 
     TemporalIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, IndexDescriptor descriptor, FileSystemAbstraction fs )
     {
         this.fs = fs;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
-        dateFileLayout = new FileLayout<>( new File( indexDirectory, "date" ), DateLayout.of( descriptor ), ValueGroup.DATE );
-        timeFileLayout = new FileLayout<>( new File( indexDirectory, "time" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
-        dateTimeFileLayout = new FileLayout<>( new File( indexDirectory, "datetime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
+        this.date = new FileLayout<>( new File( indexDirectory, "date" ), DateLayout.of( descriptor ), ValueGroup.DATE );
+        this.localTime = new FileLayout<>( new File( indexDirectory, "time" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
+        this.localDateTime = new FileLayout<>( new File( indexDirectory, "datetime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
     }
 
     Iterable<FileLayout> existing()
     {
         List<FileLayout> existing = new ArrayList<>();
-        addIfExists( existing, dateFileLayout );
-        addIfExists( existing, dateTimeFileLayout );
-        addIfExists( existing, dateTimeZonedFileLayout );
-        addIfExists( existing, timeFileLayout );
-        addIfExists( existing, timeZonedFileLayout );
-        addIfExists( existing, durationFileLayout );
+        addIfExists( existing, date );
+        addIfExists( existing, localDateTime );
+        addIfExists( existing, zonedDateTime );
+        addIfExists( existing, localTime );
+        addIfExists( existing, zonedTime );
+        addIfExists( existing, duration );
         return existing;
     }
 
@@ -66,6 +66,21 @@ class TemporalIndexFiles
         {
             indexCache.select( fileLayout.valueGroup );
         }
+    }
+
+    FileLayout<DateSchemaKey> date()
+    {
+        return date;
+    }
+
+    FileLayout<LocalTimeSchemaKey> localTime()
+    {
+        return localTime;
+    }
+
+    FileLayout<LocalDateTimeSchemaKey> localDateTime()
+    {
+        return localDateTime;
     }
 
     private void addIfExists( List<FileLayout> existing, FileLayout fileLayout )
@@ -79,21 +94,6 @@ class TemporalIndexFiles
     private boolean exists( FileLayout fileLayout )
     {
         return fileLayout != null && fs.fileExists( fileLayout.indexFile );
-    }
-
-    public FileLayout<DateSchemaKey> date()
-    {
-        return dateFileLayout;
-    }
-
-    public FileLayout<LocalTimeSchemaKey> time()
-    {
-        return timeFileLayout;
-    }
-
-    public FileLayout<LocalDateTimeSchemaKey> dateTime()
-    {
-        return dateTimeFileLayout;
     }
 
     // .... we will add more explicit accessor methods later
