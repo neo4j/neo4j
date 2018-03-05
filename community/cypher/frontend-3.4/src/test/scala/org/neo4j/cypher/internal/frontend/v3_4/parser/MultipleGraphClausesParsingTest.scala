@@ -31,8 +31,10 @@ class MultipleGraphClausesParsingTest
 
   implicit val parser: Rule1[Clause] = Clause
 
+  val fooBarGraph = ast.QualifiedGraphName(List("foo", "bar"))
+
   test("USE GRAPH foo.bar") {
-    yields(ast.UseGraph(ast.QualifiedGraphName(List("foo", "bar"))))
+    yields(ast.UseGraph(fooBarGraph))
   }
 
   test("CONSTRUCT GRAPH { CREATE () }") {
@@ -41,13 +43,12 @@ class MultipleGraphClausesParsingTest
   }
 
   test("CONSTRUCT GRAPH foo.bar { CREATE () }") {
-    val qgn = ast.QualifiedGraphName(List("foo", "bar"))
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
-    yields(ast.ConstructGraph(Some(qgn), ast.Create(exp.Pattern(patternParts)(pos))(pos)))
+    yields(ast.ConstructGraph(Some(fooBarGraph), ast.Create(exp.Pattern(patternParts)(pos))(pos)))
   }
 
   test("CREATE GRAPH foo.bar") {
-    failsToParse
+    yields(ast.CreateGraph(fooBarGraph))
   }
 
   test("COPY GRAPH foo.bar TO foo.diff") {

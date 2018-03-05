@@ -51,6 +51,12 @@ trait Clauses extends Parser
     )
   }
 
+  def CreateGraph = rule("CREATE GRAPH") {
+    group(
+      keyword("CREATE GRAPH") ~~ QualifiedGraphName ~~>> (ast.CreateGraph(_))
+    )
+  }
+
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
     group(
       SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _))

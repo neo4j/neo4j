@@ -95,6 +95,15 @@ final case class ConstructGraph(graphName: Option[QualifiedGraphName], create: C
       SemanticState.recordCurrentScope(this)
 }
 
+final case class CreateGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "CREATE GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 //final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
 //  extends MultipleGraphClause with UpdateClause {
 //
