@@ -22,6 +22,7 @@ package org.neo4j.cluster.protocol.cluster;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
@@ -53,7 +54,8 @@ public interface ClusterContext
 
     void joining( String name, Iterable<URI> instanceList );
 
-    void acquiredConfiguration( Map<InstanceId, URI> memberList, Map<String, InstanceId> roles );
+    void acquiredConfiguration( Map<InstanceId, URI> memberList, Map<String, InstanceId> roles,
+                                Set<InstanceId> failedInstances );
 
     void joined();
 
@@ -124,4 +126,11 @@ public interface ClusterContext
     void setLastElectorVersion( long lastElectorVersion );
 
     boolean shouldFilterContactingInstances();
+
+    /**
+     * @return The set of instances present in the failed set. This is not the same as the instances which are
+     * determined to be failed based on suspicions, as failed instance information can also come from the cluster
+     * configuration response at join time.
+     */
+    Set<InstanceId> getFailedInstances();
 }

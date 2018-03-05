@@ -55,20 +55,20 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
                         case addClusterListener:
                         {
-                            context.addClusterListener( message.<ClusterListener>getPayload() );
+                            context.addClusterListener( message.getPayload() );
 
                             break;
                         }
 
                         case removeClusterListener:
                         {
-                            context.removeClusterListener( message.<ClusterListener>getPayload() );
+                            context.removeClusterListener( message.getPayload() );
 
                             break;
                         }
@@ -84,10 +84,10 @@ public enum ClusterState
                         case join:
                         {
                             // Send configuration request to all instances
-                            Object[] args = message.<Object[]>getPayload();
+                            Object[] args = message.getPayload();
                             String name = (String) args[0];
                             URI[] clusterInstanceUris = (URI[]) args[1];
-                            context.joining( name, Iterables.<URI,URI>iterable( clusterInstanceUris ) );
+                            context.joining( name, Iterables.iterable( clusterInstanceUris ) );
                             context.getLog( getClass() ).info( "Trying to join with DISCOVERY header " + context.generateDiscoveryHeader() );
 
                             for ( URI potentialClusterInstanceUri : clusterInstanceUris )
@@ -154,10 +154,10 @@ public enum ClusterState
                                         ", got " + state.getClusterName() + "." );
                             }
 
-                            HashMap<InstanceId, URI> memberList = new HashMap<InstanceId, URI>( state.getMembers() );
+                            HashMap<InstanceId, URI> memberList = new HashMap<>( state.getMembers() );
                             context.discoveredLastReceivedInstanceId( state.getLatestReceivedInstanceId().getId() );
 
-                            context.acquiredConfiguration( memberList, state.getRoles() );
+                            context.acquiredConfiguration( memberList, state.getRoles(), state.getFailedMembers() );
 
                             if ( !memberList.containsKey( context.getMyId() ) ||
                                     !memberList.get( context.getMyId() ).equals( context.boundAt() ) )
@@ -379,7 +379,6 @@ public enum ClusterState
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -448,20 +447,20 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
                         case addClusterListener:
                         {
-                            context.addClusterListener( message.<ClusterListener>getPayload() );
+                            context.addClusterListener( message.getPayload() );
 
                             break;
                         }
 
                         case removeClusterListener:
                         {
-                            context.removeClusterListener( message.<ClusterListener>getPayload() );
+                            context.removeClusterListener( message.getPayload() );
 
                             break;
                         }
@@ -504,6 +503,7 @@ public enum ClusterState
                                                 .getRoles(), context.getConfiguration().getMembers(),
                                                 new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId(
                                                         context.getLastDeliveredInstanceId() ),
+                                                context.getFailedInstances(),
                                                 context.getConfiguration().getName() ) ) ) );
                             }
                             else
@@ -515,6 +515,7 @@ public enum ClusterState
                                                 .getRoles(), context.getConfiguration().getMembers(),
                                                 new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId(
                                                         context.getLastDeliveredInstanceId() ),
+                                                context.getFailedInstances(),
                                                 context.getConfiguration().getName() ) ) ) );
                             }
                             break;
@@ -529,7 +530,7 @@ public enum ClusterState
 
                         case leave:
                         {
-                            List<URI> nodeList = new ArrayList<URI>( context.getConfiguration().getMemberURIs() );
+                            List<URI> nodeList = new ArrayList<>( context.getConfiguration().getMemberURIs() );
                             if ( nodeList.size() == 1 )
                             {
                                 context.getLog( ClusterState.class ).info( format( "Shutting down cluster: %s",
@@ -570,7 +571,6 @@ public enum ClusterState
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

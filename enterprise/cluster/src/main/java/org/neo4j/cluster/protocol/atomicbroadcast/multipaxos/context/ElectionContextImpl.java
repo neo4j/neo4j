@@ -255,10 +255,14 @@ public class ElectionContextImpl
     @Override
     public boolean isElector()
     {
-        // Only the first alive server should try elections. Everyone else waits
+        // Only the first *alive* server should try elections. Everyone else waits
+        // This also takes into account the instances reported by the cluster join response as failed, to
+        // cover for the case where we just joined and our suspicions are not reliable yet.
         List<org.neo4j.cluster.InstanceId> aliveInstances = asList( getAlive() );
+        aliveInstances.removeAll( getFailed() );
         Collections.sort( aliveInstances );
-        return aliveInstances.indexOf( getMyId() ) == 0;
+        // Either we are the first one or the only one
+        return aliveInstances.indexOf( getMyId() ) == 0 || aliveInstances.isEmpty();
     }
 
     @Override
@@ -309,7 +313,7 @@ public class ElectionContextImpl
         private Election( WinnerStrategy winnerStrategy )
         {
             this.winnerStrategy = winnerStrategy;
-            this.votes = new HashMap<InstanceId, Vote>();
+            this.votes = new HashMap<>();
         }
 
         private Election( WinnerStrategy winnerStrategy, HashMap<InstanceId, Vote> votes )

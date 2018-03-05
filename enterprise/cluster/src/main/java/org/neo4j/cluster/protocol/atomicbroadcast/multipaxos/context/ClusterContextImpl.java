@@ -172,6 +172,12 @@ class ClusterContextImpl
     }
 
     @Override
+    public Set<InstanceId> getFailedInstances()
+    {
+        return heartbeatContext.getFailed();
+    }
+
+    @Override
     public InstanceId getLastElector()
     {
         return lastElector;
@@ -214,10 +220,19 @@ class ClusterContextImpl
     }
 
     @Override
-    public void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles )
+    public void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles,
+                                       final Set<InstanceId> failedInstances )
     {
         commonState.configuration().setMembers( memberList );
         commonState.configuration().setRoles( roles );
+        for ( InstanceId failedInstance : failedInstances )
+        {
+            if ( !failedInstance.equals( me  ) )
+            {
+                logProvider.getLog( ClusterContextImpl.class ).debug( "Adding instance " + failedInstance + " as failed from the start" );
+                heartbeatContext.failed( failedInstance );
+            }
+        }
     }
 
     @Override

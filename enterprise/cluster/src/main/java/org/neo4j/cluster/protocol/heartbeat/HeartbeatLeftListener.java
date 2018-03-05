@@ -40,7 +40,7 @@ public class HeartbeatLeftListener extends ClusterListener.Adapter
     @Override
     public void leftCluster( InstanceId instanceId, URI member )
     {
-        if ( heartbeatContext.isFailed( instanceId ) )
+        if ( heartbeatContext.isFailedBasedOnSuspicions( instanceId ) )
         {
             log.warn( "Instance " + instanceId + " (" + member + ") has left the cluster " +
                     "but is still treated as failed by HeartbeatContext" );
