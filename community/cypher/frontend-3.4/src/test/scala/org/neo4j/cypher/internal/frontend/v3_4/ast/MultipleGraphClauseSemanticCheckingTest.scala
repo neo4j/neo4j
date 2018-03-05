@@ -1171,13 +1171,13 @@ class MultipleGraphClauseSemanticCheckingTest
 
   import scala.compat.Platform.EOL
 
-  private def contextsByPosition(state: SemanticState): String = {
-    val astNodes = state.recordedContextGraphs.keyPositionSet ++ state.recordedScopes.keyPositionSet
-    val keys = astNodes.toSeq.sortBy(x => x._2.offset -> x._1.toString)
-    val values = keys.map(ast => s"${state.recordedContextGraphs.getOrElse(ast._1, "--")}$EOL// $ast")
-    val finalContext = state.currentScope.contextGraphs.map(_.toString).getOrElse("--")
-    s"// Start$EOL${values.mkString(EOL)}$EOL$finalContext$EOL// End"
-  }
+  private def contextsByPosition(state: SemanticState): String = ??? //{
+//    val astNodes = state.recordedContextGraphs.keyPositionSet ++ state.recordedScopes.keyPositionSet
+//    val keys = astNodes.toSeq.sortBy(x => x._2.offset -> x._1.toString)
+//    val values = keys.map(ast => s"${state.recordedContextGraphs.getOrElse(ast._1, "--")}$EOL// $ast")
+//    val finalContext = state.currentScope.contextGraphs.map(_.toString).getOrElse("--")
+//    s"// Start$EOL${values.mkString(EOL)}$EOL$finalContext$EOL// End"
+//  }
 
   override def convert(astNode: ast.Statement): SemanticCheckResult = {
     val rewritten = PreparatoryRewriting.transform(TestState(astNode), TestContext).statement()
