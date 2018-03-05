@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.MessageType;
@@ -120,14 +121,16 @@ public enum ClusterMessage
         private org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
         private Map<String, InstanceId> roles;
         private String clusterName;
+        private Set<InstanceId> failedMembers;
 
         public ConfigurationResponseState( Map<String, InstanceId> roles, Map<InstanceId, URI> nodes,
                                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId,
-                                          String clusterName )
+                                           Set<InstanceId> failedMembers, String clusterName )
         {
             this.roles = roles;
             this.nodes = nodes;
             this.latestReceivedInstanceId = latestReceivedInstanceId;
+            this.failedMembers = failedMembers;
             this.clusterName = clusterName;
         }
 
@@ -151,10 +154,15 @@ public enum ClusterMessage
             return clusterName;
         }
 
+        public Set<InstanceId> getFailedMembers()
+        {
+            return failedMembers;
+        }
+
         public ConfigurationResponseState snapshot()
         {
             return new ConfigurationResponseState( new HashMap<>( roles ), new HashMap<>( nodes ),
-                    latestReceivedInstanceId, clusterName );
+                    latestReceivedInstanceId, failedMembers, clusterName );
         }
 
         @Override
@@ -164,6 +172,7 @@ public enum ClusterMessage
                     "nodes=" + nodes +
                     ", latestReceivedInstanceId=" + latestReceivedInstanceId +
                     ", roles=" + roles +
+                    ", failed=" + failedMembers +
                     ", clusterName='" + clusterName + '\'' +
                     '}';
         }
@@ -195,7 +204,16 @@ public enum ClusterMessage
             {
                 return false;
             }
-            return roles != null ? roles.equals( that.roles ) : that.roles == null;
+            if ( failedMembers != null ? !failedMembers.equals( that.failedMembers ) : that.failedMembers != null )
+            {
+                return false;
+            }
+            if ( roles != null ? !roles.equals( that.roles ) : that.roles != null )
+            {
+                return false;
+            }
+
+            return true;
         }
 
         @Override
