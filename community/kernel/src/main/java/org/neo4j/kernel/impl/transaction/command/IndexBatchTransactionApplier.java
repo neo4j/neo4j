@@ -27,9 +27,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.concurrent.AsyncApply;
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
@@ -218,32 +215,23 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 // apply pending index updates up to this point in this batch before index schema changes occur.
                 applyPendingLabelAndIndexUpdates();
 
+                IndexRule schemaRule = (IndexRule) command.getSchemaRule();
                 switch ( command.getMode() )
                 {
-                case UPDATE:
-                    // Shouldn't we be more clear about that we are waiting for an index to come online here?
-                    // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((IndexRule) command.getSchemaRule()).canSupportUniqueConstraint() )
-                    {
-                        try
-                        {
-                            indexingService.activateIndex( command.getSchemaRule().getId() );
-                        }
-                        catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
-                                IndexPopulationFailedKernelException e )
-                        {
-                            throw new IllegalStateException(
-                                    "Unable to enable constraint, backing index is not online.", e );
-                        }
-                    }
-                    break;
                 case CREATE:
+                    // schema rule for constraint already created
+                    if ( schemaRule.canSupportUniqueConstraint() && schemaRule.getOwningConstraint() != null )
+                    {
+                        break;
+                    }
                     // Add to list so that all these indexes will be created in one call later
                     createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
-                    createdIndexes.add( (IndexRule) command.getSchemaRule() );
+                    createdIndexes.add( schemaRule );
                     break;
                 case DELETE:
-                    indexingService.dropIndex( (IndexRule) command.getSchemaRule() );
+                    indexingService.dropIndex( schemaRule );
+                    break;
+                case UPDATE:
                     break;
                 default:
                     throw new IllegalStateException( command.getMode().name() );

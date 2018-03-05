@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -83,11 +84,11 @@ public interface StoreReadLayer
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
 
     /**
-     * @param index {@link IndexDescriptor} to get schema rule id for.
-     * @return schema rule id for matching index.
+     * @param index {@link IndexDescriptor} to get schema rule for.
+     * @return schema rule for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( IndexDescriptor index )
+    IndexRule indexGetCommittedRule( IndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
     /**

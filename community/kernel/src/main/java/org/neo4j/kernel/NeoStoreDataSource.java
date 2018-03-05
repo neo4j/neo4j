@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -458,6 +459,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
             PropertyAccessor propertyAccessor = dependencies.resolveDependency( PropertyAccessor.class );
+            SchemaStorage schemaStorage = dependencies.resolveDependency( SchemaStorage.class );
 
             final NeoStoreKernelModule kernelModule = buildKernel(
                     logFiles,
@@ -471,7 +473,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionIdStore,
                     availabilityGuard,
                     clock,
-                    propertyAccessor );
+                    propertyAccessor,
+                    schemaStorage );
 
             kernelModule.satisfyDependencies( dependencies );
 
@@ -652,10 +655,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
-            IndexingService indexingService,
-            StoreReadLayer storeLayer, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
-            StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
-            AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor )
+            IndexingService indexingService, StoreReadLayer storeLayer, DatabaseSchemaState databaseSchemaState,
+            LabelScanStore labelScanStore, StorageEngine storageEngine, IndexConfigStore indexConfigStore,
+            TransactionIdStore transactionIdStore, AvailabilityGuard availabilityGuard, SystemNanoClock clock,
+            PropertyAccessor propertyAccessor, SchemaStorage schemaStorage )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
         AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
@@ -670,7 +673,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         Supplier<InwardKernel> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
-                propertyAccessor, monitors );
+                propertyAccessor, schemaStorage ,schemaIndexProviderMap );
 
         ExplicitIndexStore explicitIndexStore = new ExplicitIndexStore( config,
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );

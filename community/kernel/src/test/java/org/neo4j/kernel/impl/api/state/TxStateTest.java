@@ -40,14 +40,12 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -924,49 +922,49 @@ public class TxStateTest
         assertThat( Iterables.asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
 
-    @Test
-    public void shouldAddUniquenessConstraint()
-    {
-        // when
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint, 7 );
+//    @Test
+//    public void shouldAddUniquenessConstraint()
+//    {
+//        // when
+//        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+//        state.constraintDoAdd( constraint, 7 );
+//
+//        // then
+//        ReadableDiffSets<ConstraintDescriptor> diff = state.constraintsChangesForLabel( 1 );
+//
+//        assertEquals( singleton( constraint ), diff.getAdded() );
+//        assertTrue( diff.getRemoved().isEmpty() );
+//    }
 
-        // then
-        ReadableDiffSets<ConstraintDescriptor> diff = state.constraintsChangesForLabel( 1 );
+//    @Test
+//    public void addingUniquenessConstraintShouldBeIdempotent()
+//    {
+//        // given
+//        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+//        state.constraintDoAdd( constraint1, 7 );
+//
+//        // when
+//        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+//        state.constraintDoAdd( constraint2, 19 );
+//
+//        // then
+//        assertEquals( constraint1, constraint2 );
+//        assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
+//    }
 
-        assertEquals( singleton( constraint ), diff.getAdded() );
-        assertTrue( diff.getRemoved().isEmpty() );
-    }
-
-    @Test
-    public void addingUniquenessConstraintShouldBeIdempotent()
-    {
-        // given
-        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint1, 7 );
-
-        // when
-        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint2, 19 );
-
-        // then
-        assertEquals( constraint1, constraint2 );
-        assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
-    }
-
-    @Test
-    public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels()
-    {
-        // when
-        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint1, 7 );
-        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 2, 17 );
-        state.constraintDoAdd( constraint2, 19 );
-
-        // then
-        assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
-        assertEquals( singleton( constraint2 ), state.constraintsChangesForLabel( 2 ).getAdded() );
-    }
+//    @Test
+//    public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels()
+//    {
+//        // when
+//        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+//        state.constraintDoAdd( constraint1, 7 );
+//        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 2, 17 );
+//        state.constraintDoAdd( constraint2, 19 );
+//
+//        // then
+//        assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
+//        assertEquals( singleton( constraint2 ), state.constraintsChangesForLabel( 2 ).getAdded() );
+//    }
 
     @Test
     public void shouldAddRelationshipPropertyExistenceConstraint()

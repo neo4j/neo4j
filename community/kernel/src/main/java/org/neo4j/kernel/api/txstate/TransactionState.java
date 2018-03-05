@@ -23,6 +23,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -85,12 +86,11 @@ public interface TransactionState extends ReadableTransactionState
 
     void constraintDoAdd( ConstraintDescriptor constraint );
 
-    void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId );
+    void constraintDoAdd( IndexBackedConstraintDescriptor constraint, IndexRule indexRule );
 
     void constraintDoDrop( ConstraintDescriptor constraint );
 
     boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
     void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
-
 }

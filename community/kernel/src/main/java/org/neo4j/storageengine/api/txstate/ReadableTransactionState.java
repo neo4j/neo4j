@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.GraphState;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -135,7 +136,7 @@ public interface ReadableTransactionState
 
     ReadableDiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
 
-    Long indexCreatedForConstraint( ConstraintDescriptor constraint );
+    IndexRule indexCreatedForConstraint( ConstraintDescriptor constraint );
 
     PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor index );
 

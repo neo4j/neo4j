@@ -219,7 +219,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index )
+    public IndexRule indexGetCommittedRule( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
@@ -227,7 +227,7 @@ public class StorageLayer implements StoreReadLayer
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
         }
-        return rule.getId();
+        return rule;
     }
 
     @Override

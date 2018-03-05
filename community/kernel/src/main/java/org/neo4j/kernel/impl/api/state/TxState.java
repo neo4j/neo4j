@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.api.cursor.TxSingleNodeCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleRelationshipCursor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.EmptyPrimitiveLongReadableDiffSets;
@@ -113,7 +114,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingRelationshipsDiffSets relationships;
 
-    private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
+    private Map<IndexBackedConstraintDescriptor, IndexRule> createdConstraintIndexesByConstraint;
 
     private Map<LabelSchemaDescriptor,Map<ValueTuple,PrimitiveLongDiffSets>> indexUpdates;
 
@@ -218,7 +219,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( constraintsChanges != null )
         {
-            constraintsChanges.accept( constraintsVisitor( visitor ) );
+            constraintsChanges.accept( constraintsVisitor( visitor, createdConstraintIndexesByConstraint ) );
         }
 
         if ( createdLabelTokens != null )
@@ -286,9 +287,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         };
     }
 
-    private static DiffSetsVisitor<ConstraintDescriptor> constraintsVisitor( final TxStateVisitor visitor )
+    private static DiffSetsVisitor<ConstraintDescriptor> constraintsVisitor( final TxStateVisitor visitor,
+            Map<IndexBackedConstraintDescriptor,IndexRule> createdConstraintIndexesByConstraint )
     {
-        return new ConstraintDiffSetsVisitor( visitor );
+        return new ConstraintDiffSetsVisitor( visitor, createdConstraintIndexesByConstraint );
     }
 
     private static DiffSetsVisitor<IndexDescriptor> indexVisitor( final TxStateVisitor visitor )
@@ -899,10 +901,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId )
+    public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, IndexRule indexRule )
     {
         constraintsChangesDiffSets().add( constraint );
-        createdConstraintIndexesByConstraint().put( constraint, indexId );
+        createdConstraintIndexesByConstraint().put( constraint, indexRule );
         changed();
     }
 
@@ -974,7 +976,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Long indexCreatedForConstraint( ConstraintDescriptor constraint )
+    public IndexRule indexCreatedForConstraint( ConstraintDescriptor constraint )
     {
         return createdConstraintIndexesByConstraint == null ? null :
                 createdConstraintIndexesByConstraint.get( constraint );
@@ -1285,7 +1287,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return updates;
     }
 
-    private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint()
+    private Map<IndexBackedConstraintDescriptor, IndexRule> createdConstraintIndexesByConstraint()
     {
         if ( createdConstraintIndexesByConstraint == null )
         {
@@ -1388,16 +1390,19 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private static class ConstraintDiffSetsVisitor implements DiffSetsVisitor<ConstraintDescriptor>
     {
         private final TxStateVisitor visitor;
+        private final Map<IndexBackedConstraintDescriptor,IndexRule> createdConstraintIndexesByConstraint;
 
-        ConstraintDiffSetsVisitor( TxStateVisitor visitor )
+        ConstraintDiffSetsVisitor( TxStateVisitor visitor,
+                Map<IndexBackedConstraintDescriptor,IndexRule> createdConstraintIndexesByConstraint )
         {
             this.visitor = visitor;
+            this.createdConstraintIndexesByConstraint = createdConstraintIndexesByConstraint;
         }
 
         @Override
         public void visitAdded( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
         {
-            visitor.visitAddedConstraint( constraint );
+            visitor.visitAddedConstraint( constraint, createdConstraintIndexesByConstraint.get( constraint ) );
         }
 
         @Override
