@@ -57,6 +57,12 @@ trait Clauses extends Parser
     )
   }
 
+  def CopyGraph = rule("COPY GRAPH") {
+    group(
+      keyword("COPY GRAPH") ~~ QualifiedGraphName ~~ keyword("TO") ~~ QualifiedGraphName ~~>> (ast.CopyGraph(_, _))
+    )
+  }
+
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
     group(
       SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _))

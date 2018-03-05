@@ -104,6 +104,15 @@ final case class CreateGraph(graphName: QualifiedGraphName)(val position: InputP
       SemanticState.recordCurrentScope(this)
 }
 
+final case class CopyGraph(from: QualifiedGraphName, to: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "COPY GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 //final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
 //  extends MultipleGraphClause with UpdateClause {
 //

@@ -32,6 +32,7 @@ class MultipleGraphClausesParsingTest
   implicit val parser: Rule1[Clause] = Clause
 
   val fooBarGraph = ast.QualifiedGraphName(List("foo", "bar"))
+  val fooDiffGraph = ast.QualifiedGraphName(List("foo", "diff"))
 
   test("USE GRAPH foo.bar") {
     yields(ast.UseGraph(fooBarGraph))
@@ -52,7 +53,7 @@ class MultipleGraphClausesParsingTest
   }
 
   test("COPY GRAPH foo.bar TO foo.diff") {
-    failsToParse
+    yields(ast.CopyGraph(fooBarGraph, fooDiffGraph))
   }
 
   test("RENAME GRAPH foo.bar TO foo.diff") {
