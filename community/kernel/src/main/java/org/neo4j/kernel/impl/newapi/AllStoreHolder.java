@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.proc.BasicContext;
@@ -663,13 +664,14 @@ public class AllStoreHolder extends Read
 
         final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
         final RawIterator<Object[],ProcedureException> procedureCall;
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext ) )
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
+              Statement statement = ktx.acquireStatement() )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, ktx );
             ctx.put( Context.THREAD, Thread.currentThread() );
             ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
-            procedureCall = procedures.callProcedure( ctx, id, input, ktx.acquireStatement() );
+            procedureCall = procedures.callProcedure( ctx, id, input, statement );
         }
         return new RawIterator<Object[],ProcedureException>()
         {
