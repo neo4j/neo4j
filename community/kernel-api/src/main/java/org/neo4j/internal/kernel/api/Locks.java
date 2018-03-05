@@ -30,11 +30,15 @@ public interface Locks
 
     void acquireExclusiveExplicitIndexLock( long... ids );
 
+    void acquireExclusiveLabelLock( long... ids );
+
     void releaseExclusiveNodeLock( long... ids );
 
     void releaseExclusiveRelationshipLock( long... ids );
 
     void releaseExclusiveExplicitIndexLock( long... ids );
+
+    void releaseExclusiveLabelLock( long... ids );
 
     void acquireSharedNodeLock( long... ids );
 
@@ -42,9 +46,13 @@ public interface Locks
 
     void acquireSharedExplicitIndexLock( long... ids );
 
+    void acquireSharedLabelLock( long... ids );
+
     void releaseSharedNodeLock( long... ids );
 
     void releaseSharedRelationshipLock( long... ids );
 
     void releaseSharedExplicitIndexLock( long... ids );
+
+    void releaseSharedLabelLock( long... ids );
 }

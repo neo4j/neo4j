@@ -560,84 +560,112 @@ abstract class Read implements TxStateHolder,
     @Override
     public void acquireExclusiveNodeLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, ids );
+        acquireExclusiveLock( ResourceTypes.NODE, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireExclusiveRelationshipLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, ids );
+        acquireExclusiveLock( ResourceTypes.RELATIONSHIP, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireExclusiveExplicitIndexLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.EXPLICIT_INDEX, ids );
+        acquireExclusiveLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireExclusiveLabelLock( long... ids )
+    {
+        acquireExclusiveLock( ResourceTypes.LABEL, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseExclusiveNodeLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().releaseExclusive( ResourceTypes.NODE, ids );
+        releaseExclusiveLock( ResourceTypes.NODE, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseExclusiveRelationshipLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().releaseExclusive( ResourceTypes.RELATIONSHIP, ids );
+        releaseExclusiveLock( ResourceTypes.RELATIONSHIP, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseExclusiveExplicitIndexLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().releaseExclusive( ResourceTypes.EXPLICIT_INDEX, ids );
+        releaseExclusiveLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveLabelLock( long... ids )
+    {
+        releaseExclusiveLock( ResourceTypes.LABEL, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireSharedNodeLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.NODE, ids );
+        acquireSharedLock( ResourceTypes.NODE, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireSharedRelationshipLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, ids );
+        acquireSharedLock( ResourceTypes.RELATIONSHIP, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireSharedExplicitIndexLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.EXPLICIT_INDEX, ids );
+        acquireSharedLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedLabelLock( long... ids )
+    {
+        acquireSharedLock( ResourceTypes.LABEL, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedNodeLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().releaseShared( ResourceTypes.NODE, ids );
+        releaseSharedLock( ResourceTypes.NODE, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedRelationshipLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().releaseShared( ResourceTypes.RELATIONSHIP, ids );
+        releaseSharedLock( ResourceTypes.RELATIONSHIP, ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedExplicitIndexLock( long... ids )
     {
-        ktx.statementLocks().pessimistic().releaseShared( ResourceTypes.EXPLICIT_INDEX, ids );
+        releaseSharedLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedLabelLock( long... ids )
+    {
+        releaseSharedLock( ResourceTypes.LABEL, ids );
         ktx.assertOpen();
     }
 
@@ -645,4 +673,25 @@ abstract class Read implements TxStateHolder,
     {
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
     }
+
+    private void acquireExclusiveLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), types, ids );
+    }
+
+    private void releaseExclusiveLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseExclusive( types, ids );
+    }
+
+    private void acquireSharedLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), types, ids );
+    }
+
+    private void releaseSharedLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseShared( types, ids );
+    }
+
 }
