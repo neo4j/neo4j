@@ -258,6 +258,8 @@ public class BloomIT
     {
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        db.execute( AWAIT_POPULATION ).close();
+
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -283,6 +285,8 @@ public class BloomIT
     {
         db = getDb();
         db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        db.execute( AWAIT_POPULATION ).close();
+
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -709,9 +713,9 @@ public class BloomIT
         assertFalse( result.hasNext() );
 
         result = db.execute( GET_REL_KEYS );
+        assertEquals( "ata", result.next().get( "propertyKey" ) );
         assertEquals( "mata", result.next().get( "propertyKey" ) );
         assertEquals( "matt", result.next().get( "propertyKey" ) );
-        assertEquals( "ata", result.next().get( "propertyKey" ) );
         assertFalse( result.hasNext() );
     }
 
