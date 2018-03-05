@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.PagedReadableByteChannel;
 import org.neo4j.io.pagecache.impl.PagedWritableByteChannel;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -204,7 +205,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public long fileSize()
+    public long fileSize() throws FileIsNotMappedException
     {
         final long lastPageId = getLastPageId();
         if ( lastPageId < 0 )
@@ -519,13 +520,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public long getLastPageId()
+    public long getLastPageId() throws FileIsNotMappedException
     {
         long state = getHeaderState();
         if ( refCountOf( state ) == 0 )
         {
-            String msg = "File has been unmapped: " + file().getPath();
-            IllegalStateException exception = new IllegalStateException( msg );
+            FileIsNotMappedException exception = new FileIsNotMappedException( file() );
             Exception closedBy = closeStackTrace;
             if ( closedBy != null )
             {

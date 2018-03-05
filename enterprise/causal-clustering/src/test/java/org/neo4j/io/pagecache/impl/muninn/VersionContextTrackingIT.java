@@ -36,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -188,6 +189,7 @@ public class VersionContextTrackingIT
 
         @Override
         protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
+                throws FileIsNotMappedException
         {
             delegate.pinCursorToPage( pageRef, filePageId, swapper );
         }

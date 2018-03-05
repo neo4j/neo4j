@@ -62,6 +62,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
@@ -1299,11 +1300,26 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             List<PagedFile> existingMappings = pageCache.listExistingMappings();
             assertThat( existingMappings.size(), is( 2 ) );
             assertThat( existingMappings, containsInAnyOrder( pf1, pf2 ) );
-            for ( PagedFile existingMapping : existingMappings )
+        }
+    }
+
+    @Test
+    public void listExistingMappingsMustNotIncrementPagedFileReferenceCount() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        PagedFile existingMapping;
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            existingMapping = pageCache.listExistingMappings().get( 0 );
+            try ( PageCursor cursor = existingMapping.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
-                existingMapping.close();
+                assertTrue( cursor.next() );
             }
         }
+        // Now the mapping should be closed, which is signalled as an illegal state.
+        expectedException.expect( FileIsNotMappedException.class );
+        existingMapping.io( 0, PF_SHARED_WRITE_LOCK ).next();
     }
 
     @Test
@@ -2482,7 +2498,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             file = pf;
         }
 
-        expectedException.expect( IllegalStateException.class );
+        expectedException.expect( FileIsNotMappedException.class );
         file.getLastPageId();
     }
 
@@ -2592,7 +2608,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.next();
                 fail( "cursor.next() on unmapped file did not throw" );
             }
-            catch ( IllegalStateException e )
+            catch ( FileIsNotMappedException e )
             {
                 StringWriter out = new StringWriter();
                 e.printStackTrace( new PrintWriter( out ) );
@@ -2620,7 +2636,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.next();
             fail( "cursor.next() on unmapped file did not throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( FileIsNotMappedException e )
         {
             StringWriter out = new StringWriter();
             e.printStackTrace( new PrintWriter( out ) );
@@ -2637,7 +2653,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK );
         pagedFile.close();
 
-        expectedException.expect( IllegalStateException.class );
+        expectedException.expect( FileIsNotMappedException.class );
         cursor.next( 1 );
     }
 
@@ -2652,7 +2668,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK );
         pagedFile.close();
 
-        expectedException.expect( IllegalStateException.class );
+        expectedException.expect( FileIsNotMappedException.class );
         cursor.next();
     }
 
@@ -2667,7 +2683,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK );
         pagedFile.close();
 
-        expectedException.expect( IllegalStateException.class );
+        expectedException.expect( FileIsNotMappedException.class );
         cursor.next( 1 );
     }
 
@@ -2716,7 +2732,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         fork( $close( pagedFile ) ).join();
 
-        expectedException.expect( IllegalStateException.class );
+        expectedException.expect( FileIsNotMappedException.class );
         cursor.next();
     }
 
@@ -2740,7 +2756,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.next();
             fail( "Advancing the cursor should have thrown" );
         }
-        catch ( IllegalStateException e )
+        catch ( FileIsNotMappedException e )
         {
             // Yay!
         }
@@ -2770,7 +2786,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursor.next();
             fail( "Advancing the cursor should have thrown" );
         }
-        catch ( IllegalStateException e )
+        catch ( FileIsNotMappedException e )
         {
             // Yay!
         }

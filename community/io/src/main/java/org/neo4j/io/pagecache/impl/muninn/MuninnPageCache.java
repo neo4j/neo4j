@@ -460,8 +460,9 @@ public class MuninnPageCache implements PageCache
 
         while ( current != null )
         {
+            // Note that we are NOT incrementing the reference count here.
+            // Calling code is expected to be able to deal with asynchronously closed PagedFiles.
             MuninnPagedFile pagedFile = current.pagedFile;
-            pagedFile.incrementRefCount();
             list.add( pagedFile );
             current = current.next;
         }

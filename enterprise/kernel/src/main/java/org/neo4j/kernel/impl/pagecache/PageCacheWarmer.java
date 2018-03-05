@@ -44,6 +44,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -106,20 +107,13 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             return Resource.EMPTY;
         }
         List<PagedFile> files = pageCache.listExistingMappings();
-        try
+        for ( PagedFile file : files )
         {
-            for ( PagedFile file : files )
+            File profileFile = profileOutputFileFinal( file );
+            if ( fs.fileExists( profileFile ) )
             {
-                File profileFile = profileOutputFileFinal( file );
-                if ( fs.fileExists( profileFile ) )
-                {
-                    coll.add( new StoreFileMetadata( profileFile, 1, false ) );
-                }
+                coll.add( new StoreFileMetadata( profileFile, 1, false ) );
             }
-        }
-        finally
-        {
-            IOUtils.closeAll( files );
         }
         return Resource.EMPTY;
     }
@@ -147,16 +141,16 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     {
         long pagesLoaded = 0;
         List<PagedFile> files = pageCache.listExistingMappings();
-        try
+        for ( PagedFile file : files )
         {
-            for ( PagedFile file : files )
+            try
             {
                 pagesLoaded += reheat( file );
             }
-        }
-        finally
-        {
-            IOUtils.closeAll( files );
+            catch ( FileIsNotMappedException ignore )
+            {
+                // The database is allowed to map and unmap files while we are trying to heat it up.
+            }
         }
         return stopped ? OptionalLong.empty() : OptionalLong.of( pagesLoaded );
     }
@@ -212,16 +206,16 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         // profiling in parallel is just not worth it.
         long pagesInMemory = 0;
         List<PagedFile> files = pageCache.listExistingMappings();
-        try
+        for ( PagedFile file : files )
         {
-            for ( PagedFile file : files )
+            try
             {
                 pagesInMemory += profile( file );
             }
-        }
-        finally
-        {
-            IOUtils.closeAll( files );
+            catch ( FileIsNotMappedException ignore )
+            {
+                // The database is allowed to map and unmap files while we are profiling the page cache.
+            }
         }
         pageCache.reportEvents();
         return stopped ? OptionalLong.empty() : OptionalLong.of( pagesInMemory );
