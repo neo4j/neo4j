@@ -147,7 +147,7 @@ public class ClusterBindingIT
 
         File storeDir = cluster.getCoreMemberById( 0 ).storeDir();
 
-        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.removeCoreMemberWithServerId( 0 );
         changeStoreId( storeDir );
 
         // WHEN
@@ -173,8 +173,8 @@ public class ClusterBindingIT
             tx.success();
         } );
 
-        //TODO: Why won't this potentially remove a leader?
-        cluster.removeCoreMemberWithMemberId( 0 );
+        //TODO: Work out if/why this won't potentially remove a leader?
+        cluster.removeCoreMemberWithServerId( 0 );
 
         SampleData.createSomeData( 100, cluster );
 
@@ -208,7 +208,7 @@ public class ClusterBindingIT
         } );
 
         CoreClusterMember coreMember = cluster.getCoreMemberById( 0 );
-        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.removeCoreMemberWithServerId( 0 );
         changeClusterId( coreMember );
 
         SampleData.createSomeData( 100, cluster );

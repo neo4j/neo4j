@@ -31,6 +31,8 @@ public interface CoreTopologyService extends TopologyService
 {
     void addCoreTopologyListener( Listener listener );
 
+    void removeCoreTopologyListener( Listener listener );
+
     /**
      * Publishes the cluster ID so that other members might discover it.
      * Should only succeed to publish if one missing or already the same (CAS logic).

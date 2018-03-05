@@ -106,7 +106,6 @@ public class HazelcastClusterTopologyTest
         when( hzInstance.getMultiMap( anyString() ) ).thenReturn( (MultiMap) serverGroupsMMap );
     }
 
-
     private static List<Config> generateConfigs( int numConfigs )
     {
         return generateConfigs( numConfigs, DEFAULT_SETTINGS_GENERATOR );
@@ -127,7 +126,7 @@ public class HazelcastClusterTopologyTest
 
         List<Config> configs = generateConfigs( numMembers );
 
-        for( int i = 0; i < configs.size(); i++ )
+        for ( int i = 0; i < configs.size(); i++ )
         {
             MemberId mId = new MemberId( UUID.randomUUID() );
             coreMembers.add( mId );
@@ -169,7 +168,7 @@ public class HazelcastClusterTopologyTest
 
         List<Config> configs = generateConfigs( numMembers, generator );
 
-        for( int i = 0; i < configs.size(); i++ )
+        for ( int i = 0; i < configs.size(); i++ )
         {
             MemberId mId = new MemberId( UUID.randomUUID() );
             coreMembers.add( mId );

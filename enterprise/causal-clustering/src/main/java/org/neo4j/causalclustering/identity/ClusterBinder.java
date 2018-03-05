@@ -23,12 +23,16 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
+import org.neo4j.causalclustering.discovery.ClusterTopology;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.function.ThrowingAction;
@@ -45,12 +49,13 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     private final ThrowingAction<InterruptedException> retryWaiter;
     private final long timeoutMillis;
     private final String dbName;
+    private final int minCoreHosts;
 
     private ClusterId clusterId;
 
     public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
                             LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
-                            long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName )
+                            long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts )
     {
         this.clusterIdStorage = clusterIdStorage;
         this.topologyService = topologyService;
@@ -60,6 +65,20 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         this.retryWaiter = retryWaiter;
         this.timeoutMillis = timeoutMillis;
         this.dbName = dbName;
+        this.minCoreHosts = minCoreHosts;
+    }
+
+    /**
+     * This method verifies if the local topology being returned by the discovery service is a viable cluster.
+     * If true, then a) the topology is sufficiently large to form a cluster; & b) this host can bootstrap for
+     * its configured database.
+     *
+     * @param coreTopology the present state of the local topology, as reported by the discovery service.
+     * @return Whether or not coreTopology, in its current state, can form a viable cluster
+     */
+    boolean isViableCluster( CoreTopology coreTopology )
+    {
+        return coreTopology.members().size() >= minCoreHosts && coreTopology.canBeBootstrapped();
     }
 
     /**
@@ -93,13 +112,13 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
                 clusterId = topology.clusterId();
                 log.info( "Bound to cluster: " + clusterId );
             }
-            else if ( topology.canBeBootstrapped() )
+            else if ( isViableCluster( topology ) )
             {
                 clusterId = new ClusterId( UUID.randomUUID() );
                 snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
                 log.info( String.format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, clusterId ) );
 
-                publishClusterId( clusterId );
+                publishClusterId( clusterId, topology );
             }
             else
             {
@@ -125,6 +144,19 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     }
 
     private void publishClusterId( ClusterId localClusterId ) throws BindingException, InterruptedException
+    {
+        boolean success = topologyService.setClusterId( localClusterId, dbName );
+        if ( !success )
+        {
+            throw new BindingException( "Failed to publish: " + localClusterId );
+        }
+        else
+        {
+            log.info( "Published: " + localClusterId );
+        }
+    }
+
+    private void publishClusterId( ClusterId localClusterId, CoreTopology topology ) throws BindingException, InterruptedException
     {
         boolean success = topologyService.setClusterId( localClusterId, dbName );
         if ( !success )

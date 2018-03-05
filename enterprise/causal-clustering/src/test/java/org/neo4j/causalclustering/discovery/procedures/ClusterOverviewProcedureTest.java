@@ -86,7 +86,6 @@ public class ClusterOverviewProcedureTest
         when( topologyService.allReadReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
         when( topologyService.allCoreRoles() ).thenReturn( roleMap );
 
-        //TODO: Fix this
         ClusterOverviewProcedure procedure =
                 new ClusterOverviewProcedure( topologyService, NullLogProvider.getInstance() );
 

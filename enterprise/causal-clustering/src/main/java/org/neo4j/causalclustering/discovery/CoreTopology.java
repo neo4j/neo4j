@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -77,5 +78,26 @@ public class CoreTopology implements Topology<CoreServerInfo>
         Map<MemberId, CoreServerInfo> filteredMembers = filterHostsByDb( members(), dbName );
 
         return new CoreTopology( clusterId(), canBeBootstrapped(), filteredMembers );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        CoreTopology that = (CoreTopology) o;
+        return Objects.equals( coreMembers, that.coreMembers );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( coreMembers );
     }
 }

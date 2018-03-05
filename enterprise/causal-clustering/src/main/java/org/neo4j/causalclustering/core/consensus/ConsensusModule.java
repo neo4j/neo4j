@@ -145,7 +145,7 @@ public class ConsensusModule
 
         String dbName = config.get( CausalClusteringSettings.database );
 
-        life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine, dbName, logProvider ) );
+        life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine, dbName ) );
 
         life.add( logShipping );
     }

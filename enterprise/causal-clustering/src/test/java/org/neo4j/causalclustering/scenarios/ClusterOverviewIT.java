@@ -43,9 +43,7 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.RoleInfo;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction.Type;
@@ -86,7 +84,7 @@ public class ClusterOverviewIT
 
     public ClusterOverviewIT( DiscoveryServiceType discoveryServiceType )
     {
-        clusterRule.withDiscoveryServiceFactory( discoveryServiceType.create() );
+        clusterRule.withDiscoveryServiceType( discoveryServiceType );
     }
 
     @Test
@@ -257,8 +255,8 @@ public class ClusterOverviewIT
         }
 
         // when
-        cluster.removeCoreMemberWithMemberId( 0 );
-        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.removeCoreMemberWithServerId( 0 );
+        cluster.removeCoreMemberWithServerId( 1 );
 
         for ( int coreServerId = 2; coreServerId < coreMembers; coreServerId++ )
         {

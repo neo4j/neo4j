@@ -84,7 +84,7 @@ public class RecoveryIT
         // when
         for ( int i = 0; i < clusterSize; i++ )
         {
-            cluster.removeCoreMemberWithMemberId( i );
+            cluster.removeCoreMemberWithServerId( i );
             fireSomeLoadAtTheCluster( cluster );
             cluster.addCoreMemberWithId( i ).start();
         }

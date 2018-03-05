@@ -77,8 +77,11 @@ public class ClusteringModule
         CoreBootstrapper coreBootstrapper =
                 new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
 
+        int minimumCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
+        String dbName = config.get( CausalClusteringSettings.database );
+
         clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
-                () -> sleep( 100 ), 300_000, coreBootstrapper, config.get( CausalClusteringSettings.database ) );
+                () -> sleep( 100 ), 300_000, coreBootstrapper, dbName, minimumCoreHosts );
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )

@@ -139,12 +139,7 @@ public class Cluster
     public Set<CoreClusterMember> healthyCoreMembers()
     {
         return coreMembers.values().stream()
-                .filter( db -> {
-                    CoreGraphDatabase d = db.database();
-                    DependencyResolver dr = d.getDependencyResolver();
-                    DatabaseHealth dh = dr.resolveDependency( DatabaseHealth.class );
-                    return dh.isHealthy();
-                } )
+                .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
                 .collect( Collectors.toSet() );
     }
 
@@ -268,10 +263,9 @@ public class Cluster
         return list;
     }
 
-    public void removeCoreMemberWithMemberId( int memberId )
+    public void removeCoreMemberWithServerId( int serverId )
     {
-        //TODO: Should be serverId, is memberId is a UUID and something else entirely.
-        CoreClusterMember memberToRemove = getCoreMemberById( memberId );
+        CoreClusterMember memberToRemove = getCoreMemberById( serverId );
 
         if ( memberToRemove != null )
         {
@@ -280,7 +274,7 @@ public class Cluster
         }
         else
         {
-            throw new RuntimeException( "Could not remove core member with id " + memberId );
+            throw new RuntimeException( "Could not remove core member with id " + serverId );
         }
     }
 
@@ -327,7 +321,7 @@ public class Cluster
 
     private void ensureDBName( String dbName ) throws IllegalArgumentException
     {
-        if( !dbNames.contains( dbName ) )
+        if ( !dbNames.contains( dbName ) )
         {
             throw new IllegalArgumentException( "Database name " + dbName + " does not exist in this cluster." );
         }
@@ -405,7 +399,6 @@ public class Cluster
      */
     public CoreClusterMember coreTx( BiConsumer<CoreGraphDatabase,Transaction> op ) throws Exception
     {
-        //TODO: Rethink this - where should the list of database names be kept in this class?
         String dbName = CausalClusteringSettings.database.getDefaultValue();
         return coreTx( dbName, op );
     }
@@ -418,7 +411,6 @@ public class Cluster
         ensureDBName( dbName );
         return leaderTx( dbName, op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
-
 
     /**
      * Perform a transaction against the leader of the core cluster, retrying as necessary.

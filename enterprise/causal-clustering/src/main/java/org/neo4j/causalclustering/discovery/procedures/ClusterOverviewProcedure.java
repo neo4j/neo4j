@@ -74,9 +74,6 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                 .build() );
         this.topologyService = topologyService;
         this.log = logProvider.getLog( getClass() );
-
-        //TODO: Think about how to return an overview of the complete cluster of clusters here, but indicate which is the current cluster from the perspective
-        // of the overview.
     }
 
     @Override

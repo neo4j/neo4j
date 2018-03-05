@@ -24,10 +24,11 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 
 public enum DiscoveryServiceType
 {
-    SHARED( SharedDiscoveryService::new ),
+    SHARED( SharedDiscoveryServiceFactory::new ),
     HAZELCAST( HazelcastDiscoveryServiceFactory::new );
 
     private final Supplier<DiscoveryServiceFactory> factory;

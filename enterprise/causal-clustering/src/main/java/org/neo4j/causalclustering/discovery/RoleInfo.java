@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.discovery;
 
 public enum RoleInfo
 {
+    //TODO: Factor out for the Role which already exists in cc.consensus.roles
     LEADER,
     FOLLOWER,
     READ_REPLICA,

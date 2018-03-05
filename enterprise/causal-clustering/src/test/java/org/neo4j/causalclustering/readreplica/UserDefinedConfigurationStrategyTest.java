@@ -226,7 +226,6 @@ public class UserDefinedConfigurationStrategyTest
             @Override
             public Map<MemberId,RoleInfo> allCoreRoles()
             {
-                //TODO: Work out if we need to overhaul this to return proper roles?
                 return emptyMap();
             }
 

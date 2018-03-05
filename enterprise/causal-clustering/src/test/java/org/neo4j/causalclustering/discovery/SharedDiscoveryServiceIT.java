@@ -118,7 +118,7 @@ public class SharedDiscoveryServiceIT
             {
                 RaftMachine raftMock = mock( RaftMachine.class );
                 RaftCoreTopologyConnector tc = new RaftCoreTopologyConnector( topologyService,
-                        raftMock, CausalClusteringSettings.database.getDefaultValue(), NullLogProvider.getInstance() );
+                        raftMock, CausalClusteringSettings.database.getDefaultValue() );
                 topologyService.start();
                 tc.start();
 

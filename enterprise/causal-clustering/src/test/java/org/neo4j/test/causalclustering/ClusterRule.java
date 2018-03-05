@@ -27,22 +27,24 @@ import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.Set;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
+import org.neo4j.causalclustering.scenarios.DiscoveryServiceType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
+import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -57,7 +59,7 @@ public class ClusterRule extends ExternalResource
 
     private int noCoreMembers = 3;
     private int noReadReplicas = 3;
-    private DiscoveryServiceFactory discoveryServiceFactory = new SharedDiscoveryServiceFactory();
+    private DiscoveryServiceType discoveryServiceType = SHARED;
     private Map<String,String> coreParams = stringMap();
     private Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
     private Map<String,String> readReplicaParams = stringMap();
@@ -122,8 +124,7 @@ public class ClusterRule extends ExternalResource
     {
         createCluster();
         cluster.start();
-        //TODO: work out if we really need this - things should just retry.
-        for( String dbName : dbNames )
+        for ( String dbName : dbNames )
         {
             cluster.awaitLeader( dbName );
         }
@@ -134,7 +135,7 @@ public class ClusterRule extends ExternalResource
     {
         if ( cluster == null )
         {
-            cluster = new Cluster( clusterDirectory, noCoreMembers, noReadReplicas, discoveryServiceFactory, coreParams,
+            cluster = new Cluster( clusterDirectory, noCoreMembers, noReadReplicas, discoveryServiceType.create(), coreParams,
                     instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, ipFamily, useWildcard, dbNames );
         }
 
@@ -156,7 +157,20 @@ public class ClusterRule extends ExternalResource
         this.dbNames = dbNames;
         Map<Integer, String> coreDBMap = CausalClusteringTestHelpers.distributeDatabaseNamesToHostNums( noCoreMembers, dbNames );
         Map<Integer, String> rrDBMap = CausalClusteringTestHelpers.distributeDatabaseNamesToHostNums( noReadReplicas, dbNames );
+
+        Map<String,Long> minCoresPerDb = coreDBMap.entrySet().stream()
+                .collect( Collectors.groupingBy( Map.Entry::getValue, Collectors.counting() ) );
+
+        Map<Integer,String> minCoresSettingsMap = new HashMap<>();
+
+        for ( Map.Entry<Integer,String> entry: coreDBMap.entrySet() )
+        {
+            Optional<Long> minNumCores = Optional.ofNullable( minCoresPerDb.get( entry.getValue() ) );
+            minNumCores.ifPresent( n -> minCoresSettingsMap.put( entry.getKey(), n.toString() ) );
+        }
+
         withInstanceCoreParam( CausalClusteringSettings.database, coreDBMap::get );
+        withInstanceCoreParam( CausalClusteringSettings.minimum_core_cluster_size_at_formation, minCoresSettingsMap::get );
         withInstanceReadReplicaParam( CausalClusteringSettings.database, rrDBMap::get );
         return this;
     }
@@ -173,9 +187,9 @@ public class ClusterRule extends ExternalResource
         return this;
     }
 
-    public ClusterRule withDiscoveryServiceFactory( DiscoveryServiceFactory factory )
+    public ClusterRule withDiscoveryServiceType( DiscoveryServiceType discoveryType )
     {
-        this.discoveryServiceFactory = factory;
+        this.discoveryServiceType = discoveryType;
         return this;
     }
 

@@ -111,14 +111,14 @@ public class HazelcastClientTest
         return settings;
     };
 
-    private Config config(HashMap<String, String> settings)
+    private Config config( HashMap<String, String> settings )
     {
         HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
         defaults.putAll( settings );
         return Config.defaults( defaults );
     }
 
-    private Config config(String key, String value)
+    private Config config( String key, String value )
     {
         HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
         defaults.put(key, value);
@@ -131,7 +131,7 @@ public class HazelcastClientTest
         return Config.defaults( DEFAULT_SETTINGS.get() );
     }
 
-    private HazelcastClient hzClient(OnDemandJobScheduler jobScheduler, com.hazelcast.core.Cluster cluster, Config config)
+    private HazelcastClient hzClient( OnDemandJobScheduler jobScheduler, com.hazelcast.core.Cluster cluster, Config config )
     {
         HazelcastConnector connector = mock( HazelcastConnector.class );
 
@@ -151,7 +151,7 @@ public class HazelcastClientTest
         return client;
     }
 
-    private HazelcastClient startedClientWithMembers(Set<Member> members, Config config)
+    private HazelcastClient startedClientWithMembers( Set<Member> members, Config config )
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -178,7 +178,6 @@ public class HazelcastClientTest
         // then
         assertEquals( members.size(), topology.members().size() );
     }
-
 
     @Test
     public void localAndAllTopologiesShouldMatchForSingleDBName()

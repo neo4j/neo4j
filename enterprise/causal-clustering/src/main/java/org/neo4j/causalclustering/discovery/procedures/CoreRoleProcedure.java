@@ -24,7 +24,6 @@ import org.neo4j.causalclustering.discovery.RoleInfo;
 
 public class CoreRoleProcedure extends RoleProcedure
 {
-    //TODO: Decide whether this should take a topologyService rather than a RaftMachine in order to be consistent with CoreOverviewProcedure. Probably yes?
     private final RaftMachine raft;
 
     public CoreRoleProcedure( RaftMachine raft )

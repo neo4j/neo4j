@@ -61,12 +61,8 @@ public class ConnectToRandomCoreServerStrategyTest
         when( topologyService.localCoreServers() )
                 .thenReturn( fakeCoreTopology( memberId1, memberId2, memberId3 ) );
 
-        //TODO: Replace all instances of this mock with Config.defaults
-        Config config = mock( Config.class );
-        when( config.get( CausalClusteringSettings.database ) ).thenReturn( "default" );
-
         ConnectToRandomCoreServerStrategy connectionStrategy = new ConnectToRandomCoreServerStrategy();
-        connectionStrategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
+        connectionStrategy.inject( topologyService, Config.defaults(), NullLogProvider.getInstance(), null );
 
         // when
         Optional<MemberId> memberId = connectionStrategy.upstreamDatabase();

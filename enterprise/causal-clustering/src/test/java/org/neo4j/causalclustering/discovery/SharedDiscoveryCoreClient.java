@@ -59,7 +59,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         this.localDBName = config.get( CausalClusteringSettings.database );
     }
 
-
     @Override
     public int compareTo( SharedDiscoveryCoreClient o )
     {
@@ -71,6 +70,12 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     {
         listenerService.addCoreTopologyListener( listener );
         listener.onCoreTopologyChange( localCoreServers() );
+    }
+
+    @Override
+    public void removeCoreTopologyListener( Listener listener )
+    {
+        listenerService.removeCoreTopologyListener( listener );
     }
 
     @Override
@@ -99,18 +104,12 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     @Override
     public void start() throws InterruptedException
     {
-        sharedDiscoveryService.registerCoreMember( this );
+        sharedDiscoveryService.registerCoreMember( this, log );
         log.info( "Registered core server %s", myself );
         sharedDiscoveryService.waitForClusterFormation();
         log.info( "Cluster formed" );
         coreTopology = sharedDiscoveryService.getCoreTopology( this );
         readReplicaTopology = sharedDiscoveryService.getReadReplicaTopology();
-    }
-
-    @Override
-    public CoreTopology localCoreServers()
-    {
-        return super.localCoreServers();
     }
 
     @Override
@@ -186,5 +185,12 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     public boolean refusesToBeLeader()
     {
         return refusesToBeLeader;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "SharedDiscoveryCoreClient{" + "myself=" + myself + ", coreServerInfo=" + coreServerInfo + ", refusesToBeLeader=" + refusesToBeLeader +
+                ", localDBName='" + localDBName + '\'' + ", localLeader=" + localLeader + ", term=" + term + ", coreTopology=" + coreTopology + '}';
     }
 }

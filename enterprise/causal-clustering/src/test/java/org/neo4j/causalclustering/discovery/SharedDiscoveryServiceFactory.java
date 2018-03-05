@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -28,13 +27,12 @@ import org.neo4j.scheduler.JobScheduler;
 public class SharedDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
 
-    private SharedDiscoveryService discoveryService;
+    private final SharedDiscoveryService discoveryService = new SharedDiscoveryService();
 
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
             LogProvider userLogProvider, HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
-        configureDiscoveryService( config );
         return new SharedDiscoveryCoreClient( discoveryService, myself, logProvider, config );
     }
 
@@ -42,17 +40,7 @@ public class SharedDiscoveryServiceFactory implements DiscoveryServiceFactory
     public TopologyService topologyService( Config config, LogProvider logProvider, JobScheduler jobScheduler, MemberId myself,
             HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
-        configureDiscoveryService( config );
         return new SharedDiscoveryReadReplicaClient( discoveryService, config, myself, logProvider );
-    }
-
-    private void configureDiscoveryService( Config config )
-    {
-        if( discoveryService == null )
-        {
-            int minClusterSize = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
-            discoveryService = new SharedDiscoveryService( minClusterSize );
-        }
     }
 
 }

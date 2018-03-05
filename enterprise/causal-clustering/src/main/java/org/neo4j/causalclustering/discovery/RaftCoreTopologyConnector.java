@@ -22,12 +22,9 @@ package org.neo4j.causalclustering.discovery;
 import java.util.Set;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
-import org.neo4j.causalclustering.core.consensus.RaftMachine.BootstrapException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 /**
  * Makes the Raft aware of changes to the core topology and visa versa
@@ -37,14 +34,12 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     private final CoreTopologyService coreTopologyService;
     private final RaftMachine raftMachine;
     private final String dbName;
-    private final Log log;
 
-    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine, String dbName, LogProvider logProvider )
+    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine, String dbName )
     {
         this.coreTopologyService = coreTopologyService;
         this.raftMachine = raftMachine;
         this.dbName = dbName;
-        this.log = logProvider.getLog( this.getClass() );
     }
 
     @Override
@@ -57,7 +52,6 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     @Override
     public synchronized void onCoreTopologyChange( CoreTopology coreTopology )
     {
-        //TODO: Check for redundant callsite in HazelcastClusterTopology
         Set<MemberId> targetMembers = coreTopology.members().keySet();
         raftMachine.setTargetMembershipSet( targetMembers );
     }
@@ -67,7 +61,6 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     {
         //TODO: Create LeaderListener interface implementing Listener<MemberId>
         //Don't like this pattern as its not clear form the api that receive() is called from raftMachine.
-        //  TODO: Change Raft listener callback api to pass ExposedRaftState
         coreTopologyService.setLeader( notification, dbName, raftMachine.term() );
     }
 

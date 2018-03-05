@@ -43,6 +43,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -106,7 +107,7 @@ public class NewMemberSeedingIT
     public void setup() throws Exception
     {
         this.fileCopyDetector = new FileCopyDetector();
-        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(),
+        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(),
                 Standard.LATEST_NAME, IpFamily.IPV4, false );
         baseBackupDir = testDir.directory( "backups" );
     }

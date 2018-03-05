@@ -41,9 +41,6 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.Node;
@@ -55,6 +52,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.causalclustering.TestStoreId.getStoreIds;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
+import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
+import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
 import static org.neo4j.graphdb.Label.label;
 
 @RunWith( Parameterized.class )
@@ -64,18 +63,17 @@ public class MultiClusteringIT
     private static Set<String> DB_NAMES_2 = Collections.singleton( "default" );
     private static Set<String> DB_NAMES_3 = Stream.of( "foo", "bar", "baz" ).collect( Collectors.toSet() );
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]
                 {
-                        //TODO: Introduce ClusterRule delay in startup in order to check that hazelcast is actually behaving
-                        { "[shared discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, new SharedDiscoveryServiceFactory() },
-                        { "[hazelcast discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
-                        { "[shared discovery, 5 core hosts, 1 database]", 5, 0, DB_NAMES_2, new SharedDiscoveryServiceFactory() },
-                        { "[hazelcast discovery, 5 core hosts, 2 databases]", 5, 0, DB_NAMES_1, new HazelcastDiscoveryServiceFactory() },
-                        { "[hazelcast discovery, 9 core hosts, 3 read replicas, 3 databases]", 9, 3, DB_NAMES_3, new HazelcastDiscoveryServiceFactory() },
-                        { "[shared discovery, 8 core hosts, 2 read replicas, 3 databases]", 8, 2, DB_NAMES_3, new SharedDiscoveryServiceFactory() }
+                        { "[shared discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, SHARED },
+                        { "[hazelcast discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, HAZELCAST },
+                        { "[shared discovery, 5 core hosts, 1 database]", 5, 0, DB_NAMES_2, SHARED },
+                        { "[hazelcast discovery, 5 core hosts, 2 databases]", 5, 0, DB_NAMES_1, HAZELCAST },
+                        { "[hazelcast discovery, 9 core hosts, 3 read replicas, 3 databases]", 9, 3, DB_NAMES_3, HAZELCAST },
+                        { "[shared discovery, 8 core hosts, 2 read replicas, 3 databases]", 8, 2, DB_NAMES_3, SHARED }
                 }
         );
     }
@@ -83,23 +81,25 @@ public class MultiClusteringIT
     private final Set<String> dbNames;
     private final ClusterRule clusterRule;
     private final DefaultFileSystemRule fileSystemRule;
+    private final DiscoveryServiceType discoveryType;
 
     @Rule
     public final RuleChain ruleChain;
     private Cluster cluster;
     private FileSystemAbstraction fs;
     @Rule
-    public Timeout globalTimeout = Timeout.seconds(120);
+    public Timeout globalTimeout = Timeout.seconds(300);
 
-    public MultiClusteringIT(String ignoredName, int numCores, int numReplicas, Set<String> dbNames, DiscoveryServiceFactory discovery )
+    public MultiClusteringIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames, DiscoveryServiceType discoveryType )
     {
         this.dbNames = dbNames;
+        this.discoveryType = discoveryType;
 
         this.clusterRule = new ClusterRule()
-            .withDiscoveryServiceFactory( discovery )
             .withNumberOfCoreMembers( numCores )
             .withNumberOfReadReplicas( numReplicas )
             .withDatabaseNames( dbNames );
+
         this.fileSystemRule = new DefaultFileSystemRule();
 
         this.ruleChain = RuleChain.outerRule( fileSystemRule ).around( clusterRule );
@@ -108,6 +108,7 @@ public class MultiClusteringIT
     @Before
     public void setup() throws Exception
     {
+        clusterRule.withDiscoveryServiceType( discoveryType );
         fs = fileSystemRule.get();
         cluster = clusterRule.startCluster();
     }
@@ -186,9 +187,9 @@ public class MultiClusteringIT
 
         int followerId = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER ).serverId();
 
-        cluster.removeCoreMemberWithMemberId( followerId );
+        cluster.removeCoreMemberWithServerId( followerId );
 
-        for( int  i = 0; i < 100; i++ )
+        for ( int  i = 0; i < 100; i++ )
         {
             cluster.coreTx( dbName, ( db, tx ) ->
             {
@@ -228,5 +229,6 @@ public class MultiClusteringIT
         assertEquals( message, 1, storeIds.size() );
     }
 
+    //TODO: Test that rejoining followers wait for majority of hosts *for each database* to be available before joining
 
 }

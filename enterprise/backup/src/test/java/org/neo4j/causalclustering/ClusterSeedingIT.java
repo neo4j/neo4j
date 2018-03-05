@@ -87,6 +87,7 @@ public class ClusterSeedingIT
     {
         this.fileCopyDetector = new FileCopyDetector();
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
+                new SharedDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard
                 .LATEST_NAME, IpFamily.IPV4, false );
 
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,

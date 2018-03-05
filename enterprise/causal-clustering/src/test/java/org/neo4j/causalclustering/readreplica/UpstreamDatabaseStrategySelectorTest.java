@@ -80,11 +80,8 @@ public class UpstreamDatabaseStrategySelectorTest
         when( topologyService.localCoreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
-        //TODO: Replace with Config.defaults
-        Config config = Config.defaults();
-
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
-        defaultStrategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
+        defaultStrategy.inject( topologyService, Config.defaults(), NullLogProvider.getInstance(), null );
 
         UpstreamDatabaseStrategySelector selector = new UpstreamDatabaseStrategySelector( defaultStrategy );
 

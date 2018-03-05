@@ -70,6 +70,8 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refr
 class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
+    private static final int HAZELCAST_MIN_CLUSTER = 2;
+
     private final Config config;
     private final MemberId myself;
     private final Log log;
@@ -95,7 +97,7 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     private Thread startingThread;
     private volatile boolean stopped;
 
-    public HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
@@ -118,6 +120,12 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     {
         listenerService.addCoreTopologyListener( listener );
         listener.onCoreTopologyChange( localCoreServers() );
+    }
+
+    @Override
+    public void removeCoreTopologyListener( Listener listener )
+    {
+        listenerService.removeCoreTopologyListener( listener );
     }
 
     @Override
@@ -264,8 +272,7 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
         c.setProperty( OPERATION_CALL_TIMEOUT_MILLIS.getName(), String.valueOf( baseHazelcastTimeoutMillis ) );
         c.setProperty( MERGE_NEXT_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
         c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
-        c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(),
-                String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
+        c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(), String.valueOf( HAZELCAST_MIN_CLUSTER ) );
 
         if ( config.get( disable_middleware_logging ) )
         {
@@ -328,11 +335,6 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
                 ClientConnectorAddresses.extractFromConfig( config ) );
         userLog.info( "Discovering cluster with initial members: " + initialMembers );
         userLog.info( "Attempting to connect to the other cluster members before continuing..." );
-    }
-
-    private Integer minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize()
-    {
-        return config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation ) / 2 + 1;
     }
 
     @Override

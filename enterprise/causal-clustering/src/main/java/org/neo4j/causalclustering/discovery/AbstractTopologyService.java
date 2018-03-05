@@ -27,9 +27,6 @@ public abstract class AbstractTopologyService extends LifecycleAdapter implement
     @Override
     public CoreTopology localCoreServers()
     {
-        //TODO: The filterTopologyByDb method is not going to return a new ClusterId for the filtered topology.
-        // Even though the map for this exists in hazelcast. Perhaps we need to do the filtering in the Concrete
-        // *CoreTopologyService classes and make lookups accordingly.
         return allCoreServers().filterTopologyByDb( localDBName() );
     }
 

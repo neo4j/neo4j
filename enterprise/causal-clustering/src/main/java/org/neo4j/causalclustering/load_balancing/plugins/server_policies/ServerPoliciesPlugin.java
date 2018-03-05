@@ -60,7 +60,6 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
 {
     public static final String PLUGIN_NAME = "server_policies";
 
-    //TODO: Think about whether thie topology service should be prefiltered. Need to move routeEndpoints into TopologyService
     private TopologyService topologyService;
     private LeaderLocator leaderLocator;
     private Long timeToLive;

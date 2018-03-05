@@ -21,16 +21,23 @@ package org.neo4j.causalclustering.identity;
 
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
+import org.neo4j.causalclustering.discovery.TestTopology;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -51,6 +58,16 @@ public class ClusterBinderTest
     private final CoreBootstrapper coreBootstrapper = mock( CoreBootstrapper.class );
     private final FakeClock clock = Clocks.fakeClock();
 
+    private final Config config = Config.defaults();
+    private final int minCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
+    private final String dbName = config.get( CausalClusteringSettings.database );
+
+    private ClusterBinder clusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService )
+    {
+        return new ClusterBinder( clusterIdStorage, topologyService, NullLogProvider.getInstance(), clock,
+                () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000, coreBootstrapper, dbName, minCoreHosts );
+    }
+
     @Test
     public void shouldTimeoutWhenNotBootrappableAndNobodyElsePublishesClusterId() throws Throwable
     {
@@ -59,9 +76,11 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.localCoreServers() ).thenReturn( unboundTopology );
 
-        ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
-                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper, "default" );
+        Config config = Config.defaults();
+        int minCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
+        String dbName = config.get( CausalClusteringSettings.database );
+
+        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
 
         try
         {
@@ -89,9 +108,7 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.localCoreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
 
-        ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
-                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper, "default" );
+        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
 
         // when
         binder.bindToCluster();
@@ -115,9 +132,7 @@ public class ClusterBinderTest
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
-        ClusterBinder binder = new ClusterBinder( clusterIdStorage, topologyService,
-                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper, "default" );
+        ClusterBinder binder = clusterBinder( clusterIdStorage, topologyService );
 
         // when
         binder.bindToCluster();
@@ -141,9 +156,7 @@ public class ClusterBinderTest
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
-        ClusterBinder binder = new ClusterBinder( clusterIdStorage, topologyService,
-                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper, "default" );
+        ClusterBinder binder = clusterBinder( clusterIdStorage, topologyService );
 
         // when
         try
@@ -161,7 +174,12 @@ public class ClusterBinderTest
     public void shouldBootstrapWhenBootstrappable() throws Throwable
     {
         // given
-        CoreTopology bootstrappableTopology = new CoreTopology( null, true, emptyMap() );
+        Map<MemberId,CoreServerInfo> members = new HashMap<>();
+
+        IntStream.range(0, minCoreHosts).forEach( i ->
+                members.put( new MemberId( UUID.randomUUID() ), TestTopology.addressesForCore( i ) ) );
+
+        CoreTopology bootstrappableTopology = new CoreTopology( null, true, members );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.localCoreServers() ).thenReturn( bootstrappableTopology );
@@ -169,9 +187,7 @@ public class ClusterBinderTest
         CoreSnapshot snapshot = mock( CoreSnapshot.class );
         when( coreBootstrapper.bootstrap( any() ) ).thenReturn( snapshot );
 
-        ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
-                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ),
-                3_000, coreBootstrapper, "default" );
+        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
 
         // when
         BoundState boundState = binder.bindToCluster();

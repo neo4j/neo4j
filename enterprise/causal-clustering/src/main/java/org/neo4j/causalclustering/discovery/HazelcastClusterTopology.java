@@ -35,7 +35,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -138,7 +140,6 @@ public class HazelcastClusterTopology
 
     private static ClusterId getClusterId( HazelcastInstance hazelcastInstance, String dbName )
     {
-        //TODO: Update to Optionals
         IMap<String, UUID> uuidPerDbCluster = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
         UUID uuid = uuidPerDbCluster.get( dbName );
         return uuid != null ? new ClusterId( uuid ) : null;
@@ -155,7 +156,9 @@ public class HazelcastClusterTopology
 
         Set<String> dbNames = getDBNames( hazelcastInstance );
         Set<MemberId> allLeaders = dbNames.stream()
-                .map( n -> getLeaderForDBName( hazelcastInstance, n ).memberId() )
+                .map( n -> getLeaderForDBName( hazelcastInstance, n ) )
+                .filter( Optional::isPresent )
+                .map( l -> l.get().memberId() )
                 .collect( Collectors.toSet() );
 
         Function<MemberId,RoleInfo> roleMapper = m -> allLeaders.contains( m ) ? RoleInfo.LEADER : RoleInfo.FOLLOWER;
@@ -226,36 +229,25 @@ public class HazelcastClusterTopology
         return leaderRef.compareAndSet( expected, new RaftLeader( leader, term ) );
     }
 
-    static RaftLeader getLeaderForDBName( HazelcastInstance hazelcastInstance, String dbName )
+    static Optional<RaftLeader> getLeaderForDBName( HazelcastInstance hazelcastInstance, String dbName )
     {
         IAtomicReference<RaftLeader> leader = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
-        return leader.get();
+        return Optional.ofNullable( leader.get() );
     }
 
     private static boolean canBeBootstrapped( HazelcastInstance hazelcastInstance, Config config )
     {
-        //TODO: Refactor for clarity
         Set<Member> members = hazelcastInstance.getCluster().getMembers();
-
         String dbName = config.get( CausalClusteringSettings.database );
 
-        if ( config.get( refuse_to_be_leader ) )
-        {
-            return false;
-        }
-        else
-        {
-            for ( Member member : members )
-            {
-                boolean localDb = dbName.equals( member.getStringAttribute( MEMBER_DB_NAME ) );
+        Predicate<Member> acceptsToBeLeader = m -> !m.getBooleanAttribute( REFUSE_TO_BE_LEADER_KEY );
+        Predicate<Member> hostsMyDb = m -> dbName.equals( m.getStringAttribute( MEMBER_DB_NAME ) );
 
-                if ( !member.getBooleanAttribute( REFUSE_TO_BE_LEADER_KEY ) && localDb )
-                {
-                    return member.localMember();
-                }
-            }
-            return false;
-        }
+        Stream<Member> membersWhoCanLeadForMyDb = members.stream().filter( acceptsToBeLeader ).filter( hostsMyDb );
+
+        Optional<Member> firstAppropriateMember = membersWhoCanLeadForMyDb.findFirst();
+
+        return firstAppropriateMember.map( Member::localMember ).orElse( false );
     }
 
     static Map<MemberId,CoreServerInfo> toCoreMemberMap( Set<Member> members, Log log,

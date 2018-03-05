@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,29 +30,31 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.logging.Log;
 
 public class SharedDiscoveryService
 {
+    private static final int MIN_DISCOVERY_MEMBERS = 2;
+
     private final ConcurrentMap<MemberId,CoreServerInfo> coreMembers;
     private final ConcurrentMap<MemberId,ReadReplicaInfo> readReplicas;
     private final Set<SharedDiscoveryCoreClient> listeningClients;
     private final ConcurrentMap<String,ClusterId> clusterIdDbNames;
     private final ConcurrentMap<String,RaftLeader> leaderMap;
     private final CountDownLatch enoughMembers;
-    private final int minimumFormationMembers;
 
-    SharedDiscoveryService( int expectedFormationMembers )
+    public SharedDiscoveryService()
     {
         coreMembers = new ConcurrentHashMap<>();
         readReplicas = new ConcurrentHashMap<>();
         listeningClients = new ConcurrentSkipListSet<>();
         clusterIdDbNames = new ConcurrentHashMap<>();
         leaderMap = new ConcurrentHashMap<>();
-        this.minimumFormationMembers = expectedFormationMembers - 1;
-        enoughMembers = new CountDownLatch( minimumFormationMembers );
+        enoughMembers = new CountDownLatch( MIN_DISCOVERY_MEMBERS );
     }
 
     void waitForClusterFormation() throws InterruptedException
@@ -61,15 +64,12 @@ public class SharedDiscoveryService
 
     boolean canBeBootstrapped( SharedDiscoveryCoreClient client )
     {
-        int numClients = listeningClients.size();
+        Stream<SharedDiscoveryCoreClient> clientsWhoCanLeadForMyDb = listeningClients.stream()
+                .filter( c -> !c.refusesToBeLeader() && c.localDBName().equals( client.localDBName() ) );
 
-        boolean haveAllMembers = numClients >= minimumFormationMembers;
+        Optional<SharedDiscoveryCoreClient> firstAppropriateClient = clientsWhoCanLeadForMyDb.findFirst();
 
-        boolean isFirstMatchingClient =  listeningClients.stream()
-                .filter( c -> !c.refusesToBeLeader() && c.localDBName().equals( client.localDBName() ) )
-                .findFirst().map(c -> c.equals( client ) ).orElse( false );
-
-        return haveAllMembers && isFirstMatchingClient;
+        return firstAppropriateClient.map( c -> c.equals( client ) ).orElse( false );
     }
 
     CoreTopology getCoreTopology( SharedDiscoveryCoreClient client )
@@ -91,7 +91,7 @@ public class SharedDiscoveryService
         return new ReadReplicaTopology( Collections.unmodifiableMap( readReplicas ) );
     }
 
-    void registerCoreMember( SharedDiscoveryCoreClient client )
+    void registerCoreMember( SharedDiscoveryCoreClient client, Log log )
     {
         CoreServerInfo previousMember = coreMembers.putIfAbsent( client.getMemberId(), client.getCoreServerInfo() );
         if ( previousMember == null )
@@ -137,7 +137,7 @@ public class SharedDiscoveryService
 
         boolean success = !( greaterOrEqualTermExists || noUpdate );
 
-        if( success )
+        if ( success )
         {
             leaderMap.put( dbName, new RaftLeader( leader, term ) );
         }
