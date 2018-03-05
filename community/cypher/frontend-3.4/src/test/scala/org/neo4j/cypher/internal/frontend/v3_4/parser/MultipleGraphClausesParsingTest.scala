@@ -25,9 +25,9 @@ import scala.language.implicitConversions
 
 class MultipleGraphClausesParsingTest
   extends ParserAstTest[ast.Clause]
-  with Query
-  with Expressions
-  with AstConstructionTestSupport {
+    with Query
+    with Expressions
+    with AstConstructionTestSupport {
 
   implicit val parser: Rule1[Clause] = Clause
 
@@ -36,7 +36,14 @@ class MultipleGraphClausesParsingTest
   }
 
   test("CONSTRUCT GRAPH { CREATE () }") {
-    failsToParse
+    val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
+    yields(ast.ConstructGraph(None, ast.Create(exp.Pattern(patternParts)(pos))(pos)))
+  }
+
+  test("CONSTRUCT GRAPH foo.bar { CREATE () }") {
+    val qgn = ast.QualifiedGraphName(List("foo", "bar"))
+    val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
+    yields(ast.ConstructGraph(Some(qgn), ast.Create(exp.Pattern(patternParts)(pos))(pos)))
   }
 
   test("CREATE GRAPH foo.bar") {

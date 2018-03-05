@@ -45,9 +45,15 @@ trait Clauses extends Parser
     )
   }
 
+  def Construct = rule("CONSTRUCT") {
+    group(
+      keyword("CONSTRUCT GRAPH") ~~ optional(QualifiedGraphName) ~~ "{" ~~ Create ~~ "}" ~~>> (ast.ConstructGraph(_, _))
+    )
+  }
+
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
     group(
-      SymbolicNameString ~~ zeroOrMore(operator(".") ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _))
+      SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _))
     )
   }
 

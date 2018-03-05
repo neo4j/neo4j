@@ -86,6 +86,15 @@ final case class UseGraph(qualifiedName: QualifiedGraphName)(val position: Input
         SemanticState.recordCurrentScope(this)
 }
 
+final case class ConstructGraph(graphName: Option[QualifiedGraphName], create: Clause)(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "CONSTRUCT GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 //final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
 //  extends MultipleGraphClause with UpdateClause {
 //
