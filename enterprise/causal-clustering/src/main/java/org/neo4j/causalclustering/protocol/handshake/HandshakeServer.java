@@ -19,13 +19,14 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.messaging.Channel;
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
 import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
 import org.neo4j.stream.Streams;
@@ -35,21 +36,20 @@ import static org.neo4j.causalclustering.protocol.handshake.StatusCode.SUCCESS;
 public class HandshakeServer implements ServerMessageHandler
 {
     private final Channel channel;
-    private final ProtocolRepository<ApplicationProtocol> applicationProtocolRepository;
-    private final ProtocolRepository<ModifierProtocol> modifierProtocolRepository;
-    private final Protocol.ApplicationProtocolIdentifier applicationProtocolIdentifier;
+    private final ApplicationProtocolRepository applicationProtocolRepository;
+    private final ModifierProtocolRepository modifierProtocolRepository;
+    private final SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol;
     private final ProtocolStack.Builder protocolStackBuilder = ProtocolStack.builder();
     private final CompletableFuture<ProtocolStack> protocolStackFuture = new CompletableFuture<>();
     private boolean magicReceived;
     private boolean initialised;
 
-    HandshakeServer( Channel channel, ProtocolRepository<ApplicationProtocol> applicationProtocolRepository,
-            ProtocolRepository<ModifierProtocol> modifierProtocolRepository, Protocol.ApplicationProtocolIdentifier allowedProtocol )
+    HandshakeServer( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository, Channel channel )
     {
         this.channel = channel;
         this.applicationProtocolRepository = applicationProtocolRepository;
         this.modifierProtocolRepository = modifierProtocolRepository;
-        this.applicationProtocolIdentifier = allowedProtocol;
+        this.supportedApplicationProtocol = applicationProtocolRepository.supportedProtocol();
     }
 
     public void init()
@@ -89,7 +89,7 @@ public class HandshakeServer implements ServerMessageHandler
         ensureMagic();
 
         ApplicationProtocolResponse response;
-        if ( !request.protocolName().equals( applicationProtocolIdentifier.canonicalName() ) )
+        if ( !request.protocolName().equals( supportedApplicationProtocol.identifier().canonicalName() ) )
         {
             response = ApplicationProtocolResponse.NO_PROTOCOL;
             channel.writeAndFlush( response );
@@ -97,7 +97,7 @@ public class HandshakeServer implements ServerMessageHandler
         }
         else
         {
-            Optional<ApplicationProtocol> selected = applicationProtocolRepository.select( request.protocolName(), request.versions() );
+            Optional<ApplicationProtocol> selected = applicationProtocolRepository.select( request.protocolName(), supportedVersionsFor( request ) );
 
             if ( selected.isPresent() )
             {
@@ -122,7 +122,7 @@ public class HandshakeServer implements ServerMessageHandler
 
         ModifierProtocolResponse response;
         Optional<ModifierProtocol> selected =
-                modifierProtocolRepository.select( modifierProtocolRequest.protocolName(), modifierProtocolRequest.versions() );
+                modifierProtocolRepository.select( modifierProtocolRequest.protocolName(), supportedVersionsFor( modifierProtocolRequest ) );
 
         if ( selected.isPresent() )
         {
@@ -182,6 +182,19 @@ public class HandshakeServer implements ServerMessageHandler
 
             protocolStackFuture.complete( protocolStack );
         }
+    }
+
+    private Set<Integer> supportedVersionsFor( ModifierProtocolRequest request )
+    {
+        return modifierProtocolRepository.supportedProtocolFor( request.protocolName() )
+                .map( supported -> supported.mutuallySupportedVersionsFor( request.versions() ) )
+                // else protocol has been excluded in config
+                .orElse( Collections.emptySet() );
+    }
+
+    private Set<Integer> supportedVersionsFor( ApplicationProtocolRequest request )
+    {
+        return supportedApplicationProtocol.mutuallySupportedVersionsFor( request.versions() );
     }
 
     private void decline( String message )

@@ -19,23 +19,26 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.stream.Streams;
 
-public class ProtocolRepository<T extends Protocol>
+public abstract class ProtocolRepository<T extends Protocol>
 {
     private final Map<Pair<String, Integer>,T> protocolMap;
+    private Function<String,Comparator<T>> comparator;
 
-    public ProtocolRepository( T[] protocols )
+    public ProtocolRepository( T[] protocols, Function<String,Comparator<T>> comparators )
     {
         Map<Pair<String, Integer>,T> map = new HashMap<>();
         for ( T protocol : protocols )
@@ -48,9 +51,10 @@ public class ProtocolRepository<T extends Protocol>
             }
         }
         protocolMap = Collections.unmodifiableMap( map );
+        this.comparator = comparators;
     }
 
-    Optional<T> select( String protocolName, int version )
+    Optional<T> select( String protocolName, Integer version )
     {
         return Optional.ofNullable( protocolMap.get( Pair.of( protocolName, version ) ) );
     }
@@ -59,24 +63,37 @@ public class ProtocolRepository<T extends Protocol>
     {
         return versions
                 .stream()
-                .map( version -> of( protocolName, version ) )
+                .map( version -> select( protocolName, version ) )
                 .flatMap( Streams::ofOptional )
-                .max( Comparator.comparingInt( Protocol::version ) );
+                .max( comparator.apply( protocolName ) );
     }
 
-    private Optional<T> of( String identifier, Integer version )
+    public ProtocolSelection<T> getAll( Protocol.Identifier<T> identifier, Collection<Integer> versions )
     {
-        return Optional.ofNullable( protocolMap.get( Pair.of( identifier, version) ) );
-    }
-
-    public ProtocolSelection<T> getAll( Protocol.Identifier<T> identifier )
-    {
-        Set<Integer> versions = protocolMap
+        Set<Integer> selectedVersions = protocolMap
                 .entrySet()
                 .stream()
-                .filter( e -> e.getKey().first().equals( identifier.canonicalName() ) )
-                .map( e -> e.getKey().other() )
+                .map( Map.Entry::getKey )
+                .filter( pair -> pair.first().equals( identifier.canonicalName() ) )
+                .map( Pair::other )
+                .filter( version -> versions.isEmpty() || versions.contains( version ) )
                 .collect( Collectors.toSet() );
-        return new ProtocolSelection<>( identifier.canonicalName(), versions );
+
+        if ( selectedVersions.isEmpty() )
+        {
+            throw new IllegalArgumentException( String.format(
+                    "Attempted to select protocols for %s versions %s but no match in known protocols %s",
+                    identifier, versions, protocolMap
+            ) );
+        }
+        else
+        {
+            return new ProtocolSelection<>( identifier.canonicalName(), selectedVersions );
+        }
+    }
+
+    static <T extends Protocol> Comparator<T> versionNumberComparator()
+    {
+        return Comparator.comparingInt( Protocol::version );
     }
 }

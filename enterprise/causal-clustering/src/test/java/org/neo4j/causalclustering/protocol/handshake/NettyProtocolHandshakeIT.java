@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -47,29 +48,45 @@ import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicati
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
 import org.neo4j.logging.NullLog;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.CATCHUP;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier.COMPRESSION;
 
 public class NettyProtocolHandshakeIT
 {
-    private ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository =
-            new ProtocolRepository<>( TestApplicationProtocols.values() );
-    private ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository =
-            new ProtocolRepository<>( TestModifierProtocols.values() );
+    private SupportedProtocols<Protocol.ApplicationProtocol> supportedRaftApplicationProtocol =
+            new SupportedProtocols<>( RAFT, emptyList() );
+    private SupportedProtocols<Protocol.ApplicationProtocol> supportedCatchupApplicationProtocol =
+            new SupportedProtocols<>( CATCHUP, emptyList() );
+    private Collection<SupportedProtocols<Protocol.ModifierProtocol>> supportedCompressionModifierProtocols =
+            asList( new SupportedProtocols<>( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ) );
+    private Collection<SupportedProtocols<Protocol.ModifierProtocol>> noSupportedModifierProtocols = emptyList();
+
+    private ApplicationProtocolRepository raftApplicationProtocolRepository =
+            new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedRaftApplicationProtocol );
+    private ApplicationProtocolRepository catchupApplicationProtocolRepository =
+            new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedCatchupApplicationProtocol );
+    private ModifierProtocolRepository compressionModifierProtocolRepository =
+            new ModifierProtocolRepository( TestModifierProtocols.values(), supportedCompressionModifierProtocols );
+    private ModifierProtocolRepository unsupportingModifierProtocolRepository =
+            new ModifierProtocolRepository( TestModifierProtocols.values(), noSupportedModifierProtocols );
 
     private Server server;
     private HandshakeClient handshakeClient;
     private Client client;
-    private HandshakeServer handshakeServer;
 
     @Before
     public void setUp()
     {
         server = new Server();
-        server.start();
+        server.start( raftApplicationProtocolRepository, compressionModifierProtocolRepository );
 
         handshakeClient = new HandshakeClient();
 
@@ -85,42 +102,65 @@ public class NettyProtocolHandshakeIT
     }
 
     @Test
-    public void shouldSuccessfullyHandshakeKnownProtocolOnClient() throws Exception
+    public void shouldSuccessfullyHandshakeKnownProtocolOnClientWithCompression() throws Exception
     {
         // when
-        CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
-                        Protocol.ApplicationProtocolIdentifier.RAFT, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
+        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate(
+                new SimpleNettyChannel( client.channel, NullLog.getInstance() ), raftApplicationProtocolRepository, compressionModifierProtocolRepository );
 
         // then
         ProtocolStack clientProtocolStack = clientHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( Protocol.ApplicationProtocolIdentifier.RAFT) ) );
-        assertThat( clientProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( Protocol.ModifierProtocolIdentifier.COMPRESSION ) ) );
+        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( RAFT) ) );
+        assertThat( clientProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( COMPRESSION ) ) );
     }
 
     @Test
-    public void shouldSuccessfullyHandshakeKnownProtocolOnServer() throws Exception
+    public void shouldSuccessfullyHandshakeKnownProtocolOnServerWithCompression() throws Exception
     {
         // when
-        CompletableFuture<ProtocolStack> clientFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
-                        Protocol.ApplicationProtocolIdentifier.RAFT, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
+        CompletableFuture<ProtocolStack> clientFuture = handshakeClient.initiate(
+                new SimpleNettyChannel( client.channel, NullLog.getInstance() ), raftApplicationProtocolRepository, compressionModifierProtocolRepository );
         CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
 
         // then
         ProtocolStack serverProtocolStack = serverHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( Protocol.ApplicationProtocolIdentifier.RAFT ) ) );
-        assertThat( serverProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( Protocol.ModifierProtocolIdentifier.COMPRESSION ) ) );
+        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( RAFT ) ) );
+        assertThat( serverProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( COMPRESSION ) ) );
+    }
+
+    @Test
+    public void shouldSuccessfullyHandshakeKnownProtocolOnClientNoModifiers() throws Exception
+    {
+        // when
+        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate(
+                new SimpleNettyChannel( client.channel, NullLog.getInstance() ), raftApplicationProtocolRepository, unsupportingModifierProtocolRepository );
+
+        // then
+        ProtocolStack clientProtocolStack = clientHandshakeFuture.get( 1, TimeUnit.MINUTES );
+        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( RAFT) ) );
+        assertThat( clientProtocolStack.modifierProtocols(), empty() );
+    }
+
+    @Test
+    public void shouldSuccessfullyHandshakeKnownProtocolOnServerNoModifiers() throws Exception
+    {
+        // when
+        CompletableFuture<ProtocolStack> clientFuture = handshakeClient.initiate(
+                new SimpleNettyChannel( client.channel, NullLog.getInstance() ), raftApplicationProtocolRepository, unsupportingModifierProtocolRepository );
+        CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
+
+        // then
+        ProtocolStack serverProtocolStack = serverHandshakeFuture.get( 1, TimeUnit.MINUTES );
+        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( RAFT ) ) );
+        assertThat( serverProtocolStack.modifierProtocols(), empty() );
     }
 
     @Test( expected = ClientHandshakeException.class )
     public void shouldFailHandshakeForUnknownProtocolOnClient() throws Throwable
     {
         // when
-        applicationProtocolRepository = new ProtocolRepository<>( new Protocol.ApplicationProtocol[]{Protocol.ApplicationProtocols.RAFT_1} );
-        CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
-                        Protocol.ApplicationProtocolIdentifier.CATCHUP, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
+        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate(
+                new SimpleNettyChannel( client.channel, NullLog.getInstance() ), catchupApplicationProtocolRepository, compressionModifierProtocolRepository );
 
         // then
         try
@@ -137,10 +177,8 @@ public class NettyProtocolHandshakeIT
     public void shouldFailHandshakeForUnknownProtocolOnServer() throws Throwable
     {
         // when
-        applicationProtocolRepository = new ProtocolRepository<>( new Protocol.ApplicationProtocol[]{Protocol.ApplicationProtocols.RAFT_1} );
-        CompletableFuture<ProtocolStack> clientFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
-                        Protocol.ApplicationProtocolIdentifier.CATCHUP, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
+        CompletableFuture<ProtocolStack> clientFuture = handshakeClient.initiate(
+                new SimpleNettyChannel( client.channel, NullLog.getInstance() ), catchupApplicationProtocolRepository, compressionModifierProtocolRepository );
 
         CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
 
@@ -161,15 +199,16 @@ public class NettyProtocolHandshakeIT
      */
     private CompletableFuture<ProtocolStack> getServerHandshakeFuture( CompletableFuture<ProtocolStack> clientFuture )
     {
-        return clientFuture.handle( ( ignoreSuccess, ignoreFailure ) -> null ).thenCompose( ignored -> handshakeServer.protocolStackFuture() );
+        return clientFuture.handle( ( ignoreSuccess, ignoreFailure ) -> null ).thenCompose( ignored -> server.handshakeServer.protocolStackFuture() );
     }
 
-    private class Server
+    private static class Server
     {
         Channel channel;
         NioEventLoopGroup eventLoopGroup;
+        HandshakeServer handshakeServer;
 
-        private void start()
+        void start( final ApplicationProtocolRepository applicationProtocolRepository, final ModifierProtocolRepository modifierProtocolRepository )
         {
             eventLoopGroup = new NioEventLoopGroup();
             ServerBootstrap bootstrap = new ServerBootstrap().group( eventLoopGroup )
@@ -182,12 +221,12 @@ public class NettyProtocolHandshakeIT
                         protected void initChannel( SocketChannel ch )
                         {
                             ChannelPipeline pipeline = ch.pipeline();
+                            handshakeServer = new HandshakeServer(
+                                    applicationProtocolRepository, modifierProtocolRepository, new SimpleNettyChannel( ch, NullLog.getInstance() ) );
                             pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
                             pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                             pipeline.addLast( "responseMessageEncoder", new ServerMessageEncoder() );
                             pipeline.addLast( "requestMessageDecoder", new ServerMessageDecoder() );
-                            handshakeServer = new HandshakeServer( new SimpleNettyChannel( ch, NullLog.getInstance() ), applicationProtocolRepository,
-                                    modifierProtocolRepository, Protocol.ApplicationProtocolIdentifier.RAFT );
                             pipeline.addLast( new NettyHandshakeServer( handshakeServer ) );
                         }
                     } );
@@ -195,20 +234,20 @@ public class NettyProtocolHandshakeIT
             channel = bootstrap.bind().syncUninterruptibly().channel();
         }
 
-        private void stop()
+        void stop()
         {
             channel.close().awaitUninterruptibly();
             channel = null;
             eventLoopGroup.shutdownGracefully( 0, 0, SECONDS );
         }
 
-        private int port()
+        int port()
         {
             return ((InetSocketAddress) channel.localAddress()).getPort();
         }
     }
 
-    private class Client
+    private static class Client
     {
         Bootstrap bootstrap;
         NioEventLoopGroup eventLoopGroup;
@@ -237,7 +276,7 @@ public class NettyProtocolHandshakeIT
         }
     }
 
-    public class ClientInitializer extends ChannelInitializer<SocketChannel>
+    static class ClientInitializer extends ChannelInitializer<SocketChannel>
     {
         private final HandshakeClient handshakeClient;
 

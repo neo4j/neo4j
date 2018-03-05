@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.protocol;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
@@ -37,6 +37,8 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
@@ -45,9 +47,17 @@ import static org.junit.Assert.assertThat;
 public class ProtocolInstallerRepositoryTest
 {
     private List<ModifierProtocolInstaller<Orientation.Client>> clientModifiers =
-            asList( new SnappyClientInstaller(), new LZHClientInstaller(), new Rot13ClientInstaller() );
+            asList( new SnappyClientInstaller(),
+                    new LZOClientInstaller(),
+                    new LZ4ClientInstaller(),
+                    new LZ4HighCompressionClientInstaller(),
+                    new Rot13ClientInstaller() );
     private List<ModifierProtocolInstaller<Orientation.Server>> serverModifiers =
-            asList( new SnappyServerInstaller(), new LZHServerInstaller(), new Rot13ServerInstaller() );
+            asList( new SnappyServerInstaller(),
+                    new LZOServerInstaller(),
+                    new LZ4ServerInstaller(),
+                    new LZ4ValidatingServerInstaller(),
+                    new Rot13ServerInstaller() );
 
     private final NettyPipelineBuilderFactory pipelineBuilderFactory =
             new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER );
@@ -78,6 +88,20 @@ public class ProtocolInstallerRepositoryTest
     }
 
     @Test
+    public void shouldReturnModifierProtocolsForClient()
+    {
+        // given
+        Protocol.ModifierProtocol expected = TestModifierProtocols.SNAPPY;
+        ProtocolStack protocolStack = new ProtocolStack( ApplicationProtocols.RAFT_1, asList( expected ) );
+
+        // when
+        Collection<Collection<Protocol.ModifierProtocol>> actual = clientRepository.installerFor( protocolStack ).modifiers();
+
+        // then
+        assertThat( actual, contains( contains( expected ) ) );
+    }
+
+    @Test
     public void shouldReturnModifierProtocolsForServer()
     {
         // given
@@ -85,13 +109,42 @@ public class ProtocolInstallerRepositoryTest
         ProtocolStack protocolStack = new ProtocolStack( ApplicationProtocols.RAFT_1, asList( expected ) );
 
         // when
-        List<Protocol.ModifierProtocol> actual = clientRepository.installerFor( protocolStack ).modifiers();
+        Collection<Collection<Protocol.ModifierProtocol>> actual = serverRepository.installerFor( protocolStack ).modifiers();
 
         // then
-        assertThat(
-                expected,
-                Matchers.isIn( actual )
-        );
+        assertThat( actual, contains( contains( expected ) ) );
+    }
+
+    @Test
+    public void shouldReturnModifierProtocolsForProtocolWithSharedInstallerForClient() throws Throwable
+    {
+        // given
+        Protocol.ModifierProtocol expected = TestModifierProtocols.LZ4_HIGH_COMPRESSION_VALIDATING;
+        TestModifierProtocols alsoSupported = TestModifierProtocols.LZ4_HIGH_COMPRESSION;
+
+        ProtocolStack protocolStack = new ProtocolStack( ApplicationProtocols.RAFT_1, asList( expected ) );
+
+        // when
+        Collection<Collection<Protocol.ModifierProtocol>> actual = clientRepository.installerFor( protocolStack ).modifiers();
+
+        // then
+        assertThat( actual, contains( containsInAnyOrder( expected, alsoSupported ) )) ;
+    }
+
+    @Test
+    public void shouldReturnModifierProtocolsForProtocolWithSharedInstallerForServer() throws Throwable
+    {
+        // given
+        Protocol.ModifierProtocol expected = TestModifierProtocols.LZ4_HIGH_COMPRESSION_VALIDATING;
+        TestModifierProtocols alsoSupported = TestModifierProtocols.LZ4_VALIDATING;
+
+        ProtocolStack protocolStack = new ProtocolStack( ApplicationProtocols.RAFT_1, asList( expected ) );
+
+        // when
+        Collection<Collection<Protocol.ModifierProtocol>> actual = serverRepository.installerFor( protocolStack ).modifiers();
+
+        // then
+        assertThat( actual, contains( containsInAnyOrder( expected, alsoSupported ) )) ;
     }
 
     @Test
@@ -99,7 +152,7 @@ public class ProtocolInstallerRepositoryTest
     {
         // given
         ProtocolStack protocolStack1 = new ProtocolStack( ApplicationProtocols.RAFT_1, asList( TestModifierProtocols.SNAPPY ) );
-        ProtocolStack protocolStack2 = new ProtocolStack( ApplicationProtocols.RAFT_1, asList( TestModifierProtocols.LZH ) );
+        ProtocolStack protocolStack2 = new ProtocolStack( ApplicationProtocols.RAFT_1, asList( TestModifierProtocols.LZO ) );
 
         // when
         ProtocolInstaller protocolInstaller1 = clientRepository.installerFor( protocolStack1 );
@@ -115,7 +168,7 @@ public class ProtocolInstallerRepositoryTest
         // given
         ProtocolStack protocolStack = new ProtocolStack(
                 ApplicationProtocols.RAFT_1,
-                asList( TestModifierProtocols.SNAPPY, TestModifierProtocols.LZH ) );
+                asList( TestModifierProtocols.SNAPPY, TestModifierProtocols.LZO ) );
 
         // when
         clientRepository.installerFor( protocolStack );
@@ -162,99 +215,82 @@ public class ProtocolInstallerRepositoryTest
 
     // Dummy installers
 
-    private static class SnappyClientInstaller implements ModifierProtocolInstaller<Orientation.Client>
+    private static class SnappyClientInstaller extends ModifierProtocolInstaller.BaseClientModifier
     {
-        @Override
-        public Protocol.ModifierProtocol protocol()
+        private SnappyClientInstaller()
         {
-            return TestModifierProtocols.SNAPPY;
-        }
-
-        @Override
-        public <BUILDER extends NettyPipelineBuilder<Orientation.Client,BUILDER>> void apply(
-                NettyPipelineBuilder<Orientation.Client,BUILDER> nettyPipelineBuilder )
-        {
-
+            super( "snappy", null, TestModifierProtocols.SNAPPY );
         }
     }
 
-    private static class LZHClientInstaller implements ModifierProtocolInstaller<Orientation.Client>
+    private static class LZOClientInstaller extends ModifierProtocolInstaller.BaseClientModifier
     {
-        @Override
-        public Protocol.ModifierProtocol protocol()
+        private LZOClientInstaller()
         {
-            return TestModifierProtocols.LZH;
-        }
-
-        @Override
-        public <BUILDER extends NettyPipelineBuilder<Orientation.Client,BUILDER>> void apply(
-                NettyPipelineBuilder<Orientation.Client,BUILDER> nettyPipelineBuilder )
-        {
-
+            super( "lzo", null, TestModifierProtocols.LZO );
         }
     }
 
-    private class Rot13ClientInstaller implements ModifierProtocolInstaller<Orientation.Client>
+    private static class LZ4ClientInstaller extends ModifierProtocolInstaller.BaseClientModifier
     {
-        @Override
-        public Protocol.ModifierProtocol protocol()
+        private LZ4ClientInstaller()
         {
-            return TestModifierProtocols.ROT13;
+            super( "lz4", null, TestModifierProtocols.LZ4, TestModifierProtocols.LZ4_VALIDATING );
         }
-
-        @Override
-        public <BUILDER extends NettyPipelineBuilder<Orientation.Client,BUILDER>> void apply(
-                NettyPipelineBuilder<Orientation.Client,BUILDER> nettyPipelineBuilder )
+    }
+    private static class LZ4HighCompressionClientInstaller extends ModifierProtocolInstaller.BaseClientModifier
+    {
+        private LZ4HighCompressionClientInstaller()
         {
-
+            super( "lz4", null, TestModifierProtocols.LZ4_HIGH_COMPRESSION, TestModifierProtocols.LZ4_HIGH_COMPRESSION_VALIDATING );
         }
     }
 
-    private static class SnappyServerInstaller implements ModifierProtocolInstaller<Orientation.Server>
+    private class Rot13ClientInstaller extends ModifierProtocolInstaller.BaseClientModifier
     {
-        @Override
-        public Protocol.ModifierProtocol protocol()
+        Rot13ClientInstaller()
         {
-            return TestModifierProtocols.SNAPPY;
-        }
-
-        @Override
-        public <BUILDER extends NettyPipelineBuilder<Orientation.Server,BUILDER>> void apply(
-                NettyPipelineBuilder<Orientation.Server,BUILDER> nettyPipelineBuilder )
-        {
-
+            super( "rot13", null, TestModifierProtocols.ROT13 );
         }
     }
 
-    private static class LZHServerInstaller implements ModifierProtocolInstaller<Orientation.Server>
+    private static class SnappyServerInstaller extends ModifierProtocolInstaller.BaseServerModifier
     {
-        @Override
-        public Protocol.ModifierProtocol protocol()
+        private SnappyServerInstaller()
         {
-            return TestModifierProtocols.LZH;
-        }
-
-        @Override
-        public <BUILDER extends NettyPipelineBuilder<Orientation.Server,BUILDER>> void apply(
-                NettyPipelineBuilder<Orientation.Server,BUILDER> nettyPipelineBuilder )
-        {
-
+            super( "snappy", null, TestModifierProtocols.SNAPPY );
         }
     }
 
-    private class Rot13ServerInstaller implements ModifierProtocolInstaller<Orientation.Server>
+    private static class LZOServerInstaller extends ModifierProtocolInstaller.BaseServerModifier
     {
-        @Override
-        public Protocol.ModifierProtocol protocol()
+        private LZOServerInstaller()
         {
-            return TestModifierProtocols.ROT13;
+            super( "lzo", null, TestModifierProtocols.LZO );
         }
+    }
 
-        @Override
-        public <BUILDER extends NettyPipelineBuilder<Orientation.Server,BUILDER>> void apply(
-                NettyPipelineBuilder<Orientation.Server,BUILDER> nettyPipelineBuilder )
+    private static class LZ4ServerInstaller extends ModifierProtocolInstaller.BaseServerModifier
+    {
+        private LZ4ServerInstaller()
         {
+            super( "lz4", null, TestModifierProtocols.LZ4, TestModifierProtocols.LZ4_HIGH_COMPRESSION );
+        }
+    }
 
+    private static class LZ4ValidatingServerInstaller extends ModifierProtocolInstaller.BaseServerModifier
+    {
+        private LZ4ValidatingServerInstaller()
+        {
+            super( "lz4", null, TestModifierProtocols.LZ4_VALIDATING, TestModifierProtocols.LZ4_HIGH_COMPRESSION_VALIDATING );
+        }
+    }
+
+    private class Rot13ServerInstaller extends ModifierProtocolInstaller.BaseServerModifier
+    {
+        Rot13ServerInstaller()
+        {
+            super( "rot13", null, TestModifierProtocols.ROT13 );
         }
     }
 }

@@ -37,6 +37,7 @@ import org.neo4j.helpers.collection.Iterators;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
 
 @RunWith( Parameterized.class )
 public class HandshakeServerEnsureMagicTest
@@ -45,21 +46,27 @@ public class HandshakeServerEnsureMagicTest
     public static Collection<ServerMessage> data()
     {
         return asList(
-                new ApplicationProtocolRequest( Protocol.ApplicationProtocolIdentifier.RAFT.canonicalName(), Iterators.asSet( 1, 2 ) ),
+                new ApplicationProtocolRequest( RAFT.canonicalName(), Iterators.asSet( 1, 2 ) ),
                 new ModifierProtocolRequest( Protocol.ModifierProtocolIdentifier.COMPRESSION.canonicalName(), Iterators.asSet( 3, 4 ) ),
-                new SwitchOverRequest( Protocol.ApplicationProtocolIdentifier.RAFT.canonicalName(), 2, emptyList() )
+                new SwitchOverRequest( RAFT.canonicalName(), 2, emptyList() )
         );
     }
 
     @Parameterized.Parameter
     public ServerMessage message;
 
-    private Channel channel = mock( Channel.class );
-    private ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( TestApplicationProtocols.values() );
-    private ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( TestModifierProtocols.values() );
+    private final SupportedProtocols<Protocol.ApplicationProtocol> supportedApplicationProtocol =
+            new SupportedProtocols<>( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
 
-    private HandshakeServer server =
-            new HandshakeServer( channel, applicationProtocolRepository, modifierProtocolRepository, Protocol.ApplicationProtocolIdentifier.RAFT );
+    private Channel channel = mock( Channel.class );
+    private ApplicationProtocolRepository applicationProtocolRepository =
+            new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedApplicationProtocol );
+    private ModifierProtocolRepository modifierProtocolRepository =
+            new ModifierProtocolRepository( TestModifierProtocols.values(), emptyList() );
+
+    private HandshakeServer server = new HandshakeServer(
+            applicationProtocolRepository,
+            modifierProtocolRepository, channel );
 
     @Test( expected = IllegalStateException.class )
     public void shouldThrowIfMagicHasNotBeenSent()

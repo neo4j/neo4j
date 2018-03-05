@@ -19,29 +19,20 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import java.util.Collections;
-import java.util.Set;
-
 import org.neo4j.causalclustering.protocol.Protocol;
 
-public class ProtocolSelection<T extends Protocol>
+public class ApplicationProtocolRepository extends ProtocolRepository<Protocol.ApplicationProtocol>
 {
-    private final String identifier;
-    private final Set<Integer> versions;
+    private final SupportedProtocols<Protocol.ApplicationProtocol> supportedProtocol;
 
-    public ProtocolSelection( String identifier, Set<Integer> versions )
+    public ApplicationProtocolRepository( Protocol.ApplicationProtocol[] protocols, SupportedProtocols<Protocol.ApplicationProtocol> supportedProtocol )
     {
-        this.identifier = identifier;
-        this.versions = Collections.unmodifiableSet( versions );
+        super( protocols, ignored -> versionNumberComparator() );
+        this.supportedProtocol = supportedProtocol;
     }
 
-    public String identifier()
+    public SupportedProtocols<Protocol.ApplicationProtocol> supportedProtocol()
     {
-        return identifier;
-    }
-
-    public Set<Integer> versions()
-    {
-        return versions;
+        return supportedProtocol;
     }
 }

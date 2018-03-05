@@ -21,10 +21,12 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.messaging.Channel;
@@ -34,7 +36,6 @@ import org.neo4j.helpers.collection.Pair;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.equalTo;
@@ -49,7 +50,6 @@ import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * @see HandshakeClientEnsureMagicTest
@@ -58,9 +58,16 @@ public class HandshakeClientTest
 {
     private HandshakeClient client = new HandshakeClient();
     private Channel channel = mock( Channel.class );
-    private ProtocolRepository<ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( TestApplicationProtocols.values() );
-    private ProtocolRepository<ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( TestModifierProtocols.values() );
     private ApplicationProtocolIdentifier applicationProtocolIdentifier = ApplicationProtocolIdentifier.RAFT;
+    private SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol =
+            new SupportedProtocols<>( applicationProtocolIdentifier, emptyList() );
+    private Collection<SupportedProtocols<ModifierProtocol>> supportedModifierProtocols = Stream.of( ModifierProtocolIdentifier.values() )
+            .map( id -> new SupportedProtocols<>( id, emptyList() ) )
+            .collect( Collectors.toList() );
+    private ApplicationProtocolRepository applicationProtocolRepository =
+            new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedApplicationProtocol );
+    private ModifierProtocolRepository modifierProtocolRepository =
+            new ModifierProtocolRepository( TestModifierProtocols.values(), supportedModifierProtocols );
     private int raftVersion = TestApplicationProtocols.latest( ApplicationProtocolIdentifier.RAFT ).version();
     private ApplicationProtocol expectedApplicationProtocol =
             applicationProtocolRepository.select( applicationProtocolIdentifier.canonicalName(), raftVersion ).get();
@@ -68,7 +75,7 @@ public class HandshakeClientTest
     @Test
     public void shouldSendInitialMagicOnInitiation()
     {
-        client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+        client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
 
         verify( channel ).write( InitialMagicMessage.instance() );
     }
@@ -76,11 +83,11 @@ public class HandshakeClientTest
     @Test
     public void shouldSendApplicationProtocolRequestOnInitiation()
     {
-        client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+        client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
 
         ApplicationProtocolRequest expectedMessage = new ApplicationProtocolRequest(
                 applicationProtocolIdentifier.canonicalName(),
-                applicationProtocolRepository.getAll( applicationProtocolIdentifier ).versions()
+                applicationProtocolRepository.getAll( applicationProtocolIdentifier, emptyList() ).versions()
         );
 
         verify( channel ).writeAndFlush( expectedMessage );
@@ -90,13 +97,12 @@ public class HandshakeClientTest
     public void shouldSendModifierProtocolRequestsOnInitiation()
     {
         // when
-        client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository,
-                asSet( ModifierProtocolIdentifier.values() ) );
+        client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
 
         // then
         Stream.of( ModifierProtocolIdentifier.values() ).forEach( modifierProtocolIdentifier ->
                 {
-                    Set<Integer> versions = modifierProtocolRepository.getAll( modifierProtocolIdentifier ).versions();
+                    Set<Integer> versions = modifierProtocolRepository.getAll( modifierProtocolIdentifier, emptyList() ).versions();
                     verify( channel ).write( new ModifierProtocolRequest( modifierProtocolIdentifier.canonicalName(), versions ) );
                 } );
     }
@@ -106,7 +112,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
 
         // when
         client.handle( new InitialMagicMessage( "totally legit" ) );
@@ -120,7 +126,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
 
         // when
         client.handle( InitialMagicMessage.instance() );
@@ -134,7 +140,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
 
         // when
@@ -149,7 +155,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
 
         // when
@@ -164,7 +170,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
 
         // when
@@ -177,9 +183,10 @@ public class HandshakeClientTest
     @Test
     public void shouldSendSwitchOverRequestIfNoModifierProtocolsToRequestOnApplicationProtocolResponse()
     {
+        ModifierProtocolRepository repo = new ModifierProtocolRepository( TestModifierProtocols.values(), emptyList() );
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, repo );
         client.handle( InitialMagicMessage.instance() );
 
         // when
@@ -195,8 +202,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository,
-                        asSet( ModifierProtocolIdentifier.COMPRESSION, ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION ) );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
         client.handle( new ApplicationProtocolResponse( StatusCode.SUCCESS, applicationProtocolIdentifier.canonicalName(), raftVersion ) );
 
@@ -213,8 +219,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository,
-                        asSet( ModifierProtocolIdentifier.COMPRESSION ) );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
 
         // when
@@ -230,8 +235,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository,
-                        asSet( ModifierProtocolIdentifier.COMPRESSION, ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION ) );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
         client.handle( new ApplicationProtocolResponse( StatusCode.SUCCESS, applicationProtocolIdentifier.canonicalName(), raftVersion ) );
 
@@ -240,8 +244,10 @@ public class HandshakeClientTest
         client.handle( new ModifierProtocolResponse( StatusCode.SUCCESS, ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION.canonicalName(), 1 ) );
 
         // then
-        List<Pair<String,Integer>> switchOverModifierProtocols = asList( Pair.of( ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION.canonicalName(), 1 ),
-                Pair.of( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), 1 ) );
+        List<Pair<String,Integer>> switchOverModifierProtocols = asList(
+                Pair.of( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), 1 ),
+                Pair.of( ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION.canonicalName(), 1 )
+        );
         verify( channel ).writeAndFlush( new SwitchOverRequest( applicationProtocolIdentifier.canonicalName(), raftVersion, switchOverModifierProtocols ) );
         assertFalse( protocolStackCompletableFuture.isDone() );
     }
@@ -251,8 +257,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository,
-                        asSet( ModifierProtocolIdentifier.COMPRESSION, ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION ) );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
         client.handle( new ApplicationProtocolResponse( StatusCode.SUCCESS, applicationProtocolIdentifier.canonicalName(), raftVersion ) );
 
@@ -271,8 +276,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository,
-                        asSet( ModifierProtocolIdentifier.COMPRESSION, ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION ) );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
         client.handle( new ApplicationProtocolResponse( StatusCode.SUCCESS, applicationProtocolIdentifier.canonicalName(), raftVersion ) );
 
@@ -291,8 +295,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository,
-                        asSet( ModifierProtocolIdentifier.COMPRESSION, ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION ) );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
         client.handle( new ApplicationProtocolResponse( StatusCode.SUCCESS, applicationProtocolIdentifier.canonicalName(), raftVersion ) );
 
@@ -313,7 +316,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
         client.handle( new ApplicationProtocolResponse( StatusCode.SUCCESS, applicationProtocolIdentifier.canonicalName(), raftVersion ) );
 
@@ -329,7 +332,7 @@ public class HandshakeClientTest
     {
         // given
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier, modifierProtocolRepository, emptySet() );
+                client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
         client.handle( InitialMagicMessage.instance() );
 
         // when
@@ -343,9 +346,12 @@ public class HandshakeClientTest
     public void shouldCompleteProtocolStackOnSwitchoverResponse()
     {
         // given
+        ModifierProtocolRepository repo = new ModifierProtocolRepository(
+                TestModifierProtocols.values(),
+                asList( new SupportedProtocols<>( ModifierProtocolIdentifier.COMPRESSION, emptyList() ) ) );
+
         CompletableFuture<ProtocolStack> protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, applicationProtocolIdentifier,
-                        modifierProtocolRepository, asSet( ModifierProtocolIdentifier.COMPRESSION ) );
+                client.initiate( channel, applicationProtocolRepository, repo );
         client.handle( InitialMagicMessage.instance() );
         client.handle( new ApplicationProtocolResponse( StatusCode.SUCCESS, applicationProtocolIdentifier.canonicalName(), raftVersion ) );
         client.handle(

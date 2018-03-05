@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
@@ -43,9 +44,11 @@ import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
 import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
-import org.neo4j.causalclustering.protocol.handshake.ProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.SupportedProtocols;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
@@ -53,6 +56,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
@@ -64,8 +68,15 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class SenderServiceIT
 {
     private final LogProvider logProvider = NullLogProvider.getInstance();
-    private final ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( ApplicationProtocols.values() );
-    private final ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( ModifierProtocols.values() );
+
+    private final SupportedProtocols<Protocol.ApplicationProtocol> supportedApplicationProtocol =
+            new SupportedProtocols<>( Protocol.ApplicationProtocolIdentifier.RAFT, emptyList() );
+    private final Collection<SupportedProtocols<Protocol.ModifierProtocol>> supportedModifierProtocols = emptyList();
+
+    private final ApplicationProtocolRepository applicationProtocolRepository =
+            new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedApplicationProtocol );
+    private final ModifierProtocolRepository modifierProtocolRepository =
+            new ModifierProtocolRepository( ModifierProtocols.values(), supportedModifierProtocols );
 
     @Parameterized.Parameter
     public boolean blocking;
@@ -123,8 +134,8 @@ public class SenderServiceIT
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> installer =
                 new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
 
-        HandshakeServerInitializer channelInitializer = new HandshakeServerInitializer( logProvider, applicationProtocolRepository, modifierProtocolRepository,
-                Protocol.ApplicationProtocolIdentifier.RAFT, installer, pipelineFactory );
+        HandshakeServerInitializer channelInitializer = new HandshakeServerInitializer( applicationProtocolRepository, modifierProtocolRepository,
+                installer, pipelineFactory, logProvider );
 
         Config config = Config.defaults( raft_listen_address, new HostnamePort( "localhost", port ).toString() );
         return new RaftServer( channelInitializer, config, logProvider, logProvider );
@@ -140,10 +151,9 @@ public class SenderServiceIT
 
         HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer(
                 applicationProtocolRepository,
-                Protocol.ApplicationProtocolIdentifier.RAFT,
                 modifierProtocolRepository,
-                asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ),
-                protocolInstaller, pipelineFactory,
+                protocolInstaller,
+                pipelineFactory,
                 Config.defaults(),
                 logProvider );
 

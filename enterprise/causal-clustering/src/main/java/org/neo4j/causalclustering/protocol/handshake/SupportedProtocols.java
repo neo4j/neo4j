@@ -20,27 +20,47 @@
 package org.neo4j.causalclustering.protocol.handshake;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 
-public class ProtocolSelection<T extends Protocol>
+public class SupportedProtocols<T extends Protocol>
 {
-    private final String identifier;
-    private final Set<Integer> versions;
+    private final Protocol.Identifier<T> identifier;
+    private final List<Integer> versions;
 
-    public ProtocolSelection( String identifier, Set<Integer> versions )
+    /**
+     * @param versions Empty means support everything
+     */
+    public SupportedProtocols( Protocol.Identifier<T> identifier, List<Integer> versions )
     {
         this.identifier = identifier;
-        this.versions = Collections.unmodifiableSet( versions );
+        this.versions = Collections.unmodifiableList( versions );
     }
 
-    public String identifier()
+    public Set<Integer> mutuallySupportedVersionsFor( Set<Integer> requestedVersions )
+    {
+        if ( versions().isEmpty() )
+        {
+            return requestedVersions;
+        }
+        else
+        {
+            return requestedVersions.stream().filter( versions()::contains ).collect( Collectors.toSet() );
+        }
+    }
+
+    public Protocol.Identifier<T> identifier()
     {
         return identifier;
     }
 
-    public Set<Integer> versions()
+    /**
+     * @return If an empty list then all versions of a matching protocol will be supported
+     */
+    public List<Integer> versions()
     {
         return versions;
     }

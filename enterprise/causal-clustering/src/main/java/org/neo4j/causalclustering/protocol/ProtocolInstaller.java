@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.protocol;
 
 import io.netty.channel.Channel;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -52,9 +53,15 @@ public interface ProtocolInstaller<O extends ProtocolInstaller.Orientation>
 
     void install( Channel channel ) throws Exception;
 
+    /**
+     * For testing
+     */
     ApplicationProtocol applicationProtocol();
 
-    List<Protocol.ModifierProtocol> modifiers();
+    /**
+     * For testing
+     */
+    Collection<Collection<Protocol.ModifierProtocol>> modifiers();
 
     interface Orientation
     {

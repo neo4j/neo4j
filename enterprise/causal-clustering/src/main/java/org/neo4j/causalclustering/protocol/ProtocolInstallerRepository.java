@@ -43,7 +43,7 @@ public class ProtocolInstallerRepository<O extends ProtocolInstaller.Orientation
         this.installers = unmodifiableMap( tempInstallers );
 
         Map<ModifierProtocol,ModifierProtocolInstaller<O>> tempModifierInstallers = new HashMap<>();
-        modifiers.forEach( modifier -> addTo( tempModifierInstallers, modifier, modifier.protocol() ) );
+        modifiers.forEach( installer -> installer.protocols().forEach( protocol -> addTo( tempModifierInstallers, installer, protocol ) ) );
         this.modifiers = unmodifiableMap( tempModifierInstallers );
     }
 
@@ -53,7 +53,7 @@ public class ProtocolInstallerRepository<O extends ProtocolInstaller.Orientation
         if ( old != null )
         {
             throw new IllegalArgumentException(
-                    String.format( "Duplicate protocol installers for protocol %s", protocol )
+                    String.format( "Duplicate protocol installers for protocol %s: %s and %s", protocol, installer, old )
             );
         }
     }
@@ -88,7 +88,8 @@ public class ProtocolInstallerRepository<O extends ProtocolInstaller.Orientation
     {
         boolean duplicateIdentifier = modifierProtocolInstallers
                 .stream()
-                .anyMatch( installer -> installer.protocol().identifier().equals( modifierProtocol.identifier() ) );
+                .flatMap( modifier -> modifier.protocols().stream() )
+                .anyMatch( protocol -> protocol.identifier().equals( modifierProtocol.identifier() ) );
         if ( duplicateIdentifier )
         {
             throw new IllegalArgumentException( "Attempted to install multiple versions of " + modifierProtocol.identifier() );

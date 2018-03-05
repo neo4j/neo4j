@@ -52,6 +52,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
@@ -486,4 +487,15 @@ public class CausalClusteringSettings implements LoadableConfig
                   " If no policy is configured then the communication will not be secured." )
     public static final Setting<String> ssl_policy =
             prefixSetting( "causal_clustering.ssl_policy", STRING, NO_DEFAULT );
+
+    @Description( "Raft protocol implementation versions that this instance will allow in negotiation as a comma-separated list." +
+            " Order is not relevant: the greatest value will be preferred. An empty list will allow all supported versions" )
+    public static final Setting<List<Integer>> raft_versions =
+            setting( "causal_clustering.protocol_versions.raft", list( ",", INTEGER ), "" );
+
+    // TODO how to document supported algorithms?
+    @Description( "Network compression algorithms that this instance will allow in negotiation as a comma-separated list." +
+            " Listed in descending order of preference for incoming connections. An empty list implies no compression." )
+    public static final Setting<List<String>> compression_versions =
+            setting( "causal_clustering.protocol_versions.compression", STRING_LIST, "");
 }

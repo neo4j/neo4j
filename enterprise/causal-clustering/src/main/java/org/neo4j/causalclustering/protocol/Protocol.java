@@ -19,6 +19,10 @@
  */
 package org.neo4j.causalclustering.protocol;
 
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 public interface Protocol
 {
     String identifier();
@@ -76,7 +80,7 @@ public interface Protocol
     interface ModifierProtocol extends Protocol
     {
         /**
-         * Should be human readable in a comma separated list
+         * Should be human readable when in a comma separated list
          */
         String friendlyName();
     }
@@ -84,6 +88,7 @@ public interface Protocol
     enum ModifierProtocolIdentifier implements Identifier<ModifierProtocol>
     {
         COMPRESSION,
+        // Need a second Identifier for testing purposes.
         GRATUITOUS_OBFUSCATION;
 
         @Override
@@ -95,7 +100,13 @@ public interface Protocol
 
     enum ModifierProtocols implements ModifierProtocol
     {
-        COMPRESSION_SNAPPY( ModifierProtocolIdentifier.COMPRESSION, 1, "Snappy" );
+        COMPRESSION_GZIP( ModifierProtocolIdentifier.COMPRESSION, 1, "Gzip" ),
+        COMPRESSION_SNAPPY( ModifierProtocolIdentifier.COMPRESSION, 2, "Snappy" ),
+        COMPRESSION_SNAPPY_VALIDATING( ModifierProtocolIdentifier.COMPRESSION, 3, "Snappy_validating" ),
+        COMPRESSION_LZ4( ModifierProtocolIdentifier.COMPRESSION, 4, "LZ4" ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION( ModifierProtocolIdentifier.COMPRESSION, 5, "LZ4_high_compression" ),
+        COMPRESSION_LZ4_VALIDATING( ModifierProtocolIdentifier.COMPRESSION, 6, "LZ_validating" ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION_VALIDATING( ModifierProtocolIdentifier.COMPRESSION, 7, "LZ4_high_compression_validating" );
 
         private final int version;
         private final ModifierProtocolIdentifier identifier;
@@ -124,6 +135,13 @@ public interface Protocol
         public String friendlyName()
         {
             return friendlyName;
+        }
+
+        public static Optional<ModifierProtocols> fromFriendlyName( String friendlyName )
+        {
+            return Stream.of( ModifierProtocols.values() )
+                    .filter( protocol -> Objects.equals( protocol.friendlyName.toLowerCase(), friendlyName.toLowerCase() ) )
+                    .findFirst();
         }
     }
 }
