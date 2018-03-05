@@ -244,7 +244,7 @@ public class ConstraintIndexCreator
             }
             else
             {
-                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, cause );
+                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e );
             }
         }
     }
