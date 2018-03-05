@@ -140,6 +140,15 @@ final case class DeleteGraph(graphName: QualifiedGraphName)(val position: InputP
       SemanticState.recordCurrentScope(this)
 }
 
+final case class ReturnGraph(graphName: Option[QualifiedGraphName])(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "RETURN GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 //final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
 //  extends MultipleGraphClause with UpdateClause {
 //

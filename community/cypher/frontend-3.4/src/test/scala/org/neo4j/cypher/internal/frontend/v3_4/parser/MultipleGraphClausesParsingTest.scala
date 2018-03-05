@@ -68,6 +68,14 @@ class MultipleGraphClausesParsingTest
     yields(ast.DeleteGraph(fooBarGraph))
   }
 
+  test("RETURN GRAPH") {
+    yields(ast.ReturnGraph(None))
+  }
+
+  test("RETURN GRAPH foo.bar") {
+    yields(ast.ReturnGraph(Some(fooBarGraph)))
+  }
+
   private val nodePattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), None)(pos))))(pos)
 
   private val complexPattern = exp.Pattern(List(

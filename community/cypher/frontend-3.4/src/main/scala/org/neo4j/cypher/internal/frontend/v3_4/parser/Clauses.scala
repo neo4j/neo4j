@@ -40,21 +40,15 @@ trait Clauses extends Parser
   }
 
   def UseGraph = rule("USE GRAPH") {
-    group(
-      keyword("USE GRAPH") ~~ QualifiedGraphName  ~~>> (ast.UseGraph(_))
-    )
+    group(keyword("USE GRAPH") ~~ QualifiedGraphName ~~>> (ast.UseGraph(_)))
   }
 
   def ConstructGraph = rule("CONSTRUCT GRAPH") {
-    group(
-      keyword("CONSTRUCT GRAPH") ~~ optional(QualifiedGraphName) ~~ "{" ~~ Create ~~ "}" ~~>> (ast.ConstructGraph(_, _))
-    )
+    group(keyword("CONSTRUCT GRAPH") ~~ optional(QualifiedGraphName) ~~ "{" ~~ Create ~~ "}" ~~>> (ast.ConstructGraph(_, _)))
   }
 
   def CreateGraph = rule("CREATE GRAPH") {
-    group(
-      keyword("CREATE GRAPH") ~~ QualifiedGraphName ~~>> (ast.CreateGraph(_))
-    )
+    group(keyword("CREATE GRAPH") ~~ QualifiedGraphName ~~>> (ast.CreateGraph(_)))
   }
 
   def CopyGraph = rule("COPY GRAPH") {
@@ -70,23 +64,15 @@ trait Clauses extends Parser
   }
 
   def TruncateGraph = rule("TRUNCATE GRAPH") {
-    group(
-      keyword("TRUNCATE GRAPH") ~~ QualifiedGraphName ~~>> (ast.TruncateGraph(_))
-    )
+    group(keyword("TRUNCATE GRAPH") ~~ QualifiedGraphName ~~>> (ast.TruncateGraph(_)))
   }
 
   def DeleteGraph = rule("DELETE GRAPH") {
-    group(
-      keyword("DELETE GRAPH") ~~ QualifiedGraphName ~~>> (ast.DeleteGraph(_))
-    )
+    group(keyword("DELETE GRAPH") ~~ QualifiedGraphName ~~>> (ast.DeleteGraph(_)))
   }
 
-  RenameGraph
-
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
-    group(
-      SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _))
-    )
+    group(SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _)))
   }
 
   def Start: Rule1[ast.Start] = rule("START") {
@@ -142,8 +128,9 @@ trait Clauses extends Parser
     group(keyword("UNWIND") ~~ Expression ~~ keyword("AS") ~~ Variable) ~~>> (ast.Unwind(_, _))
   )
 
-  def Return: Rule1[ast.Return] = rule("RETURN")(
-    group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
+  def Return: Rule1[ast.Clause] = rule("RETURN")(
+    group(keyword("RETURN GRAPH") ~~ optional(QualifiedGraphName) ~~>> (ast.ReturnGraph(_)))
+      | group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
