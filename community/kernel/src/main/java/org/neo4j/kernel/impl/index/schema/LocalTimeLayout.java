@@ -26,78 +26,20 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 /**
  * {@link Layout} for local times.
  */
-abstract class LocalTimeLayout extends Layout.Adapter<LocalTimeSchemaKey,NativeSchemaValue>
+class LocalTimeLayout extends BaseLayout<LocalTimeSchemaKey>
 {
     public static Layout<LocalTimeSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
     {
         return descriptor.type() == IndexDescriptor.Type.UNIQUE ? LocalTimeLayout.UNIQUE : LocalTimeLayout.NON_UNIQUE;
     }
 
-    private static final long UNIQUE_LAYOUT_IDENTIFIER = Layout.namedIdentifier( "UTlt", NativeSchemaValue.SIZE );
-    public static LocalTimeLayout UNIQUE = new LocalTimeLayout()
+    private static LocalTimeLayout UNIQUE = new LocalTimeLayout( "UTlt", 0, 1 );
+    private static LocalTimeLayout NON_UNIQUE = new LocalTimeLayout( "NTlt", 0, 1 );
+
+    private LocalTimeLayout( String layoutName, int majorVersion, int minorVersion )
     {
-        @Override
-        public long identifier()
-        {
-            return UNIQUE_LAYOUT_IDENTIFIER;
-        }
-
-        @Override
-        public int majorVersion()
-        {
-            return 0;
-        }
-
-        @Override
-        public int minorVersion()
-        {
-            return 1;
-        }
-
-        @Override
-        public int compare( LocalTimeSchemaKey o1, LocalTimeSchemaKey o2 )
-        {
-            int comparison = o1.compareValueTo( o2 );
-            if ( comparison == 0 )
-            {
-                // This is a special case where we need also compare entityId to support inclusive/exclusive
-                if ( o1.getCompareId() || o2.getCompareId() )
-                {
-                    return Long.compare( o1.getEntityId(), o2.getEntityId() );
-                }
-            }
-            return comparison;
-        }
-    };
-
-    private static final long NON_UNIQUE_LAYOUT_IDENTIFIER = Layout.namedIdentifier( "NTlt", NativeSchemaValue.SIZE );
-    public static LocalTimeLayout NON_UNIQUE = new LocalTimeLayout()
-    {
-        @Override
-        public long identifier()
-        {
-            return NON_UNIQUE_LAYOUT_IDENTIFIER;
-        }
-
-        @Override
-        public int majorVersion()
-        {
-            return 0;
-        }
-
-        @Override
-        public int minorVersion()
-        {
-            return 1;
-        }
-
-        @Override
-        public int compare( LocalTimeSchemaKey o1, LocalTimeSchemaKey o2 )
-        {
-            int comparison = o1.compareValueTo( o2 );
-            return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
-        }
-    };
+        super( layoutName, majorVersion, minorVersion );
+    }
 
     @Override
     public LocalTimeSchemaKey newKey()
@@ -115,21 +57,9 @@ abstract class LocalTimeLayout extends Layout.Adapter<LocalTimeSchemaKey,NativeS
     }
 
     @Override
-    public NativeSchemaValue newValue()
-    {
-        return NativeSchemaValue.INSTANCE;
-    }
-
-    @Override
     public int keySize( LocalTimeSchemaKey key )
     {
         return LocalTimeSchemaKey.SIZE;
-    }
-
-    @Override
-    public int valueSize( NativeSchemaValue value )
-    {
-        return NativeSchemaValue.SIZE;
     }
 
     @Override
@@ -140,20 +70,10 @@ abstract class LocalTimeLayout extends Layout.Adapter<LocalTimeSchemaKey,NativeS
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NativeSchemaValue value )
-    {
-    }
-
-    @Override
     public void readKey( PageCursor cursor, LocalTimeSchemaKey into, int keySize )
     {
         into.nanoOfDay = cursor.getLong();
         into.setEntityId( cursor.getLong() );
-    }
-
-    @Override
-    public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
-    {
     }
 
     @Override

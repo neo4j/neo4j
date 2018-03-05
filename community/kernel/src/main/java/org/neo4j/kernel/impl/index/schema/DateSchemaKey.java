@@ -27,7 +27,7 @@ import static java.lang.String.format;
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateValue}.
  */
-class DateSchemaKey extends NativeSchemaKey
+class DateSchemaKey extends ComparableNativeSchemaKey<DateSchemaKey>
 {
     static final int SIZE =
             Long.BYTES + /* epochDay */
@@ -53,14 +53,8 @@ class DateSchemaKey extends NativeSchemaKey
         epochDay = Long.MAX_VALUE;
     }
 
-    /**
-     * Compares the value of this key to that of another key.
-     * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
-     *
-     * @param other the {@link DateSchemaKey} to compare to.
-     * @return comparison against the {@code other} {@link DateSchemaKey}.
-     */
-    int compareValueTo( DateSchemaKey other )
+    @Override
+    public int compareValueTo( DateSchemaKey other )
     {
         return Long.compare( epochDay, other.epochDay );
     }

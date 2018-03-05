@@ -27,7 +27,7 @@ import static java.lang.String.format;
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link LocalTimeValue}.
  */
-class LocalTimeSchemaKey extends NativeSchemaKey
+class LocalTimeSchemaKey extends ComparableNativeSchemaKey<LocalTimeSchemaKey>
 {
     static final int SIZE =
             Long.BYTES + /* nanoOfDay */
@@ -53,14 +53,8 @@ class LocalTimeSchemaKey extends NativeSchemaKey
         nanoOfDay = Long.MAX_VALUE;
     }
 
-    /**
-     * Compares the value of this key to that of another key.
-     * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
-     *
-     * @param other the {@link LocalTimeSchemaKey} to compare to.
-     * @return comparison against the {@code other} {@link LocalTimeSchemaKey}.
-     */
-    int compareValueTo( LocalTimeSchemaKey other )
+    @Override
+    public int compareValueTo( LocalTimeSchemaKey other )
     {
         return Long.compare( nanoOfDay, other.nanoOfDay );
     }

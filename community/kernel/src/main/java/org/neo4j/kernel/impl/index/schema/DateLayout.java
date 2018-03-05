@@ -26,22 +26,19 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 /**
  * {@link Layout} for dates.
  */
-class DateLayout extends SchemaLayout<DateSchemaKey>
+class DateLayout extends BaseLayout<DateSchemaKey>
 {
     public static Layout<DateSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
     {
         return descriptor.type() == IndexDescriptor.Type.UNIQUE ? DateLayout.UNIQUE : DateLayout.NON_UNIQUE;
     }
 
-    private static final long UNIQUE_LAYOUT_IDENTIFIER = Layout.namedIdentifier( "UTda", NativeSchemaValue.SIZE );
-    public static DateLayout UNIQUE = new DateLayout( UNIQUE_LAYOUT_IDENTIFIER, 0, 1 );
+    private static DateLayout UNIQUE = new DateLayout( "UTda", 0, 1 );
+    private static DateLayout NON_UNIQUE = new DateLayout( "NTda", 0, 1 );
 
-    private static final long NON_UNIQUE_LAYOUT_IDENTIFIER = Layout.namedIdentifier( "NTda", NativeSchemaValue.SIZE );
-    public static DateLayout NON_UNIQUE = new DateLayout( NON_UNIQUE_LAYOUT_IDENTIFIER, 0, 1 );
-
-    DateLayout( long identifier, int majorVersion, int minorVersion )
+    private DateLayout( String layoutName, int majorVersion, int minorVersion )
     {
-        super( identifier, majorVersion, minorVersion );
+        super( layoutName, majorVersion, minorVersion );
     }
 
     @Override
@@ -77,11 +74,5 @@ class DateLayout extends SchemaLayout<DateSchemaKey>
     {
         into.epochDay = cursor.getLong();
         into.setEntityId( cursor.getLong() );
-    }
-
-    @Override
-    int compareValue( DateSchemaKey o1, DateSchemaKey o2 )
-    {
-        return o1.compareValueTo( o2 );
     }
 }
