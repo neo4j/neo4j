@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import java.net.URISyntaxException;
-import java.util.Optional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -29,10 +27,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -46,57 +41,21 @@ public class DiscoveryService
 {
     private final Config config;
     private final OutputFormat outputFormat;
-    private final ConnectorPortRegister connectorPortRegister;
+    private final DiscoverableURIs uris;
 
     // Your IDE might tell you to make this less visible than public. Don't. JAX-RS demands is to be public.
-    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat, @Context NeoServer neoServer )
+    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat, @Context DiscoverableURIs uris )
     {
         this.config = config;
         this.outputFormat = outputFormat;
-        connectorPortRegister = neoServer.getDatabase().getGraph().getDependencyResolver()
-                .resolveDependency( ConnectorPortRegister.class );
+        this.uris = uris;
     }
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
     public Response getDiscoveryDocument( @Context UriInfo uriInfo )
     {
-        String managementUri = config.get( ServerSettings.management_api_path ).getPath() + "/";
-        String dataUri = config.get( ServerSettings.rest_api_path ).getPath() + "/";
-
-        Optional<AdvertisedSocketAddress> boltAddress = config.enabledBoltConnectors().stream().findFirst()
-                .map( boltConnector -> config.get( boltConnector.advertised_address ) );
-
-        if ( boltAddress.isPresent() )
-        {
-            AdvertisedSocketAddress advertisedSocketAddress = boltAddress.get();
-
-            // If port is 0 it's been assigned a random port from the OS, list this instead
-            if ( advertisedSocketAddress.getPort() == 0 )
-            {
-                int boltPort = connectorPortRegister.getLocalAddress( "bolt" ).getPort();
-                advertisedSocketAddress = new AdvertisedSocketAddress( advertisedSocketAddress.getHostname(), boltPort );
-            }
-
-            if ( advertisedSocketAddress.getHostname().equals( "localhost" ) )
-            {
-                // Use the port specified in the config, but not the host
-                return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri,
-                        new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(), advertisedSocketAddress.getPort() ) ) );
-            }
-            else
-            {
-                // Use the config verbatim since it seems sane
-                return outputFormat
-                        .ok( new DiscoveryRepresentation( managementUri, dataUri, advertisedSocketAddress ) );
-            }
-        }
-        else
-        {
-            // There's no config, compute possible endpoint using host header and default bolt port.
-            return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri,
-                    new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(), 7687 ) ) );
-        }
+        return outputFormat.ok( new DiscoveryRepresentation( uris ) );
     }
 
     @GET
