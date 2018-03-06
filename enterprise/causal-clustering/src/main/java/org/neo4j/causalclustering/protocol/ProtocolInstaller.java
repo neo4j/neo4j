@@ -21,23 +21,42 @@ package org.neo4j.causalclustering.protocol;
 
 import io.netty.channel.Channel;
 
-public abstract class ProtocolInstaller<O extends ProtocolInstaller.Orientation>
+import java.util.List;
+import java.util.function.Function;
+
+import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
+
+public interface ProtocolInstaller<O extends ProtocolInstaller.Orientation>
 {
-    private final Protocol protocol;
-
-    protected ProtocolInstaller( Protocol protocol )
+    abstract class Factory<O extends ProtocolInstaller.Orientation, I extends ProtocolInstaller<O>>
     {
-        this.protocol = protocol;
+        private final ApplicationProtocol applicationProtocol;
+        private final Function<List<ModifierProtocolInstaller<O>>,I> constructor;
+
+        protected Factory( ApplicationProtocol applicationProtocol, Function<List<ModifierProtocolInstaller<O>>,I> constructor )
+        {
+            this.applicationProtocol = applicationProtocol;
+            this.constructor = constructor;
+        }
+
+        I create( List<ModifierProtocolInstaller<O>> modifiers )
+        {
+            return constructor.apply( modifiers );
+        }
+
+        public ApplicationProtocol applicationProtocol()
+        {
+            return applicationProtocol;
+        }
     }
 
-    public abstract void install( Channel channel ) throws Exception;
+    void install( Channel channel ) throws Exception;
 
-    public final Protocol protocol()
-    {
-        return protocol;
-    }
+    ApplicationProtocol applicationProtocol();
 
-    public interface Orientation
+    List<Protocol.ModifierProtocol> modifiers();
+
+    interface Orientation
     {
         interface Server extends Orientation
         {

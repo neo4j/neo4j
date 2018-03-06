@@ -17,22 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.protocol.handshake;
+package org.neo4j.causalclustering.protocol;
 
-import static org.neo4j.causalclustering.protocol.handshake.StatusCode.FAILURE;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-public class ApplicationProtocolResponse extends BaseProtocolResponse implements ClientMessage
+import org.neo4j.logging.Log;
+
+public class ServerNettyPipelineBuilder extends NettyPipelineBuilder<ProtocolInstaller.Orientation.Server, ServerNettyPipelineBuilder>
 {
-    public static final ApplicationProtocolResponse NO_PROTOCOL = new ApplicationProtocolResponse( FAILURE, "", 0 );
-
-    ApplicationProtocolResponse( StatusCode statusCode, String protocolName, int version )
+    protected ServerNettyPipelineBuilder( ChannelPipeline pipeline, Log log )
     {
-        super( statusCode, protocolName, version );
+        super( pipeline, log );
     }
 
     @Override
-    public void dispatch( ClientMessageHandler handler )
+    public ServerNettyPipelineBuilder addFraming()
     {
-        handler.handle( this );
+        add( "frame_decoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
+        return this;
     }
 }

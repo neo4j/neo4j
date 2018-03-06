@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,11 +26,13 @@ import org.junit.Test;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedure;
+import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedureTest;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.InwardKernel;
@@ -47,12 +48,16 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
-import static org.neo4j.causalclustering.protocol.Protocol.Identifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.COMPRESSION_SNAPPY;
 import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Client.OUTBOUND;
 import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Server.INBOUND;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+/**
+ * @see InstalledProtocolsProcedureTest
+ */
 public class InstalledProtocolsProcedureIT
 {
     @Rule
@@ -73,10 +78,14 @@ public class InstalledProtocolsProcedureIT
     @Test
     public void shouldSeeOutboundInstalledProtocolsOnLeader() throws Throwable
     {
+        String modifiers = new StringJoiner( ",", "[", "]" )
+                .add( COMPRESSION_SNAPPY.friendlyName() )
+                .toString();
+
         ProtocolInfo[] expectedProtocolInfos = cluster.coreMembers()
                 .stream()
                 .filter( member -> !member.equals( leader ) )
-                .map( member -> new ProtocolInfo( OUTBOUND, localhost( member.raftListenAddress() ), RAFT.canonicalName(), 1 ) )
+                .map( member -> new ProtocolInfo( OUTBOUND, localhost( member.raftListenAddress() ), RAFT.canonicalName(), 1, modifiers ) )
                 .toArray( ProtocolInfo[]::new );
 
         assertEventually( "should see outbound installed protocols on core " + leader.serverId(),
@@ -112,9 +121,10 @@ public class InstalledProtocolsProcedureIT
                 String address = localhost( (String) row[1] );
                 String protocol = (String) row[2];
                 long version = (long) row[3];
+                String modifiers = (String) row[4];
                 if ( orientation.equals( wantedOrientation ) )
                 {
-                    infos.add( new ProtocolInfo( orientation, address, protocol, version ) );
+                    infos.add( new ProtocolInfo( orientation, address, protocol, version, modifiers ) );
                 }
             }
         }
@@ -132,13 +142,15 @@ public class InstalledProtocolsProcedureIT
         private final String address;
         private final String protocol;
         private final long version;
+        private final String modifiers;
 
-        private ProtocolInfo( String orientation, String address, String protocol, long version )
+        private ProtocolInfo( String orientation, String address, String protocol, long version, String modifiers )
         {
             this.orientation = orientation;
             this.address = address;
             this.protocol = protocol;
             this.version = version;
+            this.modifiers = modifiers;
         }
 
         @Override
@@ -154,21 +166,21 @@ public class InstalledProtocolsProcedureIT
             }
             ProtocolInfo that = (ProtocolInfo) o;
             return version == that.version && Objects.equals( orientation, that.orientation ) && Objects.equals( address, that.address ) &&
-                    Objects.equals( protocol, that.protocol );
+                    Objects.equals( protocol, that.protocol ) && Objects.equals( modifiers, that.modifiers );
         }
 
         @Override
         public int hashCode()
         {
 
-            return Objects.hash( orientation, address, protocol, version );
+            return Objects.hash( orientation, address, protocol, version, modifiers );
         }
 
         @Override
         public String toString()
         {
             return "ProtocolInfo{" + "orientation='" + orientation + '\'' + ", address='" + address + '\'' + ", protocol='" + protocol + '\'' + ", version=" +
-                    version + '}';
+                    version + ", modifiers='" + modifiers + '\'' + '}';
         }
     }
 }

@@ -56,7 +56,7 @@ public class NettyPipelineBuilderTest
     {
         // given
         RuntimeException ex = new RuntimeException();
-        NettyPipelineBuilder.with( channel.pipeline(), log ).add( "read_handler", new ChannelInboundHandlerAdapter()
+        NettyPipelineBuilder.server( channel.pipeline(), log ).add( "read_handler", new ChannelInboundHandlerAdapter()
         {
             @Override
             public void channelRead( ChannelHandlerContext ctx, Object msg )
@@ -77,7 +77,7 @@ public class NettyPipelineBuilderTest
     {
         // given
         Object msg = new Object();
-        NettyPipelineBuilder.with( channel.pipeline(), log ).install();
+        NettyPipelineBuilder.server( channel.pipeline(), log ).install();
 
         // when
         channel.writeOneInbound( msg );
@@ -91,7 +91,7 @@ public class NettyPipelineBuilderTest
     {
         // given
         Object msg = new Object();
-        NettyPipelineBuilder.with( channel.pipeline(), log ).install();
+        NettyPipelineBuilder.server( channel.pipeline(), log ).install();
 
         // when
         channel.writeAndFlush( msg );
@@ -104,7 +104,7 @@ public class NettyPipelineBuilderTest
     public void shouldLogExceptionOutbound()
     {
         RuntimeException ex = new RuntimeException();
-        NettyPipelineBuilder.with( channel.pipeline(), log ).add( "write_handler", new ChannelOutboundHandlerAdapter()
+        NettyPipelineBuilder.server( channel.pipeline(), log ).add( "write_handler", new ChannelOutboundHandlerAdapter()
         {
             @Override
             public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
@@ -124,7 +124,7 @@ public class NettyPipelineBuilderTest
     public void shouldLogExceptionOutboundWithVoidPromise()
     {
         RuntimeException ex = new RuntimeException();
-        NettyPipelineBuilder.with( channel.pipeline(), log ).add( "write_handler", new ChannelOutboundHandlerAdapter()
+        NettyPipelineBuilder.server( channel.pipeline(), log ).add( "write_handler", new ChannelOutboundHandlerAdapter()
         {
             @Override
             public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
@@ -153,7 +153,7 @@ public class NettyPipelineBuilderTest
                 // handled
             }
         };
-        NettyPipelineBuilder.with( channel.pipeline(), log ).add( "read_handler", handler ).install();
+        NettyPipelineBuilder.server( channel.pipeline(), log ).add( "read_handler", handler ).install();
 
         // when
         channel.writeOneInbound( msg );
@@ -175,7 +175,7 @@ public class NettyPipelineBuilderTest
                 ctx.write( ctx.alloc().buffer() );
             }
         };
-        NettyPipelineBuilder.with( channel.pipeline(), log ).add( "write_handler", encoder ).install();
+        NettyPipelineBuilder.server( channel.pipeline(), log ).add( "write_handler", encoder ).install();
 
         // when
         channel.writeAndFlush( msg );
@@ -185,12 +185,12 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldReInstallWithPreviousGate() throws Exception
+    public void shouldReInstallWithPreviousGate()
     {
         // given
         Object gatedMessage = new Object();
 
-        NettyPipelineBuilder builderA = NettyPipelineBuilder.with( channel.pipeline(), log );
+        ServerNettyPipelineBuilder builderA = NettyPipelineBuilder.server( channel.pipeline(), log );
         builderA.addGate( p -> p == gatedMessage );
         builderA.install();
 
@@ -199,7 +199,7 @@ public class NettyPipelineBuilderTest
                 hasItems( "error_handler_head", NettyPipelineBuilder.MESSAGE_GATE_NAME, "error_handler_tail" ) );
 
         // when
-        NettyPipelineBuilder builderB = NettyPipelineBuilder.with( channel.pipeline(), log );
+        ServerNettyPipelineBuilder builderB = NettyPipelineBuilder.server( channel.pipeline(), log );
         builderB.add( "my_handler", EMPTY_HANDLER );
         builderB.install();
 

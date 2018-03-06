@@ -41,7 +41,7 @@ public class ClientMessageEncodingTest
     private final ServerMessageEncoder encoder = new ServerMessageEncoder();
     private final ClientMessageDecoder decoder = new ClientMessageDecoder();
 
-    private List<Object> encodeDecode( ClientMessage message )
+    private List<Object> encodeDecode( ClientMessage message ) throws ClientHandshakeException
     {
         ByteBuf byteBuf = Unpooled.directBuffer();
         List<Object> output = new ArrayList<>();
@@ -57,7 +57,7 @@ public class ClientMessageEncodingTest
     {
         return Arrays.asList(
                 new ApplicationProtocolResponse( StatusCode.FAILURE, "protocol", 13 ),
-                new ModifierProtocolResponse(),
+                new ModifierProtocolResponse( StatusCode.SUCCESS, "modifier", 7 ),
                 new SwitchOverResponse( StatusCode.FAILURE )
                 );
     }
@@ -68,7 +68,7 @@ public class ClientMessageEncodingTest
     }
 
     @Test
-    public void shouldCompleteEncodingRoundTrip()
+    public void shouldCompleteEncodingRoundTrip() throws ClientHandshakeException
     {
         //when
         List<Object> output = encodeDecode( message );

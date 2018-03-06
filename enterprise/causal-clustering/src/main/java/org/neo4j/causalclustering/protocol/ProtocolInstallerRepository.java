@@ -19,28 +19,37 @@
  */
 package org.neo4j.causalclustering.protocol;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
+import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+
+import static java.util.Collections.unmodifiableMap;
 
 public class ProtocolInstallerRepository<O extends ProtocolInstaller.Orientation>
 {
-    private final Map<Protocol,ProtocolInstaller<O>> installers;
+    private final Map<ApplicationProtocol,ProtocolInstaller.Factory<O,?>> installers;
+    private final Map<ModifierProtocol,ModifierProtocolInstaller<O>> modifiers;
 
-    public ProtocolInstallerRepository( Collection<ProtocolInstaller<O>> installers )
+    public ProtocolInstallerRepository( Collection<ProtocolInstaller.Factory<O, ?>> installers, Collection<ModifierProtocolInstaller<O>> modifiers )
     {
-        Map<Protocol,ProtocolInstaller<O>> tempInstallers = new HashMap<>();
+        Map<ApplicationProtocol,ProtocolInstaller.Factory<O,?>> tempInstallers = new HashMap<>();
+        installers.forEach( installer -> addTo( tempInstallers, installer, installer.applicationProtocol() ) );
+        this.installers = unmodifiableMap( tempInstallers );
 
-        installers.forEach( installer -> addTo( tempInstallers, installer ) );
-
-        this.installers = Collections.unmodifiableMap( tempInstallers );
+        Map<ModifierProtocol,ModifierProtocolInstaller<O>> tempModifierInstallers = new HashMap<>();
+        modifiers.forEach( modifier -> addTo( tempModifierInstallers, modifier, modifier.protocol() ) );
+        this.modifiers = unmodifiableMap( tempModifierInstallers );
     }
 
-    private void addTo( Map<Protocol,ProtocolInstaller<O>> tempServerMap, ProtocolInstaller<O> installer )
+    private <T, P extends Protocol> void addTo( Map<P,T> tempServerMap, T installer, P protocol )
     {
-        Protocol protocol = installer.protocol();
-        ProtocolInstaller old = tempServerMap.put( protocol, installer );
+        T old = tempServerMap.put( protocol, installer );
         if ( old != null )
         {
             throw new IllegalArgumentException(
@@ -49,16 +58,48 @@ public class ProtocolInstallerRepository<O extends ProtocolInstaller.Orientation
         }
     }
 
-    public ProtocolInstaller installerFor( Protocol protocol )
+    public ProtocolInstaller<O> installerFor( ProtocolStack protocolStack )
     {
-        ProtocolInstaller protocolInstaller = installers.get( protocol );
+        ApplicationProtocol applicationProtocol = protocolStack.applicationProtocol();
+        ProtocolInstaller.Factory<O,?> protocolInstaller = installers.get( applicationProtocol );
+
+        ensureKnownProtocol( applicationProtocol, protocolInstaller );
+
+        return protocolInstaller.create( getModifierProtocolInstallers( protocolStack ) );
+    }
+
+    private List<ModifierProtocolInstaller<O>> getModifierProtocolInstallers( ProtocolStack protocolStack )
+    {
+        List<ModifierProtocolInstaller<O>> modifierProtocolInstallers = new ArrayList<>();
+        for ( ModifierProtocol modifierProtocol : protocolStack.modifierProtocols() )
+        {
+            ensureNotDuplicate( modifierProtocolInstallers, modifierProtocol );
+
+            ModifierProtocolInstaller<O> protocolInstaller = modifiers.get( modifierProtocol );
+
+            ensureKnownProtocol( modifierProtocol, protocolInstaller );
+
+            modifierProtocolInstallers.add( protocolInstaller );
+        }
+        return modifierProtocolInstallers;
+    }
+
+    private void ensureNotDuplicate( List<ModifierProtocolInstaller<O>> modifierProtocolInstallers, ModifierProtocol modifierProtocol )
+    {
+        boolean duplicateIdentifier = modifierProtocolInstallers
+                .stream()
+                .anyMatch( installer -> installer.protocol().identifier().equals( modifierProtocol.identifier() ) );
+        if ( duplicateIdentifier )
+        {
+            throw new IllegalArgumentException( "Attempted to install multiple versions of " + modifierProtocol.identifier() );
+        }
+    }
+
+    private void ensureKnownProtocol( Protocol protocol, Object protocolInstaller )
+    {
         if ( protocolInstaller == null )
         {
             throw new IllegalStateException( String.format( "Installer for requested protocol %s does not exist", protocol ) );
-        }
-        else
-        {
-            return protocolInstaller;
         }
     }
 }

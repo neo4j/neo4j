@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 public class ClientMessageDecoder extends ByteToMessageDecoder
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
+    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws ClientHandshakeException
     {
         int messageCode = in.readInt();
 
@@ -48,25 +48,16 @@ public class ClientMessageDecoder extends ByteToMessageDecoder
         }
         case 0:
         {
-            int statusCodeValue = in.readInt();
-            String identifier = StringMarshal.unmarshal( in );
-            int version = in.readInt();
+            ApplicationProtocolResponse applicationProtocolResponse = decodeProtocolResponse( ApplicationProtocolResponse::new, in );
 
-            Optional<StatusCode> statusCode = StatusCode.fromCodeValue( statusCodeValue );
-            if ( statusCode.isPresent() )
-            {
-                out.add( new ApplicationProtocolResponse( statusCode.get(), identifier, version ) );
-            }
-            else
-            {
-                // TODO
-            }
+            out.add( applicationProtocolResponse );
             return;
         }
         case 1:
         {
-            // TODO
-            out.add( new ModifierProtocolResponse() );
+            ModifierProtocolResponse modifierProtocolResponse = decodeProtocolResponse( ModifierProtocolResponse::new, in );
+
+            out.add( modifierProtocolResponse );
             return;
         }
         case 2:
@@ -87,5 +78,26 @@ public class ClientMessageDecoder extends ByteToMessageDecoder
             // TODO
             return;
         }
+    }
+
+    private <T extends BaseProtocolResponse> T decodeProtocolResponse( TriFunction<StatusCode, String, Integer, T> constructor, ByteBuf in )
+            throws ClientHandshakeException
+    {
+        int statusCodeValue = in.readInt();
+        String identifier = StringMarshal.unmarshal( in );
+        int version = in.readInt();
+
+        Optional<StatusCode> statusCode = StatusCode.fromCodeValue( statusCodeValue );
+
+        return statusCode
+                .map( status -> constructor.apply( status, identifier, version ) )
+                .orElseThrow( () -> new ClientHandshakeException(
+                        String.format( "Unknown status code %s for protocol %s version %d", statusCodeValue, identifier, version ) ) );
+    }
+
+    @FunctionalInterface
+    interface TriFunction<T,U,V,W>
+    {
+        W apply( T t, U u, V v );
     }
 }

@@ -19,32 +19,54 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.messaging.Channel;
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.helpers.collection.Pair;
+import org.neo4j.stream.Streams;
 
 import static org.neo4j.causalclustering.protocol.handshake.StatusCode.SUCCESS;
 
-// TODO: modifier protocols
 public class HandshakeClient implements ClientMessageHandler
 {
     private Channel channel;
-    private ProtocolRepository protocolRepository;
-    private ProtocolSelection knownProtocolVersions;
+    private ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository;
+    private ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository;
+    private ProtocolSelection<Protocol.ApplicationProtocol> knownApplicationProtocolVersions;
+    private List<ProtocolSelection<Protocol.ModifierProtocol>> knownModifierProtocolVersions;
+    private Protocol.ApplicationProtocol applicationProtocol;
+    private Map<String,Optional<Protocol.ModifierProtocol>> negotiatedModifierProtocols = new HashMap<>();
     private ProtocolStack protocolStack;
     private CompletableFuture<ProtocolStack> future = new CompletableFuture<>();
     private boolean magicReceived;
 
-    public CompletableFuture<ProtocolStack> initiate( Channel channel, ProtocolRepository protocolRepository, Protocol.Identifier protocol )
+    public CompletableFuture<ProtocolStack> initiate( Channel channel, ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository,
+            Protocol.ApplicationProtocolIdentifier applicationProtocolIdentifier, ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository,
+            Set<Protocol.ModifierProtocolIdentifier> modifierProtocolIdentifiers )
     {
         this.channel = channel;
-        this.protocolRepository = protocolRepository;
-        this.knownProtocolVersions = protocolRepository.getAll( protocol );
+        this.applicationProtocolRepository = applicationProtocolRepository;
+        this.knownApplicationProtocolVersions = applicationProtocolRepository.getAll( applicationProtocolIdentifier );
 
-        channel.write( new InitialMagicMessage() );
-        channel.writeAndFlush( new ApplicationProtocolRequest( knownProtocolVersions.identifier(), knownProtocolVersions.versions() ) );
+        this.modifierProtocolRepository = modifierProtocolRepository;
+        this.knownModifierProtocolVersions = modifierProtocolIdentifiers
+                .stream()
+                .map( modifierProtocolRepository::getAll )
+                .collect( Collectors.toList() );
+
+        channel.write( InitialMagicMessage.instance() );
+
+        knownModifierProtocolVersions.forEach( modifierProtocolSelection ->
+                channel.write( new ModifierProtocolRequest( modifierProtocolSelection.identifier(), modifierProtocolSelection .versions() ) ) );
+
+        channel.writeAndFlush( new ApplicationProtocolRequest( knownApplicationProtocolVersions.identifier(), knownApplicationProtocolVersions.versions() ) );
 
         return future;
     }
@@ -54,6 +76,7 @@ public class HandshakeClient implements ClientMessageHandler
         if ( !magicReceived )
         {
             decline( "Magic value not received." );
+            throw new IllegalStateException( "Magic value not received." );
         }
     }
 
@@ -73,59 +96,85 @@ public class HandshakeClient implements ClientMessageHandler
     public void handle( ApplicationProtocolResponse applicationProtocolResponse )
     {
         ensureMagic();
-
         if ( applicationProtocolResponse.statusCode() != SUCCESS )
         {
             decline( "Unsuccessful application protocol response" );
             return;
         }
-        if ( !knownProtocolVersions.identifier().equals( applicationProtocolResponse.protocolName() ) )
-        {
-            decline( String.format( "Mismatch of protocol name from client %s and server %s",
-                    knownProtocolVersions.identifier(), applicationProtocolResponse.protocolName() ) );
-            return;
-        }
-        if ( knownProtocolVersions.versions().stream().noneMatch( version -> version == applicationProtocolResponse.version() ) )
-        {
-            decline( String.format( "Mismatch of protocol versions for protocol %s from client %s and server %s", knownProtocolVersions.identifier(),
-                    knownProtocolVersions.versions(), applicationProtocolResponse.version() ) );
-            return;
-        }
 
-        Optional<Protocol> protocol = protocolRepository.select( applicationProtocolResponse.protocolName(), applicationProtocolResponse.version() );
+        Optional<Protocol.ApplicationProtocol> protocol =
+                applicationProtocolRepository.select( applicationProtocolResponse.protocolName(), applicationProtocolResponse.version() );
 
         if ( !protocol.isPresent() )
         {
-            throw new IllegalStateException( "Asked protocol must exist in local repository" );
+            decline( String.format(
+                    "Mismatch of application protocols between client and server: Server protocol %s version %d: Client protocol %s versions %s",
+                    applicationProtocolResponse.protocolName(), applicationProtocolResponse.version(),
+                    knownApplicationProtocolVersions.identifier(), knownApplicationProtocolVersions.versions() ) );
         }
+        else
+        {
+            applicationProtocol = protocol.get();
 
-        Protocol applicationProtocol = protocol.get();
-        protocolStack = new ProtocolStack( applicationProtocol );
-
-        channel.writeAndFlush( new SwitchOverRequest( applicationProtocol.identifier(), applicationProtocol.version() ) );
+            sendSwitchOverRequestIfReady();
+        }
     }
 
     @Override
     public void handle( ModifierProtocolResponse modifierProtocolResponse )
     {
         ensureMagic();
-        throw new UnsupportedOperationException( "Not implemented" );
+        if ( modifierProtocolResponse.statusCode() == StatusCode.SUCCESS )
+        {
+            Optional<Protocol.ModifierProtocol> selectedModifierProtocol =
+                    modifierProtocolRepository.select( modifierProtocolResponse.protocolName(), modifierProtocolResponse.version() );
+            negotiatedModifierProtocols.put( modifierProtocolResponse.protocolName(), selectedModifierProtocol );
+        }
+        else
+        {
+            negotiatedModifierProtocols.put( modifierProtocolResponse.protocolName(), Optional.empty() );
+        }
+
+        sendSwitchOverRequestIfReady();
+    }
+
+    private void sendSwitchOverRequestIfReady()
+    {
+        if ( applicationProtocol != null && negotiatedModifierProtocols.size() == knownModifierProtocolVersions.size() )
+        {
+            List<Protocol.ModifierProtocol> agreedModifierProtocols = negotiatedModifierProtocols
+                    .values()
+                    .stream()
+                    .flatMap( Streams::ofOptional )
+                    .collect( Collectors.toList() );
+
+            protocolStack = new ProtocolStack( applicationProtocol, agreedModifierProtocols );
+            List<Pair<String,Integer>> switchOverModifierProtocols =
+                    agreedModifierProtocols
+                            .stream()
+                            .map( protocol -> Pair.of( protocol.identifier(), protocol.version() ) )
+                            .collect( Collectors.toList() );
+
+            channel.writeAndFlush( new SwitchOverRequest( applicationProtocol.identifier(), applicationProtocol.version(), switchOverModifierProtocols ) );
+        }
     }
 
     @Override
     public void handle( SwitchOverResponse response )
     {
         ensureMagic();
-
         if ( protocolStack == null )
         {
             decline( "Attempted to switch over when protocol stack not established" );
-            return;
         }
-
-        // TODO: modifier protocols
-
-        future.complete( protocolStack );
+        else if ( response.status() != StatusCode.SUCCESS )
+        {
+            decline( "Server failed to switch over" );
+        }
+        else
+        {
+            future.complete( protocolStack );
+        }
     }
 
     boolean failIfNotDone( String message )

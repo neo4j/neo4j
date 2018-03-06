@@ -24,40 +24,92 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 
-public enum TestProtocols implements Protocol
+public interface TestProtocols
 {
-    RAFT_1( Identifier.RAFT, 1 ),
-    RAFT_2( Identifier.RAFT, 2 ),
-    RAFT_3( Identifier.RAFT, 3 ),
-    RAFT_4( Identifier.RAFT, 4 ),
-    CATCHUP_1( Identifier.CATCHUP, 1 ),
-    CATCHUP_2( Identifier.CATCHUP, 2 ),
-    CATCHUP_3( Identifier.CATCHUP, 3 ),
-    CATCHUP_4( Identifier.CATCHUP, 4 );
-
-    static Protocol RAFT_LATEST = Stream.of( values() )
-            .filter( protocol -> protocol.identifier().equals( Identifier.RAFT.canonicalName() ) )
-            .max( Comparator.comparing( Protocol::version ) )
-            .get();
-
-    private final int version;
-    private final Identifier identifier;
-
-    TestProtocols( Identifier identifier, int version )
+    static <T extends Protocol> T latest( Protocol.Identifier<T> identifier, T[] values )
     {
-        this.identifier = identifier;
-        this.version = version;
+        return Stream.of( values )
+                .filter( protocol -> protocol.identifier().equals( identifier.canonicalName() ) )
+                .max( Comparator.comparing( T::version ) )
+                .get();
     }
 
-    @Override
-    public String identifier()
+    enum TestApplicationProtocols implements Protocol.ApplicationProtocol
     {
-        return this.identifier.canonicalName();
+        RAFT_1( ApplicationProtocolIdentifier.RAFT, 1 ),
+        RAFT_2( ApplicationProtocolIdentifier.RAFT, 2 ),
+        RAFT_3( ApplicationProtocolIdentifier.RAFT, 3 ),
+        RAFT_4( ApplicationProtocolIdentifier.RAFT, 4 ),
+        CATCHUP_1( ApplicationProtocolIdentifier.CATCHUP, 1 ),
+        CATCHUP_2( ApplicationProtocolIdentifier.CATCHUP, 2 ),
+        CATCHUP_3( ApplicationProtocolIdentifier.CATCHUP, 3 ),
+        CATCHUP_4( ApplicationProtocolIdentifier.CATCHUP, 4 );
+
+        private final int version;
+
+        private final ApplicationProtocolIdentifier identifier;
+        TestApplicationProtocols( ApplicationProtocolIdentifier identifier, int version )
+        {
+            this.identifier = identifier;
+            this.version = version;
+        }
+
+        @Override
+        public String identifier()
+        {
+            return this.identifier.canonicalName();
+        }
+
+        @Override
+        public int version()
+        {
+            return version;
+        }
+
+        static ApplicationProtocol latest( ApplicationProtocolIdentifier identifier )
+        {
+            return TestProtocols.latest( identifier, values() );
+        }
     }
 
-    @Override
-    public int version()
+    enum TestModifierProtocols implements Protocol.ModifierProtocol
     {
-        return version;
+        SNAPPY( ModifierProtocolIdentifier.COMPRESSION, 1, "TestSnappy" ),
+        LZH( ModifierProtocolIdentifier.COMPRESSION, 2, "TestLZH" ),
+        ROT13( ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION, 1, "ROT13" );
+
+        private final int version;
+        private final ModifierProtocolIdentifier identifier;
+        private final String friendlyName;
+
+        TestModifierProtocols( ModifierProtocolIdentifier identifier, int version, String friendlyName )
+        {
+            this.version = version;
+            this.identifier = identifier;
+            this.friendlyName = friendlyName;
+        }
+
+        @Override
+        public String identifier()
+        {
+            return identifier.canonicalName();
+        }
+
+        @Override
+        public int version()
+        {
+            return version;
+        }
+
+        @Override
+        public String friendlyName()
+        {
+            return friendlyName;
+        }
+
+        static ModifierProtocol latest( ModifierProtocolIdentifier identifier )
+        {
+            return TestProtocols.latest( identifier, values() );
+        }
     }
 }

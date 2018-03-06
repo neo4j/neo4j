@@ -56,16 +56,14 @@ public class ServerMessageEncoder extends MessageToByteEncoder<ClientMessage>
         public void handle( ApplicationProtocolResponse applicationProtocolResponse )
         {
             out.writeInt( 0 );
-            out.writeInt( applicationProtocolResponse.statusCode().codeValue() );
-            StringMarshal.marshal( out, applicationProtocolResponse.protocolName() );
-            out.writeInt( applicationProtocolResponse.version() );
+            encodeProtocolResponse( applicationProtocolResponse );
         }
 
         @Override
         public void handle( ModifierProtocolResponse modifierProtocolResponse )
         {
             out.writeInt( 1 );
-            // TODO
+            encodeProtocolResponse( modifierProtocolResponse );
         }
 
         @Override
@@ -73,6 +71,13 @@ public class ServerMessageEncoder extends MessageToByteEncoder<ClientMessage>
         {
             out.writeInt( 2 );
             out.writeInt( switchOverResponse.status().codeValue() );
+        }
+
+        private void encodeProtocolResponse( BaseProtocolResponse protocolResponse )
+        {
+            out.writeInt( protocolResponse.statusCode().codeValue() );
+            StringMarshal.marshal( out, protocolResponse.protocolName() );
+            out.writeInt( protocolResponse.version() );
         }
     }
 }

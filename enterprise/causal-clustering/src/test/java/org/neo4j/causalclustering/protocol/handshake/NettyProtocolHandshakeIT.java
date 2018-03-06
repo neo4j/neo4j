@@ -43,15 +43,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
 import org.neo4j.logging.NullLog;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class NettyProtocolHandshakeIT
 {
-    private ProtocolRepository protocolRepository = new ProtocolRepository( TestProtocols.values() );
+    private ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository =
+            new ProtocolRepository<>( TestApplicationProtocols.values() );
+    private ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository =
+            new ProtocolRepository<>( TestModifierProtocols.values() );
 
     private Server server;
     private HandshakeClient handshakeClient;
@@ -82,11 +89,13 @@ public class NettyProtocolHandshakeIT
     {
         // when
         CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.RAFT );
+                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
+                        Protocol.ApplicationProtocolIdentifier.RAFT, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
 
         // then
         ProtocolStack clientProtocolStack = clientHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_LATEST ) );
+        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( Protocol.ApplicationProtocolIdentifier.RAFT) ) );
+        assertThat( clientProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( Protocol.ModifierProtocolIdentifier.COMPRESSION ) ) );
     }
 
     @Test
@@ -94,21 +103,24 @@ public class NettyProtocolHandshakeIT
     {
         // when
         CompletableFuture<ProtocolStack> clientFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.RAFT );
+                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
+                        Protocol.ApplicationProtocolIdentifier.RAFT, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
         CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
 
         // then
         ProtocolStack serverProtocolStack = serverHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_LATEST ) );
+        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( Protocol.ApplicationProtocolIdentifier.RAFT ) ) );
+        assertThat( serverProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( Protocol.ModifierProtocolIdentifier.COMPRESSION ) ) );
     }
 
     @Test( expected = ClientHandshakeException.class )
     public void shouldFailHandshakeForUnknownProtocolOnClient() throws Throwable
     {
         // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
+        applicationProtocolRepository = new ProtocolRepository<>( new Protocol.ApplicationProtocol[]{Protocol.ApplicationProtocols.RAFT_1} );
         CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.CATCHUP );
+                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
+                        Protocol.ApplicationProtocolIdentifier.CATCHUP, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
 
         // then
         try
@@ -125,9 +137,10 @@ public class NettyProtocolHandshakeIT
     public void shouldFailHandshakeForUnknownProtocolOnServer() throws Throwable
     {
         // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
+        applicationProtocolRepository = new ProtocolRepository<>( new Protocol.ApplicationProtocol[]{Protocol.ApplicationProtocols.RAFT_1} );
         CompletableFuture<ProtocolStack> clientFuture =
-                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.CATCHUP );
+                handshakeClient.initiate( new SimpleNettyChannel( client.channel, NullLog.getInstance() ), applicationProtocolRepository,
+                        Protocol.ApplicationProtocolIdentifier.CATCHUP, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
 
         CompletableFuture<ProtocolStack> serverHandshakeFuture = getServerHandshakeFuture( clientFuture );
 
@@ -148,9 +161,7 @@ public class NettyProtocolHandshakeIT
      */
     private CompletableFuture<ProtocolStack> getServerHandshakeFuture( CompletableFuture<ProtocolStack> clientFuture )
     {
-        return clientFuture
-                .handle( ( ignoreSuccess, ignoreFailure ) -> null )
-                .thenCompose( ignored -> handshakeServer.protocolStackFuture() );
+        return clientFuture.handle( ( ignoreSuccess, ignoreFailure ) -> null ).thenCompose( ignored -> handshakeServer.protocolStackFuture() );
     }
 
     private class Server
@@ -161,21 +172,25 @@ public class NettyProtocolHandshakeIT
         private void start()
         {
             eventLoopGroup = new NioEventLoopGroup();
-            ServerBootstrap bootstrap = new ServerBootstrap().group( eventLoopGroup ).channel( NioServerSocketChannel.class ).option(
-                    ChannelOption.SO_REUSEADDR, true ).localAddress( 0 ).childHandler( new ChannelInitializer<SocketChannel>()
-            {
-                @Override
-                protected void initChannel( SocketChannel ch )
-                {
-                    ChannelPipeline pipeline = ch.pipeline();
-                    pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
-                    pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
-                    pipeline.addLast( "responseMessageEncoder", new ServerMessageEncoder() );
-                    pipeline.addLast( "requestMessageDecoder", new ServerMessageDecoder() );
-                    handshakeServer = new HandshakeServer( new SimpleNettyChannel( ch, NullLog.getInstance() ), protocolRepository, Protocol.Identifier.RAFT );
-                    pipeline.addLast( new NettyHandshakeServer( handshakeServer ) );
-                }
-            } );
+            ServerBootstrap bootstrap = new ServerBootstrap().group( eventLoopGroup )
+                    .channel( NioServerSocketChannel.class )
+                    .option( ChannelOption.SO_REUSEADDR, true )
+                    .localAddress( 0 )
+                    .childHandler( new ChannelInitializer<SocketChannel>()
+                    {
+                        @Override
+                        protected void initChannel( SocketChannel ch )
+                        {
+                            ChannelPipeline pipeline = ch.pipeline();
+                            pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
+                            pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
+                            pipeline.addLast( "responseMessageEncoder", new ServerMessageEncoder() );
+                            pipeline.addLast( "requestMessageDecoder", new ServerMessageDecoder() );
+                            handshakeServer = new HandshakeServer( new SimpleNettyChannel( ch, NullLog.getInstance() ), applicationProtocolRepository,
+                                    modifierProtocolRepository, Protocol.ApplicationProtocolIdentifier.RAFT );
+                            pipeline.addLast( new NettyHandshakeServer( handshakeServer ) );
+                        }
+                    } );
 
             channel = bootstrap.bind().syncUninterruptibly().channel();
         }

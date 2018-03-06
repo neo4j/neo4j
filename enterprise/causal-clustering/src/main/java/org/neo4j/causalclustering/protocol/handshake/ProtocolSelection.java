@@ -21,7 +21,9 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import java.util.Set;
 
-public class ProtocolSelection
+import org.neo4j.causalclustering.protocol.Protocol;
+
+public class ProtocolSelection<T extends Protocol>
 {
     private final String identifier;
     private final Set<Integer> versions;
