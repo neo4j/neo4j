@@ -162,7 +162,7 @@ public interface StorageStatement extends AutoCloseable
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getFreshIndexReader( SchemaIndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Access to low level record cursors

@@ -112,7 +112,7 @@ public class SchemaImpl implements Schema
                 return emptyList();
             }
             Iterator<IndexDescriptor> indexes = statement.readOperations().indexesGetForLabel( labelId );
-            addDefinitions( definitions, statement.readOperations(), SchemaIndexDescriptor.sortByType( indexes ) );
+            addDefinitions( definitions, statement.readOperations(), IndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
     }
@@ -129,11 +129,12 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private IndexDefinition descriptorToDefinition( final ReadOperations statement, SchemaIndexDescriptor index )
+    private IndexDefinition descriptorToDefinition( final ReadOperations statement, IndexDescriptor index )
     {
         try
         {
-            Label label = label( statement.labelGetName( index.schema().getLabelId() ) );
+            //TODO we use zero index here to avoid bleeding into core api. We need to figure out how to deal with the core api in regards to fulltext indexes.
+            Label label = label( statement.labelGetName( index.schema().getEntityTokenIds()[0] ) );
             boolean constraintIndex = index.type() == UNIQUE;
             String[] propertyNames = PropertyNameUtils.getPropertyKeys( statement, index.schema().getPropertyIds() );
             return new IndexDefinitionImpl( actions, label, propertyNames, constraintIndex );
@@ -145,7 +146,7 @@ public class SchemaImpl implements Schema
     }
 
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
-                                 Iterator<SchemaIndexDescriptor> indexes )
+                                 Iterator<IndexDescriptor> indexes )
     {
         addToCollection(
                 map( index -> descriptorToDefinition( statement, index ), indexes ),

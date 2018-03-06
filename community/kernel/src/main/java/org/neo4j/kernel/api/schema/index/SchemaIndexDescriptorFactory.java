@@ -43,10 +43,14 @@ public class SchemaIndexDescriptorFactory
         return uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static SchemaIndexDescriptor forSchema( SchemaDescriptor schema )
+    public static SchemaIndexDescriptor forSchema( LabelSchemaDescriptor schema )
     {
-        //TODO ugly cast
-        return new SchemaIndexDescriptor( (LabelSchemaDescriptor) schema, GENERAL );
+        return new SchemaIndexDescriptor( schema, GENERAL );
+    }
+
+    public static SchemaIndexDescriptor forLabelBySchema( SchemaDescriptor schema )
+    {
+        return forSchema( SchemaDescriptorFactory.forLabel( schema.getEntityTokenIds()[0], schema.getPropertyIds() ) );
     }
 
     public static SchemaIndexDescriptor uniqueForSchema( LabelSchemaDescriptor schema )

@@ -167,4 +167,18 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
     {
         return userDescription( SchemaUtil.idTokenNameLookup );
     }
+
+    /**
+     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
+     * hot path.
+     *
+     * @param indexes Indexes to sort
+     * @return sorted indexes
+     */
+    public static Iterator<IndexDescriptor> sortByType( Iterator<? extends IndexDescriptor> indexes )
+    {
+        List<? extends IndexDescriptor> materialized = Iterators.asList( indexes );
+        return Iterators.concat( Iterators.filter( GENERAL, materialized.iterator() ), Iterators.filter( UNIQUE, materialized.iterator() ) );
+
+    }
 }

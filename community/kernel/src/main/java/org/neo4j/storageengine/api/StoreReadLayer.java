@@ -385,10 +385,10 @@ public interface StoreReadLayer
 
     int relationshipTypeCount();
 
-    DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     boolean nodeExists( long id );

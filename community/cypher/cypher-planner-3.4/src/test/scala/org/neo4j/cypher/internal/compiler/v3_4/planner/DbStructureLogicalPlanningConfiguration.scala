@@ -63,8 +63,9 @@ object DbStructureLogicalPlanningConfiguration {
     }
   }
 
-  private def indexSet(indices: util.Iterator[Pair[String, Array[String]]]): Set[(String, Seq[String])] =
-    indices.asScala.map { pair => pair.first() -> pair.other().to[Seq] }.toSet
+  private def indexSet(indices: util.Iterator[Pair[Array[String], Array[String]]]): Set[(String, Seq[String])] =
+    //TODO we use a zero index here as to not bleed multi-token descriptors into cypher. At least for now.
+    indices.asScala.map { pair => pair.first().apply(0) -> pair.other().to[Seq] }.toSet
 
   private def resolveTokens[T](iterator: util.Iterator[Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]

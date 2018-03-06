@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -242,7 +243,7 @@ public class AllStoreHolder extends Read
     public CapableIndexReference index( int label, int... properties )
     {
         ktx.assertOpen();
-        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( SchemaDescriptorFactory.forLabel( label, properties ) );
         if ( indexDescriptor == null )
         {
             return CapableIndexReference.NO_INDEX;

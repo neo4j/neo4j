@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,7 +37,7 @@ public class IndexPopulationFailedKernelExceptionTest
     public void shouldHandleMultiplePropertiesInConstructor1()
     {
         // Given
-        LabelSchemaDescriptor descriptor = new LabelSchemaDescriptor( 0, 42, 43, 44 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );
         TokenNameLookup lookup = mock( TokenNameLookup.class );
         when( lookup.labelGetName( 0 ) ).thenReturn( "L" );
         when( lookup.propertyKeyGetName( 42 ) ).thenReturn( "FOO" );
@@ -56,7 +57,7 @@ public class IndexPopulationFailedKernelExceptionTest
     public void shouldHandleMultiplePropertiesInConstructor2()
     {
         // Given
-        LabelSchemaDescriptor descriptor = new LabelSchemaDescriptor( 0, 42, 43, 44 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );
         TokenNameLookup lookup = mock( TokenNameLookup.class );
         when( lookup.labelGetName( 0 ) ).thenReturn( "L" );
         when( lookup.propertyKeyGetName( 42 ) ).thenReturn( "FOO" );

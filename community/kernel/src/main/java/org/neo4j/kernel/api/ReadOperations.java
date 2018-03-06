@@ -157,7 +157,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( SchemaIndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
+    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException, IndexNotApplicableKernelException;
 
     long nodesCountIndexed( SchemaIndexDescriptor index, long nodeId, Value value )
@@ -494,10 +494,10 @@ public interface ReadOperations
      */
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
 
-    DoubleLongRegister indexUpdatesAndSize( SchemaIndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( SchemaIndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     //===========================================

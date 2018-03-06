@@ -384,7 +384,7 @@ public class SchemaRuleSerialization
         }
         int[] entityTokenIds = readTokenIdList( source );
         int[] propertyIds = readTokenIdList( source );
-        return new org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor( entityTokenIds, type, propertyIds );
+        return SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
     }
 
     private static int[] readTokenIdList( ByteBuffer source )

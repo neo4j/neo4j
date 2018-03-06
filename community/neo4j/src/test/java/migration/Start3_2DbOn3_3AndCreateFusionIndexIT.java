@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -170,7 +171,7 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
                 propertyKeyIds[i] = read.propertyKeyGetForName( keys[i] );
             }
 
-            IndexDescriptor index = read.indexGetForSchema( new LabelSchemaDescriptor( labelId, propertyKeyIds ) );
+            IndexDescriptor index = read.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
             int count;
             StorageStatement storeStatement = ((KernelStatement)statement).getStoreStatement();
             IndexReader reader = storeStatement.getIndexReader( index );

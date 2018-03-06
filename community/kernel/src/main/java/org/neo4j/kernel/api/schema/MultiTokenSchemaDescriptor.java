@@ -40,7 +40,7 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     private final EntityType entityType;
     private final int[] propertyIds;
 
-    public MultiTokenSchemaDescriptor( int[] entityTokens, EntityType entityType, int[] propertyIds )
+    MultiTokenSchemaDescriptor( int[] entityTokens, EntityType entityType, int[] propertyIds )
     {
         this.entityTokens = entityTokens;
         Arrays.sort( this.entityTokens );

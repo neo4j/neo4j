@@ -267,7 +267,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private void assertIndexOnline( KernelStatement state, SchemaIndexDescriptor schemaIndexDescriptor )
+    private void assertIndexOnline( KernelStatement state, IndexDescriptor schemaIndexDescriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( schemaReadOperations.indexGetState( state, schemaIndexDescriptor ) )
@@ -368,13 +368,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
-            SchemaIndexDescriptor index,
+            IndexDescriptor index,
             ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
+        assertIndexHasOneEntityToken( index.schema() );
         assertIndexOnline( state, index );
         assertPredicatesMatchSchema( index.schema(), predicates );
-        int labelId = index.schema().getLabelId();
+        // This is fine because of the assertion above
+        int labelId = index.schema().getEntityTokenIds()[0];
 
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
         // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
@@ -401,7 +403,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return nodeId;
     }
 
-    private void assertPredicatesMatchSchema( LabelSchemaDescriptor schema, ExactPredicate[] predicates )
+    private void assertIndexHasOneEntityToken( SchemaDescriptor schema ) throws IndexNotApplicableKernelException
+    {
+        if ( schema.getEntityTokenIds().length != 1 )
+        {
+            throw new IndexNotApplicableKernelException( "The index indexes more than one entity token, and is thus not suitable for direct lookups" );
+        }
+    }
+
+    private void assertPredicatesMatchSchema( SchemaDescriptor schema, ExactPredicate[] predicates )
             throws IndexNotApplicableKernelException
     {
         int[] propertyIds = schema.getPropertyIds();

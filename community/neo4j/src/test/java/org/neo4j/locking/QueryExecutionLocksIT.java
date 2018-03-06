@@ -503,7 +503,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public long nodeGetFromUniqueIndexSeek( SchemaIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+        public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
                 throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
         {
             return readOperations.nodeGetFromUniqueIndexSeek( index, predicates );
@@ -906,14 +906,14 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public Register.DoubleLongRegister indexUpdatesAndSize( SchemaIndexDescriptor index,
+        public Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index,
                 Register.DoubleLongRegister target ) throws IndexNotFoundKernelException
         {
             return readOperations.indexUpdatesAndSize( index, target );
         }
 
         @Override
-        public Register.DoubleLongRegister indexSample( SchemaIndexDescriptor index, Register.DoubleLongRegister target )
+        public Register.DoubleLongRegister indexSample( IndexDescriptor index, Register.DoubleLongRegister target )
                 throws IndexNotFoundKernelException
         {
             return readOperations.indexSample( index, target );

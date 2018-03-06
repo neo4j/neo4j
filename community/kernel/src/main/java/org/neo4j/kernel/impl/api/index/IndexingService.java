@@ -40,7 +40,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -564,7 +563,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         return indexMapRef.getIndexProxy( descriptor );
     }
 
-    public long getIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexMapRef.getIndexId( descriptor );
     }

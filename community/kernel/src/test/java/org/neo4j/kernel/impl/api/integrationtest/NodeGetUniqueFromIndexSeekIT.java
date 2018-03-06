@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.values.storable.Value;
@@ -80,13 +81,13 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldFindMatchingNode() throws Exception
     {
         // given
-        SchemaIndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
+        IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
         Value value = Values.of( "value" );
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
-        int propertyId = index.schema().getPropertyId();
+        int propertyId = index.schema().getPropertyIds()[0];
         long foundId = readOperations.nodeGetFromUniqueIndexSeek( index, exact( propertyId, value ) );
         commit();
 
@@ -98,7 +99,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldNotFindNonMatchingNode() throws Exception
     {
         // given
-        SchemaIndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
+        IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
         Value value = Values.of( "value" );
         createNodeWithValue( Values.of( "other_" + value ) );
 
@@ -115,7 +116,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldCompositeFindMatchingNode() throws Exception
     {
         // given
-        SchemaIndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
+        IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
         Value value1 = Values.of( "value1" );
         Value value2 = Values.of( "value2" );
         long nodeId = createNodeWithValues( value1, value2 );
@@ -135,7 +136,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldNotCompositeFindNonMatchingNode() throws Exception
     {
         // given
-        SchemaIndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
+        IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
         Value value1 = Values.of( "value1" );
         Value value2 = Values.of( "value2" );
         createNodeWithValues( Values.of( "other_" + value1 ), Values.of( "other_" + value2 ) );
@@ -171,7 +172,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // assert that we complete before timeout
         final DoubleLatch latch = new DoubleLatch();
 
-        final SchemaIndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
+        final IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
         final Value value = Values.of( "value" );
 
         DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
@@ -246,13 +247,12 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         return nodeId;
     }
 
-    private SchemaIndexDescriptor createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
+    private IndexDescriptor createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
     {
         Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyIds );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        //TODO ugly cast
-        SchemaIndexDescriptor result = (SchemaIndexDescriptor) statement.readOperations().indexGetForSchema( descriptor );
+        IndexDescriptor result = statement.readOperations().indexGetForSchema( descriptor );
         commit();
         return result;
     }

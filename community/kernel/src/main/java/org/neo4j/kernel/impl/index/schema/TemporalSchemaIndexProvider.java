@@ -63,7 +63,7 @@ public class TemporalSchemaIndexProvider extends IndexProvider<SchemaIndexDescri
     @Override
     public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
-        return SchemaIndexDescriptorFactory.forSchema( schema );
+        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,12 +33,13 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
@@ -80,13 +82,13 @@ public class DbStructureCollector implements DbStructureVisitor
             }
 
             @Override
-            public Iterator<Pair<String,String[]>> knownIndices()
+            public Iterator<Pair<String[],String[]>> knownIndices()
             {
                 return regularIndices.iterator();
             }
 
             @Override
-            public Iterator<Pair<String,String[]>> knownUniqueIndices()
+            public Iterator<Pair<String[],String[]>> knownUniqueIndices()
             {
                 return uniqueIndices.iterator();
             }
@@ -192,7 +194,7 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitIndex( SchemaIndexDescriptor descriptor, String userDescription,
+    public void visitIndex( IndexDescriptor descriptor, String userDescription,
                             double uniqueValuesPercentage, long size )
     {
         IndexDescriptorMap indices = descriptor.type() == UNIQUE ? uniqueIndices : regularIndices;
@@ -343,17 +345,17 @@ public class DbStructureCollector implements DbStructureVisitor
         }
     }
 
-    private class IndexDescriptorMap implements Iterable<Pair<String,String[]>>
+    private class IndexDescriptorMap implements Iterable<Pair<String[],String[]>>
     {
         private final String indexType;
-        private final Map<LabelSchemaDescriptor, IndexStatistics> indexMap = new HashMap<>();
+        private final Map<SchemaDescriptor, IndexStatistics> indexMap = new HashMap<>();
 
         IndexDescriptorMap( String indexType )
         {
             this.indexType = indexType;
         }
 
-        public void putIndex( LabelSchemaDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size )
+        public void putIndex( SchemaDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size )
         {
             if ( indexMap.containsKey( descriptor ) )
             {
@@ -372,10 +374,10 @@ public class DbStructureCollector implements DbStructureVisitor
         }
 
         @Override
-        public Iterator<Pair<String,String[]>> iterator()
+        public Iterator<Pair<String[],String[]>> iterator()
         {
-            final Iterator<LabelSchemaDescriptor> iterator = indexMap.keySet().iterator();
-            return new Iterator<Pair<String,String[]>>()
+            final Iterator<SchemaDescriptor> iterator = indexMap.keySet().iterator();
+            return new Iterator<Pair<String[],String[]>>()
             {
                 @Override
                 public boolean hasNext()
@@ -384,13 +386,14 @@ public class DbStructureCollector implements DbStructureVisitor
                 }
 
                 @Override
-                public Pair<String,String[]> next()
+                public Pair<String[],String[]> next()
                 {
                     //TODO: Add support for composite indexes
-                    LabelSchemaDescriptor next = iterator.next();
-                    String label = labels.byIdOrFail( next.getLabelId() );
+                    //TODO: Relationship indexes?
+                    SchemaDescriptor next = iterator.next();
+                    String[] enetityTokens = labels.byIdOrFail( next.getEntityTokenIds() );
                     String[] propertyKeyNames = propertyKeys.byIdOrFail( next.getPropertyIds() );
-                    return Pair.of( label, propertyKeyNames );
+                    return Pair.of( enetityTokens, propertyKeyNames );
                 }
 
                 @Override

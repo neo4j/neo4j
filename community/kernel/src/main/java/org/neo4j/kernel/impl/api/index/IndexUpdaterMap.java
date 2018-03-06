@@ -76,7 +76,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public void close() throws UnderlyingStorageException
     {
-        Set<Pair<IndexDescriptor,UnderlyingStorageException>> exceptions = null;
+        Set<Pair<SchemaDescriptor,UnderlyingStorageException>> exceptions = null;
 
         for ( Map.Entry<SchemaDescriptor,IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
@@ -91,7 +91,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
                 {
                     exceptions = new HashSet<>();
                 }
-                exceptions.add( Pair.of( SchemaIndexDescriptorFactory.forSchema( updaterEntry.getKey() ),
+                exceptions.add( Pair.of( updaterEntry.getKey(),
                         new UnderlyingStorageException( e ) ) );
             }
         }

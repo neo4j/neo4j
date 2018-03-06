@@ -109,7 +109,6 @@ import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.function.Predicates.any;
-import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -839,7 +838,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public long nodeGetFromUniqueIndexSeek(
-            KernelStatement state, SchemaIndexDescriptor index, IndexQuery.ExactPredicate... query )
+            KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
@@ -1324,14 +1323,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, SchemaIndexDescriptor index,
+    public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, IndexDescriptor index,
             DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
         return storeLayer.indexUpdatesAndSize( index.schema(), target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( KernelStatement statement, SchemaIndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return storeLayer.indexSample( index.schema(), target );

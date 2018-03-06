@@ -238,7 +238,7 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( SchemaIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+    public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
@@ -1316,7 +1316,7 @@ public class OperationsFacade
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( SchemaIndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -1324,7 +1324,7 @@ public class OperationsFacade
     }
 
     @Override
-    public DoubleLongRegister indexSample( SchemaIndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();

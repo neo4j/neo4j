@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -213,7 +214,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
             entityTokenIds = Arrays.stream( entityTokens ).mapToInt( relationshipTypeTokenHolder::getOrCreateId ).toArray();
         }
         int[] propertyIds = Arrays.stream( properties ).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
-        return indexDescriptorFor( new MultiTokenSchemaDescriptor( entityTokenIds, type, propertyIds ), name, analyzerClassName );
+        return indexDescriptorFor( SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds ), name, analyzerClassName );
     }
 
     @Override

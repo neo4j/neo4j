@@ -99,7 +99,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     @Override
     public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
-        return SchemaIndexDescriptorFactory.forSchema( schema );
+        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
 
     @Override

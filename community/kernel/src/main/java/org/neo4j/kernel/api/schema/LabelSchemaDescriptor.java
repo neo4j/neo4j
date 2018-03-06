@@ -35,7 +35,7 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     private final int labelId;
     private final int[] propertyIds;
 
-    public LabelSchemaDescriptor( int labelId, int... propertyIds )
+    LabelSchemaDescriptor( int labelId, int... propertyIds )
     {
         this.labelId = labelId;
         this.propertyIds = propertyIds;

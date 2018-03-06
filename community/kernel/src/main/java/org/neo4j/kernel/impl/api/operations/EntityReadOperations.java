@@ -66,7 +66,7 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
-    long nodeGetFromUniqueIndexSeek( KernelStatement state, SchemaIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException;
 
     long nodesCountIndexed( KernelStatement statement, SchemaIndexDescriptor index, long nodeId, Value value )
