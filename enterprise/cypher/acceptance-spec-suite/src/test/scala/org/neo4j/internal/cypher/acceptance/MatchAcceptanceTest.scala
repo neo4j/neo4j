@@ -931,4 +931,11 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.toList should equal(List.empty)
   }
+
+  test("Reduce and concat gh #10978") {
+
+    // Fixed in 3.2.10
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Version3_2, "RETURN REDUCE(s = 0, p in [5,8,2,9] + [1,2] | s + p) as num")
+    result.toList should be(List(Map("num" -> 27)))
+  }
 }

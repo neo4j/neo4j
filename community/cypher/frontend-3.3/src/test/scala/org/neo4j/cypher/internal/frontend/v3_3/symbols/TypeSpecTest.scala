@@ -246,8 +246,9 @@ class TypeSpecTest extends CypherFunSuite {
     (CTFloat | CTInteger).coercions should equal(CTFloat.invariant)
     CTList(CTAny).covariant.coercions should equal(CTBoolean.invariant)
     TypeSpec.exact(CTList(CTPath)).coercions should equal(CTBoolean.invariant)
-    TypeSpec.all.coercions should equal(CTBoolean | CTFloat)
     CTList(CTAny).covariant.coercions should equal(CTBoolean.invariant)
+    TypeSpec.all.coercions should equal(TypeSpec.none)
+    CTInteger.contravariant.coercions should equal(TypeSpec.none)
   }
 
   test("should intersect with coercions") {
