@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
+import org.neo4j.storageengine.api.EntityType;
 
 import static java.util.Collections.singletonMap;
 
@@ -47,14 +48,14 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
 {
     private final Analyzer analyzer;
     private final String identifier;
-    private final FulltextIndexType type;
+    private final EntityType type;
     private Set<String> properties;
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
-            String identifier, FulltextIndexType type )
+            String identifier, EntityType type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );

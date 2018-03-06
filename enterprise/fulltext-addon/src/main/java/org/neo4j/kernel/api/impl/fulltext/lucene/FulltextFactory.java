@@ -31,9 +31,7 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.storageengine.api.EntityType;
 
 public class FulltextFactory
 {
@@ -77,12 +75,7 @@ public class FulltextFactory
     public LuceneFulltext createFulltextIndex( long indexId, FulltextIndexDescriptor descriptor )
     {
         PartitionedIndexStorage storage = indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
-        return new LuceneFulltext( storage, partitionFactory, descriptor.propertyNames(), analyzer, descriptor.identifier(), getType( descriptor ) );
-    }
-
-    private static FulltextIndexType getType( IndexDescriptor descriptor )
-    {
-        return descriptor.schema().entityType() == EntityType.NODE ? FulltextIndexType.NODES : FulltextIndexType.RELATIONSHIPS;
+        return new LuceneFulltext( storage, partitionFactory, descriptor.propertyNames(), analyzer, descriptor.identifier(), descriptor.schema().entityType() );
     }
 
     public String getStoredIndexFailure( long indexId )
