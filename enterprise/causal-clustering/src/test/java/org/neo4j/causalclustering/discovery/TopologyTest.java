@@ -126,6 +126,15 @@ public class TopologyTest
         {
             return members;
         }
+
+        @Override
+        public Topology<ReadReplicaInfo> filterTopologyByDb( String dbName )
+        {
+            Map<MemberId, ReadReplicaInfo> newMembers = this.members.entrySet().stream()
+                    .filter( e -> e.getValue().getDatabaseName().equals( dbName ) )
+                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+            return new TestTopology( newMembers );
+        }
     }
 
     private Map<MemberId,ReadReplicaInfo> randomMembers( int quantity )

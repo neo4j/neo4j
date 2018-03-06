@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -100,8 +101,8 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
     {
         Policy policy = policies.selectFor( context );
 
-        CoreTopology coreTopology = topologyService.coreServers();
-        ReadReplicaTopology rrTopology = topologyService.readReplicas();
+        CoreTopology coreTopology = topologyService.localCoreServers();
+        ReadReplicaTopology rrTopology = topologyService.localReadReplicas();
 
         return new LoadBalancingResult( routeEndpoints( coreTopology ), writeEndpoints( coreTopology ),
                 readEndpoints( coreTopology, rrTopology, policy ), timeToLive );
@@ -115,6 +116,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
 
     private List<Endpoint> writeEndpoints( CoreTopology cores )
     {
+
         MemberId leader;
         try
         {
@@ -134,6 +136,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
 
     private List<Endpoint> readEndpoints( CoreTopology coreTopology, ReadReplicaTopology rrTopology, Policy policy )
     {
+
         Set<ServerInfo> possibleReaders = rrTopology.members().entrySet().stream()
                 .map( entry -> new ServerInfo( entry.getValue().connectors().boltAddress(), entry.getKey(),
                         entry.getValue().groups() ) )

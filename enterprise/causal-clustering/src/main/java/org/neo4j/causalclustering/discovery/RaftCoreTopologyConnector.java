@@ -22,28 +22,31 @@ package org.neo4j.causalclustering.discovery;
 import java.util.Set;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
-import org.neo4j.causalclustering.core.consensus.RaftMachine.BootstrapException;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
- * Makes the Raft aware of changes to the core topology.
+ * Makes the Raft aware of changes to the core topology and visa versa
  */
-public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreTopologyService.Listener
+public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreTopologyService.Listener, Listener<MemberId>
 {
     private final CoreTopologyService coreTopologyService;
     private final RaftMachine raftMachine;
+    private final String dbName;
 
-    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine )
+    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine, String dbName )
     {
         this.coreTopologyService = coreTopologyService;
         this.raftMachine = raftMachine;
+        this.dbName = dbName;
     }
 
     @Override
     public void start()
     {
         coreTopologyService.addCoreTopologyListener( this );
+        raftMachine.registerListener( this );
     }
 
     @Override
@@ -51,5 +54,19 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     {
         Set<MemberId> targetMembers = coreTopology.members().keySet();
         raftMachine.setTargetMembershipSet( targetMembers );
+    }
+
+    @Override
+    public void receive( MemberId notification )
+    {
+        //TODO: Create LeaderListener interface implementing Listener<MemberId>
+        //Don't like this pattern as its not clear form the api that receive() is called from raftMachine.
+        coreTopologyService.setLeader( notification, dbName, raftMachine.term() );
+    }
+
+    @Override
+    public String dbName()
+    {
+        return this.dbName;
     }
 }

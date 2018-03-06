@@ -61,7 +61,7 @@ public class RestartIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.removeCoreMemberWithServerId( 0 );
         cluster.addCoreMemberWithId( 0 ).start();
 
         // then
@@ -75,7 +75,7 @@ public class RestartIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.removeCoreMemberWithServerId( 1 );
         cluster.addCoreMemberWithId( 1 ).start();
 
         // then
@@ -112,7 +112,7 @@ public class RestartIT
         } );
         Thread.sleep( 500 );
 
-        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.removeCoreMemberWithServerId( 1 );
         cluster.addCoreMemberWithId( 1 ).start();
         Thread.sleep( 500 );
 

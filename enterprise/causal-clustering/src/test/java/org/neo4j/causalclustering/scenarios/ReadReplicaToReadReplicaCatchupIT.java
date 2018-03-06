@@ -31,7 +31,6 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -60,7 +59,7 @@ public class ReadReplicaToReadReplicaCatchupIT
                     .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
                     .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" )
                     .withSharedReadReplicaParam( CausalClusteringSettings.multi_dc_license, "true" )
-                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+                    .withDiscoveryServiceType( DiscoveryServiceType.HAZELCAST );
 
     @Test
     public void shouldEventuallyPullTransactionAcrossReadReplicas() throws Throwable

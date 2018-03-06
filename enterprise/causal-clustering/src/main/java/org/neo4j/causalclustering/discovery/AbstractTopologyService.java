@@ -17,11 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery.procedures;
+package org.neo4j.causalclustering.discovery;
 
-public enum Role
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+public abstract class AbstractTopologyService extends LifecycleAdapter implements TopologyService
 {
-    LEADER,
-    FOLLOWER,
-    READ_REPLICA
+
+    @Override
+    public CoreTopology localCoreServers()
+    {
+        return allCoreServers().filterTopologyByDb( localDBName() );
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return allReadReplicas().filterTopologyByDb( localDBName() );
+    }
 }

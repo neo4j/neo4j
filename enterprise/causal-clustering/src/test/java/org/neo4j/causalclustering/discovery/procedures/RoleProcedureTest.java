@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.discovery.procedures;
 
 import org.junit.Test;
 
+import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.helpers.collection.Iterators;
@@ -46,7 +47,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null, null );
 
         // then
-        assertEquals( Role.LEADER.name(), single( result )[0]);
+        assertEquals( RoleInfo.LEADER.name(), single( result )[0]);
     }
 
     @Test
@@ -61,7 +62,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null, null );
 
         // then
-        assertEquals( Role.FOLLOWER.name(), single( result )[0]);
+        assertEquals( RoleInfo.FOLLOWER.name(), single( result )[0]);
     }
 
     @Test
@@ -74,7 +75,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null, null );
 
         // then
-        assertEquals( Role.READ_REPLICA.name(), single( result )[0]);
+        assertEquals( RoleInfo.READ_REPLICA.name(), single( result )[0]);
     }
 
     private Object[] single( RawIterator<Object[], ProcedureException> result ) throws ProcedureException
