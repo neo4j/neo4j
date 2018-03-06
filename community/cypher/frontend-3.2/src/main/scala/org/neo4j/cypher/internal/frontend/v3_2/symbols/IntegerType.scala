@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.frontend.v3_2.symbols
 object IntegerType {
   val instance = new IntegerType() {
     val parentType = CTNumber
-    override lazy val coercibleTo: Set[CypherType] = Set(CTFloat)
+    override lazy val coercibleTo: Set[CypherType] = Set(CTFloat) ++ parentType.coercibleTo
     override val toString = "Integer"
     override val toNeoTypeString = "INTEGER?"
 
