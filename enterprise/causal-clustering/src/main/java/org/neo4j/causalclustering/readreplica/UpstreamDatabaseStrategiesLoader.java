@@ -44,7 +44,7 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
     private final Log log;
     private final LogProvider logProvider;
 
-    UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config, MemberId myself, LogProvider logProvider )
+    public UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config, MemberId myself, LogProvider logProvider )
     {
         this.topologyService = topologyService;
         this.config = config;

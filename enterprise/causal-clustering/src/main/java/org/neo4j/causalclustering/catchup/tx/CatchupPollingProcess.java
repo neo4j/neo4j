@@ -96,6 +96,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final BatchingTxApplier applier;
     private final PullRequestMonitor pullRequestMonitor;
     private final TopologyService topologyService;
+    private final CatchupAddressProvider addressProvider;
 
     private Timer timer;
     private volatile State state = TX_PULLING;
@@ -105,7 +106,8 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
             UpstreamDatabaseStrategySelector selectionStrategy, TimerService timerService, long txPullIntervalMillis, BatchingTxApplier applier,
-            Monitors monitors, StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier, TopologyService topologyService )
+            Monitors monitors, StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier, TopologyService topologyService,
+            CatchupAddressProvider addressProvider )
 
     {
         this.localDatabase = localDatabase;
@@ -120,6 +122,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         this.storeCopyProcess = storeCopyProcess;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.topologyService = topologyService;
+        this.addressProvider = addressProvider;
     }
 
     @Override
@@ -332,10 +335,9 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         try
         {
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
-            storeCopyProcess.replaceWithStoreFrom( CatchupAddressProvider.fromSingleAddress( fromAddress ), localStoreId );
+            storeCopyProcess.replaceWithStoreFrom( addressProvider, localStoreId );
         }
-        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException | TopologyLookupException e )
+        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
         {
             log.warn( format( "Error copying store from: %s. Will retry shortly.", upstream ) );
             return;

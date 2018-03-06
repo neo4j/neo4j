@@ -21,8 +21,12 @@ package org.neo4j.causalclustering.core.state.snapshot;
 
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -32,18 +36,20 @@ class PersistentSnapshotDownloader implements Runnable
     static final String OPERATION_NAME = "download of snapshot";
 
     private final CommandApplicationProcess applicationProcess;
-    private final CatchupAddressProvider addressProvider;
+    private final CatchupAddressProvider groupAddressProvider;
+    private final CatchupAddressProvider leadAddressProvider;
     private final CoreStateDownloader downloader;
     private final Log log;
     private final TimeoutStrategy.Timeout timeout;
     private volatile State state;
     private volatile boolean keepRunning;
 
-    PersistentSnapshotDownloader( CatchupAddressProvider addressProvider, CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log,
-            TimeoutStrategy.Timeout pauseStrategy )
+    PersistentSnapshotDownloader( CatchupAddressProvider groupAddressProvider, CommandApplicationProcess applicationProcess, CoreStateDownloader downloader,
+            Log log, TimeoutStrategy.Timeout pauseStrategy, CatchupAddressProvider leadNodeAddressProvider )
     {
         this.applicationProcess = applicationProcess;
-        this.addressProvider = addressProvider;
+        this.groupAddressProvider = groupAddressProvider;
+        this.leadAddressProvider = leadNodeAddressProvider;
         this.downloader = downloader;
         this.log = log;
         this.timeout = pauseStrategy;
@@ -73,7 +79,8 @@ class PersistentSnapshotDownloader implements Runnable
             {
                 try
                 {
-                    downloader.downloadSnapshot( addressProvider );
+                    IdentityMetaData leadNode = leadAddressProvider.get();
+                    downloader.downloadSnapshot( groupAddressProvider, leadNode );
                     break;
                 }
                 catch ( StoreCopyFailedException e )

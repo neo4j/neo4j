@@ -54,13 +54,15 @@ public class StoreCopyClient
     {
         try
         {
-            PrepareStoreCopyResponse prepareStoreCopyResponse = listFiles( catchupAddressProvider.primary(), expectedStoreId, storeFileStreams );
+            AdvertisedSocketAddress fromAddress = catchupAddressProvider.get().getAddress();
+            log.info( "Listing and acquiring files from", fromAddress );
+            PrepareStoreCopyResponse prepareStoreCopyResponse = listFiles( fromAddress, expectedStoreId, storeFileStreams );
             copyFilesIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreams, requestWiseTerminationCondition );
             copyIndexSnapshotIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreams,
                     requestWiseTerminationCondition );
             return prepareStoreCopyResponse.lastTransactionId();
         }
-        catch ( CatchupAddressResolutionException | CatchUpClientException e )
+        catch ( CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
         }
@@ -79,13 +81,13 @@ public class StoreCopyClient
             {
                 try
                 {
-                    AdvertisedSocketAddress from = addressProvider.primary();
+                    AdvertisedSocketAddress from = addressProvider.get().getAddress();
                     log.info( String.format( "Downloading file '%s' from '%s'", file, from ) );
                     StoreCopyFinishedResponse response =
                             catchUpClient.makeBlockingRequest( from, new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), copyHandler );
                     successful = successfulFileDownload( response );
                 }
-                catch ( CatchUpClientException | CatchupAddressResolutionException e )
+                catch ( CatchUpClientException e )
                 {
                     successful = false;
                 }
@@ -113,14 +115,14 @@ public class StoreCopyClient
             {
                 try
                 {
-                    AdvertisedSocketAddress from = addressProvider.primary();
+                    AdvertisedSocketAddress from = addressProvider.get().getAddress();
                     log.info( String.format( "Downloading snapshot '%s' from '%s'", descriptor, from ) );
                     StoreCopyFinishedResponse response =
                             catchUpClient.makeBlockingRequest( from, new GetIndexFilesRequest( expectedStoreId, descriptor, lastTransactionId ),
                                     copyHandler );
                     successful = successfulFileDownload( response );
                 }
-                catch ( CatchUpClientException | CatchupAddressResolutionException e )
+                catch ( CatchUpClientException e )
                 {
                     successful = false;
                 }

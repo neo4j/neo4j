@@ -60,15 +60,14 @@ public class CoreStateDownloaderTest
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private CoreSnapshotService snapshotService = mock( CoreSnapshotService.class );
-    private TopologyService topologyService = mock( TopologyService.class );
     private CommitStateHelper commitStateHelper = mock( CommitStateHelper.class );
     private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
 
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
 
-    private final MemberId remoteMember = new MemberId( UUID.randomUUID() );
     private final AdvertisedSocketAddress remoteAddress = new AdvertisedSocketAddress( "remoteAddress", 1234 );
-    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( remoteAddress );
+    private final IdentityMetaData identityMetaData = new IdentityMetaData( null, null, null, null, null ); // TODO
+    private final CatchupAddressProvider catchupAddressProvider = () -> identityMetaData;
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final File storeDir = new File( "graph.db" );
 
@@ -81,7 +80,6 @@ public class CoreStateDownloaderTest
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
-        when( topologyService.findCatchupAddress( remoteMember ) ).thenReturn( Optional.of( remoteAddress ) );
     }
 
     @Test
@@ -93,7 +91,7 @@ public class CoreStateDownloaderTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( catchupAddressProvider, identityMetaData );
 
         // then
         verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), anyBoolean() );
@@ -107,7 +105,7 @@ public class CoreStateDownloaderTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( catchupAddressProvider, identityMetaData );
 
         // then
         verify( startStopLife ).stop();
@@ -127,7 +125,7 @@ public class CoreStateDownloaderTest
         // when
         try
         {
-            downloader.downloadSnapshot( catchupAddressProvider );
+            downloader.downloadSnapshot( catchupAddressProvider, identityMetaData );
             fail();
         }
         catch ( StoreCopyFailedException e )
@@ -149,7 +147,7 @@ public class CoreStateDownloaderTest
         when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( catchupAddressProvider, identityMetaData );
 
         // then
         verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false );
@@ -165,7 +163,7 @@ public class CoreStateDownloaderTest
         when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) ).thenReturn( E_TRANSACTION_PRUNED );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( catchupAddressProvider, identityMetaData );
 
         // then
         verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false );

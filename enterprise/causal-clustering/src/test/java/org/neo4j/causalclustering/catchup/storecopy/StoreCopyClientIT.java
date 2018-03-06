@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.core.state.snapshot.IdentityMetaData;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -115,7 +116,7 @@ public class StoreCopyClientIT
         InMemoryFileSystemStream storeFileStream = new InMemoryFileSystemStream();
 
         // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServerRule.getPort() ) );
+        CatchupAddressProvider catchupAddressProvider = () -> from( catchupServerRule.getPort() );
         subject.copyStoreFiles( catchupAddressProvider, catchupServerRule.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
 
         // then the catchup is successful
@@ -139,7 +140,7 @@ public class StoreCopyClientIT
         InMemoryFileSystemStream clientStoreFileStream = new InMemoryFileSystemStream();
 
         // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServerRule.getPort() ) );
+        CatchupAddressProvider catchupAddressProvider = () -> from( catchupServerRule.getPort() );
         subject.copyStoreFiles( catchupAddressProvider, catchupServerRule.getStoreId(), clientStoreFileStream, () -> defaultTerminationCondition );
 
         // then the catchup is successful
@@ -171,7 +172,7 @@ public class StoreCopyClientIT
         fileB.setRemainingNoResponse( 1 );
 
         // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServerRule.getPort() ) );
+        CatchupAddressProvider catchupAddressProvider = () -> from( catchupServerRule.getPort() );
         subject.copyStoreFiles( catchupAddressProvider, catchupServerRule.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
 
         // then the catchup is possible to complete
@@ -185,9 +186,9 @@ public class StoreCopyClientIT
         assertEquals( 1, catchupServerRule.getRequestCount( fileA.getFilename() ) );
     }
 
-    private static AdvertisedSocketAddress from( int port )
+    private static IdentityMetaData from( int port )
     {
-        return new AdvertisedSocketAddress( "localhost", port );
+        return new IdentityMetaData( new AdvertisedSocketAddress( "localhost", port ), null, null, null, null );
     }
 
     private File relative( String filename )

@@ -24,9 +24,8 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
-import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
-import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
@@ -134,14 +133,16 @@ public class RemoteStore
             // Even for cluster store copy, we still write the transaction logs into the store directory itself
             // because the destination directory is temporary. We will copy them to the correct place later.
             boolean keepTxLogsInStoreDir = true;
+            AdvertisedSocketAddress fromAddress = addressProvider.get().getAddress();
+            log.info( "Pulling transactions from %s", fromAddress );
             CatchupResult catchupResult =
-                    pullTransactions( addressProvider.primary(), expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
+                    pullTransactions( fromAddress, expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
             }
         }
-        catch ( CatchupAddressResolutionException | IOException e )
+        catch ( IOException e )
         {
             throw new StoreCopyFailedException( e );
         }

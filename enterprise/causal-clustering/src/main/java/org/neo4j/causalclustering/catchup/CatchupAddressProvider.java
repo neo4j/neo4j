@@ -19,96 +19,45 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
-import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.state.snapshot.IdentityMetaData;
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
-/**
- * Address provider for catchup client.
- */
-public interface CatchupAddressProvider
+@FunctionalInterface
+public interface CatchupAddressProvider extends Supplier<IdentityMetaData>
 {
-    /**
-     * @return The address to the primary location where up to date requests are required. For a cluster aware provider the obvious choice would be the
-     * leader address.
-     * @throws CatchupAddressResolutionException if the provider was unable to find an address to this location.
-     */
-    AdvertisedSocketAddress primary() throws CatchupAddressResolutionException;
-
-    /**
-     * @return The address to a secondary location that are not required to be up to date. If there are multiple secondary locations it is recommended to
-     * do some simple load balancing for returned addresses. This is to avoid re-sending failed requests to the same instance immediately.
-     * @throws CatchupAddressResolutionException if the provider was unable to find an address to this location.
-     */
-    AdvertisedSocketAddress secondary() throws CatchupAddressResolutionException;
-
-    class SingleAddressProvider implements CatchupAddressProvider
+    class TopologyCatchupAddressProvider implements CatchupAddressProvider
     {
-        private final AdvertisedSocketAddress socketAddress;
+        UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector;
+        TopologyService topologyService;
 
-        public SingleAddressProvider( AdvertisedSocketAddress socketAddress )
+        public TopologyCatchupAddressProvider( UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector )
         {
-            this.socketAddress = socketAddress;
+            this.upstreamDatabaseStrategySelector = upstreamDatabaseStrategySelector;
         }
 
         @Override
-        public AdvertisedSocketAddress primary()
-        {
-            return socketAddress;
-        }
-
-        @Override
-        public AdvertisedSocketAddress secondary()
-        {
-            return socketAddress;
-        }
-    }
-
-    class TopologyBasedAddressProvider implements CatchupAddressProvider
-    {
-        private final RaftMachine raftMachine;
-        private final TopologyService topologyService;
-
-        public TopologyBasedAddressProvider( RaftMachine raftMachine, TopologyService topologyService )
-        {
-            this.raftMachine = raftMachine;
-            this.topologyService = topologyService;
-        }
-
-        @Override
-        public AdvertisedSocketAddress primary() throws CatchupAddressResolutionException
+        public IdentityMetaData get()
         {
             try
             {
-                MemberId leadMember = raftMachine.getLeader();
-                return topologyService.findCatchupAddress( leadMember ).orElseThrow( () -> new CatchupAddressResolutionException( leadMember ) );
+                MemberId who = upstreamDatabaseStrategySelector.bestUpstreamDatabase();
+                AdvertisedSocketAddress address =
+                        topologyService.findCatchupAddress( who ).orElseThrow( () -> new RuntimeException( new TopologyLookupException( who ) ) );
+                ClusterId clusterId = topologyService.coreServers().clusterId();
+                return new IdentityMetaData( address, clusterId, null, who, null );
             }
-            catch ( NoLeaderFoundException e )
+            catch ( UpstreamDatabaseSelectionException e )
             {
-                throw new CatchupAddressResolutionException( e );
+                throw new RuntimeException( e );
             }
         }
-
-        @Override
-        public AdvertisedSocketAddress secondary() throws CatchupAddressResolutionException
-        {
-            List<MemberId> potentialCoresAndReplicas = new ArrayList<>( raftMachine.votingMembers() );
-            potentialCoresAndReplicas.addAll( raftMachine.replicationMembers() );
-            int accountForRoundingDown = 1;
-            MemberId randomlySelectedCatchupServer =
-                    potentialCoresAndReplicas.get( (int) (Math.random() * potentialCoresAndReplicas.size() + accountForRoundingDown) );
-            return topologyService.findCatchupAddress( randomlySelectedCatchupServer ).orElseThrow(
-                    () -> new CatchupAddressResolutionException( randomlySelectedCatchupServer ) );
-        }
-    }
-
-    static CatchupAddressProvider fromSingleAddress( AdvertisedSocketAddress advertisedSocketAddress )
-    {
-        return new SingleAddressProvider( advertisedSocketAddress );
     }
 }

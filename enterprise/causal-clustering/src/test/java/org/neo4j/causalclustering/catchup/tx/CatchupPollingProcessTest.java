@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.CountingTimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.core.state.snapshot.IdentityMetaData;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -82,7 +83,8 @@ public class CatchupPollingProcessTest
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
     private final TopologyService topologyService = mock( TopologyService.class );
     private final AdvertisedSocketAddress coreMemberAddress = new AdvertisedSocketAddress( "hostname", 1234 );
-    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( coreMemberAddress );
+    private final IdentityMetaData identityMetaData = new IdentityMetaData( null, null, null, null, null );
+    private final CatchupAddressProvider catchupAddressProvider = () -> identityMetaData;
 
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
@@ -93,7 +95,8 @@ public class CatchupPollingProcessTest
 
     private final CatchupPollingProcess txPuller =
             new CatchupPollingProcess( NullLogProvider.getInstance(), localDatabase, startStopOnStoreCopy, catchUpClient, strategyPipeline, timerService,
-                    txPullIntervalMillis, txApplier, new Monitors(), storeCopyProcess, () -> mock( DatabaseHealth.class ), topologyService );
+                    txPullIntervalMillis, txApplier, new Monitors(), storeCopyProcess, () -> mock( DatabaseHealth.class ), topologyService,
+                    catchupAddressProvider );
 
     @Before
     public void before() throws Throwable

@@ -131,6 +131,6 @@ public class BackupDelegatorTest
         verify( remoteStore ).copy( argumentCaptor.capture(), eq( storeId ), eq( anyFile.toFile() ) );
 
         //and
-        assertEquals( anyAddress, argumentCaptor.getValue().primary() );
+        assertEquals( anyAddress, argumentCaptor.getValue().get() );
     }
 }

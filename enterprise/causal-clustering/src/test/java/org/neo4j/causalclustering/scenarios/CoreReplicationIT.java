@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,8 +39,10 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
+import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -62,7 +65,8 @@ public class CoreReplicationIT
             new ClusterRule()
                     .withNumberOfCoreMembers( 3 )
                     .withNumberOfReadReplicas( 0 )
-                    .withTimeout( 1000, SECONDS );
+                    .withSharedCoreParam( GraphDatabaseSettings.store_internal_log_level, "DEBUG" )
+                    .withTimeout( 100, SECONDS );
 
     private Cluster cluster;
 
@@ -354,5 +358,26 @@ public class CoreReplicationIT
         cluster.shutdown();
         // ... and the thread running the tx does not get stuck
         thread.join( TimeUnit.MINUTES.toMillis( 1 ) );
+    }
+
+    @Test
+    public void coresHaveOptionToCatchupFromLeader() throws TimeoutException
+    {
+        // given a cluster has data
+        cluster.awaitLeader();
+        cluster.getDbWithRole( Role.LEADER ).database().getGraphDatabase().createNode();
+
+        // and cores taken down to avoid leader election
+        cluster.getDbWithRole( Role.LEADER ).shutdown();
+        cluster.awaitLeader().shutdown(); // Only one left
+        Collection<CoreClusterMember> lastCoreCollection = cluster.coreMembers();
+        assertEquals( 1, lastCoreCollection.size() );
+
+        // when catchup from new core
+        CoreClusterMember freshCore = cluster.addCoreMemberWithId( 0 );
+        freshCore.start();
+
+        // then core catches up from followers
+        dataMatchesEventually( freshCore, lastCoreCollection );
     }
 }

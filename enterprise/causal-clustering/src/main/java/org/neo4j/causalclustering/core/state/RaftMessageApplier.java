@@ -38,17 +38,17 @@ public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.
     private final RaftMachine raftMachine;
     private final CoreStateDownloaderService downloadService;
     private final CommandApplicationProcess applicationProcess;
-    private final TopologyService topologyService;
+    private final CatchupAddressProvider catchupAddressProvider;
 
     public RaftMessageApplier( LocalDatabase localDatabase, LogProvider logProvider, RaftMachine raftMachine, CoreStateDownloaderService downloadService,
-            CommandApplicationProcess applicationProcess, TopologyService topologyService )
+            CommandApplicationProcess applicationProcess, CatchupAddressProvider catchupAddressProvider )
     {
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
         this.raftMachine = raftMachine;
         this.downloadService = downloadService;
         this.applicationProcess = applicationProcess;
-        this.topologyService = topologyService;
+        this.catchupAddressProvider = catchupAddressProvider;
     }
 
     @Override
@@ -59,7 +59,7 @@ public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.
             ConsensusOutcome outcome = raftMachine.handle( wrappedMessage.message() );
             if ( outcome.needsFreshSnapshot() )
             {
-                downloadService.scheduleDownload( new CatchupAddressProvider.TopologyBasedAddressProvider( raftMachine, topologyService ) );
+                downloadService.scheduleDownload( catchupAddressProvider );
             }
             else
             {
