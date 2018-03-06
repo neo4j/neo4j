@@ -279,7 +279,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), serverPipelineWrapper, clientPipelineWrapper );
 
         serverInstalledProtocols = new RaftServerModule(
-                platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory, messageLogger
+                platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory, messageLogger,
+                topologyService
         ).raftServer()::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );

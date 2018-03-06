@@ -46,7 +46,7 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing.MultiResource;
+import org.neo4j.kernel.impl.util.MultiResource;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;

@@ -29,11 +29,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.function.Predicates;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -51,6 +53,8 @@ import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotD
 public class CoreStateDownloaderServiceTest
 {
     private final MemberId someMember = new MemberId( UUID.randomUUID() );
+    private final AdvertisedSocketAddress someMemberAddress = new AdvertisedSocketAddress( "localhost", 1234 );
+    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( someMemberAddress );
     private Neo4jJobScheduler neo4jJobScheduler;
 
     @Before
@@ -76,9 +80,7 @@ public class CoreStateDownloaderServiceTest
         CoreStateDownloaderService coreStateDownloaderService =
                 new CoreStateDownloaderService( neo4jJobScheduler, coreStateDownloader, applicationProcess,
                         logProvider( log ), new NoTimeout() );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( someMember );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
         waitForApplierToResume( applicationProcess );
 
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
@@ -101,11 +103,10 @@ public class CoreStateDownloaderServiceTest
 
         AtomicBoolean availableLeader = new AtomicBoolean( false );
 
-        LeaderLocator leaderLocator = new ControllableLeaderLocator( availableLeader );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
 
         availableLeader.set( true );
 

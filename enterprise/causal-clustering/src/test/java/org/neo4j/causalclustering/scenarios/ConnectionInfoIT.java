@@ -30,6 +30,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -74,7 +75,7 @@ public class ConnectionInfoIT
         CatchupServer catchupServer =
                 new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),
                         mockSupplier(), mock( BooleanSupplier.class ), snapshotService, config, new Monitors(),
-                        mockSupplier(), mock( FileSystemAbstraction.class ), mock( PageCache.class ),
+                        mock( CheckpointerSupplier.class), mock( FileSystemAbstraction.class ), mock( PageCache.class ),
                         new StoreCopyCheckPointMutex(), null );
 
         //then

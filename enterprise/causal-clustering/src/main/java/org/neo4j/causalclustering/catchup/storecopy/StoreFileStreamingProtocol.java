@@ -22,34 +22,26 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 
-import java.io.IOException;
-
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
-import org.neo4j.cursor.RawCursor;
 
-public class StoreStreamingProtocol
+public class StoreFileStreamingProtocol
 {
     /**
-     * This queues all the file sending operations on the outgoing pipeline, including
+     * This sends operations on the outgoing pipeline or the file, including
      * chunking {@link org.neo4j.causalclustering.catchup.storecopy.FileSender} handlers.
      * <p>
      * Note that we do not block here.
      */
-    void stream( ChannelHandlerContext ctx, RawCursor<StoreResource,IOException> resources ) throws IOException
+    void stream( ChannelHandlerContext ctx, StoreResource resource )
     {
-        while ( resources.next() )
-        {
-            StoreResource resource = resources.get();
-
-            ctx.write( ResponseMessageType.FILE );
-            ctx.write( new FileHeader( resource.path(), resource.recordSize() ) );
-            ctx.write( new FileSender( resource ) );
-        }
+        ctx.write( ResponseMessageType.FILE );
+        ctx.write( new FileHeader( resource.path(), resource.recordSize() ) );
+        ctx.write( new FileSender( resource ) );
     }
 
-    Future<Void> end( ChannelHandlerContext ctx, StoreCopyFinishedResponse.Status status, long lastCommittedTxBeforeStoreCopy )
+    Future<Void> end( ChannelHandlerContext ctx, StoreCopyFinishedResponse.Status status )
     {
         ctx.write( ResponseMessageType.STORE_COPY_FINISHED );
-        return ctx.writeAndFlush( new StoreCopyFinishedResponse( status, lastCommittedTxBeforeStoreCopy ) );
+        return ctx.writeAndFlush( new StoreCopyFinishedResponse( status ) );
     }
 }

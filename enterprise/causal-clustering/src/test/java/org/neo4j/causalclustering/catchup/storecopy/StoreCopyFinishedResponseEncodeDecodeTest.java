@@ -35,8 +35,7 @@ public class StoreCopyFinishedResponseEncodeDecodeTest
         // given
         EmbeddedChannel channel =
                 new EmbeddedChannel( new StoreCopyFinishedResponseEncoder(), new StoreCopyFinishedResponseDecoder() );
-        final long arbitraryId = 23;
-        StoreCopyFinishedResponse sent = new StoreCopyFinishedResponse( Status.E_STORE_ID_MISMATCH, arbitraryId );
+        StoreCopyFinishedResponse sent = new StoreCopyFinishedResponse( Status.E_STORE_ID_MISMATCH );
 
         // when
         channel.writeOutbound( sent );

@@ -50,26 +50,32 @@ public class ClientMessageTypeHandler extends ChannelInboundHandlerAdapter
 
             switch ( responseMessageType )
             {
-                case STORE_ID:
-                    protocol.expect( CatchupClientProtocol.State.STORE_ID );
-                    break;
-                case TX:
-                    protocol.expect( CatchupClientProtocol.State.TX_PULL_RESPONSE );
-                    break;
-                case FILE:
-                    protocol.expect( CatchupClientProtocol.State.FILE_HEADER );
-                    break;
-                case STORE_COPY_FINISHED:
-                    protocol.expect( CatchupClientProtocol.State.STORE_COPY_FINISHED );
-                    break;
-                case CORE_SNAPSHOT:
-                    protocol.expect( CatchupClientProtocol.State.CORE_SNAPSHOT );
-                    break;
-                case TX_STREAM_FINISHED:
-                    protocol.expect( CatchupClientProtocol.State.TX_STREAM_FINISHED );
-                    break;
-                default:
-                    log.warn( "No handler found for message type %s (%d)", responseMessageType.name(), byteValue );
+            case STORE_ID:
+                protocol.expect( CatchupClientProtocol.State.STORE_ID );
+                break;
+            case TX:
+                protocol.expect( CatchupClientProtocol.State.TX_PULL_RESPONSE );
+                break;
+            case FILE:
+                protocol.expect( CatchupClientProtocol.State.FILE_HEADER );
+                break;
+            case STORE_COPY_FINISHED:
+                protocol.expect( CatchupClientProtocol.State.STORE_COPY_FINISHED );
+                break;
+            case CORE_SNAPSHOT:
+                protocol.expect( CatchupClientProtocol.State.CORE_SNAPSHOT );
+                break;
+            case TX_STREAM_FINISHED:
+                protocol.expect( CatchupClientProtocol.State.TX_STREAM_FINISHED );
+                break;
+            case PREPARE_STORE_COPY_RESPONSE:
+                protocol.expect( CatchupClientProtocol.State.PREPARE_STORE_COPY_RESPONSE );
+                break;
+            case INDEX_SNAPSHOT_RESPONSE:
+                protocol.expect( CatchupClientProtocol.State.INDEX_SNAPSHOT_RESPONSE );
+                break;
+            default:
+                log.warn( "No handler found for message type %s (%d)", responseMessageType.name(), byteValue );
             }
 
             ReferenceCountUtil.release( msg );

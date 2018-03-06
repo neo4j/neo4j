@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.readreplica;
 
 import java.io.IOException;
 
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -168,7 +169,7 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            storeCopyProcess.replaceWithStoreFrom( fromAddress, storeId );
+            storeCopyProcess.replaceWithStoreFrom( CatchupAddressProvider.fromSingleAddress( fromAddress ), storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }
