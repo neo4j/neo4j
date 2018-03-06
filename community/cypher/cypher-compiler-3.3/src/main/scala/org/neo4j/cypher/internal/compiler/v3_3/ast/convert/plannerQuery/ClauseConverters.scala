@@ -484,7 +484,7 @@ object ClauseConverters {
         ))
 
       // REMOVE rel.prop when unknown whether node or rel
-      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) =>
+      case (builder, RemovePropertyItem(Property(variable, propertyKey))) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
           SetPropertyPattern(variable, propertyKey, Null()(propertyKey.position))
         ))
