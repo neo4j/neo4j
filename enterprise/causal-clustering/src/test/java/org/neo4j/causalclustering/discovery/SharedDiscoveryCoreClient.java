@@ -43,8 +43,8 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     private MemberId localLeader;
     private long term;
 
-    private CoreTopology coreTopology;
-    private ReadReplicaTopology readReplicaTopology;
+    private volatile CoreTopology coreTopology;
+    private volatile ReadReplicaTopology readReplicaTopology;
 
     SharedDiscoveryCoreClient( SharedDiscoveryService sharedDiscoveryService,
             MemberId member, LogProvider logProvider, Config config )
@@ -104,12 +104,14 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     @Override
     public void start() throws InterruptedException
     {
-        sharedDiscoveryService.registerCoreMember( this, log );
-        log.info( "Registered core server %s", myself );
-        sharedDiscoveryService.waitForClusterFormation();
-        log.info( "Cluster formed" );
         coreTopology = sharedDiscoveryService.getCoreTopology( this );
         readReplicaTopology = sharedDiscoveryService.getReadReplicaTopology();
+
+        sharedDiscoveryService.registerCoreMember( this );
+        log.info( "Registered core server %s", myself );
+
+        sharedDiscoveryService.waitForClusterFormation();
+        log.info( "Cluster formed" );
     }
 
     @Override

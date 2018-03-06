@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -34,7 +33,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.logging.Log;
 
 public class SharedDiscoveryService
 {
@@ -47,7 +45,7 @@ public class SharedDiscoveryService
     private final ConcurrentMap<String,RaftLeader> leaderMap;
     private final CountDownLatch enoughMembers;
 
-    public SharedDiscoveryService()
+    SharedDiscoveryService()
     {
         coreMembers = new ConcurrentHashMap<>();
         readReplicas = new ConcurrentHashMap<>();
@@ -62,7 +60,7 @@ public class SharedDiscoveryService
         enoughMembers.await();
     }
 
-    boolean canBeBootstrapped( SharedDiscoveryCoreClient client )
+    private boolean canBeBootstrapped( SharedDiscoveryCoreClient client )
     {
         Stream<SharedDiscoveryCoreClient> clientsWhoCanLeadForMyDb = listeningClients.stream()
                 .filter( c -> !c.refusesToBeLeader() && c.localDBName().equals( client.localDBName() ) );
@@ -91,7 +89,7 @@ public class SharedDiscoveryService
         return new ReadReplicaTopology( Collections.unmodifiableMap( readReplicas ) );
     }
 
-    void registerCoreMember( SharedDiscoveryCoreClient client, Log log )
+    void registerCoreMember( SharedDiscoveryCoreClient client )
     {
         CoreServerInfo previousMember = coreMembers.putIfAbsent( client.getMemberId(), client.getCoreServerInfo() );
         if ( previousMember == null )
@@ -127,7 +125,7 @@ public class SharedDiscoveryService
         notifyCoreClients();
     }
 
-    synchronized boolean casLeaders( MemberId leader, long term, String dbName )
+    synchronized void casLeaders( MemberId leader, long term, String dbName )
     {
         Optional<RaftLeader> current = Optional.ofNullable( leaderMap.get( dbName ) );
 
@@ -141,7 +139,6 @@ public class SharedDiscoveryService
         {
             leaderMap.put( dbName, new RaftLeader( leader, term ) );
         }
-        return success;
     }
 
     boolean casClusterId( ClusterId clusterId, String dbName )
@@ -178,5 +175,4 @@ public class SharedDiscoveryService
             c.onReadReplicaTopologyChange( getReadReplicaTopology() );
         } );
     }
-
 }
