@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -32,12 +30,14 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
-import org.neo4j.causalclustering.discovery.ClusterTopology;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.function.ThrowingAction;
+import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 public class ClusterBinder implements Supplier<Optional<ClusterId>>
 {
@@ -45,6 +45,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     private final CoreTopologyService topologyService;
     private final CoreBootstrapper coreBootstrapper;
     private final Log log;
+    private final CappedLogger cappedLog;
     private final Clock clock;
     private final ThrowingAction<InterruptedException> retryWaiter;
     private final long timeoutMillis;
@@ -61,6 +62,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         this.topologyService = topologyService;
         this.coreBootstrapper = coreBootstrapper;
         this.log = logProvider.getLog( getClass() );
+        this.cappedLog = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, clock );
         this.clock = clock;
         this.retryWaiter = retryWaiter;
         this.timeoutMillis = timeoutMillis;
@@ -76,9 +78,25 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
      * @param coreTopology the present state of the local topology, as reported by the discovery service.
      * @return Whether or not coreTopology, in its current state, can form a viable cluster
      */
-    boolean isViableCluster( CoreTopology coreTopology )
+    private boolean isViableCluster( CoreTopology coreTopology )
     {
-        return coreTopology.members().size() >= minCoreHosts && coreTopology.canBeBootstrapped();
+        int memberCount = coreTopology.members().size();
+        if ( memberCount < minCoreHosts )
+        {
+            String message = "Waiting for %d members. Currently discovered %d members: %s. ";
+            cappedLog.info( format( message, minCoreHosts, memberCount, coreTopology.members() ) );
+            return false;
+        }
+        else if ( !coreTopology.canBeBootstrapped() )
+        {
+            String message = "Discovered sufficient members (%d) but waiting for bootstrap by other instance.";
+            cappedLog.info( format( message, memberCount ) );
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     /**
@@ -116,9 +134,9 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
             {
                 clusterId = new ClusterId( UUID.randomUUID() );
                 snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
-                log.info( String.format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, clusterId ) );
+                log.info( format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, clusterId ) );
 
-                publishClusterId( clusterId, topology );
+                publishClusterId( clusterId );
             }
             else
             {
@@ -128,7 +146,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
         if ( clusterId == null )
         {
-            throw new TimeoutException( String.format(
+            throw new TimeoutException( format(
                     "Failed to join a cluster with members %s. Another member should have published " +
                     "a clusterId but none was detected. Please restart the cluster.", topology ) );
         }
@@ -144,19 +162,6 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     }
 
     private void publishClusterId( ClusterId localClusterId ) throws BindingException, InterruptedException
-    {
-        boolean success = topologyService.setClusterId( localClusterId, dbName );
-        if ( !success )
-        {
-            throw new BindingException( "Failed to publish: " + localClusterId );
-        }
-        else
-        {
-            log.info( "Published: " + localClusterId );
-        }
-    }
-
-    private void publishClusterId( ClusterId localClusterId, CoreTopology topology ) throws BindingException, InterruptedException
     {
         boolean success = topologyService.setClusterId( localClusterId, dbName );
         if ( !success )
