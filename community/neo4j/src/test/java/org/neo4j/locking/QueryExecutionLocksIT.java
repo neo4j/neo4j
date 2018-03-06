@@ -44,9 +44,23 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExplicitIndexRead;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -69,6 +83,8 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -214,7 +230,7 @@ public class QueryExecutionLocksIT
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
             executionEngine.executeQuery( query, Collections.emptyMap(), context );
-            return new ArrayList<>( context.recordingReadOperationsWrapper.getLockOperationRecords() );
+            return new ArrayList<>( context.recordingLocks.getLockOperationRecords() );
         }
     }
 
@@ -233,6 +249,7 @@ public class QueryExecutionLocksIT
         private final List<LockOperationRecord> recordedLocks;
         private final LockOperationListener[] listeners;
         private LockRecordingReadOperationsWrapper recordingReadOperationsWrapper;
+        private RecordingLocks recordingLocks;
 
         private TransactionalContextWrapper( TransactionalContext delegate, LockOperationListener... listeners )
         {
@@ -272,7 +289,12 @@ public class QueryExecutionLocksIT
         @Override
         public KernelTransaction kernelTransaction()
         {
-            return delegate.kernelTransaction();
+            if ( recordingLocks == null )
+            {
+                recordingLocks =
+                        new RecordingLocks( delegate.kernelTransaction().locks(), asList( listeners ), recordedLocks );
+            }
+            return new DelegatingTransaction( delegate.kernelTransaction(), recordingLocks );
         }
 
         @Override
@@ -376,6 +398,151 @@ public class QueryExecutionLocksIT
         public ResourceTracker resourceTracker()
         {
             return delegate.resourceTracker();
+        }
+    }
+
+    private static class RecordingLocks implements Locks
+    {
+        private final Locks delegate;
+        private final List<LockOperationListener> listeners;
+        private final List<LockOperationRecord> lockOperationRecords;
+
+        private RecordingLocks( Locks delegate,
+                List<LockOperationListener> listeners,
+                List<LockOperationRecord> lockOperationRecords )
+        {
+            this.delegate = delegate;
+            this.listeners = listeners;
+            this.lockOperationRecords = lockOperationRecords;
+        }
+
+        public List<LockOperationRecord> getLockOperationRecords()
+        {
+            return lockOperationRecords;
+        }
+
+        private void record( boolean exclusive, boolean acquisition, ResourceTypes type, long... ids )
+        {
+            if (acquisition)
+            {
+                for ( LockOperationListener listener : listeners )
+                {
+                    listener.lockAcquired( exclusive, type, ids );
+                }
+            }
+            lockOperationRecords.add( new LockOperationRecord( exclusive, acquisition, type, ids ) );
+        }
+
+        @Override
+        public void acquireExclusiveNodeLock( long... ids )
+        {
+            record( true, true, ResourceTypes.NODE, ids );
+            delegate.acquireExclusiveNodeLock( ids );
+        }
+
+        @Override
+        public void acquireExclusiveRelationshipLock( long... ids )
+        {
+            record( true, true, ResourceTypes.RELATIONSHIP, ids );
+            delegate.acquireExclusiveRelationshipLock( ids );
+        }
+
+        @Override
+        public void acquireExclusiveExplicitIndexLock( long... ids )
+        {
+            record( true, true, ResourceTypes.EXPLICIT_INDEX, ids );
+            delegate.acquireExclusiveExplicitIndexLock( ids );
+        }
+
+        @Override
+        public void acquireExclusiveLabelLock( long... ids )
+        {
+            record( true, true, ResourceTypes.LABEL, ids );
+            delegate.acquireExclusiveLabelLock( ids );
+        }
+
+        @Override
+        public void releaseExclusiveNodeLock( long... ids )
+        {
+            record( true, false, ResourceTypes.NODE, ids );
+            delegate.releaseExclusiveNodeLock( ids );
+        }
+
+        @Override
+        public void releaseExclusiveRelationshipLock( long... ids )
+        {
+            record( true, false, ResourceTypes.RELATIONSHIP, ids );
+            delegate.releaseExclusiveRelationshipLock( ids );
+        }
+
+        @Override
+        public void releaseExclusiveExplicitIndexLock( long... ids )
+        {
+            record( true, false, ResourceTypes.EXPLICIT_INDEX, ids );
+            delegate.releaseExclusiveExplicitIndexLock( ids );
+        }
+
+        @Override
+        public void releaseExclusiveLabelLock( long... ids )
+        {
+            record( true, false, ResourceTypes.LABEL, ids );
+            delegate.releaseExclusiveLabelLock( ids );
+        }
+
+        @Override
+        public void acquireSharedNodeLock( long... ids )
+        {
+            record( false, true, ResourceTypes.NODE, ids );
+            delegate.acquireSharedNodeLock( ids );
+        }
+
+        @Override
+        public void acquireSharedRelationshipLock( long... ids )
+        {
+            record( false, true, ResourceTypes.RELATIONSHIP, ids );
+            delegate.acquireSharedRelationshipLock( ids );
+        }
+
+        @Override
+        public void acquireSharedExplicitIndexLock( long... ids )
+        {
+            record( false, true, ResourceTypes.EXPLICIT_INDEX, ids );
+            delegate.acquireSharedExplicitIndexLock( ids );
+        }
+
+        @Override
+        public void acquireSharedLabelLock( long... ids )
+        {
+            record( false, true, ResourceTypes.LABEL, ids );
+            delegate.acquireSharedLabelLock( ids );
+        }
+
+        @Override
+        public void releaseSharedNodeLock( long... ids )
+        {
+            record( false, false, ResourceTypes.NODE, ids );
+            delegate.releaseSharedNodeLock( ids );
+        }
+
+        @Override
+        public void releaseSharedRelationshipLock( long... ids )
+        {
+            record( false, false, ResourceTypes.RELATIONSHIP, ids );
+            delegate.releaseSharedRelationshipLock( ids );
+        }
+
+        @Override
+        public void releaseSharedExplicitIndexLock( long... ids )
+        {
+            record( false, false, ResourceTypes.EXPLICIT_INDEX, ids );
+            delegate.releaseSharedExplicitIndexLock( ids );
+        }
+
+        @Override
+        public void releaseSharedLabelLock( long... ids )
+        {
+            record( false, false, ResourceTypes.LABEL, ids );
+            delegate.releaseSharedLabelLock( ids );
         }
     }
 
@@ -998,6 +1165,228 @@ public class QueryExecutionLocksIT
                 }
             }
             executed = true;
+        }
+    }
+
+    private static class DelegatingTransaction implements KernelTransaction
+    {
+        private final KernelTransaction internal;
+        private final Locks locks;
+
+        DelegatingTransaction( KernelTransaction internal, Locks locks )
+        {
+            this.internal = internal;
+            this.locks = locks;
+        }
+
+        @Override
+        public void success()
+        {
+            internal.success();
+        }
+
+        @Override
+        public void failure()
+        {
+            internal.failure();
+        }
+
+        @Override
+        public Read dataRead()
+        {
+            return internal.dataRead();
+        }
+
+        @Override
+        public Read stableDataRead()
+        {
+            return internal.stableDataRead();
+        }
+
+        @Override
+        public void markAsStable()
+        {
+            internal.markAsStable();
+        }
+
+        @Override
+        public Write dataWrite() throws InvalidTransactionTypeKernelException
+        {
+            return internal.dataWrite();
+        }
+
+        @Override
+        public ExplicitIndexRead indexRead()
+        {
+            return internal.indexRead();
+        }
+
+        @Override
+        public ExplicitIndexWrite indexWrite()
+        {
+            return internal.indexWrite();
+        }
+
+        @Override
+        public TokenRead tokenRead()
+        {
+            return internal.tokenRead();
+        }
+
+        @Override
+        public TokenWrite tokenWrite()
+        {
+            return internal.tokenWrite();
+        }
+
+        @Override
+        public org.neo4j.internal.kernel.api.Token token()
+        {
+            return internal.token();
+        }
+
+        @Override
+        public SchemaRead schemaRead()
+        {
+            return internal.schemaRead();
+        }
+
+        @Override
+        public SchemaWrite schemaWrite()
+        {
+            return internal.schemaWrite();
+        }
+
+        @Override
+        public Locks locks()
+        {
+            return locks;
+        }
+
+        @Override
+        public CursorFactory cursors()
+        {
+            return internal.cursors();
+        }
+
+        @Override
+        public Statement acquireStatement()
+        {
+            return internal.acquireStatement();
+        }
+
+        @Override
+        public long closeTransaction() throws TransactionFailureException
+        {
+            return internal.closeTransaction();
+        }
+
+        @Override
+        public void close() throws TransactionFailureException
+        {
+            internal.close();
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return internal.isOpen();
+        }
+
+        @Override
+        public SecurityContext securityContext()
+        {
+            return internal.securityContext();
+        }
+
+        @Override
+        public Optional<Status> getReasonIfTerminated()
+        {
+            return internal.getReasonIfTerminated();
+        }
+
+        @Override
+        public boolean isTerminated()
+        {
+            return internal.isTerminated();
+        }
+
+        @Override
+        public void markForTermination( Status reason )
+        {
+            internal.markForTermination( reason );
+        }
+
+        @Override
+        public long lastTransactionTimestampWhenStarted()
+        {
+            return internal.lastTransactionTimestampWhenStarted();
+        }
+
+        @Override
+        public long lastTransactionIdWhenStarted()
+        {
+            return internal.lastTransactionIdWhenStarted();
+        }
+
+        @Override
+        public long startTime()
+        {
+            return internal.startTime();
+        }
+
+        @Override
+        public long timeout()
+        {
+            return internal.timeout();
+        }
+
+        @Override
+        public void registerCloseListener( CloseListener listener )
+        {
+            internal.registerCloseListener( listener );
+        }
+
+        @Override
+        public Type transactionType()
+        {
+            return internal.transactionType();
+        }
+
+        @Override
+        public long getTransactionId()
+        {
+            return internal.getTransactionId();
+        }
+
+        @Override
+        public long getCommitTime()
+        {
+            return internal.getCommitTime();
+        }
+
+        @Override
+        public Revertable overrideWith( SecurityContext context )
+        {
+            return internal.overrideWith( context );
+        }
+
+        @Override
+        public NodeCursor nodeCursor()
+        {
+            return internal.nodeCursor();
+        }
+
+        @Override
+        public RelationshipScanCursor relationshipCursor()
+        {
+            return internal.relationshipCursor();
+        }
+
+        @Override
+        public PropertyCursor propertyCursor()
+        {
+            return internal.propertyCursor();
         }
     }
 }
