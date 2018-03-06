@@ -30,9 +30,6 @@ import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResp
 
 public class StoreCopyFinishedResponseTest
 {
-    /*
-    Order should not change. New statuses should be added as higher ordinal and old statuses should not be replaced.
-     */
     @Test
     public void shouldMaintainOrderOfStatuses()
     {
