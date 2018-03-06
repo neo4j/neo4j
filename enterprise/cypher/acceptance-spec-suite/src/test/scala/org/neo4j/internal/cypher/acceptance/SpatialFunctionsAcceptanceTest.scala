@@ -28,6 +28,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
   val pointConfig = Configs.Interpreted - Configs.Version2_3
   val equalityConfig = Configs.Interpreted - Configs.OldAndRule
+  val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
 
   test("point function should work with literal map") {
     val result = executeWith(pointConfig, "RETURN point({latitude: 12.78, longitude: 56.7}) as point",
@@ -529,6 +530,33 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
     // Then
     failWithError(equalityConfig + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
+  }
+
+  test("accessors on 2D cartesian points") {
+    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2}) AS p RETURN p.x, p.y, p.crs")
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian")))
+
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
+  }
+
+  test("accessors on 3D cartesian points") {
+    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.x, p.y, p.z, p.crs")
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0, "p.crs" -> "cartesian-3D")))
+
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+  }
+
+  test("accessors on 2D geographic points") {
+    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2}) AS p RETURN p.longitude, p.latitude, p.crs")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "WGS-84")))
+
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.height", Seq("Field: height is not available"))
+  }
+
+  test("accessors on 3D geographic points") {
+    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2, height:3}) AS p RETURN p.longitude, p.latitude, p.height, p.crs")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.height" -> 3.0, "p.crs" -> "WGS-84-3D")))
   }
 
 }

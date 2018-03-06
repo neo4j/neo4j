@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{DurationValue, TemporalValue, Values}
+import org.neo4j.values.storable.{DurationValue, PointValue, TemporalValue, Values}
 import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
+
+import scala.util.{Failure, Success, Try}
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
@@ -46,6 +48,10 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
     case IsMap(mapFunc) => mapFunc(state.query).get(propertyKey.name)
     case t: TemporalValue[_,_] => t.get(propertyKey.name)
     case d: DurationValue => d.get(propertyKey.name)
+    case p: PointValue => Try(p.get(propertyKey.name)) match {
+      case Success(v) => v
+      case Failure(e) => throw new InvalidArgumentException(e.getMessage, e)
+    }
     case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 

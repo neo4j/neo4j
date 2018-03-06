@@ -479,4 +479,46 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
         private ValueGroup valueType;
     }
+
+    /**
+     * For accessors from cypher.
+     */
+    public AnyValue get( String fieldName )
+    {
+        switch ( fieldName.toLowerCase() )
+        {
+        case "x":
+            return getNthCoordinate( 0, fieldName, false );
+        case "y":
+            return getNthCoordinate( 1, fieldName, false );
+        case "z":
+            return getNthCoordinate( 2, fieldName, false );
+        case "longitude":
+            return getNthCoordinate( 0, fieldName, true );
+        case "latitude":
+            return getNthCoordinate( 1, fieldName, true );
+        case "height":
+            return getNthCoordinate( 2, fieldName, true );
+        case "crs":
+            return Values.stringValue( crs.toString() );
+        default:
+            throw new IllegalArgumentException( "No such field: " + fieldName );
+        }
+    }
+
+    private DoubleValue getNthCoordinate( int n, String fieldName, boolean onlyGeographic )
+    {
+        if ( onlyGeographic && !this.getCoordinateReferenceSystem().isGeographic() )
+        {
+            throw new IllegalArgumentException( "Field: " + fieldName + " is not available on cartesian point: " + this );
+        }
+        else if ( n >= this.coordinate().length )
+        {
+            throw new IllegalArgumentException( "Field: " + fieldName + " is not available on point: " + this );
+        }
+        else
+        {
+            return Values.doubleValue( coordinate[n] );
+        }
+    }
 }
