@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -301,6 +302,18 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
         return defaultZone.get();
+    }
+
+    @Override
+    ZoneId getZoneId()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+    }
+
+    @Override
+    ZoneOffset getZoneOffset()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
     }
 
     @Override

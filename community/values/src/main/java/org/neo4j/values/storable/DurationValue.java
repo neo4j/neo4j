@@ -28,6 +28,7 @@ import java.time.temporal.IsoFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -713,7 +714,70 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 break;
             }
         }
-        throw new UnsupportedOperationException( "Unsupported unit: " + unit );
+        throw new UnsupportedTemporalTypeException( "Unsupported unit: " + unit );
+    }
+
+    /**
+     * In contrast to {@link #get(TemporalUnit)}, this method supports more units, namely:
+     *
+     * years, hours, minutes, milliseconds, microseconds,
+     * monthsOfYear, minutesOfHour, secondsOfMinute, millisecondsOfSecond, microsecondsOfSecond, nanosecondsOfSecond
+     */
+    public LongValue get( String fieldName )
+    {
+        long val;
+        switch ( fieldName.toLowerCase() )
+        {
+        case "years":
+            val = months / 12;
+            break;
+        case "months":
+            val = months;
+            break;
+        case "monthsofyear":
+            val = months % 12;
+            break;
+        case "days":
+            val = days;
+            break;
+        case "hours":
+            val = seconds / 3600;
+            break;
+        case "minutesofhour":
+            val = (seconds / 60) % 60;
+            break;
+        case "minutes":
+            val = seconds / 60;
+            break;
+        case "secondsofminute":
+            val = seconds % 60;
+            break;
+        case "seconds":
+            val = seconds;
+            break;
+        case "millisecondsofsecond":
+            val = nanos / 1000_000;
+            break;
+        case "milliseconds":
+            val = seconds * 1000 + nanos / 1000_000;
+            break;
+        case "microsecondsofsecond":
+            val = nanos / 1000;
+            break;
+        case "microseconds":
+            val = seconds * 1000_000 + nanos / 1000;
+            break;
+        case "nanosecondsofsecond":
+            val = nanos;
+            break;
+        case "nanoseconds":
+            val = seconds * NANOS_PER_SECOND + nanos;
+            break;
+        default:
+            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+        }
+
+        return Values.longValue( val );
     }
 
     @Override

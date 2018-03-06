@@ -8,12 +8,6 @@ Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure 
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with empty db"
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with hits"
 
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for local date time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for date time"
-Feature "TemporalAccessorAcceptance": Scenario "Should provide accessors for duration"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in years"
 Feature "DurationBetweenAcceptance": Scenario "Should compute duration between two temporals in quarters"

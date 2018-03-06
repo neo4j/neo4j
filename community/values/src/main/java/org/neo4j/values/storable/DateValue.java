@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
@@ -216,7 +217,19 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
-        throw new IllegalArgumentException( String.format( "Cannot get the time zone of: %s", this ) );
+        throw new UnsupportedTemporalTypeException( String.format( "Cannot get the time zone of: %s", this ) );
+    }
+
+    @Override
+    ZoneId getZoneId()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+    }
+
+    @Override
+    ZoneOffset getZoneOffset()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
     }
 
     @Override
