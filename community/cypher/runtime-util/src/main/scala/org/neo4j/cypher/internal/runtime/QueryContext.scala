@@ -24,6 +24,7 @@ import java.net.URL
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
@@ -185,16 +186,22 @@ trait QueryContext extends TokenContext {
   def lockRelationships(relIds: Long*)
 
   def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
   def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
   def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
   def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
   def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue
+  def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue
 
   def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
+  def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
 
     // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database

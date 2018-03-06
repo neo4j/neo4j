@@ -296,27 +296,93 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
     {
        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
     {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public UserAggregator aggregationFunction( int id ) throws ProcedureException
     {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
     {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     private abstract static class Record<R extends AbstractBaseRecord>

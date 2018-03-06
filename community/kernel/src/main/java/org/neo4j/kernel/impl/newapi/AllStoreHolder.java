@@ -620,6 +620,71 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public RawIterator<Object[],ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsReads() )
+        {
+            throw accessMode.onViolation( format( "Read operations are not allowed for %s.",
+                    ktx.securityContext().description() ) );
+        }
+        return callProcedure( name, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static
+                .READ ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        return callProcedure( name, arguments,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsWrites() )
+        {
+            throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
+                    ktx.securityContext().description() ) );
+        }
+        return callProcedure( name, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        return callProcedure( name, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsSchemaWrites() )
+        {
+            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.",
+                    ktx.securityContext().description() ) );
+        }
+        return callProcedure( name, arguments,
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        return callProcedure( name, arguments,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
+    }
+
+    @Override
     public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
     {
         if ( !ktx.securityContext().mode().allowsReads() )
@@ -632,11 +697,29 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    {
+        if ( !ktx.securityContext().mode().allowsReads() )
+        {
+            throw ktx.securityContext().mode().onViolation(
+                    format( "Read operations are not allowed for %s.", ktx.securityContext().description() ) );
+        }
+        return callFunction( name, arguments,
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
     public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
     {
         return callFunction( id, arguments,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
 
+    @Override
+    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    {
+        return callFunction( name, arguments,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
     @Override
@@ -651,11 +734,30 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    {
+        if ( !ktx.securityContext().mode().allowsReads() )
+        {
+            throw ktx.securityContext().mode().onViolation(
+                    format( "Read operations are not allowed for %s.", ktx.securityContext().description() ) );
+        }
+        return aggregationFunction( name, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
     public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
     {
         return aggregationFunction( id,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
+
+    @Override
+    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    {
+        return aggregationFunction( name,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
     private RawIterator<Object[],ProcedureException> callProcedure(
             int id, Object[] input, final AccessMode override  )
             throws ProcedureException
@@ -667,12 +769,30 @@ public class AllStoreHolder extends Read
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )
         {
-            BasicContext ctx = new BasicContext();
-            ctx.put( Context.KERNEL_TRANSACTION, ktx );
-            ctx.put( Context.THREAD, Thread.currentThread() );
-            ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
-            procedureCall = procedures.callProcedure( ctx, id, input, statement );
+            procedureCall = procedures.callProcedure( populateProcedureContext( procedureSecurityContext ), id, input, statement );
         }
+        return createIterator( procedureSecurityContext, procedureCall );
+    }
+
+    private RawIterator<Object[],ProcedureException> callProcedure(
+            QualifiedName name, Object[] input, final AccessMode override  )
+            throws ProcedureException
+    {
+        ktx.assertOpen();
+
+        final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
+        final RawIterator<Object[],ProcedureException> procedureCall;
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
+              Statement statement = ktx.acquireStatement() )
+        {
+            procedureCall = procedures.callProcedure( populateProcedureContext( procedureSecurityContext ), name, input, statement );
+        }
+        return createIterator( procedureSecurityContext, procedureCall );
+    }
+
+    private RawIterator<Object[],ProcedureException> createIterator( SecurityContext procedureSecurityContext,
+            RawIterator<Object[],ProcedureException> procedureCall )
+    {
         return new RawIterator<Object[],ProcedureException>()
         {
             @Override
@@ -694,20 +814,24 @@ public class AllStoreHolder extends Read
             }
         };
     }
+
     private AnyValue callFunction( int id, AnyValue[] input, final AccessMode mode ) throws ProcedureException
     {
         ktx.assertOpen();
 
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
         {
-            BasicContext ctx = new BasicContext();
-            ctx.put( Context.KERNEL_TRANSACTION, ktx );
-            ctx.put( Context.THREAD, Thread.currentThread() );
-            ClockContext clocks = ktx.clocks();
-            ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );
-            ctx.put( Context.STATEMENT_CLOCK, clocks.statementClock() );
-            ctx.put( Context.TRANSACTION_CLOCK, clocks.transactionClock() );
-            return procedures.callFunction( ctx, id, input );
+            return procedures.callFunction( populateFunctionContext(), id, input );
+        }
+    }
+
+    private AnyValue callFunction( QualifiedName name, AnyValue[] input, final AccessMode mode ) throws ProcedureException
+    {
+        ktx.assertOpen();
+
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
+        {
+            return procedures.callFunction( populateFunctionContext(), name, input );
         }
     }
 
@@ -718,10 +842,47 @@ public class AllStoreHolder extends Read
 
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
         {
-            BasicContext ctx = new BasicContext();
-            ctx.put( Context.KERNEL_TRANSACTION, ktx );
-            ctx.put( Context.THREAD, Thread.currentThread() );
-            return procedures.createAggregationFunction( ctx, id );
+            return procedures.createAggregationFunction( populateAggregationContext(), id );
         }
+    }
+
+    private UserAggregator aggregationFunction( QualifiedName name, final AccessMode mode )
+            throws ProcedureException
+    {
+        ktx.assertOpen();
+
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
+        {
+            return procedures.createAggregationFunction( populateAggregationContext(), name );
+        }
+    }
+
+    private BasicContext populateFunctionContext()
+    {
+        BasicContext ctx = new BasicContext();
+        ctx.put( Context.KERNEL_TRANSACTION, ktx );
+        ctx.put( Context.THREAD, Thread.currentThread() );
+        ClockContext clocks = ktx.clocks();
+        ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );
+        ctx.put( Context.STATEMENT_CLOCK, clocks.statementClock() );
+        ctx.put( Context.TRANSACTION_CLOCK, clocks.transactionClock() );
+        return ctx;
+    }
+
+    private BasicContext populateAggregationContext()
+    {
+        BasicContext ctx = new BasicContext();
+        ctx.put( Context.KERNEL_TRANSACTION, ktx );
+        ctx.put( Context.THREAD, Thread.currentThread() );
+        return ctx;
+    }
+
+    private BasicContext populateProcedureContext( SecurityContext procedureSecurityContext )
+    {
+        BasicContext ctx = new BasicContext();
+        ctx.put( Context.KERNEL_TRANSACTION, ktx );
+        ctx.put( Context.THREAD, Thread.currentThread() );
+        ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
+        return ctx;
     }
 }

@@ -56,7 +56,7 @@ import org.neo4j.values.storable._
 class ProcedureExecutionResult(context: QueryContext,
                                taskCloser: TaskCloser,
                                name: QualifiedName,
-                               id: Int,
+                               id: Option[Int],
                                callMode: ProcedureCallMode,
                                args: Seq[Any],
                                indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
@@ -69,7 +69,9 @@ class ProcedureExecutionResult(context: QueryContext,
   private final val executionResults = executeCall
 
   // The signature mode is taking care of eagerization
-  protected def executeCall: Iterator[Array[AnyRef]] = callMode.callProcedure(context, id, args)
+  protected def executeCall: Iterator[Array[AnyRef]] =
+    if (id.nonEmpty) callMode.callProcedure(context, id.get, args)
+    else callMode.callProcedure(context, name, args)
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =

@@ -860,7 +860,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("CALL foo() YIELD all RETURN all") {
     val signature = ProcedureSignature(
       QualifiedName(Seq.empty, "foo"),
-      42,
       inputSignature = IndexedSeq.empty,
       deprecationInfo = None,
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),

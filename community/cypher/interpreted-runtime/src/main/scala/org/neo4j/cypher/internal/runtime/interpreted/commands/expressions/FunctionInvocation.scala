@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.v3_4.logical.plans.UserFunctionSignature
 import org.neo4j.values._
 
-case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+abstract class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
@@ -32,13 +33,38 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
     val argValues = arguments.map(arg => {
       arg(ctx, state)
     })
-    query.callFunction(signature.id, argValues, signature.allowed)
+    call(query, argValues)
   }
 
-  override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
+  protected def call(query: QueryContext,
+                   argValues: IndexedSeq[AnyValue]): AnyValue
+
 
   override def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 
   override def toString = s"${signature.name}(${arguments.mkString(",")})"
+}
+
+case class FunctionInvocationById(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+  extends FunctionInvocation(signature, arguments) {
+
+  protected def call(query: QueryContext,
+                   argValues: IndexedSeq[AnyValue]): AnyValue = {
+    query.callFunction(signature.id.get, argValues, signature.allowed)
+  }
+
+  override def rewrite(f: (Expression) => Expression) =
+    f(FunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
+}
+
+case class FunctionInvocationByName(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+  extends FunctionInvocation(signature, arguments) {
+
+  protected def call(query: QueryContext,
+                     argValues: IndexedSeq[AnyValue]): AnyValue = {
+    query.callFunction(signature.name, argValues, signature.allowed)
+  }
+
+  override def rewrite(f: (Expression) => Expression) =
+    f(FunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
 }

@@ -339,7 +339,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
     val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)
     val inputv3_4 = plansV3_4.FieldSignature("d", symbolsV3_4.CTString, Some(plansV3_4.CypherValue("e", symbolsV3_4.CTString)))
-    val sigv3_4 = plansV3_4.ProcedureSignature(plansV3_4.QualifiedName(Seq("a", "b"), "c"), 42, IndexedSeq(inputv3_4), None, None, plansV3_4.ProcedureReadWriteAccess(Array("foo", "bar")))
+    val sigv3_4 = plansV3_4.ProcedureSignature(plansV3_4.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv3_4), None, None, plansV3_4.ProcedureReadWriteAccess(Array("foo", "bar")))
     val pres3_4 = astV3_4.ProcedureResultItem(Some(expressionsV3_4.ProcedureOutput("f")(pos3_4)), var3_4)(pos3_4)
     val rc3_4 = plansV3_4.ResolvedCall(sigv3_4, Seq(var3_4), IndexedSeq(pres3_4))(pos3_4)
     val pc3_4 = plansV3_4.ProcedureCall(a3_4, rc3_4)
@@ -423,7 +423,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val name3_4 = plansV3_4.QualifiedName(Seq.empty, "foo")
     val call3_4 = plansV3_4.ResolvedFunctionInvocation(name3_4,
-      Some(plansV3_4.UserFunctionSignature(name3_4, 0,Vector(plansV3_4.FieldSignature("input", symbolsV3_4.CTAny,
+      Some(plansV3_4.UserFunctionSignature(name3_4, Vector(plansV3_4.FieldSignature("input", symbolsV3_4.CTAny,
         default = Some(plansV3_4.CypherValue(null, symbolsV3_4.CTAny)))),
         symbolsV3_4.CTAny, None, allowed, None, isAggregate = false)), Vector())(InputPosition(1, 2, 3))
 

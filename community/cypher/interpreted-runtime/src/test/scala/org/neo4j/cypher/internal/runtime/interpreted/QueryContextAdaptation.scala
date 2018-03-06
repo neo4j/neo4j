@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
@@ -155,11 +156,22 @@ trait QueryContextAdaptation {
 
   override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
   override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
 
   override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator = ???
+
+  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
+
+  override def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 

@@ -22,22 +22,23 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import java.lang.reflect.Constructor
 
 import org.neo4j.cypher.internal.compatibility.v3_3.SemanticTableConverter.ExpressionMapping3To4
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, IdGen, SameId, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
-import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, IdGen, SameId, SequentialIdGen}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -142,12 +143,31 @@ object LogicalPlanConverter {
           convertVersion("frontend.v3_3", "util.v3_4", nameId, children)
         case (frontendV3_3.helpers.Fby(head, tail), children: Seq[AnyRef]) => utilV3_4.Fby(children(0), children(1).asInstanceOf[utilV3_4.NonEmptyList[_]])
         case (frontendV3_3.helpers.Last(head), children: Seq[AnyRef]) => utilV3_4.Last(children(0))
+
+        case ( _:plansV3_3.ProcedureSignature, children: Seq[AnyRef]) =>
+         plansV3_4.ProcedureSignature(children(0).asInstanceOf[QualifiedName],
+                                      children(1).asInstanceOf[IndexedSeq[FieldSignature]],
+                                      children(2).asInstanceOf[Option[IndexedSeq[FieldSignature]]],
+                                      children(3).asInstanceOf[Option[String]],
+                                      children(4).asInstanceOf[ProcedureAccessMode],
+                                      children(5).asInstanceOf[Option[String]],
+                                      children(5).asInstanceOf[Option[String]],
+                                      None)
+
+        case ( _:plansV3_3.UserFunctionSignature, children: Seq[AnyRef]) =>
+          plansV3_4.UserFunctionSignature(children(0).asInstanceOf[QualifiedName],
+                                       children(1).asInstanceOf[IndexedSeq[FieldSignature]],
+                                       children(2).asInstanceOf[CypherType],
+                                       children(3).asInstanceOf[Option[String]],
+                                       children(4).asInstanceOf[Array[String]],
+                                       children(5).asInstanceOf[Option[String]],
+                                       children(5).asInstanceOf[Boolean],
+                                       None)
+
         case (item@(_: plansV3_3.CypherValue |
                     _: plansV3_3.QualifiedName |
                     _: plansV3_3.FieldSignature |
                     _: plansV3_3.ProcedureAccessMode |
-                    _: plansV3_3.ProcedureSignature |
-                    _: plansV3_3.UserFunctionSignature |
                     _: plansV3_3.QueryExpression[_] |
                     _: plansV3_3.SeekableArgs |
                     _: irV3_3.PatternRelationship |

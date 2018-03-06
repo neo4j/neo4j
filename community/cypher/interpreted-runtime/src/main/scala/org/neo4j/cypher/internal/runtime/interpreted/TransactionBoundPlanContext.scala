@@ -144,7 +144,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val description = asOption(signature.description())
     val warning = asOption(signature.warning())
 
-    ProcedureSignature(name, handle.id(), input, output, deprecationInfo, mode, description, warning)
+    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, Some(handle.id()))
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
@@ -165,8 +165,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val description = asOption(signature.description())
 
 
-      Some(UserFunctionSignature(name, fcn.id(), input, output, deprecationInfo,
-                                 signature.allowed(), description, isAggregate = aggregation))
+      Some(UserFunctionSignature(name, input, output, deprecationInfo,
+                                 signature.allowed(), description, isAggregate = aggregation, id = Some(fcn.id())))
     }
   }
 

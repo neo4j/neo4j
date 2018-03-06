@@ -85,7 +85,6 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   private val readSignature = ProcedureSignature(
     QualifiedName(IndexedSeq.empty, "foo"),
-    42,
     IndexedSeq(FieldSignature("a", CTInteger)),
     Some(IndexedSeq(FieldSignature("b", CTInteger))),
     None,
@@ -94,7 +93,6 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   private val writeSignature = ProcedureSignature(
     QualifiedName(Seq.empty, "foo"),
-    42,
     IndexedSeq(FieldSignature("a", CTInteger)),
     Some(IndexedSeq(FieldSignature("b", CTInteger))),
     None,

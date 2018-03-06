@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 
 case class ProcedureSignature(name: QualifiedName,
-                              id: Int,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
                               accessMode: ProcedureAccessMode,
                               description: Option[String] = None,
-                              warning: Option[String] = None) {
+                              warning: Option[String] = None,
+                              id: Option[Int] = None) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
 
@@ -43,13 +43,13 @@ case class ProcedureSignature(name: QualifiedName,
 }
 
 case class UserFunctionSignature(name: QualifiedName,
-                                 id: Int,
                                  inputSignature: IndexedSeq[FieldSignature],
                                  outputType: CypherType,
                                  deprecationInfo: Option[String],
                                  allowed: Array[String],
                                  description: Option[String],
-                                 isAggregate: Boolean) {
+                                 isAggregate: Boolean,
+                                 id: Option[Int] = None) {
   override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
 }
 

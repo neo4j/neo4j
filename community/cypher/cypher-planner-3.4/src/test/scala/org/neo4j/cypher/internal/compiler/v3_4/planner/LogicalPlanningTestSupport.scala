@@ -264,7 +264,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                              fcnLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None) = {
     val signature = ProcedureSignature(
       QualifiedName(Seq.empty, "foo"),
-      42,
       inputSignature = IndexedSeq.empty,
       deprecationInfo = None,
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),
