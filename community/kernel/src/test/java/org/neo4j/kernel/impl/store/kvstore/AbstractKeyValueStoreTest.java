@@ -37,6 +37,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -106,7 +107,7 @@ public class AbstractKeyValueStoreTest
 
     @Test
     @Resources.Life( STARTED )
-    public void accessClosedStateCauseIllegalStateException() throws Exception
+    public void accessClosedStateShouldThrow() throws Exception
     {
         Store store = resourceManager.managed( new Store() );
         store.put( "test", "value" );
@@ -114,7 +115,7 @@ public class AbstractKeyValueStoreTest
         ProgressiveState<String> lookupState = store.state;
         store.prepareRotation( 0 ).rotate();
 
-        expectedException.expect( IllegalStateException.class );
+        expectedException.expect( FileIsNotMappedException.class );
         expectedException.expectMessage( "File has been unmapped" );
 
         lookupState.lookup( "test", new ValueSink()

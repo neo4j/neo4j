@@ -62,6 +62,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
@@ -890,7 +891,7 @@ public class GBPTreeTest
         write.get();
         close.get();
         assertTrue( "Writer should not be able to acquired after close",
-                writerError.get() instanceof IllegalStateException );
+                writerError.get() instanceof FileIsNotMappedException );
     }
 
     private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )

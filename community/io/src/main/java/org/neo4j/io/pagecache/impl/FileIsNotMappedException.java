@@ -30,6 +30,6 @@ public class FileIsNotMappedException extends IOException
 {
     public FileIsNotMappedException( File file )
     {
-        super( "File is not mapped: " + file );
+        super( "File has been unmapped: " + file );
     }
 }

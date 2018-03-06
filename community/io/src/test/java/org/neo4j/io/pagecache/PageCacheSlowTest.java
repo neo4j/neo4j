@@ -39,6 +39,7 @@ import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
@@ -469,7 +470,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             catch ( ExecutionException e )
             {
                 Throwable cause = e.getCause();
-                assertThat( cause, instanceOf( IllegalStateException.class ) );
+                assertThat( cause, instanceOf( FileIsNotMappedException.class ) );
                 assertThat( cause.getMessage(), startsWith( "File has been unmapped" ) );
             }
         }
