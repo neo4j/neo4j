@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt;
+package org.neo4j.bolt.runtime;
 
-import java.net.SocketAddress;
-
-public interface BoltConnectionDescriptor
+public interface BoltConnectionLifetimeListener
 {
-    String id();
 
-    String connector();
+    void created( BoltConnection connection );
 
-    SocketAddress clientAddress();
+    void closed( BoltConnection connection );
 
-    SocketAddress serverAddress();
 }

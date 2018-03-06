@@ -29,6 +29,7 @@ import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -436,7 +437,7 @@ public class BoltStateMachineTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldTerminateOnAuthExpiryDuringSTREAMING() throws Throwable
+    public void shouldTerminateOnAuthExpiryDuringSTREAMINGPullAll() throws Throwable
     {
         // Given
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
@@ -449,6 +450,19 @@ public class BoltStateMachineTest
         // When & Then
         assertException( () -> machine.pullAll( responseHandler ),
                 BoltConnectionAuthFatality.class, "Auth expired!" );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldTerminateOnAuthExpiryDuringSTREAMINGDiscardAll() throws Throwable
+    {
+        // Given
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
+                .onRecords( any(), anyBoolean() );
+        BoltStateMachine machine = newMachine( STREAMING );
+        // We assume the only implementation of statement processor is TransactionStateMachine
+        ((TransactionStateMachine) machine.statementProcessor()).ctx.currentResult = BoltResult.EMPTY;
 
         // When & Then
         assertException( () -> machine.discardAll( responseHandler ),
@@ -482,7 +496,7 @@ public class BoltStateMachineTest
         // Given
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        final BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC() );
+        final BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
 
         // When
         machine.close();
@@ -496,7 +510,7 @@ public class BoltStateMachineTest
     {
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
 
         machine.close();
 

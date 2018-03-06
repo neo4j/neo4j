@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
@@ -43,7 +44,6 @@ import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -142,7 +142,7 @@ public class FragmentedMessageDeliveryTest
         when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
 
         BoltMessagingProtocolHandlerImpl protocol = new BoltMessagingProtocolHandlerImpl( boltChannel,
-                new SynchronousBoltWorker( machine ), neo4jPack, TransportThrottleGroup.NO_THROTTLE,
+                new SynchronousBoltConnection( machine ), neo4jPack, TransportThrottleGroup.NO_THROTTLE,
                 NullLogService.getInstance() );
 
         // When data arrives split up according to the current permutation

@@ -17,25 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
-public interface BoltWorker
+import java.util.Collection;
+
+import org.neo4j.bolt.v1.runtime.Job;
+
+public interface BoltConnectionQueueMonitor
 {
-    /**
-     * Add a new job to the job queue.
-     *
-     * @param job the {@link Job} to add
-     */
-    void enqueue( Job job );
 
-    /**
-     * Interrupt and stop the current action but remain open for new actions.
-     */
-    void interrupt();
+    void enqueued( BoltConnection to, Job job );
 
-    /**
-     * Shut down the worker.
-     */
-    void halt();
+    void drained( BoltConnection from, Collection<Job> batch );
 
 }

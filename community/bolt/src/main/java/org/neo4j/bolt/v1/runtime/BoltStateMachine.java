@@ -38,6 +38,8 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -63,18 +65,20 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     private final String id = UUID.randomUUID().toString();
     private final BoltChannel boltChannel;
     private final Clock clock;
+    private final Log log;
 
     State state = State.CONNECTED;
 
     final SPI spi;
     final MutableConnectionState ctx;
 
-    public BoltStateMachine( SPI spi, BoltChannel boltChannel, Clock clock )
+    public BoltStateMachine( SPI spi, BoltChannel boltChannel, Clock clock, LogService logService )
     {
         this.spi = spi;
         this.ctx = new MutableConnectionState( spi, clock );
         this.boltChannel = boltChannel;
         this.clock = clock;
+        this.log = logService.getInternalLog( getClass() );
     }
 
     public State state()
@@ -106,6 +110,13 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         {
             try
             {
+                if ( hasPendingError() )
+                {
+                    Neo4jError pendingError = ctx.pendingError;
+                    ctx.pendingError = null;
+                    ctx.markFailed( pendingError );
+                }
+
                 ctx.responseHandler.onFinish();
             }
             finally
@@ -124,7 +135,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            state = state.init( this, userAgent, authToken );
+            if ( !hasPendingError() )
+            {
+                state = state.init( this, userAgent, authToken );
+            }
         }
         finally
         {
@@ -148,7 +162,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            state = state.ackFailure( this );
+            if ( !hasPendingError() )
+            {
+                state = state.ackFailure( this );
+            }
         }
         finally
         {
@@ -175,7 +192,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            state = state.reset( this );
+            if ( !hasPendingError() )
+            {
+                state = state.reset( this );
+            }
         }
         finally
         {
@@ -197,8 +217,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            state = state.run( this, statement, params );
-            handler.onMetadata( "result_available_after", Values.longValue( clock.millis() - start ) );
+            if ( !hasPendingError() )
+            {
+                state = state.run( this, statement, params );
+                handler.onMetadata( "result_available_after", Values.longValue( clock.millis() - start ) );
+            }
         }
         finally
         {
@@ -216,7 +239,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            state = state.discardAll( this );
+            if ( !hasPendingError() )
+            {
+                state = state.discardAll( this );
+            }
         }
         finally
         {
@@ -233,12 +259,25 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            state = state.pullAll( this );
+            if ( !hasPendingError() )
+            {
+                state = state.pullAll( this );
+            }
         }
         finally
         {
             after();
         }
+    }
+
+    public void markFailed( Neo4jError error )
+    {
+        fail( this, error );
+    }
+
+    private boolean hasPendingError()
+    {
+        return ctx.pendingError != null;
     }
 
     /** A session id that is unique for this database instance */
@@ -325,7 +364,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
          * This is a side-channel call and we should not close anything directly.
          * Just mark the transaction and set isTerminated to true and then the session
          * thread will close down the connection eventually.
-         */
+            */
         ctx.isTerminated.set( true );
         ctx.statementProcessor.markCurrentTransactionForTermination();
         spi.onTerminate( this );
@@ -335,6 +374,16 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     public boolean willTerminate()
     {
         return ctx.isTerminated.get();
+    }
+
+    public boolean shouldStickOnThread()
+    {
+        return state == State.STREAMING || statementProcessor().hasTransaction();
+    }
+
+    public boolean hasOpenStatement()
+    {
+        return statementProcessor().hasOpenStatement();
     }
 
     public enum State
@@ -718,6 +767,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
          */
         BoltResponseHandler responseHandler;
 
+        Neo4jError pendingError;
+
         /**
          * This is incremented each time {@link #interrupt()} is called,
          * and decremented each time a {@link BoltStateMachine#reset(BoltResponseHandler)} message
@@ -796,6 +847,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             {
                 responseHandler.markFailed( error );
             }
+            else
+            {
+                pendingError = error;
+            }
         }
 
         @Override
@@ -809,7 +864,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     }
 
-    interface SPI
+    public interface SPI
     {
         void reportError( Neo4jError err );
 
@@ -862,6 +917,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
         @Override
         public boolean hasTransaction()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasOpenStatement()
         {
             return false;
         }

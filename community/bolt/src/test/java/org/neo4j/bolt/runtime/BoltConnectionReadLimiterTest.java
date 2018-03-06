@@ -17,13 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+
+import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
 import org.neo4j.util.FeatureToggles;
 
@@ -41,48 +44,54 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class BoltChannelAutoReadLimiterTest
+public class BoltConnectionReadLimiterTest
 {
     private static final Job job = s -> s.run( "INIT", null, null );
+    private BoltConnection connection;
     private Channel channel;
     private Log log;
 
     @Before
     public void setup()
     {
-        this.channel = new EmbeddedChannel();
-        this.log = mock( Log.class );
+        channel = new EmbeddedChannel();
+        log = mock( Log.class );
+
+        connection = mock( BoltConnection.class );
+        when( connection.id() ).thenReturn( channel.id().asLongText() );
+        when( connection.channel() ).thenReturn( channel );
     }
 
     @Test
     public void shouldUseWatermarksFromSystemProperties()
     {
-        FeatureToggles.set( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.LOW_WATERMARK_NAME, 5 );
-        FeatureToggles.set( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.HIGH_WATERMARK_NAME, 10 );
+        FeatureToggles.set( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.LOW_WATERMARK_NAME, 5 );
+        FeatureToggles.set( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.HIGH_WATERMARK_NAME, 10 );
 
         try
         {
-           BoltChannelAutoReadLimiter limiter = newLimiterWithDefaults();
+           BoltConnectionReadLimiter limiter = newLimiterWithDefaults();
 
            assertThat( limiter.getLowWatermark(), is( 5 ) );
            assertThat( limiter.getHighWatermark(), is( 10 ) );
         }
         finally
         {
-            FeatureToggles.clear( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.LOW_WATERMARK_NAME );
-            FeatureToggles.clear( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.HIGH_WATERMARK_NAME );
+            FeatureToggles.clear( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.LOW_WATERMARK_NAME );
+            FeatureToggles.clear( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.HIGH_WATERMARK_NAME );
         }
     }
 
     @Test
     public void shouldNotDisableAutoReadBelowHighWatermark()
     {
-        BoltChannelAutoReadLimiter limiter = newLimiter( 1, 2 );
+        BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
+        limiter.enqueued( connection, job );
 
         assertTrue( channel.config().isAutoRead() );
         verify( log, never() ).warn( anyString(), any(), any() );
@@ -91,13 +100,13 @@ public class BoltChannelAutoReadLimiterTest
     @Test
     public void shouldDisableAutoReadWhenAtHighWatermark()
     {
-        BoltChannelAutoReadLimiter limiter = newLimiter( 1, 2 );
+        BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
 
         assertFalse( channel.config().isAutoRead() );
         verify( log ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -106,15 +115,15 @@ public class BoltChannelAutoReadLimiterTest
     @Test
     public void shouldDisableAutoReadOnlyOnceWhenAboveHighWatermark()
     {
-        BoltChannelAutoReadLimiter limiter = newLimiter( 1, 2 );
+        BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
 
         assertFalse( channel.config().isAutoRead() );
         verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -123,15 +132,14 @@ public class BoltChannelAutoReadLimiterTest
     @Test
     public void shouldEnableAutoReadWhenAtLowWatermark()
     {
-        BoltChannelAutoReadLimiter limiter = newLimiter( 1, 2 );
+        BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.dequeued( job );
-        limiter.dequeued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.drained( connection, Arrays.asList( job, job  ) );
 
         assertTrue( channel.config().isAutoRead() );
         verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -141,16 +149,14 @@ public class BoltChannelAutoReadLimiterTest
     @Test
     public void shouldEnableAutoReadOnlyOnceWhenBelowLowWatermark()
     {
-        BoltChannelAutoReadLimiter limiter = newLimiter( 1, 2 );
+        BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.dequeued( job );
-        limiter.dequeued( job );
-        limiter.dequeued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.drained( connection, Arrays.asList( job, job, job ) );
 
         assertTrue( channel.config().isAutoRead() );
         verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -227,14 +233,14 @@ public class BoltChannelAutoReadLimiterTest
         }
     }
 
-    private BoltChannelAutoReadLimiter newLimiter( int low, int high )
+    private BoltConnectionReadLimiter newLimiter( int low, int high )
     {
-        return new BoltChannelAutoReadLimiter( channel, log, low, high );
+        return new BoltConnectionReadLimiter( log, low, high );
     }
 
-    private BoltChannelAutoReadLimiter newLimiterWithDefaults()
+    private BoltConnectionReadLimiter newLimiterWithDefaults()
     {
-        return new BoltChannelAutoReadLimiter( channel, log );
+        return new BoltConnectionReadLimiter( log );
     }
 
 }

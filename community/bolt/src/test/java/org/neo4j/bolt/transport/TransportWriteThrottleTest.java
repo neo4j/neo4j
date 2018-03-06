@@ -57,6 +57,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -123,7 +124,8 @@ public class TransportWriteThrottleTest
     public void shouldNotLockWhenWritable() throws Exception
     {
         // given
-        TransportThrottle throttle = newThrottleAndInstall( channel );
+        TestThrottleLock lockOverride = new TestThrottleLock();
+        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
         when( channel.isWritable() ).thenReturn( true );
 
         // when
@@ -144,15 +146,16 @@ public class TransportWriteThrottleTest
         }
 
         assertTrue( future.isDone() );
-        verify( lock, never() ).lock( any(), anyLong() );
-        verify( lock, never() ).unlock( any() );
+        assertThat( lockOverride.lockCallCount(), is( 0 ) );
+        assertThat( lockOverride.unlockCallCount(), is( 0 ) );
     }
 
     @Test
     public void shouldLockWhenNotWritable() throws Exception
     {
         // given
-        TransportThrottle throttle = newThrottleAndInstall( channel );
+        TestThrottleLock lockOverride = new TestThrottleLock();
+        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
         when( channel.isWritable() ).thenReturn( false );
 
         // when
@@ -175,8 +178,8 @@ public class TransportWriteThrottleTest
         }
 
         assertFalse( future.isDone() );
-        verify( lock, atLeast( 1 ) ).lock( any(), anyLong() );
-        verify( lock, never() ).unlock( any() );
+        assertThat( lockOverride.lockCallCount(), greaterThan( 0 ) );
+        assertThat( lockOverride.unlockCallCount(), is( 0 ) );
     }
 
     @Test

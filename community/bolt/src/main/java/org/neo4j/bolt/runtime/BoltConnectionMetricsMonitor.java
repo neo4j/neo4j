@@ -17,39 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
-public class SynchronousBoltWorker implements BoltWorker
+public interface BoltConnectionMetricsMonitor
 {
-    private final BoltStateMachine machine;
 
-    public SynchronousBoltWorker( BoltStateMachine machine )
-    {
-        this.machine = machine;
-    }
+    void connectionOpened();
 
-    @Override
-    public void enqueue( Job job )
-    {
-        try
-        {
-            job.perform( machine );
-        }
-        catch ( BoltConnectionFatality connectionFatality )
-        {
-            throw new RuntimeException( connectionFatality );
-        }
-    }
+    void connectionActivated();
 
-    @Override
-    public void interrupt()
-    {
-        machine.interrupt();
-    }
+    void connectionWaiting();
 
-    @Override
-    public void halt()
-    {
-        machine.close();
-    }
+    void messageReceived();
+
+    void messageProcessingStarted( long queueTime );
+
+    void messageProcessingCompleted( long processingTime );
+
+    void messageProcessingFailed();
+
+    void connectionClosed();
+
 }

@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt;
+package org.neo4j.bolt.runtime;
 
-import java.net.SocketAddress;
+import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 
-public interface BoltConnectionDescriptor
+public interface ExecutorFactory
 {
-    String id();
 
-    String connector();
+    ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, ThreadFactory threadFactory );
 
-    SocketAddress clientAddress();
-
-    SocketAddress serverAddress();
 }

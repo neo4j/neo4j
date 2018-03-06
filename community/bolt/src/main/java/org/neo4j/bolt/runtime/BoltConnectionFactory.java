@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
-import java.util.Collection;
+import org.neo4j.bolt.BoltChannel;
 
-public interface BoltWorkerQueueMonitor
+public interface BoltConnectionFactory
 {
-
-    void enqueued( Job job );
-
-    void dequeued( Job job );
-
-    void drained( Collection<Job> jobs );
+    /**
+     * Create a new connection bound to the specified channel
+     *
+     * @param channel the underlying channel
+     * @return the newly created connection instance
+     */
+    BoltConnection newConnection( BoltChannel channel );
 
 }

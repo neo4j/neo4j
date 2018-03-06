@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.cypher.internal.frontend.v2_3.ast.functions.Str;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.inOrder;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.when;
 @RunWith( MockitoJUnitRunner.class )
 public class BoltChannelTest
 {
+    private final String connector = "default";
     @Mock
     private ChannelHandlerContext channelHandlerContext;
     @Mock
@@ -48,7 +50,7 @@ public class BoltChannelTest
     @Test
     public void shouldLogWhenOpened()
     {
-        BoltChannel boltChannel = BoltChannel.open( channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
         assertNotNull( boltChannel );
 
         verify( messageLogger ).serverEvent( "OPEN" );
@@ -59,7 +61,7 @@ public class BoltChannelTest
     {
         Channel channel = channelMock( true );
         when( channelHandlerContext.channel() ).thenReturn( channel );
-        BoltChannel boltChannel = BoltChannel.open( channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
         assertNotNull( boltChannel );
 
         boltChannel.close();
@@ -74,7 +76,7 @@ public class BoltChannelTest
     {
         Channel channel = channelMock( true );
         when( channelHandlerContext.channel() ).thenReturn( channel );
-        BoltChannel boltChannel = BoltChannel.open( channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
 
         boltChannel.close();
 
@@ -86,7 +88,7 @@ public class BoltChannelTest
     {
         Channel channel = channelMock( false );
         when( channelHandlerContext.channel() ).thenReturn( channel );
-        BoltChannel boltChannel = BoltChannel.open( channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
 
         boltChannel.close();
 
