@@ -53,7 +53,16 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
             Visitor<EntityUpdates, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan );
-    //TODO javadoc
+
+    /**
+     * Retrieve all relationships in the database which has any of the the given relationship types AND
+     * one or more of the given property key ids.
+     *
+     * @param relationshipTypeIds array of relationsip type ids to generate updates for. Empty array means all.
+     * @param propertyKeyIdFilter property key ids to generate updates for.
+     * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}
+     * @return a {@link StoreScan} to start and to stop the scan.
+     */
     <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor );
 

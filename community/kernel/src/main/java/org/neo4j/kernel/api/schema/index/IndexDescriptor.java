@@ -136,7 +136,10 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
         return this.equals( supplier.getIndexDescriptor() );
     }
 
-    //TODO javadoc
+    /**
+     * Returns the identifier for the index descriptor, or null if not applicable to this index type.
+     * @return the index identifier
+     */
     public String identifier()
     {
         return null;

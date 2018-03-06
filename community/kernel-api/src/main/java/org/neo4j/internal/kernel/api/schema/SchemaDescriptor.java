@@ -80,7 +80,10 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      */
     int[] getPropertyIds();
 
-    //TODO javadoc
+    /**
+     * This method returns the entity token ids handled by this descriptor.
+     * @return the entity token ids that this schema descriptor represents
+     */
     int[] getEntityTokenIds();
 
     /**

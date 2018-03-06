@@ -144,11 +144,16 @@ public interface StoreReadLayer
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link SchemaIndexDescriptor} for matching index, or {@code null} if not found.
+     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
      */
     IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
 
-    //TODO javadoc
+    /**
+     * Looks for a stored index by given index name
+     *
+     * @param name of the index.
+     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
+     */
     IndexDescriptor indexGetForName( String name );
 
     /**

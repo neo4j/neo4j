@@ -21,7 +21,11 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 public interface ReadOnlyFulltext extends AutoCloseable
 {
-    //TODO javadoc
+    /**
+     * Queires the fulltext index with the given lucene-syntax query
+     * @param query the lucene query
+     * @return A {@link ScoreEntityIterator} over the results
+     */
     ScoreEntityIterator query( String query );
 
     @Override
