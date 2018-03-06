@@ -772,7 +772,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       transactionalContext.kernelTransaction.locks().acquireExclusiveRelationshipLock(obj)
 
     override def releaseExclusiveLock(obj: Long): Unit =
-      transactionalContext.kernelTransaction.locks().acquireExclusiveRelationshipLock(obj)
+      transactionalContext.kernelTransaction.locks().releaseExclusiveRelationshipLock(obj)
 
     override def exists(id: Long): Boolean = reads().relationshipExists(id)
   }
