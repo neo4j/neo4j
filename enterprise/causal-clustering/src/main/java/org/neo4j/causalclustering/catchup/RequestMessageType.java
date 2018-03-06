@@ -26,9 +26,10 @@ import static java.lang.String.format;
 public enum RequestMessageType implements Message
 {
     TX_PULL_REQUEST( (byte) 1 ),
-    PREPARE_STORE_COPY( (byte) 2 ),
+    STORE( (byte) 2 ),
     CORE_SNAPSHOT( (byte) 3 ),
     STORE_ID( (byte) 4 ),
+    PREPARE_STORE_COPY( (byte) 5 ),
     STORE_FILE( (byte) 6 ),
     INDEX_SNAPSHOT( (byte) 7 ),
     UNKNOWN( (byte) 404 );

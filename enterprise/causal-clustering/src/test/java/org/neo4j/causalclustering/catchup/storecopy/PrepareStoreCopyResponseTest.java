@@ -19,48 +19,21 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.util.Objects;
+import org.junit.Test;
 
-public class StoreCopyFinishedResponse
+import static org.junit.Assert.assertArrayEquals;
+import static org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse.Status.E_LISTING_STORE;
+import static org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse.Status.E_STORE_ID_MISMATCH;
+import static org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse.Status.SUCCESS;
+
+public class PrepareStoreCopyResponseTest
 {
-    public enum Status
+    @Test
+    public void shouldMaintainOrderOfStatuses()
     {
-        SUCCESS,
-        E_STORE_ID_MISMATCH,
-        E_TOO_FAR_BEHIND,
-        E_UNKNOWN
-    }
+        PrepareStoreCopyResponse.Status[] givenValues = PrepareStoreCopyResponse.Status.values();
+        PrepareStoreCopyResponse.Status[] expectedValues = new PrepareStoreCopyResponse.Status[]{SUCCESS, E_STORE_ID_MISMATCH, E_LISTING_STORE};
 
-    private final Status status;
-
-    public StoreCopyFinishedResponse( Status status )
-    {
-        this.status = status;
-    }
-
-    Status status()
-    {
-        return status;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        StoreCopyFinishedResponse that = (StoreCopyFinishedResponse) o;
-        return status == that.status;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( status );
+        assertArrayEquals( givenValues, expectedValues );
     }
 }
