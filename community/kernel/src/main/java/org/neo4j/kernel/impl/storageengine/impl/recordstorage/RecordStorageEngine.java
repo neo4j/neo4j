@@ -201,9 +201,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         try
         {
-            //TODO
-            propertyKeyTokenHolder.setInitialTokens(
-                    neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaCache = new SchemaCache( constraintSemantics, Collections.emptyIterator() );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), indexProviderMap );
@@ -213,6 +210,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
             labelScanStore = new NativeLabelScanStore( pageCache, storeDir, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );
+
+            // We need to load the tokens here, since we need them before we load the indexes.
+            propertyKeyTokenHolder.setInitialTokens(
+                    neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
+            relationshipTypeTokenHolder.setInitialTokens(
+                    neoStores.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
+            labelTokenHolder.setInitialTokens(
+                    neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
             this.indexProviderMap = indexProviderMap;
@@ -415,14 +420,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void start() throws Throwable
     {
         neoStores.makeStoreOk();
-
-        propertyKeyTokenHolder.setInitialTokens(
-                neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
-        relationshipTypeTokenHolder.setInitialTokens(
-                neoStores.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-        labelTokenHolder.setInitialTokens(
-                neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
-
         neoStores.rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
         loadSchemaCache();
         indexingService.start();

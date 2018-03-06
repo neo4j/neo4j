@@ -69,6 +69,8 @@ public class BloomIT
     static final String SCORE = "score";
     static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
     static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
+    static final String REMOVE_NODE_KEYS = "CALL bloom.removeNodeIndex";
+    static final String REMOVE_REL_KEYS = "CALL bloom.removeRelationshipIndex";
     static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
     static final String GET_REL_KEYS = "CALL bloom.getIndexedRelationshipPropertyKeys";
     static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
@@ -629,51 +631,44 @@ public class BloomIT
         }
     }
 
-    //TODO Make a way to disable/remove the indexes?
-//    @Test
-//    public void shouldReindexAfterBeingTemporarilyDisabled() throws Exception
-//    {
-//
-//        // Create a node while the index is enabled.
-//        db = getDb();
-//        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
-//        try ( Transaction tx = db.beginTx() )
-//        {
-//            db.createNode().setProperty( "prop", "Hello and hello again." );
-//            tx.success();
-//        }
-//
-//        // Shut down, disable the index, start up again and create a node that would have been indexed had the index
-//        // been enabled.
-//        db.shutdown();
-//        builder.setConfig( bloom_enabled, "false" );
-//        db = builder.newGraphDatabase();
-//
-//        try ( Transaction tx = db.beginTx() )
-//        {
-//            db.createNode().setProperty( "prop", "En tomte bodde i ett hus." );
-//            tx.success();
-//        }
-//
-//        // Re-enable the index and restart. Wait for the index to rebuild.
-//        db.shutdown();
-//        builder.setConfig( bloom_enabled, "true" );
-//        db = getDb();
-//        db.execute( AWAIT_POPULATION ).close();
-//
-//        // Now we should be able to find the node that was added while the index was disabled.
-//        try ( Transaction ignore = db.beginTx() )
-//        {
-//            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"hello\"", false, false ) ) )
-//            {
-//                assertThat( Iterators.count( result ), is( 1L ) );
-//            }
-//            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"tomte\"", false, false ) ) )
-//            {
-//                assertThat( Iterators.count( result ), is( 1L ) );
-//            }
-//        }
-//    }
+    @Test
+    public void shouldReindexAfterBeingTemporarilyDisabled() throws Exception
+    {
+
+        // Create a node while the index is enabled.
+        db = getDb();
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "Hello and hello again." );
+            tx.success();
+        }
+
+        db.execute( String.format( REMOVE_NODE_KEYS ) );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "En tomte bodde i ett hus." );
+            tx.success();
+        }
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+
+        // Re-enable the index and restart. Wait for the index to rebuild.
+        db.execute( AWAIT_POPULATION ).close();
+
+        // Now we should be able to find the node that was added while the index was disabled.
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"hello\"", false, false ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+            try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"tomte\"", false, false ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+        }
+    }
 
     @Test
     public void indexedPropertiesShouldBeSetByProcedure() throws Exception

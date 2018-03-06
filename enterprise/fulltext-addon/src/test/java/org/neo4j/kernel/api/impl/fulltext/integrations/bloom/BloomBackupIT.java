@@ -36,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -55,6 +56,8 @@ public class BloomBackupIT
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     private GraphDatabaseAPI db;
     private int backupPort;
 

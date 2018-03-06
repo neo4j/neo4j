@@ -34,10 +34,10 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator.ScoreEntry;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextQueryHelper;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator.ScoreEntry;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -90,20 +90,38 @@ public class BloomProcedures
                 }
             }
         }
-        catch ( IndexNotFoundKernelException | SchemaRuleNotFoundException e )
+        catch ( IndexNotFoundKernelException | SchemaRuleNotFoundException ignore )
         {
-            //This is fine
         }
     }
 
     @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws SchemaRuleNotFoundException
+    public Stream<PropertyOutput> getIndexedNodePropertyKeys()
     {
         try ( Statement stmt = tx.acquireStatement() )
         {
             ReadOperations readOperations = stmt.readOperations();
             return accessor.propertyKeyStrings( readOperations.indexGetForName( BLOOM_NODES ) ).map( PropertyOutput::new );
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            return Stream.empty();
+        }
+    }
+
+    @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
+    @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
+    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys()
+    {
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            return accessor.propertyKeyStrings( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) ).map( PropertyOutput::new );
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            return Stream.empty();
         }
     }
 
@@ -124,17 +142,6 @@ public class BloomProcedures
         {
             IndexDescriptor indexDescriptor = accessor.indexDescriptorFor( BLOOM_NODES, EntityType.NODE, new String[0], propertyKeys.toArray( new String[0] ) );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( indexDescriptor );
-        }
-    }
-
-    @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
-    @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws SchemaRuleNotFoundException
-    {
-        try ( Statement stmt = tx.acquireStatement() )
-        {
-            ReadOperations readOperations = stmt.readOperations();
-            return accessor.propertyKeyStrings( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) ).map( PropertyOutput::new );
         }
     }
 
@@ -159,37 +166,84 @@ public class BloomProcedures
         }
     }
 
-    @Description( "Check the status of the Bloom fulltext index add-on" )
-    @Procedure( name = "bloom.indexStatus", mode = READ )
-    public Stream<StatusOutput> indexStatus() throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+    @Description( "Remove the node index" )
+    @Procedure( name = "bloom.removeNodeIndex", mode = SCHEMA )
+    public void removeNodeIndex() throws Exception
     {
         try ( Statement stmt = tx.acquireStatement() )
         {
             ReadOperations readOperations = stmt.readOperations();
-            InternalIndexState internalNodeIndexState =
-                    readOperations.indexGetState( readOperations.indexGetForName( BLOOM_NODES ) );
-            InternalIndexState internalRelationshipIndexState =
-                    readOperations.indexGetState( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) );
-            StatusOutput nodeIndexState = new StatusOutput( BLOOM_NODES, internalNodeIndexState );
-            StatusOutput relationshipIndexState = new StatusOutput( BLOOM_RELATIONSHIPS, internalRelationshipIndexState );
-            return Stream.of( nodeIndexState, relationshipIndexState );
+            stmt.schemaWriteOperations().indexDrop( readOperations.indexGetForName( BLOOM_NODES ) );
         }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            //this is fine
+        }
+    }
+
+    @Description( "Remove the relationship index" )
+    @Procedure( name = "bloom.removeRelationshipIndex", mode = SCHEMA )
+    public void removeRelationshipIndex() throws Exception
+    {
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            stmt.schemaWriteOperations().indexDrop( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) );
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            //this is fine
+        }
+    }
+
+    @Description( "Check the status of the Bloom fulltext index add-on" )
+    @Procedure( name = "bloom.indexStatus", mode = READ )
+    public Stream<StatusOutput> indexStatus()
+    {
+        StatusOutput nodeIndexState = new StatusOutput( BLOOM_NODES, InternalIndexState.FAILED );
+        StatusOutput relationshipIndexState = new StatusOutput( BLOOM_RELATIONSHIPS, InternalIndexState.FAILED );
+        try ( Statement stmt = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = stmt.readOperations();
+            InternalIndexState internalNodeIndexState = readOperations.indexGetState( readOperations.indexGetForName( BLOOM_NODES ) );
+            InternalIndexState internalRelationshipIndexState = readOperations.indexGetState( readOperations.indexGetForName( BLOOM_RELATIONSHIPS ) );
+            nodeIndexState = new StatusOutput( BLOOM_NODES, internalNodeIndexState );
+            relationshipIndexState = new StatusOutput( BLOOM_RELATIONSHIPS, internalRelationshipIndexState );
+        }
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException ignored )
+        {
+        }
+        return Stream.of( nodeIndexState, relationshipIndexState );
     }
 
     @Description( "Query the Bloom fulltext index for nodes" )
     @Procedure( name = "bloom.searchNodes", mode = READ )
     public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
-            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
+            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll )
     {
-        return queryAsStream( terms, BLOOM_NODES, fuzzy, matchAll );
+        try
+        {
+            return queryAsStream( terms, BLOOM_NODES, fuzzy, matchAll );
+        }
+        catch ( IOException | IndexNotFoundKernelException e )
+        {
+           return Stream.empty();
+        }
     }
 
     @Description( "Query the Bloom fulltext index for relationships" )
     @Procedure( name = "bloom.searchRelationships", mode = READ )
     public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
-            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
+            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll )
     {
-        return queryAsStream( terms, BLOOM_RELATIONSHIPS, fuzzy, matchAll );
+        try
+        {
+            return queryAsStream( terms, BLOOM_RELATIONSHIPS, fuzzy, matchAll );
+        }
+        catch ( IOException | IndexNotFoundKernelException e )
+        {
+            return Stream.empty();
+        }
     }
 
     private Stream<EntityOutput> queryAsStream( List<String> terms, String indexName, boolean fuzzy, boolean matchAll )
