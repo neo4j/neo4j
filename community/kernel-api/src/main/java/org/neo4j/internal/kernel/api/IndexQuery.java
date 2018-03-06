@@ -64,52 +64,40 @@ public abstract class IndexQuery
      * Searches the index for numeric values between {@code from} and {@code to}.
      *
      * @param propertyKeyId the property ID to match.
-     * @param from the lower bound of the property value.
+     * @param from lower bound of the range or null if unbounded
      * @param fromInclusive the lower bound is inclusive if true.
-     * @param to the upper bound of the property value.
+     * @param to upper bound of the range or null if unbounded
      * @param toInclusive the upper bound is inclusive if true.
      * @return an {@link IndexQuery} instance to be used for querying an index.
      */
-    public static RangePredicate range( int propertyKeyId, Number from, boolean fromInclusive,
+    public static RangePredicate range( int propertyKeyId,
+                                        Number from, boolean fromInclusive,
                                         Number to, boolean toInclusive )
     {
         return new NumberRangePredicate( propertyKeyId,
-                                   from == null ? null : Values.numberValue( from ), fromInclusive,
-                                   to == null ? null : Values.numberValue( to ), toInclusive );
+                                         from == null ? null : Values.numberValue( from ), fromInclusive,
+                                         to == null ? null : Values.numberValue( to ), toInclusive );
     }
 
-    /**
-     * Searches the index for geometry values between {@code from} and {@code to}.
-     *
-     * @param propertyKeyId the property ID to match.
-     * @param from the lower bound of the property value. In 2D this means lower-left corner of search envelope.
-     * @param fromInclusive the lower bound is inclusive if true.
-     * @param to the upper bound of the property value. In 2D this means upper-right corner of search envelope.
-     * @param toInclusive the upper bound is inclusive if true.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
-     */
-    public static RangePredicate range( int propertyKeyId, PointValue from, boolean fromInclusive,
-                                        PointValue to, boolean toInclusive )
-    {
-        return new GeometryRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
-    }
-
-    /**
-     * Searches the index for string values between {@code from} and {@code to}.
-     *
-     * @param propertyKeyId the property ID to match.
-     * @param from the lower bound of the property value.
-     * @param fromInclusive the lower bound is inclusive if true.
-     * @param to the upper bound of the property value.
-     * @param toInclusive the upper bound is inclusive if true.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
-     */
-    public static RangePredicate range( int propertyKeyId, String from, boolean fromInclusive,
+    public static RangePredicate range( int propertyKeyId,
+                                        String from, boolean fromInclusive,
                                         String to, boolean toInclusive )
     {
         return new TextRangePredicate( propertyKeyId,
-                                   from == null ? null : Values.stringValue( from ), fromInclusive,
-                                   to == null ? null : Values.stringValue( to ), toInclusive );
+                                       from == null ? null : Values.stringValue( from ), fromInclusive,
+                                       to == null ? null : Values.stringValue( to ), toInclusive );
+    }
+
+    public static <VALUE extends Value> RangePredicate range( int propertyKeyId,
+                                                              VALUE from, boolean fromInclusive,
+                                                              VALUE to, boolean toInclusive )
+    {
+        ValueGroup valueGroup = from != null ? from.valueGroup() : to.valueGroup();
+        if ( valueGroup == ValueGroup.GEOMETRY )
+        {
+            return new GeometryRangePredicate( propertyKeyId, (PointValue)from, fromInclusive, (PointValue)to, toInclusive );
+        }
+        return new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
     }
 
     /**

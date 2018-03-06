@@ -28,7 +28,9 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.values.storable.Value;
 
+import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
@@ -41,6 +43,12 @@ import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.epochDate;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -208,6 +216,79 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             assertThat( query( range( 1, "Anna", true, "William", false ) ), equalTo( asList( 1L, 2L, 3L ) ) );
             assertThat( query( range( 1, "Anna", false, "William", true ) ), equalTo( asList( 3L, 4L, 5L ) ) );
             assertThat( query( range( 1, "Anna", true, "William", true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByDateWithDuplicates() throws Exception
+        {
+            testIndexRangeSeekWithDuplicates( epochDate( 100 ),
+                                              epochDate( 101 ),
+                                              epochDate( 200 ),
+                                              epochDate( 300 ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByLocalDateTimeWithDuplicates() throws Exception
+        {
+            testIndexRangeSeekWithDuplicates( localDateTime( 1000, 10 ),
+                                              localDateTime( 1000, 11 ),
+                                              localDateTime( 2000, 10 ),
+                                              localDateTime( 3000, 10 ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByDateTimeWithDuplicates() throws Exception
+        {
+            testIndexRangeSeekWithDuplicates( datetime( 1000, 10, UTC ),
+                                              datetime( 1000, 11, UTC ),
+                                              datetime( 2000, 10, UTC ),
+                                              datetime( 3000, 10, UTC ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByLocalTimeWithDuplicates() throws Exception
+        {
+            testIndexRangeSeekWithDuplicates( localTime( 1000 ),
+                                              localTime( 1001 ),
+                                              localTime( 2000 ),
+                                              localTime( 3000 ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByTimeWithDuplicates() throws Exception
+        {
+            testIndexRangeSeekWithDuplicates( time( 1000, UTC ),
+                                              time( 1001, UTC ),
+                                              time( 2000, UTC ),
+                                              time( 3000, UTC ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByDurationWithDuplicates() throws Exception
+        {
+            testIndexRangeSeekWithDuplicates( duration( 1, 1, 1, 1 ),
+                                              duration( 1, 1, 1, 2 ),
+                                              duration( 2, 1, 1, 1 ),
+                                              duration( 3, 1, 1, 1 ) );
+        }
+
+        /**
+         * Helper for testing range seeks. Takes 4 ordered sample values.
+         */
+        private <VALUE extends Value> void testIndexRangeSeekWithDuplicates( VALUE v1, VALUE v2, VALUE v3, VALUE v4 ) throws Exception
+        {
+            updateAndCommit( asList(
+                    add( 1L, descriptor.schema(), v1 ),
+                    add( 2L, descriptor.schema(), v1 ),
+                    add( 3L, descriptor.schema(), v3 ),
+                    add( 4L, descriptor.schema(), v4 ),
+                    add( 5L, descriptor.schema(), v4 ) ) );
+
+            assertThat( query( range( 1, v1, false, v4, false ) ), equalTo( singletonList( 3L ) ) );
+            assertThat( query( range( 1, v2, false, v3, false ) ), equalTo( EMPTY_LIST ) );
+            assertThat( query( range( 1, v1, true, v4, false ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+            assertThat( query( range( 1, v1, false, v4, true ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+            assertThat( query( range( 1, v1, true, v4, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
         }
 
         @Test

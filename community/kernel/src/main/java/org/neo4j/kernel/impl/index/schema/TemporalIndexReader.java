@@ -28,7 +28,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
@@ -89,7 +88,12 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
     @Override
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
     {
-        if ( predicates[0] instanceof ExistsPredicate )
+        if ( predicates.length != 1 )
+        {
+            throw new IllegalArgumentException( "Only single property temporal indexes are supported." );
+        }
+        IndexQuery predicate = predicates[0];
+        if ( predicate instanceof ExistsPredicate )
         {
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
@@ -100,13 +104,21 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         }
         else
         {
-            if ( validPredicates( predicates ) )
+            if ( validPredicate( predicate ) )
             {
-                NativeSchemaIndexReader<?,NativeSchemaValue> part = uncheckedSelect( predicates[0].valueGroup() );
+                NativeSchemaIndexReader<?,NativeSchemaValue> part = uncheckedSelect( predicate.valueGroup() );
                 if ( part != null )
                 {
                     part.query( cursor, indexOrder, predicates );
                 }
+                else
+                {
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
+                }
+            }
+            else
+            {
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
             }
         }
     }
@@ -117,9 +129,9 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         return true;
     }
 
-    private boolean validPredicates( IndexQuery[] predicates )
+    private boolean validPredicate( IndexQuery predicate )
     {
-        return predicates[0] instanceof ExactPredicate;
+        return predicate instanceof IndexQuery.ExactPredicate || predicate instanceof IndexQuery.RangePredicate;
     }
 
     /**
