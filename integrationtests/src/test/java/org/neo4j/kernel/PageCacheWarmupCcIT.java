@@ -30,7 +30,9 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmerMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -43,7 +45,9 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
     @Rule
     public ClusterRule clusterRule = new ClusterRule()
             .withNumberOfReadReplicas( 0 )
+            .withSharedCoreParam( UdcSettings.udc_enabled, Settings.FALSE )
             .withSharedCoreParam( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" )
+            .withSharedReadReplicaParam( UdcSettings.udc_enabled, Settings.FALSE )
             .withSharedReadReplicaParam( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
 
     private Cluster cluster;

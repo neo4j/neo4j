@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.StandardCopyOption;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.OptionalLong;
@@ -37,10 +34,15 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipException;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -65,15 +67,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 {
     public static final String SUFFIX_CACHEPROF = ".cacheprof";
-    public static final String SUFFIX_CACHEPROF_TMP = ".cacheprof.tmp";
 
-    // We use the deflate algorithm since it has been experimentally shown to be both the fastest,
-    // and the algorithm that produces the smallest output.
-    // For instance, a 5.7 GiB file where 7 out of 8 pages are in memory, produces a 57 KiB profile file,
-    // where the uncompressed profile is 87.5 KiB. A 35% reduction.
-    private static final String COMPRESSION_FORMAT = CompressorStreamFactory.getDeflate();
     private static final int IO_PARALLELISM = Runtime.getRuntime().availableProcessors();
-    private static final CompressorStreamFactory COMPRESSOR_FACTORY = new CompressorStreamFactory( true, 1024 );
 
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -109,7 +104,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         List<PagedFile> files = pageCache.listExistingMappings();
         for ( PagedFile file : files )
         {
-            File profileFile = profileOutputFileFinal( file );
+            File profileFile = profileOutputFileName( file );
             if ( fs.fileExists( profileFile ) )
             {
                 coll.add( new StoreFileMetadata( profileFile, 1, false ) );
@@ -158,13 +153,31 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private long reheat( PagedFile file ) throws IOException
     {
         long pagesLoaded = 0;
-        File savedProfile = profileOutputFileFinal( file );
+        File savedProfile = profileOutputFileName( file );
 
         if ( !fs.fileExists( savedProfile ) )
         {
             return pagesLoaded;
         }
 
+        // First read through the profile to verify its checksum.
+        try ( InputStream inputStream = compressedInputStream( savedProfile ) )
+        {
+            int b;
+            do
+            {
+                b = inputStream.read();
+            }
+            while ( b != -1 );
+        }
+        catch ( ZipException ignore )
+        {
+            // ZipException is used to indicate checksum failures.
+            // Let's ignore this file since it's corrupt.
+            return pagesLoaded;
+        }
+
+        // The file contents checks out. Let's load it in.
         try ( InputStream inputStream = compressedInputStream( savedProfile );
               PageLoader loader = pageLoaderFactory.getLoader( file ) )
         {
@@ -224,9 +237,9 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private long profile( PagedFile file ) throws IOException
     {
         long pagesInMemory = 0;
-        File outputNext = profileOutputFileNext( file );
+        File outputFile = profileOutputFileName( file );
 
-        try ( OutputStream outputStream = compressedOutputStream( outputNext );
+        try ( OutputStream outputStream = compressedOutputStream( outputFile );
               PageCursor cursor = file.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
         {
             int stepper = 0;
@@ -258,8 +271,6 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             outputStream.flush();
         }
 
-        File outputFinal = profileOutputFileFinal( file );
-        fs.renameFile( outputNext, outputFinal, StandardCopyOption.REPLACE_EXISTING );
         return pagesInMemory;
     }
 
@@ -268,9 +279,9 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         InputStream source = fs.openAsInputStream( input );
         try
         {
-            return COMPRESSOR_FACTORY.createCompressorInputStream( COMPRESSION_FORMAT, source );
+            return new GZIPInputStream( source );
         }
-        catch ( CompressorException e )
+        catch ( IOException e )
         {
             IOUtils.closeAllSilently( source );
             throw new IOException( "Exception when building decompressor.", e );
@@ -279,30 +290,43 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
     private OutputStream compressedOutputStream( File output ) throws IOException
     {
-        OutputStream sink = fs.openAsOutputStream( output, false );
+        StoreChannel channel = fs.open( output, OpenMode.READ_WRITE );
+        ByteBuffer buf = ByteBuffer.allocate( 1 );
+        OutputStream sink = new OutputStream()
+        {
+            @Override
+            public void write( int b ) throws IOException
+            {
+                buf.put( (byte) b );
+                buf.flip();
+                channel.write( buf );
+                buf.flip();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                channel.truncate( channel.position() );
+                channel.close();
+            }
+        };
         try
         {
-            return COMPRESSOR_FACTORY.createCompressorOutputStream( COMPRESSION_FORMAT, sink );
+            return new GZIPOutputStream( sink );
         }
-        catch ( CompressorException e )
+        catch ( IOException e )
         {
-            IOUtils.closeAllSilently( sink );
+            // We close the channel instead of the sink here, because we don't want to truncate the file if we fail
+            // to open the gzip output stream.
+            IOUtils.closeAllSilently( channel );
             throw new IOException( "Exception when building compressor.", e );
         }
     }
 
-    private File profileOutputFileFinal( PagedFile file )
+    private File profileOutputFileName( PagedFile file )
     {
         File mappedFile = file.file();
         String profileOutputName = "." + mappedFile.getName() + SUFFIX_CACHEPROF;
-        File parent = mappedFile.getParentFile();
-        return new File( parent, profileOutputName );
-    }
-
-    private File profileOutputFileNext( PagedFile file )
-    {
-        File mappedFile = file.file();
-        String profileOutputName = "." + mappedFile.getName() + SUFFIX_CACHEPROF_TMP;
         File parent = mappedFile.getParentFile();
         return new File( parent, profileOutputName );
     }
