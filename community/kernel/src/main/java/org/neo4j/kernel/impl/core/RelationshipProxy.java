@@ -93,8 +93,9 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 RelationshipScanCursor relationships = transaction.relationshipCursor();
-                singleRelationship( transaction, relationships );
-                this.id = relationships.relationshipReference();
+                transaction.dataRead().singleRelationship( id, relationships );
+                //at this point we don't care if it is there or not just load what we got
+                relationships.next();
                 this.type = relationships.type();
                 this.startNode = relationships.sourceNodeReference();
                 this.endNode = relationships.targetNodeReference();
