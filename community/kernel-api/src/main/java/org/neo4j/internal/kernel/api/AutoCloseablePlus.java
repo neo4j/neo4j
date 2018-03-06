@@ -20,29 +20,13 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * This interface is package-private because it is not generically useful. All use cases should use the explicit cursor
- * types. It is however useful to define this interface to ensure that the generic usage pattern (as outlined by the
- * example code snippet below) aligns across all cursor interfaces.
- * <p>
- * Generic usage:
- * <code><pre>
- * SomeCursor cursor = allocateCursorOfAppropriateType();
- * store.positionCursor( cursor );
- * while ( cursor.next() )
- * {
- *     do
- *     {
- *         // access data here ...
- *         // also make sure that data read here is considered valid until `shouldRetry()` is false.
- *     }
- *     while ( cursor.shouldRetry() );
- *     // use accessed data here ...
- * }
- * </pre></code>
+ * Enriches AutoCloseable with isClosed(). This method can be used to query whether a resource was closed or
+ * to make sure that it is only closed once.
  */
-interface Cursor extends AutoCloseablePlus
+public interface AutoCloseablePlus extends AutoCloseable
 {
-    boolean next();
+    @Override
+    void close();
 
-    boolean shouldRetry();
+    boolean isClosed();
 }
