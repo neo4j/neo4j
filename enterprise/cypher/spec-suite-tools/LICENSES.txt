@@ -4,7 +4,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  Apache Commons Compress
   Apache Commons Lang
   Caffeine cache
   casbah-commons
@@ -21,7 +20,6 @@ Apache Software License, Version 2.0
   MongoDB Java Driver
   Netty/All-in-One
   nscala-time
-  Objenesis
   openCypher TCK API
   openCypher TCK Features and Graphs
   org.apiguardian:apiguardian-api
