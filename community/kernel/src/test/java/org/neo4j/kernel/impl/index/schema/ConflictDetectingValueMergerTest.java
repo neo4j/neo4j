@@ -26,17 +26,13 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.values.storable.Values.stringValue;
 
 public class ConflictDetectingValueMergerTest
 {
-    private final ConflictDetectingValueMerger<SchemaNumberKey,SchemaNumberValue> detector = new ConflictDetectingValueMerger.Check<>();
+    private final ConflictDetectingValueMerger<SchemaNumberKey,SchemaNumberValue> detector = new ConflictDetectingValueMerger<>( true );
 
     @Test
     public void shouldReportConflictOnSameValueAndDifferentEntityIds() throws Exception
@@ -47,11 +43,7 @@ public class ConflictDetectingValueMergerTest
         long entityId2 = 20;
 
         // when
-        SchemaNumberValue merged = detector.merge(
-                key( entityId1, value ),
-                key( entityId2, value ),
-                SchemaNumberValue.INSTANCE,
-                SchemaNumberValue.INSTANCE );
+        SchemaNumberValue merged = detector.merge( key( entityId1, value ), key( entityId2, value ), SchemaNumberValue.INSTANCE, SchemaNumberValue.INSTANCE );
 
         // then
         assertNull( merged );
@@ -72,15 +64,11 @@ public class ConflictDetectingValueMergerTest
     public void shouldNotReportConflictOnSameValueSameEntityId() throws Exception
     {
         // given
-        Value value = Values.of( 123);
+        Value value = Values.of( 123 );
         long entityId = 10;
 
         // when
-        SchemaNumberValue merged = detector.merge(
-                key( entityId, value ),
-                key( entityId, value ),
-                SchemaNumberValue.INSTANCE,
-                SchemaNumberValue.INSTANCE );
+        SchemaNumberValue merged = detector.merge( key( entityId, value ), key( entityId, value ), SchemaNumberValue.INSTANCE, SchemaNumberValue.INSTANCE );
 
         // then
         assertNull( merged );

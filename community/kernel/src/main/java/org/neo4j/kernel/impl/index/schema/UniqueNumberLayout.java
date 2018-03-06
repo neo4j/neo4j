@@ -49,19 +49,4 @@ class UniqueNumberLayout extends NumberLayout
     {
         return MINOR_VERSION;
     }
-
-    @Override
-    public int compare( SchemaNumberKey o1, SchemaNumberKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        if ( comparison == 0 )
-        {
-            // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.entityIdIsSpecialTieBreaker || o2.entityIdIsSpecialTieBreaker )
-            {
-                return Long.compare( o1.entityId, o2.entityId );
-            }
-        }
-        return comparison;
-    }
 }

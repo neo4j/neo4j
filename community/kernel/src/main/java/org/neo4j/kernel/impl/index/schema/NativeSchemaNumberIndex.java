@@ -44,7 +44,7 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
     final File storeFile;
     final Layout<KEY,VALUE> layout;
     final GBPTreeFileUtil gbpTreeFileUtil;
-    private final IndexDescriptor descriptor;
+    final IndexDescriptor descriptor;
     private final long indexId;
     private final SchemaIndexProvider.Monitor monitor;
 

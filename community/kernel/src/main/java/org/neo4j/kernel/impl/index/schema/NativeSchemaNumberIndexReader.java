@@ -148,7 +148,6 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         else
         {
             treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
-            treeKeyTo.entityIdIsSpecialTieBreaker = true;
         }
     }
 
@@ -162,7 +161,6 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         else
         {
             treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
-            treeKeyFrom.entityIdIsSpecialTieBreaker = true;
         }
     }
 

@@ -32,6 +32,7 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 public class AccidentalUniquenessConstraintViolationIT
@@ -85,6 +86,9 @@ public class AccidentalUniquenessConstraintViolationIT
                 // good
             }
             tx.success();
+
+            assertEquals( fourtyTwo, db.findNode( Foo, BAR, 41 ) );
+            assertNull( db.findNode( Foo, BAR, 42 ) );
         }
     }
 }
