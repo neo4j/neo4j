@@ -105,6 +105,23 @@ public class TimeBasedTaskSchedulerTest
     }
 
     @Test
+    public void mustOnlyScheduleTasksThatAreDue() throws Exception
+    {
+        JobHandle handle1 = scheduler.submit( group, () -> counter.addAndGet( 10 ), 100, 0 );
+        JobHandle handle2 = scheduler.submit( group, () -> counter.addAndGet( 100 ), 200, 0 );
+        scheduler.tick();
+        assertThat( counter.get(), is( 0 ) );
+        clock.forward( 199, TimeUnit.NANOSECONDS );
+        scheduler.tick();
+        handle1.waitTermination();
+        assertThat( counter.get(), is( 10 ) );
+        clock.forward( 1, TimeUnit.NANOSECONDS );
+        scheduler.tick();
+        handle2.waitTermination();
+        assertThat( counter.get(), is( 110 ) );
+    }
+
+    @Test
     public void mustNotRescheduleDelayedTasks() throws Exception
     {
         JobHandle handle = scheduler.submit( group, counter::incrementAndGet, 100, 0 );
