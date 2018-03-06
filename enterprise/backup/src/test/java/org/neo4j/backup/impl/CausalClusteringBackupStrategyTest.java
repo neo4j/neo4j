@@ -128,7 +128,6 @@ public class CausalClusteringBackupStrategyTest
     public void failingToRetrieveStoreIdCausesFailWithStatus_incrementalBackup() throws StoreIdDownloadFailedException
     {
         // given
-        AdvertisedSocketAddress fromAddress = anyAddress();
         StoreIdDownloadFailedException storeIdDownloadFailedException = new StoreIdDownloadFailedException( "Expected description" );
         when( backupDelegator.fetchStoreId( any() ) ).thenThrow( storeIdDownloadFailedException );
 
@@ -223,10 +222,5 @@ public class CausalClusteringBackupStrategyTest
     private StoreId anyStoreId()
     {
         return new StoreId( 1, 2, 3, 4 );
-    }
-
-    private AdvertisedSocketAddress anyAddress()
-    {
-        return new AdvertisedSocketAddress( "hostname", 1234 );
     }
 }

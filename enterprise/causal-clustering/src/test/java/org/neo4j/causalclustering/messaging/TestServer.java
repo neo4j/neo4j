@@ -33,7 +33,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-class TestServer
+public class TestServer
 {
     private final int port;
     private final ChildHandler childHandler;
@@ -45,13 +45,13 @@ class TestServer
         this( port, null );
     }
 
-    private TestServer( int port, ChannelInitializer<SocketChannel> channelInitializer )
+    public TestServer( int port, ChannelInitializer<SocketChannel> channelInitializer )
     {
         this.port = port;
         this.childHandler = new ChildHandler( channelInitializer );
     }
 
-    void start()
+    public void start()
     {
         elg = new NioEventLoopGroup( 0 );
         ServerBootstrap boot = new ServerBootstrap()
@@ -63,7 +63,7 @@ class TestServer
         fServer.syncUninterruptibly();
     }
 
-    void stop()
+    public void stop()
     {
         if ( elg != null )
         {

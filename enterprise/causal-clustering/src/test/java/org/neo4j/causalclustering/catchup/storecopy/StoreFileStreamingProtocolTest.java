@@ -44,7 +44,7 @@ import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResp
 import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse.Status.SUCCESS;
 import static org.neo4j.kernel.impl.util.Cursors.rawCursorOf;
 
-public class StoreStreamingProtocolTest
+public class StoreFileStreamingProtocolTest
 {
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -64,7 +64,7 @@ public class StoreStreamingProtocolTest
     public void shouldStreamResources() throws Exception
     {
         // given
-        StoreStreamingProtocol protocol = new StoreStreamingProtocol();
+        StoreFileStreamingProtocol protocol = new StoreFileStreamingProtocol();
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
 
         fs.mkdir( new File( "dirA" ) );
@@ -80,7 +80,10 @@ public class StoreStreamingProtocolTest
         RawCursor<StoreResource,IOException> resources = rawCursorOf( resourceList );
 
         // when
-        protocol.stream( ctx, resources );
+        while ( resources.next() )
+        {
+            protocol.stream( ctx, resources.get() );
+        }
 
         // then
         InOrder inOrder = Mockito.inOrder( ctx );
@@ -98,16 +101,16 @@ public class StoreStreamingProtocolTest
     public void shouldBeAbleToEndWithFailure()
     {
         // given
-        StoreStreamingProtocol protocol = new StoreStreamingProtocol();
+        StoreFileStreamingProtocol protocol = new StoreFileStreamingProtocol();
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
 
         // when
-        protocol.end( ctx, E_STORE_ID_MISMATCH, -1 );
+        protocol.end( ctx, E_STORE_ID_MISMATCH );
 
         // then
         InOrder inOrder = Mockito.inOrder( ctx );
         inOrder.verify( ctx ).write( ResponseMessageType.STORE_COPY_FINISHED );
-        inOrder.verify( ctx ).writeAndFlush( new StoreCopyFinishedResponse( E_STORE_ID_MISMATCH, -1 ) );
+        inOrder.verify( ctx ).writeAndFlush( new StoreCopyFinishedResponse( E_STORE_ID_MISMATCH ) );
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -115,17 +118,16 @@ public class StoreStreamingProtocolTest
     public void shouldBeAbleToEndWithSuccess()
     {
         // given
-        StoreStreamingProtocol protocol = new StoreStreamingProtocol();
+        StoreFileStreamingProtocol protocol = new StoreFileStreamingProtocol();
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
 
         // when
-        int lastCommittedTxBeforeStoreCopy = 100000;
-        protocol.end( ctx, StoreCopyFinishedResponse.Status.SUCCESS, lastCommittedTxBeforeStoreCopy );
+        protocol.end( ctx, StoreCopyFinishedResponse.Status.SUCCESS );
 
         // then
         InOrder inOrder = Mockito.inOrder( ctx );
         inOrder.verify( ctx ).write( ResponseMessageType.STORE_COPY_FINISHED );
-        inOrder.verify( ctx ).writeAndFlush( new StoreCopyFinishedResponse( SUCCESS, lastCommittedTxBeforeStoreCopy ) );
+        inOrder.verify( ctx ).writeAndFlush( new StoreCopyFinishedResponse( SUCCESS ) );
         inOrder.verifyNoMoreInteractions();
     }
 

@@ -138,7 +138,7 @@ public class OnlineBackupCommandCcIT
         AtomicBoolean populateDatabaseFlag = new AtomicBoolean( true );
         new Thread( () -> repeatedlyPopulateDatabase(  cluster, populateDatabaseFlag ) )
                 .start(); // populate db with number properties etc.
-        oneOffShutdownTasks.add( () -> populateDatabaseFlag.set( false ) ); // kill thread
+        oneOffShutdownTasks.add( () -> populateDatabaseFlag.set( false ) ); // kill thread after test is complete
 
         // then backup is successful
         String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );

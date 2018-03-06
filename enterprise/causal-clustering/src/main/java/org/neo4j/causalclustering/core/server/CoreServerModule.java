@@ -182,8 +182,8 @@ public class CoreServerModule
         CatchUpClient catchUpClient = platformModule.life.add(
                 new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors, clientPipelineWrapper ) );
 
-        RemoteStore remoteStore = new RemoteStore(
-                logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
+        RemoteStore remoteStore = new RemoteStore( logProvider, platformModule.fileSystem, platformModule.pageCache,
+                new StoreCopyClient( catchUpClient, logProvider ),
                 new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = platformModule.life.add(
@@ -194,7 +194,7 @@ public class CoreServerModule
 
         CommitStateHelper commitStateHelper = new CommitStateHelper( platformModule.pageCache, platformModule.fileSystem, config );
         return new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider,
-                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, clusteringModule.topologyService(), commitStateHelper );
+                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, commitStateHelper );
     }
 
     private MembershipWaiterLifecycle createMembershipWaiterLifecycle()

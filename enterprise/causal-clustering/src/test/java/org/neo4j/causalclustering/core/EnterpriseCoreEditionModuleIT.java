@@ -45,7 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class EnterpriseCoreEditionModuleIntegrationTest
+public class EnterpriseCoreEditionModuleIT
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule();
