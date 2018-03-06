@@ -41,7 +41,7 @@ public abstract class PathValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof PathValue))
+        if ( other == null || !(other instanceof PathValue) )
         {
             return false;
         }
