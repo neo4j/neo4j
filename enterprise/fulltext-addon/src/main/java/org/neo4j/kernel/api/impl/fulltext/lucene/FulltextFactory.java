@@ -22,46 +22,41 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.function.Factory;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
-import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.EntityType;
 
-/**
- * Used for creating {@link LuceneFulltext} and registering those to a {@link FulltextProvider}.
- */
 public class FulltextFactory
 {
-    public static final String INDEX_DIR = "bloom_fts";
-    private final FileSystemAbstraction fileSystem;
     private final WritableIndexPartitionFactory partitionFactory;
-    private final File indexDir;
+    private final IndexStorageFactory indexStorageFactory;
     private final Analyzer analyzer;
+    private final Config config;
 
     /**
      * Creates a factory for the specified location and analyzer.
      *
-     * @param fileSystem The filesystem to use.
-     * @param storeDir Store directory of the database.
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
+     * @param config
      * @throws IOException
      */
-    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName )
+
+    public FulltextFactory( IndexStorageFactory indexStorageFactory, String analyzerClassName, Config config )
     {
+        this.indexStorageFactory = indexStorageFactory;
         this.analyzer = getAnalyzer( analyzerClassName );
-        this.fileSystem = fileSystem;
+        this.config = config;
         Factory<IndexWriterConfig> indexWriterConfigFactory = () -> IndexWriterConfigs.standard( analyzer );
-        partitionFactory = new WritableIndexPartitionFactory( indexWriterConfigFactory );
-        indexDir = new File( storeDir, INDEX_DIR );
+        this.partitionFactory = new WritableIndexPartitionFactory( indexWriterConfigFactory );
     }
 
     private Analyzer getAnalyzer( String analyzerClassName )
@@ -79,17 +74,19 @@ public class FulltextFactory
         return analyzer;
     }
 
-    public LuceneFulltext createFulltextIndex( FulltextIndexDescriptor descriptor )
+    public LuceneFulltext createFulltextIndex( long indexId, FulltextIndexDescriptor descriptor )
     {
-        File indexRootFolder = new File( indexDir, descriptor.identifier() );
-        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
-        PartitionedIndexStorage storage = storageBuilder.build();
+        PartitionedIndexStorage storage = indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
         return new LuceneFulltext( storage, partitionFactory, descriptor.propertyNames(), analyzer, descriptor.identifier(), getType( descriptor ) );
     }
 
-    public static FulltextIndexType getType( IndexDescriptor descriptor )
+    private static FulltextIndexType getType( IndexDescriptor descriptor )
     {
         return descriptor.schema().entityType() == EntityType.NODE ? FulltextIndexType.NODES : FulltextIndexType.RELATIONSHIPS;
+    }
+
+    public String getStoredIndexFailure( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) ).getStoredIndexFailure();
     }
 }

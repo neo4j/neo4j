@@ -49,7 +49,7 @@ public class FulltextIndexAccessor implements IndexAccessor
     private WritableFulltext luceneFulltext;
     private FulltextIndexDescriptor descriptor;
 
-    public FulltextIndexAccessor( WritableFulltext luceneFulltext, FulltextIndexDescriptor descriptor )
+    FulltextIndexAccessor( WritableFulltext luceneFulltext, FulltextIndexDescriptor descriptor )
     {
         this.luceneFulltext = luceneFulltext;
         this.descriptor = descriptor;
@@ -129,9 +129,9 @@ public class FulltextIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
     {
-        //Sure whatever
+        //The fulltext index does not care about constraints.
     }
 
     @Override
@@ -218,7 +218,7 @@ public class FulltextIndexAccessor implements IndexAccessor
                     LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
         }
 
-        protected void remove( long nodeId ) throws IOException
+        void remove( long nodeId ) throws IOException
         {
             luceneFulltext.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ) );
         }

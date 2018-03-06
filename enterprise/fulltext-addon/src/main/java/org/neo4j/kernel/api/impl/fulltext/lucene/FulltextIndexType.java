@@ -24,6 +24,7 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
  */
 enum FulltextIndexType
 {
+    //TODO Replace this with EntityType
     NODES
             {
                 @Override

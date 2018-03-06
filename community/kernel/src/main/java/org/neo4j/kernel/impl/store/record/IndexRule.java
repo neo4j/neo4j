@@ -43,7 +43,7 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
         return new IndexRule( id, providerDescriptor, descriptor, null );
     }
 
-    public static IndexRule constraintIndexRule( long id, SchemaIndexDescriptor descriptor,
+    public static IndexRule constraintIndexRule( long id, IndexDescriptor descriptor,
                                                  IndexProvider.Descriptor providerDescriptor,
                                                  Long owningConstraint )
     {
@@ -121,8 +121,7 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
         {
             throw new IllegalStateException( this + " is not a constraint index" );
         }
-        //TODO we cast here since only SchemaIndexDescriptors have constraints
-        return constraintIndexRule( id, (SchemaIndexDescriptor) descriptor, providerDescriptor, constraintId );
+        return constraintIndexRule( id, descriptor, providerDescriptor, constraintId );
     }
 
     @Override

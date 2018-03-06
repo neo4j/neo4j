@@ -40,7 +40,7 @@ public class FulltextIndexPopulator implements IndexPopulator
     private final FulltextIndexDescriptor descriptor;
     private final WritableFulltext index;
 
-    public FulltextIndexPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, WritableFulltext index )
+    FulltextIndexPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, WritableFulltext index )
     {
         this.descriptor = descriptor;
         this.index = index;

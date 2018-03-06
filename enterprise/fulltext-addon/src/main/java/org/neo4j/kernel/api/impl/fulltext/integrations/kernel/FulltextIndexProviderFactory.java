@@ -51,7 +51,7 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
         super( KEY );
     }
 
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
     {
         IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( storeDir ).forProvider( DESCRIPTOR );
         return directoriesBySubProvider( parentDirectoryStructure );

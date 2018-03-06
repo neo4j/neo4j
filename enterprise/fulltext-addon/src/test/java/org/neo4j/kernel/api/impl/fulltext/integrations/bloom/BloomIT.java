@@ -43,7 +43,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextConfig;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -554,7 +554,7 @@ public class BloomIT
     {
         expectedException.expectMessage( "__lucene__fulltext__addon__" );
         db = getDb();
-        db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"" + FulltextProvider.FIELD_ENTITY_ID + "\", \"hello\"" ) );
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"" + FulltextAccessor.FIELD_ENTITY_ID + "\", \"hello\"" ) );
     }
 
     @Test

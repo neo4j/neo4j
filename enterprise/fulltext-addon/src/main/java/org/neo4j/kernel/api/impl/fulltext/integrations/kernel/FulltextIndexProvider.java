@@ -25,26 +25,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
@@ -67,7 +63,6 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final Map<FulltextIndexDescriptor,FulltextIndexAccessor> accessors;
     private final Map<String,FulltextIndexAccessor> accessorsByName;
-    private final Config config;
     private final String analyzerClassName;
 
     FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory, FileSystemAbstraction fileSystem,
@@ -75,7 +70,6 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
             RelationshipTypeTokenHolder relationshipTypeTokenHolder, DirectoryFactory directoryFactory )
     {
         super( descriptor, priority, directoryStructureFactory );
-        this.config = config;
 
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
@@ -83,7 +77,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
 
         analyzerClassName = config.get( FulltextConfig.fulltext_default_analyzer );
-        factory = new FulltextFactory( fileSystem, directoryStructure().rootDirectory(), analyzerClassName );
+        factory = new FulltextFactory( indexStorageFactory, analyzerClassName, config );
         accessors = new HashMap<>();
         accessorsByName = new HashMap<>();
     }
@@ -109,14 +103,14 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( descriptor ) );
+        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( indexId, descriptor ) );
         return new FulltextIndexPopulator( indexId, descriptor, samplingConfig, fulltextIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( descriptor ) );
+        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( indexId, descriptor ) );
         fulltextIndex.open();
 
         FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex, descriptor );
@@ -128,15 +122,18 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public String getPopulationFailure( long indexId, FulltextIndexDescriptor descriptor ) throws IllegalStateException
     {
-        //TODO properly handle index failures
-        return "TODO Failure";
+        String failure = factory.getStoredIndexFailure( indexId );
+        if ( failure == null )
+        {
+            throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+        }
+        return failure;
     }
 
     @Override
     public InternalIndexState getInitialState( long indexId, FulltextIndexDescriptor descriptor )
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
-        String failure = indexStorage.getStoredIndexFailure();
+        String failure = factory.getStoredIndexFailure( indexId );
         if ( failure != null )
         {
             return InternalIndexState.FAILED;
@@ -147,7 +144,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         }
         try
         {
-            return indexIsOnline( descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            return indexIsOnline( indexId, descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }
         catch ( IOException e )
         {
@@ -155,14 +152,9 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         }
     }
 
-    private PartitionedIndexStorage getIndexStorage( long indexId )
+    private boolean indexIsOnline( long indexId, FulltextIndexDescriptor descriptor ) throws IOException
     {
-        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
-    }
-
-    private boolean indexIsOnline( FulltextIndexDescriptor descriptor ) throws IOException
-    {
-        try ( LuceneFulltext index = factory.createFulltextIndex( descriptor ) )
+        try ( LuceneFulltext index = factory.createFulltextIndex( indexId, descriptor ) )
         {
             if ( index.exists() )
             {
@@ -200,9 +192,9 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties )
     {
-        if ( Arrays.stream( properties ).anyMatch( prop -> prop.equals( FulltextProvider.FIELD_ENTITY_ID ) ) )
+        if ( Arrays.stream( properties ).anyMatch( prop -> prop.equals( FulltextAccessor.FIELD_ENTITY_ID ) ) )
         {
-            throw new BadSchemaException( "Unable to index the property " + FulltextProvider.FIELD_ENTITY_ID );
+            throw new BadSchemaException( "Unable to index the property " + FulltextAccessor.FIELD_ENTITY_ID );
         }
         int[] entityTokenIds;
         if ( type == EntityType.NODE )
