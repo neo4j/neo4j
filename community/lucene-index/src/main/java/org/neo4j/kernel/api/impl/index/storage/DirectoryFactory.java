@@ -41,7 +41,7 @@ public interface DirectoryFactory extends AutoCloseable
 {
     int MAX_MERGE_SIZE_MB = FeatureToggles.getInteger( DirectoryFactory.class, "max_merge_size_mb", 5 );
     int MAX_CACHED_MB = FeatureToggles.getInteger( DirectoryFactory.class, "max_cached_mb", 50 );
-    String DEFAULT_FACTORY = FeatureToggles.getString( DirectoryFactory.class, "factory", "paged" );
+    String DEFAULT_FACTORY = FeatureToggles.getString( DirectoryFactory.class, "factory", "mmap" );
 
     Directory open( File dir ) throws IOException;
 
