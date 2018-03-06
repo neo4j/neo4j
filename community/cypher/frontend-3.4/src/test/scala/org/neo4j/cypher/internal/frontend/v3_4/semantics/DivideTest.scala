@@ -33,18 +33,20 @@ class DivideTest extends InfixExpressionTestBase(Divide(_, _)(DummyPosition(0)))
     testValidTypes(CTInteger, CTFloat)(CTFloat)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
+    testValidTypes(CTDuration, CTFloat)(CTDuration)
+    testValidTypes(CTDuration, CTInteger)(CTDuration)
   }
 
   test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTFloat | CTInteger)
   }
 
-  test("shouldFailTypeCheckWhenAddingIncompatible") {
+  test("shouldFailTypeCheckWhenIncompatible") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float or Integer but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Float or Integer but was Boolean"
+      "Type mismatch: expected Float, Integer or Duration but was Boolean"
     )
   }
 }

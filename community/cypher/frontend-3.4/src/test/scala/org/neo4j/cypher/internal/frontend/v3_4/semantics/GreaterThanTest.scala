@@ -34,8 +34,20 @@ class GreaterThanTest extends InfixExpressionTestBase(GreaterThan(_, _)(DummyPos
     testValidTypes(CTString, CTString)(CTBoolean)
   }
 
+  test("shouldSupportComparingPoints") {
+    testValidTypes(CTPoint, CTPoint)(CTBoolean)
+  }
+
+  test("shouldSupportComparingTemporals") {
+    testValidTypes(CTDate, CTDate)(CTBoolean)
+    testValidTypes(CTTime, CTTime)(CTBoolean)
+    testValidTypes(CTLocalTime, CTLocalTime)(CTBoolean)
+    testValidTypes(CTDateTime, CTDateTime)(CTBoolean)
+    testValidTypes(CTLocalDateTime, CTLocalDateTime)(CTBoolean)
+  }
+
   test("shouldReturnErrorIfInvalidArgumentTypes") {
-    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer, Point or String but was Node")
+    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node")
     testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Float or Integer but was Node")
   }
 }
