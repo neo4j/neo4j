@@ -29,7 +29,7 @@ import static java.util.Collections.emptySet;
 
 class DefaultRelationshipScanCursor extends RelationshipCursor implements RelationshipScanCursor
 {
-    private int label;
+    private int type;
     private long next;
     private long highMark;
     private PageCursor pageCursor;
@@ -42,7 +42,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         this.pool = pool;
     }
 
-    void scan( int label, Read read )
+    void scan( int type, Read read )
     {
         if ( getId() != NO_ID )
         {
@@ -53,7 +53,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
             pageCursor = read.relationshipPage( 0 );
         }
         next = 0;
-        this.label = label;
+        this.type = type;
         highMark = read.relationshipHighMark();
         init( read );
         this.addedRelationships = emptySet();
@@ -70,7 +70,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
             pageCursor = read.relationshipPage( reference );
         }
         next = reference;
-        label = -1;
+        type = -1;
         highMark = NO_ID;
         init( read );
         this.addedRelationships = emptySet();
@@ -111,7 +111,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
                 if ( isSingle() )
                 {
                     next = NO_ID;
-                    return isWantedLabelAndInUse();
+                    return isWantedTypeAndInUse();
                 }
                 else
                 {
@@ -119,19 +119,19 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
                     if ( next > highMark )
                     {
                         next = NO_ID;
-                        return isWantedLabelAndInUse();
+                        return isWantedTypeAndInUse();
                     }
                 }
             }
         }
-        while ( !isWantedLabelAndInUse() );
+        while ( !isWantedTypeAndInUse() );
 
         return true;
     }
 
-    private boolean isWantedLabelAndInUse()
+    private boolean isWantedTypeAndInUse()
     {
-        return (label == -1 || type() == label) && inUse();
+        return (type == -1 || type() == type) && inUse();
     }
 
     private boolean containsRelationship( TransactionState txs )
@@ -177,7 +177,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         }
         else
         {
-            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", label=" + label +
+            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", type=" + type +
                     ", underlying record=" + super.toString() + " ]";
         }
     }
