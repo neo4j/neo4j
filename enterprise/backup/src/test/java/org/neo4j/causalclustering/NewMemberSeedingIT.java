@@ -42,7 +42,6 @@ import org.neo4j.causalclustering.cluster_load.SmallBurst;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.SuppressOutput;

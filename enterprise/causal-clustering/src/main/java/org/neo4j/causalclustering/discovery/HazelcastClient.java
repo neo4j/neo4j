@@ -44,7 +44,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-class HazelcastClient extends AbstractTopologyService
+public class HazelcastClient extends AbstractTopologyService
 {
     private final Log log;
     private final ClientConnectorAddresses connectorAddresses;
@@ -68,8 +68,8 @@ class HazelcastClient extends AbstractTopologyService
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile ReadReplicaTopology rrTopology = ReadReplicaTopology.EMPTY;
 
-    HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config,
-            MemberId myself, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
+    public HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config, MemberId myself,
+            TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         this.hzInstance = new RobustHazelcastWrapper( connector );
         this.config = config;

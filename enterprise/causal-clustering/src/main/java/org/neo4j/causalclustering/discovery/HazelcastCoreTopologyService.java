@@ -20,14 +20,10 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
@@ -67,7 +63,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
+public class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private static final int HAZELCAST_MIN_CLUSTER = 2;
@@ -79,7 +75,6 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     private final CoreTopologyListenerService listenerService;
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
-    private final LogProvider logProvider;
     private final HostnameResolver hostnameResolver;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
     private final String localDBName;
@@ -97,7 +92,7 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     private Thread startingThread;
     private volatile boolean stopped;
 
-    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+    protected HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
@@ -105,7 +100,6 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
         this.myself = myself;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
-        this.logProvider = logProvider;
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
@@ -251,8 +245,6 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
             networkConfig.setInterfaces( interfaces );
         }
 
-        additionalConfig( networkConfig, logProvider );
-
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
@@ -315,11 +307,6 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
         refreshGroups( hazelcastInstance, myself.getUuid().toString(), groups );
 
         return hazelcastInstance;
-    }
-
-    protected void additionalConfig( NetworkConfig networkConfig, LogProvider logProvider )
-    {
-
     }
 
     private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
