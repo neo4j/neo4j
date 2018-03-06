@@ -136,18 +136,10 @@ case class ActiveReadInjector(attributes: Attributes) {
   })
 
   private def hasCreateMerge(plan:LogicalPlan): Boolean = {
-    var p = plan
-    var found = false
-    while (!found && p != null) {
-      p match {
-        case x: MergeCreateNode => found = true
-        case x: MergeCreateRelationship => found = true
-        case withSource if p.rhs.nonEmpty => throw new UnsupportedOperationException("not implemented")
-        case withSource if p.lhs.nonEmpty => p = withSource.lhs.get
-        case _ => p = null
-      }
+    plan.treeExists {
+      case _: MergeCreateNode => true
+      case _: MergeCreateRelationship =>  true
     }
-    found
   }
 
   private def hasLockNodes(plan:LogicalPlan): Boolean =

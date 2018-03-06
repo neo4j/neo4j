@@ -33,7 +33,7 @@ class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPl
 
     val input = EmptyResult(AllNodesScan("a", Set.empty))
 
-    activeReadInjector.apply(input) should equal(input)
+    activeReadInjector(input) should equal(input)
   }
 
   test("should inject into single merge node") {
@@ -48,7 +48,7 @@ class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPl
         )
       )
 
-    activeReadInjector.apply(input) should equal(
+    activeReadInjector(input) should equal(
       EmptyResult(
         AntiConditionalApply(
           Optional(
@@ -110,7 +110,7 @@ class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPl
       )
 
     // THEN
-    activeReadInjector.apply(input) should equal(
+    activeReadInjector(input) should equal(
       EmptyResult(
         AntiConditionalApply(expectedOnMatch, createAndOnCreate, Seq("a"))
       )
@@ -149,7 +149,7 @@ class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPl
       )
 
     // THEN
-    activeReadInjector.apply(input) should equal(
+    activeReadInjector(input) should equal(
       EmptyResult(
         AntiConditionalApply(
           Optional(
@@ -207,7 +207,7 @@ class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPl
       )
 
     // THEN
-    activeReadInjector.apply(input) should equal(
+    activeReadInjector(input) should equal(
       EmptyResult(
         Apply(
           scans,
@@ -281,7 +281,7 @@ class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPl
       )
 
     // THEN
-    activeReadInjector.apply(input) should equal(
+    activeReadInjector(input) should equal(
       EmptyResult(
         Apply(
           scans,
