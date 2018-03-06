@@ -33,11 +33,11 @@ import org.neo4j.function.Factory;
  * {@link io.netty.handler.codec.ByteToMessageDecoder} instead the decode method would fail as no
  * bytes are consumed from the ByteBuf but an object is added in the out list.
  */
-class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+public class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
     private Factory<? extends Message> factory;
 
-    SimpleRequestDecoder( Factory<? extends Message> factory )
+    public SimpleRequestDecoder( Factory<? extends Message> factory )
     {
         this.factory = factory;
     }

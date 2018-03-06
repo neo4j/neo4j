@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.logging.Log;
@@ -38,19 +38,19 @@ class MessageProcessingHandler implements BoltResponseHandler
     protected final Map<String,AnyValue> metadata = new HashMap<>();
 
     protected final Log log;
-    protected final BoltWorker worker;
+    protected final BoltConnection connection;
     protected final BoltResponseMessageHandler<IOException> handler;
 
     private Neo4jError error;
     private final Runnable onFinish;
     private boolean ignored;
 
-    MessageProcessingHandler( BoltResponseMessageHandler<IOException> handler, Runnable onFinish, BoltWorker worker,
+    MessageProcessingHandler( BoltResponseMessageHandler<IOException> handler, Runnable onFinish, BoltConnection connection,
             Log logger )
     {
         this.handler = handler;
         this.onFinish = onFinish;
-        this.worker = worker;
+        this.connection = connection;
         this.log = logger;
     }
 
@@ -102,7 +102,7 @@ class MessageProcessingHandler implements BoltResponseHandler
         }
         catch ( Throwable e )
         {
-            worker.halt();
+            connection.stop();
             log.error( "Failed to write response to driver", e );
         }
         finally

@@ -29,11 +29,11 @@ import org.mockito.stubbing.Answer;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
-import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
@@ -64,7 +64,7 @@ public class BoltMessagingProtocolHandlerImplTest
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltMessagingProtocolHandlerImpl protocol = newHandler( boltChannel, new SynchronousBoltWorker( machine ) );
+        BoltMessagingProtocolHandlerImpl protocol = newHandler( boltChannel, new SynchronousBoltConnection( machine ) );
         verify( outputChannel ).alloc();
 
         // And given inbound data that'll explode when the protocol tries to interpret it
@@ -96,7 +96,7 @@ public class BoltMessagingProtocolHandlerImplTest
         BoltChannel boltChannel = mock( BoltChannel.class );
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
-        BoltMessagingProtocolHandlerImpl protocol = newHandler( boltChannel, new SynchronousBoltWorker( machine ) );
+        BoltMessagingProtocolHandlerImpl protocol = newHandler( boltChannel, new SynchronousBoltConnection( machine ) );
         protocol.close();
 
         verify( machine ).close();
@@ -116,7 +116,7 @@ public class BoltMessagingProtocolHandlerImplTest
         BoltChannel boltChannel = mock( BoltChannel.class );
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
-        BoltMessagingProtocolHandlerImpl protocol = newHandler( boltChannel, mock( BoltWorker.class ), logService );
+        BoltMessagingProtocolHandlerImpl protocol = newHandler( boltChannel, mock( BoltConnection.class ), logService );
 
         protocol.handle( mock( ChannelHandlerContext.class ), data );
 
@@ -129,7 +129,7 @@ public class BoltMessagingProtocolHandlerImplTest
     @Test
     public void shouldHaveCorrectVersion()
     {
-        BoltMessagingProtocolHandler handler = newHandler( mock( BoltChannel.class, RETURNS_MOCKS ), mock( BoltWorker.class ) );
+        BoltMessagingProtocolHandler handler = newHandler( mock( BoltChannel.class, RETURNS_MOCKS ), mock( BoltConnection.class ) );
 
         assertEquals( 1, handler.version() );
     }
@@ -153,13 +153,13 @@ public class BoltMessagingProtocolHandlerImplTest
         return channel;
     }
 
-    private static BoltMessagingProtocolHandlerImpl newHandler( BoltChannel channel, BoltWorker worker )
+    private static BoltMessagingProtocolHandlerImpl newHandler( BoltChannel channel, BoltConnection connection )
     {
-        return newHandler( channel, worker, NullLogService.getInstance() );
+        return newHandler( channel, connection, NullLogService.getInstance() );
     }
 
-    private static BoltMessagingProtocolHandlerImpl newHandler( BoltChannel channel, BoltWorker worker, LogService logService )
+    private static BoltMessagingProtocolHandlerImpl newHandler( BoltChannel channel, BoltConnection connection, LogService logService )
     {
-        return new BoltMessagingProtocolHandlerImpl( channel, worker, new Neo4jPackV1(), NO_THROTTLE, logService );
+        return new BoltMessagingProtocolHandlerImpl( channel, connection, new Neo4jPackV1(), NO_THROTTLE, logService );
     }
 }

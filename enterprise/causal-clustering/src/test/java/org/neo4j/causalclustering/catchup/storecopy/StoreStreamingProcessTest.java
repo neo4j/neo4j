@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.util.Cursors.rawCursorOf;
 public class StoreStreamingProcessTest
 {
     // mocks
-    private final StoreStreamingProtocol protocol = mock( StoreStreamingProtocol.class );
+    private final StoreFileStreamingProtocol protocol = mock( StoreFileStreamingProtocol.class );
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final StoreResourceStreamFactory resourceStream = mock( StoreResourceStreamFactory.class );
     private final ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
@@ -69,7 +69,7 @@ public class StoreStreamingProcessTest
 
         when( checkPointer.tryCheckPoint( any() ) ).thenReturn( lastCheckpointedTxId );
         when( checkPointer.lastCheckPointedTransactionId() ).thenReturn( lastCheckpointedTxId );
-        when( protocol.end( ctx, SUCCESS, lastCheckpointedTxId ) ).thenReturn( completionPromise );
+        when( protocol.end( ctx, SUCCESS ) ).thenReturn( completionPromise );
         when( resourceStream.create() ).thenReturn( resources );
 
         // when
@@ -78,8 +78,7 @@ public class StoreStreamingProcessTest
         // then
         InOrder inOrder = Mockito.inOrder( protocol, checkPointer );
         inOrder.verify( checkPointer ).tryCheckPoint( any() );
-        inOrder.verify( protocol ).stream( ctx, resources );
-        inOrder.verify( protocol ).end( ctx, SUCCESS, lastCheckpointedTxId );
+        inOrder.verify( protocol ).end( ctx, SUCCESS );
         inOrder.verifyNoMoreInteractions();
 
         assertEquals( 1, lock.getReadLockCount() );
@@ -101,6 +100,6 @@ public class StoreStreamingProcessTest
         process.fail( ctx, E_STORE_ID_MISMATCH );
 
         // then
-        verify( protocol ).end( ctx, E_STORE_ID_MISMATCH, -1 );
+        verify( protocol ).end( ctx, E_STORE_ID_MISMATCH );
     }
 }

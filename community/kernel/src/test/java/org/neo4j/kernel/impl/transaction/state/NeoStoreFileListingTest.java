@@ -138,7 +138,7 @@ public class NeoStoreFileListingTest
                 new String[]{"blah/scan.store", "scan.more"} );
         ResourceIterator<File> indexSnapshot = indexFilesAre( indexingService, new String[]{"schema/index/my.index"} );
 
-        ResourceIterator<StoreFileMetadata> result = fileListing.listStoreFiles( false );
+        ResourceIterator<StoreFileMetadata> result = fileListing.builder().excludeLogFiles().build();
 
         // When
         result.close();
@@ -202,8 +202,7 @@ public class NeoStoreFileListingTest
     public void shouldListNeostoreFiles() throws Exception
     {
         StoreType[] values = StoreType.values();
-        ResourceIterator<StoreFileMetadata> storeFiles =
-                neoStoreDataSource.listStoreFiles( false );
+        ResourceIterator<StoreFileMetadata> storeFiles = neoStoreDataSource.listStoreFiles( false );
         List<StoreType> listedStoreFiles = storeFiles.stream()
                 .map( toStoreType )
                 .filter( Optional::isPresent )
@@ -249,7 +248,7 @@ public class NeoStoreFileListingTest
         ArrayList<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
         ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
-        when( indexingService.snapshotStoreFiles() ).thenReturn( snapshot );
+        when( indexingService.snapshotIndexFiles() ).thenReturn( snapshot );
         return snapshot;
     }
 

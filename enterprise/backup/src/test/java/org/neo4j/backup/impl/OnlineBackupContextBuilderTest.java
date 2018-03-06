@@ -36,6 +36,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -59,6 +60,8 @@ public class OnlineBackupContextBuilderTest
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public ExpectedException expected = ExpectedException.none();
+    @Rule
+    public SuppressOutput suppress = SuppressOutput.suppressAll();
 
     private Path homeDir;
     private Path configDir;

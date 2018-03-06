@@ -36,16 +36,19 @@ import org.neo4j.logging.LogProvider;
 public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel>
 {
     private final Log log;
-    private final ProtocolRepository protocolRepository;
-    private final Protocol.Identifier allowedProtocol;
+    private final ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository;
+    private final ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository;
+    private final Protocol.ApplicationProtocolIdentifier allowedProtocol;
     private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
 
-    public HandshakeServerInitializer( LogProvider logProvider, ProtocolRepository protocolRepository, Protocol.Identifier allowedProtocol,
+    public HandshakeServerInitializer( LogProvider logProvider, ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository,
+            ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository, Protocol.ApplicationProtocolIdentifier allowedProtocol,
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository, NettyPipelineBuilderFactory pipelineBuilderFactory )
     {
         this.log = logProvider.getLog( getClass() );
-        this.protocolRepository = protocolRepository;
+        this.applicationProtocolRepository = applicationProtocolRepository;
+        this.modifierProtocolRepository = modifierProtocolRepository;
         this.allowedProtocol = allowedProtocol;
         this.protocolInstallerRepository = protocolInstallerRepository;
         this.pipelineBuilderFactory = pipelineBuilderFactory;
@@ -54,7 +57,7 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
     @Override
     public void initChannel( SocketChannel ch ) throws Exception
     {
-        pipelineBuilderFactory.create( ch, log )
+        pipelineBuilderFactory.server( ch, log )
                 .addFraming()
                 .add( "handshake_server_encoder", new ServerMessageEncoder() )
                 .add( "handshake_server_decoder", new ServerMessageDecoder() )
@@ -64,7 +67,8 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
 
     private NettyHandshakeServer createHandshakeServer( SocketChannel channel )
     {
-        HandshakeServer handshakeServer = new HandshakeServer( new SimpleNettyChannel( channel, log ), protocolRepository, allowedProtocol );
+        HandshakeServer handshakeServer =
+                new HandshakeServer( new SimpleNettyChannel( channel, log ), applicationProtocolRepository, modifierProtocolRepository, allowedProtocol );
         handshakeServer.protocolStackFuture().whenComplete( ( protocolStack, failure ) -> onHandshakeComplete( protocolStack, channel, failure ) );
         channel.closeFuture().addListener(
                 ignored -> channel.parent().pipeline().fireUserEventTriggered( new ServerHandshakeFinishedEvent.Closed( toSocketAddress( channel ) ) )
@@ -82,7 +86,7 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
 
         try
         {
-            protocolInstallerRepository.installerFor( protocolStack.applicationProtocol() ).install( channel );
+            protocolInstallerRepository.installerFor( protocolStack ).install( channel );
             channel.parent().pipeline().fireUserEventTriggered( new ServerHandshakeFinishedEvent.Created( toSocketAddress( channel ), protocolStack ) );
         }
         catch ( Throwable t )

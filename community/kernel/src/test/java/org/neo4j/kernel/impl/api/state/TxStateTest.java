@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -31,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -43,7 +47,8 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
@@ -66,6 +71,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.collection.primitive.Primitive.intObjectMap;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -73,6 +86,7 @@ import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 
+@RunWith( Parameterized.class )
 public class TxStateTest
 {
     public final RandomRule random = new RandomRule();
@@ -81,6 +95,65 @@ public class TxStateTest
     public final TestRule repeatWithDifferentRandomization()
     {
         return RuleChain.outerRule( new RepeatRule() ).around( random );
+    }
+
+    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.forLabel( 1, 1 );
+    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.forLabel( 2, 1 );
+
+    private CollectionsFactory collectionsFactory;
+    private TxState state;
+
+    @Parameter
+    public CollectionsFactorySupplier collectionsFactorySupplier;
+
+    @Parameters( name = "{0}" )
+    public static List<CollectionsFactorySupplier> data()
+    {
+        return asList(
+                new CollectionsFactorySupplier()
+                {
+                    @Override
+                    public CollectionsFactory create()
+                    {
+                        return CollectionsFactorySupplier.ON_HEAP.create();
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "On heap";
+                    }
+                },
+                new CollectionsFactorySupplier()
+                {
+                    @Override
+                    public CollectionsFactory create()
+                    {
+                        return CollectionsFactorySupplier.OFF_HEAP.create();
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "Off heap";
+                    }
+                }
+        );
+    }
+
+    @Before
+    public void before()
+    {
+        collectionsFactory = collectionsFactorySupplier.create();
+        state = new TxState( collectionsFactory );
+    }
+
+    @After
+    public void after()
+    {
+        state.release();
+        assertEquals( "Seems like native memory is leaking", 0L, collectionsFactory.getMemoryTracker().usedDirectMemory() );
     }
 
     //region node label update tests
@@ -1295,9 +1368,9 @@ public class TxStateTest
             void createLateState()
             {
                 state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
-                                            /*type=*/random.nextInt( 128 ),
-                                            /*startNode=*/random.nextInt( 1 << 20 ),
-                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+                        /*type=*/random.nextInt( 128 ),
+                        /*startNode=*/random.nextInt( 1 << 20 ),
+                        /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             // then
@@ -1329,18 +1402,18 @@ public class TxStateTest
             void createEarlyState()
             {
                 state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
-                                            /*type=*/random.nextInt( 128 ),
-                                            /*startNode=*/random.nextInt( 1 << 20 ),
-                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+                        /*type=*/random.nextInt( 128 ),
+                        /*startNode=*/random.nextInt( 1 << 20 ),
+                        /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             @Override
             void createLateState()
             {
                 state.relationshipDoDelete( /*id=*/random.nextInt( 1 << 20 ),
-                                            /*type=*/random.nextInt( 128 ),
-                                            /*startNode=*/random.nextInt( 1 << 20 ),
-                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+                        /*type=*/random.nextInt( 128 ),
+                        /*startNode=*/random.nextInt( 1 << 20 ),
+                        /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             // then
@@ -1371,9 +1444,9 @@ public class TxStateTest
             void createEarlyState()
             {
                 state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
-                                            /*type=*/random.nextInt( 128 ),
-                                            /*startNode=*/random.nextInt( 1 << 20 ),
-                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+                        /*type=*/random.nextInt( 128 ),
+                        /*startNode=*/random.nextInt( 1 << 20 ),
+                        /*endNode=*/random.nextInt( 1 << 20 ) );
             }
 
             @Override
@@ -1450,9 +1523,9 @@ public class TxStateTest
             Cursor<RelationshipItem> committed = cursor(
                     relationshipsForNode( i, committedRelationships, direction, relationshipTypes ).values() );
             Cursor<RelationshipItem> augmented = relationshipTypes == null
-                    ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
-                    : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
-                             relationshipTypes );
+                                                 ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
+                                                 : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
+                                                         relationshipTypes );
 
             Map<Long,RelationshipItem> expectedRelationships =
                     relationshipsForNode( i, allRelationships, direction, relationshipTypes );
@@ -1468,6 +1541,22 @@ public class TxStateTest
             assertTrue( "Augmented cursor didn't return some expected relationships: " + expectedRelationships,
                     expectedRelationships.isEmpty() );
         }
+    }
+
+    @Test
+    public void useCollectionFactory()
+    {
+        final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
+        doAnswer( invocation -> intObjectMap() ).when( collectionsFactory ).newIntObjectMap();
+
+        state = new TxState( collectionsFactory );
+
+        state.labelDoCreateForName( "foo", 1 );
+        state.propertyKeyDoCreateForName( "bar", 2 );
+        state.relationshipTypeDoCreateForName( "baz", 3 );
+
+        verify( collectionsFactory, times( 3 ) ).newIntObjectMap();
+        verifyNoMoreInteractions( collectionsFactory );
     }
 
     private Map<Long,RelationshipItem> relationshipsForNode( long nodeId, Map<Long,RelationshipItem> allRelationships,
@@ -1618,18 +1707,6 @@ public class TxStateTest
         {
             late = true;
         }
-    }
-
-    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.forLabel( 1, 1 );
-    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.forLabel( 1, 2 );
-    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.forLabel( 2, 1 );
-
-    private TransactionState state;
-
-    @Before
-    public void before()
-    {
-        state = new TxState();
     }
 
     private interface IndexUpdater

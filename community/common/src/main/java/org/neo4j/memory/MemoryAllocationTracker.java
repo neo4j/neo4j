@@ -22,17 +22,17 @@ package org.neo4j.memory;
 /**
  * Memory allocation tracker that tracks bytes allocation and de-allocation
  */
-public interface MemoryAllocationTracker
+public interface MemoryAllocationTracker extends MemoryTracker
 {
     /**
      * Record allocation of bytes
-     * @param allocatedBytes number of allocated bytes
+     * @param bytes number of allocated bytes
      */
-    void allocate( long allocatedBytes );
+    void allocated( long bytes );
 
     /**
      * Record de-allocation of bytes
-     * @param deAllocatedBytes number of de0allocated bytes
+     * @param bytes number of de0allocated bytes
      */
-    void deallocate( long deAllocatedBytes );
+    void deallocated( long bytes );
 }

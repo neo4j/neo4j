@@ -30,13 +30,13 @@ import java.util.Map;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerAdapter
+public class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerAdapter
 {
     private final Map<E, ChannelInboundHandler> decoders = new HashMap<>();
     private final Protocol<E> protocol;
     private final Log log;
 
-    RequestDecoderDispatcher( Protocol<E> protocol, LogProvider logProvider )
+    public RequestDecoderDispatcher( Protocol<E> protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );

@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
@@ -40,7 +41,6 @@ import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -63,6 +63,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 @RunWith( Parameterized.class )
 public class SocketTransportHandlerTest
 {
+    private static final String CONNECTOR = "default";
     private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final BoltMessageLogging BOLT_LOGGING = BoltMessageLogging.none();
 
@@ -150,7 +151,7 @@ public class SocketTransportHandlerTest
         AssertableLogProvider logging = new AssertableLogProvider();
 
         BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( machine );
-        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, logging, BOLT_LOGGING );
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, logging, BOLT_LOGGING );
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -171,7 +172,7 @@ public class SocketTransportHandlerTest
         // Given
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
         AssertableLogProvider logging = new AssertableLogProvider();
-        SocketTransportHandler handler = new SocketTransportHandler( mock( BoltHandshakeProtocolHandler.class ),
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, mock( BoltHandshakeProtocolHandler.class ),
                 logging, BOLT_LOGGING );
 
         // When
@@ -191,7 +192,7 @@ public class SocketTransportHandlerTest
         BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( machine );
         ChannelHandlerContext context = channelHandlerContextMock();
 
-        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, LOG_PROVIDER, BOLT_LOGGING );
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, LOG_PROVIDER, BOLT_LOGGING );
 
         handler.channelRead( context, handshake() );
         BoltMessagingProtocolHandler protocol1 = handshakeHandler.chosenProtocol();
@@ -208,7 +209,7 @@ public class SocketTransportHandlerTest
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( stateMachine );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, logProvider, BOLT_LOGGING );
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, logProvider, BOLT_LOGGING );
 
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         EmbeddedChannel channel = new EmbeddedChannel();
@@ -224,7 +225,7 @@ public class SocketTransportHandlerTest
 
     private static SocketTransportHandler newSocketTransportHandler( BoltHandshakeProtocolHandler handler )
     {
-        return new SocketTransportHandler( handler, LOG_PROVIDER, BOLT_LOGGING );
+        return new SocketTransportHandler( CONNECTOR, handler, LOG_PROVIDER, BOLT_LOGGING );
     }
 
     private static ChannelHandlerContext channelHandlerContextMock()
@@ -257,7 +258,7 @@ public class SocketTransportHandlerTest
                 throw new IllegalArgumentException( "Unknown version: " + version );
             }
 
-            return new BoltMessagingProtocolHandlerImpl( channel, new SynchronousBoltWorker( machine ),
+            return new BoltMessagingProtocolHandlerImpl( channel, new SynchronousBoltConnection( machine ),
                     neo4jPack, TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
         };
 

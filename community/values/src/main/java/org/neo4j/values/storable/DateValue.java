@@ -21,21 +21,28 @@ package org.neo4j.values.storable;
 
 import java.time.Clock;
 import java.time.DateTimeException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
+import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
@@ -111,7 +118,57 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        LocalDate localDate = input.getDatePart();
+        DateValue truncated = date( truncateTo( localDate, unit ) );
+        if ( fields.size() == 0 )
+        {
+            return truncated;
+        }
+        else
+        {
+            MapValue updatedFields = VirtualValues.copy( fields, Pair.of( "date", truncated ) );
+            return build( updatedFields, defaultZone );
+        }
+    }
+
+    static LocalDate truncateTo( LocalDate value, TemporalUnit unit )
+    {
+        if ( unit == ChronoUnit.MILLENNIA )
+        {
+            return value.with( Neo4JTemporalField.YEAR_OF_MILLENNIUM, 0 );
+        }
+        else if ( unit == ChronoUnit.CENTURIES )
+        {
+            return value.with( Neo4JTemporalField.YEAR_OF_CENTURY, 0 );
+        }
+        else if ( unit == ChronoUnit.DECADES )
+        {
+            return value.with( Neo4JTemporalField.YEAR_OF_DECADE, 0 );
+        }
+        else if ( unit == ChronoUnit.YEARS )
+        {
+            return value.with( TemporalAdjusters.firstDayOfYear() );
+        }
+        else if ( unit == IsoFields.QUARTER_YEARS )
+        {
+            return value.with( IsoFields.DAY_OF_QUARTER, 1 );
+        }
+        else if ( unit == ChronoUnit.MONTHS )
+        {
+            return value.with( TemporalAdjusters.firstDayOfMonth() );
+        }
+        else if ( unit == ChronoUnit.WEEKS )
+        {
+            return value.with( TemporalAdjusters.previousOrSame( DayOfWeek.MONDAY ) );
+        }
+        else if ( unit == ChronoUnit.DAYS )
+        {
+            return value;
+        }
+        else
+        {
+            throw new UnsupportedTemporalTypeException( "Unit too small for truncation: " + unit );
+        }
     }
 
     static DateBuilder builder( Supplier<ZoneId> defaultZone )
@@ -160,11 +217,29 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
-        throw new IllegalArgumentException( String.format( "Cannot get the time zone of: %s", this ) );
+        throw new UnsupportedTemporalTypeException( String.format( "Cannot get the time zone of: %s", this ) );
+    }
+
+    @Override
+    ZoneId getZoneId()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+    }
+
+    @Override
+    ZoneOffset getZoneOffset()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
     }
 
     @Override
     public boolean hasTimeZone()
+    {
+        return false;
+    }
+
+    @Override
+    boolean hasTime()
     {
         return false;
     }

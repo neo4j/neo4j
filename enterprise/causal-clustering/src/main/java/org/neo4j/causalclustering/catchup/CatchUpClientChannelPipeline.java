@@ -31,12 +31,15 @@ import org.neo4j.causalclustering.catchup.storecopy.FileChunkDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.FileChunkHandler;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderHandler;
+import org.neo4j.causalclustering.catchup.storecopy.GetIndexFilesRequest;
+import org.neo4j.causalclustering.catchup.storecopy.GetStoreFileRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponseDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponseHandler;
-import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestEncoder;
+import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyRequestEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponseDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponseHandler;
+import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse;
 import org.neo4j.causalclustering.catchup.tx.TxPullRequestEncoder;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseDecoder;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseHandler;
@@ -77,11 +80,13 @@ class CatchUpClientChannelPipeline
         pipeline.addLast( new VersionPrepender() );
 
         pipeline.addLast( new TxPullRequestEncoder() );
-        pipeline.addLast( new GetStoreRequestEncoder() );
+        pipeline.addLast( new GetIndexFilesRequest.Encoder() );
+        pipeline.addLast( new GetStoreFileRequest.Encoder() );
         pipeline.addLast( new CoreSnapshotRequestEncoder() );
         pipeline.addLast( new GetStoreIdRequestEncoder() );
         pipeline.addLast( new ResponseMessageTypeEncoder() );
         pipeline.addLast( new RequestMessageTypeEncoder() );
+        pipeline.addLast( new PrepareStoreCopyRequestEncoder() );
 
         pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
@@ -95,6 +100,7 @@ class CatchUpClientChannelPipeline
         decoderDispatcher.register( CatchupClientProtocol.State.TX_STREAM_FINISHED, new
                 TxStreamFinishedResponseDecoder() );
         decoderDispatcher.register( CatchupClientProtocol.State.FILE_HEADER, new FileHeaderDecoder() );
+        decoderDispatcher.register( CatchupClientProtocol.State.PREPARE_STORE_COPY_RESPONSE, new PrepareStoreCopyResponse.Decoder() );
         decoderDispatcher.register( CatchupClientProtocol.State.FILE_CONTENTS, new FileChunkDecoder() );
 
         pipeline.addLast( decoderDispatcher );
@@ -111,5 +117,6 @@ class CatchUpClientChannelPipeline
         pipeline.addLast( new ExceptionMonitoringHandler(
                 monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchUpClient.class ) ) );
         pipeline.addLast( new ExceptionSwallowingHandler() );
+        pipeline.addLast( new StoreListingResponseHandler( protocol, handler ));
     }
 }

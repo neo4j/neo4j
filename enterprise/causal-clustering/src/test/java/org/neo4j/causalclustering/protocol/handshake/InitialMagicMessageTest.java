@@ -30,7 +30,7 @@ public class InitialMagicMessageTest
     public void shouldCreateWithCorrectMagicValue()
     {
         // given
-        InitialMagicMessage magicMessage = new InitialMagicMessage();
+        InitialMagicMessage magicMessage = InitialMagicMessage.instance();
 
         // then
         assertTrue( magicMessage.isCorrectMagic() );

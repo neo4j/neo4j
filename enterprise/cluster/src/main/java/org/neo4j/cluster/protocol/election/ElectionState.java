@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
@@ -152,6 +153,7 @@ public enum ElectionState
 
                                 if ( isElector )
                                 {
+                                    context.getLog( ElectionState.class ).info( "I am the elector, doing election..." );
                                     // Start election process for all roles
                                     Iterable<ElectionRole> rolesRequiringElection = context.getPossibleRoles();
                                     for ( ElectionRole role : rolesRequiringElection )
@@ -210,10 +212,23 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    List<InstanceId> aliveInstances = Iterables.asList( context.getAlive() );
-                                    Collections.sort( aliveInstances );
+                                    /*
+                                     * We take alive instances as determined by suspicions and remove those that are
+                                     * marked as failed in the failed set. This is done so that an instance which
+                                     * just joined can use the failed set provided in the configuration response to
+                                     * correctly determine the instances that are failed and skip them.
+                                     * Basically, this is to solve an issue where if an instance joins and is the
+                                     * lowest numbered alive but not overall will not try to get the failed lower
+                                     * numbered one to do elections.
+                                     */
+                                    Set<InstanceId> aliveInstances = Iterables.asSet( context.getAlive() );
+                                    aliveInstances.removeAll( context.getFailed() );
+                                    List<InstanceId> adjustedAlive = Iterables.asList( aliveInstances );
+                                    Collections.sort( adjustedAlive );
+
+                                    context.getLog( ElectionState.class ).info( "I am NOT the elector, sending to " + adjustedAlive );
                                     outgoing.offer( message.setHeader( Message.HEADER_TO,
-                                            context.getUriForId( firstOrNull( aliveInstances ) ).toString() ) );
+                                            context.getUriForId( firstOrNull( adjustedAlive ) ).toString() ) );
                                 }
                             }
                             break;

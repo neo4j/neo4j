@@ -19,63 +19,20 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import java.util.Objects;
-
 import static org.neo4j.causalclustering.protocol.handshake.StatusCode.FAILURE;
 
-public class ApplicationProtocolResponse implements ClientMessage
+public class ApplicationProtocolResponse extends BaseProtocolResponse implements ClientMessage
 {
     public static final ApplicationProtocolResponse NO_PROTOCOL = new ApplicationProtocolResponse( FAILURE, "", 0 );
-    private final StatusCode statusCode;
-    private final String protocolName;
-    private final int version;
 
     ApplicationProtocolResponse( StatusCode statusCode, String protocolName, int version )
     {
-        this.statusCode = statusCode;
-        this.protocolName = protocolName;
-        this.version = version;
+        super( statusCode, protocolName, version );
     }
 
     @Override
     public void dispatch( ClientMessageHandler handler )
     {
         handler.handle( this );
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        ApplicationProtocolResponse that = (ApplicationProtocolResponse) o;
-        return version == that.version && Objects.equals( protocolName, that.protocolName );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( protocolName, version );
-    }
-
-    public StatusCode statusCode()
-    {
-        return statusCode;
-    }
-
-    public String protocolName()
-    {
-        return protocolName;
-    }
-
-    public int version()
-    {
-        return version;
     }
 }

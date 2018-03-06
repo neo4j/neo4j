@@ -164,8 +164,7 @@ public class StoreCopyServer
 
             // Copy the store files
             long lastAppliedTransaction;
-            try ( Resource lock = mutex.storeCopy( checkPointAction );
-                    ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
+            try ( Resource lock = mutex.storeCopy( checkPointAction ); ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
             {
                 lastAppliedTransaction = checkPointer.lastCheckPointedTransactionId();
                 monitor.startStreamingStoreFiles( storeCopyIdentifier );

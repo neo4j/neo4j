@@ -29,9 +29,9 @@ public class LocalMemoryTrackerTest
     public void trackMemoryAllocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-        memoryTracker.allocate( 10 );
-        memoryTracker.allocate( 20 );
-        memoryTracker.allocate( 40 );
+        memoryTracker.allocated( 10 );
+        memoryTracker.allocated( 20 );
+        memoryTracker.allocated( 40 );
         assertEquals( 70, memoryTracker.usedDirectMemory());
     }
 
@@ -39,13 +39,13 @@ public class LocalMemoryTrackerTest
     public void trackMemoryDeallocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-        memoryTracker.allocate( 100 );
+        memoryTracker.allocated( 100 );
         assertEquals( 100, memoryTracker.usedDirectMemory() );
 
-        memoryTracker.deallocate( 20 );
+        memoryTracker.deallocated( 20 );
         assertEquals( 80, memoryTracker.usedDirectMemory() );
 
-        memoryTracker.deallocate( 40 );
+        memoryTracker.deallocated( 40 );
         assertEquals( 40, memoryTracker.usedDirectMemory() );
     }
 
@@ -56,11 +56,11 @@ public class LocalMemoryTrackerTest
         long initialGlobalUsage = globalMemoryTracker.usedDirectMemory();
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
 
-        memoryTracker.allocate( 100 );
+        memoryTracker.allocated( 100 );
         assertEquals( 100, memoryTracker.usedDirectMemory() );
         assertEquals( 100, globalMemoryTracker.usedDirectMemory() - initialGlobalUsage );
 
-        memoryTracker.deallocate( 50 );
+        memoryTracker.deallocated( 50 );
         assertEquals( 50, memoryTracker.usedDirectMemory() );
         assertEquals( 50, globalMemoryTracker.usedDirectMemory() - initialGlobalUsage );
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.scheduler.JobScheduler;
@@ -51,7 +51,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         this.downloaderPauseStrategy = downloaderPauseStrategy;
     }
 
-    public synchronized void scheduleDownload( LeaderLocator leaderLocator )
+    public synchronized void scheduleDownload( CatchupAddressProvider addressProvider )
     {
         if ( stopped )
         {
@@ -60,7 +60,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
 
         if ( currentJob == null || currentJob.hasCompleted() )
         {
-            currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log,
+            currentJob = new PersistentSnapshotDownloader( addressProvider, applicationProcess, downloader, log,
                     downloaderPauseStrategy );
             jobScheduler.schedule( downloadSnapshot, currentJob );
         }

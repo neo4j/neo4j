@@ -30,14 +30,18 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
@@ -102,7 +106,23 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        LocalTime localTime = input.getLocalTimePart();
+        LocalTime truncatedLT = localTime.truncatedTo( unit );
+        if ( fields.size() == 0 )
+        {
+            return localTime( truncatedLT );
+        }
+        else
+        {
+            Map<String,AnyValue> updatedFields = fields.getMapCopy();
+            truncatedLT = updateFieldMapWithConflictingSubseconds( updatedFields, unit, truncatedLT );
+            if ( updatedFields.size() == 0 )
+            {
+                return localTime( truncatedLT );
+            }
+            updatedFields.put( "time", localTime( truncatedLT ) );
+            return build( VirtualValues.map( updatedFields ), defaultZone );
+        }
     }
 
     static final LocalTime DEFAULT_LOCAL_TIME = LocalTime.of( Field.hour.defaultValue, Field.minute.defaultValue );
@@ -201,9 +221,27 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
+    ZoneId getZoneId()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+    }
+
+    @Override
+    ZoneOffset getZoneOffset()
+    {
+        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
+    }
+
+    @Override
     public boolean hasTimeZone()
     {
         return false;
+    }
+
+    @Override
+    boolean hasTime()
+    {
+        return true;
     }
 
     @Override

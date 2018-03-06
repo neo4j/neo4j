@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import java.io.Closeable;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
@@ -36,20 +38,22 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
  * target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order.
  */
-public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
+public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Closeable
 {
+    private final CollectionsFactory collectionsFactory;
     private PrimitiveLongSet addedElements;
     private PrimitiveLongSet removedElements;
 
     public PrimitiveLongDiffSets()
     {
-        this( emptySet(), emptySet() );
+        this( emptySet(), emptySet(), OnHeapCollectionsFactory.INSTANCE );
     }
 
-    public PrimitiveLongDiffSets( PrimitiveLongSet addedElements, PrimitiveLongSet removedElements )
+    public PrimitiveLongDiffSets( PrimitiveLongSet addedElements, PrimitiveLongSet removedElements, CollectionsFactory collectionsFactory )
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;
+        this.collectionsFactory = collectionsFactory;
     }
 
     @Override
@@ -185,7 +189,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
     {
         if ( emptySet() == addedElements )
         {
-            addedElements = Primitive.longSet();
+            addedElements = collectionsFactory.newLongSet();
         }
     }
 
@@ -193,8 +197,14 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
     {
         if ( emptySet() == removedElements )
         {
-            removedElements = Primitive.longSet();
+            removedElements = collectionsFactory.newLongSet();
         }
     }
 
+    @Override
+    public void close()
+    {
+        removedElements.close();
+        addedElements.close();
+    }
 }

@@ -35,6 +35,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
+import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -233,6 +234,27 @@ enum SystemDiagnostics implements DiagnosticsProvider
                     }
                     logger.log( key + " = " + System.getProperty( key ) );
                 }
+            }
+        }
+    },
+    TIMEZONE_DATABASE( "(IANA) TimeZone Database Version:" )
+    {
+        @Override
+        void dump( Logger logger )
+        {
+            Map<String,Integer> versions = new HashMap<>();
+            for ( String tz : ZoneRulesProvider.getAvailableZoneIds() )
+            {
+                for ( String version : ZoneRulesProvider.getVersions( tz ).keySet() )
+                {
+                    versions.compute( version, ( key, value ) -> value == null ? 1 : (value + 1) );
+                }
+            }
+            String[] sorted = versions.keySet().toArray( new String[0] );
+            Arrays.sort( sorted );
+            for ( String tz : sorted )
+            {
+                logger.log( "  TimeZone version: %s (available for %d zone identifiers)", tz, versions.get( tz ) );
             }
         }
     },

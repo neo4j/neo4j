@@ -22,10 +22,10 @@ package org.neo4j.causalclustering.protocol.handshake;
 import co.unruly.matchers.OptionalMatchers;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
 
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertThat;
@@ -33,13 +33,14 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ProtocolRepositoryTest
 {
-    private ProtocolRepository protocolRepository = new ProtocolRepository( TestProtocols.values() );
+    private ProtocolRepository<Protocol.ApplicationProtocol> protocolRepository = new ProtocolRepository<>( TestApplicationProtocols.values() );
 
     @Test
     public void shouldReturnEmptyIfUnknownVersion()
     {
         // when
-        Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), -1 );
+        Optional<Protocol.ApplicationProtocol> applicationProtocol =
+                protocolRepository.select( Protocol.ApplicationProtocolIdentifier.RAFT.canonicalName(), -1 );
 
         // then
         assertThat( applicationProtocol, OptionalMatchers.empty() );
@@ -49,7 +50,7 @@ public class ProtocolRepositoryTest
     public void shouldReturnEmptyIfUnknownName()
     {
         // when
-        Optional<Protocol> applicationProtocol = protocolRepository.select( "not a real protocol", 1 );
+        Optional<Protocol.ApplicationProtocol> applicationProtocol = protocolRepository.select( "not a real protocol", 1 );
 
         // then
         assertThat( applicationProtocol, OptionalMatchers.empty() );
@@ -59,7 +60,8 @@ public class ProtocolRepositoryTest
     public void shouldReturnEmptyIfNoVersions()
     {
         // when
-        Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), emptySet());
+        Optional<Protocol.ApplicationProtocol> applicationProtocol =
+                protocolRepository.select( Protocol.ApplicationProtocolIdentifier.RAFT.canonicalName(), emptySet() );
 
         // then
         assertThat( applicationProtocol, OptionalMatchers.empty() );
@@ -69,39 +71,41 @@ public class ProtocolRepositoryTest
     public void shouldReturnProtocolIfKnownNameAndVersion()
     {
         // when
-        Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), 1 );
+        Optional<Protocol.ApplicationProtocol> applicationProtocol =
+                protocolRepository.select( Protocol.ApplicationProtocolIdentifier.RAFT.canonicalName(), 1 );
 
         // then
-        assertThat( applicationProtocol, OptionalMatchers.contains( TestProtocols.RAFT_1 ) );
+        assertThat( applicationProtocol, OptionalMatchers.contains( TestApplicationProtocols.RAFT_1 ) );
     }
 
     @Test
     public void shouldReturnKnownProtocolVersionWhenFirstGivenVersionNotKnown()
     {
         // when
-        Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), asSet( -1, 1 ));
+        Optional<Protocol.ApplicationProtocol> applicationProtocol =
+                protocolRepository.select( Protocol.ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( -1, 1 ) );
 
         // then
-        assertThat( applicationProtocol, OptionalMatchers.contains( TestProtocols.RAFT_1 ) );
+        assertThat( applicationProtocol, OptionalMatchers.contains( TestApplicationProtocols.RAFT_1 ) );
     }
 
     @Test
     public void shouldReturnProtocolOfHighestVersionRequestedAndSupported()
     {
         // when
-        Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), asSet( 9, 1, 3, 2, 7 ) );
+        Optional<Protocol.ApplicationProtocol> applicationProtocol =
+                protocolRepository.select( Protocol.ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( 9, 1, 3, 2, 7 ) );
 
         // then
-        assertThat( applicationProtocol, OptionalMatchers.contains( TestProtocols.RAFT_3 ) );
+        assertThat( applicationProtocol, OptionalMatchers.contains( TestApplicationProtocols.RAFT_3 ) );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void shouldNotInstantiateIfDuplicateProtocolsSupplied()
     {
         // given
-        Protocol protocol = new Protocol()
+        Protocol.ApplicationProtocol protocol = new Protocol.ApplicationProtocol()
         {
-
             @Override
             public String identifier()
             {
@@ -114,10 +118,10 @@ public class ProtocolRepositoryTest
                 return 1;
             }
         };
-        Protocol[] protocols = {protocol, protocol};
+        Protocol.ApplicationProtocol[] protocols = {protocol, protocol};
 
         // when
-        new ProtocolRepository( protocols );
+        new ProtocolRepository<>( protocols );
 
         // then throw
     }

@@ -87,6 +87,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -116,6 +118,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
 
+    private final CollectionsFactory collectionsFactory;
+
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
@@ -138,7 +142,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
-    private TransactionState txState;
+    private TxState txState;
     private ExplicitIndexTransactionState explicitIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
@@ -184,7 +188,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier )
+            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -216,6 +220,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
                         storageStatement,
                         this, new KernelToken( storeLayer, this ), cursors, autoIndexing );
+        this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
     /**
@@ -409,7 +414,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( txState == null )
         {
             transactionMonitor.upgradeToWriteTransaction();
-            txState = new TxState();
+            txState = new TxState( collectionsFactory );
         }
         return txState;
     }
@@ -851,7 +856,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             securityContext = null;
             transactionEvent = null;
             explicitIndexTransactionState = null;
-            txState = null;
+            if ( txState != null )
+            {
+                txState.release();
+                txState = null;
+            }
             hooksState = null;
             closeListeners.clear();
             reuseCount++;
@@ -1005,9 +1014,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Returns number of allocated bytes by current transaction.
          * @return number of allocated bytes by the thread.
          */
-        long heapAllocateBytes()
+        long heapAllocatedBytes()
         {
             return heapAllocation.allocatedBytes( transactionThreadId ) - heapAllocatedBytesWhenQueryStarted;
+        }
+
+        /**
+         * Returns amount of direct memory allocated by current transaction.
+         *
+         * @return amount of direct memory allocated by the thread in bytes.
+         */
+        long directAllocatedBytes()
+        {
+            return transaction.collectionsFactory.getMemoryTracker().usedDirectMemory();
         }
 
         /**

@@ -25,26 +25,36 @@ public interface Protocol
 
     int version();
 
-    enum Identifier
+    interface Identifier<T extends Protocol>
+    {
+        String canonicalName();
+    }
+
+    interface ApplicationProtocol extends Protocol
+    {
+    }
+
+    enum ApplicationProtocolIdentifier implements Identifier<ApplicationProtocol>
     {
         RAFT,
         CATCHUP;
 
+        @Override
         public String canonicalName()
         {
             return name().toLowerCase();
         }
     }
 
-    enum Protocols implements Protocol
+    enum ApplicationProtocols implements ApplicationProtocol
     {
-        RAFT_1( Identifier.RAFT, 1 ),
-        CATCHUP_1( Identifier.CATCHUP, 1 );
+        RAFT_1( ApplicationProtocolIdentifier.RAFT, 1 ),
+        CATCHUP_1( ApplicationProtocolIdentifier.CATCHUP, 1 );
 
         private final int version;
-        private final Identifier identifier;
+        private final ApplicationProtocolIdentifier identifier;
 
-        Protocols( Identifier identifier, int version )
+        ApplicationProtocols( ApplicationProtocolIdentifier identifier, int version )
         {
             this.identifier = identifier;
             this.version = version;
@@ -53,13 +63,67 @@ public interface Protocol
         @Override
         public String identifier()
         {
-            return this.identifier.canonicalName();
+            return identifier.canonicalName();
         }
 
         @Override
         public int version()
         {
             return version;
+        }
+    }
+
+    interface ModifierProtocol extends Protocol
+    {
+        /**
+         * Should be human readable in a comma separated list
+         */
+        String friendlyName();
+    }
+
+    enum ModifierProtocolIdentifier implements Identifier<ModifierProtocol>
+    {
+        COMPRESSION,
+        GRATUITOUS_OBFUSCATION;
+
+        @Override
+        public String canonicalName()
+        {
+            return name().toLowerCase();
+        }
+    }
+
+    enum ModifierProtocols implements ModifierProtocol
+    {
+        COMPRESSION_SNAPPY( ModifierProtocolIdentifier.COMPRESSION, 1, "Snappy" );
+
+        private final int version;
+        private final ModifierProtocolIdentifier identifier;
+        private final String friendlyName;
+
+        ModifierProtocols( ModifierProtocolIdentifier identifier, int version, String friendlyName )
+        {
+            this.version = version;
+            this.identifier = identifier;
+            this.friendlyName = friendlyName;
+        }
+
+        @Override
+        public int version()
+        {
+            return version;
+        }
+
+        @Override
+        public String identifier()
+        {
+            return identifier.canonicalName();
+        }
+
+        @Override
+        public String friendlyName()
+        {
+            return friendlyName;
         }
     }
 }

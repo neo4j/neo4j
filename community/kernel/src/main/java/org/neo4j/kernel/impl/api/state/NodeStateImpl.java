@@ -202,7 +202,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 
     DiffSets<Integer> getOrCreateLabelDiffSets()
     {
-        if ( null == labelDiffSets )
+        if ( labelDiffSets == null )
         {
             labelDiffSets = new DiffSets<>();
         }

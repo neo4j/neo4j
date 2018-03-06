@@ -127,9 +127,11 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransacti
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
@@ -266,6 +268,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final AvailabilityGuard availabilityGuard;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
+    private final CollectionsFactorySupplier collectionsFactorySupplier;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -296,7 +299,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard,
             SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController,
-            OperationalMode operationalMode, VersionContextSupplier versionContextSupplier )
+            OperationalMode operationalMode, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -364,6 +367,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = pageCache;
         this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
+        this.collectionsFactorySupplier = collectionsFactorySupplier;
     }
 
     @Override
@@ -687,7 +691,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
-                explicitIndexStore, versionContextSupplier ) );
+                explicitIndexStore, versionContextSupplier, collectionsFactorySupplier ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -828,7 +832,19 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        return kernelModule.fileListing().listStoreFiles( includeLogs );
+        if ( includeLogs )
+        {
+            return getNeoStoreFileListing().builder().build();
+        }
+        else
+        {
+            return getNeoStoreFileListing().builder().excludeLogFiles().build();
+        }
+    }
+
+    public NeoStoreFileListing getNeoStoreFileListing()
+    {
+        return kernelModule.fileListing();
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )

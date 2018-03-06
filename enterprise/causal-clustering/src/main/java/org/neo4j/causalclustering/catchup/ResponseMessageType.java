@@ -29,7 +29,9 @@ public enum ResponseMessageType
     STORE_COPY_FINISHED( (byte) 4 ),
     CORE_SNAPSHOT( (byte) 5 ),
     TX_STREAM_FINISHED( (byte) 6 ),
-    UNKNOWN( (byte) 200 ),;
+    PREPARE_STORE_COPY_RESPONSE( (byte) 7 ),
+    INDEX_SNAPSHOT_RESPONSE( (byte) 8 ),
+    UNKNOWN( (byte) 200 );
 
     private byte messageType;
 

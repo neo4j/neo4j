@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
+import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.NodeItem;
@@ -223,7 +224,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScan( index ) ).thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
+        when( txState.indexUpdatesForScan( index ) ).thenReturn( createDiffSets() );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
@@ -252,8 +253,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForSeek( index, ValueTuple.of( "value" ) ) )
-                .thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
+        when( txState.indexUpdatesForSeek( index, ValueTuple.of( "value" ) ) ).thenReturn( createDiffSets() );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
@@ -281,8 +281,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
-                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
+        when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn( createDiffSets()
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -311,8 +310,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScan( index ) ).thenReturn(
-                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
+        when( txState.indexUpdatesForScan( index ) ).thenReturn( createDiffSets()
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -341,8 +339,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScan( index ) ).thenReturn(
-                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
+        when( txState.indexUpdatesForScan( index ) ).thenReturn( createDiffSets()
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -379,8 +376,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.txState() ).thenReturn( txState );
         StorageStatement storageStatement = mock( StorageStatement.class );
         when( statement.getStoreStatement() ).thenReturn( storageStatement );
-        when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
-                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
+        when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn( createDiffSets()
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -427,8 +423,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) )
-                .thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
+        when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn( createDiffSets() );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
@@ -644,5 +639,10 @@ public class StateHandlingStatementOperationsTest
         IndexReader indexReader = mock( IndexReader.class );
         when( storeStatement.getIndexReader( any( IndexDescriptor.class ) ) ).thenReturn( indexReader );
         return indexReader;
+    }
+
+    private static PrimitiveLongDiffSets createDiffSets()
+    {
+        return new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ), OnHeapCollectionsFactory.INSTANCE );
     }
 }

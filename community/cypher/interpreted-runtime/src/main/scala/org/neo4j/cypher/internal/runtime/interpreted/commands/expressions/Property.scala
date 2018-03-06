@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue}
+import org.neo4j.values.storable.{DurationValue, TemporalValue, Values}
+import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
@@ -44,6 +44,8 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
         case Some(propId) => state.query.relationshipOps.getProperty(r.id(), propId)
       }
     case IsMap(mapFunc) => mapFunc(state.query).get(propertyKey.name)
+    case t: TemporalValue[_,_] => t.get(propertyKey.name)
+    case d: DurationValue => d.get(propertyKey.name)
     case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 
