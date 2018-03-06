@@ -1139,12 +1139,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     cursor
   }
 
-  private def allocateAndTraceExplicitIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeExplicitIndexCursor()
-    resources.trace(cursor)
-    cursor
-  }
-
   private def allocateAndTraceRelationshipScanCursor() = {
     val cursor = transactionalContext.cursors.allocateRelationshipScanCursor()
     resources.trace(cursor)
