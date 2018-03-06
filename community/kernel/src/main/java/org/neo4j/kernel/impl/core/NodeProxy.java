@@ -749,10 +749,6 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             NodeCursor nodes = transaction.nodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
-            if ( !nodes.next() )
-            {
-                throw new NotFoundException( "Node not found." );
-            }
             nodes.allRelationships( relationships );
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
