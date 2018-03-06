@@ -19,39 +19,27 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.causalclustering.catchup.RequestMessageType;
+import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.CatchUpRequest;
 
-class InMemoryFileSystemStream implements StoreFileStreams
+public class GetStoreRequest implements CatchUpRequest
 {
-    Map<String,StringBuffer> filesystem = new HashMap<>();
+    private final StoreId expectedStoreId;
 
-    /**
-     *
-     * @param destination
-     * @param requiredAlignment
-     * @param data
-     * @throws IOException
-     */
-    public void write( String destination, int requiredAlignment, byte[] data ) throws IOException
+    GetStoreRequest( StoreId expectedStoreId )
     {
-        StringBuffer buffer = filesystem.getOrDefault( destination, new StringBuffer() );
-        for ( byte b : data )
-        {
-            buffer.append( (char) b );
-        }
-        filesystem.put( destination, buffer );
+        this.expectedStoreId = expectedStoreId;
     }
 
     @Override
-    public void close() throws Exception
+    public RequestMessageType messageType()
     {
-        throw new RuntimeException( "Unimplemented" );
+        return RequestMessageType.STORE;
     }
 
-    public Map<String,StringBuffer> getFilesystem()
+    StoreId expectedStoreId()
     {
-        return filesystem;
+        return expectedStoreId;
     }
 }

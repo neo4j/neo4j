@@ -32,8 +32,6 @@ import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
 import org.neo4j.causalclustering.core.state.RaftMessageApplier;
-import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
@@ -60,12 +58,10 @@ class RaftServerModule
     private final MessageLogger<MemberId> messageLogger;
     private final LogProvider logProvider;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
-    private final TopologyService topologyService;
     private final RaftServer raftServer;
 
     RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
-            LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger,
-            CoreTopologyService topologyService )
+            LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
@@ -74,7 +70,6 @@ class RaftServerModule
         this.messageLogger = messageLogger;
         this.logProvider = platformModule.logging.getInternalLogProvider();
         this.pipelineBuilderFactory = pipelineBuilderFactory;
-        this.topologyService = topologyService;
 
         LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule );
 
@@ -110,9 +105,8 @@ class RaftServerModule
 
     private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule )
     {
-        RaftMessageApplier messageApplier =
-                new RaftMessageApplier( localDatabase, logProvider, consensusModule.raftMachine(), coreServerModule.downloadService(),
-                        coreServerModule.commandApplicationProcess(), topologyService );
+        RaftMessageApplier messageApplier = new RaftMessageApplier( localDatabase, logProvider,
+                consensusModule.raftMachine(), coreServerModule.downloadService(), coreServerModule.commandApplicationProcess() );
 
         ComposableMessageHandler monitoringHandler = RaftMessageMonitoringHandler.composable( platformModule.clock, platformModule.monitors );
 

@@ -26,16 +26,22 @@ public class StoreCopyFinishedResponse
     public enum Status
     {
         SUCCESS,
-        E_TOO_FAR_BEHIND,
-        E_UNKNOWN,
         E_STORE_ID_MISMATCH
     }
 
     private final Status status;
+    private final long lastCommittedTxBeforeStoreCopy;
 
-    public StoreCopyFinishedResponse( Status status )
+    public StoreCopyFinishedResponse( Status status,
+            long lastCommittedTxBeforeStoreCopy )
     {
         this.status = status;
+        this.lastCommittedTxBeforeStoreCopy = lastCommittedTxBeforeStoreCopy;
+    }
+
+    long lastCommittedTxBeforeStoreCopy()
+    {
+        return lastCommittedTxBeforeStoreCopy;
     }
 
     Status status()
@@ -55,12 +61,12 @@ public class StoreCopyFinishedResponse
             return false;
         }
         StoreCopyFinishedResponse that = (StoreCopyFinishedResponse) o;
-        return status == that.status;
+        return lastCommittedTxBeforeStoreCopy == that.lastCommittedTxBeforeStoreCopy && status == that.status;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( status );
+        return Objects.hash( status, lastCommittedTxBeforeStoreCopy );
     }
 }

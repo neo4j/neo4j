@@ -17,20 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
-import org.neo4j.causalclustering.identity.MemberId;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
-public class CatchupAddressResolutionException extends TopologyLookupException
+import java.util.List;
+
+import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
+
+public class GetStoreRequestDecoder extends ByteToMessageDecoder
 {
-    public CatchupAddressResolutionException( MemberId memberId )
+    @Override
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        super( memberId );
-    }
-
-    public CatchupAddressResolutionException( Exception e )
-    {
-        super( e );
+        StoreId expectedStoreId = StoreIdMarshal.INSTANCE.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
+        out.add( new GetStoreRequest( expectedStoreId ) );
     }
 }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.causalclustering.core.state;
 
-import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
-import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
@@ -38,17 +36,16 @@ public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.
     private final RaftMachine raftMachine;
     private final CoreStateDownloaderService downloadService;
     private final CommandApplicationProcess applicationProcess;
-    private final TopologyService topologyService;
 
-    public RaftMessageApplier( LocalDatabase localDatabase, LogProvider logProvider, RaftMachine raftMachine, CoreStateDownloaderService downloadService,
-            CommandApplicationProcess applicationProcess, TopologyService topologyService )
+    public RaftMessageApplier( LocalDatabase localDatabase, LogProvider logProvider,
+            RaftMachine raftMachine, CoreStateDownloaderService downloadService,
+            CommandApplicationProcess applicationProcess )
     {
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
         this.raftMachine = raftMachine;
         this.downloadService = downloadService;
         this.applicationProcess = applicationProcess;
-        this.topologyService = topologyService;
     }
 
     @Override
@@ -59,7 +56,7 @@ public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.
             ConsensusOutcome outcome = raftMachine.handle( wrappedMessage.message() );
             if ( outcome.needsFreshSnapshot() )
             {
-                downloadService.scheduleDownload( new CatchupAddressProvider.TopologyBasedAddressProvider( raftMachine, topologyService ) );
+                downloadService.scheduleDownload( raftMachine );
             }
             else
             {

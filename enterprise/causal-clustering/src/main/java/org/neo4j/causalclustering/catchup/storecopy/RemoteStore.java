@@ -21,12 +21,9 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
-import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
@@ -50,7 +47,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
  */
 public class RemoteStore
 {
-    private static final Supplier<TerminationCondition> DEFAULT_TERMINATION_CONDITIONS = () -> new MaximumTotalRetries( 10, 10 );
     private final Log log;
     private final Config config;
     private final Monitors monitors;
@@ -118,15 +114,16 @@ public class RemoteStore
         }
     }
 
-    public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir )
+    public void copy( AdvertisedSocketAddress from, StoreId expectedStoreId, File destDir )
             throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try
         {
+            log.info( "Copying store from %s", from );
             long lastFlushedTxId;
             try ( StreamToDisk storeFileStreams = new StreamToDisk( destDir, fs, pageCache, monitors ) )
             {
-                lastFlushedTxId = storeCopyClient.copyStoreFiles( addressProvider, expectedStoreId, storeFileStreams, DEFAULT_TERMINATION_CONDITIONS );
+                lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, storeFileStreams );
             }
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
@@ -135,13 +132,13 @@ public class RemoteStore
             // because the destination directory is temporary. We will copy them to the correct place later.
             boolean keepTxLogsInStoreDir = true;
             CatchupResult catchupResult =
-                    pullTransactions( addressProvider.primary(), expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
+                    pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
             }
         }
-        catch ( CatchupAddressResolutionException | IOException e )
+        catch ( IOException e )
         {
             throw new StoreCopyFailedException( e );
         }

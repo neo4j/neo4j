@@ -28,12 +28,6 @@ public class CatchupServerProtocol extends Protocol<CatchupServerProtocol.State>
 
     public enum State
     {
-        MESSAGE_TYPE,
-        PREPARE_STORE_COPY,
-        GET_STORE_ID,
-        GET_CORE_SNAPSHOT,
-        GET_STORE_FILE,
-        GET_INDEX_SNAPSHOT,
-        TX_PULL
+        MESSAGE_TYPE, GET_STORE, GET_STORE_ID, GET_CORE_SNAPSHOT, TX_PULL
     }
 }

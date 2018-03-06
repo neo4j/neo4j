@@ -24,14 +24,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -638,33 +635,14 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         } );
     }
 
-    public Set<IndexDescriptor> getIndexDescriptors()
-    {
-        Set<IndexDescriptor> indexDescriptors = new HashSet<>();
-        for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
-        {
-            indexDescriptors.add( indexProxy.getDescriptor() );
-        }
-        return indexDescriptors;
-    }
-
-    public ResourceIterator<File> snapshotIndexFiles( Predicate<IndexDescriptor> filter ) throws IOException
+    public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
         Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
         for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
         {
-            IndexDescriptor providerDescriptor = indexProxy.getDescriptor();
-            if ( filter.test( providerDescriptor ) )
-            {
-                snapshots.add( indexProxy.snapshotFiles() );
-            }
+            snapshots.add( indexProxy.snapshotFiles() );
         }
         return Iterators.concatResourceIterators( snapshots.iterator() );
-    }
-
-    public ResourceIterator<File> snapshotIndexFiles() throws IOException
-    {
-        return snapshotIndexFiles( d -> true );
     }
 
     private IndexPopulationJob newIndexPopulationJob()

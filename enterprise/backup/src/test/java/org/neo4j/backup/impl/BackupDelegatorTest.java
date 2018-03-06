@@ -21,15 +21,12 @@ package org.neo4j.backup.impl;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
-import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
-import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -39,7 +36,6 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,7 +60,7 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void tryCatchingUpDelegatesToRemoteStore() throws StoreCopyFailedException, IOException
+    public void tryCatchingUpDelegatesToRemoteStore() throws org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException, IOException
     {
         // given
         AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "neo4j.com", 5432 );
@@ -116,8 +112,7 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void retrieveStoreDelegatesToStoreCopyService()
-            throws StoreCopyFailedException, StreamingTransactionsFailedException, CatchupAddressResolutionException
+    public void retrieveStoreDelegatesToStoreCopyService() throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         // given
         StoreId storeId = new StoreId( 92, 5, 7, 32 );
@@ -127,10 +122,6 @@ public class BackupDelegatorTest
         subject.copy( anyAddress, storeId, anyFile );
 
         // then
-        ArgumentCaptor<CatchupAddressProvider> argumentCaptor = ArgumentCaptor.forClass( CatchupAddressProvider.class );
-        verify( remoteStore ).copy( argumentCaptor.capture(), eq( storeId ), eq( anyFile.toFile() ) );
-
-        //and
-        assertEquals( anyAddress, argumentCaptor.getValue().primary() );
+        verify( remoteStore ).copy( anyAddress, storeId, anyFile.toFile() );
     }
 }

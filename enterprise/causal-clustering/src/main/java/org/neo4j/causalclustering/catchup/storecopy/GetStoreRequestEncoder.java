@@ -17,30 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering.catchup.storecopy;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse;
+import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
-public class StoreListingResponseHandler extends SimpleChannelInboundHandler<PrepareStoreCopyResponse>
+public class GetStoreRequestEncoder extends MessageToByteEncoder<GetStoreRequest>
 {
-    private final CatchupClientProtocol protocol;
-    private final CatchUpResponseHandler handler;
-
-    public StoreListingResponseHandler( CatchupClientProtocol protocol,
-            CatchUpResponseHandler handler )
-    {
-        this.protocol = protocol;
-        this.handler = handler;
-    }
-
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final PrepareStoreCopyResponse msg ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, GetStoreRequest msg, ByteBuf out ) throws Exception
     {
-        handler.onStoreListingResponse( msg );
-        protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
+        StoreIdMarshal.INSTANCE.marshal( msg.expectedStoreId(), new NetworkFlushableChannelNetty4( out ) );
     }
 }
-

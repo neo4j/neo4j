@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
-import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -68,13 +67,12 @@ public class CoreStateDownloaderTest
 
     private final MemberId remoteMember = new MemberId( UUID.randomUUID() );
     private final AdvertisedSocketAddress remoteAddress = new AdvertisedSocketAddress( "remoteAddress", 1234 );
-    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( remoteAddress );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final File storeDir = new File( "graph.db" );
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachines,
-                    snapshotService, commitStateHelper );
+                    snapshotService, topologyService, commitStateHelper );
 
     @Before
     public void commonMocking()
@@ -93,11 +91,11 @@ public class CoreStateDownloaderTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), anyBoolean() );
-        verify( storeCopyProcess ).replaceWithStoreFrom( catchupAddressProvider, remoteStoreId );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteAddress, remoteStoreId );
     }
 
     @Test
@@ -107,7 +105,7 @@ public class CoreStateDownloaderTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( startStopLife ).stop();
@@ -127,7 +125,7 @@ public class CoreStateDownloaderTest
         // when
         try
         {
-            downloader.downloadSnapshot( catchupAddressProvider );
+            downloader.downloadSnapshot( remoteMember );
             fail();
         }
         catch ( StoreCopyFailedException e )
@@ -149,7 +147,7 @@ public class CoreStateDownloaderTest
         when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false );
@@ -165,10 +163,10 @@ public class CoreStateDownloaderTest
         when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) ).thenReturn( E_TRANSACTION_PRUNED );
 
         // when
-        downloader.downloadSnapshot( catchupAddressProvider );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false );
-        verify( storeCopyProcess ).replaceWithStoreFrom( catchupAddressProvider, storeId );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteAddress, storeId );
     }
 }

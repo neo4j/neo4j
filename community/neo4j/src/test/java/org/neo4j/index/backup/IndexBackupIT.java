@@ -79,20 +79,20 @@ public class IndexBackupIT
         prepareDatabase( label );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotStoreFiles();
         generateData( label );
         removeOldNodes( LongStream.range( 1, 20 )  );
         updateOldNodes( LongStream.range( 30, 40 ) );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotStoreFiles();
 
         generateData( label );
         removeOldNodes( LongStream.range( 50, 60 )  );
         updateOldNodes( LongStream.range( 70, 80 ) );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotStoreFiles();
 
         Set<String> firstSnapshotFileNames =  getFileNames( firstCheckpointSnapshot );
         Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );
@@ -114,11 +114,11 @@ public class IndexBackupIT
         Label label = Label.label( "testLabel" );
         prepareDatabase( label );
 
-        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotStoreFiles();
         generateData( label );
-        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotStoreFiles();
         generateData( label );
-        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotStoreFiles();
 
         Set<String> firstSnapshotFileNames =  getFileNames( firstCheckpointSnapshot );
         Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );
