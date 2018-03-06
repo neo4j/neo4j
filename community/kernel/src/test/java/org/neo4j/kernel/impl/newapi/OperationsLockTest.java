@@ -431,6 +431,6 @@ public class OperationsLockTest
         when( relationshipCursor.relationshipReference() ).thenReturn( relationshipId );
         when( relationshipCursor.sourceNodeReference() ).thenReturn( sourceNode );
         when( relationshipCursor.targetNodeReference() ).thenReturn( targetNode );
-        when( relationshipCursor.label() ).thenReturn( relationshipLabel );
+        when( relationshipCursor.type() ).thenReturn( relationshipLabel );
     }
 }

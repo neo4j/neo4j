@@ -757,7 +757,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
             {
-                types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.label() ) ) );
+                types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );
             }
 
             return types;

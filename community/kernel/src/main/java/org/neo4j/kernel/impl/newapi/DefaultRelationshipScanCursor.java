@@ -131,7 +131,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
 
     private boolean isWantedLabelAndInUse()
     {
-        return (label == -1 || label() == label) && inUse();
+        return (label == -1 || type() == label) && inUse();
     }
 
     private boolean containsRelationship( TransactionState txs )

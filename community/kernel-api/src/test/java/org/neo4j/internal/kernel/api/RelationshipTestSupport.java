@@ -153,7 +153,7 @@ public class RelationshipTestSupport
 
         while ( relationship.next() )
         {
-            assertEquals( "same type", expectedType, relationship.label() );
+            assertEquals( "same type", expectedType, relationship.type() );
             count++;
         }
 
@@ -239,7 +239,7 @@ public class RelationshipTestSupport
             d = Direction.INCOMING;
         }
 
-        return computeKey( transaction.token().relationshipTypeName( r.label() ), d );
+        return computeKey( transaction.token().relationshipTypeName( r.type() ), d );
     }
 
     static String computeKey( String type, Direction direction )
