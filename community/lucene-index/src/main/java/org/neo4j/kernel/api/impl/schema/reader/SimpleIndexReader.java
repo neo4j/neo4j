@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
@@ -142,14 +143,24 @@ public class SimpleIndexReader extends AbstractIndexReader
                 }
             }
             return LuceneDocumentStructure.newScanQuery();
-        case rangeNumeric:
+        case range:
             assertNotComposite( predicates );
-            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-            return LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( np.from(), np.to() );
-        case rangeString:
-            assertNotComposite( predicates );
-            IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
-            return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
+            switch ( predicate.valueGroup() )
+            {
+            case NUMBER:
+                IndexQuery.RangePredicate np = (IndexQuery.RangePredicate) predicate;
+                return LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( (Number)np.fromValue().asObject(),
+                                                                                  (Number)np.toValue().asObject() );
+
+            case TEXT:
+                IndexQuery.RangePredicate sp = (IndexQuery.RangePredicate) predicate;
+                return LuceneDocumentStructure.newRangeSeekByStringQuery( (String)sp.fromValue().asObject(), sp.fromInclusive(),
+                                                                          (String)sp.toValue().asObject(), sp.toInclusive() );
+            default:
+                throw new UnsupportedOperationException(
+                        format( "Range scans of value group %s are not supported", predicate.valueGroup() ) );
+            }
+
         case stringPrefix:
             assertNotComposite( predicates );
             IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;

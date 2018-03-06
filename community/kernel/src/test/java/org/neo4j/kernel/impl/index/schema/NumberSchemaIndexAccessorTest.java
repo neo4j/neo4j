@@ -58,7 +58,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
 
         // when
         IndexReader reader = accessor.newReader();
-        IndexQuery.NumberRangePredicate supportedQuery =
+        IndexQuery.RangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
         for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )

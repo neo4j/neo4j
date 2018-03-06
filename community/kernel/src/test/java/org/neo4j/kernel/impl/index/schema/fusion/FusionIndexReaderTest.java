@@ -28,11 +28,9 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -232,7 +230,7 @@ public class FusionIndexReaderTest
     public void mustSelectStringForRangeStringPredicate() throws Exception
     {
         // given
-        StringRangePredicate stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
+        RangePredicate stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
 
         // then
         verifyQueryWithCorrectReader( stringReader, stringRange );
@@ -242,7 +240,7 @@ public class FusionIndexReaderTest
     public void mustSelectNumberForRangeNumericPredicate() throws Exception
     {
         // given
-        NumberRangePredicate numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
+        RangePredicate numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
 
         // then
         verifyQueryWithCorrectReader( numberReader, numberRange );
@@ -254,7 +252,7 @@ public class FusionIndexReaderTest
         // given
         PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0);
         PointValue to = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.0, 2.0);
-        GeometryRangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
+        RangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
 
         // then
         verifyQueryWithCorrectReader( spatialReader, geometryRange );

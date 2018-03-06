@@ -74,9 +74,9 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -1063,56 +1063,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( SchemaIndexDescriptor descriptor,
-                                                                PointValue lower, boolean includeLower,
-                                                                PointValue upper, boolean includeUpper )
-    {
-        TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
-        if ( sortedUpdates == null )
-        {
-            return PrimitiveLongReadableDiffSets.EMPTY;
-        }
-
-        if ( lower == null && upper == null )
-        {
-            throw new IllegalArgumentException( "Cannot access TxState with invalid GeometryRangePredicate" );
-        }
-
-        ValueTuple selectedLower;
-        boolean selectedIncludeLower;
-
-        ValueTuple selectedUpper;
-        boolean selectedIncludeUpper;
-
-        if ( lower == null )
-        {
-            selectedLower = ValueTuple.of( Values.minPointValue( upper ) );
-            selectedIncludeLower = true;
-        }
-        else
-        {
-            selectedLower = ValueTuple.of( lower );
-            selectedIncludeLower = includeLower;
-        }
-
-        if ( upper == null )
-        {
-            selectedUpper = ValueTuple.of( Values.maxPointValue( lower ) );
-            selectedIncludeUpper = true;
-        }
-        else
-        {
-            selectedUpper = ValueTuple.of( upper );
-            selectedIncludeUpper = includeUpper;
-        }
-
-        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-    }
-
-    @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( SchemaIndexDescriptor descriptor,
-                                                                    String lower, boolean includeLower,
-                                                                    String upper, boolean includeUpper )
+                                                                           String lower, boolean includeLower,
+                                                                           String upper, boolean includeUpper )
     {
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
@@ -1145,6 +1098,48 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         else
         {
             selectedUpper = ValueTuple.of( Values.stringValue( upper ) );
+            selectedIncludeUpper = includeUpper;
+        }
+
+        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+    }
+
+    @Override
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor descriptor, ValueGroup valueGroup,
+                                                                   Value lower, boolean includeLower,
+                                                                   Value upper, boolean includeUpper )
+    {
+        TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        if ( sortedUpdates == null )
+        {
+            return PrimitiveLongReadableDiffSets.EMPTY;
+        }
+
+        ValueTuple selectedLower;
+        boolean selectedIncludeLower;
+
+        ValueTuple selectedUpper;
+        boolean selectedIncludeUpper;
+
+        if ( lower == null )
+        {
+            selectedLower = ValueTuple.of( Values.minValue( valueGroup, upper ) );
+            selectedIncludeLower = true;
+        }
+        else
+        {
+            selectedLower = ValueTuple.of( lower );
+            selectedIncludeLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            selectedUpper = ValueTuple.of( Values.maxValue( valueGroup, lower ) );
+            selectedIncludeUpper = false;
+        }
+        else
+        {
+            selectedUpper = ValueTuple.of( upper );
             selectedIncludeUpper = includeUpper;
         }
 

@@ -32,6 +32,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -126,7 +127,7 @@ public class SpatialFusionIndexReaderTest
         {
             PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 );
             PointValue to = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.0, 2.0 );
-            IndexQuery.GeometryRangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
+            RangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
 
             verifyQueryWithCorrectReader( readerMap.get( CoordinateReferenceSystem.Cartesian ), geometryRange );
         }
@@ -134,7 +135,7 @@ public class SpatialFusionIndexReaderTest
         {
             PointValue from = Values.pointValue( CoordinateReferenceSystem.WGS84, 1.0, 1.0 );
             PointValue to = Values.pointValue( CoordinateReferenceSystem.WGS84, 2.0, 2.0 );
-            IndexQuery.GeometryRangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
+            RangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
 
             verifyQueryWithCorrectReader( readerMap.get( CoordinateReferenceSystem.WGS84 ), geometryRange );
         }
