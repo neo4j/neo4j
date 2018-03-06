@@ -68,7 +68,7 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
     testValidTypes(CTInteger.covariant, CTInteger.covariant)(CTInteger)
     testValidTypes(CTInteger.covariant, CTFloat)(CTFloat)
     testValidTypes(CTInteger, CTFloat.covariant)(CTFloat)
-    testValidTypes(CTFloat.covariant, CTFloat.covariant)(CTFloat.covariant)
+    testValidTypes(CTFloat.covariant, CTFloat.covariant)(CTFloat)
 
     testValidTypes(CTList(CTFloat).covariant, CTList(CTFloat).covariant)(CTList(CTFloat))
 
