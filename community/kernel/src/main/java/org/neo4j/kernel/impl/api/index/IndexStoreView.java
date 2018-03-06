@@ -73,6 +73,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
      * @param nodeId id of node to load.
      * @return node updates container
      */
+    //TODO This seems to only be used in tests
     EntityUpdates nodeAsUpdates( long nodeId );
 
     DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );

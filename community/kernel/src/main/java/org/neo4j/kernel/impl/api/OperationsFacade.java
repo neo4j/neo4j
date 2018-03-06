@@ -961,6 +961,14 @@ public class OperationsFacade
     }
 
     @Override
+    public IndexDescriptor nonSchemaIndexCreate( IndexDescriptor indexDescriptor )
+            throws AlreadyConstrainedException, AlreadyIndexedException, RepeatedPropertyInCompositeSchemaException
+    {
+        statement.assertOpen();
+        return schemaWrite().nonSchemaIndexCreate( statement, indexDescriptor );
+    }
+
+    @Override
     public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         statement.assertOpen();
@@ -1009,13 +1017,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );
-    }
-
-    @Override
-    public IndexDescriptor nonSchemaIndexCreate( IndexDescriptor indexDescriptor )
-    {
-        statement.assertOpen();
-        return schemaWrite().nonSchemaIndexCreate( statement, indexDescriptor );
     }
 
     // </SchemaWrite>

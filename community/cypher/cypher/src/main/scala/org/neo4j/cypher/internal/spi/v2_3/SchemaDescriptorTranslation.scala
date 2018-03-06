@@ -29,7 +29,7 @@ trait SchemaDescriptorTranslation {
 
   implicit def kernelToCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor =
     if (index.schema().getPropertyIds.length == 1)
-    //TODO zero index hack due to cypher index descriptor
+    //TODO we use a zero index here as to not bleed multi-token descriptors into cypher. At least for now.
       SchemaTypes.IndexDescriptor(index.schema().getEntityTokenIds.head, index.schema().getPropertyIds().head)
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite indexes")

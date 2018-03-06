@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
@@ -79,25 +80,29 @@ public class FulltextIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        //TODO whatever
-        if ( populationCompletedSuccessfully )
+        try
         {
-            index.markAsOnline();
+            if ( populationCompletedSuccessfully )
+            {
+                index.markAsOnline();
+            }
         }
-        index.close();
+        finally
+        {
+            IOUtils.closeAllSilently( index );
+        }
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        //TODO whatever??
-        index.setFailed( failure );
+        index.markAsFailed( failure );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        //Sure, I guess?
+        //Index sampling is not our thing, really.
     }
 
     @Override

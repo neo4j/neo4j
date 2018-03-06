@@ -64,9 +64,8 @@ public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFullte
         return indexWriter;
     }
 
-    public void setFailed( String failure ) throws IOException
+    public void markAsFailed( String failure ) throws IOException
     {
-        // TODO how to handle that string?
         luceneIndex.markAsFailed( failure );
     }
 

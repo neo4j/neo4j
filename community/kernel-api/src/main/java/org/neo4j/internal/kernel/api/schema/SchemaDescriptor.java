@@ -91,7 +91,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * Key is part of schema unit that determines which resources with specified properties are applicable.
      * @return id of underlying key
      */
-    //TODO MultiTokenSchema support for the new kernel api
+    //TODO MultiTokenSchema support for the new kernel api. This method is only used in the AllStoreHolder
     int keyId();
 
     /**

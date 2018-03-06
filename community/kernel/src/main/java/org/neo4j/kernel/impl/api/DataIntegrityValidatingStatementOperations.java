@@ -123,6 +123,15 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
+    public IndexDescriptor nonSchemaIndexCreate( KernelStatement state, IndexDescriptor descriptor )
+            throws RepeatedPropertyInCompositeSchemaException, AlreadyIndexedException, AlreadyConstrainedException
+    {
+        assertValidDescriptor( descriptor.schema(), OperationContext.INDEX_CREATION );
+        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, descriptor.schema() );
+        return schemaWriteDelegate.nonSchemaIndexCreate( state, descriptor );
+    }
+
+    @Override
     public void indexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
     {
         try
@@ -225,17 +234,8 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, descriptor );
     }
 
-    @Override
-    public IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
-    {
-        //TODO validate something?
-//        assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
-//        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, descriptor );
-        return schemaWriteDelegate.nonSchemaIndexCreate( statement, indexDescriptor );
-    }
-
     private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
-            LabelSchemaDescriptor descriptor )
+            SchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         IndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );

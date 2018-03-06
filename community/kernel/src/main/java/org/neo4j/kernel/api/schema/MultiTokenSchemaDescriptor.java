@@ -100,7 +100,7 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     @Override
     public int keyId()
     {
-        //TODO figure out locking
+        //TODO MultiTokenSchema support for the new kernel api. This method is only used in the AllStoreHolder
         return 1;
     }
 

@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.EntityType;
 
 class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> implements FulltextAccessor
@@ -187,8 +188,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
     {
-        //TODO store migration
-        return StoreMigrationParticipant.NOT_PARTICIPATING;
+        return new SchemaIndexMigrator( fs, this );
     }
 
     @Override

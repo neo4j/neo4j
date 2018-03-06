@@ -68,5 +68,6 @@ public interface SchemaWriteOperations
 
     void constraintDrop( ConstraintDescriptor constraint ) throws DropConstraintFailureException;
 
-    IndexDescriptor nonSchemaIndexCreate( IndexDescriptor nonSchemaIndexDescriptor );
+    IndexDescriptor nonSchemaIndexCreate( IndexDescriptor nonSchemaIndexDescriptor )
+            throws AlreadyConstrainedException, AlreadyIndexedException, RepeatedPropertyInCompositeSchemaException;
 }

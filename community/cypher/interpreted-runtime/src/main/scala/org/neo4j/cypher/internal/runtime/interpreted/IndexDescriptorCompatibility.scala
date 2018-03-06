@@ -29,7 +29,7 @@ trait IndexDescriptorCompatibility {
     SchemaIndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
   def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
-  //TODO zero index hack, due to cypher index descriptor
+  //TODO we use a zero index here as to not bleed multi-token descriptors into cypher. At least for now.
     CypherIndexDescriptor(index.schema().getEntityTokenIds.head, index.schema().getPropertyIds)
 
   def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =

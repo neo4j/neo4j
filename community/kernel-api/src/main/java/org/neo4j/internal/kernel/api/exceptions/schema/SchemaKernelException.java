@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -53,9 +53,9 @@ public abstract class SchemaKernelException extends KernelException
         super( statusCode, message );
     }
 
-    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
-            LabelSchemaDescriptor descriptor )
+    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString, SchemaDescriptor descriptor )
     {
+        //TODO do we need to adjust this to represent relationship types as well?
         int[] propertyIds = descriptor.getPropertyIds();
 
         if ( tokenNameLookup != null )
@@ -66,7 +66,7 @@ public abstract class SchemaKernelException extends KernelException
                                             .mapToObj( i -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'" )
                                             .collect( Collectors.joining( " and " ));
             return String.format( formatString,
-                    tokenNameLookup.labelGetName( descriptor.getLabelId() ), propertyString);
+                    String.join( ", ", tokenNameLookup.entityTokensGetNames( descriptor.entityType(), descriptor.getEntityTokenIds() ) ), propertyString );
         }
         else
         {
@@ -75,7 +75,7 @@ public abstract class SchemaKernelException extends KernelException
                                        .mapToObj( Integer::toString )
                                        .collect( Collectors.joining( ", " )) + "]";
             return String.format( formatString,
-                    "label[" + descriptor.getLabelId() + "]", keyString );
+                    "label[" + Arrays.toString( descriptor.getEntityTokenIds() ) + "]", keyString );
         }
     }
 }

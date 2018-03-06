@@ -573,6 +573,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
+            throws AlreadyConstrainedException, AlreadyIndexedException, RepeatedPropertyInCompositeSchemaException
+    {
+        return schemaWriteOperations.nonSchemaIndexCreate( statement, indexDescriptor );
+    }
+
+    @Override
     public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.indexDrop( state, descriptor );
@@ -637,12 +644,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws DropConstraintFailureException
     {
         schemaWriteOperations.constraintDrop( state, constraint );
-    }
-
-    @Override
-    public IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
-    {
-        return schemaWriteOperations.nonSchemaIndexCreate( statement, indexDescriptor );
     }
 
     @Override

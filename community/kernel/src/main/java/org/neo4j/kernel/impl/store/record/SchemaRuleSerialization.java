@@ -228,31 +228,32 @@ public class SchemaRuleSerialization
     private static IndexRule readIndexRule( long id, ByteBuffer source, IndexProviderMap indexProviderMap ) throws MalformedSchemaRuleException
     {
         IndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
-        LabelSchemaDescriptor schema;
         byte indexRuleType = source.get();
         String name;
         switch ( indexRuleType )
         {
         case GENERAL_INDEX:
-            schema = readLabelSchema( source );
+        {
+            LabelSchemaDescriptor schema = readLabelSchema( source );
             name = readRuleName( id, IndexRule.class, source );
             return IndexRule.indexRule( id, indexProviderMap.apply( indexProvider ).indexDescriptorFor( schema, name, "" ), indexProvider, name );
-
+        }
         case UNIQUE_INDEX:
+        {
             long owningConstraint = source.getLong();
-            schema = readLabelSchema( source );
+            LabelSchemaDescriptor schema = readLabelSchema( source );
             SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.constraintIndexRule( id, descriptor, indexProvider,
-                    owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
-
+            return IndexRule.constraintIndexRule( id, descriptor, indexProvider, owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
+        }
         case NON_SCHEMA_INDEX:
-            //TODO typing is ugly here
+        {
             MultiTokenSchemaDescriptor nonSchema = readNonSchemaSchema( source );
             name = readRuleName( id, IndexRule.class, source );
             String metadata = readMetaData( source );
             IndexDescriptor indexDescriptor = indexProviderMap.apply( indexProvider ).indexDescriptorFor( nonSchema, name, metadata );
             return IndexRule.indexRule( id, indexDescriptor, indexProvider, name );
+        }
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );

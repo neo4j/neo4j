@@ -74,7 +74,7 @@ public class BloomProcedures
 
     private void await( String indexName ) throws IndexPopulationFailedKernelException
     {
-        //TODO real await
+        //TODO This is here because the core api really doesn't play nicely with multi token schema yet.
         try ( Statement stmt = tx.acquireStatement() )
         {
             //noinspection StatementWithEmptyBody

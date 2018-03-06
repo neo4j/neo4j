@@ -117,7 +117,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         return new RelationshipStoreScan<>( relationshipStore, locks, propertyStore, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter );
     }
 
-    //TODO is this used only by tests?!
     @Override
     public EntityUpdates nodeAsUpdates( long nodeId )
     {

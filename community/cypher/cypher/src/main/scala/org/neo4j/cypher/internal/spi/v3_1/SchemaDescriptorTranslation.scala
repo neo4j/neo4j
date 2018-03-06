@@ -30,7 +30,7 @@ trait SchemaDescriptorTranslation {
 
   implicit def toCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor = {
     assertSingleProperty(index.schema())
-    //TODO zero index hack due to cypher index descriptor
+    //TODO we use a zero index here as to not bleed multi-token descriptors into cypher. At least for now.
     SchemaTypes.IndexDescriptor(index.schema().getEntityTokenIds.head, index.schema().getPropertyIds().head)
   }
 

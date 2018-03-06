@@ -133,7 +133,7 @@ public class SchemaImpl implements Schema
     {
         try
         {
-            //TODO we use zero index here to avoid bleeding into core api. We need to figure out how to deal with the core api in regards to fulltext indexes.
+            //TODO we use a zero index here to avoid bleeding into core api. We need to figure out how to deal with the core api in regards to fulltext indexes.
             Label label = label( statement.labelGetName( index.schema().getEntityTokenIds()[0] ) );
             boolean constraintIndex = index.type() == UNIQUE;
             String[] propertyNames = PropertyNameUtils.getPropertyKeys( statement, index.schema().getPropertyIds() );

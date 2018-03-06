@@ -233,9 +233,9 @@ public class FulltextIndexProviderTest
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( secondNodeId, result.next().entityId() );
-            assertTrue( result.hasNext() );
             assertEquals( 0L, result.next().entityId() );
+            assertTrue( result.hasNext() );
+            assertEquals( secondNodeId, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }
@@ -301,9 +301,9 @@ public class FulltextIndexProviderTest
 
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
-            assertEquals( secondRelId, result.next().entityId() );
-            assertTrue( result.hasNext() );
             assertEquals( 0L, result.next().entityId() );
+            assertTrue( result.hasNext() );
+            assertEquals( secondRelId, result.next().entityId() );
             assertFalse( result.hasNext() );
             transaction.success();
         }

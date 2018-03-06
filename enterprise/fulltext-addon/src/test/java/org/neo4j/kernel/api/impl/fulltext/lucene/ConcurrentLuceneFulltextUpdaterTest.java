@@ -28,6 +28,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RepeatRule;
@@ -69,7 +72,8 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
     }
 
     private void createInitialIndex( IndexDescriptor descriptor )
-            throws InvalidTransactionTypeKernelException, IndexNotFoundKernelException
+            throws InvalidTransactionTypeKernelException, IndexNotFoundKernelException, RepeatedPropertyInCompositeSchemaException, AlreadyConstrainedException,
+            AlreadyIndexedException
     {
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {

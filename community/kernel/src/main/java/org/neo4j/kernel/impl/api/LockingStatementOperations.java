@@ -126,6 +126,15 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public IndexDescriptor nonSchemaIndexCreate( KernelStatement state, IndexDescriptor descriptor )
+            throws AlreadyConstrainedException, AlreadyIndexedException, RepeatedPropertyInCompositeSchemaException
+    {
+        lockSchemaExclusive( state, descriptor.schema() );
+        state.assertOpen();
+        return schemaWriteDelegate.nonSchemaIndexCreate( state, descriptor );
+    }
+
+    @Override
     public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         lockSchemaExclusive( state, descriptor.schema() );
@@ -430,14 +439,6 @@ public class LockingStatementOperations implements
         lockSchemaExclusive( state, schema );
         state.assertOpen();
         schemaWriteDelegate.constraintDrop( state, constraint );
-    }
-
-    @Override
-    public IndexDescriptor nonSchemaIndexCreate( KernelStatement state, IndexDescriptor descriptor )
-    {
-        lockSchemaExclusive( state, descriptor.schema() );
-        state.assertOpen();
-        return schemaWriteDelegate.nonSchemaIndexCreate( state, descriptor );
     }
 
     @Override

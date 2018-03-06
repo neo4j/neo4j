@@ -38,7 +38,7 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     @Override
     public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
-        //TODO support fulltext indexes
+        //TODO support fulltext indexes in index consistency check
         int labelId = indexRule.schema().getEntityTokenIds()[0];
         engine.comparativeCheck( records.node( record.getId() ),
                 new NodeInUseWithCorrectLabelsCheck<>( new long[]{labelId}, false ) );

@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -181,37 +183,32 @@ public final class IndexMap implements Cloneable
     public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntSet properties,
             EntityType entityType )
     {
+        Function<long[],Set<SchemaDescriptor>> byEnitiyIds;
+        BiFunction<long[],PrimitiveIntSet,Set<SchemaDescriptor>> byProperties;
         if ( entityType == EntityType.NODE )
         {
-            if ( changedEntityTokens.length == 1 && properties.isEmpty() )
-            {
-                //TODO maybe there is a all label index bug here?
-                Set<SchemaDescriptor> descriptors = descriptorsByLabel.get( (int) changedEntityTokens[0] );
-                return descriptors == null ? Collections.emptySet() : descriptors;
-            }
-
-            if ( changedEntityTokens.length == 0 && properties.size() == 1 )
-            {
-                return getDescriptorsByProperties( unchangedEntityTokens, properties );
-            }
-
-            Set<SchemaDescriptor> descriptors = extractIndexesByLabels( changedEntityTokens );
-            descriptors.addAll( getDescriptorsByProperties( unchangedEntityTokens, properties ) );
-
-            return descriptors;
+            byEnitiyIds = this::extractIndexesByLabels;
+            byProperties = this::getDescriptorsByProperties;
         }
         else
         {
-            if ( changedEntityTokens.length == 0 && properties.size() == 1 )
-            {
-                return getRelDescriptorsByProperties( unchangedEntityTokens, properties );
-            }
-
-            Set<SchemaDescriptor> descriptors = extractIndexesByReltype( changedEntityTokens );
-            descriptors.addAll( getRelDescriptorsByProperties( unchangedEntityTokens, properties ) );
-
-            return descriptors;
+            byEnitiyIds = this::extractIndexesByReltype;
+            byProperties = this::getRelDescriptorsByProperties;
         }
+
+        if ( properties.isEmpty() )
+        {
+            Set<SchemaDescriptor> descriptors = byEnitiyIds.apply( changedEntityTokens );
+            return descriptors == null ? Collections.emptySet() : descriptors;
+        }
+        if ( changedEntityTokens.length == 0 )
+        {
+            return byProperties.apply( unchangedEntityTokens, properties );
+        }
+        Set<SchemaDescriptor> descriptors = byEnitiyIds.apply( changedEntityTokens );
+        descriptors.addAll( byProperties.apply( unchangedEntityTokens, properties ) );
+
+        return descriptors;
     }
 
     @Override

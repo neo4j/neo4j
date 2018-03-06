@@ -73,5 +73,6 @@ public interface SchemaWriteOperations
 
     void constraintDrop( KernelStatement state, ConstraintDescriptor constraint ) throws DropConstraintFailureException;
 
-    IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor );
+    IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
+            throws RepeatedPropertyInCompositeSchemaException, AlreadyIndexedException, AlreadyConstrainedException;
 }

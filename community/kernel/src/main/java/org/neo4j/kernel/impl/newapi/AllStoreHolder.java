@@ -272,7 +272,7 @@ public class AllStoreHolder extends Read
         try
         {
             IndexCapability indexCapability = storeReadLayer.indexGetCapability( indexDescriptor );
-            //TODO ugly zero index. Newapi stuff
+            //TODO newapi support for multitoken schema. zero index as workaround for now.
             return new DefaultCapableIndexReference( unique, indexCapability, indexDescriptor.schema().getEntityTokenIds()[0],
                     indexDescriptor.schema().getPropertyIds() );
         }
