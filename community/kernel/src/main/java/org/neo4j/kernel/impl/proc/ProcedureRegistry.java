@@ -207,7 +207,7 @@ public class ProcedureRegistry
     public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, int id, Object[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
-        CallableProcedure proc = null;
+        CallableProcedure proc;
         try
         {
             proc = procedures.get( id );
@@ -225,7 +225,7 @@ public class ProcedureRegistry
         CallableUserFunction func = functions.get( name );
         if ( func == null )
         {
-            throw noSuchProcedure( name );
+            throw noSuchFunction( name );
         }
         return func.apply( ctx, input );
     }
@@ -233,7 +233,7 @@ public class ProcedureRegistry
     public AnyValue callFunction( Context ctx, int functionId, AnyValue[] input )
             throws ProcedureException
     {
-        CallableUserFunction func = null;
+        CallableUserFunction func;
         try
         {
             func = functions.get( functionId );

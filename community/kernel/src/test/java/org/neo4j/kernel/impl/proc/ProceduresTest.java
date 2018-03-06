@@ -67,7 +67,7 @@ public class ProceduresTest
         procs.register( procedure );
 
         // Then
-        assertThat( procs.procedure( signature.name() ), equalTo( signature ) );
+        assertThat( procs.procedure( signature.name() ).signature(), equalTo( signature ) );
     }
 
     @Test

@@ -118,7 +118,10 @@ public abstract class KernelIntegrationTest
 
     protected void commit() throws TransactionFailureException
     {
-        statement.close();
+        if ( statement != null )
+        {
+            statement.close();
+        }
         statement = null;
         transaction.success();
         try

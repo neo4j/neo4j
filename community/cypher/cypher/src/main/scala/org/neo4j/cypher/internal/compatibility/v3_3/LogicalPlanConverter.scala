@@ -151,7 +151,7 @@ object LogicalPlanConverter {
                                       children(3).asInstanceOf[Option[String]],
                                       children(4).asInstanceOf[ProcedureAccessMode],
                                       children(5).asInstanceOf[Option[String]],
-                                      children(5).asInstanceOf[Option[String]],
+                                      children(6).asInstanceOf[Option[String]],
                                       None)
 
         case ( _:plansV3_3.UserFunctionSignature, children: Seq[AnyRef]) =>
@@ -161,7 +161,7 @@ object LogicalPlanConverter {
                                        children(3).asInstanceOf[Option[String]],
                                        children(4).asInstanceOf[Array[String]],
                                        children(5).asInstanceOf[Option[String]],
-                                       children(5).asInstanceOf[Boolean],
+                                       children(6).asInstanceOf[Boolean],
                                        None)
 
         case (item@(_: plansV3_3.CypherValue |

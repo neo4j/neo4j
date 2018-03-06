@@ -66,5 +66,5 @@ case class FunctionInvocationByName(signature: UserFunctionSignature, arguments:
   }
 
   override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
+    f(FunctionInvocationByName(signature, arguments.map(a => a.rewrite(f))))
 }

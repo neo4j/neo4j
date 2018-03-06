@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -118,9 +119,12 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     }
   }
 
+  val procs = mock[Procedures]
   when(ctx.transactionalContext).thenReturn(mock[QueryTransactionalContext])
   when(ctx.callReadOnlyProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
     override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArgument(0).asInstanceOf[LongValue].value()
   })
