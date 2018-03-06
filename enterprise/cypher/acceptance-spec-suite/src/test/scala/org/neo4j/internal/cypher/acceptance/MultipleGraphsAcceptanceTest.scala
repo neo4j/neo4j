@@ -25,21 +25,20 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import scala.language.postfixOps
 
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  val configs = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
-  val expectedException = "Selecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs."
+  val configs = Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners
 
   test("use graph") {
     val query = "USE GRAPH foo.bar MATCH (a)-->() RETURN a"
-    failWithError(configs, query, List(expectedException))
+    failWithError(configs, query, List("The `USE GRAPH` clause is not available in this implementation of Cypher due to lack of support for multiple graphs."))
   }
 
   test("return graph") {
     val query = "WITH $param AS foo MATCH ()--() RETURN GRAPH"
-    failWithError(configs, query, List(expectedException))
+    failWithError(configs, query, List("The `RETURN GRAPH` clause is not available in this implementation of Cypher due to lack of support for multiple graphs."))
   }
 
   test("construct graph") {
-    val query = "MATCH (a) CONSTRUCT { (~a)-[:T]->(:B) } RETURN 1 AS a"
-    failWithError(configs, query, List(expectedException))
+    val query = "MATCH (a) CONSTRUCT GRAPH { CREATE () } RETURN 1 AS a"
+    failWithError(configs, query, List("The `CONSTRUCT GRAPH` clause is not available in this implementation of Cypher due to lack of support for multiple graphs."))
   }
 }

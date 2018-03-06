@@ -57,6 +57,13 @@ class MultipleGraphClauseSemanticCheckingTest
 //    }
 //  }
 
+  test("can conclude with RETURN GRAPH") {
+    parsing(
+      """RETURN GRAPH""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+    }
+  }
+
   ignore("allows bound relationships in GRAPH OF") {
     parsing(
       """MATCH (a)-[r]->(b)
