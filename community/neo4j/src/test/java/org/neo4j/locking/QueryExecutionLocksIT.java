@@ -30,6 +30,7 @@ import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -51,6 +52,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -93,6 +95,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -423,7 +426,7 @@ public class QueryExecutionLocksIT
 
         private void record( boolean exclusive, boolean acquisition, ResourceTypes type, long... ids )
         {
-            if (acquisition)
+            if ( acquisition )
             {
                 for ( LockOperationListener listener : listeners )
                 {
@@ -1270,6 +1273,12 @@ public class QueryExecutionLocksIT
         }
 
         @Override
+        public Procedures procedures()
+        {
+            return internal.procedures();
+        }
+
+        @Override
         public Statement acquireStatement()
         {
             return internal.acquireStatement();
@@ -1369,6 +1378,12 @@ public class QueryExecutionLocksIT
         public Revertable overrideWith( SecurityContext context )
         {
             return internal.overrideWith( context );
+        }
+
+        @Override
+        public ClockContext clocks()
+        {
+            return internal.clocks();
         }
 
         @Override
