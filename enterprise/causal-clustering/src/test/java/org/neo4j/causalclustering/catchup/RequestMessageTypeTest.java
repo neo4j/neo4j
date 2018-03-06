@@ -34,6 +34,9 @@ import static org.neo4j.causalclustering.catchup.RequestMessageType.UNKNOWN;
 
 public class RequestMessageTypeTest
 {
+    /*
+    Order should not change. New states should be added as higher values and old states should not be replaced.
+     */
     @Test
     public void shouldHaveExpectedValues()
     {
@@ -41,13 +44,16 @@ public class RequestMessageTypeTest
 
         RequestMessageType[] exepctedStates =
                 new RequestMessageType[]{TX_PULL_REQUEST, STORE, CORE_SNAPSHOT, STORE_ID, PREPARE_STORE_COPY, STORE_FILE, INDEX_SNAPSHOT, UNKNOWN};
+        byte[] expectedValues = new byte[]{1, 2, 3, 4, 5, 6, 7, (byte) 404};
 
         assertEquals( exepctedStates.length, givenStates.length );
+        assertEquals( exepctedStates.length, expectedValues.length );
         for ( int i = 0; i < givenStates.length; i++ )
         {
             RequestMessageType exepctedState = exepctedStates[i];
             RequestMessageType givenState = givenStates[i];
             assertEquals( format( "Expected %s git %s", givenState, exepctedState ), givenState.messageType(), exepctedState.messageType() );
+            assertEquals( givenState.messageType(), expectedValues[i] );
         }
     }
 }
