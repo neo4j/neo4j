@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 
@@ -42,7 +43,7 @@ public class SharedDiscoveryService
     private final ConcurrentMap<MemberId,ReadReplicaInfo> readReplicas;
     private final Set<SharedDiscoveryCoreClient> listeningClients;
     private final ConcurrentMap<String,ClusterId> clusterIdDbNames;
-    private final ConcurrentMap<String,RaftLeader> leaderMap;
+    private final ConcurrentMap<String,LeaderInfo> leaderMap;
     private final CountDownLatch enoughMembers;
 
     SharedDiscoveryService()
@@ -125,19 +126,19 @@ public class SharedDiscoveryService
         notifyCoreClients();
     }
 
-    synchronized void casLeaders( MemberId leader, long term, String dbName )
+    synchronized void casLeaders( LeaderInfo leaderInfo, String dbName )
     {
-        Optional<RaftLeader> current = Optional.ofNullable( leaderMap.get( dbName ) );
+        Optional<LeaderInfo> current = Optional.ofNullable( leaderMap.get( dbName ) );
 
-        boolean noUpdate = current.map( RaftLeader::memberId ).equals( Optional.ofNullable( leader ) );
+        boolean noUpdate = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
-        boolean greaterOrEqualTermExists =  current.map(l -> l.term() >= term ).orElse( false );
+        boolean greaterOrEqualTermExists =  current.map(l -> l.term() >= leaderInfo.term() ).orElse( false );
 
         boolean success = !( greaterOrEqualTermExists || noUpdate );
 
         if ( success )
         {
-            leaderMap.put( dbName, new RaftLeader( leader, term ) );
+            leaderMap.put( dbName, leaderInfo );
         }
     }
 
@@ -161,7 +162,7 @@ public class SharedDiscoveryService
                 .map( dbName -> Optional.ofNullable( leaderMap.get( dbName ) ) )
                 .filter( Optional::isPresent )
                 .map( Optional::get )
-                .map( RaftLeader::memberId )
+                .map( LeaderInfo::memberId )
                 .collect( Collectors.toSet());
 
         Function<MemberId,RoleInfo> roleMapper = m -> allLeaders.contains( m ) ? RoleInfo.LEADER : RoleInfo.FOLLOWER;

@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.MemberId;
 
 /**
  * Extends upon the topology service with a few extra services, connected to
@@ -47,13 +47,10 @@ public interface CoreTopologyService extends TopologyService
      * Sets or updates the leader memberId for the given database (i.e. Raft consensus group).
      * This is intended for informational purposes **only**, e.g. in {@link ClusterOverviewProcedure}.
      * The leadership information should otherwise be communicated via raft as before.
-     *
-     * @param memberId The member ID to declare as the new leader
+     * @param leaderInfo Information about the new leader
      * @param dbName The database name for which memberId is the new leader
-     * @param term The raft term for which memberId is the leader of dbName
-     *
      */
-    void setLeader( MemberId memberId, String dbName, long term );
+    void setLeader( LeaderInfo leaderInfo, String dbName );
 
     interface Listener
     {

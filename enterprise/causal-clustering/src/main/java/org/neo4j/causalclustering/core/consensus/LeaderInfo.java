@@ -19,13 +19,37 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import java.io.Serializable;
+
 import org.neo4j.causalclustering.identity.MemberId;
 
-public interface LeaderLocator
+// TODO: basics for Serializable
+public class LeaderInfo implements Serializable
 {
-    MemberId getLeader() throws NoLeaderFoundException;
+    public static final LeaderInfo INITIAL = new LeaderInfo( null, -1 );
 
-    void registerListener( LeaderListener listener );
+    private final MemberId memberId;
+    private final long term;
 
-    void unregisterListener( LeaderListener listener );
+    public LeaderInfo( MemberId memberId, long term )
+    {
+        this.memberId = memberId;
+        this.term = term;
+    }
+
+    public MemberId memberId()
+    {
+        return memberId;
+    }
+
+    public long term()
+    {
+        return term;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "LeaderInfo{" + "memberId=" + memberId + ", term=" + term + '}';
+    }
 }

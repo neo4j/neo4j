@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -40,9 +41,7 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     private final boolean refusesToBeLeader;
     private final String localDBName;
 
-    private MemberId localLeader;
-    private long term;
-
+    private volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private volatile CoreTopology coreTopology;
     private volatile ReadReplicaTopology readReplicaTopology;
 
@@ -55,7 +54,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         this.coreServerInfo = extractCoreServerInfo( config );
         this.log = logProvider.getLog( getClass() );
         this.refusesToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
-        this.term = -1L;
         this.localDBName = config.get( CausalClusteringSettings.database );
     }
 
@@ -91,13 +89,12 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
-    public void setLeader( MemberId memberId, String dbName, long term )
+    public void setLeader( LeaderInfo newLeader, String dbName )
     {
-        if ( this.term < term && memberId != null )
+        if ( this.leaderInfo.term() < newLeader.term() && newLeader.memberId() != null )
         {
-            localLeader = memberId;
-            this.term = term;
-            sharedDiscoveryService.casLeaders( localLeader, term, localDBName );
+            this.leaderInfo = newLeader;
+            sharedDiscoveryService.casLeaders( newLeader, localDBName );
         }
     }
 
@@ -193,6 +190,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     public String toString()
     {
         return "SharedDiscoveryCoreClient{" + "myself=" + myself + ", coreServerInfo=" + coreServerInfo + ", refusesToBeLeader=" + refusesToBeLeader +
-                ", localDBName='" + localDBName + '\'' + ", localLeader=" + localLeader + ", term=" + term + ", coreTopology=" + coreTopology + '}';
+                ", localDBName='" + localDBName + '\'' + ", leaderInfo=" + leaderInfo + ", coreTopology=" + coreTopology + '}';
     }
 }

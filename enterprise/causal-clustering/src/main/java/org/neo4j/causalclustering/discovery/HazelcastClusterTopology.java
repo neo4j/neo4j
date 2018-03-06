@@ -40,13 +40,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.refuse_to_be_leader;
 import static java.util.stream.Stream.concat;
@@ -145,7 +145,7 @@ public class HazelcastClusterTopology
         return uuid != null ? new ClusterId( uuid ) : null;
     }
 
-    public static Set<String> getDBNames( HazelcastInstance hazelcastInstance )
+    private static Set<String> getDBNames( HazelcastInstance hazelcastInstance )
     {
         IMap<String, UUID> uuidPerDbCluster = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
         return uuidPerDbCluster.keySet();
@@ -211,27 +211,27 @@ public class HazelcastClusterTopology
         return result;
     }
 
-    static boolean casLeaders( HazelcastInstance hazelcastInstance, MemberId leader, long term, String dbName )
+    static void casLeaders( HazelcastInstance hazelcastInstance, LeaderInfo leaderInfo, String dbName )
     {
-        IAtomicReference<RaftLeader> leaderRef = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
+        IAtomicReference<LeaderInfo> leaderRef = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
 
-        RaftLeader expected = leaderRef.get();
+        LeaderInfo expected = leaderRef.get();
 
-        boolean noUpdate = Optional.ofNullable( expected ).map( RaftLeader::memberId ).equals( Optional.ofNullable( leader ) );
+        boolean noUpdate = Optional.ofNullable( expected ).map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
-        boolean greaterOrEqualTermExists = Optional.ofNullable( expected ).map(l -> l.term() >= term ).orElse( false );
+        boolean greaterOrEqualTermExists = Optional.ofNullable( expected ).map(l -> l.term() >= leaderInfo.term() ).orElse( false );
 
         if ( greaterOrEqualTermExists || noUpdate )
         {
-            return false;
+            return;
         }
 
-        return leaderRef.compareAndSet( expected, new RaftLeader( leader, term ) );
+        leaderRef.compareAndSet( expected, leaderInfo );
     }
 
-    static Optional<RaftLeader> getLeaderForDBName( HazelcastInstance hazelcastInstance, String dbName )
+    private static Optional<LeaderInfo> getLeaderForDBName( HazelcastInstance hazelcastInstance, String dbName )
     {
-        IAtomicReference<RaftLeader> leader = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
+        IAtomicReference<LeaderInfo> leader = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
         return Optional.ofNullable( leader.get() );
     }
 

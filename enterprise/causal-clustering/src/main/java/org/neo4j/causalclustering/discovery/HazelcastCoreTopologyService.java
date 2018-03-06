@@ -38,6 +38,7 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -82,8 +83,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
 
-    private volatile MemberId localLeader;
-    private volatile long term;
+    private volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private volatile HazelcastInstance hazelcastInstance;
     private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
@@ -105,7 +105,6 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.hostnameResolver = hostnameResolver;
         this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
-        this.term = -1L;
         this.localDBName = config.get( CausalClusteringSettings.database );
     }
 
@@ -130,12 +129,11 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
-    public void setLeader( MemberId memberId, String dbName, long term )
+    public void setLeader( LeaderInfo leaderInfo, String dbName )
     {
-        if ( this.term < term )
+        if ( this.leaderInfo.term() < leaderInfo.term() )
         {
-            localLeader = memberId;
-            this.term = term;
+            this.leaderInfo = leaderInfo;
         }
     }
 
@@ -352,10 +350,10 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
     private void refreshRoles() throws InterruptedException
     {
-        if ( localLeader != null && localLeader.equals( myself ) )
+        if ( leaderInfo != null && leaderInfo.memberId().equals( myself ) )
         {
             waitOnHazelcastInstanceCreation();
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, localLeader, term, localDBName );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
         }
     }
 

@@ -29,13 +29,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.causalclustering.core.consensus.LeaderListener;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
-import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -148,13 +148,13 @@ public class CoreStateDownloaderServiceTest
         }
 
         @Override
-        public void registerListener( Listener<MemberId> listener )
+        public void registerListener( LeaderListener listener )
         {
             // do nothing
         }
 
         @Override
-        public void unregisterListener( Listener<MemberId> listener )
+        public void unregisterListener( LeaderListener listener )
         {
             // do nothing
         }
