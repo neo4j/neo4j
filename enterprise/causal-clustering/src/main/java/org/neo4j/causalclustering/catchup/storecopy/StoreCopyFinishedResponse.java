@@ -26,9 +26,9 @@ public class StoreCopyFinishedResponse
     public enum Status
     {
         SUCCESS,
-        E_STORE_ID_MISMATCH,
         E_TOO_FAR_BEHIND,
-        E_UNKNOWN
+        E_UNKNOWN,
+        E_STORE_ID_MISMATCH
     }
 
     private final Status status;
