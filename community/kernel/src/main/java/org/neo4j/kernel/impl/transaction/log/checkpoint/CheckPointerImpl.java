@@ -172,7 +172,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             msgLog.info( prefix + " Check pointing completed" );
             /*
              * Prune up to the version pointed from the latest check point,
-             * since it might be an earlier version than the current log version.
+             * since it might be an earlier version than the current log version (tx could have been received during checkpoint).
              */
             logPruning.pruneLogs( logPosition.getLogVersion() );
             lastCheckPointedTx = lastClosedTransactionId;
