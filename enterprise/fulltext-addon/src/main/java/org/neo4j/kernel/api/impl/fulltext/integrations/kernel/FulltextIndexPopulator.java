@@ -118,18 +118,14 @@ public class FulltextIndexPopulator implements IndexPopulator
 
     private class PopulatingFulltextIndexUpdater implements IndexUpdater
     {
-
         @Override
         public void process( IndexEntryUpdate<?> update ) throws IOException
         {
-            //TODO is this comment copy pasted? What does it mean?
-            // we do not support adding partial entries
             assert update.indexKey().schema().equals( descriptor.schema() );
 
             switch ( update.updateMode() )
             {
             case ADDED:
-
                 long nodeId = update.getEntityId();
                 index.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
                         LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), update.values() ) );

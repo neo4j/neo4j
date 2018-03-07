@@ -240,15 +240,14 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         final PrimitiveLongObjectMap<RebuildingIndexDescriptor> rebuildingDescriptors = Primitive.longObjectMap();
         indexMapRef.modify( indexMap ->
         {
-            Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
+            Map<InternalIndexState,List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
 
             // Find all indexes that are not already online, do not require rebuilding, and create them
             indexMap.forEachIndexProxy( ( indexId, proxy ) ->
             {
                 InternalIndexState state = proxy.getState();
                 IndexDescriptor descriptor = proxy.getDescriptor();
-                indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
-                .add( new IndexLogRecord( indexId, descriptor ) );
+                indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( indexId, descriptor ) );
                 log.debug( indexStateInfo( "start", indexId, state, descriptor ) );
                 switch ( state )
                 {
@@ -257,8 +256,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     break;
                 case POPULATING:
                     // Remember for rebuilding
-                    rebuildingDescriptors.put( indexId,
-                            new RebuildingIndexDescriptor( descriptor, proxy.getProviderDescriptor() ) );
+                    rebuildingDescriptors.put( indexId, new RebuildingIndexDescriptor( descriptor, proxy.getProviderDescriptor() ) );
                     break;
                 case FAILED:
                     // Don't do anything, the user needs to drop the index and re-create
@@ -273,26 +271,35 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             dropRecoveringIndexes( indexMap, rebuildingDescriptors.iterator() );
 
             // Rebuild indexes by recreating and repopulating them
-            if ( !rebuildingDescriptors.isEmpty() )
+            PrimitiveLongObjectMap<RebuildingIndexDescriptor> rebuildingNodeDescriptors = Primitive.longObjectMap();
+            PrimitiveLongObjectMap<RebuildingIndexDescriptor> rebuildingRelationshipDescriptors = Primitive.longObjectMap();
+            PrimitiveLongIterator iterator = rebuildingDescriptors.iterator();
+            while ( iterator.hasNext() )
             {
-                //TODO why is this nodes only?
-                IndexPopulationJob populationJob = newIndexPopulationJob( EntityType.NODE );
-                rebuildingDescriptors.visitEntries(
-                        (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->
-                        {
-                            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy(
-                                    indexId,
-                                    descriptor.getIndexDescriptor(),
-                                    descriptor.getProviderDescriptor(),
-                                    false, // never pass through a tentative online state during recovery
-                                    monitor,
-                                    populationJob );
-                            proxy.start();
-                            indexMap.putIndexProxy( indexId, proxy );
-                            return false;
-                        } );
-                startIndexPopulation( populationJob );
+                long indexId = iterator.next();
+                RebuildingIndexDescriptor descriptor = rebuildingDescriptors.get( indexId );
+                if ( descriptor.getIndexDescriptor().schema().entityType() == EntityType.NODE )
+                {
+                    rebuildingNodeDescriptors.put( indexId, descriptor );
+                }
+                else
+                {
+                    rebuildingRelationshipDescriptors.put( indexId, descriptor );
+                }
             }
+
+            if ( !rebuildingNodeDescriptors.isEmpty() )
+            {
+                IndexPopulationJob populationJob = newIndexPopulationJob( EntityType.NODE );
+                populate( rebuildingNodeDescriptors, indexMap, populationJob );
+            }
+
+            if ( !rebuildingRelationshipDescriptors.isEmpty() )
+            {
+                IndexPopulationJob populationJob = newIndexPopulationJob( EntityType.RELATIONSHIP );
+                populate( rebuildingRelationshipDescriptors, indexMap, populationJob );
+            }
+
             return indexMap;
         } );
 
@@ -329,6 +336,26 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 } );
 
         state = State.RUNNING;
+    }
+
+    private void populate( PrimitiveLongObjectMap<RebuildingIndexDescriptor> rebuildingDescriptors, IndexMap indexMap, IndexPopulationJob populationJob )
+            throws Exception
+    {
+        rebuildingDescriptors.visitEntries(
+                (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->
+                {
+                    IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy(
+                            indexId,
+                            descriptor.getIndexDescriptor(),
+                            descriptor.getProviderDescriptor(),
+                            false, // never pass through a tentative online state during recovery
+                            monitor,
+                            populationJob );
+                    proxy.start();
+                    indexMap.putIndexProxy( indexId, proxy );
+                    return false;
+                } );
+        startIndexPopulation( populationJob );
     }
 
     /**

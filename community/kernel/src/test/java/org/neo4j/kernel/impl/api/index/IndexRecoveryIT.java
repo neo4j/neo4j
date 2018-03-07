@@ -114,15 +114,21 @@ public class IndexRecoveryIT
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
-        // Then
-        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-        verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
-                anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
-        );
-        latch.countDown();
+        try
+        {
+            // Then
+            assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+            assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
+            verify( mockedIndexProvider, times( 2 ) )
+                    .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+            verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
+                    anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
+            );
+        }
+        finally
+        {
+            latch.countDown();
+        }
     }
 
     @Test

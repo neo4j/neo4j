@@ -211,13 +211,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             labelScanStore = new NativeLabelScanStore( pageCache, storeDir, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
-            // We need to load the tokens here, since we need them before we load the indexes.
+            // We need to load the property tokens here, since we need them before we load the indexes.
             propertyKeyTokenHolder.setInitialTokens(
                     neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
-            relationshipTypeTokenHolder.setInitialTokens(
-                    neoStores.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-            labelTokenHolder.setInitialTokens(
-                    neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
             this.indexProviderMap = indexProviderMap;
@@ -420,6 +416,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void start() throws Throwable
     {
         neoStores.makeStoreOk();
+
+        propertyKeyTokenHolder.setInitialTokens(
+                neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
+        relationshipTypeTokenHolder.setInitialTokens(
+                neoStores.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
+        labelTokenHolder.setInitialTokens(
+                neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
+
         neoStores.rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
         loadSchemaCache();
         indexingService.start();

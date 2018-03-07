@@ -100,7 +100,6 @@ public class RelationshipStoreScan<FAILURE extends Exception> implements StoreSc
         if ( propertyUpdatesVisitor != null && containsAnyRelType( relationshipTypeIds, reltype ) )
         {
             // Notify the property update visitor
-            // TODO: reuse object instead? Better in terms of speed and GC?
             EntityUpdates.Builder updates = EntityUpdates.forEntity( record.getId(), new long[]{reltype} );
             boolean hasRelevantProperty = false;
 
