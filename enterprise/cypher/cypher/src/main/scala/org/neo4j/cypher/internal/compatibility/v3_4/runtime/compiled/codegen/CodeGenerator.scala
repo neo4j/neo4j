@@ -22,20 +22,20 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen
 import java.time.Clock
 import java.util
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CompiledRuntimeName
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{PlanFingerprint, Provider}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CompiledRuntimeName
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{Eagerly, TaskCloser}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
@@ -84,6 +84,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
             val (provider, tracer) = descriptionProvider(description)
             val execution: GeneratedQueryExecution = query.query.execute(closer, queryContext, execMode,
               provider, tracer.getOrElse(QueryExecutionTracer.NONE),params)
+            closer.addTask(queryContext.resources.close)
             new CompiledExecutionResult(closer, queryContext, execution, provider)
           }
         }
