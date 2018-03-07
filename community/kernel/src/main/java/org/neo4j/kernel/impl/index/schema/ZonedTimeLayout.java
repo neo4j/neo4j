@@ -78,10 +78,4 @@ class ZonedTimeLayout extends BaseLayout<ZonedTimeSchemaKey>
         into.zoneOffsetSeconds = cursor.getInt();
         into.setEntityId( cursor.getLong() );
     }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
-    }
 }

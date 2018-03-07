@@ -106,12 +106,6 @@ class ZonedDateTimeLayout extends BaseLayout<ZonedDateTimeSchemaKey>
         into.setEntityId( cursor.getLong() );
     }
 
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
-    }
-
     private int asZoneOffset( int encodedZone )
     {
         return encodedZone;

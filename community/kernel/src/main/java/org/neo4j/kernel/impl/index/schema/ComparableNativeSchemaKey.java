@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.Comparator;
 
 /**
- * Adds comparability to NativeSchemaKey.
+ * Adds comparability to NativeSchemaKey. Note that comparability of keys is required for the GBPTree, so
+ * this has to be implemented even if the values in the key are not comparable.
  *
  * @param <SELF> the type of the concrete implementing subclass
  */
@@ -33,8 +34,8 @@ abstract class ComparableNativeSchemaKey<SELF extends ComparableNativeSchemaKey>
      * Compares the value of this key to that of another key.
      * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
      *
-     * @param other the {@link LocalTimeSchemaKey} to compare to.
-     * @return comparison against the {@code other} {@link LocalTimeSchemaKey}.
+     * @param other the key to compare to.
+     * @return comparison against the {@code other} key.
      */
     abstract int compareValueTo( SELF other );
 

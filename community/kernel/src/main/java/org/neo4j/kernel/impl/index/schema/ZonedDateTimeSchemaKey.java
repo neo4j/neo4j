@@ -62,6 +62,8 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
     {
         epochSecondUTC = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
+        zoneId = Short.MIN_VALUE;
+        zoneOffsetSeconds = Integer.MIN_VALUE;
     }
 
     @Override
@@ -69,6 +71,8 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
     {
         epochSecondUTC = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;
+        zoneId = Short.MAX_VALUE;
+        zoneOffsetSeconds = Integer.MAX_VALUE;
     }
 
     @Override

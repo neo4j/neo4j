@@ -84,10 +84,4 @@ class DurationLayout extends BaseLayout<DurationSchemaKey>
         into.days = cursor.getLong();
         into.setEntityId( cursor.getLong() );
     }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
-    }
 }

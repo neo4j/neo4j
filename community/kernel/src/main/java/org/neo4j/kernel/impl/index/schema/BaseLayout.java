@@ -38,5 +38,4 @@ abstract class BaseLayout<KEY extends ComparableNativeSchemaKey<KEY>> extends Sc
     {
         return o1.compareValueTo( o2 );
     }
-
 }

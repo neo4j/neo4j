@@ -78,10 +78,4 @@ class LocalDateTimeLayout extends BaseLayout<LocalDateTimeSchemaKey>
         into.nanoOfSecond = cursor.getInt();
         into.setEntityId( cursor.getLong() );
     }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
-    }
 }
