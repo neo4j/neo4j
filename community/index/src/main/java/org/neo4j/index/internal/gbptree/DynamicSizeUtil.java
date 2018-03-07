@@ -92,10 +92,14 @@ class DynamicSizeUtil
 
     private static final int FLAG_FIRST_BYTE_TOMBSTONE = 0x80;
     private static final long FLAG_READ_TOMBSTONE = 0x80000000_00000000L;
+    // mask for one-byte key size to map to the k's in [_,_,_,k,k,k,k,k]
     static final int MASK_ONE_BYTE_KEY_SIZE = 0x1F;
-    static final int MASK_TWO_BYTE_KEY_SIZE = 0xFFF;
+    // max two-byte key size to map to the k's in [_,_,_,k,k,k,k,k][_,k,k,k,k,k,k,k]
+    private static final int MAX_TWO_BYTE_KEY_SIZE = 0xFFF;
+    // mask for one-byte value size to map to the v's in [_,v,v,v,v,v,v,v]
     static final int MASK_ONE_BYTE_VALUE_SIZE = 0x7F;
-    static final int MASK_TWO_BYTE_VALUE_SIZE = 0x7FFF;
+    // max two-byte value size to map to the v's in [_,v,v,v,v,v,v,v][v,v,v,v,v,v,v,v]
+    private static final int MAX_TWO_BYTE_VALUE_SIZE = 0x7FFF;
     private static final int FLAG_HAS_VALUE_SIZE = 0x20;
     private static final int FLAG_ADDITIONAL_KEY_SIZE = 0x40;
     private static final int FLAG_ADDITIONAL_VALUE_SIZE = 0x80;
@@ -128,10 +132,10 @@ class DynamicSizeUtil
             if ( hasAdditionalKeySize )
             {
                 firstByte |= FLAG_ADDITIONAL_KEY_SIZE;
-                if ( keySize > MASK_TWO_BYTE_KEY_SIZE )
+                if ( keySize > MAX_TWO_BYTE_KEY_SIZE )
                 {
                     throw new IllegalArgumentException(
-                            format( "Max supported key size is %d, but tried to store key of size %d", MASK_TWO_BYTE_KEY_SIZE, keySize ) );
+                            format( "Max supported key size is %d, but tried to store key of size %d", MAX_TWO_BYTE_KEY_SIZE, keySize ) );
                 }
             }
             if ( hasValueSize )
@@ -155,10 +159,10 @@ class DynamicSizeUtil
                 byte firstByte = (byte) (valueSize & MASK_ONE_BYTE_VALUE_SIZE); // Least significant 7 bits
                 if ( needsAdditionalValueSize )
                 {
-                    if ( valueSize > MASK_TWO_BYTE_VALUE_SIZE )
+                    if ( valueSize > MAX_TWO_BYTE_VALUE_SIZE )
                     {
                         throw new IllegalArgumentException(
-                                format( "Max supported value size is %d, but tried to store value of size %d", MASK_TWO_BYTE_VALUE_SIZE, valueSize ) );
+                                format( "Max supported value size is %d, but tried to store value of size %d", MAX_TWO_BYTE_VALUE_SIZE, valueSize ) );
                     }
                     firstByte |= FLAG_ADDITIONAL_VALUE_SIZE;
                 }
