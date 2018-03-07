@@ -116,6 +116,8 @@ public interface IndexProxy extends LabelSchemaSupplier
 
     void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException;
 
+    long getIndexId();
+
     ResourceIterator<File> snapshotFiles() throws IOException;
 
     default void verifyDeferredConstraints( PropertyAccessor accessor )  throws IndexEntryConflictException, IOException

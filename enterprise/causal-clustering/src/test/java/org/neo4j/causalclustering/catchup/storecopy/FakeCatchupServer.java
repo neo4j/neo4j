@@ -34,9 +34,9 @@ import java.util.stream.Collectors;
 import org.neo4j.causalclustering.StrippedCatchupServer;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -172,8 +172,9 @@ class FakeCatchupServer extends StrippedCatchupServer
                 File[] files = new File[list.size()];
                 files = list.toArray( files );
                 long transactionId = 123L;
-                channelHandlerContext.writeAndFlush( PrepareStoreCopyResponse.success( files,
-                        new IndexDescriptor[]{new IndexDescriptor( new LabelSchemaDescriptor( 1, 2, 3 ), IndexDescriptor.Type.GENERAL )}, transactionId ) );
+                PrimitiveLongSet indexIds = Primitive.longSet();
+                indexIds.add( 13 );
+                channelHandlerContext.writeAndFlush( PrepareStoreCopyResponse.success( files, indexIds, transactionId ) );
                 protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
             }
         };
@@ -187,7 +188,7 @@ class FakeCatchupServer extends StrippedCatchupServer
             @Override
             protected void channelRead0( ChannelHandlerContext channelHandlerContext, GetIndexFilesRequest snapshotRequest )
             {
-                log.info( "Received request for index %s", snapshotRequest.descriptor() );
+                log.info( "Received request for index %s", snapshotRequest.indexId() );
                 try
                 {
                     for ( FakeFile indexFile : indexFiles )

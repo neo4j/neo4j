@@ -25,9 +25,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -70,7 +71,7 @@ public class PrepareStoreCopyFilesTest
         storeDir = testDirectory.graphDbDir();
         when( dataSource.getStoreDir() ).thenReturn( storeDir );
         indexListingMock = mock( NeoStoreFileIndexListing.class );
-        when( indexListingMock.listIndexDescriptors() ).thenReturn( new ArrayList<>() );
+        when( indexListingMock.getIndexIds() ).thenReturn( Primitive.longSet() );
         NeoStoreFileListing storeFileListing = mock( NeoStoreFileListing.class );
         when( storeFileListing.getNeoStoreFileIndexListing() ).thenReturn( indexListingMock );
         when( storeFileListing.builder() ).thenReturn( fileListingBuilder );
@@ -123,25 +124,21 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldHandleEmptyDescriptors()
     {
-        IndexDescriptor[] indexDescriptors = prepareStoreCopyFiles.getIndexDescriptors();
+        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getIndexIds();
 
-        assertEquals( 0, indexDescriptors.length );
+        assertEquals( 0, indexIds.size() );
     }
 
     @Test
     public void shouldReturnExpectedDescriptors()
     {
-        IndexDescriptor[] expectedDescriptors = {indexDescriptor( 1, 2 )};
-        when( indexListingMock.listIndexDescriptors() ).thenReturn( Arrays.asList( expectedDescriptors ) );
+        PrimitiveLongSet expectedIndexIds = Primitive.longSet();
+        expectedIndexIds.add( 42 );
+        when( indexListingMock.getIndexIds() ).thenReturn( expectedIndexIds );
 
-        IndexDescriptor[] indexDescriptors = prepareStoreCopyFiles.getIndexDescriptors();
+        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getIndexIds();
 
-        assertArrayEquals( expectedDescriptors, indexDescriptors );
-    }
-
-    private IndexDescriptor indexDescriptor( int labelId, int propertyId1 )
-    {
-        return new IndexDescriptor( new LabelSchemaDescriptor( labelId, propertyId1 ), IndexDescriptor.Type.GENERAL );
+        assertEquals( expectedIndexIds, actualIndexIndexIds );
     }
 
     private String getRelativePath( StoreFileMetadata f )

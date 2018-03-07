@@ -45,8 +45,8 @@ public class OnlineIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy( indexId, new IndexMeta( descriptor, providerDescriptor, NO_CAPABILITY ),
-                accessor, storeView, false );
+        IndexMeta indexMeta = new IndexMeta( indexId, descriptor, providerDescriptor, NO_CAPABILITY );
+        OnlineIndexProxy index = new OnlineIndexProxy( indexId, indexMeta, accessor, storeView, false );
 
         // when
         index.drop();

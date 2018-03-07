@@ -433,7 +433,7 @@ public class MultipleIndexPopulatorTest
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
-                new IndexMeta( descriptor, mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY ),
+                new IndexMeta( indexId, descriptor, mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY ),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 

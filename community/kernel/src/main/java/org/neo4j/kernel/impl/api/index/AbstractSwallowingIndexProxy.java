@@ -114,4 +114,10 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public long getIndexId()
+    {
+        return indexMeta.getIndexId();
+    }
 }

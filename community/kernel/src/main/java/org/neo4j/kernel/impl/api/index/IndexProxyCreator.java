@@ -68,7 +68,7 @@ class IndexProxyCreator
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
-        IndexMeta indexMeta = indexMetaFromProvider( providerDescriptor, descriptor );
+        IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
                 indexMeta,
@@ -104,10 +104,10 @@ class IndexProxyCreator
         return new ContractCheckingIndexProxy( flipper, false );
     }
 
-    IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor,
+    IndexProxy createRecoveringIndexProxy( long ruleId, IndexDescriptor descriptor,
             SchemaIndexProvider.Descriptor providerDescriptor )
     {
-        IndexMeta indexMeta = indexMetaFromProvider( providerDescriptor, descriptor );
+        IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
         IndexProxy proxy = new RecoveringIndexProxy( indexMeta );
         return new ContractCheckingIndexProxy( proxy, true );
     }
@@ -121,7 +121,7 @@ class IndexProxyCreator
         {
             IndexAccessor onlineAccessor =
                     onlineAccessorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
-            IndexMeta indexMeta = indexMetaFromProvider( providerDescriptor, descriptor );
+            IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
             IndexProxy proxy;
             proxy = new OnlineIndexProxy( ruleId, indexMeta, onlineAccessor, storeView, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
@@ -132,7 +132,7 @@ class IndexProxyCreator
             logProvider.getLog( getClass() ).error( "Failed to open index: " + ruleId +
                                                     " (" + descriptor.userDescription( tokenNameLookup ) +
                                                     "), requesting re-population.", e );
-            return createRecoveringIndexProxy( descriptor, providerDescriptor );
+            return createRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
         }
     }
 
@@ -142,7 +142,7 @@ class IndexProxyCreator
             IndexPopulationFailure populationFailure )
     {
         IndexPopulator indexPopulator = populatorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
-        IndexMeta indexMeta = indexMetaFromProvider( providerDescriptor, descriptor );
+        IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
         String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexProxy proxy;
         proxy = new FailedIndexProxy(
@@ -178,9 +178,9 @@ class IndexProxyCreator
         return indexProvider.getOnlineAccessor( ruleId, descriptor, samplingConfig );
     }
 
-    private IndexMeta indexMetaFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, IndexDescriptor indexDescriptor )
+    private IndexMeta indexMetaFromProvider( long ruleId, SchemaIndexProvider.Descriptor providerDescriptor, IndexDescriptor indexDescriptor )
     {
         IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability( indexDescriptor );
-        return new IndexMeta( indexDescriptor, providerDescriptor, indexCapability );
+        return new IndexMeta( ruleId, indexDescriptor, providerDescriptor, indexCapability );
     }
 }

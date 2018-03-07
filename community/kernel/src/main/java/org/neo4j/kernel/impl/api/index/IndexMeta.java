@@ -25,15 +25,22 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 public class IndexMeta
 {
+    private final long ruleId;
     private final IndexDescriptor indexDescriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexCapability indexCapability;
 
-    public IndexMeta( IndexDescriptor indexDescriptor, SchemaIndexProvider.Descriptor providerDescriptor, IndexCapability indexCapability )
+    public IndexMeta( long ruleId, IndexDescriptor indexDescriptor, SchemaIndexProvider.Descriptor providerDescriptor, IndexCapability indexCapability )
     {
+        this.ruleId = ruleId;
         this.indexDescriptor = indexDescriptor;
         this.providerDescriptor = providerDescriptor;
         this.indexCapability = indexCapability;
+    }
+
+    public long getIndexId()
+    {
+        return ruleId;
     }
 
     public IndexDescriptor indexDescriptor()

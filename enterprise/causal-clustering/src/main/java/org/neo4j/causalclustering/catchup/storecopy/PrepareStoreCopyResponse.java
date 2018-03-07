@@ -33,7 +33,9 @@ import java.util.Objects;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.string.UTF8;
@@ -41,7 +43,7 @@ import org.neo4j.string.UTF8;
 public class PrepareStoreCopyResponse
 {
     private final File[] files;
-    private final IndexDescriptor[] indexDescriptors;
+    private final PrimitiveLongSet indexIds;
     private final Long transactionId;
     private final Status status;
 
@@ -51,17 +53,17 @@ public class PrepareStoreCopyResponse
         {
             throw new IllegalStateException( "Cannot create error result from state: " + errorStatus );
         }
-        return new PrepareStoreCopyResponse( new File[0], new IndexDescriptor[0], 0L, errorStatus );
+        return new PrepareStoreCopyResponse( new File[0], Primitive.longSet(), 0L, errorStatus );
     }
 
-    public static PrepareStoreCopyResponse success( File[] storeFiles, IndexDescriptor[] indexDescriptors, long lastTransactionId )
+    public static PrepareStoreCopyResponse success( File[] storeFiles, PrimitiveLongSet indexIds, long lastTransactionId )
     {
-        return new PrepareStoreCopyResponse( storeFiles, indexDescriptors, lastTransactionId, Status.SUCCESS );
+        return new PrepareStoreCopyResponse( storeFiles, indexIds, lastTransactionId, Status.SUCCESS );
     }
 
-    IndexDescriptor[] getDescriptors()
+    PrimitiveLongSet getIndexIds()
     {
-        return indexDescriptors;
+        return indexIds;
     }
 
     enum Status
@@ -71,10 +73,10 @@ public class PrepareStoreCopyResponse
         E_LISTING_STORE
     }
 
-    private PrepareStoreCopyResponse( File[] files, IndexDescriptor[] indexDescriptors, Long transactionId, Status status )
+    private PrepareStoreCopyResponse( File[] files, PrimitiveLongSet indexIds, Long transactionId, Status status )
     {
         this.files = files;
-        this.indexDescriptors = indexDescriptors;
+        this.indexIds = indexIds;
         this.transactionId = transactionId;
         this.status = status;
     }
@@ -106,14 +108,14 @@ public class PrepareStoreCopyResponse
             return false;
         }
         PrepareStoreCopyResponse that = (PrepareStoreCopyResponse) o;
-        return Arrays.equals( files, that.files ) && Arrays.equals( indexDescriptors, that.indexDescriptors ) &&
-                Objects.equals( transactionId, that.transactionId ) && status == that.status;
+        return Arrays.equals( files, that.files ) && indexIds.equals( that.indexIds ) &&
+               Objects.equals( transactionId, that.transactionId ) && status == that.status;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( files, indexDescriptors, transactionId, status );
+        return Objects.hash( files, indexIds, transactionId, status );
     }
 
     public static class StoreListingMarshal extends SafeChannelMarshal<PrepareStoreCopyResponse>
@@ -124,7 +126,7 @@ public class PrepareStoreCopyResponse
             buffer.putInt( prepareStoreCopyResponse.status.ordinal() );
             buffer.putLong( prepareStoreCopyResponse.transactionId );
             marshalFiles( buffer, prepareStoreCopyResponse.files );
-            marshalIndexDescriptors( buffer, prepareStoreCopyResponse.indexDescriptors );
+            marshalIndexIds( buffer, prepareStoreCopyResponse.indexIds );
         }
 
         @Override
@@ -134,8 +136,8 @@ public class PrepareStoreCopyResponse
             Status status = Status.values()[ordinal];
             Long transactionId = channel.getLong();
             File[] files = unmarshalFiles( channel );
-            IndexDescriptor[] indexDescriptors = unmarshalIndexProviderDescriptors( channel );
-            return new PrepareStoreCopyResponse( files, indexDescriptors, transactionId, status );
+            PrimitiveLongSet indexIds = unmarshalIndexIds( channel );
+            return new PrepareStoreCopyResponse( files, indexIds, transactionId, status );
         }
 
         private static void marshalFiles( WritableChannel buffer, File[] files ) throws IOException
@@ -147,12 +149,14 @@ public class PrepareStoreCopyResponse
             }
         }
 
-        private void marshalIndexDescriptors( WritableChannel buffer, IndexDescriptor[] descriptors ) throws IOException
+        private void marshalIndexIds( WritableChannel buffer, PrimitiveLongSet indexIds ) throws IOException
         {
-            buffer.putInt( descriptors.length );
-            for ( IndexDescriptor descriptor : descriptors )
+            buffer.putInt( indexIds.size() );
+            PrimitiveLongIterator itr = indexIds.iterator();
+            while ( itr.hasNext() )
             {
-                IndexDescriptorSerializer.serialize( descriptor, buffer );
+                long indexId = itr.next();
+                buffer.putLong( indexId );
             }
         }
 
@@ -173,20 +177,15 @@ public class PrepareStoreCopyResponse
             return new File( UTF8.decode( name ) );
         }
 
-        private IndexDescriptor[] unmarshalIndexProviderDescriptors( ReadableChannel channel ) throws IOException
+        private PrimitiveLongSet unmarshalIndexIds( ReadableChannel channel ) throws IOException
         {
-            int numberOfDescriptors = channel.getInt();
-            IndexDescriptor[] descriptors = new IndexDescriptor[numberOfDescriptors];
-            for ( int i = 0; i < numberOfDescriptors; i++ )
+            int numberOfIndexIds = channel.getInt();
+            PrimitiveLongSet indexIds = Primitive.longSet( numberOfIndexIds );
+            for ( int i = 0; i < numberOfIndexIds; i++ )
             {
-                descriptors[i] = unmarshalIndexProviderDescriptor( channel );
+                indexIds.add( channel.getLong() );
             }
-            return descriptors;
-        }
-
-        private IndexDescriptor unmarshalIndexProviderDescriptor( ReadableChannel channel ) throws IOException
-        {
-            return IndexDescriptorSerializer.deserialize( channel );
+            return indexIds;
         }
 
         private static void putBytes( WritableChannel buffer, String value ) throws IOException

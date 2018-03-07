@@ -80,6 +80,6 @@ public class FailedIndexProxyTest
 
     private IndexMeta indexMeta( IndexDescriptor descriptor )
     {
-        return new IndexMeta( descriptor, providerDescriptor, indexCapability );
+        return new IndexMeta( 1, descriptor, providerDescriptor, indexCapability );
     }
 }

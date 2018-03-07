@@ -24,19 +24,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ResourceIterator;
@@ -209,7 +207,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                    indexProxy = indexProxyCreator.createRecoveringIndexProxy( descriptor, providerDescriptor );
+                    indexProxy = indexProxyCreator.createRecoveringIndexProxy(
+                            indexId, descriptor, providerDescriptor );
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId, descriptor ) );
@@ -638,33 +637,25 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         } );
     }
 
-    public Set<IndexDescriptor> getIndexDescriptors()
+    public PrimitiveLongSet getIndexIds()
     {
-        Set<IndexDescriptor> indexDescriptors = new HashSet<>();
-        for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
+        Iterable<IndexProxy> indexProxies = indexMapRef.getAllIndexProxies();
+        PrimitiveLongSet indexIds = Primitive.longSet();
+        for ( IndexProxy indexProxy : indexProxies )
         {
-            indexDescriptors.add( indexProxy.getDescriptor() );
+            indexIds.add( indexProxy.getIndexId() );
         }
-        return indexDescriptors;
-    }
-
-    public ResourceIterator<File> snapshotIndexFiles( Predicate<IndexDescriptor> filter ) throws IOException
-    {
-        Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
-        {
-            IndexDescriptor providerDescriptor = indexProxy.getDescriptor();
-            if ( filter.test( providerDescriptor ) )
-            {
-                snapshots.add( indexProxy.snapshotFiles() );
-            }
-        }
-        return Iterators.concatResourceIterators( snapshots.iterator() );
+        return indexIds;
     }
 
     public ResourceIterator<File> snapshotIndexFiles() throws IOException
     {
-        return snapshotIndexFiles( d -> true );
+        Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
+        for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
+        {
+            snapshots.add( indexProxy.snapshotFiles() );
+        }
+        return Iterators.concatResourceIterators( snapshots.iterator() );
     }
 
     private IndexPopulationJob newIndexPopulationJob()
@@ -760,7 +751,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 }
                 else
                 {
-                    index = indexProxyCreator.createRecoveringIndexProxy( descriptor, providerDescriptor );
+                    index = indexProxyCreator.createRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
                 }
 
                 indexMap.putIndexProxy( rule.getId(), index );

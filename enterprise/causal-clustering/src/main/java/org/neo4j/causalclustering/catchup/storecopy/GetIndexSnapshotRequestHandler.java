@@ -31,7 +31,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
@@ -78,7 +77,7 @@ public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<
             StoreCopyFinishedResponse.Status status = StoreCopyFinishedResponse.Status.E_UNKNOWN;
             File storeDir = neoStoreDataSource.getStoreDir();
             ResourceIterator<StoreFileMetadata> resourceIterator =
-                    neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getSnapshot( snapshotRequest.descriptor() );
+                    neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getSnapshot( snapshotRequest.indexId() );
             try
             {
                 closeablesListener.add( resourceIterator );

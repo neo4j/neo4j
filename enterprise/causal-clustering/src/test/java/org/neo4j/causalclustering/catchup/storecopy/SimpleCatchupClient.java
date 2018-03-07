@@ -31,7 +31,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -108,11 +107,13 @@ class SimpleCatchupClient implements AutoCloseable
         return new AdvertisedSocketAddress( "localhost", catchupServer.getPort() );
     }
 
-    StoreCopyFinishedResponse requestIndexSnapshot( IndexDescriptor expectedDescriptor ) throws CatchUpClientException
+    StoreCopyFinishedResponse requestIndexSnapshot( long indexId ) throws CatchUpClientException
     {
         long lastCheckPointedTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
-        return catchUpClient.makeBlockingRequest( from, new GetIndexFilesRequest( getStoreIdFromKernelStoreId( graphDb ), expectedDescriptor,
-                lastCheckPointedTransactionId ), new StoreCopyClient.StoreFileCopyResponseAdaptor( streamToDisk, log ) );
+        StoreId storeId = getStoreIdFromKernelStoreId( graphDb );
+        GetIndexFilesRequest request = new GetIndexFilesRequest( storeId, indexId, lastCheckPointedTransactionId );
+        return catchUpClient.makeBlockingRequest( from,
+                request, new StoreCopyClient.StoreFileCopyResponseAdaptor( streamToDisk, log ) );
     }
 
     @Override

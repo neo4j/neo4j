@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -617,7 +615,7 @@ public class IndexPopulationJobTest
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
-        job.addPopulator( populator, indexId, new IndexMeta( descriptor, PROVIDER_DESCRIPTOR, NO_CAPABILITY ),
+        job.addPopulator( populator, indexId, new IndexMeta( indexId, descriptor, PROVIDER_DESCRIPTOR, NO_CAPABILITY ),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
     }
