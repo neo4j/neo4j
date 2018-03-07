@@ -92,12 +92,41 @@ public abstract class IndexQuery
                                                               VALUE from, boolean fromInclusive,
                                                               VALUE to, boolean toInclusive )
     {
+        if ( from == null && to == null )
+        {
+            throw new IllegalArgumentException( "Cannot create RangePredicate without at least one bound" );
+        }
+
         ValueGroup valueGroup = from != null ? from.valueGroup() : to.valueGroup();
         if ( valueGroup == ValueGroup.GEOMETRY )
         {
-            return new GeometryRangePredicate( propertyKeyId, (PointValue)from, fromInclusive, (PointValue)to, toInclusive );
+            PointValue pFrom = (PointValue)from;
+            PointValue pTo = (PointValue)to;
+            CoordinateReferenceSystem crs = pFrom != null ? pFrom.getCoordinateReferenceSystem() : pTo.getCoordinateReferenceSystem();
+            return new GeometryRangePredicate( propertyKeyId, crs, pFrom, fromInclusive, pTo, toInclusive );
         }
         return new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+    }
+
+    /**
+     * Create IndexQuery for retrieving all indexed entries of the given value group.
+     */
+    public static RangePredicate range( int propertyKeyId, ValueGroup valueGroup )
+    {
+        if ( valueGroup == ValueGroup.GEOMETRY )
+        {
+            throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without at specified CRS" );
+        }
+        return new RangePredicate<>( propertyKeyId, valueGroup, null, true, null, true );
+    }
+
+    /**
+     * Create IndexQuery for retrieving all indexed entries with spatial value of the given
+     * coordinate reference system.
+     */
+    public static RangePredicate range( int propertyKeyId, CoordinateReferenceSystem crs )
+    {
+        return new GeometryRangePredicate( propertyKeyId, crs, null, true, null, true );
     }
 
     /**
@@ -305,7 +334,7 @@ public abstract class IndexQuery
             }
             if ( value.valueGroup() == valueGroup )
             {
-                if ( from != NO_VALUE )
+                if ( from != null )
                 {
                     int compare = Values.COMPARATOR.compare( value, from );
                     if ( compare < 0 || !fromInclusive && compare == 0 )
@@ -313,7 +342,7 @@ public abstract class IndexQuery
                         return false;
                     }
                 }
-                if ( to != NO_VALUE )
+                if ( to != null )
                 {
                     int compare = Values.COMPARATOR.compare( value, to );
                     if ( compare > 0 || !toInclusive && compare == 0 )
@@ -357,14 +386,10 @@ public abstract class IndexQuery
     {
         private final CoordinateReferenceSystem crs;
 
-        GeometryRangePredicate( int propertyKeyId, PointValue from, boolean fromInclusive, PointValue to, boolean toInclusive )
+        GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs, PointValue from, boolean fromInclusive, PointValue to, boolean toInclusive )
         {
             super( propertyKeyId, ValueGroup.GEOMETRY, from, fromInclusive, to, toInclusive );
-            if ( from == null && to == null )
-            {
-                throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without at least one bound" );
-            }
-            this.crs = from != null ? from.getCoordinateReferenceSystem() : to.getCoordinateReferenceSystem();
+            this.crs = crs;
         }
 
         @Override
@@ -377,7 +402,10 @@ public abstract class IndexQuery
             if ( value instanceof PointValue )
             {
                 PointValue point = (PointValue) value;
-                return point.withinRange( from, fromInclusive, to, toInclusive );
+                if ( point.getCRS() == crs )
+                {
+                    return point.withinRange( from, fromInclusive, to, toInclusive );
+                }
             }
             return false;
         }

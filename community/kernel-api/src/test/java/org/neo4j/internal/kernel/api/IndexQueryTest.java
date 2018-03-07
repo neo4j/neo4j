@@ -21,6 +21,8 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
+import java.time.ZoneOffset;
+
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
@@ -28,7 +30,12 @@ import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertFalse;
@@ -409,6 +416,45 @@ public class IndexQueryTest
         assertTrue( test( p, gps2_3d ) );
     }
 
+    @Test
+    public void testDateRange()
+    {
+        RangePredicate p = IndexQuery.range( propId, DateValue.date( 2014, 7, 7 ), true, DateValue.date( 2017,3, 7 ), false );
+
+        assertFalse( test( p, DateValue.date( 2014, 6, 8 ) ) );
+        assertTrue( test( p, DateValue.date( 2014, 7, 7 ) ) );
+        assertTrue( test( p, DateValue.date( 2016, 6, 8 ) ) );
+        assertFalse( test( p, DateValue.date( 2017, 3, 7 ) ) );
+        assertFalse( test( p, DateValue.date( 2017, 3, 8 ) ) );
+        assertFalse( test( p, LocalDateTimeValue.localDateTime( 2016, 3, 8, 0, 0, 0, 0 ) ) );
+    }
+
+    // VALUE GROUP SCAN
+    @Test
+    public void testValueGroupRange()
+    {
+        RangePredicate p = IndexQuery.range( propId, ValueGroup.DATE );
+
+        assertTrue( test( p, DateValue.date( -4000, 1, 31 ) ) );
+        assertTrue( test( p, DateValue.date( 2018, 3, 7 ) ) );
+        assertFalse( test( p, DateTimeValue.datetime( 2018, 3, 7, 0, 0, 0, 0, ZoneOffset.UTC ) ) );
+        assertFalse( test( p, Values.stringValue( "hej" ) ) );
+        assertFalse( test( p, gps2_3d ) );
+    }
+
+    @Test
+    public void testCRSRange()
+    {
+        RangePredicate p = IndexQuery.range( propId, CoordinateReferenceSystem.WGS84 );
+
+        assertTrue( test( p, gps2 ) );
+        assertFalse( test( p, DateValue.date( -4000, 1, 31 ) ) );
+        assertFalse( test( p, Values.stringValue( "hej" ) ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car4 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
     // STRING PREFIX
 
     @Test
@@ -492,6 +538,6 @@ public class IndexQueryTest
 
     private boolean test( IndexQuery p, Object x )
     {
-        return p.acceptsValue( Values.of( x ) );
+        return p.acceptsValue( x instanceof Value ? (Value)x : Values.of( x ) );
     }
 }
