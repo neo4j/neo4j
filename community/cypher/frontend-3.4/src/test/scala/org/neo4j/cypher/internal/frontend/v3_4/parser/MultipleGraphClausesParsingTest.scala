@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Clause}
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.parboiled.scala.Rule1
 
 import scala.language.implicitConversions
@@ -38,14 +38,59 @@ class MultipleGraphClausesParsingTest
     yields(ast.UseGraph(fooBarGraph))
   }
 
-  test("CONSTRUCT GRAPH { CREATE () }") {
+  test("CONSTRUCT { CREATE () }") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
-    yields(ast.ConstructGraph(None, ast.Create(exp.Pattern(patternParts)(pos))(pos)))
+    yields(ast.ConstructGraph(creates = List(ast.Create(exp.Pattern(patternParts)(pos))(pos))))
   }
 
-  test("CONSTRUCT GRAPH foo.bar { CREATE () }") {
+  test("CONSTRUCT { MERGE () CREATE () REMOVE a.prop SET a.prop = 1 }") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
-    yields(ast.ConstructGraph(Some(fooBarGraph), ast.Create(exp.Pattern(patternParts)(pos))(pos)))
+    val merge: ast.Merge = ast.Merge(exp.Pattern(patternParts)(pos), Seq.empty)(pos)
+    val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
+    val remove: ast.Remove = ast.Remove(Seq(ast.RemovePropertyItem(exp.Property(exp.Variable("a")(pos), exp.PropertyKeyName("prop")(pos))(pos))))(pos)
+    val set: ast.SetClause = ast.SetClause(Seq(ast.SetPropertyItem(exp.Property(exp.Variable("a")(pos), exp.PropertyKeyName("prop")(pos))(pos), exp.SignedDecimalIntegerLiteral("1")(pos))(pos)))(pos)
+
+    yields(ast.ConstructGraph(
+      merges = List(merge),
+      creates = List(create),
+      removes = List(remove),
+      sets = List(set))
+    )
+  }
+
+  test("CONSTRUCT { CREATE (a) SET a:A }") {
+    val a = exp.Variable("a")(pos)
+    val patternParts = List(exp.EveryPath(exp.NodePattern(Some(a),List(),None)(pos)))
+    val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
+    val set: ast.SetClause = ast.SetClause(Seq(ast.SetLabelItem(a, Seq(exp.LabelName("A")(pos)))(pos)))(pos)
+
+    yields(ast.ConstructGraph(
+      creates = List(create),
+      sets = List(set))
+    )
+  }
+
+  test("CONSTRUCT { MERGE (a) MERGE (b) SET a:A }") {
+    val a = exp.Variable("a")(pos)
+    val aPattern = List(exp.EveryPath(exp.NodePattern(Some(a),List(),None)(pos)))
+    val aMerge: ast.Merge = ast.Merge(exp.Pattern(aPattern)(pos), Seq.empty)(pos)
+    val b = exp.Variable("b")(pos)
+    val bPattern = List(exp.EveryPath(exp.NodePattern(Some(b),List(),None)(pos)))
+    val bMerge: ast.Merge = ast.Merge(exp.Pattern(bPattern)(pos), Seq.empty)(pos)
+    val set: ast.SetClause = ast.SetClause(Seq(ast.SetLabelItem(a, Seq(exp.LabelName("A")(pos)))(pos)))(pos)
+
+    yields(ast.ConstructGraph(
+      merges = List(aMerge, bMerge),
+      sets = List(set))
+    )
+  }
+
+  test("CONSTRUCT {}") {
+    yields(ast.ConstructGraph())
+  }
+
+  test("CONSTRUCT { SET a:A CREATE (b) }") {
+    failsToParse
   }
 
   test("CREATE GRAPH foo.bar") {

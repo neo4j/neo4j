@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Create, CreateUnique}
 import org.neo4j.cypher.internal.v3_4.expressions.{Pattern => ASTPattern}
 import org.parboiled.scala._
 
@@ -42,8 +43,13 @@ trait Clauses extends Parser
     group(keyword("USE GRAPH") ~~ QualifiedGraphName ~~>> (ast.UseGraph(_)))
   }
 
-  def ConstructGraph = rule("CONSTRUCT GRAPH") {
-    group(keyword("CONSTRUCT GRAPH") ~~ optional(QualifiedGraphName) ~~ "{" ~~ Create ~~ "}" ~~>> (ast.ConstructGraph(_, _)))
+  def ConstructGraph = rule("CONSTRUCT") {
+    group(keyword("CONSTRUCT") ~~ "{" ~~
+      zeroOrMore(WS ~ Merge) ~~
+      zeroOrMore(WS ~ Create) ~~
+      zeroOrMore(WS ~ Remove) ~~
+      zeroOrMore(WS ~ SetClause) ~~
+      "}" ~~>> (ast.ConstructGraph(_, _, _, _)))
   }
 
   def CreateGraph = rule("CREATE GRAPH") {
@@ -94,10 +100,13 @@ trait Clauses extends Parser
     ) ~~>> (ast.Merge(_, _))
   }
 
-  def Create: Rule1[ast.Clause] = rule("CREATE")(
+  def Create: Rule1[Create] = rule("CREATE") {
+    group(keyword("CREATE") ~~ Pattern) ~~>> (ast.Create(_))
+  }
+
+  def CreateUnique: Rule1[CreateUnique] = rule("CREATE UNIQUE") {
     group(keyword("CREATE UNIQUE") ~~ Pattern) ~~>> (ast.CreateUnique(_))
-      | group(keyword("CREATE") ~~ Pattern) ~~>> (ast.Create(_))
-  )
+  }
 
   def SetClause: Rule1[ast.SetClause] = rule("SET") {
     group(keyword("SET") ~~ oneOrMore(SetItem, separator = CommaSep)) ~~>> (ast.SetClause(_))

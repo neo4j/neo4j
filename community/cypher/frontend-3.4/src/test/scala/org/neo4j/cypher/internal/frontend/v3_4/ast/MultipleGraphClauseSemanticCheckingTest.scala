@@ -35,15 +35,16 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Query] = Query
 
-//  test("sets the working with USE GRAPH") {
-//    parsing(
-//      """USE GRAPH foo.bar.baz
-//        |RETURN 1 as a
-//      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
-//      result.state.workingGraph should equal(Some(ast.QualifiedGraphName(List("foo", "bar", "baz"))))
-//      result.errors shouldBe empty
-//    }
-//  }
+  test("finds semantic errors in clauses inside CONSTRUCT") {
+    parsing(
+      """CONSTRUCT { REMOVE a.prop }
+        |RETURN 1 as a
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(Set("Variable `a` not defined"))
+    }
+  }
+
 //
 //  test("sets the working with CONSTRUCT GRAPH") {
 //    parsing(

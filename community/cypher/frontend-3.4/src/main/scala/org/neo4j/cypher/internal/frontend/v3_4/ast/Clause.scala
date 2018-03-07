@@ -87,14 +87,22 @@ final case class UseGraph(graphName: QualifiedGraphName)(val position: InputPosi
 
 }
 
-final case class ConstructGraph(graphName: Option[QualifiedGraphName], create: Clause)(val position: InputPosition) extends MultipleGraphClause {
+final case class ConstructGraph(
+  merges: List[Merge] = List.empty,
+  creates: List[Create] = List.empty,
+  removes: List[Remove] = List.empty,
+  sets: List[SetClause] = List.empty
+)(val position: InputPosition) extends MultipleGraphClause {
 
-  override def name = "CONSTRUCT GRAPH"
+  override def name = "CONSTRUCT"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this) chain
-      create.semanticCheck
+      merges.semanticCheck chain
+      creates.semanticCheck chain
+      removes.semanticCheck chain
+      sets.semanticCheck
 
 }
 
