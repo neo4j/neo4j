@@ -38,6 +38,8 @@ import org.neo4j.causalclustering.StrippedCatchupServer;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -45,7 +47,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -143,7 +144,7 @@ public class CatchupServerIT
         assertTransactionIdMatches( prepareStoreCopyResponse.lastTransactionId() );
 
         //and
-        assertDescriptorsMatch( prepareStoreCopyResponse.getDescriptors(), neoStoreDataSource );
+        assertIndexIdsMatch( prepareStoreCopyResponse.getIndexIds(), neoStoreDataSource );
     }
 
     @Test
@@ -198,12 +199,13 @@ public class CatchupServerIT
         SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchUpClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // and
-        Collection<IndexDescriptor> expectedDescriptors = getExpectedDescriptors( neoStoreDataSource );
+        PrimitiveLongIterator indexIds = getExpectedIndexIds( neoStoreDataSource ).iterator();
 
         // when
-        for ( IndexDescriptor expectedDescriptor : expectedDescriptors )
+        while ( indexIds.hasNext() )
         {
-            StoreCopyFinishedResponse response = simpleCatchupClient.requestIndexSnapshot( expectedDescriptor );
+            long indexId = indexIds.next();
+            StoreCopyFinishedResponse response = simpleCatchupClient.requestIndexSnapshot( indexId );
             simpleCatchupClient.close();
             assertEquals( StoreCopyFinishedResponse.Status.SUCCESS, response.status() );
         }
@@ -271,17 +273,15 @@ public class CatchupServerIT
         assertThat( givenFile, containsInAnyOrder( expectedStoreFiles.toArray( new String[givenFile.size()] ) ) );
     }
 
-    private void assertDescriptorsMatch( IndexDescriptor[] descriptors, NeoStoreDataSource neoStoreDataSource )
+    private void assertIndexIdsMatch( PrimitiveLongSet indexIds, NeoStoreDataSource neoStoreDataSource )
     {
-        Collection<IndexDescriptor> expectedDescriptors = getExpectedDescriptors( neoStoreDataSource );
-
-        assertThat( expectedDescriptors, containsInAnyOrder( descriptors ) );
-        assertThat( expectedDescriptors.size(), equalTo( descriptors.length ) );
+        PrimitiveLongSet expectedIndexIds = getExpectedIndexIds( neoStoreDataSource );
+        assertThat( expectedIndexIds, equalTo( indexIds ) );
     }
 
-    private Collection<IndexDescriptor> getExpectedDescriptors( NeoStoreDataSource neoStoreDataSource )
+    private PrimitiveLongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )
     {
-        return neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().listIndexDescriptors();
+        return neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getIndexIds();
     }
 
     private List<File> listServerExpectedNonReplayableFiles( NeoStoreDataSource neoStoreDataSource ) throws IOException

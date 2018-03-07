@@ -28,9 +28,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -95,10 +95,10 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
 
     private PrepareStoreCopyResponse createSuccessfulResponse( CheckPointer checkPointer, PrepareStoreCopyFiles prepareStoreCopyFiles ) throws IOException
     {
-        IndexDescriptor[] indexDescriptors = prepareStoreCopyFiles.getIndexDescriptors();
+        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getIndexIds();
         File[] files = prepareStoreCopyFiles.listReplayableFiles();
         long lastCommittedTxId = checkPointer.lastCheckPointedTransactionId();
-        return PrepareStoreCopyResponse.success( files, indexDescriptors, lastCommittedTxId );
+        return PrepareStoreCopyResponse.success( files, indexIds, lastCommittedTxId );
     }
 
     private Resource tryCheckpointAndAcquireMutex( CheckPointer checkPointer ) throws IOException

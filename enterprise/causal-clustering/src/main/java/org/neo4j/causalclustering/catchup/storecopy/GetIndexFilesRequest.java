@@ -35,20 +35,19 @@ import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public class GetIndexFilesRequest implements CatchUpRequest
 {
     private final StoreId expectedStoreId;
-    private final IndexDescriptor descriptor;
+    private final long indexId;
     private final long lastTransactionId;
 
-    public GetIndexFilesRequest( StoreId expectedStoreId, IndexDescriptor indexDescriptor, long lastTransactionId )
+    public GetIndexFilesRequest( StoreId expectedStoreId, long indexId, long lastTransactionId )
     {
         this.expectedStoreId = expectedStoreId;
-        this.descriptor = indexDescriptor;
+        this.indexId = indexId;
         this.lastTransactionId = lastTransactionId;
     }
 
@@ -62,9 +61,9 @@ public class GetIndexFilesRequest implements CatchUpRequest
         return lastTransactionId;
     }
 
-    public IndexDescriptor descriptor()
+    public long indexId()
     {
-        return descriptor;
+        return indexId;
     }
 
     @Override
@@ -80,8 +79,8 @@ public class GetIndexFilesRequest implements CatchUpRequest
         {
             StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( channel );
             long requiredTransactionId = channel.getLong();
-            IndexDescriptor indexDescriptor = IndexDescriptorSerializer.deserialize( channel );
-            return new GetIndexFilesRequest( storeId, indexDescriptor, requiredTransactionId );
+            long indexId = channel.getLong();
+            return new GetIndexFilesRequest( storeId, indexId, requiredTransactionId );
         }
 
         @Override
@@ -89,7 +88,7 @@ public class GetIndexFilesRequest implements CatchUpRequest
         {
             StoreIdMarshal.INSTANCE.marshal( getIndexFilesRequest.expectedStoreId(), channel );
             channel.putLong( getIndexFilesRequest.requiredTransactionId() );
-            IndexDescriptorSerializer.serialize( getIndexFilesRequest.descriptor(), channel );
+            channel.putLong( getIndexFilesRequest.indexId() );
         }
     }
 

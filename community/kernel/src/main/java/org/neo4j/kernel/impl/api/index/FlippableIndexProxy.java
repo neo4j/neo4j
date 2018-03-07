@@ -356,6 +356,20 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
+    public long getIndexId()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.getIndexId();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         lock.readLock().lock();

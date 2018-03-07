@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
@@ -434,7 +433,7 @@ public class MultipleIndexPopulatorTest
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
-                new IndexMeta( descriptor, mock( IndexProvider.Descriptor.class ), NO_CAPABILITY ),
+                new IndexMeta( indexId, descriptor, mock( IndexProvider.Descriptor.class ), NO_CAPABILITY ),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 

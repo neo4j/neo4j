@@ -30,8 +30,8 @@ import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -105,8 +105,10 @@ public class StoreCopyClient
     {
         CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler = new StoreFileCopyResponseAdaptor( storeFileStreams, log );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
-        for ( IndexDescriptor descriptor : prepareStoreCopyResponse.getDescriptors() )
+        PrimitiveLongIterator indexIds = prepareStoreCopyResponse.getIndexIds().iterator();
+        while ( indexIds.hasNext() )
         {
+            long indexId = indexIds.next();
             TerminationCondition terminationCondition = terminationConditions.get();
             boolean successful;
             do
@@ -114,9 +116,9 @@ public class StoreCopyClient
                 try
                 {
                     AdvertisedSocketAddress from = addressProvider.primary();
-                    log.info( String.format( "Downloading snapshot '%s' from '%s'", descriptor, from ) );
+                    log.info( String.format( "Downloading snapshot of index '%s' from '%s'", indexId, from ) );
                     StoreCopyFinishedResponse response =
-                            catchUpClient.makeBlockingRequest( from, new GetIndexFilesRequest( expectedStoreId, descriptor, lastTransactionId ),
+                            catchUpClient.makeBlockingRequest( from, new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ),
                                     copyHandler );
                     successful = successfulFileDownload( response );
                 }
@@ -126,7 +128,7 @@ public class StoreCopyClient
                 }
                 if ( !successful )
                 {
-                    log.error( "Failed to download file '%s'", descriptor );
+                    log.error( "Failed to download files from index '%s'", indexId );
                     terminationCondition.assertContinue();
                 }
             }
