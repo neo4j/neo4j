@@ -37,6 +37,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -79,7 +80,7 @@ public class SpatialCRSSchemaIndex
     private byte[] failureBytes;
     private SpatialSchemaKey treeKey;
     private NativeSchemaValue treeValue;
-    private SpatialLayout layout;
+    private Layout<SpatialSchemaKey,NativeSchemaValue> layout;
     private NativeSchemaIndexUpdater<SpatialSchemaKey,NativeSchemaValue> singleUpdater;
     private NativeSchemaIndex<SpatialSchemaKey,NativeSchemaValue> schemaIndex;
     private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> additionsWorkSync;

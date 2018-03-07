@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
- * {@link Layout} for PointValues where they don't need to be unique.
+ * {@link Layout} for PointValues.
  */
 class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
 {
@@ -79,11 +79,5 @@ class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
     {
         into.rawValueBits = cursor.getLong();
         into.setEntityId( cursor.getLong() );
-    }
-
-    @Override
-    int compareValue( SpatialSchemaKey o1, SpatialSchemaKey o2 )
-    {
-        return o1.compareValueTo( o2 );
     }
 }
