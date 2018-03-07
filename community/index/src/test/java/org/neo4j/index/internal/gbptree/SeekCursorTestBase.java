@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -35,6 +36,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -44,6 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
@@ -67,6 +70,9 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private static final Consumer<Throwable> exceptionDecorator = t ->
     {
     };
+
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;
@@ -1199,7 +1205,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         // WHEN
         try ( SeekCursor<KEY,VALUE> cursor = new SeekCursor<>( this.cursor,
                 node, from, to, layout, stableGeneration, unstableGeneration, () -> 0L, failingRootCatchup,
-                unstableGeneration, exceptionDecorator ) )
+                unstableGeneration, exceptionDecorator, 1 ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1869,7 +1875,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, key( 0 ), key( 1 ), layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             // do nothing
         }
@@ -1920,7 +1926,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             // do nothing
         }
@@ -1969,7 +1975,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         KEY to = key( 20L );
         try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             while ( seek.next() )
             {
@@ -2191,7 +2197,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
             PageCursor pageCursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
         return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
-                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator );
+                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ) );
     }
 
     /**
