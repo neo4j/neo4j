@@ -133,7 +133,7 @@ public class StoreCopyClientTest
                 spy( new LocalStoreCopyRequester( original, originalDir, fileSystem ) );
 
         // when
-        copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
+        copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting(), false );
 
         // Then
         GraphDatabaseService copy = startDatabase( copyDir );
@@ -179,7 +179,7 @@ public class StoreCopyClientTest
         StoreCopyClient.StoreCopyRequester storeCopyRequest = new LocalStoreCopyRequester( original, originalDir,
                 fileSystem );
 
-        copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
+        copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting(), false );
 
         assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
 
@@ -223,7 +223,7 @@ public class StoreCopyClientTest
                 spy( new LocalStoreCopyRequester( original, originalDir, fileSystem ) );
 
         // when
-        copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
+        copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting(), false );
 
         // Then
         GraphDatabaseService copy = startDatabase( copyDir );
@@ -263,7 +263,7 @@ public class StoreCopyClientTest
                 new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem );
 
         // WHEN
-        copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
+        copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting(), false );
 
         // THEN
         long updatedTransactionOffset =
@@ -302,7 +302,7 @@ public class StoreCopyClientTest
         // WHEN
         try
         {
-            copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
+            copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting(), false );
             fail( "should have thrown " );
         }
         catch ( RuntimeException ex )

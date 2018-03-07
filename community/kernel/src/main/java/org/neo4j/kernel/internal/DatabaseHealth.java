@@ -27,8 +27,7 @@ import static org.neo4j.helpers.Exceptions.withCause;
 
 public class DatabaseHealth
 {
-    private static final String panicMessage = "Database has encountered some problem, "
-            + "please perform necessary action (tx recovery/restart)";
+    private static final String panicMessage = "Database has encountered some problem, please perform necessary action (tx recovery/restart)";
 
     // Keep that cozy name for legacy purposes
     private volatile boolean tmOk = true; // TODO rather skip volatile if possible here.
