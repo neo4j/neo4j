@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.Test;
 
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.Value;
@@ -35,26 +36,32 @@ public class ZonedDateTimeSchemaKeyTest
     @Test
     public void compareToSameAsValue()
     {
-        Value[] values = {DateTimeValue.datetime( 9999, 100, ZoneId.of( "+18:00" ) ),
+        Value[] values = {DateTimeValue.datetime( 9999, 100,  ZoneId.of( "+18:00" ) ),
                           DateTimeValue.datetime( 10000, 100, ZoneId.of( "-18:00" ) ),
+                          DateTimeValue.datetime( 10000, 100, ZoneOffset.of( "-17:59:59" ) ),
                           DateTimeValue.datetime( 10000, 100, ZoneId.of( "UTC" ) ),
-                          DateTimeValue.datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) ),
                           DateTimeValue.datetime( 10000, 100, ZoneId.of( "+01:00" ) ),
+                          DateTimeValue.datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) ),
                           DateTimeValue.datetime( 10000, 100, ZoneId.of( "+03:00" ) ),
                           DateTimeValue.datetime( 10000, 101, ZoneId.of( "-18:00" ) )};
 
         ZonedDateTimeSchemaKey keyI = new ZonedDateTimeSchemaKey();
         ZonedDateTimeSchemaKey keyJ = new ZonedDateTimeSchemaKey();
 
-        for ( Value vi : values )
+        int len = values.length;
+
+        for ( int i = 0; i < len; i++ )
         {
-            for ( Value vj : values )
+            for ( int j = 0; j < len; j++ )
             {
+                Value vi = values[i];
+                Value vj = values[j];
                 vi.writeTo( keyI );
                 vj.writeTo( keyJ );
 
-                int expected = Values.COMPARATOR.compare( vi, vj );
-                assertEquals( format( "comparing %s and %s", vi, vj ), expected, keyI.compareValueTo( keyJ ) );
+                int expected = Integer.signum( Values.COMPARATOR.compare( vi, vj ) );
+                assertEquals( format( "comparing %s and %s", vi, vj ), expected, Integer.signum( i - j ) );
+                assertEquals( format( "comparing %s and %s", vi, vj ), expected, Integer.signum( keyI.compareValueTo( keyJ ) ) );
             }
         }
     }
