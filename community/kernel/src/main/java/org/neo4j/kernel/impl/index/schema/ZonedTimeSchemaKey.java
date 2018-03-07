@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.time.ZoneOffset;
 
+import org.neo4j.kernel.impl.store.TimeZones;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -66,7 +67,7 @@ class ZonedTimeSchemaKey extends ComparableNativeSchemaKey<ZonedTimeSchemaKey>
     public int compareValueTo( ZonedTimeSchemaKey other )
     {
         int compare = Long.compare( nanosOfDayUTC, other.nanosOfDayUTC );
-        if ( compare == 0 && zoneOffsetSeconds != other.zoneOffsetSeconds )
+        if ( compare == 0 && differentValidZoneOffset( other ) )
         {
             compare = Values.COMPARATOR.compare( asValue(), other.asValue() );
         }
@@ -96,5 +97,12 @@ class ZonedTimeSchemaKey extends ComparableNativeSchemaKey<ZonedTimeSchemaKey>
                     "Key layout does only support TimeValue, tried to create key from " + value );
         }
         return value;
+    }
+
+    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
+    private boolean differentValidZoneOffset( ZonedTimeSchemaKey other )
+    {
+        return zoneOffsetSeconds != other.zoneOffsetSeconds &&
+                TimeZones.validZoneOffset( zoneOffsetSeconds ) && TimeZones.validZoneOffset( other.zoneOffsetSeconds );
     }
 }

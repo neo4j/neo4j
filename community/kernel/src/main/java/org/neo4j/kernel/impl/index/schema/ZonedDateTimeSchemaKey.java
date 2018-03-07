@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-import org.neo4j.kernel.impl.store.TimeZoneMapping;
+import org.neo4j.kernel.impl.store.TimeZones;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -53,7 +53,7 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
     public Value asValue()
     {
         return zoneId >= 0 ?
-            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneId.of( TimeZoneMapping.map( zoneId ) ) ) :
+            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneId.of( TimeZones.map( zoneId ) ) ) :
             DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
     }
 
@@ -82,7 +82,7 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
         if ( compare == 0 )
         {
             compare = Integer.compare( nanoOfSecond, other.nanoOfSecond );
-            if ( compare == 0 && ( zoneId != other.zoneId || zoneOffsetSeconds != other.zoneOffsetSeconds ) )
+            if ( compare == 0 && ( differentValidZoneId( other ) || differentValidZoneOffset( other ) ) )
             {
                 // In the rare case of comparing the same instant in different time zones, we settle for
                 // mapping to values and comparing using the general values comparator.
@@ -112,7 +112,7 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
     {
         this.epochSecondUTC = epochSecondUTC;
         this.nanoOfSecond = nano;
-        this.zoneId = TimeZoneMapping.map( zoneId );
+        this.zoneId = TimeZones.map( zoneId );
         this.zoneOffsetSeconds = 0;
     }
 
@@ -125,5 +125,18 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
                     "Key layout does only support DateTimeValue, tried to create key from " + value );
         }
         return value;
+    }
+
+    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
+    private boolean differentValidZoneOffset( ZonedDateTimeSchemaKey other )
+    {
+        return zoneOffsetSeconds != other.zoneOffsetSeconds &&
+                TimeZones.validZoneOffset( zoneOffsetSeconds ) && TimeZones.validZoneOffset( other.zoneOffsetSeconds );
+    }
+
+    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
+    private boolean differentValidZoneId( ZonedDateTimeSchemaKey other )
+    {
+        return zoneId != other.zoneId && TimeZones.validZoneId( zoneId ) && TimeZones.validZoneId( other.zoneId );
     }
 }

@@ -47,23 +47,23 @@ import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-public class TimeZoneMappingTest
+public class TimeZonesTest
 {
     @Test
     public void weSupportAllJavaZoneIds()
     {
         ZoneId.getAvailableZoneIds().forEach( s ->
         {
-            short num = TimeZoneMapping.map( s );
+            short num = TimeZones.map( s );
             assertThat( "Our time zone table does not have a mapping for " + s, num, greaterThanOrEqualTo( (short) 0 ) );
 
-            String nameFromTable = TimeZoneMapping.map( num );
+            String nameFromTable = TimeZones.map( num );
             if ( !s.equals( nameFromTable ) )
             {
                 // The test is running on an older Java version and `s` has been removed since, thus it points to a different zone now.
                 // That zone should point to itself, however.
-                assertThat( "Our time zone table has inconsistent mapping for " + nameFromTable, TimeZoneMapping.map( TimeZoneMapping.map( nameFromTable ) ),
-                        equalTo( nameFromTable ) );
+                assertThat( "Our time zone table has inconsistent mapping for " + nameFromTable,
+                        TimeZones.map( TimeZones.map( nameFromTable ) ), equalTo( nameFromTable ) );
             }
         } );
     }
@@ -73,9 +73,9 @@ public class TimeZoneMappingTest
     {
         try
         {
-            short eastSaskatchewan = TimeZoneMapping.map( "Canada/East-Saskatchewan" );
-            assertThat( "Our time zone table does not remap Canada/East-Saskatchewan to Canada/Saskatchewan", TimeZoneMapping.map( eastSaskatchewan ),
-                    equalTo( "Canada/Saskatchewan" ) );
+            short eastSaskatchewan = TimeZones.map( "Canada/East-Saskatchewan" );
+            assertThat( "Our time zone table does not remap Canada/East-Saskatchewan to Canada/Saskatchewan",
+                    TimeZones.map( eastSaskatchewan ), equalTo( "Canada/Saskatchewan" ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -94,7 +94,7 @@ public class TimeZoneMappingTest
             {
                 String substring = line.substring( line.indexOf( ' ' ) + 1 );
                 String release = substring.substring( 0, substring.indexOf( ' ' ) );
-                if ( TimeZoneMapping.LATEST_SUPPORTED_IANA_VERSION.equals( release ) )
+                if ( TimeZones.LATEST_SUPPORTED_IANA_VERSION.equals( release ) )
                 {
                     return false; // stop reading
                 }
@@ -122,7 +122,7 @@ public class TimeZoneMappingTest
     @Test
     public void tzidsOrderMustNotChange() throws IOException
     {
-        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZoneMapping.class.getResourceAsStream( "/TZIDS" ) ) ) )
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZones.class.getResourceAsStream( "/TZIDS" ) ) ) )
         {
             String text = reader.lines().collect( Collectors.joining( "\n" ) );
             MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
@@ -155,7 +155,7 @@ public class TimeZoneMappingTest
         } );
 
         // TODO assertion for removals
-        Set<String> neo4jSupportedTzs = TimeZoneMapping.supportedTimeZones();
+        Set<String> neo4jSupportedTzs = TimeZones.supportedTimeZones();
         Set<String> removedTzs = new HashSet<>( neo4jSupportedTzs );
         removedTzs.removeAll( ianaSupportedTzs );
         //assertThat( "There were removals from the IANA database. Please upgrade manually.", removedTzs, empty() );
