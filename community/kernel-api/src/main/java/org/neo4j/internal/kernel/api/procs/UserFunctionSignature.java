@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.proc;
+package org.neo4j.internal.kernel.api.procs;
+
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -25,7 +26,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -33,21 +33,21 @@ import static java.util.Collections.unmodifiableList;
  * This describes the signature of a function, made up of its namespace, name, and input/output description.
  * Function uniqueness is currently *only* on the namespace/name level - no function overloading allowed (yet).
  */
-public class UserFunctionSignature
+public final class UserFunctionSignature
 {
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
     private final Neo4jTypes.AnyType type;
     private final String[] allowed;
-    private final Optional<String> deprecated;
-    private final Optional<String> description;
+    private final String deprecated;
+    private final String description;
 
     public UserFunctionSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
             Neo4jTypes.AnyType type,
-            Optional<String> deprecated,
+            String deprecated,
             String[] allowed,
-            Optional<String> description )
+            String description )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -64,7 +64,7 @@ public class UserFunctionSignature
 
     public Optional<String> deprecated()
     {
-        return deprecated;
+        return Optional.ofNullable( deprecated );
     }
 
     public List<FieldSignature> inputSignature()
@@ -79,7 +79,7 @@ public class UserFunctionSignature
 
     public Optional<String> description()
     {
-        return description;
+        return Optional.ofNullable( description );
     }
 
     public String[] allowed()
@@ -123,8 +123,8 @@ public class UserFunctionSignature
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private Neo4jTypes.AnyType outputType;
         private String[] allowed = new String[0];
-        private Optional<String> deprecated = Optional.empty();
-        private Optional<String> description = Optional.empty();
+        private String deprecated;
+        private String description;
 
         public Builder( String[] namespace, String name )
         {
@@ -133,25 +133,25 @@ public class UserFunctionSignature
 
         public Builder description( String description )
         {
-            this.description = Optional.of( description );
+            this.description = description;
             return this;
         }
 
         public Builder deprecatedBy( String deprecated )
         {
-            this.deprecated = Optional.of( deprecated );
+            this.deprecated = deprecated;
             return this;
         }
 
         /** Define an input field */
-        public Builder in( String name, AnyType type )
+        public Builder in( String name, Neo4jTypes.AnyType type )
         {
             inputSignature.add( FieldSignature.inputField( name, type ) );
             return this;
         }
 
         /** Define an output field */
-        public Builder out( AnyType type )
+        public Builder out( Neo4jTypes.AnyType type )
         {
             outputType = type;
             return this;

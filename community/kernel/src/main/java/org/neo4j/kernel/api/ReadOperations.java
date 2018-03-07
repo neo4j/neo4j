@@ -21,7 +21,6 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -34,21 +33,23 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -495,13 +496,13 @@ public interface ReadOperations
     //===========================================
 
     /** Fetch a procedure given its signature. */
-    ProcedureSignature procedureGet( QualifiedName name ) throws ProcedureException;
+    ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException;
 
     /** Fetch a function given its signature, or <code>empty</code> if no such function exists*/
-    Optional<UserFunctionSignature> functionGet( QualifiedName name );
+    UserFunctionHandle functionGet( QualifiedName name );
 
     /** Fetch an aggregation function given its signature, or <code>empty</code> if no such function exists*/
-    Optional<UserFunctionSignature> aggregationFunctionGet( QualifiedName name );
+    UserFunctionHandle aggregationFunctionGet( QualifiedName name );
 
     /** Fetch all registered procedures */
     Set<UserFunctionSignature> functionsGetAll();

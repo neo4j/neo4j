@@ -21,10 +21,12 @@ package cypher.features
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTBoolean, CTFloat, CTInteger, CTMap, CTNode, CTNumber, CTPath, CTRelationship, CTString, CypherType, ListType}
-import org.neo4j.kernel.api.{InwardKernel, ResourceTracker}
-import org.neo4j.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
+import org.neo4j.kernel.api.proc.Context
+import org.neo4j.kernel.api.{InwardKernel, ResourceTracker}
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
 import org.opencypher.tools.tck.api.{CypherValueRecords, Graph, ProcedureSupport}
@@ -92,13 +94,13 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
     kernelProcedure
   }
 
-  private def asKernelSignature(parsedSignature: ProcedureSignature): org.neo4j.kernel.api.proc.ProcedureSignature = {
-    val builder = org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
+  private def asKernelSignature(parsedSignature: ProcedureSignature): procs.ProcedureSignature = {
+    val builder = procs.ProcedureSignature.procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
     builder.mode(Mode.READ)
     parsedSignature.inputs.foreach { case (name, tpe) => builder.in(name, asKernelType(tpe)) }
     parsedSignature.outputs match {
       case Some(fields) => fields.foreach { case (name, tpe) => builder.out(name, asKernelType(tpe)) }
-      case None => builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
+      case None => builder.out(procs.ProcedureSignature.VOID)
     }
     builder.build()
   }

@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.proc;
 import java.lang.reflect.Type;
 import java.util.function.Function;
 
-import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
-import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntList;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntList;
 import static org.neo4j.kernel.impl.proc.ParseUtil.parseList;
 
 

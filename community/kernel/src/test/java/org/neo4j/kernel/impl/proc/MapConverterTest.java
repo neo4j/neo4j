@@ -25,12 +25,14 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntMap;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
 
 public class MapConverterTest
 {

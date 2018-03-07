@@ -38,17 +38,17 @@ import javax.management.openmbean.TabularData;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.Pair.pair;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
 {

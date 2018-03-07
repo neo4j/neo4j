@@ -28,6 +28,8 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -36,14 +38,14 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntList;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
 public class ListConverterTest
 {

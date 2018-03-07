@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -34,9 +34,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 
 public class GetServersProcedureV2Test
 {

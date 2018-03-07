@@ -35,10 +35,11 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -58,7 +59,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 
 public class ReflectiveUserAggregationFunctionTest
 {
@@ -98,7 +99,7 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction func = compile( SingleAggregationFunction.class ).get( 0 );
 
         // When
-        CallableUserAggregationFunction.Aggregator aggregator = func.create( new BasicContext() );
+        UserAggregator aggregator = func.create( new BasicContext() );
 
         aggregator.update( new Object[]{"Harry"} );
         aggregator.update( new Object[]{"Bonnie"} );
@@ -119,7 +120,7 @@ public class ReflectiveUserAggregationFunctionTest
                 function = procedureCompiler.compileAggregationFunction( LoggingFunction.class ).get( 0 );
 
         // When
-        CallableUserAggregationFunction.Aggregator aggregator = function.create( new BasicContext() );
+        UserAggregator aggregator = function.create( new BasicContext() );
         aggregator.update( new Object[]{} );
         aggregator.result();
 
@@ -149,10 +150,10 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction f2 = compiled.get( 1 );
 
         // When
-        CallableUserAggregationFunction.Aggregator f1Aggregator = f1.create( new BasicContext() );
+        UserAggregator f1Aggregator = f1.create( new BasicContext() );
         f1Aggregator.update( new Object[]{"Bonnie"} );
         f1Aggregator.update( new Object[]{"Clyde"} );
-        CallableUserAggregationFunction.Aggregator f2Aggregator = f2.create( new BasicContext() );
+        UserAggregator f2Aggregator = f2.create( new BasicContext() );
         f2Aggregator.update( new Object[]{"Bonnie", 1337L} );
         f2Aggregator.update( new Object[]{"Bonnie", 42L} );
 
@@ -357,7 +358,7 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction method = compile( SingleAggregationFunction.class ).get( 0 );
 
         // Expect
-        CallableUserAggregationFunction.Aggregator created = method.create( new BasicContext() );
+        UserAggregator created = method.create( new BasicContext() );
         created.update( new Object[]{"Bonnie"} );
         assertThat(created.result(), equalTo( Collections.singletonList( "Bonnie" ) ) );
     }

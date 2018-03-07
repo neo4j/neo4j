@@ -21,8 +21,6 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 

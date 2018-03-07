@@ -20,15 +20,17 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.runtime.{Counter, CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.{Counter, CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.{ResourceTracker, proc}
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs
+import org.neo4j.internal.kernel.api.procs.{Neo4jTypes, ProcedureSignature}
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
+import org.neo4j.kernel.api.proc.Context
+import org.neo4j.kernel.api.{ResourceTracker, proc}
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.Values
@@ -235,7 +237,7 @@ class EagerizationAcceptanceTest
     registerProcedure("user.mkRel") { builder =>
       builder.in("x", Neo4jTypes.NTNode)
       builder.in("y", Neo4jTypes.NTNode)
-      builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
+      builder.out(ProcedureSignature.VOID)
       builder.mode(Mode.WRITE)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
@@ -326,7 +328,7 @@ class EagerizationAcceptanceTest
     registerProcedure("user.expand") { builder =>
       builder.in("x", Neo4jTypes.NTNode)
       builder.in("y", Neo4jTypes.NTNode)
-      builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
+      builder.out(procs.ProcedureSignature.VOID)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
                            resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {

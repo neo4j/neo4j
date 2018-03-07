@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import java.io.IOException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +35,8 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -44,8 +45,6 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.configuration.Config;

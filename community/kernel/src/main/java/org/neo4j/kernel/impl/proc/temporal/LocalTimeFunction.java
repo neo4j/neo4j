@@ -26,12 +26,12 @@ import java.util.function.Supplier;
 
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTLocalTime;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalTime;
 
 @Description( "Create a LocalTime instant." )
 class LocalTimeFunction extends TemporalFunction<LocalTimeValue>

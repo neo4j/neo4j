@@ -32,8 +32,7 @@ object ResolvedFunctionInvocation {
   def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
     val position = unresolved.position
     val name = QualifiedName(unresolved)
-    val signature = signatureLookup(name)
-    ResolvedFunctionInvocation(name, signature, unresolved.args)(position)
+    ResolvedFunctionInvocation(name, signatureLookup(name), unresolved.args)(position)
   }
 }
 

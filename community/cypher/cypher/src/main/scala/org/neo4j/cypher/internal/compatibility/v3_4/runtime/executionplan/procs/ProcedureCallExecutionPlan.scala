@@ -85,7 +85,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                           input: Seq[Any], planType: ExecutionMode) = {
     val descriptionGenerator = () => createNormalPlan
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, signature.id, callMode, input,
                                  resultMappings, descriptionGenerator, planType)
   }
 
@@ -103,7 +103,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     val rowCounter = Counter()
     val descriptionGenerator = createProfilePlanGenerator(rowCounter)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, signature.id, callMode, input,
                                  resultMappings, descriptionGenerator, planType) {
       override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
     }

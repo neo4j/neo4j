@@ -35,10 +35,10 @@ import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedu
 import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedureTest;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -52,7 +52,7 @@ import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolId
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.COMPRESSION_SNAPPY;
 import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Client.OUTBOUND;
 import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Server.INBOUND;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 /**

@@ -148,6 +148,14 @@ trait QueryContextAdaptation {
 
   override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue] = ???
 
+  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+
+  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+
+  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+
+  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
@@ -156,10 +164,14 @@ trait QueryContextAdaptation {
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
+  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
+
+  override def aggregateFunction(id: Int,
+                                 allowed: Array[String]): UserDefinedAggregator = ???
+
   override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
 
-  override def aggregateFunction(name: QualifiedName,
-                                 allowed: Array[String]): UserDefinedAggregator = ???
+  override def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 

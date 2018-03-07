@@ -20,19 +20,18 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ValueConversion}
 import org.neo4j.cypher.internal.v3_4.logical.plans.UserFunctionSignature
 import org.neo4j.values.AnyValue
 
-case class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+abstract class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends AggregationExpression {
   private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
   override def createAggregationFunction: AggregationFunction = new AggregationFunction {
-    private var inner: UserDefinedAggregator = null
+    private var inner: UserDefinedAggregator = _
 
     override def result(state: QueryState): AnyValue = {
       valueConverter(aggregator(state).result)
@@ -47,14 +46,31 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
 
     private def aggregator(state: QueryState) = {
       if (inner == null) {
-        inner = state.query.aggregateFunction(signature.name, signature.allowed)
+        inner = call(state)
       }
       inner
     }
   }
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(
-    AggregationFunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
-
   override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
+
+  protected def call(state: QueryState): UserDefinedAggregator
+}
+
+case class AggregationFunctionInvocationById(signature: UserFunctionSignature,  arguments: IndexedSeq[Expression])
+  extends AggregationFunctionInvocation(signature, arguments)
+{
+  protected def call(state: QueryState) = {state.query.aggregateFunction(signature.id.get, signature.allowed)}
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(
+    AggregationFunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
+}
+
+case class AggregationFunctionInvocationByName(signature: UserFunctionSignature,  arguments: IndexedSeq[Expression])
+  extends AggregationFunctionInvocation(signature, arguments)
+{
+  protected def call(state: QueryState) = {state.query.aggregateFunction(signature.name, signature.allowed)}
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(
+    AggregationFunctionInvocationByName(signature, arguments.map(a => a.rewrite(f))))
 }

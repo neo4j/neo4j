@@ -26,13 +26,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -97,7 +96,7 @@ public class ResourceInjectionTest
     {
         // Given
         CallableProcedure proc =
-                compiler.compileProcedure( ProcedureWithInjectedAPI.class, Optional.empty(), true ).get( 0 );
+                compiler.compileProcedure( ProcedureWithInjectedAPI.class, null, true ).get( 0 );
 
         // Then
         List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
@@ -117,7 +116,7 @@ public class ResourceInjectionTest
                 "which is not a known injectable component." );
 
         // Then
-        compiler.compileProcedure( ProcedureWithUnknownAPI.class, Optional.empty(), true );
+        compiler.compileProcedure( ProcedureWithUnknownAPI.class, null, true );
     }
 
     @Test
@@ -125,7 +124,7 @@ public class ResourceInjectionTest
     {
         // Given
         CallableProcedure proc =
-                compiler.compileProcedure( ProcedureWithUnsafeAPI.class, Optional.empty(), true ).get( 0 );
+                compiler.compileProcedure( ProcedureWithUnsafeAPI.class, null, true ).get( 0 );
 
         // Then
         List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
@@ -142,7 +141,7 @@ public class ResourceInjectionTest
     {
         //When
         List<CallableProcedure> procList =
-                compiler.compileProcedure( ProcedureWithUnsafeAPI.class, Optional.empty(), false );
+                compiler.compileProcedure( ProcedureWithUnsafeAPI.class, null, false );
         verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
 
         assertThat( procList.size(), equalTo( 1 ) );
@@ -257,7 +256,7 @@ public class ResourceInjectionTest
     {
         //When
         compiler.compileFunction( FunctionsAndProcedureUnsafe.class );
-        compiler.compileProcedure( FunctionsAndProcedureUnsafe.class, Optional.empty(), false );
+        compiler.compileProcedure( FunctionsAndProcedureUnsafe.class, null, false );
         compiler.compileAggregationFunction( FunctionsAndProcedureUnsafe.class );
         // Then
 

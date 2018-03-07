@@ -24,16 +24,17 @@ import java.util
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.{FieldSignature, Neo4jTypes, ProcedureSignature, QualifiedName}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{ResourceTracker, Statement}
-import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
+import org.neo4j.kernel.api.{ResourceTracker, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Mode
@@ -489,8 +490,8 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(
-      procedureName, paramSignature, resultSignature, Mode.READ, java.util.Optional.empty(), Array.empty,
-      java.util.Optional.empty(), java.util.Optional.empty())
+      procedureName, paramSignature, resultSignature, Mode.READ, null, Array.empty,
+      null, null)
 
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
 

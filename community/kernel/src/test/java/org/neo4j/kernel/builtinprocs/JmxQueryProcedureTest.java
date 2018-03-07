@@ -34,10 +34,10 @@ import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;

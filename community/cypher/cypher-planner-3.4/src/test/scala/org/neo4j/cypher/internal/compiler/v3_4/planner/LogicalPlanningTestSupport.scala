@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.{Answer, OngoingStubbing}
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -40,8 +39,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, PropertyKeyId, RelTypeId}

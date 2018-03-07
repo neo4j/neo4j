@@ -21,14 +21,15 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature
+import org.neo4j.internal.kernel.api.procs.{Neo4jTypes, ProcedureSignature, UserAggregator}
 import org.neo4j.kernel.api.ResourceTracker
-import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.{Aggregator, BasicUserAggregationFunction}
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.BasicUserAggregationFunction
 import org.neo4j.kernel.api.proc.CallableUserFunction.BasicUserFunction
-import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
-import org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature
-import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature}
+import org.neo4j.kernel.api.proc.Context
 import org.neo4j.values.AnyValue
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
@@ -78,7 +79,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
       new BasicUserAggregationFunction(builder.build) {
 
-        override def create(ctx: Context): Aggregator = new Aggregator {
+        override def create(ctx: Context): UserAggregator = new UserAggregator {
 
           override def result() = value
 

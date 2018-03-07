@@ -28,6 +28,7 @@
     <module>collections</module>
     <module>primitive-collections</module>
     <module>graphdb-api</module>
+    <module>procedure-api</module>
     <module>unsafe</module>
     <module>io</module>
     <module>kernel-api</module>

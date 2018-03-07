@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+
 public class ComponentInjectionException extends ProcedureException
 {
     public ComponentInjectionException( Status statusCode, String message,

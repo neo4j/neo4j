@@ -31,9 +31,10 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -45,7 +46,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 public class SchemaProcedureIT extends KernelIntegrationTest
 {
@@ -59,8 +60,9 @@ public class SchemaProcedureIT extends KernelIntegrationTest
         // Given the database is empty
 
         // When
+        Procedures procs = procs();
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+               procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{new ArrayList<>(), new ArrayList<>()} ) ) );
@@ -88,7 +90,8 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema" ) ).id(),
+                        new Object[0] );
 
         // Then
         while ( stream.hasNext() )
@@ -123,7 +126,8 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet(  procedureName( "db", "schema" ) ).id(),
+                        new Object[0] );
 
         // Then
         while ( stream.hasNext() )

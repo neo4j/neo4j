@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
@@ -674,6 +675,11 @@ public class Operations implements Write, ExplicitIndexWrite
     public CursorFactory cursors()
     {
         return cursors;
+    }
+
+    public Procedures procedures()
+    {
+        return allStoreHolder;
     }
 
     public void release()

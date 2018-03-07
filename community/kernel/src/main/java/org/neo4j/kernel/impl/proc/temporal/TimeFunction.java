@@ -26,12 +26,12 @@ import java.util.function.Supplier;
 
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTTime;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 
 @Description( "Create a Time instant." )
 class TimeFunction extends TemporalFunction<TimeValue>

@@ -137,7 +137,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
     private final StoreReadLayer storeLayer;
-    private final Clock clock;
+    private final ClockContext clocks;
     private final AccessCapability accessCapability;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
@@ -201,19 +201,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageEngine = storageEngine;
         this.explicitIndexTxStateSupplier = explicitIndexTxStateSupplier;
         this.pool = pool;
-        this.clock = clock;
+        this.clocks = new ClockContext( clock );
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations, new ClockContext( clock ),
+                procedures, accessCapability, lockTracer, statementOperations, this.clocks,
                 versionContextSupplier );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
-                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore, procedures );
         this.operations =
                 new Operations(
                         allStoreHolder,
@@ -239,7 +239,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.failure = false;
         this.success = false;
         this.writeState = TransactionWriteState.NONE;
-        this.startTimeMillis = clock.millis();
+        this.startTimeMillis = clocks.systemClock().millis();
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
@@ -629,7 +629,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
                     TransactionHeaderInformation headerInformation = headerInformationFactory.create();
-                    long timeCommitted = clock.millis();
+                    long timeCommitted = clocks.systemClock().millis();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
@@ -800,6 +800,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public CursorFactory cursors()
     {
         return operations.cursors();
+    }
+
+    @Override
+    public org.neo4j.internal.kernel.api.Procedures procedures()
+    {
+        return operations.procedures();
     }
 
     public LockTracer lockTracer()
@@ -1094,6 +1100,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             waitingTimeNanos = 0;
             transactionThreadId = -1;
         }
+    }
+
+    @Override
+    public ClockContext clocks()
+    {
+        return clocks;
     }
 
     @Override

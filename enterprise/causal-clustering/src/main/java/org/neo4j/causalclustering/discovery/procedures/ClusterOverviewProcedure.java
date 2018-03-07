@@ -37,12 +37,12 @@ import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -50,7 +50,7 @@ import static java.util.Comparator.comparing;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.helpers.collection.Iterators.map;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 /**
  * Overview procedure with added support for server groups.
