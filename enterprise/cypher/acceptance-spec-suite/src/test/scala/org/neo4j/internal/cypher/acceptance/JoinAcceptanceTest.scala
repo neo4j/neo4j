@@ -89,6 +89,44 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.BackwardsCompatibility))
   }
 
+  test("should handle node left outer hash join with different types for the node variable") {
+    val a = createLabeledNode(Map[String, Any]("name" -> "a"), "A")
+    createLabeledNode(Map[String, Any]("name" -> "a2"), "A")
+    for(i <- 0 until 50) { // This number is sensitive in that it has to exceed the cardinality estimation of the UNWIND
+      val b = createLabeledNode(Map[String, Any]("name" -> s"${i}b"), "B")
+      if(i != 0) relate(a, b)
+    }
+
+    val query = """MATCH (a:A)
+                  |UNWIND [a] as refA
+                  |OPTIONAL MATCH (refA)-->(b:B)
+                  |USING JOIN ON refA
+                  |RETURN a.name, b.name""".stripMargin
+
+    val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
+    executeWith(expectSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeLeftOuterHashJoin"), expectPlansToFail))
+  }
+
+  test("should handle node right outer hash join with different types for the node variable") {
+    val b = createLabeledNode(Map[String, Any]("name" -> "b"), "B")
+    createLabeledNode(Map[String, Any]("name" -> "b2"), "B")
+    for(i <- 0 until 10) {
+      val a = createLabeledNode(Map[String, Any]("name" -> s"${i}a"), "A")
+      if(i == 0) relate(a, b)
+    }
+
+    val query = """MATCH (a:A)
+                  |UNWIND [a] as refA
+                  |OPTIONAL MATCH (refA)-->(b:B)
+                  |USING JOIN ON refA
+                  |RETURN a.name, b.name""".stripMargin
+
+    val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
+    val result = executeWith(expectSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+  }
+
   test("optional match join should not crash") {
     val query =
       """MATCH (a:A)-->(b:B)-->(c:C)
