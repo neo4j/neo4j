@@ -178,7 +178,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    @Ignore("Impossible situation?")
+    @Ignore( "Impossible situation?" )
     public void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
     {
         // given
