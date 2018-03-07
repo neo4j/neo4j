@@ -508,8 +508,9 @@ public class ImportLogic implements Closeable
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
-        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", storeUpdateMonitor, bytes( peakMemoryUsage ) ) );
-        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
+        String additionalInformation = getState( DataStatistics.class ).toString();
+        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
+        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
 
         if ( nodeRelationshipCache != null )
         {
