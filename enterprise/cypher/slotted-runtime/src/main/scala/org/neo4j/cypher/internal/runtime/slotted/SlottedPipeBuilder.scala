@@ -99,7 +99,18 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case (key, slot) =>
         val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
         val setter = SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
-        slots.updateAccessorFunctions(key, getter, setter)
+        val primitiveNodeSetter =
+          if (slot.typ.isAssignableFrom(CTNode))
+            Some(SlottedPipeBuilderUtils.makeSetPrimitiveNodeInSlotFunctionFor(slot))
+          else
+            None
+        val primitiveRelationshipSetter =
+          if (slot.typ.isAssignableFrom(CTRelationship))
+            Some(SlottedPipeBuilderUtils.makeSetPrimitiveRelationshipInSlotFunctionFor(slot))
+          else
+            None
+
+       slots.updateAccessorFunctions(key, getter, setter, primitiveNodeSetter, primitiveRelationshipSetter)
     }
   }
 

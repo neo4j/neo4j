@@ -46,4 +46,11 @@ public class AssertionRunner
     {
         void apply();
     }
+
+    public static boolean isAssertionsEnabled()
+    {
+        boolean assertionsEnabled = false;
+        assert assertionsEnabled = true;
+        return assertionsEnabled;
+    }
 }

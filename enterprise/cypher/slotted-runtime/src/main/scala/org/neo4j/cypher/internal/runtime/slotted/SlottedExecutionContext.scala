@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
+import org.neo4j.cypher.internal.util.v3_4.AssertionUtils._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
 import org.neo4j.values.AnyValue
@@ -206,21 +207,37 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     refs(offset)
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
-    case primitiveOther: SlottedExecutionContext =>
-      primitiveOther.slots.foreachSlot {
-        case (key, otherSlot) =>
-          val thisSlot = slots.get(key).getOrElse(
+    case slottedOther: SlottedExecutionContext =>
+      slottedOther.slots.foreachSlot {
+        case (key, otherSlot @ LongSlot(offset, _, CTNode)) =>
+          val thisSlotSetter = slots.maybePrimitiveNodeSetter(key).getOrElse(
+            throw new InternalException(s"Tried to merge primitive node slot $otherSlot from $other but it is missing from $this." +
+              "Looks like something needs to be fixed in slot allocation.")
+          )
+          thisSlotSetter.apply(this, other.getLongAt(offset))
+
+        case (key, otherSlot @ LongSlot(offset, _, CTRelationship)) =>
+          val thisSlotSetter = slots.maybePrimitiveRelationshipSetter(key).getOrElse(
+            throw new InternalException(s"Tried to merge primitive relationship slot $otherSlot from $other but it is missing from $this." +
+              "Looks like something needs to be fixed in slot allocation.")
+          )
+          thisSlotSetter.apply(this, other.getLongAt(offset))
+
+        case (key, otherSlot @ RefSlot(offset, _, _)) if slottedOther.isRefInitialized(offset) =>
+          val thisSlotSetter = slots.maybeSetter(key).getOrElse(
             throw new InternalException(s"Tried to merge slot $otherSlot from $other but it is missing from $this." +
               "Looks like something needs to be fixed in slot allocation.")
           )
-          assert(thisSlot.isTypeCompatibleWith(otherSlot))
-          otherSlot match {
-            case LongSlot(offset, _, _) =>
-              setLongAt(thisSlot.offset, other.getLongAt(offset))
-            case RefSlot(offset, _, _) if primitiveOther.isRefInitialized(offset) =>
-              setRefAt(thisSlot.offset, primitiveOther.getRefAtWithoutCheckingInitialized(offset))
-            case _ =>
+
+          ifAssertionsEnabled {
+            val thisSlot = slots.get(key).get
+            // This should be guaranteed by slot allocation or else we could get incorrect results
+            if (!thisSlot.nullable && otherSlot.nullable)
+              throw new InternalException(s"Tried to merge slot $otherSlot into $thisSlot but its nullability is incompatible")
           }
+
+          val otherValue = slottedOther.getRefAtWithoutCheckingInitialized(offset)
+          thisSlotSetter.apply(this, otherValue)
       }
       this
 
