@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
 
 import static java.lang.String.format;
+import static org.neo4j.util.FeatureToggles.flag;
 
 public class DefaultCursors implements CursorFactory
 {
@@ -42,7 +43,7 @@ public class DefaultCursors implements CursorFactory
     private DefaultNodeExplicitIndexCursor nodeExplicitIndexCursor;
     private DefaultRelationshipExplicitIndexCursor relationshipExplicitIndexCursor;
 
-    private static final boolean DEBUG_CLOSING = false;
+    private static final boolean DEBUG_CLOSING = flag( DefaultCursors.class, "trackCursors", false );
     private List<CloseableStacktrace> closeables = new ArrayList<>();
 
     @Override
