@@ -82,9 +82,6 @@ public interface JobScheduler extends Lifecycle
      */
     class Groups
     {
-        /** Session workers, these perform the work of actually executing client queries.  */
-        public static final Group sessionWorker = new Group( "Session" );
-
         /** Background index population */
         public static final Group indexPopulation = new Group( "IndexPopulation" );
 
@@ -206,6 +203,11 @@ public interface JobScheduler extends Lifecycle
          * IO helper threads for page cache and IO related stuff.
          */
         public static final Group pageCacheIOHelper = new Group( "PageCacheIOHelper" );
+
+        /**
+         * Bolt scheduler worker
+         */
+        public static Group boltWorker = new Group( "BoltWorker" );
 
         private Groups()
         {

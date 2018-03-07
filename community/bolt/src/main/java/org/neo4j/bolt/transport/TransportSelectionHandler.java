@@ -43,6 +43,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
     private static final int MAX_WEBSOCKET_FRAME_SIZE = 65536;
 
+    private final String connector;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private final boolean isEncrypted;
@@ -50,10 +51,11 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final BoltMessageLogging boltLogging;
     private final BoltProtocolHandlerFactory handlerFactory;
 
-    TransportSelectionHandler( SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
+    TransportSelectionHandler( String connector, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
                                BoltProtocolHandlerFactory handlerFactory,
                                BoltMessageLogging boltLogging )
     {
+        this.connector = connector;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.isEncrypted = isEncrypted;
@@ -117,7 +119,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
-        p.addLast( new TransportSelectionHandler( null, encryptionRequired, true, logging,
+        p.addLast( new TransportSelectionHandler( connector, null, encryptionRequired, true, logging,
                 handlerFactory, boltLogging ) );
         p.remove( this );
     }
@@ -146,6 +148,6 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         BoltHandshakeProtocolHandler protocolHandler = new BoltHandshakeProtocolHandler( handlerFactory,
                 encryptionRequired, isEncrypted );
-        return new SocketTransportHandler( protocolHandler, logging, boltLogging );
+        return new SocketTransportHandler( connector, protocolHandler, logging, boltLogging );
     }
 }

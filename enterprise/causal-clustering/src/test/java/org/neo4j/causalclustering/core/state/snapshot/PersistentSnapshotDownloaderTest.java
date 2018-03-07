@@ -21,16 +21,14 @@ package org.neo4j.causalclustering.core.state.snapshot;
 
 import org.junit.Test;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.function.Predicates;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -40,13 +38,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotDownloader.OPERATION_NAME;
 
 public class PersistentSnapshotDownloaderTest
 {
-    private final MemberId someMember = new MemberId( UUID.randomUUID() );
+    private final AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "localhost", 1234 );
+    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( fromAddress );
 
     @Test
     public void shouldPauseAndResumeApplicationProcessIfDownloadIsSuccessful() throws Exception
@@ -55,11 +53,8 @@ public class PersistentSnapshotDownloaderTest
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
         final Log log = mock( Log.class );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( someMember );
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
-                        new NoTimeout() );
+                new PersistentSnapshotDownloader( catchupAddressProvider, applicationProcess, coreStateDownloader, log, new NoTimeout() );
 
         // when
         persistentSnapshotDownloader.run();
@@ -76,16 +71,13 @@ public class PersistentSnapshotDownloaderTest
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
-        doThrow( StoreCopyFailedException.class ).when( coreStateDownloader ).downloadSnapshot( someMember );
+        doThrow( StoreCopyFailedException.class ).when( coreStateDownloader ).downloadSnapshot( catchupAddressProvider );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( someMember );
 
         final Log log = mock( Log.class );
         NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
-                        timeout );
+                new PersistentSnapshotDownloader( catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout );
 
         // when
         Thread thread = new Thread( persistentSnapshotDownloader );
@@ -105,16 +97,14 @@ public class PersistentSnapshotDownloaderTest
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        doThrow( StoreCopyFailedException.class ).when( coreStateDownloader ).downloadSnapshot( any() );
+
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        doThrow( NoLeaderFoundException.class ).when( leaderLocator ).getLeader();
 
         final Log log = mock( Log.class );
-        NoTimeout timeout = new
-                NoTimeout();
+        NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
-                        timeout );
+                new PersistentSnapshotDownloader( null, applicationProcess, coreStateDownloader, log, timeout );
 
         // when
         Thread thread = new Thread( persistentSnapshotDownloader );
@@ -136,13 +126,10 @@ public class PersistentSnapshotDownloaderTest
         CoreStateDownloader coreStateDownloader = new EventuallySuccessfulDownloader( 3 );
 
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( someMember );
         final Log log = mock( Log.class );
         NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
-                        timeout );
+                new PersistentSnapshotDownloader( catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout );
 
         // when
         persistentSnapshotDownloader.run();
@@ -160,20 +147,17 @@ public class PersistentSnapshotDownloaderTest
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( someMember );
 
         final Log log = mock( Log.class );
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
-                        new NoTimeout() );
+                new PersistentSnapshotDownloader( catchupAddressProvider, applicationProcess, coreStateDownloader, log, new NoTimeout() );
 
         // when
         persistentSnapshotDownloader.run();
         persistentSnapshotDownloader.run();
 
         // then
-        verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( someMember );
+        verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( catchupAddressProvider );
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
     }
@@ -184,14 +168,12 @@ public class PersistentSnapshotDownloaderTest
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        doThrow( NoLeaderFoundException.class ).when( leaderLocator ).getLeader();
+        doThrow( StoreCopyFailedException.class ).when( coreStateDownloader ).downloadSnapshot( any() );
 
         final Log log = mock( Log.class );
         NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
-                        timeout );
+                new PersistentSnapshotDownloader( catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout );
 
         Thread thread = new Thread( persistentSnapshotDownloader );
 
@@ -218,14 +200,12 @@ public class PersistentSnapshotDownloaderTest
 
         private EventuallySuccessfulDownloader( int after )
         {
-            super( null, null, null,
-                    null, NullLogProvider.getInstance(), null, null,
-                    null, null, null );
+            super( null, null, null, null, NullLogProvider.getInstance(), null, null, null, null );
             this.after = after;
         }
 
         @Override
-        void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
+        void downloadSnapshot( CatchupAddressProvider addressProvider ) throws StoreCopyFailedException
         {
             if ( after-- > 0 )
             {
@@ -233,5 +213,4 @@ public class PersistentSnapshotDownloaderTest
             }
         }
     }
-
 }

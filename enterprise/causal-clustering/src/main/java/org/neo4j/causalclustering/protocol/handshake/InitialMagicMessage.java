@@ -30,14 +30,16 @@ public class InitialMagicMessage implements ServerMessage, ClientMessage
     private final String magic;
     // TODO: clusterId (String?)
 
-    InitialMagicMessage()
-    {
-        this.magic = CORRECT_MAGIC_VALUE;
-    }
+    private static final InitialMagicMessage instance = new InitialMagicMessage( CORRECT_MAGIC_VALUE );
 
     InitialMagicMessage( String magic )
     {
         this.magic = magic;
+    }
+
+    public static InitialMagicMessage instance()
+    {
+        return instance;
     }
 
     @Override

@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -46,6 +47,9 @@ import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupReadReplicaIT
 {
+    @Rule
+    public SuppressOutput suppress = SuppressOutput.suppressAll();
+
     @Rule
     public ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )

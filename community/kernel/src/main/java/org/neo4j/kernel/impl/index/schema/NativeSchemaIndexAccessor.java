@@ -74,7 +74,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public NativeSchemaIndexUpdater<KEY, VALUE> newUpdater( IndexUpdateMode mode )
     {
         assertOpen();
         try

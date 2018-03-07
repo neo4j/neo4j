@@ -21,6 +21,7 @@ package org.neo4j.values.virtual;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -196,6 +197,11 @@ public final class MapValue extends VirtualValue
     public AnyValue get( String key )
     {
       return map.getOrDefault( key, NO_VALUE );
+    }
+
+    public Map<String,AnyValue> getMapCopy()
+    {
+        return new HashMap<>( map );
     }
 
     @Override

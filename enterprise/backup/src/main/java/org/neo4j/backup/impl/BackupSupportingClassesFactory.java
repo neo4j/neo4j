@@ -61,7 +61,7 @@ public class BackupSupportingClassesFactory
         this.monitors = backupModule.getMonitors();
         this.fileSystemAbstraction = backupModule.getFileSystemAbstraction();
         this.transactionLogCatchUpFactory = backupModule.getTransactionLogCatchUpFactory();
-        this.logDestination = backupModule.getOutsideWorld().errorStream();
+        this.logDestination = backupModule.getOutsideWorld().outStream();
     }
 
     /**

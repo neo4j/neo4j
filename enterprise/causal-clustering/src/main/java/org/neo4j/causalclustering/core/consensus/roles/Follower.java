@@ -149,7 +149,7 @@ class Follower implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.PruneRequest pruneRequest ) throws IOException
+        public Outcome handle( RaftMessages.PruneRequest pruneRequest )
         {
             Pruning.handlePruneRequest( outcome, pruneRequest );
             return outcome;
@@ -174,7 +174,7 @@ class Follower implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws IOException
+        public Outcome handle( RaftMessages.Timeout.Heartbeat heartbeat )
         {
             return outcome;
         }
@@ -242,7 +242,7 @@ class Follower implements RaftMessageHandler
     private static class PreVoteUnsupportedRefusesToLead implements ElectionTimeoutHandler
     {
         @Override
-        public Outcome handle( RaftMessages.Timeout.Election election, Outcome outcome, ReadableRaftState ctx, Log log ) throws IOException
+        public Outcome handle( RaftMessages.Timeout.Election election, Outcome outcome, ReadableRaftState ctx, Log log )
         {
             log.info( "Election timeout triggered but refusing to be leader" );
             return outcome;
@@ -254,7 +254,7 @@ class Follower implements RaftMessageHandler
     private static class PreVoteSupportedRefusesToLeadHandler implements ElectionTimeoutHandler
     {
         @Override
-        public Outcome handle( RaftMessages.Timeout.Election election, Outcome outcome, ReadableRaftState ctx, Log log ) throws IOException
+        public Outcome handle( RaftMessages.Timeout.Election election, Outcome outcome, ReadableRaftState ctx, Log log )
         {
             log.info( "Election timeout triggered but refusing to be leader" );
             Set<MemberId> memberIds = ctx.votingMembers();
@@ -295,7 +295,7 @@ class Follower implements RaftMessageHandler
     private static class PreVoteRequestNoOpHandler implements PreVoteRequestHandler
     {
         @Override
-        public Outcome handle( RaftMessages.PreVote.Request request, Outcome outcome, ReadableRaftState ctx, Log log ) throws IOException
+        public Outcome handle( RaftMessages.PreVote.Request request, Outcome outcome, ReadableRaftState ctx, Log log )
         {
             return outcome;
         }
@@ -343,7 +343,7 @@ class Follower implements RaftMessageHandler
     private static class PreVoteResponseNoOpHandler implements PreVoteResponseHandler
     {
         @Override
-        public Outcome handle( RaftMessages.PreVote.Response response, Outcome outcome, ReadableRaftState ctx, Log log ) throws IOException
+        public Outcome handle( RaftMessages.PreVote.Response response, Outcome outcome, ReadableRaftState ctx, Log log )
         {
             return outcome;
         }

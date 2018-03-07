@@ -331,7 +331,7 @@ public class BackupProtocolService
         return anonymous( transactionIdStore.getLastCommittedTransactionId() );
     }
 
-    boolean directoryContainsDb( Path targetDirectory )
+    private boolean directoryContainsDb( Path targetDirectory )
     {
         return Files.isRegularFile( targetDirectory.resolve( MetaDataStore.DEFAULT_NAME ) );
     }

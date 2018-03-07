@@ -105,7 +105,10 @@ public interface Status
                 "The request cannot be performed outside of a transaction, and there is no transaction present to " +
                 "use. Wrap your request in a transaction and retry." ),
         InvalidUsage( ClientError,  // TODO: see above
-                "The client made a request but did not consume outgoing buffers in a timely fashion." );
+                "The client made a request but did not consume outgoing buffers in a timely fashion." ),
+        NoThreadsAvailable( TransientError,  // TODO: see above
+                "There are no available threads to serve this request at the moment. You can retry at a later time " +
+                        "or consider increasing max pool / queue size for bolt connector(s)." );
         private final Code code;
 
         @Override

@@ -21,22 +21,40 @@ package org.neo4j.causalclustering.core.consensus;
 
 import io.netty.channel.Channel;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.RaftMessageEncoder;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
+import org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftProtocolClientInstaller extends ProtocolInstaller<ProtocolInstaller.Orientation.Client>
+public class RaftProtocolClientInstaller implements ProtocolInstaller<Orientation.Client>
 {
+    private static final Protocol.ApplicationProtocols APPLICATION_PROTOCOL = Protocol.ApplicationProtocols.RAFT_1;
+
+    public static class Factory extends ProtocolInstaller.Factory<Orientation.Client, RaftProtocolClientInstaller>
+    {
+        public Factory( NettyPipelineBuilderFactory clientPipelineBuilderFactory, LogProvider logProvider )
+        {
+            super( APPLICATION_PROTOCOL,
+                    modifiers -> new RaftProtocolClientInstaller( clientPipelineBuilderFactory, modifiers, logProvider ) );
+        }
+    }
+
+    private final List<ModifierProtocolInstaller<Orientation.Client>> modifiers;
     private final Log log;
     private final NettyPipelineBuilderFactory clientPipelineBuilderFactory;
 
-    public RaftProtocolClientInstaller( LogProvider logProvider, NettyPipelineBuilderFactory clientPipelineBuilderFactory )
+    public RaftProtocolClientInstaller( NettyPipelineBuilderFactory clientPipelineBuilderFactory, List<ModifierProtocolInstaller<Orientation.Client>> modifiers,
+            LogProvider logProvider )
     {
-        super( Protocol.Protocols.RAFT_1 );
+        this.modifiers = modifiers;
         this.log = logProvider.getLog( getClass() );
         this.clientPipelineBuilderFactory = clientPipelineBuilderFactory;
     }
@@ -44,9 +62,22 @@ public class RaftProtocolClientInstaller extends ProtocolInstaller<ProtocolInsta
     @Override
     public void install( Channel channel ) throws Exception
     {
-        clientPipelineBuilderFactory.create( channel, log )
+        clientPipelineBuilderFactory.client( channel, log )
+                .modify( modifiers )
                 .addFraming()
                 .add( "raft_encoder", new RaftMessageEncoder( new CoreReplicatedContentMarshal() ) )
                 .install();
+    }
+
+    @Override
+    public Protocol.ApplicationProtocol applicationProtocol()
+    {
+        return APPLICATION_PROTOCOL;
+    }
+
+    @Override
+    public List<Protocol.ModifierProtocol> modifiers()
+    {
+        return modifiers.stream().map( ModifierProtocolInstaller::protocol ).collect( Collectors.toList() );
     }
 }

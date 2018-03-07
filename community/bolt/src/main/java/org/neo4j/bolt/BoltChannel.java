@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ServerChannel;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 
@@ -31,18 +32,20 @@ import org.neo4j.bolt.logging.BoltMessageLogger;
  */
 public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
 {
+    private final String connector;
     private final ChannelHandlerContext channelHandlerContext;
     private final BoltMessageLogger messageLogger;
 
-    public static BoltChannel open( ChannelHandlerContext channelHandlerContext,
+    public static BoltChannel open( String connector, ChannelHandlerContext channelHandlerContext,
                                     BoltMessageLogger messageLogger )
     {
-        return new BoltChannel( channelHandlerContext, messageLogger );
+        return new BoltChannel( connector, channelHandlerContext, messageLogger );
     }
 
-    private BoltChannel( ChannelHandlerContext channelHandlerContext,
+    private BoltChannel( String connector, ChannelHandlerContext channelHandlerContext,
                          BoltMessageLogger messageLogger )
     {
+        this.connector = connector;
         this.channelHandlerContext = channelHandlerContext;
         this.messageLogger = messageLogger;
         messageLogger.serverEvent( "OPEN" );
@@ -75,6 +78,17 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     }
 
     @Override
+    public String id()
+    {
+        return rawChannel().id().asLongText();
+    }
+
+    @Override
+    public String connector()
+    {
+        return connector;
+    }
+    @Override
     public SocketAddress clientAddress()
     {
         return channelHandlerContext.channel().remoteAddress();
@@ -85,4 +99,5 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     {
         return channelHandlerContext.channel().localAddress();
     }
+
 }

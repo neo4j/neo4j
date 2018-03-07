@@ -45,7 +45,7 @@ public class FileChunk
         return new FileChunk( last ? bytes.length : USE_MAX_SIZE_AND_EXPECT_MORE_CHUNKS, bytes );
     }
 
-    private FileChunk( int encodedLength, byte[] bytes )
+    FileChunk( int encodedLength, byte[] bytes )
     {
         this.encodedLength = encodedLength;
         this.bytes = bytes;

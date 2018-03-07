@@ -28,8 +28,6 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 import java.util.ArrayList;
@@ -49,7 +47,7 @@ import static java.util.Arrays.asList;
  * <p>
  * Do not modify the names of handlers you install.
  */
-public class NettyPipelineBuilder
+public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientation, BUILDER extends NettyPipelineBuilder<O, BUILDER>>
 {
     static final String MESSAGE_GATE_NAME = "message_gate";
 
@@ -59,22 +57,37 @@ public class NettyPipelineBuilder
 
     private Predicate<Object> gatePredicate;
 
-    private NettyPipelineBuilder( ChannelPipeline pipeline, Log log )
+    @SuppressWarnings( "unchecked" )
+    private BUILDER self = (BUILDER) this;
+
+    NettyPipelineBuilder( ChannelPipeline pipeline, Log log )
     {
         this.pipeline = pipeline;
         this.log = log;
     }
 
     /**
-     * Entry point for the builder.
+     * Entry point for the client builder.
      *
      * @param pipeline The pipeline to build for.
      * @param log The log used for last-resort errors occurring in the pipeline.
-     * @return The builder.
+     * @return The client builder.
      */
-    public static NettyPipelineBuilder with( ChannelPipeline pipeline, Log log )
+    public static ClientNettyPipelineBuilder client( ChannelPipeline pipeline, Log log )
     {
-        return new NettyPipelineBuilder( pipeline, log );
+        return new ClientNettyPipelineBuilder( pipeline, log );
+    }
+
+    /**
+     * Entry point for the server builder.
+     *
+     * @param pipeline The pipeline to build for.
+     * @param log The log used for last-resort errors occurring in the pipeline.
+     * @return The server builder.
+     */
+    public static ServerNettyPipelineBuilder server( ChannelPipeline pipeline, Log log )
+    {
+        return new ServerNettyPipelineBuilder( pipeline, log );
     }
 
     /**
@@ -82,11 +95,18 @@ public class NettyPipelineBuilder
      * complete POJOs as an example using {@link MessageToByteEncoder} and
      * {@link ByteToMessageDecoder}.
      */
-    public NettyPipelineBuilder addFraming()
+    public abstract BUILDER addFraming();
+
+    public BUILDER modify( ModifierProtocolInstaller<O> modifier )
     {
-        add( "framing_decoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
-        add( "framing_encoder", new LengthFieldPrepender( 4 ) );
-        return this;
+        modifier.apply( this );
+        return self;
+    }
+
+    public BUILDER modify( List<ModifierProtocolInstaller<O>> modifiers )
+    {
+        modifiers.forEach( this::modify );
+        return self;
     }
 
     /**
@@ -99,28 +119,28 @@ public class NettyPipelineBuilder
      * @param newHandlers The new handlers.
      * @return The builder.
      */
-    public NettyPipelineBuilder add( String name, List<ChannelHandler> newHandlers )
+    public BUILDER add( String name, List<ChannelHandler> newHandlers )
     {
         newHandlers.stream().map( handler -> new HandlerInfo( name, handler ) ).forEachOrdered( handlerInfos::add );
-        return this;
+        return self;
     }
 
     /**
      * @see #add(String, List)
      */
-    public NettyPipelineBuilder add( String name, ChannelHandler... newHandlers )
+    public BUILDER add( String name, ChannelHandler... newHandlers )
     {
         return add( name, asList( newHandlers ) );
     }
 
-    public NettyPipelineBuilder addGate( Predicate<Object> gatePredicate )
+    public BUILDER addGate( Predicate<Object> gatePredicate )
     {
         if ( this.gatePredicate != null )
         {
             throw new IllegalStateException( "Cannot have more than one gate." );
         }
         this.gatePredicate = gatePredicate;
-        return this;
+        return self;
     }
 
     /**

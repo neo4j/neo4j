@@ -56,19 +56,14 @@ public class ClientMessageEncoder extends MessageToByteEncoder<ServerMessage>
         public void handle( ApplicationProtocolRequest applicationProtocolRequest )
         {
             out.writeInt( 1 );
-            StringMarshal.marshal( out, applicationProtocolRequest.protocolName() );
-            out.writeInt( applicationProtocolRequest.versions().size() );
-            for ( int version : applicationProtocolRequest.versions() )
-            {
-                out.writeInt( version );
-            }
+            encodeProtocolRequest( applicationProtocolRequest );
         }
 
         @Override
         public void handle( ModifierProtocolRequest modifierProtocolRequest )
         {
             out.writeInt( 2 );
-            // TODO
+            encodeProtocolRequest( modifierProtocolRequest );
         }
 
         @Override
@@ -77,6 +72,20 @@ public class ClientMessageEncoder extends MessageToByteEncoder<ServerMessage>
             out.writeInt( 3 );
             StringMarshal.marshal( out, switchOverRequest.protocolName() );
             out.writeInt( switchOverRequest.version() );
+            out.writeInt( switchOverRequest.modifierProtocols().size() );
+            switchOverRequest.modifierProtocols().forEach( pair ->
+                    {
+                        StringMarshal.marshal( out, pair.first() );
+                        out.writeInt( pair.other() );
+                    }
+            );
+        }
+
+        private void encodeProtocolRequest( BaseProtocolRequest applicationProtocolRequest )
+        {
+            StringMarshal.marshal( out, applicationProtocolRequest.protocolName() );
+            out.writeInt( applicationProtocolRequest.versions().size() );
+            applicationProtocolRequest.versions().forEach( out::writeInt );
         }
     }
 }

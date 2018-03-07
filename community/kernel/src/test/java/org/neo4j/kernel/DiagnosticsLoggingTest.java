@@ -60,5 +60,6 @@ public class DiagnosticsLoggingTest
         }
         // transaction log info
         logProvider.assertContainsMessageContaining( "Transaction log" );
+        logProvider.assertContainsMessageContaining( "TimeZone version: " );
     }
 }

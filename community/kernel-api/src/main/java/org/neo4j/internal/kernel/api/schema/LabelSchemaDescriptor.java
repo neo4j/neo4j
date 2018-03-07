@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
+/**
+ * Please note that this interface has dependencies in other modules. See {@see org.neo4j.causalclustering.catchup.storecopy.IndexDescriptorSerializer}
+ */
 public interface LabelSchemaDescriptor extends SchemaDescriptor, LabelSchemaSupplier
 {
     int getLabelId();

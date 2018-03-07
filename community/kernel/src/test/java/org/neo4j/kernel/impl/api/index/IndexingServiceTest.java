@@ -487,7 +487,7 @@ public class IndexingServiceTest
         life.start();
 
         // WHEN
-        ResourceIterator<File> files = indexing.snapshotStoreFiles();
+        ResourceIterator<File> files = indexing.snapshotIndexFiles();
 
         // THEN
         // We get a snapshot per online index
@@ -517,7 +517,7 @@ public class IndexingServiceTest
         life.start();
 
         // WHEN
-        ResourceIterator<File> files = indexing.snapshotStoreFiles();
+        ResourceIterator<File> files = indexing.snapshotIndexFiles();
         populatorLatch.countDown(); // only now, after the snapshot, is the population job allowed to finish
         waitForIndexesToComeOnline( indexing, indexId, indexId2 );
 

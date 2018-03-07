@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import org.junit.Test;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
+
+import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -48,6 +48,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -185,6 +186,53 @@ public class ElectionContextTest
         ElectionContext toTest = context.getElectionContext();
 
         assertFalse( toTest.electionOk() );
+    }
+
+    @Test
+    public void testInstanceWithLowestIdFailedIsNotConsideredTheElector()
+    {
+        // Given
+        // A cluster of 5 of which the two lowest instances are failed
+        Set<InstanceId> failed = new HashSet<>();
+        failed.add( new InstanceId( 1 ) );
+        failed.add( new InstanceId( 2 ) );
+
+        // This is the instance that must discover that it is the elector and whose state machine we'll test
+        InstanceId lowestNonFailedInstanceId = new InstanceId( 3 );
+
+        Map<InstanceId, URI> members = new HashMap<>();
+        members.put( new InstanceId( 1 ), URI.create( "server1" ) );
+        members.put( new InstanceId( 2 ), URI.create( "server2" ) );
+        members.put( lowestNonFailedInstanceId, URI.create( "server3" ) );
+        members.put( new InstanceId( 4 ), URI.create( "server4" ) );
+        members.put( new InstanceId( 5 ), URI.create( "server5" ) );
+
+        Config config = Config.defaults();
+        ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
+        when( clusterConfiguration.getMembers() ).thenReturn( members );
+        when( clusterConfiguration.getMemberIds() ).thenReturn( members.keySet() );
+
+        ClusterContext clusterContext = mock( ClusterContext.class );
+        when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
+
+        MultiPaxosContext context = new MultiPaxosContext( lowestNonFailedInstanceId, Iterables.iterable(
+                new ElectionRole( "coordinator" ) ), clusterConfiguration,
+                mock( Executor.class ), NullLogProvider.getInstance(),
+                mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
+                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                mock( ElectionCredentialsProvider.class), config );
+
+        ElectionContext toTest = context.getElectionContext();
+        // Sanity check that before learning about lowest failed ids it does not consider itself the elector
+        assertFalse( toTest.isElector() );
+
+        // When
+        // The lowest numbered alive instance receives word about other failed instances
+        context.getHeartbeatContext().getFailed().addAll( failed );
+
+        // Then
+        // It should realise it is the elector (lowest instance id alive)
+        assertTrue( toTest.isElector() );
     }
 
     @Test
@@ -399,7 +447,6 @@ public class ElectionContextTest
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
 
-        HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         ClusterContext clusterContext = context.getClusterContext();
 
         clusterContext.setLastElector( leavingInstance );

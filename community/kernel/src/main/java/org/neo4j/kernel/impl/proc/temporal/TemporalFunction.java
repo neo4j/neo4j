@@ -292,7 +292,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             {
                 AnyValue unit = args[0];
                 AnyValue input = args[1];
-                AnyValue fields = args.length == 3 ? args[2] : EMPTY_MAP;
+                AnyValue fields = args.length == 2 || args[2] == NO_VALUE ? EMPTY_MAP : args[2];
                 if ( unit instanceof TextValue && input instanceof TemporalValue && fields instanceof MapValue )
                 {
                     return function.truncate(

@@ -21,8 +21,10 @@ package org.neo4j.causalclustering.discovery.procedures;
 
 import java.util.Comparator;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.collection.RawIterator;
@@ -54,7 +56,8 @@ public class InstalledProtocolsProcedure extends CallableProcedure.BasicProcedur
                 .out( "orientation", Neo4jTypes.NTString )
                 .out( "remoteAddress", Neo4jTypes.NTString )
                 .out( "applicationProtocol", Neo4jTypes.NTString )
-                .out( "version", Neo4jTypes.NTInteger )
+                .out( "applicationProtocolVersion", Neo4jTypes.NTInteger )
+                .out( "modifierProtocols", Neo4jTypes.NTString )
                 .description( "Overview of installed protocols" )
                 .build() );
         this.clientInstalledProtocols = clientInstalledProtocols;
@@ -63,7 +66,7 @@ public class InstalledProtocolsProcedure extends CallableProcedure.BasicProcedur
 
     @Override
     public RawIterator<Object[],ProcedureException> apply(
-            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+            Context ctx, Object[] input, ResourceTracker resourceTracker )
     {
         Stream<Object[]> outbound = toOutputRows( clientInstalledProtocols, ProtocolInstaller.Orientation.Client.OUTBOUND );
 
@@ -74,14 +77,34 @@ public class InstalledProtocolsProcedure extends CallableProcedure.BasicProcedur
 
     private <T extends SocketAddress> Stream<Object[]> toOutputRows( Supplier<Stream<Pair<T,ProtocolStack>>> installedProtocols, String orientation )
     {
+        Comparator<Pair<T,ProtocolStack>> connectionInfoComparator = Comparator.comparing( ( Pair<T,ProtocolStack> entry ) -> entry.first().getHostname() )
+                .thenComparing( entry -> entry.first().getPort() );
+
         return installedProtocols.get()
-                .sorted( Comparator.comparing( entry -> entry.first().toString() ) )
-                .map( entry -> new Object[]
-                        {
-                                orientation,
-                                entry.first().toString(),
-                                entry.other().applicationProtocol().identifier(),
-                                (long) entry.other().applicationProtocol().version()
-                        } );
+                .sorted( connectionInfoComparator )
+                .map( entry -> buildRow( entry, orientation ) );
+    }
+
+    private <T extends SocketAddress> Object[] buildRow( Pair<T,ProtocolStack> connectionInfo, String orientation )
+    {
+        T socketAddress = connectionInfo.first();
+        ProtocolStack protocolStack = connectionInfo.other();
+        return new Object[]
+                {
+                    orientation,
+                    socketAddress.toString(),
+                    protocolStack.applicationProtocol().identifier(),
+                    (long) protocolStack.applicationProtocol().version(),
+                    modifierString( protocolStack )
+                };
+    }
+
+    private String modifierString( ProtocolStack protocolStack )
+    {
+        return protocolStack
+                .modifierProtocols()
+                .stream()
+                .map( Protocol.ModifierProtocol::friendlyName )
+                .collect( Collectors.joining( ",", "[", "]") );
     }
 }

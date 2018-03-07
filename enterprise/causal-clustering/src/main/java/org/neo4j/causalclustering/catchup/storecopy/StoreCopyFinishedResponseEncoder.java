@@ -29,6 +29,5 @@ public class StoreCopyFinishedResponseEncoder extends MessageToByteEncoder<Store
     protected void encode( ChannelHandlerContext ctx, StoreCopyFinishedResponse msg, ByteBuf out )
     {
         out.writeInt( msg.status().ordinal() );
-        out.writeLong( msg.lastCommittedTxBeforeStoreCopy() );
-     }
+    }
 }

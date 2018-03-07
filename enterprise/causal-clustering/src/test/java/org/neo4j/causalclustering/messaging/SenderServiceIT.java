@@ -36,8 +36,11 @@ import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
+import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
@@ -61,7 +64,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class SenderServiceIT
 {
     private final LogProvider logProvider = NullLogProvider.getInstance();
-    private final ProtocolRepository protocols = new ProtocolRepository( Protocol.Protocols.values() );
+    private final ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( ApplicationProtocols.values() );
+    private final ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( ModifierProtocols.values() );
 
     @Parameterized.Parameter
     public boolean blocking;
@@ -81,7 +85,7 @@ public class SenderServiceIT
         ChannelInboundHandler nettyHandler = new ChannelInboundHandlerAdapter()
         {
             @Override
-            public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
+            public void channelRead( ChannelHandlerContext ctx, Object msg )
             {
                 messageReceived.release();
             }
@@ -115,12 +119,12 @@ public class SenderServiceIT
     {
         NettyPipelineBuilderFactory pipelineFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
 
-        RaftProtocolServerInstaller raftProtocolServerInstaller = new RaftProtocolServerInstaller( nettyHandler, pipelineFactory, logProvider );
-        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> installer = new ProtocolInstallerRepository<>(
-                singletonList( raftProtocolServerInstaller ) );
+        RaftProtocolServerInstaller.Factory raftProtocolServerInstaller = new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineFactory, logProvider );
+        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> installer =
+                new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
 
-        HandshakeServerInitializer channelInitializer = new HandshakeServerInitializer( logProvider, protocols, Protocol.Identifier.RAFT, installer,
-                pipelineFactory );
+        HandshakeServerInitializer channelInitializer = new HandshakeServerInitializer( logProvider, applicationProtocolRepository, modifierProtocolRepository,
+                Protocol.ApplicationProtocolIdentifier.RAFT, installer, pipelineFactory );
 
         Config config = Config.defaults( raft_listen_address, new HostnamePort( "localhost", port ).toString() );
         return new RaftServer( channelInitializer, config, logProvider, logProvider );
@@ -130,11 +134,18 @@ public class SenderServiceIT
     {
         NettyPipelineBuilderFactory pipelineFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
 
-        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller = new ProtocolInstallerRepository<>(
-                singletonList( new RaftProtocolClientInstaller( logProvider, pipelineFactory ) ) );
+        RaftProtocolClientInstaller.Factory raftProtocolClientInstaller = new RaftProtocolClientInstaller.Factory( pipelineFactory, logProvider );
+        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller =
+                new ProtocolInstallerRepository<>( singletonList( raftProtocolClientInstaller ), ModifierProtocolInstaller.allClientInstallers );
 
-        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( logProvider, protocols, Protocol.Identifier.RAFT, protocolInstaller,
-                Config.defaults(), pipelineFactory );
+        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer(
+                applicationProtocolRepository,
+                Protocol.ApplicationProtocolIdentifier.RAFT,
+                modifierProtocolRepository,
+                asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ),
+                protocolInstaller, pipelineFactory,
+                Config.defaults(),
+                logProvider );
 
         return new SenderService( channelInitializer, logProvider );
     }

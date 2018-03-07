@@ -31,12 +31,13 @@ import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.NON_SCHEMA;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
+ *
+ * Please note that this class has dependencies in other modules. See {@see org.neo4j.causalclustering.catchup.storecopy.IndexDescriptorSerializer}
  */
 public abstract class IndexDescriptor implements SchemaDescriptorSupplier
 {
@@ -97,7 +98,7 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
     private final SchemaDescriptor schema;
     private final IndexDescriptor.Type type;
 
-    protected IndexDescriptor( SchemaDescriptor schema, Type type )
+    public IndexDescriptor( SchemaDescriptor schema, Type type )
     {
         this.schema = schema;
         this.type = type;

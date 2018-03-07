@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.resources.CpuClock;
@@ -98,6 +99,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final Supplier<DefaultCursors> cursorsSupplier;
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
+    private final CollectionsFactorySupplier collectionsFactorySupplier;
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.
@@ -138,7 +140,9 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
             Supplier<DefaultCursors> cursorsSupplier,
             AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier )
+            ExplicitIndexStore explicitIndexStore,
+            VersionContextSupplier versionContextSupplier,
+            CollectionsFactorySupplier collectionsFactorySupplier )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -165,6 +169,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.clock = clock;
         doBlockNewTransactions();
         this.cursorsSupplier = cursorsSupplier;
+        this.collectionsFactorySupplier = collectionsFactorySupplier;
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
@@ -362,7 +367,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             cursorsSupplier.get(), autoIndexing,
-                            explicitIndexStore, versionContextSupplier );
+                            explicitIndexStore, versionContextSupplier, collectionsFactorySupplier );
             this.transactions.add( tx );
             return tx;
         }

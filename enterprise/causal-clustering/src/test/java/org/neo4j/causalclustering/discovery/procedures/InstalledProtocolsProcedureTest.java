@@ -24,28 +24,39 @@ import org.junit.Test;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
-import org.neo4j.causalclustering.protocol.handshake.TestProtocols;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
+import org.neo4j.causalclustering.scenarios.InstalledProtocolsProcedureIT;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
+/**
+ * @see InstalledProtocolsProcedureIT
+ */
 public class InstalledProtocolsProcedureTest
 {
     private Pair<AdvertisedSocketAddress,ProtocolStack> outbound1 =
-            Pair.of( new AdvertisedSocketAddress( "host1", 1 ), new ProtocolStack( TestProtocols.RAFT_1 ) );
+            Pair.of( new AdvertisedSocketAddress( "host1", 1 ),
+                    new ProtocolStack( TestApplicationProtocols.RAFT_1, asList( TestModifierProtocols.SNAPPY ) ) );
     private Pair<AdvertisedSocketAddress,ProtocolStack> outbound2 =
-            Pair.of( new AdvertisedSocketAddress( "host2", 2 ), new ProtocolStack( TestProtocols.RAFT_2 ) );
+            Pair.of( new AdvertisedSocketAddress( "host2", 2 ),
+                    new ProtocolStack( TestApplicationProtocols.RAFT_2, asList( TestModifierProtocols.SNAPPY, TestModifierProtocols.ROT13 ) ) );
 
     private Pair<SocketAddress,ProtocolStack> inbound1 =
-            Pair.of( new SocketAddress( "host3", 3 ), new ProtocolStack( TestProtocols.RAFT_3 ) );
+            Pair.of( new SocketAddress( "host3", 3 ),
+                    new ProtocolStack( TestApplicationProtocols.RAFT_3, asList( TestModifierProtocols.SNAPPY ) ) );
     private Pair<SocketAddress,ProtocolStack> inbound2 =
-            Pair.of( new SocketAddress( "host4", 4 ), new ProtocolStack( TestProtocols.RAFT_4 ) );
+            Pair.of( new SocketAddress( "host4", 4 ),
+                    new ProtocolStack( TestApplicationProtocols.RAFT_4, emptyList() ) );
 
     @Test
     public void shouldHaveEmptyOutputIfNoInstalledProtocols() throws Throwable
@@ -72,8 +83,8 @@ public class InstalledProtocolsProcedureTest
         RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null, null );
 
         // then
-        assertThat( result.next(), arrayContaining( "outbound", "host1:1", "raft", 1L ) );
-        assertThat( result.next(), arrayContaining( "outbound", "host2:2", "raft", 2L ) );
+        assertThat( result.next(), arrayContaining( "outbound", "host1:1", "raft", 1L, "[TestSnappy]" ) );
+        assertThat( result.next(), arrayContaining( "outbound", "host2:2", "raft", 2L, "[TestSnappy,ROT13]" ) );
         assertFalse( result.hasNext() );
     }
 
@@ -88,8 +99,8 @@ public class InstalledProtocolsProcedureTest
         RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null, null );
 
         // then
-        assertThat( result.next(), arrayContaining( "inbound", "host3:3", "raft", 3L ) );
-        assertThat( result.next(), arrayContaining( "inbound", "host4:4", "raft", 4L ) );
+        assertThat( result.next(), arrayContaining( "inbound", "host3:3", "raft", 3L, "[TestSnappy]" ) );
+        assertThat( result.next(), arrayContaining( "inbound", "host4:4", "raft", 4L, "[]" ) );
         assertFalse( result.hasNext() );
     }
 
@@ -104,10 +115,10 @@ public class InstalledProtocolsProcedureTest
         RawIterator<Object[],ProcedureException> result = installedProtocolsProcedure.apply( null, null, null );
 
         // then
-        assertThat( result.next(), arrayContaining( "outbound", "host1:1", "raft", 1L ) );
-        assertThat( result.next(), arrayContaining( "outbound", "host2:2", "raft", 2L ) );
-        assertThat( result.next(), arrayContaining( "inbound", "host3:3", "raft", 3L ) );
-        assertThat( result.next(), arrayContaining( "inbound", "host4:4", "raft", 4L ) );
+        assertThat( result.next(), arrayContaining( "outbound", "host1:1", "raft", 1L, "[TestSnappy]" ) );
+        assertThat( result.next(), arrayContaining( "outbound", "host2:2", "raft", 2L, "[TestSnappy,ROT13]" ) );
+        assertThat( result.next(), arrayContaining( "inbound", "host3:3", "raft", 3L, "[TestSnappy]" ) );
+        assertThat( result.next(), arrayContaining( "inbound", "host4:4", "raft", 4L, "[]" ) );
         assertFalse( result.hasNext() );
     }
 }

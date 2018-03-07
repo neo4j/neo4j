@@ -39,15 +39,17 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
  */
 public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 {
+    private final String connector;
     private final BoltHandshakeProtocolHandler handshake;
     private final Log log;
     private final BoltMessageLogging boltLogging;
 
     private BoltMessagingProtocolHandler protocol;
 
-    public SocketTransportHandler( BoltHandshakeProtocolHandler handshake,
+    public SocketTransportHandler( String connector, BoltHandshakeProtocolHandler handshake,
             LogProvider logging, BoltMessageLogging boltLogging )
     {
+        this.connector = connector;
         this.handshake = handshake;
         this.log = logging.getLog( getClass() );
         this.boltLogging = boltLogging;
@@ -63,7 +65,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             {
                 BoltMessageLogger boltLogger = boltLogging.newLogger( ctx.channel() );
                 boltLogger.clientEvent( "OPEN" );
-                performHandshake( BoltChannel.open( ctx, boltLogger ), buffer );
+                performHandshake( BoltChannel.open( connector, ctx, boltLogger ), buffer );
             }
             else
             {

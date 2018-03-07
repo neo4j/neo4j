@@ -33,7 +33,6 @@ public class StoreCopyFinishedResponseDecoder extends ByteToMessageDecoder
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out )
     {
         int statusOrdinal = msg.readInt();
-        long lastCommittedTxBeforeStoreCopy = msg.readLong();
-        out.add( new StoreCopyFinishedResponse( Status.values()[statusOrdinal], lastCommittedTxBeforeStoreCopy ) );
+        out.add( new StoreCopyFinishedResponse( Status.values()[statusOrdinal] ) );
     }
 }

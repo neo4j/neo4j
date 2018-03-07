@@ -54,7 +54,7 @@ public interface HeartbeatContext
 
     void serverLeftCluster( InstanceId node );
 
-    boolean isFailed( InstanceId node );
+    boolean isFailedBasedOnSuspicions( InstanceId node );
 
     List<InstanceId> getSuspicionsOf( InstanceId server );
 
@@ -65,4 +65,10 @@ public interface HeartbeatContext
     long getLastKnownLearnedInstanceInCluster();
 
     long getLastLearnedInstanceId();
+
+    /**
+     * Adds an instance in the failed set. Note that the {@link #isFailedBasedOnSuspicions(InstanceId)} method does not consult this set
+     * or adds to it, instead deriving failed status from suspicions.
+     */
+    void failed( InstanceId instanceId );
 }

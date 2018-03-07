@@ -24,6 +24,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -44,21 +45,28 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel>
 {
-    private final Log log;
-    private final ProtocolRepository protocolRepository;
-    private final Protocol.Identifier protocolName;
+    private final ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository;
+    private final Protocol.ApplicationProtocolIdentifier applicationProtocolIdentifier;
+    private final ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository;
+    private final Set<Protocol.ModifierProtocolIdentifier> modifierProtocolIdentifiers;
     private final Duration timeout;
     private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
     private final TimeoutStrategy timeoutStrategy;
+    private final Log log;
 
-    public HandshakeClientInitializer( LogProvider logProvider, ProtocolRepository protocolRepository, Protocol.Identifier protocolName,
-            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository, Config config,
-            NettyPipelineBuilderFactory pipelineBuilderFactory )
+    public HandshakeClientInitializer( ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository,
+            Protocol.ApplicationProtocolIdentifier applicationProtocolIdentifier,
+            ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository,
+            Set<Protocol.ModifierProtocolIdentifier> modifierProtocolIdentifiers,
+            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository, NettyPipelineBuilderFactory pipelineBuilderFactory,
+            Config config, LogProvider logProvider )
     {
         this.log = logProvider.getLog( getClass() );
-        this.protocolRepository = protocolRepository;
-        this.protocolName = protocolName;
+        this.applicationProtocolRepository = applicationProtocolRepository;
+        this.applicationProtocolIdentifier = applicationProtocolIdentifier;
+        this.modifierProtocolRepository = modifierProtocolRepository;
+        this.modifierProtocolIdentifiers = modifierProtocolIdentifiers;
         this.timeout = config.get( CausalClusteringSettings.handshake_timeout );
         this.protocolInstaller = protocolInstallerRepository;
         this.pipelineBuilderFactory = pipelineBuilderFactory;
@@ -67,7 +75,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
 
     private void installHandlers( Channel channel, HandshakeClient handshakeClient ) throws Exception
     {
-        pipelineBuilderFactory.create( channel, log )
+        pipelineBuilderFactory.client( channel, log )
                 .addFraming()
                 .add( "handshake_client_encoder", new ClientMessageEncoder() )
                 .add( "handshake_client_decoder", new ClientMessageDecoder() )
@@ -122,7 +130,8 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     private void initiateHandshake( Channel channel, HandshakeClient handshakeClient )
     {
         SimpleNettyChannel channelWrapper = new SimpleNettyChannel( channel, log );
-        CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, protocolRepository, protocolName );
+        CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, applicationProtocolRepository, applicationProtocolIdentifier,
+                modifierProtocolRepository, modifierProtocolIdentifiers );
 
         handshake.whenComplete( ( protocolStack, failure ) -> onHandshakeComplete( protocolStack, channel, failure ) );
     }
@@ -140,7 +149,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
             try
             {
                 log.info( "Installing: " + protocolStack );
-                protocolInstaller.installerFor( protocolStack.applicationProtocol() ).install( channel );
+                protocolInstaller.installerFor( protocolStack ).install( channel );
                 channel.attr( ReconnectingChannel.PROTOCOL_STACK_KEY ).set( protocolStack );
 
                 channel.pipeline().fireUserEventTriggered( GateEvent.getSuccess() );

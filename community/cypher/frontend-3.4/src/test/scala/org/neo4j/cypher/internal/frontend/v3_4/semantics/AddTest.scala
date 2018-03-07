@@ -55,6 +55,25 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
 
     testValidTypes(CTNode, CTList(CTNode))(CTList(CTNode))
     testValidTypes(CTFloat, CTList(CTFloat))(CTList(CTFloat))
+
+    testValidTypes(CTList(CTAny), CTList(CTAny))(CTList(CTAny))
+  }
+
+  test("should handle covariant types") {
+    testValidTypes(CTString.covariant, CTString.covariant)(CTString)
+    testValidTypes(CTString.covariant, CTInteger)(CTString)
+    testValidTypes(CTString, CTInteger.covariant)(CTString)
+    testValidTypes(CTInteger.covariant, CTInteger.covariant)(CTInteger)
+    testValidTypes(CTInteger.covariant, CTFloat)(CTFloat)
+    testValidTypes(CTInteger, CTFloat.covariant)(CTFloat)
+    testValidTypes(CTFloat.covariant, CTFloat.covariant)(CTFloat)
+
+    testValidTypes(CTList(CTFloat).covariant, CTList(CTFloat).covariant)(CTList(CTFloat))
+
+    testValidTypes(CTList(CTNode).covariant, CTNode)(CTList(CTNode))
+    testValidTypes(CTList(CTNode), CTNode.covariant)(CTList(CTNode))
+
+    testValidTypes(CTList(CTAny).covariant, CTList(CTAny).covariant)(CTList(CTAny).covariant)
   }
 
   test("shouldHandleCombinedSpecializations") {

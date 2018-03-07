@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
@@ -156,12 +157,17 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
-    public static MapValue copy( MapValue map )
+    @SafeVarargs
+    public static MapValue copy( MapValue map, Pair<String,AnyValue>... moreEntries )
     {
         HashMap<String,AnyValue> hashMap = new HashMap<>( map.size() );
         for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {
             hashMap.put( entry.getKey(), entry.getValue() );
+        }
+        for ( Pair<String,AnyValue> entry : moreEntries )
+        {
+            hashMap.put( entry.first(), entry.other() );
         }
         return new MapValue( hashMap );
     }

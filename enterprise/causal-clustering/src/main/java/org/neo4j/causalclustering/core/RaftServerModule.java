@@ -32,11 +32,14 @@ import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
 import org.neo4j.causalclustering.core.state.RaftMessageApplier;
+import org.neo4j.causalclustering.discovery.CoreTopologyService;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.messaging.LoggingInbound;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
@@ -58,10 +61,12 @@ class RaftServerModule
     private final MessageLogger<MemberId> messageLogger;
     private final LogProvider logProvider;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
+    private final TopologyService topologyService;
     private final RaftServer raftServer;
 
     RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
-            LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger )
+            LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger,
+            CoreTopologyService topologyService )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
@@ -70,6 +75,7 @@ class RaftServerModule
         this.messageLogger = messageLogger;
         this.logProvider = platformModule.logging.getInternalLogProvider();
         this.pipelineBuilderFactory = pipelineBuilderFactory;
+        this.topologyService = topologyService;
 
         LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule );
 
@@ -79,15 +85,18 @@ class RaftServerModule
     private RaftServer createRaftServer( CoreServerModule coreServerModule,
             LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain )
     {
-        ProtocolRepository protocolRepository = new ProtocolRepository( Protocol.Protocols.values() );
+        ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( Protocol.ApplicationProtocols.values() );
+        ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( Protocol.ModifierProtocols.values() );
 
         RaftMessageNettyHandler nettyHandler = new RaftMessageNettyHandler( logProvider );
-        RaftProtocolServerInstaller raftProtocolServerInstaller = new RaftProtocolServerInstaller( nettyHandler, pipelineBuilderFactory, logProvider );
+        RaftProtocolServerInstaller.Factory raftProtocolServerInstaller =
+                new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository =
-                new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ) );
+                new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
 
-        HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( logProvider, protocolRepository, Protocol.Identifier.RAFT,
-                protocolInstallerRepository, pipelineBuilderFactory );
+        HandshakeServerInitializer handshakeServerInitializer =
+                new HandshakeServerInitializer( logProvider, applicationProtocolRepository, modifierProtocolRepository,
+                        Protocol.ApplicationProtocolIdentifier.RAFT, protocolInstallerRepository, pipelineBuilderFactory );
         RaftServer raftServer = new RaftServer( handshakeServerInitializer, platformModule.config,
                 logProvider, platformModule.logging.getUserLogProvider() );
 
@@ -105,8 +114,9 @@ class RaftServerModule
 
     private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule )
     {
-        RaftMessageApplier messageApplier = new RaftMessageApplier( localDatabase, logProvider,
-                consensusModule.raftMachine(), coreServerModule.downloadService(), coreServerModule.commandApplicationProcess() );
+        RaftMessageApplier messageApplier =
+                new RaftMessageApplier( localDatabase, logProvider, consensusModule.raftMachine(), coreServerModule.downloadService(),
+                        coreServerModule.commandApplicationProcess(), topologyService );
 
         ComposableMessageHandler monitoringHandler = RaftMessageMonitoringHandler.composable( platformModule.clock, platformModule.monitors );
 

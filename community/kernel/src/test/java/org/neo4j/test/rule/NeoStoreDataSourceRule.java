@@ -78,6 +78,7 @@ import org.neo4j.time.SystemNanoClock;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -137,9 +138,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new CanWrite(), new StoreCopyCheckPointMutex(),
                 RecoveryCleanupWorkCollector.IMMEDIATE,
                 new BufferedIdController(
-                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                        idConfigurationProvider ), jobScheduler ),
-                OperationalMode.single, new TransactionVersionContextSupplier() );
+                        new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ), jobScheduler ),
+                OperationalMode.single, new TransactionVersionContextSupplier(), ON_HEAP );
         return dataSource;
     }
 

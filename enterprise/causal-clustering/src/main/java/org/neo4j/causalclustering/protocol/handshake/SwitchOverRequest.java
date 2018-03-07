@@ -19,17 +19,22 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
+import java.util.List;
 import java.util.Objects;
+
+import org.neo4j.helpers.collection.Pair;
 
 public class SwitchOverRequest implements ServerMessage
 {
     private final String protocolName;
     private final int version;
+    private final List<Pair<String,Integer>> modifierProtocols;
 
-    public SwitchOverRequest( String protocolName, int version )
+    public SwitchOverRequest( String applicationProtocolName, int applicationProtocolVersion, List<Pair<String,Integer>> modifierProtocols )
     {
-        this.protocolName = protocolName;
-        this.version = version;
+        this.protocolName = applicationProtocolName;
+        this.version = applicationProtocolVersion;
+        this.modifierProtocols = modifierProtocols;
     }
 
     @Override
@@ -41,6 +46,11 @@ public class SwitchOverRequest implements ServerMessage
     public String protocolName()
     {
         return protocolName;
+    }
+
+    public List<Pair<String,Integer>> modifierProtocols()
+    {
+        return modifierProtocols;
     }
 
     public int version()
@@ -60,12 +70,18 @@ public class SwitchOverRequest implements ServerMessage
             return false;
         }
         SwitchOverRequest that = (SwitchOverRequest) o;
-        return version == that.version && Objects.equals( protocolName, that.protocolName );
+        return version == that.version && Objects.equals( protocolName, that.protocolName ) && Objects.equals( modifierProtocols, that.modifierProtocols );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( protocolName, version );
+        return Objects.hash( protocolName, version, modifierProtocols );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "SwitchOverRequest{" + "protocolName='" + protocolName + '\'' + ", version=" + version + ", modifierProtocols=" + modifierProtocols + '}';
     }
 }

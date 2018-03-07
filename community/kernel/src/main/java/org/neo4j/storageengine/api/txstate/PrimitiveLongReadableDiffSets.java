@@ -22,6 +22,8 @@ package org.neo4j.storageengine.api.txstate;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
+
 /**
  * Read only variant of specialised primitive longs collection that with given a sequence of add
  * and removal operations, tracks which elements need to actually be added and removed at minimum from some
@@ -30,6 +32,57 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
  */
 public interface PrimitiveLongReadableDiffSets
 {
+    PrimitiveLongReadableDiffSets EMPTY = new PrimitiveLongReadableDiffSets()
+    {
+        @Override
+        public boolean isAdded( long element )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isRemoved( long element )
+        {
+            return false;
+        }
+
+        @Override
+        public PrimitiveLongSet getAdded()
+        {
+            return emptySet();
+        }
+
+        @Override
+        public PrimitiveLongSet getAddedSnapshot()
+        {
+            return emptySet();
+        }
+
+        @Override
+        public PrimitiveLongSet getRemoved()
+        {
+            return emptySet();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return true;
+        }
+
+        @Override
+        public int delta()
+        {
+            return 0;
+        }
+
+        @Override
+        public PrimitiveLongIterator augment( PrimitiveLongIterator elements )
+        {
+            return elements;
+        }
+    };
+
     /**
      * Check if provided element added in this collection
      * @param element element to check

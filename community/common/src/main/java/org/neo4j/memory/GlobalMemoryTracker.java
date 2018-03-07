@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.LongAdder;
  * @see org.neo4j.memory.MemoryAllocationTracker
  * @see MemoryTracker
  */
-public class GlobalMemoryTracker implements MemoryTracker, MemoryAllocationTracker
+public class GlobalMemoryTracker implements MemoryAllocationTracker
 {
-    private LongAdder longAdder = new LongAdder();
-
     public static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
+
+    private final LongAdder allocatedBytes = new LongAdder();
 
     private GlobalMemoryTracker()
     {
@@ -40,18 +40,18 @@ public class GlobalMemoryTracker implements MemoryTracker, MemoryAllocationTrack
     @Override
     public long usedDirectMemory()
     {
-        return longAdder.sum();
+        return allocatedBytes.sum();
     }
 
     @Override
-    public void allocate( long allocatedBytes )
+    public void allocated( long bytes )
     {
-        longAdder.add( allocatedBytes );
+        allocatedBytes.add( bytes );
     }
 
     @Override
-    public void deallocate( long deAllocatedBytes )
+    public void deallocated( long bytes )
     {
-        longAdder.add( -deAllocatedBytes );
+        allocatedBytes.add( -bytes );
     }
 }

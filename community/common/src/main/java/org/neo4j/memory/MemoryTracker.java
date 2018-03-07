@@ -25,6 +25,8 @@ package org.neo4j.memory;
  */
 public interface MemoryTracker
 {
+    MemoryTracker NONE = () -> 0;
+
     /**
      * @return number of bytes of direct memory that are used
      */
