@@ -124,10 +124,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       val context = transactionalContext.getOrBeginNewIfClosed()
       var success = false
       try {
-        val result = work(new TransactionBoundQueryContext(context))
+        val newContext = new TransactionBoundQueryContext(context, resources)
+        val result = work(newContext)
         success = true
         result
       } finally {
+        resources.close(success)
         context.close(success)
       }
     }
