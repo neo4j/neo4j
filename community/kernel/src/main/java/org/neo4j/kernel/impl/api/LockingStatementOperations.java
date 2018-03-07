@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
@@ -236,12 +237,12 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
+    public IndexRule indexGetExistingRule( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         sharedLabelLock( state, index.schema().getLabelId() );
         state.assertOpen();
-        return schemaReadDelegate.indexGetCommittedId( state, index );
+        return schemaReadDelegate.indexGetExistingRule( state, index );
     }
 
     @Override

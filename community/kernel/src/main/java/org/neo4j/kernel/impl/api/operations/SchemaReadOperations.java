@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public interface SchemaReadOperations
@@ -112,8 +113,8 @@ public interface SchemaReadOperations
     Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index );
 
     /**
-     * Get the index id (the id or the schema rule record) for a committed index
+     * Get the index (the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    IndexRule indexGetExistingRule( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
 }

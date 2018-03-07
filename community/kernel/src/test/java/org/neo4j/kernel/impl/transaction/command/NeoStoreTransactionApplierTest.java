@@ -22,15 +22,11 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -74,11 +70,8 @@ import org.neo4j.storageengine.api.Token;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -620,7 +613,6 @@ public class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).activateIndex( rule.getId() );
         verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
     }
 
@@ -644,37 +636,7 @@ public class NeoStoreTransactionApplierTest
 
         verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
         verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).activateIndex( rule.getId() );
         verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
-    }
-
-    @Test
-    public void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem()
-            throws IndexNotFoundKernelException,
-            IndexPopulationFailedKernelException, IndexActivationFailedKernelException
-    {
-        // given
-        final BatchTransactionApplier applier = newIndexApplier( );
-        doThrow( new IndexNotFoundKernelException( "" ) ).when( indexingService ).activateIndex( anyLong() );
-
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final IndexRule rule =
-                constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
-        final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
-
-        // when
-        try
-        {
-            apply( applier, command::handle, transactionToApply );
-            fail( "should have thrown" );
-        }
-        catch ( Exception e )
-        {
-            // then
-            assertTrue( e.getCause() instanceof IndexNotFoundKernelException );
-        }
     }
 
     @Test

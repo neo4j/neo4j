@@ -25,8 +25,8 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -59,7 +59,8 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitRemovedIndex( IndexDescriptor element );
 
-    void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
+    void visitAddedConstraint( ConstraintDescriptor element, IndexRule indexRule ) throws
+            CreateConstraintFailureException;
 
     void visitRemovedConstraint( ConstraintDescriptor element );
 
@@ -128,7 +129,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException
+        public void visitAddedConstraint( ConstraintDescriptor element, IndexRule indexRule ) throws CreateConstraintFailureException
         {
         }
 
@@ -237,9 +238,9 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedConstraint( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
+        public void visitAddedConstraint( ConstraintDescriptor constraint, IndexRule indexRule ) throws CreateConstraintFailureException
         {
-            actual.visitAddedConstraint( constraint );
+            actual.visitAddedConstraint( constraint, indexRule );
         }
 
         @Override

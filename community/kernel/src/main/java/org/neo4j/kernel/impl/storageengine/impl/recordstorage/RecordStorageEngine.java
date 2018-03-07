@@ -399,6 +399,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // providing TransactionIdStore, LogVersionRepository
         satisfier.satisfyDependency( neoStores.getMetaDataStore() );
         satisfier.satisfyDependency( indexStoreView );
+        satisfier.satisfyDependency( schemaStorage );
     }
 
     @Override

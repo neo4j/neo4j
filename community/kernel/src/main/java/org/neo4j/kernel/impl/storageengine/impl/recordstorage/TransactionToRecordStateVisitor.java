@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
@@ -197,7 +196,8 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedConstraint( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
+    public void visitAddedConstraint( ConstraintDescriptor constraint, IndexRule indexRule ) throws
+            CreateConstraintFailureException
     {
         clearSchemaState = true;
         long constraintId = schemaStorage.newRuleId();
@@ -205,16 +205,15 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         switch ( constraint.type() )
         {
         case UNIQUE:
-            visitAddedUniquenessConstraint( (UniquenessConstraintDescriptor) constraint, constraintId );
+            visitAddedUniquenessConstraint( (UniquenessConstraintDescriptor) constraint, indexRule, constraintId );
             break;
 
         case UNIQUE_EXISTS:
-            visitAddedNodeKeyConstraint( (NodeKeyConstraintDescriptor) constraint, constraintId );
+            visitAddedNodeKeyConstraint( (NodeKeyConstraintDescriptor) constraint, indexRule, constraintId );
             break;
 
         case EXISTS:
-            recordState.createSchemaRule(
-                    constraintSemantics.createExistenceConstraint( schemaStorage.newRuleId(), constraint ) );
+            visitExistenceConstraint( constraint, constraintId );
             break;
 
         default:
@@ -222,21 +221,27 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
     }
 
-    private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId )
-    {
-        IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
-        recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
-                constraintId, uniqueConstraint, indexRule.getId() ) );
-        recordState.setConstraintIndexOwner( indexRule, constraintId );
-    }
-
-    private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId )
+    private void visitExistenceConstraint( ConstraintDescriptor constraint, long constraintId )
             throws CreateConstraintFailureException
     {
-        IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
+        recordState.createSchemaRule(
+                constraintSemantics.createExistenceConstraint( constraintId, constraint ) );
+    }
+
+    private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint,
+            IndexRule indexRule, long constraintId )
+    {
+        recordState.createSchemaRule( indexRule.withOwningConstraint( constraintId ) );
+        recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
+                constraintId, uniqueConstraint, indexRule.getId() ) );
+    }
+
+    private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, IndexRule indexRule, long constraintId )
+            throws CreateConstraintFailureException
+    {
+        recordState.createSchemaRule( indexRule.withOwningConstraint( constraintId ) );
         recordState.createSchemaRule( constraintSemantics.createNodeKeyConstraintRule(
                 constraintId, uniqueConstraint, indexRule.getId() ) );
-        recordState.setConstraintIndexOwner( indexRule, constraintId );
     }
 
     @Override

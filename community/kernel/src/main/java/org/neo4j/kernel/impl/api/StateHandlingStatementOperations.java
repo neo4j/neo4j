@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.api.state.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
@@ -602,7 +603,7 @@ public class StateHandlingStatementOperations implements
                         return;
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, descriptor );
+                IndexRule indexRule = constraintIndexCreator.createUniquenessConstraintIndex( state, this, descriptor );
                 if ( !constraintExists( state, constraint ) )
                 {
                     // This looks weird, but since we release the label lock while awaiting population of the index
@@ -610,7 +611,7 @@ public class StateHandlingStatementOperations implements
                     // before we do, so now getting out here under the lock we must check again and if it exists
                     // we must at this point consider this an idempotent operation because we verified earlier
                     // that it didn't exist and went on to create it.
-                    state.txState().constraintDoAdd( constraint, indexId );
+                    state.txState().constraintDoAdd( constraint, indexRule );
                 }
             }
         }
@@ -1335,10 +1336,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
+    public IndexRule indexGetExistingRule( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        return storeLayer.indexGetCommittedId( index );
+        return storeLayer.indexGetCommittedRule( index );
     }
 
     @Override
