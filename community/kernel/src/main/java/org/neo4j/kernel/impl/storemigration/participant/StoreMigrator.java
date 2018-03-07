@@ -362,9 +362,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             Configuration importConfig = new Configuration.Overridden( config )
             {
                 @Override
-                public boolean parallelRecordReadsWhenWriting()
+                public boolean highIO()
                 {
-                    return FileUtils.highIODevice( storeDir.toPath(), super.parallelRecordReadsWhenWriting() );
+                    return FileUtils.highIODevice( storeDir.toPath(), super.highIO() );
                 }
             };
             AdditionalInitialIds additionalInitialIds =

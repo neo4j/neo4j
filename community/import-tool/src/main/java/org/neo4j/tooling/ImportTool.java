@@ -716,11 +716,11 @@ public class ImportTool
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir )
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir, Boolean defaultHighIO )
     {
         return importConfiguration(
                 processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir,
-                DEFAULT.allowCacheAllocationOnHeap(), (Boolean)Options.HIGH_IO.defaultValue() );
+                DEFAULT.allowCacheAllocationOnHeap(), defaultHighIO );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
@@ -754,7 +754,7 @@ public class ImportTool
             }
 
             @Override
-            public boolean parallelRecordReadsWhenWriting()
+            public boolean highIO()
             {
                 return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( storeDir.toPath(), false );
             }
