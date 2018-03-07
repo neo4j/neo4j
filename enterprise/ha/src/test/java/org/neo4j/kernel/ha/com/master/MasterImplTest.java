@@ -315,7 +315,7 @@ public class MasterImplTest
         master.start();
         HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
-        int no_lock_session = -1;
+        final int no_lock_session = -1;
         RequestContext ctx = new RequestContext( handshake.epoch(), 1, no_lock_session, 0, 0 );
         TransactionRepresentation tx = mock( TransactionRepresentation.class );
 

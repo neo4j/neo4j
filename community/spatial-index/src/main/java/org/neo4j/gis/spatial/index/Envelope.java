@@ -323,24 +323,24 @@ public class Envelope
     {
         if ( getDimension() == other.getDimension() )
         {
-            double[] i_min = new double[this.min.length];
-            double[] i_max = new double[this.min.length];
-            Arrays.fill(i_min, Double.NaN);
-            Arrays.fill(i_max, Double.NaN);
+            double[] iMin = new double[this.min.length];
+            double[] iMax = new double[this.min.length];
+            Arrays.fill(iMin, Double.NaN);
+            Arrays.fill(iMax, Double.NaN);
             boolean result = true;
             for ( int i = 0; i < min.length; i++ )
             {
                 if ( other.min[i] <= this.max[i] && other.max[i] >= this.min[i] )
                 {
-                    i_min[i] = Math.max(this.min[i], other.min[i]);
-                    i_max[i] = Math.min(this.max[i], other.max[i]);
+                    iMin[i] = Math.max(this.min[i], other.min[i]);
+                    iMax[i] = Math.min(this.max[i], other.max[i]);
                 }
                 else
                 {
                     result = false;
                 }
             }
-            return result ? new Envelope( i_min, i_max ) : null;
+            return result ? new Envelope( iMin, iMax ) : null;
         }
         else
         {

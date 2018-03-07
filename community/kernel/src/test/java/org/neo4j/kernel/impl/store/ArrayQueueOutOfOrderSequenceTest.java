@@ -191,14 +191,14 @@ public class ArrayQueueOutOfOrderSequenceTest
     public void shouldBeAbleToTimeoutWaitingForNumber() throws Exception
     {
         // given
-        long TIMEOUT = 10;
+        long timeout = 10;
         final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 3, 5, EMPTY_META );
 
         long startTime = System.currentTimeMillis();
         try
         {
             // when
-            sequence.await( 4, TIMEOUT );
+            sequence.await( 4, timeout );
             fail();
         }
         catch ( TimeoutException e )
@@ -207,7 +207,7 @@ public class ArrayQueueOutOfOrderSequenceTest
         }
 
         long endTime = System.currentTimeMillis();
-        assertThat( endTime - startTime, greaterThanOrEqualTo( TIMEOUT ) );
+        assertThat( endTime - startTime, greaterThanOrEqualTo( timeout ) );
     }
 
     @Test

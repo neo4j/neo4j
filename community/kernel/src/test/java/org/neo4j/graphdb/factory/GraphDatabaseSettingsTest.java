@@ -99,8 +99,8 @@ public class GraphDatabaseSettingsTest
 
         // when
         BoltConnector boltConnector = new BoltConnector( scoping );
-        Setting<AdvertisedSocketAddress> advertised_address = boltConnector.advertised_address;
-        AdvertisedSocketAddress advertisedSocketAddress = advertised_address.apply( config::get );
+        Setting<AdvertisedSocketAddress> advertisedAddress = boltConnector.advertised_address;
+        AdvertisedSocketAddress advertisedSocketAddress = advertisedAddress.apply( config::get );
 
         // then
         assertEquals( hostname, advertisedSocketAddress.getHostname() );

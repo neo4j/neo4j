@@ -39,7 +39,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
@@ -608,30 +607,30 @@ public class TransactionRecordStateTest
          */
         // Given:
         // - dense node threshold of 5
-        // - node with 4 rels of type A and 1 rel of type B
+        // - node with 4 rels of type relationshipB and 1 rel of type relationshipB
         NeoStores neoStore = neoStoresRule.builder()
                 .with( GraphDatabaseSettings.dense_node_threshold.name(), "5" ).build();
-        int A = 0;
-        int B = 1;
+        int relationshipA = 0;
+        int relationshipB = 1;
         TransactionRecordState state = newTransactionRecordState( neoStore );
         state.nodeCreate( 0 );
-        state.relCreate( 0, A, 0, 0 );
-        state.relCreate( 1, A, 0, 0 );
-        state.relCreate( 2, A, 0, 0 );
-        state.relCreate( 3, A, 0, 0 );
-        state.relCreate( 4, B, 0, 0 );
+        state.relCreate( 0, relationshipA, 0, 0 );
+        state.relCreate( 1, relationshipA, 0, 0 );
+        state.relCreate( 2, relationshipA, 0, 0 );
+        state.relCreate( 3, relationshipA, 0, 0 );
+        state.relCreate( 4, relationshipB, 0, 0 );
         apply( neoStore, state );
 
-        // When doing a tx where a relationship of type A for the node is create and rel of type B is deleted
+        // When doing a tx where a relationship of type A for the node is create and rel of type relationshipB is deleted
         state = newTransactionRecordState( neoStore );
-        state.relCreate( 5, A, 0, 0 ); // here this node should be converted to dense and the groups should be created
-        state.relDelete( 4 ); // here the group B should be delete
+        state.relCreate( 5, relationshipA, 0, 0 ); // here this node should be converted to dense and the groups should be created
+        state.relDelete( 4 ); // here the group relationshipB should be delete
 
         // Then
         Collection<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
         RelationshipGroupCommand group = singleRelationshipGroupCommand( commands );
-        assertEquals( A, group.getAfter().getType() );
+        assertEquals( relationshipA, group.getAfter().getType() );
     }
 
     @Test

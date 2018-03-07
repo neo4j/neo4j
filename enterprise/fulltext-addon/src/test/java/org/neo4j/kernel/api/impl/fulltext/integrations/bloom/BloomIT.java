@@ -516,8 +516,8 @@ public class BloomIT
     @Test
     public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
     {
-        String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
-        String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
+        final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
+        final String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
         builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, ENGLISH );
 

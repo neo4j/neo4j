@@ -101,8 +101,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             while ( !shouldStop.get() )
             {
                 boolean updateCounter = rng.nextBoolean();
-                int pf_flags = updateCounter ? PF_SHARED_WRITE_LOCK : PF_SHARED_READ_LOCK;
-                performReadOrUpdate( rng, updateCounter, pf_flags );
+                int pfFlags = updateCounter ? PF_SHARED_WRITE_LOCK : PF_SHARED_READ_LOCK;
+                performReadOrUpdate( rng, updateCounter, pfFlags );
             }
 
             return new UpdateResult( threadId, pageCounts );
@@ -512,10 +512,10 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             long maxPageId = pagedFile.getLastPageId();
             boolean performingRead = rng.nextBoolean() && maxPageId != -1;
             long startingPage = maxPageId < 0 ? 0 : rng.nextLong( maxPageId + 1 );
-            int pf_flags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
+            int pfFlags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
             int pageSize = pagedFile.pageSize();
 
-            try ( PageCursor cursor = pagedFile.io( startingPage, pf_flags ) )
+            try ( PageCursor cursor = pagedFile.io( startingPage, pfFlags ) )
             {
                 if ( performingRead )
                 {
