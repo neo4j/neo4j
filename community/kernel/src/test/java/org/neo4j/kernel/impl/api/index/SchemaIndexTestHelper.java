@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -38,7 +37,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class SchemaIndexTestHelper
 {
@@ -78,10 +76,7 @@ public class SchemaIndexTestHelper
 
     public static IndexProxy mockIndexProxy() throws IOException
     {
-        IndexProxy result = mock( IndexProxy.class );
-        when( result.drop() ).thenReturn( FutureAdapter.VOID );
-        when( result.close() ).thenReturn( FutureAdapter.VOID );
-        return result;
+        return mock( IndexProxy.class );
     }
 
     public static <T> T awaitFuture( Future<T> future )

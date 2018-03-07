@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -34,7 +33,6 @@ import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
-import static org.neo4j.helpers.FutureAdapter.VOID;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class IndexProxyAdapter implements IndexProxy
@@ -51,9 +49,8 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop()
+    public void drop()
     {
-        return VOID;
     }
 
     @Override
@@ -78,9 +75,8 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public Future<Void> close()
+    public void close()
     {
-        return VOID;
     }
 
     @Override

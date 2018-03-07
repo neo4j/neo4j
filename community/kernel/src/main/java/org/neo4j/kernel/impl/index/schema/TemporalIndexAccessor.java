@@ -237,31 +237,31 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         }
 
         @Override
-        public PartAccessor<?> newDateTime() throws IOException
+        public PartAccessor<?> newDateTime()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newDateTimeZoned() throws IOException
+        public PartAccessor<?> newDateTimeZoned()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newTime() throws IOException
+        public PartAccessor<?> newTime()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newTimeZoned() throws IOException
+        public PartAccessor<?> newTimeZoned()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newDuration() throws IOException
+        public PartAccessor<?> newDuration()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
