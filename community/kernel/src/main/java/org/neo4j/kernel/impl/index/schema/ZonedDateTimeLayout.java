@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 class ZonedDateTimeLayout extends BaseLayout<ZonedDateTimeSchemaKey>
 {
     private static final int ZONE_ID_FLAG = 0x0100_0000;
-    private static final int NO_ZONE_ID_FLAG = 0x0000_FFFF;
+    private static final int ZONE_ID_MASK = 0x0000_FFFF;
 
     public static Layout<ZonedDateTimeSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
     {
@@ -93,15 +93,15 @@ class ZonedDateTimeLayout extends BaseLayout<ZonedDateTimeSchemaKey>
         into.epochSecondUTC = cursor.getLong();
         into.nanoOfSecond = cursor.getInt();
         int encodedZone = cursor.getInt();
-        if ( ( encodedZone & ZONE_ID_FLAG ) != 0 )
+        if ( isZoneId( encodedZone ) )
         {
-            into.zoneId = (short) ( encodedZone & NO_ZONE_ID_FLAG );
+            into.zoneId = asZoneId( encodedZone );
             into.zoneOffsetSeconds = 0;
         }
         else
         {
             into.zoneId = -1;
-            into.zoneOffsetSeconds = encodedZone;
+            into.zoneOffsetSeconds = asZoneOffset( encodedZone );
         }
         into.setEntityId( cursor.getLong() );
     }
@@ -110,5 +110,20 @@ class ZonedDateTimeLayout extends BaseLayout<ZonedDateTimeSchemaKey>
     public boolean fixedSize()
     {
         return true;
+    }
+
+    private int asZoneOffset( int encodedZone )
+    {
+        return encodedZone;
+    }
+
+    private short asZoneId( int encodedZone )
+    {
+        return (short) ( encodedZone & ZONE_ID_MASK);
+    }
+
+    private boolean isZoneId( int encodedZone )
+    {
+        return ( encodedZone & ZONE_ID_FLAG ) != 0;
     }
 }

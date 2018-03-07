@@ -109,6 +109,7 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
         this.epochSecondUTC = epochSecondUTC;
         this.nanoOfSecond = nano;
         this.zoneId = TimeZoneMapping.map( zoneId );
+        this.zoneOffsetSeconds = 0;
     }
 
     @Override
