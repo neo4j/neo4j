@@ -160,10 +160,10 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       throwsException(typeParameter("E")))) { (codeBlock: CodeBlock) =>
       val structure = new GeneratedMethodStructure(fields, codeBlock, new AuxGenerator(conf.packageName, generator), onClose =
         Seq((success: Boolean) => (block: CodeBlock) => {
+          block.expression(invoke(block.self(), methodReference(block.owner(), TypeReference.VOID, "closeCursors")))
           val target = Expression.get(block.self(), fields.closeable)
           val reference = method[Completable, Unit]("completed", typeRef[Boolean])
           block.expression(invoke(target, reference, Expression.constant(success)))
-          block.expression(invoke(block.self(), methodReference(block.owner(), TypeReference.VOID, "closeCursors")))
         }))
       codeBlock.assign(typeRef[ResultRecord], "row",
                        invoke(newInstance(typeRef[ResultRecord]),

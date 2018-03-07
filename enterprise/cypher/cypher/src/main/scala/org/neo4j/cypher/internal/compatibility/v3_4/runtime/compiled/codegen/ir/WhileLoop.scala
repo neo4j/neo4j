@@ -33,6 +33,7 @@ case class WhileLoop(variable: Variable, producer: LoopDataGenerator, action: In
         producer.getNext(variable, iterator, loopBody)
         action.body(loopBody)
       }
+      producer.close(iterator, generator)
     }
   }
 
