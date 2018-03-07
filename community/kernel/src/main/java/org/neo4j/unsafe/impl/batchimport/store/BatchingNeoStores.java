@@ -340,7 +340,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         // Here as a safety mechanism when e.g. panicking.
         if ( flusher != null )
@@ -351,14 +351,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         flushAndForce();
 
         // Flush out all pending changes
-        propertyKeyRepository.close();
-        labelRepository.close();
-        relationshipTypeRepository.close();
+        safeClose( propertyKeyRepository, labelRepository, relationshipTypeRepository );
 
         // Close the neo store
         life.shutdown();
-        neoStores.close();
-        temporaryNeoStores.close();
+        safeClose( neoStores, temporaryNeoStores );
         if ( !externalPageCache )
         {
             pageCache.close();
@@ -367,6 +364,25 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         if ( successful )
         {
             cleanup();
+        }
+    }
+
+    private void safeClose( AutoCloseable... closeables ) throws IOException
+    {
+        for ( AutoCloseable closeable : closeables )
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch ( IOException e )
+            {
+                throw e;
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -429,12 +445,30 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     public void flushAndForce()
     {
-        propertyKeyRepository.flush();
-        labelRepository.flush();
-        relationshipTypeRepository.flush();
-        neoStores.flush( unlimited() );
-        temporaryNeoStores.flush( unlimited() );
-        labelScanStore.force( unlimited() );
+        if ( propertyKeyRepository != null )
+        {
+            propertyKeyRepository.flush();
+        }
+        if ( labelRepository != null )
+        {
+            labelRepository.flush();
+        }
+        if ( relationshipTypeRepository != null )
+        {
+            relationshipTypeRepository.flush();
+        }
+        if ( neoStores != null )
+        {
+            neoStores.flush( unlimited() );
+        }
+        if ( temporaryNeoStores != null )
+        {
+            temporaryNeoStores.flush( unlimited() );
+        }
+        if ( labelScanStore != null )
+        {
+            labelScanStore.force( unlimited() );
+        }
     }
 
     public void success()
