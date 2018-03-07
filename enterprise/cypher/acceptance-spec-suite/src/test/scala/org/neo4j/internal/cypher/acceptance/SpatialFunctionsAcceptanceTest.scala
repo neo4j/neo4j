@@ -104,17 +104,23 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should fail properly if missing cartesian coordinates") {
-    failWithError(pointConfig, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
+    failWithError(pointConfig, "RETURN point({params}) as point",
+      List("A cartesian point must contain 'x' and 'y'",
+           "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
       params = "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
   }
 
   test("should fail properly if missing geographic longitude") {
-    failWithError(pointConfig, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
+    failWithError(pointConfig, "RETURN point({params}) as point",
+      List("A WGS-84 point must contain 'latitude' and 'longitude'",
+           "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
       params = "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
   }
 
   test("should fail properly if missing geographic latitude") {
-    failWithError(pointConfig, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
+    failWithError(pointConfig, "RETURN point({params}) as point",
+      List("A WGS-84 point must contain 'latitude' and 'longitude'",
+           "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
       params = "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
   }
 

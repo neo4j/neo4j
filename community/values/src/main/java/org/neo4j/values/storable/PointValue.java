@@ -21,15 +21,21 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.PrettyPrinter;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static org.neo4j.values.storable.ValueGroup.NUMBER;
+import static org.neo4j.values.storable.ValueGroup.TEXT;
 
 public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
@@ -254,5 +260,223 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
         }
         return true;
+    }
+
+    public static PointValue fromMap( MapValue map )
+    {
+        AnyValue[] fields = new Value[PointValueField.values().length];
+        for ( PointValueField f : PointValueField.values() )
+        {
+            AnyValue fieldValue = map.get( f.name().toLowerCase() );
+            fields[f.ordinal()] = fieldValue != Values.NO_VALUE ? fieldValue : null;
+        }
+        return fromInputFields( fields );
+    }
+
+    private static Pattern mapPattern = Pattern.compile( "\\{(.*)\\}" );
+    private static Pattern keyValuePattern =
+        Pattern.compile( "(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)" );
+
+    private static Pattern quotesPattern = Pattern.compile( "^[\"']|[\"']$" );
+
+    public static PointValue parse( CharSequence text )
+    {
+        Matcher mapMatcher = mapPattern.matcher( text );
+        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1  ) )
+        {
+            String errorMessage = format( "Failed to parse point value: '%s'", text );
+            throw new IllegalArgumentException( errorMessage );
+        }
+
+        String mapContents = mapMatcher.group( 1 );
+        if ( mapContents.isEmpty() )
+        {
+            String errorMessage = format( "Failed to parse point value: '%s'", text );
+            throw new IllegalArgumentException( errorMessage );
+        }
+
+        Matcher matcher = keyValuePattern.matcher( mapContents );
+        if ( !(matcher.find() ) )
+        {
+            String errorMessage = format( "Failed to parse point value: '%s'", text );
+            throw new IllegalArgumentException( errorMessage );
+        }
+
+        Value[] fields = new Value[PointValueField.values().length];
+
+        do
+        {
+            String key = matcher.group( "k" );
+            if ( key != null )
+            {
+                PointValueField field = null;
+                try
+                {
+                    // NOTE: We let the key be case-insensitive here
+                    field = PointValueField.valueOf( PointValueField.class, key.toUpperCase() );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    // Ignore unknown fields
+                }
+
+                if ( field != null )
+                {
+                    if ( fields[field.ordinal()] != null )
+                    {
+                        String errorMessage =
+                                format( "Failed to parse point value: '%s'. Duplicate field '%s' is not allowed.",
+                                        text, key );
+                        throw new IllegalArgumentException( errorMessage );
+                    }
+
+                    String value = matcher.group( "v" );
+                    if ( value != null )
+                    {
+                        switch ( field.valueType() )
+                        {
+                        case NUMBER:
+                        {
+                            DoubleValue doubleValue = Values.doubleValue( Double.parseDouble( value ) );
+                            fields[field.ordinal()] = doubleValue;
+                            break;
+                        }
+
+                        case TEXT:
+                        {
+                            // Eliminate any quoutes
+                            String unquotedValue = quotesPattern.matcher( value ).replaceAll( "" );
+                            fields[field.ordinal()] = Values.stringValue( unquotedValue );
+                            break;
+                        }
+
+                        default:
+                            // Just ignore unknown fields
+                        }
+                    }
+                }
+            }
+        } while ( matcher.find() );
+
+        return fromInputFields( fields );
+    }
+
+    /**
+     * This contains the logic to decide the default coordinate reference system based on the input fields
+     */
+    private static PointValue fromInputFields( AnyValue[] fields )
+    {
+        CoordinateReferenceSystem crs;
+        double[] coordinates;
+
+        AnyValue crsValue = fields[PointValueField.CRS.ordinal()];
+        if ( crsValue != null )
+        {
+            TextValue crsName = (TextValue) crsValue;
+            crs = CoordinateReferenceSystem.byName( crsName.stringValue() );
+            if ( crs == null )
+            {
+                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crsName.stringValue() );
+            }
+        }
+        else
+        {
+            crs = null;
+        }
+
+        AnyValue xValue = fields[PointValueField.X.ordinal()];
+        AnyValue yValue = fields[PointValueField.Y.ordinal()];
+        AnyValue latitudeValue = fields[PointValueField.LATITUDE.ordinal()];
+        AnyValue longitudeValue = fields[PointValueField.LONGITUDE.ordinal()];
+
+        if ( xValue != null && yValue != null )
+        {
+            double x = ((NumberValue) xValue).doubleValue();
+            double y = ((NumberValue) yValue).doubleValue();
+            AnyValue zValue = fields[PointValueField.Z.ordinal()];
+
+            coordinates = zValue != null ? new double[]{x, y, ((NumberValue) zValue).doubleValue()} : new double[]{x, y};
+            if ( crs == null )
+            {
+                crs = coordinates.length == 3 ? CoordinateReferenceSystem.Cartesian_3D : CoordinateReferenceSystem.Cartesian;
+            }
+        }
+        else if ( latitudeValue != null && longitudeValue != null )
+        {
+            double x = ((NumberValue) longitudeValue).doubleValue();
+            double y = ((NumberValue) latitudeValue).doubleValue();
+            AnyValue zValue = fields[PointValueField.Z.ordinal()];
+            AnyValue heightValue = fields[PointValueField.HEIGHT.ordinal()];
+            if ( zValue != null )
+            {
+                coordinates = new double[]{x, y, ((NumberValue) zValue).doubleValue()};
+            }
+            else if ( heightValue != null )
+            {
+                coordinates = new double[]{x, y, ((NumberValue) heightValue).doubleValue()};
+            }
+            else
+            {
+                coordinates = new double[]{x, y};
+            }
+            if ( crs == null )
+            {
+                crs = coordinates.length == 3 ? CoordinateReferenceSystem.WGS84_3D : CoordinateReferenceSystem.WGS84;
+            }
+            if ( !crs.isGeographic() )
+            {
+                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs );
+            }
+        }
+        else
+        {
+            if ( crs == CoordinateReferenceSystem.Cartesian )
+            {
+                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.Cartesian.getName() + " point must contain 'x' and 'y'" );
+            }
+            else if ( crs == CoordinateReferenceSystem.Cartesian_3D )
+            {
+                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.Cartesian_3D.getName() + " point must contain 'x', 'y' and 'z'" );
+            }
+            else if ( crs == CoordinateReferenceSystem.WGS84 )
+            {
+                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.WGS84.getName() + " point must contain 'latitude' and 'longitude'" );
+            }
+            else if ( crs == CoordinateReferenceSystem.WGS84_3D )
+            {
+                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.WGS84_3D.getName() +
+                                                    " point must contain 'latitude', 'longitude' and 'height'" );
+            }
+            throw new IllegalArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
+        }
+
+        if ( crs.getDimension() != coordinates.length )
+        {
+            throw new IllegalArgumentException( "Cannot create " + crs.getDimension() + "D point with " + coordinates.length + " coordinates" );
+        }
+        return Values.pointValue( crs, coordinates );
+    }
+
+    private enum PointValueField
+    {
+        X( NUMBER ),
+        Y( NUMBER ),
+        Z( NUMBER ),
+        LATITUDE( NUMBER ),
+        LONGITUDE( NUMBER ),
+        HEIGHT( NUMBER ),
+        CRS( TEXT );
+
+        PointValueField( ValueGroup valueType )
+        {
+            this.valueType = valueType;
+        }
+
+        ValueGroup valueType()
+        {
+            return valueType;
+        }
+
+        private ValueGroup valueType;
     }
 }

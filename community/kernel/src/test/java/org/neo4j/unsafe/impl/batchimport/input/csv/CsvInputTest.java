@@ -52,6 +52,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
@@ -452,6 +454,30 @@ public class CsvInputTest
             // THEN
             assertNextNode( nodes, 0L, new Object[] {"name", "Mattias"}, labels() );
             assertNextNode( nodes, 1L, new Object[] {"name", "Johan", "extra", 10}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParsePointPropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,point:Point\n" +
+                "0,Mattias,\"{x: 2.7, y:3.2 }\"\n" +
+                "1,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2 } \"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "point",
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.7, 3.2) }, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "point",
+                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 5, -4.2, 0.01)}, labels() );
             assertFalse( readNext( nodes ) );
         }
     }

@@ -34,10 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -66,6 +68,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.values.storable.PointValue;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -96,6 +99,10 @@ public class CsvInputBatchImportIT
     private String nameOf( InputEntity node )
     {
         return (String) node.properties()[1];
+    }
+    private int indexOf( InputEntity node )
+    {
+        return Integer.parseInt(((String) node.properties()[1]).split( "\\s" )[1] ) ;
     }
 
     @Rule
@@ -170,6 +177,7 @@ public class CsvInputBatchImportIT
             InputEntity node = new InputEntity();
             node.id( UUID.randomUUID().toString(), Group.GLOBAL );
             node.property( "name", "Node " + i );
+            node.property( "point", "\"   { x : -4.2, y : " + i + ", crs: WGS-84 } \"");
             node.labels( randomLabels( random ) );
             nodes.add( node );
         }
@@ -227,13 +235,13 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
-            println( writer, "id:ID,name,some-labels:LABEL" );
+            println( writer, "id:ID,name,point:Point,some-labels:LABEL" );
 
             // Data
             for ( InputEntity node : nodeData )
             {
                 String csvLabels = csvLabels( node.labels() );
-                println( writer, node.id() + "," + node.properties()[1] + "," +
+                println( writer, node.id() + "," + node.properties()[1] + "," + node.properties()[3] + "," +
                         (csvLabels != null && csvLabels.length() > 0 ? csvLabels : "") );
             }
         }
@@ -283,13 +291,14 @@ public class CsvInputBatchImportIT
         // Build up expected data for the verification below
         Map<String/*id*/, InputEntity> expectedNodes = new HashMap<>();
         Map<String,String[]> expectedNodeNames = new HashMap<>();
+        Map<String, Map<String,Consumer<Object>>> expectedNodePropertyVerifiers = new HashMap<>();
         Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>> expectedRelationships =
                 new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicInteger.class ) ) ) );
         Map<String, AtomicLong> expectedNodeCounts = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
         Map<String, Map<String, Map<String, AtomicLong>>> expectedRelationshipCounts =
                 new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicLong.class ) ) ) );
-        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedRelationships,
-                expectedNodeCounts, expectedRelationshipCounts );
+        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedNodePropertyVerifiers,
+                expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
@@ -301,6 +310,19 @@ public class CsvInputBatchImportIT
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
                 assertEquals( asSet( labels ), names( node.getLabels() ) );
+
+                // Verify node properties
+                Map<String,Consumer<Object>> expectedPropertyVerifiers = expectedNodePropertyVerifiers.remove( name );
+                Map<String,Object> actualProperties = node.getAllProperties();
+                actualProperties.remove( "id" ); // The id does not exist in expected properties
+                for ( Map.Entry actualProperty : actualProperties.entrySet() )
+                {
+                    Consumer v = expectedPropertyVerifiers.get( actualProperty.getKey() );
+                    if ( v != null )
+                    {
+                        v.accept( actualProperty.getValue() );
+                    }
+                }
             }
             assertEquals( 0, expectedNodeNames.size() );
 
@@ -444,6 +466,7 @@ public class CsvInputBatchImportIT
             List<InputEntity> relationshipData,
             Map<String, InputEntity> expectedNodes,
             Map<String, String[]> expectedNodeNames,
+            Map<String, Map<String,Consumer<Object>>> expectedNodePropertyVerifiers,
             Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships,
             Map<String, AtomicLong> nodeCounts,
             Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts )
@@ -452,6 +475,34 @@ public class CsvInputBatchImportIT
         {
             expectedNodes.put( (String) node.id(), node );
             expectedNodeNames.put( nameOf( node ), node.labels() );
+
+            // Build default verifiers for all the properties that compares the property value using equals
+            assert node.hasIntPropertyKeyIds == false;
+            Map<String,Consumer<Object>> propertyVerifiers = new TreeMap<>();
+            for ( int i = 0; i < node.propertyCount(); i++ )
+            {
+                final Object expectedValue = node.propertyValue( i );
+                Consumer verify = actualValue ->
+                {
+                    assertEquals( expectedValue, actualValue );
+                };
+                propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
+            }
+
+            // Special verifier for point property
+            Consumer verifyPoint = actualValue ->
+            {
+                // The y-coordinate should match the node number
+                PointValue v = (PointValue) actualValue;
+                double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
+                double expectedY = indexOf( node );
+                String message = actualValue.toString() + " does not have y=" + expectedY;
+                assertEquals( message, expectedY, actualY, 0.1 );
+            };
+            propertyVerifiers.put( "point", verifyPoint );
+
+            expectedNodePropertyVerifiers.put( nameOf( node ), propertyVerifiers );
+
             countNodeLabels( nodeCounts, node.labels() );
         }
         for ( InputEntity relationship : relationshipData )

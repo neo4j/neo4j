@@ -31,20 +31,22 @@ public class AnyValueTestUtil
 {
     public static void assertEqual( AnyValue a, AnyValue b )
     {
-        assertTrue(
-                String.format( "%s should be equivalent to %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+        assertTrue( formatMessage( "should be equivalent to", a, b ),
                 a.equals( b ) );
         assertTrue(
-                String.format( "%s should be equivalent to %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+                formatMessage( "should be equivalent to", b, a ),
                 b.equals( a ) );
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+        assertTrue( formatMessage( "should be equal to", a, b ),
                 a.ternaryEquals( b ) );
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+        assertTrue( formatMessage( "should be equal to", b, a ),
                 b.ternaryEquals( a ) );
-        assertTrue( String.format( "%s should have same hashcode as %s", a.getClass().getSimpleName(),
-                b.getClass().getSimpleName() ), a.hashCode() == b.hashCode() );
+        assertTrue( formatMessage( "should have same hashcode as", a, b ),
+                a.hashCode() == b.hashCode() );
+    }
+
+    private static String formatMessage( String should, AnyValue a, AnyValue b )
+    {
+        return String.format( "%s(%s) %s %s(%s)", a.getClass().getSimpleName(), a.toString(), should, b.getClass().getSimpleName(), b.toString() );
     }
 
     public static void assertEqualValues( AnyValue a, AnyValue b )

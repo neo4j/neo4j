@@ -148,6 +148,7 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -161,7 +162,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyIterator;
@@ -408,7 +408,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
         RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords = recordAccess.getPropertyRecords();
 
-        propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, Values.of( propertyValue ), propertyRecords );
+        propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, ValueUtils.asValue( propertyValue ), propertyRecords );
     }
 
     private void validateIndexCanBeCreated( int labelId, int[] propertyKeyIds )
@@ -773,7 +773,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             protected PropertyBlock underlyingObjectToObject( Entry<String, Object> property )
             {
                 return propertyCreator.encodePropertyValue(
-                        getOrCreatePropertyKeyId( property.getKey() ), Values.of( property.getValue() ) );
+                        getOrCreatePropertyKeyId( property.getKey() ), ValueUtils.asValue( property.getValue() ) );
             }
         };
     }
