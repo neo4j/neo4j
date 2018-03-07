@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -184,8 +183,8 @@ public class FixturesTestIT
         catch ( RuntimeException e )
         {
             assertThat( e.getMessage(), equalTo(
-                    "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() +
-                    "\"this is not a valid cypher statement\"" + lineSeparator() + " ^" ) );
+                    "Invalid input 'h': expected 'r/R' (line 1, column 2 (offset: 1))" + lineSeparator() +
+                    "\"this is not a valid cypher statement\"" + lineSeparator() + "  ^" ) );
         }
     }
 
