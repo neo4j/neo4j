@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core;
 
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
@@ -46,6 +47,7 @@ import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolRepository;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -61,12 +63,11 @@ class RaftServerModule
     private final MessageLogger<MemberId> messageLogger;
     private final LogProvider logProvider;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
-    private final TopologyService topologyService;
     private final RaftServer raftServer;
 
     RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
             LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger,
-            CoreTopologyService topologyService )
+            UpstreamDatabaseStrategySelector strategySelector )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
@@ -75,9 +76,8 @@ class RaftServerModule
         this.messageLogger = messageLogger;
         this.logProvider = platformModule.logging.getInternalLogProvider();
         this.pipelineBuilderFactory = pipelineBuilderFactory;
-        this.topologyService = topologyService;
 
-        LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule );
+        LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule, strategySelector );
 
         raftServer = createRaftServer( coreServerModule, messageHandlerChain );
     }
@@ -112,11 +112,13 @@ class RaftServerModule
         return raftServer;
     }
 
-    private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule )
+    private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule,
+            UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector )
     {
+        CatchupAddressProvider catchupAddressProvider = new CatchupAddressProvider.TopologyCatchupAddressProvider( upstreamDatabaseStrategySelector );
         RaftMessageApplier messageApplier =
                 new RaftMessageApplier( localDatabase, logProvider, consensusModule.raftMachine(), coreServerModule.downloadService(),
-                        coreServerModule.commandApplicationProcess(), topologyService );
+                        coreServerModule.commandApplicationProcess(), catchupAddressProvider );
 
         ComposableMessageHandler monitoringHandler = RaftMessageMonitoringHandler.composable( platformModule.clock, platformModule.monitors );
 

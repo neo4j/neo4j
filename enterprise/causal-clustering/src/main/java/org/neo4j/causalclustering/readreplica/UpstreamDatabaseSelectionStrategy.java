@@ -44,7 +44,7 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
     }
 
     // Service loader can't inject via the constructor
-    void inject( TopologyService topologyService, Config config, LogProvider logProvider, MemberId myself )
+    public void inject( TopologyService topologyService, Config config, LogProvider logProvider, MemberId myself )
     {
         this.topologyService = topologyService;
         this.config = config;

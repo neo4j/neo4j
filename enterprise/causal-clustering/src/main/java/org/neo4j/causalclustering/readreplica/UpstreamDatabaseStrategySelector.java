@@ -41,9 +41,8 @@ public class UpstreamDatabaseStrategySelector
         this( defaultStrategy, empty(), null, NullLogProvider.getInstance() );
     }
 
-    UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy,
-                                      Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies, MemberId myself,
-                                      LogProvider logProvider )
+    public UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy, Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies,
+            MemberId myself, LogProvider logProvider )
     {
         this.myself = myself;
         this.log = logProvider.getLog( getClass() );

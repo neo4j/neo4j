@@ -34,10 +34,10 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.core.state.snapshot.IdentityMetaData;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.FormattedLogProvider;
@@ -46,7 +46,6 @@ import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +67,8 @@ public class StoreCopyClientTest
 
     // params
     private final AdvertisedSocketAddress expectedAdvertisedAddress = new AdvertisedSocketAddress( "host", 1234 );
-    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( expectedAdvertisedAddress );
+    private final IdentityMetaData identityMetaData = new IdentityMetaData( expectedAdvertisedAddress, null, null, null, null );
+    private final CatchupAddressProvider catchupAddressProvider = () -> identityMetaData;
     private final StoreId expectedStoreId = new StoreId( 1, 2, 3, 4 );
     private final StoreFileStreams expectedStoreFileStreams = mock( StoreFileStreams.class );
 
@@ -210,6 +210,20 @@ public class StoreCopyClientTest
 
         // when copy is performed
         subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStreams, continueIndefinitely() );
+    }
+
+    @Test
+    public void clientCanUseDifferentHostsWithinConstraints()
+    {
+        // given we have a policy that doesn't return the same address
+
+        // when copy is performed
+
+        // then the store id and initial copy and listing are from one host
+
+        // and the the individual files are from other hosts
+
+        // and the native indexes are copied from another single unique host
     }
 
     private List<CatchUpRequest> getRequests() throws CatchUpClientException

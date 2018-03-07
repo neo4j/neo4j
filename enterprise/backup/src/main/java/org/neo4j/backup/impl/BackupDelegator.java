@@ -55,7 +55,7 @@ class BackupDelegator extends LifecycleAdapter
     {
         try
         {
-            remoteStore.copy( new CatchupAddressProvider.SingleAddressProvider( fromAddress ), expectedStoreId, destDir.toFile() );
+            remoteStore.copy( () -> fromAddress, expectedStoreId, destDir.toFile() );
         }
         catch ( StreamingTransactionsFailedException e )
         {

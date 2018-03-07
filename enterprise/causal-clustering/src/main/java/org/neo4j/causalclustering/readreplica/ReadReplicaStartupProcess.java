@@ -28,6 +28,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
+import org.neo4j.causalclustering.core.state.snapshot.IdentityMetaData;
 import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
@@ -169,7 +170,8 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            storeCopyProcess.replaceWithStoreFrom( CatchupAddressProvider.fromSingleAddress( fromAddress ), storeId );
+            CatchupAddressProvider catchupAddressProvider = () -> new IdentityMetaData( fromAddress, null, null, null, null );// TODO
+            storeCopyProcess.replaceWithStoreFrom( catchupAddressProvider, storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }

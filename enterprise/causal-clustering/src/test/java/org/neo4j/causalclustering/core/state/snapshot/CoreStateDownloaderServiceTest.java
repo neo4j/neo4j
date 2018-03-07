@@ -54,7 +54,8 @@ public class CoreStateDownloaderServiceTest
 {
     private final MemberId someMember = new MemberId( UUID.randomUUID() );
     private final AdvertisedSocketAddress someMemberAddress = new AdvertisedSocketAddress( "localhost", 1234 );
-    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( someMemberAddress );
+    private final IdentityMetaData identityMetaData = new IdentityMetaData( someMemberAddress, null, null, null, null );
+    private final CatchupAddressProvider catchupAddressProvider = () -> identityMetaData;
     private Neo4jJobScheduler neo4jJobScheduler;
 
     @Before
@@ -85,7 +86,7 @@ public class CoreStateDownloaderServiceTest
 
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
-        verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( any() );
+        verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( any(), identityMetaData );
     }
 
     @Test

@@ -72,6 +72,7 @@ import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -127,7 +128,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
  */
-public class EnterpriseCoreEditionModule extends EditionModule
+public class EnterpriseCoreEditionModule extends SharedEnterpriseEditionModule
 {
     private final ConsensusModule consensusModule;
     private final ReplicationModule replicationModule;
@@ -284,10 +285,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
                 replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), serverPipelineWrapper, clientPipelineWrapper );
 
-        serverInstalledProtocols = new RaftServerModule(
-                platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory, messageLogger,
-                topologyService
-        ).raftServer()::installedProtocols;
+        UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector =
+                getUpstreamDatabaseStrategySelector( config, topologyService, identityModule.myself(), logProvider );
+        serverInstalledProtocols =
+                new RaftServerModule( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory,
+                        messageLogger, upstreamDatabaseStrategySelector ).raftServer()::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
