@@ -82,8 +82,8 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
                     descriptionProvider: DescriptionProvider, params: MapValue,
                     closer: TaskCloser): InternalExecutionResult = {
             val (provider, tracer) = descriptionProvider(description)
-            val execution: GeneratedQueryExecution = query.query.execute(closer, queryContext, execMode,
-              provider, tracer.getOrElse(QueryExecutionTracer.NONE),params)
+            val execution: GeneratedQueryExecution = query.query.execute(queryContext, execMode, provider,
+                                                                         tracer.getOrElse(QueryExecutionTracer.NONE),params)
             closer.addTask(queryContext.resources.close)
             new CompiledExecutionResult(closer, queryContext, execution, provider)
           }

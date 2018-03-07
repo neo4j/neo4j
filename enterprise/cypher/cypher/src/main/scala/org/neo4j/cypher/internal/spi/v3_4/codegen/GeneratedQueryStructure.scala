@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
+import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
@@ -113,7 +113,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
     val query = using(generator.generateClass(conf.packageName, className, typeRef[GeneratedQuery])) { clazz =>
       using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
-        param[TaskCloser]("closer"),
         param[QueryContext]("queryContext"),
         param[ExecutionMode]("executionMode"),
         param[Provider[InternalPlanDescription]]("description"),
@@ -123,13 +122,11 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
           invoke(
             newInstance(execution),
             constructorReference(execution,
-              typeRef[TaskCloser],
               typeRef[QueryContext],
               typeRef[ExecutionMode],
               typeRef[Provider[InternalPlanDescription]],
               typeRef[QueryExecutionTracer],
               typeRef[MapValue]),
-            execute.load("closer"),
             execute.load("queryContext"),
             execute.load("executionMode"),
             execute.load("description"),
@@ -202,7 +199,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
                       "COLUMNS", newArray(typeRef[String], columns.map(key => constant(key)):_*))
 
     Fields(
-      closer = clazz.field(typeRef[TaskCloser], "closer"),
       entityAccessor = clazz.field(typeRef[EmbeddedProxySPI], "proxySpi"),
       executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
       description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),

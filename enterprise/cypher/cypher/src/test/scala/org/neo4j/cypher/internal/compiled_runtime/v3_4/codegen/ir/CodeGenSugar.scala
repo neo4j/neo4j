@@ -29,12 +29,11 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.{CompiledEx
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, NormalMode, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, NormalMode, QueryContext}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
@@ -45,8 +44,8 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
@@ -137,7 +136,7 @@ trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport 
                   provider: Provider[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: MapValue = EMPTY_MAP): InternalExecutionResult = {
-    val generated = clazz.execute(taskCloser, queryContext,
+    val generated = clazz.execute(queryContext,
                                   executionMode, provider, queryExecutionTracer, params)
     new CompiledExecutionResult(taskCloser, queryContext, generated, provider)
   }

@@ -23,14 +23,12 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Provid
 import org.neo4j.cypher.internal.runtime.ExecutionMode;
 import org.neo4j.cypher.internal.runtime.QueryContext;
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription;
-import org.neo4j.cypher.internal.util.v3_4.TaskCloser;
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer;
 import org.neo4j.values.virtual.MapValue;
 
 public interface GeneratedQuery
 {
     org.neo4j.cypher.internal.v3_4.executionplan.GeneratedQueryExecution execute(
-            TaskCloser closer,
             QueryContext queryContext,
             ExecutionMode executionMode,
             Provider<InternalPlanDescription> description,

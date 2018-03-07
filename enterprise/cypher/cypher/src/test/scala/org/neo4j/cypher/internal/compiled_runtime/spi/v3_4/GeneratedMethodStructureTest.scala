@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_4.codegen.{GeneratedMethodStructure, Methods, _}
+import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
@@ -228,7 +228,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
     implicit val context = new CodeGenContext(SemanticTable(), Map.empty)
     val clazz = using(codeGen.generateClass(packageName, "Test")) { body =>
       val fields = Fields(
-        closer = body.field(typeRef[TaskCloser], "closer"),
         entityAccessor = body.field(typeRef[EmbeddedProxySPI], "proxySpi"),
         executionMode = body.field(typeRef[ExecutionMode], "executionMode"),
         description = body.field(typeRef[Provider[InternalPlanDescription]], "description"),
