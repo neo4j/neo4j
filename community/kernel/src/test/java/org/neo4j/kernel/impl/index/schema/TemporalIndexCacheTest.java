@@ -23,58 +23,70 @@ import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class TemporalIndexCacheTest
 {
     @Test
     public void shouldIterateOverCreatedParts() throws Exception
     {
-        // GIVEN
         TemporalIndexCache<String, Exception> cache = new TemporalIndexCache<>( new StringFactory() );
-        cache.localDateTime();
-        cache.zonedDateTime();
 
-        // THEN
-        assertEquals( Iterables.count( cache ), 2 );
+        assertEquals( Iterables.count( cache ), 0 );
+
+        cache.localDateTime();
+        cache.zonedTime();
+
+        assertThat( cache, containsInAnyOrder( "LocalDateTime", "ZonedTime" ) );
+
+        cache.date();
+        cache.localTime();
+        cache.localDateTime();
+        cache.zonedTime();
+        cache.zonedDateTime();
+        cache.duration();
+
+        assertThat( cache, containsInAnyOrder( "Date", "LocalDateTime", "ZonedDateTime", "LocalTime", "ZonedTime", "Duration" ) );
     }
 
     static class StringFactory implements TemporalIndexCache.Factory<String, Exception>
     {
         @Override
-        public String newDate() throws Exception
+        public String newDate()
         {
-            return "newDate";
+            return "Date";
         }
 
         @Override
-        public String newLocalDateTime() throws Exception
+        public String newLocalDateTime()
         {
-            return "newLocalDateTime";
+            return "LocalDateTime";
         }
 
         @Override
-        public String newZonedDateTime() throws Exception
+        public String newZonedDateTime()
         {
-            return "newZonedDateTime";
+            return "ZonedDateTime";
         }
 
         @Override
-        public String newLocalTime() throws Exception
+        public String newLocalTime()
         {
-            return "newLocalTime";
+            return "LocalTime";
         }
 
         @Override
-        public String newZonedTime() throws Exception
+        public String newZonedTime()
         {
-            return "newZonedTime";
+            return "ZonedTime";
         }
 
         @Override
-        public String newDuration() throws Exception
+        public String newDuration()
         {
-            return "newDuration";
+            return "Duration";
         }
     }
 }
