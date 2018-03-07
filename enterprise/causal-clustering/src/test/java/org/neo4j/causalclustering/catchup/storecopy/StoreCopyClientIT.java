@@ -204,7 +204,7 @@ public class StoreCopyClientIT
     {
         try ( StoreChannel storeChannel = fileSystemAbstraction.open( file, OpenMode.READ ) )
         {
-            int MAX_BUFFER_SIZE = 100;
+            final int MAX_BUFFER_SIZE = 100;
             ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[MAX_BUFFER_SIZE] );
             StringBuilder stringBuilder = new StringBuilder();
             Predicate<Integer> inRange = betweenZeroAndRange( MAX_BUFFER_SIZE );
