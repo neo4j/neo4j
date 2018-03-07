@@ -25,6 +25,7 @@ import java.time.ZoneOffset;
 import org.neo4j.kernel.impl.store.TimeZoneMapping;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 
@@ -77,11 +78,12 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
         if ( compare == 0 )
         {
             compare = Integer.compare( nanoOfSecond, other.nanoOfSecond );
-        }
-        if ( compare == 0 )
-        {
-            compare = zoneId >= 0 ? Integer.compare( zoneId, other.zoneId ) :
-                                    Integer.compare( zoneOffsetSeconds, zoneOffsetSeconds );
+            if ( compare == 0 && ( zoneId != other.zoneId || zoneOffsetSeconds != other.zoneOffsetSeconds ) )
+            {
+                // In the rare case of comparing the same instant in different time zones, we settle for
+                // mapping to values and comparing using the general values comparator.
+                compare = Values.COMPARATOR.compare( asValue(), other.asValue() );
+            }
         }
         return compare;
     }

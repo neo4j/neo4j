@@ -23,6 +23,7 @@ import java.time.ZoneOffset;
 
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 
@@ -65,9 +66,9 @@ class ZonedTimeSchemaKey extends ComparableNativeSchemaKey<ZonedTimeSchemaKey>
     public int compareValueTo( ZonedTimeSchemaKey other )
     {
         int compare = Long.compare( nanosOfDayUTC, other.nanosOfDayUTC );
-        if ( compare == 0 )
+        if ( compare == 0 && zoneOffsetSeconds != other.zoneOffsetSeconds )
         {
-            compare = Integer.compare( zoneOffsetSeconds, other.zoneOffsetSeconds );
+            compare = Values.COMPARATOR.compare( asValue(), other.asValue() );
         }
         return compare;
     }
