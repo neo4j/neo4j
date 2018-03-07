@@ -85,14 +85,19 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
-        assert multiPopulator.hasPopulators() : "No index populators was added so there'd be no point in running this job";
-        assert storeScan == null : "Population have already started";
-
         String oldThreadName = currentThread().getName();
-        currentThread().setName( "Index populator" );
-
         try
         {
+            if ( !multiPopulator.hasPopulators() )
+            {
+                return;
+            }
+            if ( storeScan != null )
+            {
+                throw new IllegalStateException( "Population already started." );
+            }
+
+            currentThread().setName( "Index populator" );
             try
             {
                 multiPopulator.create();
