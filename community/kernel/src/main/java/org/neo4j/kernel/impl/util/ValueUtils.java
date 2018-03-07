@@ -50,7 +50,6 @@ import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.PointValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.stream.StreamSupport.stream;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
@@ -96,7 +95,7 @@ public final class ValueUtils
             {
                 if ( object instanceof Path )
                 {
-                    return asPathValue( (Path) object );
+                    return fromPath( (Path) object );
                 }
                 else if ( object instanceof List<?> )
                 {
@@ -221,16 +220,6 @@ public final class ValueUtils
         }
     }
 
-    public static PathValue asPathValue( Path path )
-    {
-        NodeValue[] nodes = stream( path.nodes().spliterator(), false )
-                .map( ValueUtils::fromNodeProxy ).toArray( NodeValue[]::new );
-        EdgeValue[] edges = stream( path.relationships().spliterator(), false )
-                .map( ValueUtils::fromRelationshipProxy ).toArray( EdgeValue[]::new );
-
-        return VirtualValues.path( nodes, edges );
-    }
-
     public static ListValue asListOfEdges( Iterable<Relationship> rels )
     {
         return VirtualValues.list( StreamSupport.stream( rels.spliterator(), false )
@@ -323,6 +312,11 @@ public final class ValueUtils
     public static EdgeValue fromRelationshipProxy( Relationship relationship )
     {
         return new RelationshipProxyWrappingEdgeValue( relationship );
+    }
+
+    public static PathValue fromPath( Path path )
+    {
+        return new PathWrappingPathValue( path );
     }
 
     public static final class JavaObjectAnyValue extends AnyValue

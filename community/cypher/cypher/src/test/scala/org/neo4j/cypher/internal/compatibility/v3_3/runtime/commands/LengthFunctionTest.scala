@@ -33,7 +33,7 @@ class LengthFunctionTest extends CypherFunSuite {
   test("length can be used on paths") {
     //given
     val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m = ExecutionContext.from("p" -> ValueUtils.asPathValue(p))
+    val m = ExecutionContext.from("p" -> ValueUtils.fromPath(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
     //when

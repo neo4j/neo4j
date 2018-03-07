@@ -23,7 +23,7 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship, RelationshipType}
-import org.neo4j.kernel.impl.util.ValueUtils.asPathValue
+import org.neo4j.kernel.impl.util.ValueUtils.fromPath
 import org.neo4j.values.storable.Values.NO_VALUE
 
 class PathValueBuilderTest extends CypherFunSuite {
@@ -44,7 +44,7 @@ class PathValueBuilderTest extends CypherFunSuite {
 
     builder.addNode(A)
 
-    builder.result() should equal(asPathValue(PathImpl(A)))
+    builder.result() should equal(fromPath(PathImpl(A)))
   }
 
   test("p = (a)-[r:X]->(b)") {
@@ -53,7 +53,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(A)
       .addOutgoingRelationship(rel1)
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B)))
   }
 
   test("p = (b)<-[r:X]-(a)") {
@@ -62,7 +62,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(B)
       .addIncomingRelationship(rel1)
 
-    builder.result() should equal(asPathValue(PathImpl(B, rel1, A)))
+    builder.result() should equal(fromPath(PathImpl(B, rel1, A)))
   }
 
   test("p = (a)-[r:X]-(b)") {
@@ -71,7 +71,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(A)
       .addUndirectedRelationship(rel1)
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B)))
   }
 
   test("p = (b)-[r:X]-(a)") {
@@ -80,7 +80,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(B)
       .addUndirectedRelationship(rel1)
 
-    builder.result() should equal(asPathValue(PathImpl(B, rel1, A)))
+    builder.result() should equal(fromPath(PathImpl(B, rel1, A)))
   }
 
   test("p = <empty> should throw") {
@@ -97,7 +97,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(A)
       .addOutgoingRelationships(Iterable(rel1, rel2))
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B, rel2, C)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B, rel2, C)))
   }
 
   test("p = (a)-[r:X*]->(b) when rels is null") {
@@ -116,7 +116,7 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addOutgoingRelationship(rel1)
       .addUndirectedRelationship(rel2)
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B, rel2, C)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B, rel2, C)))
   }
 
   test("p = (b)<-[r:X*]-(a)") {
@@ -125,7 +125,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(C)
       .addIncomingRelationships(Iterable(rel2, rel1))
 
-    builder.result() should equal(asPathValue(PathImpl(C, rel2, B, rel1, A)))
+    builder.result() should equal(fromPath(PathImpl(C, rel2, B, rel1, A)))
   }
 
   test("p = (b)<-[r:X*]-(a) when rels is null") {
@@ -143,7 +143,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(C)
       .addUndirectedRelationships(Iterable(rel2, rel1))
 
-    builder.result() should equal(asPathValue(PathImpl(C, rel2, B, rel1, A)))
+    builder.result() should equal(fromPath(PathImpl(C, rel2, B, rel1, A)))
   }
 
   test("p = (b)-[r:X*]-(a) reversed") {
@@ -152,7 +152,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(C)
       .addUndirectedRelationships(Iterable(rel1, rel2))
 
-    builder.result() should equal(asPathValue(PathImpl(C, rel2, B, rel1, A)))
+    builder.result() should equal(fromPath(PathImpl(C, rel2, B, rel1, A)))
   }
 
   test("p = (a)-[r1*]-()-[r2*]-()") {
@@ -162,7 +162,7 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(Iterable(rel1, rel2))
       .addUndirectedRelationships(Iterable(rel3, rel4))
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
   }
 
   test("p = (a)-[r1*]-()-[r2*]-() reversed r1") {
@@ -172,7 +172,7 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(Iterable(rel2, rel1))
       .addUndirectedRelationships(Iterable(rel3, rel4))
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
   }
 
   test("p = (a)-[r1*]-()-[r2*]-() reversed r2") {
@@ -182,7 +182,7 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(Iterable(rel1, rel2))
       .addUndirectedRelationships(Iterable(rel4, rel3))
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
   }
 
   test("p = (a)-[r1*]-()-[r2*]-() reversed r1 && r2") {
@@ -192,7 +192,7 @@ class PathValueBuilderTest extends CypherFunSuite {
       .addUndirectedRelationships(Iterable(rel2, rel1))
       .addUndirectedRelationships(Iterable(rel4, rel3))
 
-    builder.result() should equal(asPathValue(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
+    builder.result() should equal(fromPath(PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E)))
   }
 
   test("p = (b)-[r:X*0]-(a)") {
@@ -201,7 +201,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.addNode(C)
       .addUndirectedRelationships(Iterable())
 
-    builder.result() should equal(asPathValue(PathImpl(C)))
+    builder.result() should equal(fromPath(PathImpl(C)))
   }
 
   test("p = (b)-[r:X*]-(a) when rels is null") {

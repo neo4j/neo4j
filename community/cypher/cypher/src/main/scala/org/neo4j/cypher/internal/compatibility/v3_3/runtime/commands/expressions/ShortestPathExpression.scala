@@ -67,13 +67,13 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
                             shortestPathPredicate, nodePredicates)
       if (!shortestPathPattern.allowZeroLength && result.forall(p => p.length() == 0))
         Values.NO_VALUE
-      else result.map(ValueUtils.asPathValue).getOrElse(Values.NO_VALUE)
+      else result.map(ValueUtils.fromPath).getOrElse(Values.NO_VALUE)
     }
     else {
       val result = state.query
         .allShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
                          shortestPathPredicate, nodePredicates)
-        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }.map(ValueUtils.asPathValue).toArray
+        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }.map(ValueUtils.fromPath).toArray
       VirtualValues.list(result:_*)
     }
   }
@@ -84,7 +84,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     new KernelPredicate[Path] {
       override def test(path: Path): Boolean = maybePredicate.forall {
         predicate =>
-          incomingCtx += shortestPathPattern.pathName -> ValueUtils.asPathValue(path)
+          incomingCtx += shortestPathPattern.pathName -> ValueUtils.fromPath(path)
           incomingCtx += shortestPathPattern.relIterator.get -> ValueUtils.asListOfEdges(path.relationships())
           predicate.isTrue(incomingCtx, state)
       } && (!withFallBack || RelationshipSupport.areRelationshipsUnique(path.relationships.asScala.toList))

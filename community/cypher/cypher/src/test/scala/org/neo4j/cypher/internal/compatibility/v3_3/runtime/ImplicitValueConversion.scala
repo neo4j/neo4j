@@ -79,9 +79,9 @@ object ImplicitValueConversion {
 
   implicit def toEdgeValue(r: Relationship): EdgeValue = ValueUtils.fromRelationshipProxy(r)
 
-  implicit def toPathValue(p: Path): PathValue = ValueUtils.asPathValue(p)
+  implicit def toPathValue(p: Path): PathValue = ValueUtils.fromPath(p)
 
-  implicit def toPathValue(p: PathImpl): PathValue = ValueUtils.asPathValue(p)
+  implicit def toPathValue(p: PathImpl): PathValue = ValueUtils.fromPath(p)
 
   implicit def toListValue(t: TraversableOnce[_]): ListValue =
     ValueUtils.asListValue(t.toIterable.asJava)
