@@ -34,6 +34,7 @@ class IndexDescriptorSerializer
 
     static void serialize( IndexDescriptor indexDescriptor, WritableChannel channel ) throws IOException
     {
+        // TODO handle all SchemaDescriptor types
         org.neo4j.internal.kernel.api.schema.SchemaDescriptor schemaDescriptor = indexDescriptor.schema();
         if ( schemaDescriptor instanceof LabelSchemaDescriptor )
         {
@@ -79,6 +80,7 @@ class IndexDescriptorSerializer
             }
             else
             {
+                // TODO handle fulltext/non-schema descriptors as well.
                 throw new IllegalStateException( "Unhandled schema descriptor type: " + type );
             }
         default:
