@@ -155,7 +155,7 @@ public class TransactionLogAnalyzer
         }
 
         channel = new ReadAheadLogChannel( openVersionedChannel( fileSystem, firstFile ), bridge );
-        //TODO put the proper index provider map here.
+        //TODO empty index provider map, investigate if we need a rel one.
         entryReader = new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory( new DefaultIndexProviderMap( NO_INDEX_PROVIDER ) ),
                 invalidLogEntryHandler );
         positionMarker = new LogPositionMarker();

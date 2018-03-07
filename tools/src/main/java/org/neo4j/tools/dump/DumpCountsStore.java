@@ -89,7 +89,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
                         pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();
-                //TODO put the proper map here.
+                //TODO empty index provider map, investigate if we need a rel one.
                 SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), new DefaultIndexProviderMap( NO_INDEX_PROVIDER ) );
                 neoStores.getCounts().accept( new DumpCountsStore( out, neoStores, schemaStorage ) );
             }

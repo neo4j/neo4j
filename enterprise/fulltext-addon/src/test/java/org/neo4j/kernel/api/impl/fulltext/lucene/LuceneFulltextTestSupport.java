@@ -213,7 +213,7 @@ public class LuceneFulltextTestSupport
 
     protected void await( IndexDescriptor fulltextIndexDescriptor ) throws IndexNotFoundKernelException
     {
-        //TODO real await
+        //TODO change this once you can use normal index await with multi-token indexes
         try ( Transaction ignore = db.beginTx(); Statement stmt = db.statement() )
         {
             //noinspection StatementWithEmptyBody

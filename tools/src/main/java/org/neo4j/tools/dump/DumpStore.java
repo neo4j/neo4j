@@ -254,7 +254,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
     {
         try ( SchemaStore store = neoStores.getSchemaStore() )
         {
-            //TODO put the proper map here.
+            //TODO empty index provider map, investigate if we need a rel one.
             final SchemaStorage storage = new SchemaStorage( store, new DefaultIndexProviderMap( NO_INDEX_PROVIDER ) );
             new DumpStore<DynamicRecord,SchemaStore>( System.out )
             {

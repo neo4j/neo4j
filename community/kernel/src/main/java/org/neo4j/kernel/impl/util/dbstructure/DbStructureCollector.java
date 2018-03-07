@@ -389,7 +389,7 @@ public class DbStructureCollector implements DbStructureVisitor
                 public Pair<String[],String[]> next()
                 {
                     //TODO: Add support for composite indexes
-                    //TODO: Add support for relationship indexes as well?
+                    //TODO: Add support for relationship indexes for DbStructureCollector as well
                     SchemaDescriptor next = iterator.next();
                     String[] enetityTokens = labels.byIdOrFail( next.getEntityTokenIds() );
                     String[] propertyKeyNames = propertyKeys.byIdOrFail( next.getPropertyIds() );

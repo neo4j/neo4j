@@ -55,7 +55,6 @@ public abstract class SchemaKernelException extends KernelException
 
     protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString, SchemaDescriptor descriptor )
     {
-        //TODO do we need to adjust this to represent relationship types as well?
         int[] propertyIds = descriptor.getPropertyIds();
 
         if ( tokenNameLookup != null )
