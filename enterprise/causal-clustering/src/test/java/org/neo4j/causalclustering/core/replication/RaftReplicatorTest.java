@@ -83,7 +83,8 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                        capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -110,7 +111,8 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -165,7 +167,8 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
