@@ -83,14 +83,14 @@ class DurationSchemaKey extends ComparableNativeSchemaKey<DurationSchemaKey>
         if ( comparison == 0 )
         {
             comparison = Integer.compare( nanosOfSecond, other.nanosOfSecond );
-        }
-        if ( comparison == 0 )
-        {
-            comparison = Long.compare( months, other.months );
-        }
-        if ( comparison == 0 )
-        {
-            comparison = Long.compare( days, other.days );
+            if ( comparison == 0 )
+            {
+                comparison = Long.compare( months, other.months );
+                if ( comparison == 0 )
+                {
+                    comparison = Long.compare( days, other.days );
+                }
+            }
         }
         return comparison;
     }
