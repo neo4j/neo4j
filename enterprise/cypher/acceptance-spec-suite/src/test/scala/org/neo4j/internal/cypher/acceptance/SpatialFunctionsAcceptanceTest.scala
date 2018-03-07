@@ -548,15 +548,18 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("accessors on 2D geographic points") {
-    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2}) AS p RETURN p.longitude, p.latitude, p.crs")
-    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "WGS-84")))
+    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2}) AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "WGS-84", "p.x" -> 1.0, "p.y" -> 2.0)))
 
     failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.height", Seq("Field: height is not available"))
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
   }
 
   test("accessors on 3D geographic points") {
-    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2, height:3}) AS p RETURN p.longitude, p.latitude, p.height, p.crs")
-    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.height" -> 3.0, "p.crs" -> "WGS-84-3D")))
+    val result = executeWith(latestPointConfig,
+      "WITH point({longitude: 1, latitude: 2, height:3}) AS p RETURN p.longitude, p.latitude, p.height, p.crs, p.x, p.y, p.z")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.height" -> 3.0, "p.crs" -> "WGS-84-3D",
+                                     "p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0)))
   }
 
 }
