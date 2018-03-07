@@ -19,29 +19,25 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import javax.annotation.Resource;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
-import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -50,44 +46,47 @@ import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 
-@ExtendWith( RandomExtension.class )
-class FusionSchemaIndexProviderTest
+public class FusionSchemaIndexProviderTest
 {
     private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "test-fusion", "1" );
 
     private SchemaIndexProvider nativeProvider;
     private SchemaIndexProvider spatialProvider;
+    private SchemaIndexProvider temporalProvider;
     private SchemaIndexProvider luceneProvider;
 
-    @Resource
-    private RandomRule random;
-
-    @BeforeEach
-    void setup()
+    @Before
+    public void setup()
     {
         nativeProvider = mock( SchemaIndexProvider.class );
         spatialProvider = mock( SchemaIndexProvider.class );
+        temporalProvider = mock( SchemaIndexProvider.class );
         luceneProvider = mock( SchemaIndexProvider.class );
         when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
         when( spatialProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "spatial", "1" ) );
+        when( temporalProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "temporal", "1" ) );
         when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
     }
 
+    @Rule
+    public RandomRule random = new RandomRule();
+
     @Test
-    void mustSelectCorrectTargetForAllGivenValueCombinations()
+    public void mustSelectCorrectTargetForAllGivenValueCombinations()
     {
         // given
         Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
         Value[] spatialValues = FusionIndexTestHelp.valuesSupportedBySpatial();
+        Value[] temporalValues = FusionIndexTestHelp.valuesSupportedByTemporal();
         Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
         // Number values should go to native provider
-        Selector selector = new NativeSelector();
+        Selector selector = new FusionSelector();
         for ( Value numberValue : numberValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, numberValue );
+            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, numberValue );
 
             // then
             assertSame( nativeProvider, selected );
@@ -97,17 +96,27 @@ class FusionSchemaIndexProviderTest
         for ( Value spatialValue : spatialValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, spatialValue );
+            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, spatialValue );
 
             // then
             assertSame( spatialProvider, selected );
+        }
+
+        // Temporal values should go to temporal provider
+        for ( Value temporalValue : temporalValues )
+        {
+            // when
+            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, temporalValue );
+
+            // then
+            assertSame( temporalProvider, selected );
         }
 
         // Other values should go to lucene provider
         for ( Value otherValue : otherValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, otherValue );
+            SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, otherValue );
 
             // then
             assertSame( luceneProvider, selected );
@@ -119,7 +128,7 @@ class FusionSchemaIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, luceneProvider, firstValue, secondValue );
+                SchemaIndexProvider selected = selector.select( nativeProvider, spatialProvider, temporalProvider, luceneProvider, firstValue, secondValue );
 
                 // then
                 assertSame( luceneProvider, selected );
@@ -128,7 +137,7 @@ class FusionSchemaIndexProviderTest
     }
 
     @Test
-    void mustCombineSamples()
+    public void mustCombineSamples()
     {
         // given
         int nativeIndexSize = random.nextInt( 0, 1_000_000 );
@@ -141,22 +150,27 @@ class FusionSchemaIndexProviderTest
         int spatialSampleSize = random.nextInt( 0, 1_000_000 );
         IndexSample spatialSample = new IndexSample( spatialIndexSize, spatialUniqueValues, spatialSampleSize );
 
+        int temporalIndexSize = random.nextInt( 0, 1_000_000 );
+        int temporalUniqueValues = random.nextInt( 0, 1_000_000 );
+        int temporalSampleSize = random.nextInt( 0, 1_000_000 );
+        IndexSample temporalSample = new IndexSample( temporalIndexSize, temporalUniqueValues, temporalSampleSize );
+
         int luceneIndexSize = random.nextInt( 0, 1_000_000 );
         int luceneUniqueValues = random.nextInt( 0, 1_000_000 );
         int luceneSampleSize = random.nextInt( 0, 1_000_000 );
         IndexSample luceneSample = new IndexSample( luceneIndexSize, luceneUniqueValues, luceneSampleSize );
 
         // when
-        IndexSample fusionSample = FusionSchemaIndexProvider.combineSamples( nativeSample, spatialSample, luceneSample );
+        IndexSample fusionSample = FusionSchemaIndexProvider.combineSamples( nativeSample, spatialSample, temporalSample, luceneSample );
 
         // then
-        assertEquals( nativeIndexSize + spatialIndexSize + luceneIndexSize, fusionSample.indexSize() );
-        assertEquals( nativeUniqueValues + spatialUniqueValues + luceneUniqueValues, fusionSample.uniqueValues() );
-        assertEquals( nativeSampleSize + spatialSampleSize + luceneSampleSize, fusionSample.sampleSize() );
+        assertEquals( nativeIndexSize + spatialIndexSize + temporalIndexSize + luceneIndexSize, fusionSample.indexSize() );
+        assertEquals( nativeUniqueValues + spatialUniqueValues + temporalUniqueValues + luceneUniqueValues, fusionSample.uniqueValues() );
+        assertEquals( nativeSampleSize + spatialSampleSize + temporalSampleSize + luceneSampleSize, fusionSample.sampleSize() );
     }
 
     @Test
-    void getPopulationFailureMustThrowIfNoFailure()
+    public void getPopulationFailureMustThrowIfNoFailure()
     {
         // given
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
@@ -165,14 +179,16 @@ class FusionSchemaIndexProviderTest
         // ... no failure
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
+        IllegalStateException temporalThrow = new IllegalStateException( "no temporal failure" );
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
         when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
+        when( temporalProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( temporalThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
         try
         {
-            fusionSchemaIndexProvider.getPopulationFailure( 0, null );
+            fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -181,7 +197,7 @@ class FusionSchemaIndexProviderTest
     }
 
     @Test
-    void getPopulationFailureMustReportFailureWhenNativeFailure()
+    public void getPopulationFailureMustReportFailureWhenNativeFailure()
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
@@ -189,16 +205,18 @@ class FusionSchemaIndexProviderTest
         // ... native failure
         String nativeFailure = "native failure";
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
+        IllegalStateException temporalThrow = new IllegalStateException( "no temporal failure" );
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
         when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
+        when( temporalProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( temporalThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
         assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( nativeFailure ) );
     }
 
     @Test
-    void getPopulationFailureMustReportFailureWhenSpatialFailure() throws Exception
+    public void getPopulationFailureMustReportFailureWhenSpatialFailure() throws Exception
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
@@ -206,16 +224,37 @@ class FusionSchemaIndexProviderTest
         // ... spatial failure
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
         String spatialFailure = "spatial failure";
+        IllegalStateException temporalThrow = new IllegalStateException( "no temporal failure" );
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
         when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( spatialFailure );
+        when( temporalProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( temporalThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
         assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( spatialFailure ) );
     }
 
     @Test
-    void getPopulationFailureMustReportFailureWhenLuceneFailure()
+    public void getPopulationFailureMustReportFailureWhenTemporalFailure() throws Exception
+    {
+        FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
+
+        // when
+        // ... spatial failure
+        IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
+        IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
+        String temporalFailure = "temporal failure";
+        IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
+        when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
+        when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
+        when( temporalProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( temporalFailure );
+        when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
+        // then
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( temporalFailure ) );
+    }
+
+    @Test
+    public void getPopulationFailureMustReportFailureWhenLuceneFailure()
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
@@ -223,16 +262,18 @@ class FusionSchemaIndexProviderTest
         // ... lucene failure
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
+        IllegalStateException temporalThrow = new IllegalStateException( "no temporal failure" );
         String luceneFailure = "lucene failure";
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
         when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
+        when( temporalProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( temporalThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
         assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( luceneFailure ) );
     }
 
     @Test
-    void getPopulationFailureMustReportFailureWhenBothNativeAndLuceneFail()
+    public void getPopulationFailureMustReportFailureWhenBothNativeAndLuceneFail()
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
@@ -240,9 +281,11 @@ class FusionSchemaIndexProviderTest
         // ... native and lucene failure
         String nativeFailure = "native failure";
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
+        IllegalStateException temporalThrow = new IllegalStateException( "no temporal failure" );
         String luceneFailure = "lucene failure";
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
         when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
+        when( temporalProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( temporalThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
         String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
@@ -251,27 +294,30 @@ class FusionSchemaIndexProviderTest
     }
 
     @Test
-    void getPopulationFailureMustReportFailureWhenAllFail() throws Exception
+    public void getPopulationFailureMustReportFailureWhenAllFail() throws Exception
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
         // when
         // ... native and lucene failure
         String nativeFailure = "native failure";
-        String spatialFailure = "native failure";
+        String spatialFailure = "spatial failure";
+        String temporalFailure = "temporal failure";
         String luceneFailure = "lucene failure";
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
         when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( spatialFailure );
+        when( temporalProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( temporalFailure );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
         String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
         assertThat( populationFailure, containsString( nativeFailure ) );
         assertThat( populationFailure, containsString( spatialFailure ) );
+        assertThat( populationFailure, containsString( temporalFailure ) );
         assertThat( populationFailure, containsString( luceneFailure ) );
     }
 
     @Test
-    void shouldReportFailedIfAnyIsFailed()
+    public void shouldReportFailedIfAnyIsFailed()
     {
         // given
         SchemaIndexProvider provider = fusionProvider();
@@ -282,28 +328,38 @@ class FusionSchemaIndexProviderTest
             // when
             setInitialState( nativeProvider, InternalIndexState.FAILED );
             setInitialState( spatialProvider, state );
+            setInitialState( temporalProvider, state );
             setInitialState( luceneProvider, state );
             InternalIndexState failed1 = provider.getInitialState( 0, indexDescriptor );
 
             setInitialState( nativeProvider, state );
             setInitialState( spatialProvider, InternalIndexState.FAILED );
+            setInitialState( temporalProvider, state );
             setInitialState( luceneProvider, state );
             InternalIndexState failed2 = provider.getInitialState( 0, indexDescriptor );
 
             setInitialState( nativeProvider, state );
             setInitialState( spatialProvider, state );
-            setInitialState( luceneProvider, InternalIndexState.FAILED );
+            setInitialState( temporalProvider, InternalIndexState.FAILED );
+            setInitialState( luceneProvider, state );
             InternalIndexState failed3 = provider.getInitialState( 0, indexDescriptor );
+
+            setInitialState( nativeProvider, state );
+            setInitialState( spatialProvider, state );
+            setInitialState( temporalProvider, state );
+            setInitialState( luceneProvider, InternalIndexState.FAILED );
+            InternalIndexState failed4 = provider.getInitialState( 0, indexDescriptor );
 
             // then
             assertEquals( InternalIndexState.FAILED, failed1 );
             assertEquals( InternalIndexState.FAILED, failed2 );
             assertEquals( InternalIndexState.FAILED, failed3 );
+            assertEquals( InternalIndexState.FAILED, failed4 );
         }
     }
 
     @Test
-    void shouldReportPopulatingIfAnyIsPopulating()
+    public void shouldReportPopulatingIfAnyIsPopulating()
     {
         // given
         SchemaIndexProvider provider = fusionProvider();
@@ -314,29 +370,39 @@ class FusionSchemaIndexProviderTest
             // when
             setInitialState( nativeProvider, InternalIndexState.POPULATING );
             setInitialState( spatialProvider, state );
+            setInitialState( temporalProvider, state );
             setInitialState( luceneProvider, state );
             InternalIndexState failed1 = provider.getInitialState( 0, indexDescriptor );
 
             setInitialState( nativeProvider, state );
             setInitialState( spatialProvider, InternalIndexState.POPULATING );
+            setInitialState( temporalProvider, state );
             setInitialState( luceneProvider, state );
             InternalIndexState failed2 = provider.getInitialState( 0, indexDescriptor );
 
             setInitialState( nativeProvider, state );
             setInitialState( spatialProvider, state );
-            setInitialState( luceneProvider, InternalIndexState.POPULATING );
+            setInitialState( temporalProvider, InternalIndexState.POPULATING );
+            setInitialState( luceneProvider, state );
             InternalIndexState failed3 = provider.getInitialState( 0, indexDescriptor );
+
+            setInitialState( nativeProvider, state );
+            setInitialState( spatialProvider, state );
+            setInitialState( temporalProvider, state );
+            setInitialState( luceneProvider, InternalIndexState.POPULATING );
+            InternalIndexState failed4 = provider.getInitialState( 0, indexDescriptor );
 
             // then
             assertEquals( InternalIndexState.POPULATING, failed1 );
             assertEquals( InternalIndexState.POPULATING, failed2 );
             assertEquals( InternalIndexState.POPULATING, failed3 );
+            assertEquals( InternalIndexState.POPULATING, failed4 );
         }
     }
 
     private FusionSchemaIndexProvider fusionProvider()
     {
-        return new FusionSchemaIndexProvider( nativeProvider, spatialProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10, NONE,
+        return new FusionSchemaIndexProvider( nativeProvider, spatialProvider, temporalProvider, luceneProvider, new FusionSelector(), DESCRIPTOR, 10, NONE,
                 mock( FileSystemAbstraction.class ) );
     }
 

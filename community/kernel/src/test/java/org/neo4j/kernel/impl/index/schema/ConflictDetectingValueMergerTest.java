@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -28,10 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.values.storable.Values.stringValue;
 
 class ConflictDetectingValueMergerTest
 {
-    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger<>();
+    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger.Check<>();
 
     @Test
     void shouldReportConflictOnSameValueAndDifferentEntityIds()
@@ -50,13 +54,21 @@ class ConflictDetectingValueMergerTest
 
         // then
         assertNull( merged );
-        assertTrue( detector.wasConflict() );
-        assertEquals( entityId1, detector.existingNodeId() );
-        assertEquals( entityId2, detector.addedNodeId() );
+        try
+        {
+            detector.checkConflict( array( value ) );
+            fail( "Should've detected conflict" );
+        }
+        catch ( IndexEntryConflictException e )
+        {
+            assertEquals( entityId1, e.getExistingNodeId() );
+            assertEquals( entityId2, e.getAddedNodeId() );
+            assertEquals( value, e.getSinglePropertyValue() );
+        }
     }
 
     @Test
-    void shouldNotReportConflictOnSameValueSameEntityId()
+    void shouldNotReportConflictOnSameValueSameEntityId() throws IndexEntryConflictException
     {
         // given
         Value value = Values.of( 123 );
@@ -71,7 +83,7 @@ class ConflictDetectingValueMergerTest
 
         // then
         assertNull( merged );
-        assertFalse( detector.wasConflict() );
+        detector.checkConflict( array() ); // <-- should not throw conflict exception
     }
 
     private static NumberSchemaKey key( long entityId, Value... value )

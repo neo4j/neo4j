@@ -70,6 +70,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class OperationsLockTest
 {
@@ -111,12 +112,12 @@ class OperationsLockTest
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
+        when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                store, transaction, new KernelToken( storeReadLayer ), cursors, autoindexing,
-                mock( NodeSchemaMatcher.class ) );
+                store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storeReadLayer );
@@ -281,7 +282,26 @@ class OperationsLockTest
     }
 
     @Test
-    void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
+    void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
+    {
+        // given
+        when( relationshipCursor.next() ).thenReturn( true );
+        int propertyKeyId = 8;
+        Value value = Values.of( 9 );
+        when( propertyCursor.next() ).thenReturn( true );
+        when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
+        when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
+
+        // when
+        operations.relationshipSetProperty( 123, propertyKeyId, value );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
+        order.verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
+    }
+
+    @Test
+    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -300,7 +320,25 @@ class OperationsLockTest
     }
 
     @Test
-    void shouldAcquireEntityWriteLockBeforeDeletingNode()
+    void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
+    {
+        // given
+        when( relationshipCursor.next() ).thenReturn( true );
+        when( transaction.hasTxStateWithChanges() ).thenReturn( true );
+        txState.relationshipDoCreate( 123, 42, 43, 45 );
+        int propertyKeyId = 8;
+        Value value = Values.of( 9 );
+
+        // when
+        operations.relationshipSetProperty( 123, propertyKeyId, value );
+
+        // then
+        verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
+        verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
+    }
+
+    @Test
+    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
             throws AutoIndexingKernelException
     {
         // GIVEN
