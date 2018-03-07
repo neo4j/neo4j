@@ -412,10 +412,10 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.bytesWithDefault" );
+            Result res = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault" );
 
             // Then
-            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{3, 2, 1} ) );
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{4, 3, 2} ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -427,10 +427,10 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.bytesWithDefault($param)", map( "param", new byte[]{4, 5, 6} ) );
+            Result res = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault($param)", map( "param", new byte[]{4, 5, 6} ) );
 
             // Then
-            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{4, 5, 6} ) );
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 7} ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -442,11 +442,29 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.bytesWithDefault([7,8,9]) YIELD bytes RETURN bytes" );
+            Result res = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault([7,8,9]) YIELD bytes RETURN bytes" );
 
             // Then
-            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{7, 8, 9} ) );
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{8, 9, 10} ) );
             assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameterAndYieldAndParameterReuse() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "WITH [10,11,12] as param CALL org.neo4j.procedure.incrBytesWithDefault(param) YIELD bytes RETURN bytes, param" );
+
+            // Then
+            assertTrue(res.hasNext());
+            Map<String,Object> results = res.next();
+            assertFalse( res.hasNext() );
+            assertThat( results.get( "bytes" ), equalTo( new byte[]{11, 12, 13} ) );
+            assertThat( results.get( "param" ), equalTo( asList( 10L, 11L, 12L ) ) );
         }
     }
 
@@ -1323,6 +1341,84 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldCallFunctionWithByteArrayWithDefault() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault() AS bytes" );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{2, 1, 0} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallFunctionWithByteArrayWithParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault($param) AS bytes", map( "param", new byte[]{4, 5, 6} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{3, 4, 5} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallFunctionWithByteArrayWithLiteral() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([7,8,9]) AS bytes" );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{6, 7, 8} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallFuctionWithByteArrayWithBoundLiteral() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "WITH [10,11,12] as param RETURN org.neo4j.procedure.decrBytesWithDefault(param) AS bytes, param" );
+
+            // Then
+            assertTrue(res.hasNext());
+            Map<String,Object> results = res.next();
+            assertFalse( res.hasNext() );
+            assertThat( results.get( "bytes" ), equalTo( new byte[]{9, 10, 11} ) );
+            assertThat( results.get( "param" ), equalTo( asList( 10L, 11L, 12L ) ) );
+        }
+    }
+
+    @Test
+    public void shouldCallAggregationFunctionWithByteArrays() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "UNWIND [[1,2,3],[3,2,1],[1,2,1]] AS bytes RETURN org.neo4j.procedure.aggregateByteArrays(bytes) AS bytes" );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 5} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
     public void shouldUseGuardToDetectTransactionTermination() throws Throwable
     {
         exception.expect( QueryExecutionException.class );
@@ -1601,8 +1697,12 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<BytesOutput> bytesWithDefault( @Name( value = "bytes", defaultValue = "[3, 2, 1]" ) byte[] bytes )
+        public Stream<BytesOutput> incrBytesWithDefault( @Name( value = "bytes", defaultValue = "[3, 2, 1]" ) byte[] bytes )
         {
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] += 1;
+            }
             return Stream.of( new BytesOutput( bytes ) );
         }
 
@@ -1884,6 +1984,46 @@ public class ProcedureIT
         public long functionWithDescription()
         {
             return 0;
+        }
+
+        @UserFunction
+        public byte[] decrBytesWithDefault( @Name( value = "bytes", defaultValue = "[3, 2, 1]" ) byte[] bytes )
+        {
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] -= 1;
+            }
+            return bytes;
+        }
+
+        @UserAggregationFunction
+        public ByteArrayAggregator aggregateByteArrays()
+        {
+            return new ByteArrayAggregator();
+        }
+
+        public static class ByteArrayAggregator
+        {
+            byte[] aggregated = null;
+
+            @UserAggregationUpdate
+            public void update( @Name( "bytes" ) byte[] bytes )
+            {
+                if ( aggregated == null )
+                {
+                    aggregated = new byte[bytes.length];
+                }
+                for ( int i = 0; i < Math.min( bytes.length, aggregated.length ); i++ )
+                {
+                    aggregated[i] += bytes[i];
+                }
+            }
+
+            @UserAggregationResult
+            public byte[] result()
+            {
+                return aggregated == null ? new byte[0] : aggregated;
+            }
         }
     }
 

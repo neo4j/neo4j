@@ -56,7 +56,7 @@ public class ByteArrayConverter implements Function<String,Neo4jValue>, FieldSig
         {
             return input;
         }
-        if ( input instanceof List )
+        if ( input instanceof List<?> )
         {
             List list = (List) input;
             byte[] bytes = new byte[list.size()];
