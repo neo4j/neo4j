@@ -26,7 +26,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
+import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -38,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -58,12 +62,13 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
     private final SpaceFillingCurveConfiguration configuration;
+    private final int maxLevels;
 
     private Map<Long,Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex>> indexes = new HashMap<>();
 
     public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
-            SpaceFillingCurveConfiguration configuration )
+            Config config )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;
@@ -71,7 +76,24 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
-        this.configuration = configuration;
+        this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
+        this.maxLevels = config.get( GraphDatabaseSettings.space_filling_curve_max_levels );
+    }
+
+    private static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
+    {
+        int extraLevels = config.get( GraphDatabaseSettings.space_filling_curve_extra_levels );
+        double topThreshold = config.get( GraphDatabaseSettings.space_filling_curve_top_threshold );
+        double bottomThreshold = config.get( GraphDatabaseSettings.space_filling_curve_bottom_threshold );
+
+        if ( topThreshold == 0.0 || bottomThreshold == 0.0 )
+        {
+            return new StandardConfiguration( extraLevels );
+        }
+        else
+        {
+            return new PartialOverlapConfiguration( extraLevels, topThreshold, bottomThreshold );
+        }
     }
 
     @Override
@@ -171,7 +193,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     {
         return indexMap.computeIfAbsent( crs,
                 crsKey -> new SpatialCRSSchemaIndex( descriptor, directoryStructure(), crsKey, indexId, pageCache, fs, monitor,
-                        recoveryCleanupWorkCollector, configuration ) );
+                        recoveryCleanupWorkCollector, configuration, maxLevels ) );
     }
 
     /**

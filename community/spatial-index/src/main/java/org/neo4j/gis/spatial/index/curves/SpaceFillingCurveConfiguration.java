@@ -49,9 +49,4 @@ public interface SpaceFillingCurveConfiguration
      * @return the size to use when initializing the ArrayList to store ranges.
      */
     int initialRangesListCapacity();
-
-    /**
-     * The depth of the space filling curves created for indexes.
-     */
-    int maxLevels();
 }

@@ -37,7 +37,6 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -94,7 +93,8 @@ public class SpatialCRSSchemaIndex
             FileSystemAbstraction fs,
             SchemaIndexProvider.Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            SpaceFillingCurveConfiguration configuration )
+            SpaceFillingCurveConfiguration configuration,
+            int maxLevels )
     {
         this.crs = crs;
         this.pageCache = pageCache;
@@ -110,11 +110,11 @@ public class SpatialCRSSchemaIndex
         indexFile = new File( indexDir.directoryForIndex( indexId ), "index-" + indexId );
         if ( crs.getDimension() == 2 )
         {
-            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), configuration.maxLevels() );
+            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), maxLevels );
         }
         else if ( crs.getDimension() == 3 )
         {
-            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), configuration.maxLevels() );
+            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), maxLevels );
         }
         else
         {

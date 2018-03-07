@@ -21,9 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
-import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -92,10 +89,8 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         boolean readOnly = isReadOnly( config, operationalMode );
         NumberSchemaIndexProvider nativeProvider =
                 new NumberSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
-
-        SpaceFillingCurveConfiguration sfcConfig = getConfiguredSpaceFillingCurveConfiguration( config );
         SpatialFusionSchemaIndexProvider spatialProvider =
-                new SpatialFusionSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, sfcConfig );
+                new SpatialFusionSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
         TemporalSchemaIndexProvider temporalProvider =
                 new TemporalSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
@@ -104,23 +99,6 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         int priority = useNativeIndex ? PRIORITY : 0;
         return new FusionSchemaIndexProvider( nativeProvider,
                 spatialProvider, temporalProvider, luceneProvider, new FusionSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
-    }
-
-    private static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
-    {
-        int extraLevels = config.get( GraphDatabaseSettings.space_filling_curve_extra_levels );
-        double topThreshold = config.get( GraphDatabaseSettings.space_filling_curve_top_threshold );
-        double bottomThreshold = config.get( GraphDatabaseSettings.space_filling_curve_bottom_threshold );
-        int maxLevels = config.get( GraphDatabaseSettings.space_filling_curve_max_levels );
-
-        if ( topThreshold == 0.0 || bottomThreshold == 0.0 )
-        {
-            return new StandardConfiguration( extraLevels, maxLevels );
-        }
-        else
-        {
-            return new PartialOverlapConfiguration( extraLevels, maxLevels, topThreshold, bottomThreshold );
-        }
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )

@@ -134,7 +134,6 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
             double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
             Envelope envelope = new Envelope( from, to );
-
             List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope, configuration );
             for ( SpaceFillingCurve.LongRange range : ranges )
             {

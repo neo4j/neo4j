@@ -28,12 +28,12 @@ public class PartialOverlapConfiguration extends StandardConfiguration
 
     public PartialOverlapConfiguration()
     {
-        this( StandardConfiguration.DEFAULT_EXTRA_LEVELS, StandardConfiguration.DEFAULT_MAX_LEVELS, TOP_THRESHOLD, BOTTOM_THRESHOLD );
+        this( StandardConfiguration.DEFAULT_EXTRA_LEVELS, TOP_THRESHOLD, BOTTOM_THRESHOLD );
     }
 
-    public PartialOverlapConfiguration( int extraLevels, int maxLevels, double topThreshold, double bottomThreshold )
+    public PartialOverlapConfiguration( int extraLevels, double topThreshold, double bottomThreshold )
     {
-        super( extraLevels, maxLevels );
+        super( extraLevels );
         this.topThreshold = topThreshold;
         this.bottomThreshold = bottomThreshold;
     }

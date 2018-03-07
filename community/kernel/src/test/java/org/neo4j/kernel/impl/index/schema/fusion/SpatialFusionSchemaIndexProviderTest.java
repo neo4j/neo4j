@@ -26,13 +26,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -64,7 +64,9 @@ public class SpatialFusionSchemaIndexProviderTest
                 mock( FileSystemAbstraction.class ),
                 NONE,
                 SchemaIndexProvider.Monitor.EMPTY,
-                null, false, new StandardConfiguration() );
+                null,
+                false,
+                Config.defaults() );
         indexMap = provider.indexesFor( 0 );
         indexMap.put( CoordinateReferenceSystem.WGS84, mock( SpatialCRSSchemaIndex.class ) );
         indexMap.put( CoordinateReferenceSystem.Cartesian, mock( SpatialCRSSchemaIndex.class ) );

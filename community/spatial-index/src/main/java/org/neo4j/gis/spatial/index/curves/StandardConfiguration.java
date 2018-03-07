@@ -24,7 +24,6 @@ import org.neo4j.gis.spatial.index.Envelope;
 public class StandardConfiguration implements SpaceFillingCurveConfiguration
 {
     public static final int DEFAULT_EXTRA_LEVELS = 1;
-    public static final int DEFAULT_MAX_LEVELS = 1;
 
     /**
      * After estimating the search ratio, we know the level at which tiles have approximately the same size as
@@ -33,20 +32,14 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
      */
     protected int extraLevels;
 
-    /**
-     * Depth of SpaceFillingCurves at creation time.
-     */
-    protected int maxLevels;
-
     public StandardConfiguration()
     {
-        this( DEFAULT_EXTRA_LEVELS, DEFAULT_MAX_LEVELS );
+        this( DEFAULT_EXTRA_LEVELS );
     }
 
-    public StandardConfiguration( int extraLevels, int maxLevels )
+    public StandardConfiguration( int extraLevels )
     {
         this.extraLevels = extraLevels;
-        this.maxLevels = maxLevels;
     }
 
     /**
@@ -86,11 +79,5 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
     {
         // Probably big enough to for the majority of index queries.
         return 1000;
-    }
-
-    @Override
-    public int maxLevels()
-    {
-        return maxLevels;
     }
 }
