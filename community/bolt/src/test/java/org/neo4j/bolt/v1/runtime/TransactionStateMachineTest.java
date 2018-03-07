@@ -537,7 +537,6 @@ public class TransactionStateMachineTest
         assertNull( stateMachine.ctx.currentResult );
     }
 
-
     private static KernelTransaction newTransaction()
     {
         KernelTransaction transaction = mock( KernelTransaction.class );
