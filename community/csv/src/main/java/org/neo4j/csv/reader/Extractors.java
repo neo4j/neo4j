@@ -369,6 +369,28 @@ public class Extractors
         protected abstract boolean extract0( char[] data, int offset, int length );
     }
 
+    private abstract static class AbstractSingleAnyValueExtractor extends AbstractSingleValueExtractor<AnyValue>
+    {
+        protected AnyValue value;
+
+        AbstractSingleAnyValueExtractor( String toString )
+        {
+            super( toString );
+        }
+
+        @Override
+        protected void clear()
+        {
+            value = Values.NO_VALUE;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
     public static class StringExtractor extends AbstractSingleValueExtractor<String>
     {
         private String value;
@@ -979,19 +1001,11 @@ public class Extractors
         }
     }
 
-    public static class PointExtractor extends AbstractSingleValueExtractor<AnyValue>
+    public static class PointExtractor extends AbstractSingleAnyValueExtractor
     {
-        private AnyValue value;
-
         PointExtractor()
         {
             super( "Point" );
-        }
-
-        @Override
-        protected void clear()
-        {
-            value = Values.NO_VALUE;
         }
 
         @Override
@@ -1008,21 +1022,12 @@ public class Extractors
         }
     }
 
-    public static class DateExtractor extends AbstractSingleValueExtractor<AnyValue>
+    public static class DateExtractor extends AbstractSingleAnyValueExtractor
     {
-        private AnyValue value;
-
         DateExtractor()
         {
             super( "Date" );
         }
-
-        @Override
-        protected void clear()
-        {
-            value = Values.NO_VALUE;
-        }
-
         @Override
         protected boolean extract0( char[] data, int offset, int length )
         {
@@ -1037,21 +1042,14 @@ public class Extractors
         }
     }
 
-    public static class TimeExtractor extends AbstractSingleValueExtractor<AnyValue>
+    public static class TimeExtractor extends AbstractSingleAnyValueExtractor
     {
-        private AnyValue value;
         private Supplier<ZoneId> defaultTimeZone;
 
         TimeExtractor( Supplier<ZoneId> defaultTimeZone )
         {
             super( "Time" );
             this.defaultTimeZone = defaultTimeZone;
-        }
-
-        @Override
-        protected void clear()
-        {
-            value = Values.NO_VALUE;
         }
 
         @Override
@@ -1068,21 +1066,14 @@ public class Extractors
         }
     }
 
-    public static class DateTimeExtractor extends AbstractSingleValueExtractor<AnyValue>
+    public static class DateTimeExtractor extends AbstractSingleAnyValueExtractor
     {
-        private AnyValue value;
         private Supplier<ZoneId> defaultTimeZone;
 
         DateTimeExtractor( Supplier<ZoneId> defaultTimeZone )
         {
             super( "DateTime" );
             this.defaultTimeZone = defaultTimeZone;
-        }
-
-        @Override
-        protected void clear()
-        {
-            value = Values.NO_VALUE;
         }
 
         @Override
@@ -1099,19 +1090,11 @@ public class Extractors
         }
     }
 
-    public static class LocalTimeExtractor extends AbstractSingleValueExtractor<AnyValue>
+    public static class LocalTimeExtractor extends AbstractSingleAnyValueExtractor
     {
-        private AnyValue value;
-
         LocalTimeExtractor()
         {
             super( "LocalTime" );
-        }
-
-        @Override
-        protected void clear()
-        {
-            value = Values.NO_VALUE;
         }
 
         @Override
@@ -1128,19 +1111,11 @@ public class Extractors
         }
     }
 
-    public static class LocalDateTimeExtractor extends AbstractSingleValueExtractor<AnyValue>
+    public static class LocalDateTimeExtractor extends AbstractSingleAnyValueExtractor
     {
-        private AnyValue value;
-
         LocalDateTimeExtractor()
         {
             super( "LocalDateTime" );
-        }
-
-        @Override
-        protected void clear()
-        {
-            value = Values.NO_VALUE;
         }
 
         @Override
@@ -1157,19 +1132,11 @@ public class Extractors
         }
     }
 
-    public static class DurationExtractor extends AbstractSingleValueExtractor<AnyValue>
+    public static class DurationExtractor extends AbstractSingleAnyValueExtractor
     {
-        private AnyValue value;
-
         DurationExtractor()
         {
             super( "Duration" );
-        }
-
-        @Override
-        protected void clear()
-        {
-            value = Values.NO_VALUE;
         }
 
         @Override

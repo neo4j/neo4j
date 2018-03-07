@@ -520,7 +520,8 @@ public class CsvInputTest
         DataFactory data = data(
                 ":ID,name,time:Time\n" +
                 "0,Mattias,13:37\n" +
-                "1,Johan,\"16:20:01\"\n" );
+                "1,Johan,\"16:20:01\"\n" +
+                "2,Bob,07:30-05:00\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
@@ -534,6 +535,8 @@ public class CsvInputTest
                     TimeValue.time( 13, 37, 0, 0, "+00:00" )}, labels() );
             assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
                     TimeValue.time( 16, 20, 1, 0, "+00:00" )}, labels() );
+            assertNextNode( nodes, 2L, new Object[]{"name", "Bob", "time",
+                    TimeValue.time( 7, 30, 0, 0, "-05:00" )}, labels() );
             assertFalse( readNext( nodes ) );
         }
     }
@@ -545,7 +548,9 @@ public class CsvInputTest
         DataFactory data = data(
                 ":ID,name,time:DateTime\n" +
                 "0,Mattias,2018-02-27T13:37\n" +
-                "1,Johan,\"2018-03-01T16:20:01\"\n" );
+                "1,Johan,\"2018-03-01T16:20:01\"\n" +
+                "2,Bob,1981-05-11T07:30-05:00\n" );
+
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
@@ -559,6 +564,8 @@ public class CsvInputTest
                     DateTimeValue.datetime( 2018, 2, 27, 13, 37, 0, 0, "+00:00" )}, labels() );
             assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
                     DateTimeValue.datetime( 2018, 3, 1, 16, 20, 1, 0, "+00:00" )}, labels() );
+            assertNextNode( nodes, 2L, new Object[]{"name", "Bob", "time",
+                    DateTimeValue.datetime( 1981, 5, 11, 7, 30, 0, 0, "-05:00" )}, labels() );
             assertFalse( readNext( nodes ) );
         }
     }
