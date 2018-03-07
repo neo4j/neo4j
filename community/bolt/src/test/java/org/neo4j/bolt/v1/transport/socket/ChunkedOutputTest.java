@@ -30,10 +30,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
@@ -67,52 +63,6 @@ public class ChunkedOutputTest
     public void tearDown()
     {
         out.close();
-    }
-
-    @Test
-    public void shouldNotNPE() throws Throwable
-    {
-        ExecutorService runner = Executors.newFixedThreadPool( 4 );
-        // When
-        runner.execute( () ->
-        {
-            try
-            {
-                for ( int i = 0; i < 5; i++ )
-                {
-
-                    out.writeByte( (byte) 1 ).writeShort( (short) 2 );
-                    out.onMessageComplete();
-                    out.flush();
-                    Thread.sleep( ThreadLocalRandom.current().nextLong( 5 ) );
-
-                }
-            }
-            catch ( IOException | InterruptedException e )
-            {
-                throw new AssertionError( e );
-            }
-        } );
-        for ( int i = 0; i < 9; i++ )
-        {
-            runner.execute( () ->
-            {
-                try
-                {
-                    for ( int j = 0; j < 5; j++ )
-                    {
-                        out.flush();
-                        Thread.sleep( ThreadLocalRandom.current().nextLong( 5 ) );
-                    }
-                }
-                catch ( IOException | InterruptedException e )
-                {
-                    throw new AssertionError( e );
-                }
-            } );
-        }
-
-        runner.awaitTermination( 2, TimeUnit.SECONDS );
     }
 
     @Test
