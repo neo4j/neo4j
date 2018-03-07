@@ -1402,7 +1402,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         @Override
         public void visitAdded( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
         {
-            visitor.visitAddedConstraint( constraint, createdConstraintIndexesByConstraint.get( constraint ) );
+            visitor.visitAddedConstraint( constraint, createdConstraintIndexesByConstraint != null ?
+                    createdConstraintIndexesByConstraint.get( constraint ) : null );
         }
 
         @Override
