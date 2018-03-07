@@ -139,7 +139,7 @@ public class NotificationAcceptanceTest
         thrown.expectMessage( "CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE");
 
         // when
-        Result result = db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
     }
 
     @Test
