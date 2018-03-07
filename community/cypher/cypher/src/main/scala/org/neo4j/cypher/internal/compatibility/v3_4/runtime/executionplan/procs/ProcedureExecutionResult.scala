@@ -106,7 +106,7 @@ class ProcedureExecutionResult(context: QueryContext,
         fieldArray(i) = mapping._3 match {
           case CTNode => transform(res(pos), fromNodeProxy)
           case CTRelationship => transform(res(pos), fromRelationshipProxy)
-          case CTPath => transform(res(pos), asPathValue)
+          case CTPath => transform(res(pos), fromPath)
           case CTInteger => transform(res(pos), longValue)
           case CTFloat => transform(res(pos), doubleValue)
           case CTNumber => transform(res(pos), numberValue)

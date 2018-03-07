@@ -30,6 +30,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.virtual.PathValue.DirectPathValue;
 
 /**
  * Entry point to the virtual values library.
@@ -191,7 +192,7 @@ public final class VirtualValues
             throw new IllegalArgumentException(
                     "Tried to construct a path that is not built like a path: even number of elements" );
         }
-        return new PathValue( nodes, relationships );
+        return new DirectPathValue( nodes, relationships );
     }
 
     public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )
