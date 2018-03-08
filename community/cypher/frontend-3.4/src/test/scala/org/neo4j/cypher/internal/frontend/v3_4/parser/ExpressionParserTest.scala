@@ -14,12 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.semantics
+package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-sealed trait SemanticFeature
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
+import org.parboiled.scala.Rule1
 
-object SemanticFeature {
-  case object MultipleGraphs extends SemanticFeature
-  case object WithInitialQuerySignature extends SemanticFeature
-  case object Cypher10Support extends SemanticFeature
+import scala.language.implicitConversions
+
+class ExpressionParserTest
+  extends ParserAstTest[exp.Expression]
+    with Expressions
+    with AstConstructionTestSupport {
+
+  implicit val parser: Rule1[exp.Expression] = Expression
+
+  test("a ~ b") {
+    yields(exp.Equivalent(varFor("a"), varFor("b")))
+  }
+
+  test("[] ~ []") {
+    yields(exp.Equivalent(exp.ListLiteral(Seq.empty)(pos), exp.ListLiteral(Seq.empty)(pos)))
+  }
+
 }

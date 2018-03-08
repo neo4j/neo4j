@@ -24,7 +24,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 import scala.language.postfixOps
 
-class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+class UnsupportedFeaturesAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   val configs = Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners
 
   test("use graph") {
@@ -40,5 +40,10 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   test("construct graph") {
     val query = "MATCH (a) CONSTRUCT GRAPH { CREATE () } RETURN 1 AS a"
     failWithError(configs, query, List("The `CONSTRUCT GRAPH` clause is not available in this implementation of Cypher due to lack of support for multiple graphs."))
+  }
+
+  test("equivalence operator") {
+    val query = "RETURN 1 ~ 2"
+    failWithError(configs, query, List("`~` (equivalence) is a Cypher 10 feature and is not available in this implementation of Cypher."))
   }
 }
