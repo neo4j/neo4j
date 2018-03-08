@@ -30,11 +30,11 @@ import org.junit.runners.Parameterized.Parameter;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.ssl.SecureClient;
 import org.neo4j.ssl.SslContextFactory;
 import org.neo4j.ssl.SslResource;
