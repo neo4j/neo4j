@@ -98,7 +98,7 @@ public class ConstraintDescriptorFactory
                 @Override
                 public ConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
                 {
-                    throw new IllegalStateException( "NonSchema schema rules cannot support constraints" );
+                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
                 }
             };
 
@@ -124,7 +124,7 @@ public class ConstraintDescriptorFactory
                 @Override
                 public UniquenessConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
                 {
-                    throw new IllegalStateException( "NonSchema schema rules cannot support constraints" );
+                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
                 }
             };
 

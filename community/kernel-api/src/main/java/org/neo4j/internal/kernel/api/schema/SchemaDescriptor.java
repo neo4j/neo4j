@@ -41,8 +41,8 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
 
     enum PropertySchemaType
     {
-        SCHEMA_ALL,
-        NON_SCHEMA_ANY
+        SCHEMA_ALL_TOKENS,
+        NON_SCHEMA_ANY_TOKEN
     }
     /**
      * Computes some value by feeding this object into the given SchemaComputer.

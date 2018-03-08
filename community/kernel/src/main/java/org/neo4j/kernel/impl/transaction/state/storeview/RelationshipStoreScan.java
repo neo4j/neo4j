@@ -108,7 +108,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> implements StoreSc
                 int propertyKeyId = property.getKeyIndexId();
                 if ( propertyKeyIdFilter.test( propertyKeyId ) )
                 {
-                    // This node has a property of interest to us
+                    // This relationship has a property of interest to us
                     Value value = valueOf( property );
                     Validators.INDEX_VALUE_VALIDATOR.validate( value );
                     updates.added( propertyKeyId, value );

@@ -184,7 +184,7 @@ public abstract class SchemaRule implements SchemaDescriptorSupplier
             @Override
             public Kind computeSpecific( MultiTokenSchemaDescriptor schema )
             {
-                throw new IllegalStateException( "NonSchema schema rules cannot support constraints" );
+                throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
             }
         };
     }

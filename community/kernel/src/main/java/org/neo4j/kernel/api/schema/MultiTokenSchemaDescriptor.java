@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -55,7 +57,7 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
         {
             return true;
         }
-        return Arrays.stream( entityTokens ).anyMatch( id -> binarySearch( entityIds, id ) >= 0 );
+        return Arrays.stream( entityTokens ).anyMatch( id -> ArrayUtils.contains( entityIds, id ) );
     }
 
     @Override
@@ -128,7 +130,7 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     @Override
     public PropertySchemaType propertySchemaType()
     {
-        return PropertySchemaType.NON_SCHEMA_ANY;
+        return PropertySchemaType.NON_SCHEMA_ANY_TOKEN;
     }
 
     @Override

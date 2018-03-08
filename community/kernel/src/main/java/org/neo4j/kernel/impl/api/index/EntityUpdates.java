@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.SCHEMA_ALL;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.SCHEMA_ALL_TOKENS;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.NoValue;
@@ -301,7 +301,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             PropertyValue propertyValue = knownProperties.get( propertyId );
             if ( propertyValue == null || !propertyValue.hasBefore() )
             {
-                if ( propertySchemaType == SCHEMA_ALL )
+                if ( propertySchemaType == SCHEMA_ALL_TOKENS )
                 {
                     return false;
                 }
@@ -322,7 +322,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             PropertyValue propertyValue = knownProperties.get( propertyId );
             if ( propertyValue == null || !propertyValue.hasAfter() )
             {
-                if ( propertySchemaType == SCHEMA_ALL )
+                if ( propertySchemaType == SCHEMA_ALL_TOKENS )
                 {
                     return false;
                 }
@@ -358,7 +358,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
 
     private boolean valuesChanged( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
     {
-        if ( propertySchemaType == SCHEMA_ALL )
+        if ( propertySchemaType == SCHEMA_ALL_TOKENS )
         {
             for ( int propertyId : propertyIds )
             {

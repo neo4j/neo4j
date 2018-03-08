@@ -47,7 +47,7 @@ public class NodeSchemaMatcher
      * To avoid unnecessary store lookups, this implementation only gets propertyKeyIds for the node if some
      * descriptor has a valid label.
      *
-     * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptorSupplier
+     * @param <SUPPLIER> the type to match. Must implement SchemaDescriptorSupplier
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @param schemaSuppliers The suppliers to match
      * @param node The node cursor

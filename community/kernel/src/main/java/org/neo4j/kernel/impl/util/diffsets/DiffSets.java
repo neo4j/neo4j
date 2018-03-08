@@ -74,11 +74,4 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongResourceIterator, 
                 Iterables.asSet( Iterables.filter( addedFilter, added( false ) ) ),
                 Iterables.asSet( removed( false ) ) );
     }
-
-    public DiffSets filterType( Class<? extends T> type )
-    {
-        return new DiffSets<>(
-                Iterables.asSet( Iterables.filter( type::isInstance, added( false ) ) ),
-                Iterables.asSet( Iterables.filter( type::isInstance,removed( false ) ) ) );
-    }
 }

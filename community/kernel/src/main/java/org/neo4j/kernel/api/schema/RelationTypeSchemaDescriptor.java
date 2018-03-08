@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -44,7 +46,7 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     @Override
     public boolean isAffected( long[] entityIds )
     {
-        return Arrays.binarySearch( entityIds, relTypeId ) >= 0;
+        return ArrayUtils.contains( entityIds, relTypeId );
     }
 
     @Override
@@ -81,7 +83,7 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     @Override
     public int[] getEntityTokenIds()
     {
-        return new int[]{getRelTypeId()};
+        return new int[]{relTypeId};
     }
 
     @Override
@@ -105,7 +107,7 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     @Override
     public PropertySchemaType propertySchemaType()
     {
-        return PropertySchemaType.SCHEMA_ALL;
+        return PropertySchemaType.SCHEMA_ALL_TOKENS;
     }
 
     @Override
