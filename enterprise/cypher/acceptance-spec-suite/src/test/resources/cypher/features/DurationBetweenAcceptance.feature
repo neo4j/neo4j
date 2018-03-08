@@ -636,13 +636,13 @@ Feature: DurationBetweenAcceptance
     Given an empty graph
     When executing query:
     """
-    UNWIND[ duration.between(date("0001-01-01"), date("2001-01-01")),
-            duration.seconds(date("0001-01-01"), date("2001-01-01"))
+    UNWIND[ duration.between(date("-999999999-01-01"), date("+999999999-12-31")),
+            duration.seconds(localdatetime("-999999999-01-01"), localdatetime("+999999999-12-31T23:59:59"))
             ] as d
     RETURN d
     """
     Then the result should be, in order:
       | d      |
-      | 'P2000Y' |
-      | 'PT17531640H' |
+      | 'P1999999998Y11M30D' |
+      | 'PT17531639991215H59M59S' |
     And no side effects
