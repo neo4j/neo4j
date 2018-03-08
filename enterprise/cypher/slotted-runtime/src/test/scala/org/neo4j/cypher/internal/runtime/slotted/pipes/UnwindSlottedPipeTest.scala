@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
+import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionContext, SlottedExecutionContextFactory}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.ReferenceFromSlot
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -46,6 +46,7 @@ class UnwindSlottedPipeTest extends CypherFunSuite {
 
     val source = FakeSlottedPipe(data.toIterator, inputPipeline)
     val unwindPipe = UnwindSlottedPipe(source, ReferenceFromSlot(x), y, outputPipeline)()
+    unwindPipe.setExecutionContextFactory(SlottedExecutionContextFactory(outputPipeline))
     unwindPipe.createResults(QueryStateHelper.empty).map {
       case c: SlottedExecutionContext =>
         Map("x" -> c.getRefAt(x), "y" -> c.getRefAt(y))

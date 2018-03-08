@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.{RowL, mockPipeFor, testableResult}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContextFactory
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
@@ -42,8 +43,11 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     val left = mockPipeFor(slots, RowL(node1), RowL(node2))
     val right = mockPipeFor(slots, RowL(node2), RowL(node3))
 
+    val nodeHashJoinPipe = NodeHashJoinSlottedPipe(Array(0), Array(0), left, right, slots, Array(), Array())()
+    nodeHashJoinPipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0), Array(0), left, right, slots, Array(), Array())().createResults(queryState)
+    val result = nodeHashJoinPipe.createResults(queryState)
 
     // then
     val list: Iterator[ExecutionContext] = result
@@ -83,9 +87,11 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
       RowL(NULL, node2, node4)
     )
 
+    val nodeHashJoinPipe = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, hashSlots, Array((2, 3)), Array())()
+    nodeHashJoinPipe.setExecutionContextFactory(SlottedExecutionContextFactory(hashSlots))
+
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, hashSlots, Array((2, 3)), Array())().
-      createResults(queryState)
+    val result = nodeHashJoinPipe.createResults(queryState)
 
     // then
     testableResult(result, hashSlots).toSet should equal(Set(
@@ -107,9 +113,11 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
 
     val right = mock[Pipe]
 
+    val nodeHashJoinPipe = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array())()
+    nodeHashJoinPipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array())().
-      createResults(queryState)
+    val result = nodeHashJoinPipe.createResults(queryState)
 
     // then
     result should be(empty)
@@ -126,9 +134,11 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     val left = mockPipeFor(slots, RowL(NULL))
     val right = mockPipeFor(slots, RowL(node0))
 
+    val nodeHashJoinPipe = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array())()
+    nodeHashJoinPipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+
     // when
-    val result = NodeHashJoinSlottedPipe(Array(0, 1), Array(0, 1), left, right, slots, Array(), Array())().
-      createResults(queryState)
+    val result = nodeHashJoinPipe.createResults(queryState)
 
     // then
     result should be(empty)

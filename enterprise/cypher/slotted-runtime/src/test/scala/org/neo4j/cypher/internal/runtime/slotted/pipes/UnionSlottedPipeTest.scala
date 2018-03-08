@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
+import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionContext, SlottedExecutionContextFactory}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.computeUnionMapping
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -47,6 +47,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     val lhs = FakeSlottedPipe(lhsData.toIterator, lhsSlots)
     val rhs = FakeSlottedPipe(rhsData.toIterator, rhsSlots)
     val union = UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsSlots, out), computeUnionMapping(rhsSlots, out) )()
+    union.setExecutionContextFactory(SlottedExecutionContextFactory(out))
     val context = mock[QueryContext]
     val nodeOps = mock[Operations[NodeValue]]
     when(nodeOps.getById(any())).thenAnswer(new Answer[NodeValue] {

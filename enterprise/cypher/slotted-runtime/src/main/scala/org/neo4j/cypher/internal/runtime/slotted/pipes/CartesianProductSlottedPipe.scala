@@ -41,7 +41,7 @@ case class CartesianProductSlottedPipe(lhs: Pipe, rhs: Pipe,
             lhsCtx.release()
             rhsCtx.copyTo(context,
               fromLongOffset = argumentSize.nLongs, fromRefOffset = argumentSize.nReferences, // Skip over arguments since they should be identical to lhsCtx
-            toLongOffset = lhsLongCount, toRefOffset = lhsRefCount)
+              toLongOffset = lhsLongCount, toRefOffset = lhsRefCount)
             rhsCtx.release()
             context
         }
