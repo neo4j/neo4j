@@ -23,10 +23,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
-/**
- * {@link Layout} for numbers where numbers doesn't need to be unique.
- */
-abstract class DateLayout extends Layout.Adapter<DateSchemaKey,NativeSchemaValue>
+class DateLayout extends SchemaLayout<DateSchemaKey>
 {
     public static Layout<DateSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
     {
@@ -34,70 +31,15 @@ abstract class DateLayout extends Layout.Adapter<DateSchemaKey,NativeSchemaValue
     }
 
     private static final long UNIQUE_LAYOUT_IDENTIFIER = Layout.namedIdentifier( "UTda", NativeSchemaValue.SIZE );
-    public static DateLayout UNIQUE = new DateLayout()
-    {
-        @Override
-        public long identifier()
-        {
-            return UNIQUE_LAYOUT_IDENTIFIER;
-        }
-
-        @Override
-        public int majorVersion()
-        {
-            return 0;
-        }
-
-        @Override
-        public int minorVersion()
-        {
-            return 1;
-        }
-
-        @Override
-        public int compare( DateSchemaKey o1, DateSchemaKey o2 )
-        {
-            int comparison = o1.compareValueTo( o2 );
-            if ( comparison == 0 )
-            {
-                // This is a special case where we need also compare entityId to support inclusive/exclusive
-                if ( o1.getCompareId() || o2.getCompareId() )
-                {
-                    return Long.compare( o1.getEntityId(), o2.getEntityId() );
-                }
-            }
-            return comparison;
-        }
-    };
+    public static DateLayout UNIQUE = new DateLayout( UNIQUE_LAYOUT_IDENTIFIER, 0, 1 );
 
     private static final long NON_UNIQUE_LAYOUT_IDENTIFIER = Layout.namedIdentifier( "NTda", NativeSchemaValue.SIZE );
-    public static DateLayout NON_UNIQUE = new DateLayout()
+    public static DateLayout NON_UNIQUE = new DateLayout( NON_UNIQUE_LAYOUT_IDENTIFIER, 0, 1 );
+
+    DateLayout( long identifier, int majorVersion, int minorVersion )
     {
-        @Override
-        public long identifier()
-        {
-            return NON_UNIQUE_LAYOUT_IDENTIFIER;
-        }
-
-        @Override
-        public int majorVersion()
-        {
-            return 0;
-        }
-
-        @Override
-        public int minorVersion()
-        {
-            return 1;
-        }
-
-        @Override
-        public int compare( DateSchemaKey o1, DateSchemaKey o2 )
-        {
-            int comparison = o1.compareValueTo( o2 );
-            return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
-        }
-    };
+        super( identifier, majorVersion, minorVersion );
+    }
 
     @Override
     public DateSchemaKey newKey()
@@ -115,21 +57,9 @@ abstract class DateLayout extends Layout.Adapter<DateSchemaKey,NativeSchemaValue
     }
 
     @Override
-    public NativeSchemaValue newValue()
-    {
-        return NativeSchemaValue.INSTANCE;
-    }
-
-    @Override
     public int keySize( DateSchemaKey key )
     {
         return DateSchemaKey.SIZE;
-    }
-
-    @Override
-    public int valueSize( NativeSchemaValue value )
-    {
-        return NativeSchemaValue.SIZE;
     }
 
     @Override
@@ -140,11 +70,6 @@ abstract class DateLayout extends Layout.Adapter<DateSchemaKey,NativeSchemaValue
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NativeSchemaValue value )
-    {
-    }
-
-    @Override
     public void readKey( PageCursor cursor, DateSchemaKey into, int keySize )
     {
         into.epochDay = cursor.getLong();
@@ -152,13 +77,8 @@ abstract class DateLayout extends Layout.Adapter<DateSchemaKey,NativeSchemaValue
     }
 
     @Override
-    public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
+    int compareValue( DateSchemaKey o1, DateSchemaKey o2 )
     {
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
+        return o1.compareValueTo( o2 );
     }
 }

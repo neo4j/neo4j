@@ -21,28 +21,15 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 
-public class NumberLayoutNonUnique extends NumberLayout
+class NumberLayoutNonUnique extends NumberLayout
 {
     private static final String IDENTIFIER_NAME = "NUNI";
-    static final int MAJOR_VERSION = 0;
-    static final int MINOR_VERSION = 1;
-    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
+    private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
-    @Override
-    public long identifier()
+    NumberLayoutNonUnique()
     {
-        return IDENTIFIER;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return MAJOR_VERSION;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return MINOR_VERSION;
+        super( IDENTIFIER, MAJOR_VERSION, MINOR_VERSION );
     }
 }

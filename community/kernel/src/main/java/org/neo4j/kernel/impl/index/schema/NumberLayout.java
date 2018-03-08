@@ -25,8 +25,13 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaValue>
+abstract class NumberLayout extends SchemaLayout<NumberSchemaKey>
 {
+    NumberLayout( long identifier, int majorVersion, int minorVersion )
+    {
+        super( identifier, majorVersion, minorVersion );
+    }
+
     @Override
     public NumberSchemaKey newKey()
     {
@@ -44,21 +49,9 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public NativeSchemaValue newValue()
-    {
-        return NativeSchemaValue.INSTANCE;
-    }
-
-    @Override
     public int keySize( NumberSchemaKey key )
     {
         return NumberSchemaKey.SIZE;
-    }
-
-    @Override
-    public int valueSize( NativeSchemaValue value )
-    {
-        return NativeSchemaValue.SIZE;
     }
 
     @Override
@@ -70,11 +63,6 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NativeSchemaValue value )
-    {
-    }
-
-    @Override
     public void readKey( PageCursor cursor, NumberSchemaKey into, int keySize )
     {
         into.type = cursor.getByte();
@@ -83,28 +71,8 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
+    int compareValue( NumberSchemaKey o1, NumberSchemaKey o2 )
     {
-    }
-
-    @Override
-    public int compare( NumberSchemaKey o1, NumberSchemaKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        if ( comparison == 0 )
-        {
-            // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getCompareId() & o2.getCompareId() )
-            {
-                return Long.compare( o1.getEntityId(), o2.getEntityId() );
-            }
-        }
-        return comparison;
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
+        return o1.compareValueTo( o2 );
     }
 }

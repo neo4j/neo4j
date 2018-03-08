@@ -27,13 +27,14 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 /**
  * {@link Layout} for PointValues where they don't need to be unique.
  */
-abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchemaValue>
+abstract class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
 {
     private SpaceFillingCurve curve;
     CoordinateReferenceSystem crs;
 
-    SpatialLayout( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
+    SpatialLayout( long identifier, int majorVersion, int minorVersion, CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
+        super( identifier, majorVersion, minorVersion );
         this.crs = crs;
         this.curve = curve;
     }
@@ -61,21 +62,9 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchem
     }
 
     @Override
-    public NativeSchemaValue newValue()
-    {
-        return NativeSchemaValue.INSTANCE;
-    }
-
-    @Override
     public int keySize( SpatialSchemaKey key )
     {
         return SpatialSchemaKey.SIZE;
-    }
-
-    @Override
-    public int valueSize( NativeSchemaValue value )
-    {
-        return NativeSchemaValue.SIZE;
     }
 
     @Override
@@ -86,11 +75,6 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchem
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NativeSchemaValue value )
-    {
-    }
-
-    @Override
     public void readKey( PageCursor cursor, SpatialSchemaKey into, int keySize )
     {
         into.rawValueBits = cursor.getLong();
@@ -98,13 +82,8 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchem
     }
 
     @Override
-    public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
+    int compareValue( SpatialSchemaKey o1, SpatialSchemaKey o2 )
     {
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
+        return o1.compareValueTo( o2 );
     }
 }

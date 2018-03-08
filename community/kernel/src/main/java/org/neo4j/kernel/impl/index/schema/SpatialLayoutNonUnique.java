@@ -35,31 +35,6 @@ public class SpatialLayoutNonUnique extends SpatialLayout
 
     SpatialLayoutNonUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
-        super( crs, curve );
-    }
-
-    @Override
-    public long identifier()
-    {
-        return LAYOUT_IDENTIFIER;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return MAJOR_VERSION;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return MINOR_VERSION;
-    }
-
-    @Override
-    public int compare( SpatialSchemaKey o1, SpatialSchemaKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
+        super( LAYOUT_IDENTIFIER, MAJOR_VERSION, MINOR_VERSION, crs, curve );
     }
 }

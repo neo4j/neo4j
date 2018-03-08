@@ -28,7 +28,7 @@ class StringUniqueLayoutTestUtil extends StringLayoutTestUtil
 {
     StringUniqueLayoutTestUtil()
     {
-        super( IndexDescriptorFactory.forLabel( 42, 666 ) );
+        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
     }
 
     @Override

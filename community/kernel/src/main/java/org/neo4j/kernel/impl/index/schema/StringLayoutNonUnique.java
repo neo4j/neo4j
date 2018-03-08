@@ -31,28 +31,8 @@ public class StringLayoutNonUnique extends StringLayout
     private static final int MINOR_VERSION = 1;
     private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
-    @Override
-    public long identifier()
+    StringLayoutNonUnique()
     {
-        return IDENTIFIER;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return MAJOR_VERSION;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return MINOR_VERSION;
-    }
-
-    @Override
-    public int compare( StringSchemaKey o1, StringSchemaKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
+        super( IDENTIFIER, MAJOR_VERSION, MINOR_VERSION );
     }
 }

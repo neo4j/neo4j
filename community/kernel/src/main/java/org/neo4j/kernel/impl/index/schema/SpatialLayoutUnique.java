@@ -35,39 +35,6 @@ public class SpatialLayoutUnique extends SpatialLayout
 
     SpatialLayoutUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
-        super( crs, curve );
-    }
-
-    @Override
-    public long identifier()
-    {
-        return LAYOUT_IDENTIFIER;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return MAJOR_VERSION;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return MINOR_VERSION;
-    }
-
-    @Override
-    public int compare( SpatialSchemaKey o1, SpatialSchemaKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        if ( comparison == 0 )
-        {
-            // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getCompareId() || o2.getCompareId() )
-            {
-                return Long.compare( o1.getEntityId(), o2.getEntityId() );
-            }
-        }
-        return comparison;
+        super( LAYOUT_IDENTIFIER, MAJOR_VERSION, MINOR_VERSION, crs, curve );
     }
 }
