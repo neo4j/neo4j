@@ -149,13 +149,13 @@ public class NeoStores implements AutoCloseable
                 getOrCreateStore( type );
             }
         }
-        catch ( Exception initException )
+        catch ( RuntimeException initException )
         {
             try
             {
                 close();
             }
-            catch ( Exception closeException )
+            catch ( RuntimeException closeException )
             {
                 initException.addSuppressed( closeException );
             }
