@@ -20,12 +20,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.File
+import java.time.ZoneOffset
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
+import org.neo4j.values.storable._
 
-class SpatialIndexAcceptanceTest extends IndexingTestSupport {
+class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
 
   private var dbDir = new File("test")
 
@@ -59,6 +60,14 @@ class SpatialIndexAcceptanceTest extends IndexingTestSupport {
   private val wgs1_3d = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0)
   private val car = Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78)
   private val car_3d = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0)
+  private val date = DateValue.epochDate( 1000 )
+  private val dateTime = DateTimeValue.datetime( 1000, 100, ZoneOffset.UTC )
+  private val localDateTime = LocalDateTimeValue.localDateTime( 1000, 100 )
+  private val time = TimeValue.time( 1000, ZoneOffset.UTC )
+  private val localTime = LocalTimeValue.localTime( 1000 )
+  private val duration = DurationValue.duration( 1, 2, 3, 4 )
+
+  private val values: Array[Value] = Array(wgs1, wgs2, wgs1_3d, car, car_3d, date, dateTime, localDateTime, time, localTime, duration)
 
   test("persisted indexed point should be seekable from node property") {
     createIndex()
@@ -74,16 +83,13 @@ class SpatialIndexAcceptanceTest extends IndexingTestSupport {
   test("different types of indexed points should survive restart") {
     createIndex()
 
-    val n1 = createIndexedNode(wgs1)
-    val n2 = createIndexedNode(wgs1_3d)
-    val n3 = createIndexedNode(car)
-    val n4 = createIndexedNode(car_3d)
+    val nodes = values.map(createIndexedNode)
 
-    assertScanMatch(n1, n2, n3, n4)
+    assertScanMatch(nodes:_*)
 
     restartGraphDatabase()
 
-    assertScanMatch(n1, n2, n3, n4)
+    assertScanMatch(nodes:_*)
   }
 
   test("overwriting indexed property should work") {
@@ -125,26 +131,15 @@ class SpatialIndexAcceptanceTest extends IndexingTestSupport {
     assertSeekMatchFor(wgs1, n1)
   }
 
-  test("change crs") {
+  test("change value of indexed node") {
     val n1 = createIndexedNode(wgs1)
     createIndex()
 
     assertSeekMatchFor(wgs1, n1)
 
-    // When changing to Cartesian
-    setIndexedValue(n1, car)
-    assertSeekMatchFor(car, n1)
-
-    // When changing to Cartesian-3D
-    setIndexedValue(n1, car_3d)
-    assertSeekMatchFor(car_3d, n1)
-
-    // When changing to WGS84-3D
-    setIndexedValue(n1, wgs1_3d)
-    assertSeekMatchFor(wgs1_3d, n1)
-
-    // When changing back to WGS84
-    setIndexedValue(n1, wgs1)
-    assertSeekMatchFor(wgs1, n1)
+    for ( value <- values ) {
+      setIndexedValue(n1, value)
+      assertSeekMatchFor(value, n1)
+    }
   }
 }
