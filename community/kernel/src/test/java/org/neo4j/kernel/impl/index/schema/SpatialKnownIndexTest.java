@@ -85,7 +85,7 @@ public class SpatialKnownIndexTest
         IndexDirectoryStructure dirStructure = IndexDirectoryStructure.directoriesByProvider( storeDir ).forProvider( SPATIAL_PROVIDER_DESCRIPTOR );
         descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
         index = new SpatialCRSSchemaIndex( descriptor, dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
-                SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 30 );
+                SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 60 );
         samplingConfig = mock( IndexSamplingConfig.class );
     }
 

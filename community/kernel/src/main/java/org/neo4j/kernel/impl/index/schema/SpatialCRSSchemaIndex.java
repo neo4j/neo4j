@@ -94,7 +94,7 @@ public class SpatialCRSSchemaIndex
             SchemaIndexProvider.Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             SpaceFillingCurveConfiguration configuration,
-            int maxLevels )
+            int maxBits )
     {
         this.crs = crs;
         this.pageCache = pageCache;
@@ -110,11 +110,11 @@ public class SpatialCRSSchemaIndex
         indexFile = new File( indexDir.directoryForIndex( indexId ), "index-" + indexId );
         if ( crs.getDimension() == 2 )
         {
-            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), maxLevels );
+            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), Math.min( 30, maxBits / 2 ) );
         }
         else if ( crs.getDimension() == 3 )
         {
-            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), maxLevels );
+            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), Math.min( 20, maxBits / 3 ) );
         }
         else
         {

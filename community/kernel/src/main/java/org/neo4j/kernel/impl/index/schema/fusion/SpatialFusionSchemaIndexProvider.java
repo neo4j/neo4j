@@ -62,7 +62,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
     private final SpaceFillingCurveConfiguration configuration;
-    private final int maxLevels;
+    private final int maxBits;
 
     private Map<Long,Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex>> indexes = new HashMap<>();
 
@@ -77,7 +77,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
-        this.maxLevels = config.get( GraphDatabaseSettings.space_filling_curve_max_levels );
+        this.maxBits = config.get( GraphDatabaseSettings.space_filling_curve_max_bits );
     }
 
     private static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
@@ -193,7 +193,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     {
         return indexMap.computeIfAbsent( crs,
                 crsKey -> new SpatialCRSSchemaIndex( descriptor, directoryStructure(), crsKey, indexId, pageCache, fs, monitor,
-                        recoveryCleanupWorkCollector, configuration, maxLevels ) );
+                        recoveryCleanupWorkCollector, configuration, maxBits ) );
     }
 
     /**
