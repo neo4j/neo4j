@@ -283,6 +283,33 @@ public class AllStoreHolder extends Read
         return Iterators.map( this::indexGetCapability, iterator );
     }
 
+    @Override
+    public Iterator<CapableIndexReference> indexesGetAll( )
+    {
+        ktx.assertOpen();
+
+        Iterator<SchemaIndexDescriptor> iterator = storeReadLayer.indexesGetAll();
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            iterator = ktx.txState().indexChanges().apply( storeReadLayer.indexesGetAll() );
+        }
+
+        return  Iterators.map( indexDescriptor ->
+        {
+            sharedOptimisticLock( ResourceTypes.LABEL, indexDescriptor.schema().getLabelId() );
+            return indexGetCapability( indexDescriptor );
+        }, iterator );
+    }
+
+    @Override
+    public InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
+        return indexGetState( indexDescriptor );
+    }
+
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
         try

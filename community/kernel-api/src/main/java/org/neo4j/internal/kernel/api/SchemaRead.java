@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
@@ -41,9 +42,23 @@ public interface SchemaRead
     /**
      * Returns all indexes associated with the given label
      * @param labelId The id of the label which associated indexes you are looking for
-     * @return The index associated with the given label
+     * @return The indexes associated with the given label
      */
     Iterator<CapableIndexReference> indexesGetForLabel( int labelId );
+
+    /**
+     * Returns all indexes used in the database
+     * @return all indexes used in the database
+     */
+    Iterator<CapableIndexReference> indexesGetAll(  );
+
+    /**
+     * Retrieves the state of an index
+     * @param index the index which state to retrieve
+     * @return The state of the provided index
+     * @throws IndexNotFoundKernelException if the index was not found in the database
+     */
+    InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException;
 
     /**
      * Finds all constraints for the given schema
