@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
+import static java.time.ZoneOffset.UTC;
 import static org.neo4j.csv.reader.Readables.individualFiles;
 import static org.neo4j.csv.reader.Readables.iterator;
 
@@ -121,10 +123,20 @@ public class DataFactories
      *
      * This header factory can be used even when the header exists in a separate file, if that file
      * is the first in the list of files supplied to {@link #data}.
+     *
+     * @param defaultTimeZone A supplier of the time zone to be used for temporal values when not specified explicitly
+     */
+    public static Header.Factory defaultFormatNodeFileHeader( Supplier<ZoneId> defaultTimeZone )
+    {
+        return new DefaultNodeFileHeaderParser( defaultTimeZone );
+    }
+
+    /**
+     * Like {@link #defaultFormatNodeFileHeader(Supplier<ZoneId>)} with UTC as the default time zone.
      */
     public static Header.Factory defaultFormatNodeFileHeader()
     {
-        return new DefaultNodeFileHeaderParser();
+        return defaultFormatNodeFileHeader( defaultTimeZone );
     }
 
     /**
@@ -133,19 +145,33 @@ public class DataFactories
      *
      * This header factory can be used even when the header exists in a separate file, if that file
      * is the first in the list of files supplied to {@link #data}.
+     *
+     * @param defaultTimeZone A supplier of the time zone to be used for temporal values when not specified explicitly
+     */
+    public static Header.Factory defaultFormatRelationshipFileHeader( Supplier<ZoneId> defaultTimeZone )
+    {
+        return new DefaultRelationshipFileHeaderParser( defaultTimeZone );
+    }
+
+    /**
+     * Like {@link #defaultFormatRelationshipFileHeader(Supplier<ZoneId>)} with UTC as the default time zone.
      */
     public static Header.Factory defaultFormatRelationshipFileHeader()
     {
-        return new DefaultRelationshipFileHeaderParser();
+        return defaultFormatRelationshipFileHeader( defaultTimeZone );
     }
+
+    private static Supplier<ZoneId> defaultTimeZone = () -> UTC;
 
     private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory
     {
         private final boolean createGroups;
         private final Type[] mandatoryTypes;
+        private final Supplier<ZoneId> defaultTimeZone;
 
-        protected AbstractDefaultFileHeaderParser( boolean createGroups, Type... mandatoryTypes )
+        protected AbstractDefaultFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean createGroups, Type... mandatoryTypes )
         {
+            this.defaultTimeZone = defaultTimeZone;
             this.createGroups = createGroups;
             this.mandatoryTypes = mandatoryTypes;
         }
@@ -156,7 +182,8 @@ public class DataFactories
             try
             {
                 Mark mark = new Mark();
-                Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(), config.trimStrings() );
+                Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(),
+                        config.trimStrings(), defaultTimeZone );
                 Extractor<?> idExtractor = idType.extractor( extractors );
                 int delimiter = config.delimiter();
                 List<Header.Entry> columns = new ArrayList<>();
@@ -292,9 +319,9 @@ public class DataFactories
 
     private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser
     {
-        protected DefaultNodeFileHeaderParser()
+        protected DefaultNodeFileHeaderParser( Supplier<ZoneId> defaultTimeZone )
         {
-            super( true );
+            super( defaultTimeZone, true );
         }
 
         @Override
@@ -336,10 +363,10 @@ public class DataFactories
 
     private static class DefaultRelationshipFileHeaderParser extends AbstractDefaultFileHeaderParser
     {
-        protected DefaultRelationshipFileHeaderParser()
+        protected DefaultRelationshipFileHeaderParser( Supplier<ZoneId> defaultTimeZone )
         {
             // Don't have TYPE as mandatory since a decorator could provide that
-            super( false, Type.START_ID, Type.END_ID );
+            super( defaultTimeZone, false, Type.START_ID, Type.END_ID );
         }
 
         @Override

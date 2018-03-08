@@ -26,6 +26,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalQueries;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,6 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,6 +68,7 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -78,6 +91,7 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.charset.Charset.defaultCharset;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
@@ -112,11 +126,13 @@ public class CsvInputBatchImportIT
     private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
 
+    private static final Supplier<ZoneId> testDefaultTimeZone = () -> ZoneId.of( "Asia/Shanghai" );
+
     @Test
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        Config dbConfig = Config.defaults();
+        Config dbConfig = Config.builder().withSetting( db_timezone, LogTimeZone.SYSTEM.name() ).build();
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(), null,
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), AdditionalInitialIds.EMPTY, dbConfig,
                 RecordFormatSelector.defaultFormat(), NO_MONITOR );
@@ -146,9 +162,12 @@ public class CsvInputBatchImportIT
             org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration, Collector badCollector )
     {
         return new CsvInput(
-                datas( data( NO_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
+                datas( data( NO_DECORATOR, defaultCharset(), nodes ) ),
+                defaultFormatNodeFileHeader( testDefaultTimeZone ),
                 datas( data( NO_DECORATOR, defaultCharset(), relationships ) ),
-                defaultFormatRelationshipFileHeader(), idType, configuration,
+                defaultFormatRelationshipFileHeader( testDefaultTimeZone ),
+                idType,
+                configuration,
                 badCollector );
     }
 
@@ -177,7 +196,16 @@ public class CsvInputBatchImportIT
             InputEntity node = new InputEntity();
             node.id( UUID.randomUUID().toString(), Group.GLOBAL );
             node.property( "name", "Node " + i );
-            node.property( "point", "\"   { x : -4.2, y : " + i + ", crs: WGS-84 } \"");
+            node.property( "point", "\"   { x : -4.2, y : " + i + ", crs: WGS-84 } \"" );
+            node.property( "date", LocalDate.of( 2018, i % 12 + 1, i % 28 + 1 ) );
+            node.property( "time", OffsetTime.of( 1, i % 60, 0, 0, ZoneOffset.ofHours( 9 ) ) );
+            node.property( "dateTime",
+                    ZonedDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0, ZoneId.of( "Europe/Stockholm" ) ) );
+            node.property( "dateTime2",
+                    LocalDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0 ) ); // No zone specified
+            node.property( "localTime", LocalTime.of( 1, i % 60, 0 ) );
+            node.property( "localDateTime", LocalDateTime.of( 2011, 9, 11, 8, i % 60 ) );
+            node.property( "duration", Period.of( 2, -3, i % 30 ) );
             node.labels( randomLabels( random ) );
             nodes.add( node );
         }
@@ -235,14 +263,20 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
-            println( writer, "id:ID,name,point:Point,some-labels:LABEL" );
+            println( writer, "id:ID,name,point:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
+                             "localDateTime:LocalDateTime,duration:Duration,some-labels:LABEL" );
 
             // Data
             for ( InputEntity node : nodeData )
             {
                 String csvLabels = csvLabels( node.labels() );
-                println( writer, node.id() + "," + node.properties()[1] + "," + node.properties()[3] + "," +
-                        (csvLabels != null && csvLabels.length() > 0 ? csvLabels : "") );
+                StringBuilder sb = new StringBuilder( node.id() + "," );
+                for ( int i = 0; i < node.propertyCount(); i++ )
+                {
+                    sb.append( node.propertyValue( i ) + "," );
+                }
+                sb.append( csvLabels != null && csvLabels.length() > 0 ? csvLabels : "" );
+                println( writer, sb.toString() );
             }
         }
         return file;
@@ -482,10 +516,54 @@ public class CsvInputBatchImportIT
             for ( int i = 0; i < node.propertyCount(); i++ )
             {
                 final Object expectedValue = node.propertyValue( i );
-                Consumer verify = actualValue ->
+                Consumer verify;
+                if ( expectedValue instanceof TemporalAmount )
                 {
-                    assertEquals( expectedValue, actualValue );
-                };
+                    // Since there is no straightforward comparison for TemporalAmount we add it to a reference
+                    // point in time and compare the result
+                    verify = actualValue ->
+                    {
+                        LocalDateTime referenceTemporal = LocalDateTime.of( 0, 1, 1, 0, 0 );
+                        LocalDateTime expected = referenceTemporal.plus( (TemporalAmount) expectedValue );
+                        LocalDateTime actual = referenceTemporal.plus( (TemporalAmount) actualValue );
+                        assertEquals( expected, actual );
+                    };
+                }
+                else if ( expectedValue instanceof Temporal )
+                {
+                    final LocalDate expectedDate = ((Temporal) expectedValue).query( TemporalQueries.localDate() );
+                    final LocalTime expectedTime = ((Temporal) expectedValue).query( TemporalQueries.localTime() );
+                    final ZoneId expectedZoneId = ((Temporal) expectedValue).query( TemporalQueries.zone() );
+
+                    verify = actualValue ->
+                    {
+                        LocalDate actualDate = ((Temporal) actualValue).query( TemporalQueries.localDate() );
+                        LocalTime actualTime = ((Temporal) actualValue).query( TemporalQueries.localTime() );
+                        ZoneId actualZoneId = ((Temporal) actualValue).query( TemporalQueries.zone() );
+
+                        assertEquals( expectedDate, actualDate );
+                        assertEquals( expectedTime, actualTime );
+                        if ( expectedZoneId == null )
+                        {
+                            if ( actualZoneId != null )
+                            {
+                                // If the actual value is zoned it should have the default zone
+                                assertEquals( testDefaultTimeZone.get(), actualZoneId );
+                            }
+                        }
+                        else
+                        {
+                            assertEquals( expectedZoneId, actualZoneId );
+                        }
+                    };
+                }
+                else
+                {
+                    verify = actualValue ->
+                    {
+                        assertEquals( expectedValue, actualValue );
+                    };
+                }
                 propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
             }
 
