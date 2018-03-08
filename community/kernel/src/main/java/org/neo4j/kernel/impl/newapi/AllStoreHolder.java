@@ -77,6 +77,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValue;
@@ -306,8 +307,45 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
-        SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
-        return indexGetState( indexDescriptor );
+        return indexGetState( indexDescriptor( index ) );
+    }
+
+    @Override
+    public PopulationProgress indexGetPopulationProgress( CapableIndexReference index )
+            throws IndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        SchemaIndexDescriptor descriptor = indexDescriptor( index );
+
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            if ( checkIndexState( descriptor,
+                    ktx.txState().indexDiffSetsByLabel( index.label() ) ) )
+            {
+                return PopulationProgress.NONE;
+            }
+        }
+
+        return storeReadLayer.indexGetPopulationProgress( descriptor.schema() );
+    }
+
+    private SchemaIndexDescriptor indexDescriptor( CapableIndexReference index )
+    {
+        if ( index.isUnique() )
+        {
+            return SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() );
+        }
+        else
+        {
+            return SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
+        }
+    }
+
+    @Override
+    public String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        return storeReadLayer.indexGetFailure( new LabelSchemaDescriptor( index.label(), index.properties() ) );
     }
 
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
