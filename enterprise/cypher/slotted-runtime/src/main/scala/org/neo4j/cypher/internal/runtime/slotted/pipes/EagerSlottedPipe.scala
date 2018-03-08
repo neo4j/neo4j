@@ -31,8 +31,9 @@ case class EagerSlottedPipe(source: Pipe, slots: SlotConfiguration)(val id: Id =
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map { inputRow =>
       // this is necessary because Eager is the beginning of a new pipeline
-      val outputRow = SlottedExecutionContext(slots)
+      val outputRow = executionContextFactory.newExecutionContext()
       inputRow.copyTo(outputRow)
+      inputRow.release()
       outputRow
     }.toIndexedSeq.iterator
   }

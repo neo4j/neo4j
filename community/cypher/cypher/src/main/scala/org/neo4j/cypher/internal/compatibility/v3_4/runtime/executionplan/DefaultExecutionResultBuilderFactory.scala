@@ -118,11 +118,7 @@ abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
 
     protected def queryContext = maybeQueryContext.get
 
-    private def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator = {
-      val closingIterator = new ClosingIterator(results, taskCloser, exceptionDecorator)
-      val resultIterator = if (isUpdating) closingIterator.toEager else closingIterator
-      resultIterator
-    }
+    protected def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator
 
     private def buildDescriptor(planDescription: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription =
       pipeDecorator.decorate(planDescription, verifyProfileReady)
@@ -155,6 +151,12 @@ case class InterpretedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     override def createQueryState(params: MapValue) = {
       new QueryState(queryContext, externalResource, params, pipeDecorator,
         triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+    }
+
+    override def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator = {
+      val closingIterator = new ClosingIterator(results, taskCloser, exceptionDecorator)
+      val resultIterator = if (isUpdating) closingIterator.toEager else closingIterator
+      resultIterator
     }
   }
 }

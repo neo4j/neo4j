@@ -17,22 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.slotted.pipes
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
-case class ArgumentSlottedPipe(slots: SlotConfiguration,
-                               argumentSize:Size)
-                              (val id: Id = Id.INVALID_ID)
-  extends Pipe {
+trait ExecutionContextInstanceCache[T, C <: ExecutionContext] {
+  self: T =>
 
-  def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val context = executionContextFactory.newExecutionContext()
-    state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
-    Iterator(context)
+  type ExecutionContextConstructor = T => C
+
+  private var freeExecutionContextInstance: C = null.asInstanceOf[C]
+  private var constructor: ExecutionContextConstructor = null
+
+  final def setExecutionContextConstructor(constructor: ExecutionContextConstructor) =
+    this.constructor = constructor
+
+  final def allocateExecutionContext: C = {
+    if (freeExecutionContextInstance != null) {
+      val context = freeExecutionContextInstance
+      freeExecutionContextInstance = null.asInstanceOf[C]
+      context.reset()
+      context
+    }
+    else {
+      constructor(self)
+    }
+  }
+
+  final def releaseExecutionContext(executionContext: C) = {
+    freeExecutionContextInstance = executionContext
   }
 }

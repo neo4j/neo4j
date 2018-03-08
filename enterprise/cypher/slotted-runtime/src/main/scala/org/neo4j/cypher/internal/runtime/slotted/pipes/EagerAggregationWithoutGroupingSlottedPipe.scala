@@ -54,10 +54,11 @@ case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
       // Consume input
       input.foreach { ctx =>
         aggregationAccumulators.foreach(f => f.apply(ctx, state))
+        ctx.release()
       }
 
       // Present result
-      val context = SlottedExecutionContext(slots)
+      val context = executionContextFactory.newExecutionContext()
       (aggregationOffsets zip aggregationAccumulators).foreach {
         case (offset, value) => context.setRefAt(offset, value.result(state))
       }
@@ -67,7 +68,7 @@ case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
 
   // Used when we have no input and no grouping expressions. In this case, we'll return a single row
   def createEmptyResult(state: QueryState): Iterator[ExecutionContext] = {
-    val context = SlottedExecutionContext(slots)
+    val context = executionContextFactory.newExecutionContext()
     val aggregationOffsetsAndFunctions = aggregationOffsets zip aggregations
       .map(_._2.createAggregationFunction.result(state))
 

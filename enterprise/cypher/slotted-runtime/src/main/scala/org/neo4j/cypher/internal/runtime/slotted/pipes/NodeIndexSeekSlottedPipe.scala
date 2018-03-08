@@ -62,7 +62,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
     resultNodes.map { node =>
-      val context = SlottedExecutionContext(slots)
+      val context = executionContextFactory.newExecutionContext()
       state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
       context.setLongAt(offset, node.id)
       context

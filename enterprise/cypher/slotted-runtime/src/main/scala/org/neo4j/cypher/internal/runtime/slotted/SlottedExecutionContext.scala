@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContextInstanceCache, LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
@@ -55,6 +58,15 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     }
     s ++= "\n}\n"
     s.result
+  }
+
+  override def release(): Unit = slots.releaseExecutionContext(this)
+
+  override def reset(): Unit = {
+    // Clear refs
+    // TODO: We could try to skip this (e.g. if assertions are not enabled)
+    // when we don't have code that relies on isRefInitialized() for correctness
+    java.util.Arrays.fill(refs.asInstanceOf[Array[Object]], null)
   }
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit =
@@ -117,7 +129,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     (longSlotValues ++ refSlotValues).iterator
   }
 
-  private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
+  private def fail(): Nothing = throw new InternalException("Tried using a slotted context as a map")
 
   //-----------------------------------------------------------------------------------------------------------
   // Compatibility implementations of the old ExecutionContext API used by Community interpreted runtime pipes
@@ -281,4 +293,116 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
       case _ =>
         false
     }
+}
+
+case class ArrayResultExecutionContextFactory(columns: Seq[(String, Expression)])
+  extends ExecutionContextInstanceCache[ArrayResultExecutionContextFactory, ArrayResultExecutionContext] {
+  val columnExpressionArray = columns.map(_._2).toArray
+  val columnArraySize = columnExpressionArray.size
+  val columnIndexMap = {
+    val m = new mutable.OpenHashMap[String, Int](columns.length)
+    var index = 0
+    columns.foreach {
+      case (name, exp) => m.put(name, index)
+      index += 1
+    }
+    m
+  }
+
+  setExecutionContextConstructor((factory) => {
+    val resultArray = new Array[AnyValue](columnArraySize)
+    ArrayResultExecutionContext(resultArray, columnIndexMap, factory)
+  })
+
+  def newResult(context: ExecutionContext, state: QueryState): ArrayResultExecutionContext = {
+    val result = allocateExecutionContext
+
+    // Apply the expressions that materializes the result values and fill in the result array
+    val resultArray = result.resultArray
+    0 until columnArraySize foreach {
+      index =>
+        resultArray(index) = columnExpressionArray(index).apply(context, state)
+    }
+    result
+  }
+}
+
+case class ArrayResultExecutionContext(resultArray: Array[AnyValue],
+                                       columnIndexMap: scala.collection.Map[String, Int],
+                                       factory: ArrayResultExecutionContextFactory)
+  extends ExecutionContext with QueryResult.Record {
+
+  override def releaseMe(): Unit = factory.releaseExecutionContext(this)
+  override def release(): Unit = factory.releaseExecutionContext(this)
+
+  override def reset(): Unit = ()
+
+  override def get(key: String): Option[AnyValue] = {
+    columnIndexMap.get(key) match {
+      case Some(index) => Some(resultArray(index))
+      case _=> None
+    }
+  }
+
+  override def iterator: Iterator[(String, AnyValue)] = {
+    columnIndexMap.iterator.map {
+      case (name, index) =>
+        (name, resultArray(index))
+    }
+  }
+
+  override def fields(): Array[AnyValue] = {
+    resultArray
+  }
+
+  override def size: Int = resultArray.size
+
+  //---------------------------------------------------------------------------
+  // This is an ExecutionContext by name only and does not support the full API
+  // The methods below should never be called on a produced result
+  private def fail(): Nothing = throw new InternalException("Tried using a result context as an execution context")
+
+  override def copyTo(target: ExecutionContext, fromLongOffset: Int, fromRefOffset: Int, toLongOffset: Int, toRefOffset: Int): Unit = fail()
+
+  override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = fail()
+
+  override def setLongAt(offset: Int, value: Long): Unit = fail()
+
+  override def getLongAt(offset: Int): Long = fail()
+
+  override def longs(): Array[Long] = fail()
+
+  override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
+
+  override def getRefAt(offset: Int): AnyValue = fail()
+
+  override def refs(): Array[AnyValue] = fail()
+
+  override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
+
+  override def set(key: String, value: AnyValue): ExecutionContext = fail()
+
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
+
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()
+
+  override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
+
+  override def createClone(): ExecutionContext = fail()
+
+  override def copyWith(key: String, value: AnyValue): ExecutionContext = fail()
+
+  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
+
+  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()
+
+  override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
+
+  override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = fail()
+
+  override def isNull(key: String): Boolean = fail()
+
+  override def +=(kv: (String, AnyValue)): ArrayResultExecutionContext.this.type = fail()
+
+  override def -=(key: String): ArrayResultExecutionContext.this.type = fail()
 }

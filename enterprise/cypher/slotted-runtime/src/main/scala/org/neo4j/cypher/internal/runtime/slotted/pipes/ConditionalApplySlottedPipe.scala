@@ -42,11 +42,13 @@ case class ConditionalApplySlottedPipe(lhs: Pipe,
 
         if (condition(lhsContext)) {
           val rhsState = state.withInitialContext(lhsContext)
+          lhsContext.release()
           rhs.createResults(rhsState)
         }
         else {
-          val output = SlottedExecutionContext(slots)
+          val output = executionContextFactory.newExecutionContext()
           lhsContext.copyTo(output)
+          lhsContext.release()
           Iterator.single(output)
         }
     }

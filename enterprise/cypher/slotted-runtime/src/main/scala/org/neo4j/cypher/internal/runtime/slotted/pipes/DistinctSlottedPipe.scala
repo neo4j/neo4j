@@ -61,8 +61,9 @@ case class DistinctSlottedPipe(source: Pipe,
                                       state: QueryState): Iterator[ExecutionContext] = {
     // For each incoming row, run expression and put it into the correct slot in the context
     val result = input.map(incoming => {
-      val outgoing = SlottedExecutionContext(slots)
+      val outgoing = executionContextFactory.newExecutionContext()
       groupingSetInSlotFunctions.foreach { _(incoming, state, outgoing) }
+      incoming.release()
       outgoing
     })
 

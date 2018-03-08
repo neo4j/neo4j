@@ -153,7 +153,7 @@ object SlotConfiguration {
   */
 class SlotConfiguration(private val slots: mutable.Map[String, Slot],
                         var numberOfLongs: Int,
-                        var numberOfReferences: Int) {
+                        var numberOfReferences: Int) extends ExecutionContextInstanceCache[SlotConfiguration, ExecutionContext] {
 
   private val aliases: mutable.Set[String] = mutable.Set()
   private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
@@ -219,6 +219,8 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
           LongSlot(offset, nullable, newSlot.typ)
         case ((RefSlot(offset, nullable, _), false, true)) =>
           RefSlot(offset, nullable, newSlot.typ)
+        case _ =>
+          existingSlot // This should never happen but it eliminates a warning
       }
       replaceExistingSlot(key, existingSlot, modifiedSlot);
     }

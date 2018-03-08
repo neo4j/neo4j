@@ -70,8 +70,9 @@ case class ExpandAllSlottedPipe(source: Pipe,
 
           PrimitiveLongHelper.map(relationships, relId => {
             relationships.relationshipVisit(relId, relVisitor)
-            val outputRow = SlottedExecutionContext(slots)
+            val outputRow = executionContextFactory.newExecutionContext()
             inputRow.copyTo(outputRow)
+            inputRow.release()
             outputRow.setLongAt(relOffset, relId)
             outputRow.setLongAt(toOffset, otherSide)
             outputRow

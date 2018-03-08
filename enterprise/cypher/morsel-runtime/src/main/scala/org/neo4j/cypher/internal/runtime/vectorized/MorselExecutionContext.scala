@@ -76,4 +76,8 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = ???
 
   override def isNull(key: String): Boolean = ???
+
+  override def release(): Unit = ()
+
+  override def reset(): Unit = ()
 }

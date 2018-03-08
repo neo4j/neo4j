@@ -57,11 +57,13 @@ class SlottedQueryState(query: QueryContext,
 }
 
 case class SlottedExecutionContextFactory(slots: SlotConfiguration) extends ExecutionContextFactory {
+  slots.setExecutionContextConstructor(SlottedExecutionContext.apply)
+
   override def newExecutionContext(m: mutable.Map[String, AnyValue] = MutableMaps.empty): ExecutionContext =
     throw new UnsupportedOperationException("Please implement")
 
   override def newExecutionContext(): ExecutionContext =
-    SlottedExecutionContext(slots)
+    slots.allocateExecutionContext
 
   override def copyWith(row: ExecutionContext): ExecutionContext = {
     val newCtx = SlottedExecutionContext(slots)

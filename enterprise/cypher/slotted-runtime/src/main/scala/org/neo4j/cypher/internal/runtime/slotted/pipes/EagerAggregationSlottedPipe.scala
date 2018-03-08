@@ -122,7 +122,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
 
     // Used when we have no input and no grouping expressions. In this case, we'll return a single row
     def createEmptyResult(params: MapValue): Iterator[ExecutionContext] = {
-      val context = SlottedExecutionContext(slots)
+      val context = executionContextFactory.newExecutionContext()
       val aggregationOffsetsAndFunctions = aggregationOffsets zip aggregations
         .map(_._2.createAggregationFunction.result(state))
 
@@ -133,7 +133,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
     }
 
     def writeAggregationResultToContext(groupingKey: AnyValue, aggregator: Seq[AggregationFunction]): ExecutionContext = {
-      val context = SlottedExecutionContext(slots)
+      val context = executionContextFactory.newExecutionContext().asInstanceOf[SlottedExecutionContext]
       addGroupingValuesToResult(context, groupingKey)
       (aggregationOffsets zip aggregator.map(_.result(state))).foreach {
         case (offset, value) => context.setRefAt(offset, value)
@@ -146,6 +146,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
       val groupingValue: AnyValue = groupingFunction(ctx, state)
       val functions = result.getOrElseUpdate(groupingValue, aggregationFunctions.map(_.createAggregationFunction))
       functions.foreach(func => func(ctx, state))
+      ctx.release()
     })
 
     // Write the produced aggregation map to the output pipeline

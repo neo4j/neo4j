@@ -55,8 +55,9 @@ abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
         val matchesFromLhs: mutable.Seq[ExecutionContext] = table.getOrElse(joinKey, mutable.MutableList.empty)
 
         matchesFromLhs.map { lhs =>
-          val newRow = SlottedExecutionContext(slots)
+          val newRow = executionContextFactory.newExecutionContext().asInstanceOf[SlottedExecutionContext]
           lhs.copyTo(newRow)
+          lhs.release()
           copyDataFromRhs(newRow, rhs)
           newRow
         }
