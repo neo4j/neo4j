@@ -47,7 +47,7 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
             PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, indexDescriptor, indexId );
     }
 
     @Override
@@ -69,10 +69,9 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
             populator.add( Arrays.asList( updates ) );
             fail( "Updates should have conflicted" );
         }
-        catch ( Throwable e )
+        catch ( IndexEntryConflictException e )
         {
-            // then
-            assertTrue( Exceptions.contains( e, IndexEntryConflictException.class ) );
+            // then good
         }
         finally
         {

@@ -80,7 +80,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer(), true );
+            return singleUpdater.initialize( tree.writer() );
         }
         catch ( IOException e )
         {

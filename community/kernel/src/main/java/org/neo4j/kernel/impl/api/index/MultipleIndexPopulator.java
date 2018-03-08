@@ -523,7 +523,12 @@ public class MultipleIndexPopulator implements IndexPopulator
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
                         sample.indexSize() );
-                populator.close( true );
+                if ( populations.contains( IndexPopulation.this ) )
+                {
+                    populator.close( true );
+                }
+                // else it has failed when applying the last updates from queue. This is done because a multi-populator
+                // may have multiple populators running and they should not affect each other
                 return null;
             }, failedIndexProxyFactory );
             log.info( "Index population completed. Index is now online: [%s]", indexUserDescription );

@@ -25,20 +25,16 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.values.storable.ValueTuple;
-
-import static org.neo4j.kernel.impl.index.schema.ConflictDetectingValueMerger.dontCheck;
 
 class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         implements IndexUpdater
 {
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger = dontCheck();
+    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger = new ConflictDetectingValueMerger<>( true );
     private Writer<KEY,VALUE> writer;
 
     private boolean closed = true;
-    private boolean manageClosingOfWriter;
 
     NativeSchemaNumberIndexUpdater( KEY treeKey, VALUE treeValue )
     {
@@ -46,14 +42,13 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         this.treeValue = treeValue;
     }
 
-    NativeSchemaNumberIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
+    NativeSchemaNumberIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer )
     {
         if ( !closed )
         {
             throw new IllegalStateException( "Updater still open" );
         }
 
-        this.manageClosingOfWriter = manageClosingOfWriter;
         this.writer = writer;
         closed = false;
         return this;
@@ -69,10 +64,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        if ( manageClosingOfWriter )
-        {
-            writer.close();
-        }
+        writer.close();
         closed = true;
     }
 
@@ -124,6 +116,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         // Insert new entry
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
+        conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
         conflictDetectingValueMerger.checkConflict( update.values() );
     }
@@ -135,6 +128,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     {
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
+        conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
         conflictDetectingValueMerger.checkConflict( update.values() );
     }

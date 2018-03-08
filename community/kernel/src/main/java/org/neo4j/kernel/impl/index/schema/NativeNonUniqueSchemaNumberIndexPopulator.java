@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,7 +38,6 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NativeSchemaNumberIndexPopulator<KEY,VALUE>
 {
-    private final IndexSamplingConfig samplingConfig;
     private boolean updateSampling;
     private NonUniqueIndexSampler sampler;
 
@@ -48,7 +45,6 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VAL
             IndexSamplingConfig samplingConfig, SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
-        this.samplingConfig = samplingConfig;
         this.sampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
     }
 
@@ -61,30 +57,6 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VAL
     @Override
     public IndexSample sampleResult()
     {
-        // Close the writer before scanning
-        try
-        {
-            closeWriter();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-
-        try
-        {
-            return sampler.result();
-        }
-        finally
-        {
-            try
-            {
-                instantiateWriter();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        }
+        return sampler.result();
     }
 }

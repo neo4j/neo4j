@@ -20,28 +20,34 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
- * {@link NativeSchemaNumberIndexPopulator} which can enforces unique values.
+ * {@link NativeSchemaNumberIndexPopulator} which enforces unique values.
  */
 class NativeUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NativeSchemaNumberIndexPopulator<KEY,VALUE>
 {
     private final UniqueIndexSampler sampler;
+    private final IndexSamplingConfig samplingConfig;
 
     NativeUniqueSchemaNumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
+            IndexSamplingConfig samplingConfig, SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
+        this.samplingConfig = samplingConfig;
         this.sampler = new UniqueIndexSampler();
     }
 
@@ -55,5 +61,14 @@ class NativeUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE 
     public IndexSample sampleResult()
     {
         return sampler.result();
+    }
+
+    @Override
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    {
+        // The index population detects conflicts on the fly, however for updates coming in we're in a position
+        // where we cannot detect conflicts while applying, but instead afterwards.
+        return new DeferredConflictCheckingIndexUpdater( super.newPopulatingUpdater( accessor ),
+                () -> new NativeSchemaNumberIndexReader<>( tree, layout, samplingConfig ), descriptor );
     }
 }

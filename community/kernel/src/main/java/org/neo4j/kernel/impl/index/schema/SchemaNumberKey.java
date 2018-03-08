@@ -55,13 +55,13 @@ class SchemaNumberKey extends ValueWriter.Adapter<RuntimeException>
      * <p>
      * Note that {@code entityIdIsSpecialTieBreaker} is only an in memory state.
      */
-    boolean entityIdIsSpecialTieBreaker;
+    boolean entityIdIsSpecialTieBreaker = true;
 
     void from( long entityId, Value... values )
     {
         extractRawBitsAndType( assertValidSingleNumber( values ) );
         this.entityId = entityId;
-        entityIdIsSpecialTieBreaker = false;
+        entityIdIsSpecialTieBreaker = true;
     }
 
     private static NumberValue assertValidSingleNumber( Value... values )

@@ -81,8 +81,8 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
             return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new NonUniqueNumberLayout(), samplingConfig,
                     monitor, descriptor, indexId );
         case UNIQUE:
-            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout(), monitor, descriptor,
-                    indexId );
+            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout(), samplingConfig,
+                    monitor, descriptor, indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
         }
