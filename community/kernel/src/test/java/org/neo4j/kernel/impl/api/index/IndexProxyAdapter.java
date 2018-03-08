@@ -124,6 +124,12 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
+    public long getIndexId()
+    {
+        return 1;
+    }
+
+    @Override
     public ResourceIterator<File> snapshotFiles()
     {
         return emptyResourceIterator();

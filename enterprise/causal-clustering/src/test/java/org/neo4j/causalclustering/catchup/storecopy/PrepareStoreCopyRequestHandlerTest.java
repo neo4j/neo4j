@@ -33,10 +33,9 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 
@@ -100,19 +99,19 @@ public class PrepareStoreCopyRequestHandlerTest
     public void shouldGetSuccessfulResponseFromPrepareStoreCopyRequest() throws Exception
     {
         // given storeId matches
-        IndexDescriptor[] descriptors = new IndexDescriptor[]{
-                SchemaIndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 2, 3 ) )};
+        PrimitiveLongSet indexIds = Primitive.longSet();
+        indexIds.add( 1 );
         File[] files = new File[]{new File( "file" )};
         long lastCheckpoint = 1;
 
-        configureProvidedStoreCopyFiles( new StoreResource[0], files, descriptors, lastCheckpoint );
+        configureProvidedStoreCopyFiles( new StoreResource[0], files, indexIds, lastCheckpoint );
 
         // when store listing is requested
         embeddedChannel.writeInbound( channelHandlerContext, new PrepareStoreCopyRequest( STORE_ID_MATCHING ) );
 
         // and the contents of the store listing response is sent
         assertEquals( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE, embeddedChannel.readOutbound() );
-        PrepareStoreCopyResponse response = PrepareStoreCopyResponse.success( files, descriptors, lastCheckpoint );
+        PrepareStoreCopyResponse response = PrepareStoreCopyResponse.success( files, indexIds, lastCheckpoint );
         assertEquals( response, embeddedChannel.readOutbound() );
 
         // and the protocol is reset to expect any message type after listing has been transmitted
@@ -131,11 +130,11 @@ public class PrepareStoreCopyRequestHandlerTest
         PrepareStoreCopyRequestHandler subjectHandler = createHandler( new StoreCopyCheckPointMutex( lock ) );
 
         // and
-        IndexDescriptor[] descriptors = new IndexDescriptor[]{
-                SchemaIndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 2, 3 ) )};
+        PrimitiveLongSet indexIds = Primitive.longSet();
+        indexIds.add( 42 );
         File[] files = new File[]{new File( "file" )};
         long lastCheckpoint = 1;
-        configureProvidedStoreCopyFiles( new StoreResource[0], files, descriptors, lastCheckpoint );
+        configureProvidedStoreCopyFiles( new StoreResource[0], files, indexIds, lastCheckpoint );
 
         // when
         subjectHandler.channelRead0( channelHandlerContext, new PrepareStoreCopyRequest( STORE_ID_MATCHING ) );
@@ -150,11 +149,11 @@ public class PrepareStoreCopyRequestHandlerTest
         assertEquals( 0, lock.getReadLockCount() );
     }
 
-    private void configureProvidedStoreCopyFiles( StoreResource[] atomicFiles, File[] files, IndexDescriptor[] descriptors, long lastCommitedTx )
+    private void configureProvidedStoreCopyFiles( StoreResource[] atomicFiles, File[] files, PrimitiveLongSet indexIds, long lastCommitedTx )
             throws IOException
     {
         when( prepareStoreCopyFiles.getAtomicFilesSnapshot() ).thenReturn( atomicFiles );
-        when( prepareStoreCopyFiles.getIndexDescriptors() ).thenReturn( descriptors );
+        when( prepareStoreCopyFiles.getIndexIds() ).thenReturn( indexIds );
         when( prepareStoreCopyFiles.listReplayableFiles() ).thenReturn( files );
         when( checkPointer.lastCheckPointedTransactionId() ).thenReturn( lastCommitedTx );
     }

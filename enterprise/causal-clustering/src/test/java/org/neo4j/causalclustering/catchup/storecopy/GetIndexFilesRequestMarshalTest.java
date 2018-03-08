@@ -25,9 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,15 +39,14 @@ public class GetIndexFilesRequestMarshalTest
     }
 
     private static final StoreId expectedStore = new StoreId( 1, 2, 3, 4 );
-    private static final IndexDescriptor exepctedDescriptor =
-            SchemaIndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 2, 3 ) );
+    private static final long exepctedIndexId = 13;
     private static final Long expectedLastTransaction = 1234L;
 
     @Test
     public void getsTransmitted()
     {
         // given
-        GetIndexFilesRequest expectedIndexSnapshotRequest = new GetIndexFilesRequest( expectedStore, exepctedDescriptor, expectedLastTransaction );
+        GetIndexFilesRequest expectedIndexSnapshotRequest = new GetIndexFilesRequest( expectedStore, exepctedIndexId, expectedLastTransaction );
 
         // when
         sendToChannel( expectedIndexSnapshotRequest, embeddedChannel );
@@ -58,7 +54,7 @@ public class GetIndexFilesRequestMarshalTest
         // then
         GetIndexFilesRequest actualIndexRequest = embeddedChannel.readInbound();
         assertEquals( expectedStore, actualIndexRequest.expectedStoreId() );
-        assertEquals( exepctedDescriptor, actualIndexRequest.descriptor() );
+        assertEquals( exepctedIndexId, actualIndexRequest.indexId() );
         assertEquals( expectedLastTransaction.longValue(), actualIndexRequest.requiredTransactionId() );
     }
 

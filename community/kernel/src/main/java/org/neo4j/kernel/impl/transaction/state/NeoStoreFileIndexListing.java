@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -53,9 +55,9 @@ public class NeoStoreFileIndexListing
         this.explicitIndexProviders = explicitIndexProviders;
     }
 
-    public Collection<IndexDescriptor> listIndexDescriptors()
+    public PrimitiveLongSet getIndexIds()
     {
-        return indexingService.getIndexDescriptors();
+        return indexingService.getIndexIds();
     }
 
     Resource gatherSchemaIndexFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
@@ -95,11 +97,19 @@ public class NeoStoreFileIndexListing
         snapshot.stream().map( toStoreFileMetatadata ).forEach( targetFiles::add );
     }
 
-    public ResourceIterator<StoreFileMetadata> getSnapshot( IndexDescriptor descriptor ) throws IOException
+    public ResourceIterator<StoreFileMetadata> getSnapshot( long indexId ) throws IOException
     {
-        ResourceIterator<File> snapshot = indexingService.snapshotIndexFiles( descriptor::equals );
-        ArrayList<StoreFileMetadata> files = new ArrayList<>();
-        getSnapshotFilesMetadata( snapshot, files );
-        return resourceIterator( files.iterator(), snapshot );
+        try
+        {
+            ResourceIterator<File> snapshot = indexingService.getIndexProxy( indexId ).snapshotFiles();
+            ArrayList<StoreFileMetadata> files = new ArrayList<>();
+            getSnapshotFilesMetadata( snapshot, files );
+            return resourceIterator( files.iterator(), snapshot );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            // Perhaps it got dropped after getIndexIds() was called.
+            return Iterators.emptyResourceIterator();
+        }
     }
 }

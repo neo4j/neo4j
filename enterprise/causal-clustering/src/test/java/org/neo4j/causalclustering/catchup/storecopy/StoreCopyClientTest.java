@@ -36,10 +36,9 @@ import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
@@ -73,12 +72,12 @@ public class StoreCopyClientTest
 
     // helpers
     private File[] serverFiles = new File[]{new File( "fileA.txt" ), new File( "fileB.bmp" )};
-    private IndexDescriptor[] descriptors = new IndexDescriptor[]{
-            SchemaIndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 2, 3 ) )};
+    private PrimitiveLongSet indexIds = Primitive.longSet();
 
     @Before
     public void setup()
     {
+        indexIds.add( 13 );
         subject = new StoreCopyClient( catchUpClient, logProvider );
     }
 
@@ -86,7 +85,7 @@ public class StoreCopyClientTest
     public void clientRequestsAllFilesListedInListingResponse() throws StoreCopyFailedException, CatchUpClientException
     {
         // given a bunch of fake files on the server
-        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, descriptors, -123L );
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
         when( catchUpClient.makeBlockingRequest( any(), any( PrepareStoreCopyRequest.class ), any() ) ).thenReturn( prepareStoreCopyResponse );
 
         // and any request for a file will be successful
@@ -140,7 +139,8 @@ public class StoreCopyClientTest
                 new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND ) );
 
         // and the initial list+count store files request is successful
-        PrepareStoreCopyResponse initialListingOfFilesResponse = PrepareStoreCopyResponse.success( serverFiles, descriptors, -123L );
+        PrepareStoreCopyResponse initialListingOfFilesResponse = PrepareStoreCopyResponse.success( serverFiles,
+                indexIds, -123L );
         when( catchUpClient.makeBlockingRequest( any(), any( PrepareStoreCopyRequest.class ), any() ) ).thenReturn( initialListingOfFilesResponse );
 
         // when we perform catchup
@@ -197,7 +197,7 @@ public class StoreCopyClientTest
     public void storeIdMismatchOnCopyIndividualFile() throws StoreCopyFailedException, CatchUpClientException
     {
         // given listing response will be successful
-        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, descriptors, -123L );
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
         when( catchUpClient.makeBlockingRequest( any(), any(), any() ) ).thenReturn( prepareStoreCopyResponse );
 
         // and individual file requests get store id mismatch

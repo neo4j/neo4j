@@ -21,17 +21,18 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.io.fs.FileUtils.relativePath;
@@ -50,10 +51,11 @@ public class PrepareStoreCopyFiles implements AutoCloseable
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
-    IndexDescriptor[] getIndexDescriptors()
+    PrimitiveLongSet getIndexIds()
     {
-        Collection<IndexDescriptor> descriptors = neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().listIndexDescriptors();
-        return descriptors.toArray( new IndexDescriptor[descriptors.size()] );
+        NeoStoreFileListing neoStoreFileListing = neoStoreDataSource.getNeoStoreFileListing();
+        NeoStoreFileIndexListing indexListing = neoStoreFileListing.getNeoStoreFileIndexListing();
+        return indexListing.getIndexIds();
     }
 
     StoreResource[] getAtomicFilesSnapshot() throws IOException
