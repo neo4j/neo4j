@@ -23,6 +23,7 @@ import java.util.stream.Collectors
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
+import org.neo4j.values.storable.Value
 
 import scala.collection.JavaConversions._
 
@@ -39,24 +40,31 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
     graph.execute(s"DROP INDEX ON :$LABEL($PROPERTY)")
   }
 
-  protected def createIndexedNode(value: AnyRef): Node = {
-    createLabeledNode(Map(PROPERTY -> value), LABEL)
+  protected def createIndexedNode(value: Value): Node = {
+    createLabeledNode(Map(PROPERTY -> value.asObject()), LABEL)
   }
 
-  protected def setIndexedValue(node: Node, value: AnyRef): Unit = {
+  protected def setIndexedValue(node: Node, value: Value): Unit = {
     graph.inTx {
-      node.setProperty(PROPERTY, value)
+      node.setProperty(PROPERTY, value.asObject())
     }
   }
 
-  protected def assertSeekMatchFor(value: AnyRef, node: Node*): Unit = {
+  protected def assertSeekMatchFor(value: Value, nodes: Node*): Unit = {
     val query = "CYPHER runtime=slotted MATCH (n:%s) WHERE n.%s = $%s RETURN n".format(LABEL, PROPERTY, PROPERTY)
-    testIndexedRead(query, Map(PROPERTY -> value), "NodeIndexSeek", node)
+    testIndexedRead(query, Map(PROPERTY -> value.asObject()), "NodeIndexSeek", nodes)
   }
 
-  protected def assertScanMatch(node: Node*): Unit = {
+  protected def assertScanMatch(nodes: Node*): Unit = {
     val query = "CYPHER runtime=slotted MATCH (n:%s) WHERE EXISTS(n.%s) RETURN n".format(LABEL, PROPERTY)
-    testIndexedRead(query, Map(), "NodeIndexScan", node)
+    testIndexedRead(query, Map(), "NodeIndexScan", nodes)
+  }
+
+  protected def assertRangeScanFor(op1: String, bound1: Value, op2: String, bound2: Value, nodes: Node*): Unit = {
+    val predicate1 = s"n.$PROPERTY $op1 $$param1"
+    val predicate2 = s"n.$PROPERTY $op2 $$param2"
+    val query = s"CYPHER runtime=slotted MATCH (n:$LABEL) WHERE $predicate1 AND $predicate2 RETURN n"
+    testIndexedRead(query, Map("param1" -> bound1.asObject(), "param2" -> bound2.asObject()), "NodeIndexSeekByRange", nodes)
   }
 
   private def testIndexedRead(query: String, params: Map[String, AnyRef], wantedOperator: String, expected: Seq[Node]): Unit = {

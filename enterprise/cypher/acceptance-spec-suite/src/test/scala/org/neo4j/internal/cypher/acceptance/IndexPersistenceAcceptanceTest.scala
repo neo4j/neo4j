@@ -69,7 +69,7 @@ class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
 
   private val values: Array[Value] = Array(wgs1, wgs2, wgs1_3d, car, car_3d, date, dateTime, localDateTime, time, localTime, duration)
 
-  test("persisted indexed point should be seekable from node property") {
+  test("persisted indexed property should be seekable from node property") {
     createIndex()
     val node = createIndexedNode(wgs1)
 
@@ -80,7 +80,7 @@ class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
     assertSeekMatchFor(wgs1, node)
   }
 
-  test("different types of indexed points should survive restart") {
+  test("different types of indexed property should survive restart") {
     createIndex()
 
     val nodes = values.map(createIndexedNode)
