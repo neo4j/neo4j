@@ -45,7 +45,6 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.helper.VolatileFuture;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -186,17 +185,17 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
-    private Collection<Listener<MemberId>> leaderListeners = new ArrayList<>();
+    private Collection<LeaderListener> leaderListeners = new ArrayList<>();
 
     @Override
-    public synchronized void registerListener( Listener<MemberId> listener )
+    public synchronized void registerListener( LeaderListener listener )
     {
         leaderListeners.add( listener );
-        listener.receive( state.leader() );
+        listener.onLeaderSwitch( state.leaderInfo() );
     }
 
     @Override
-    public synchronized void unregisterListener( Listener listener )
+    public synchronized void unregisterListener( LeaderListener listener )
     {
         leaderListeners.remove( listener );
     }
@@ -213,10 +212,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        for ( Listener<MemberId> listener : leaderListeners )
+        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm() );
+        for ( LeaderListener listener : leaderListeners )
         {
-            //TODO: Update to pass leader and term, probably creating a leader-term pair/immutable struct
-            listener.receive( outcome.getLeader() );
+            listener.onLeaderSwitch( leaderInfo );
         }
     }
 

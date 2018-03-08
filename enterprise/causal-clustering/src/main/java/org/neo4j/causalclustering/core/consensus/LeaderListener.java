@@ -17,36 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.core.consensus;
 
-import java.io.Serializable;
-import java.util.UUID;
-
-import org.neo4j.causalclustering.identity.MemberId;
-
-/**
- * Simple struct representing a raft leader - move to the raft module and make sure its used properly there.
- */
-public class RaftLeader implements Serializable
+public interface LeaderListener
 {
-
-    private final long term;
-    private final UUID memberUUID;
-
-    public RaftLeader( MemberId memberId, long term )
-    {
-        this.memberUUID = memberId.getUuid();
-        this.term = term;
-    }
-
-    public long term()
-    {
-        return term;
-    }
-
-    public MemberId memberId()
-    {
-        return new MemberId( memberUUID );
-    }
+    void onLeaderSwitch( LeaderInfo leaderInfo );
 }
-

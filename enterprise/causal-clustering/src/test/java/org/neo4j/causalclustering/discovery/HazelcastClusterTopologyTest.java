@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.client.impl.MemberImpl;
-import com.hazelcast.concurrent.atomicreference.AtomicReferenceProxy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;
@@ -32,7 +31,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +44,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -245,14 +244,14 @@ public class HazelcastClusterTopologyTest
                 .mapToObj( ignored -> new MemberId( UUID.randomUUID() ) ).collect( Collectors.toList() );
 
         @SuppressWarnings( "unchecked" )
-        IAtomicReference<RaftLeader> leaderRef = mock( IAtomicReference.class );
+        IAtomicReference<LeaderInfo> leaderRef = mock( IAtomicReference.class );
         MemberId chosenLeaderId = members.get( 0 );
-        when( leaderRef.get() ).thenReturn( new RaftLeader( chosenLeaderId, 0L ) );
+        when( leaderRef.get() ).thenReturn( new LeaderInfo( chosenLeaderId, 0L ) );
 
         @SuppressWarnings( "unchecked" )
         IMap<String, UUID> uuidDBMap = mock( IMap.class );
         when( uuidDBMap.keySet() ).thenReturn( Collections.singleton( DEFAULT_DB_NAME ) );
-        when( hzInstance.<RaftLeader>getAtomicReference( startsWith( DB_NAME_LEADER_TERM_PREFIX ) ) ).thenReturn( leaderRef );
+        when( hzInstance.<LeaderInfo>getAtomicReference( startsWith( DB_NAME_LEADER_TERM_PREFIX ) ) ).thenReturn( leaderRef );
         when( hzInstance.<String, UUID>getMap( eq( CLUSTER_UUID_DB_NAME_MAP ) ) ).thenReturn( uuidDBMap );
 
         // when
