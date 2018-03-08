@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -63,12 +64,12 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class BackupToolTest
 {
+    private SystemExitRule systemExitRule = SystemExitRule.none();
+    private TestDirectory testDirectory = TestDirectory.testDirectory();
+    private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     @Rule
-    public SystemExitRule systemExitRule = SystemExitRule.none();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public RuleChain chain = RuleChain.outerRule( suppressOutput ).around( testDirectory ).around( systemExitRule );
 
     @Test
     public void shouldToolFailureExceptionCauseExitCode()
