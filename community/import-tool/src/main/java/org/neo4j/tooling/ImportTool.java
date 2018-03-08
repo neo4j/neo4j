@@ -428,7 +428,7 @@ public class ImportTool
             args = useArgumentsFromFileArgumentIfPresent( args );
 
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
-                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE );
             Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
             logsDir = config.get( GraphDatabaseSettings.logs_directory );
             fs.mkdirs( logsDir );
