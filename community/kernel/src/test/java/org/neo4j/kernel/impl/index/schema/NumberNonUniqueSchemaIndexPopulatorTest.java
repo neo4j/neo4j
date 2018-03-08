@@ -31,8 +31,7 @@ public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSche
     NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
             File indexFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, indexDescriptor,
-                indexId );
+        return new NumberSchemaIndexPopulator( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId, samplingConfig );
     }
 
     @Override

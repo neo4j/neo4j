@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -38,8 +29,12 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
 /**
  * Base class for native indexes on top of {@link GBPTree}.
@@ -75,18 +70,12 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
         }
 
         File storeFile = nativeIndexFileFromIndexId( indexId );
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, layoutNonUnique(), samplingConfig,
-                    monitor, descriptor, indexId );
-        case UNIQUE:
-            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, layoutUnique(), samplingConfig, monitor, descriptor,
-                    indexId );
-        default:
-            throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
-        }
+        Layout<KEY,VALUE> layout = layout( descriptor );
+        return newIndexPopulator( storeFile, layout, descriptor, indexId, samplingConfig );
     }
+
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout, IndexDescriptor descriptor, long indexId,
+            IndexSamplingConfig samplingConfig );
 
     @Override
     public IndexAccessor getOnlineAccessor(

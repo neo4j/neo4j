@@ -100,6 +100,7 @@ public class SpatialKnownIndexTest
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
         index.finishPopulation( true );
+        index.close();
     }
 
     @Test
@@ -119,6 +120,7 @@ public class SpatialKnownIndexTest
             assertThat( e.getMessage(), containsString( "Index file does not exist." ) );
             assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
         }
+        index.close();
     }
 
     @Test
@@ -140,6 +142,7 @@ public class SpatialKnownIndexTest
             assertThat( e.getMessage(), containsString( "Failed to bring index online." ) );
             index.finishPopulation( true );
         }
+        index.close();
     }
 
     @Test
@@ -183,6 +186,7 @@ public class SpatialKnownIndexTest
 
         updater.close();
         index.finishPopulation( true );
+        index.close();
     }
 
     @Test

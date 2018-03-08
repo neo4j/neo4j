@@ -20,24 +20,26 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
+
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
-public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+public class StringSchemaIndexPopulator extends NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue>
 {
-    @Override
-    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator(
-            PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
+    StringSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout,
+            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
     {
-        return new NumberSchemaIndexPopulator( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId, samplingConfig );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
     }
 
     @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    IndexReader newReader()
     {
-        return new NumberUniqueLayoutTestUtil();
+        return new StringSchemaIndexReader( tree, layout, samplingConfig, descriptor );
     }
 }

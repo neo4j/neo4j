@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
@@ -62,6 +63,13 @@ public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberS
     protected NumberLayoutNonUnique layoutNonUnique()
     {
         return new NumberLayoutNonUnique();
+    }
+
+    @Override
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor, long indexId,
+            IndexSamplingConfig samplingConfig )
+    {
+        return new NumberSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
     }
 
     @Override

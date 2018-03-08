@@ -42,9 +42,16 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -61,6 +68,10 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
 
     private final KEY treeKey;
     private final VALUE treeValue;
+    private final UniqueIndexSampler uniqueSampler;
+    private final NonUniqueIndexSampler nonUniqueSampler;
+    final IndexSamplingConfig samplingConfig;
+
     private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> additionsWorkSync;
     private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> updatesWorkSync;
 
@@ -68,11 +79,25 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     private boolean dropped;
 
     NativeSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
+            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
+        this.samplingConfig = samplingConfig;
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            uniqueSampler = null;
+            nonUniqueSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+            break;
+        case UNIQUE:
+            uniqueSampler = new UniqueIndexSampler();
+            nonUniqueSampler = null;
+            break;
+        default:
+            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
     }
 
     public void clear() throws IOException
@@ -89,11 +114,11 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
         boolean compareIds = descriptor.type() == GENERAL;
-        additionsWorkSync = new WorkSync<>( new IndexUpdateApply( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( compareIds ) ) );
+        additionsWorkSync = new WorkSync<>( new IndexUpdateApply<>( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( compareIds ) ) );
 
         // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
         // there are added conflict checks after updates have been applied.
-        updatesWorkSync = new WorkSync<>( new IndexUpdateApply( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( true ) ) );
+        updatesWorkSync = new WorkSync<>( new IndexUpdateApply<>( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( true ) ) );
     }
 
     @Override
@@ -125,7 +150,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        return new IndexUpdater()
+        IndexUpdater updater = new IndexUpdater()
         {
             private boolean closed;
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
@@ -152,7 +177,17 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
                 }
             }
         };
+
+        if ( descriptor.type() == UNIQUE )
+        {
+            // The index population detects conflicts on the fly, however for updates coming in we're in a position
+            // where we cannot detect conflicts while applying, but instead afterwards.
+            updater = new DeferredConflictCheckingIndexUpdater( updater, this::newReader, descriptor );
+        }
+        return updater;
     }
+
+    abstract IndexReader newReader();
 
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
@@ -187,7 +222,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     {
         try
         {
-            workSync.apply( new IndexUpdateWork( updates ) );
+            workSync.apply( new IndexUpdateWork<>( updates ) );
         }
         catch ( ExecutionException e )
         {
@@ -286,17 +321,47 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         }
 
         @Override
-        public IndexUpdateWork combine( IndexUpdateWork work )
+        public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork work )
         {
             ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
             combined.addAll( work.updates );
-            return new IndexUpdateWork( combined );
+            return new IndexUpdateWork<>( combined );
         }
 
         @Override
-        public void apply( IndexUpdateApply indexUpdateApply ) throws Exception
+        public void apply( IndexUpdateApply<KEY,VALUE> indexUpdateApply ) throws Exception
         {
             indexUpdateApply.process( updates );
+        }
+    }
+
+    @Override
+    public void includeSample( IndexEntryUpdate<?> update )
+    {
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            nonUniqueSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
+            break;
+        case UNIQUE:
+            uniqueSampler.increment( 1 );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
+    }
+
+    @Override
+    public IndexSample sampleResult()
+    {
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            return nonUniqueSampler.result();
+        case UNIQUE:
+            return uniqueSampler.result();
+        default:
+            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
         }
     }
 }
