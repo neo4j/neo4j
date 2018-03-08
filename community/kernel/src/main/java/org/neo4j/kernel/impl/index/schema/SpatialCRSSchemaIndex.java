@@ -341,7 +341,6 @@ public class SpatialCRSSchemaIndex
     {
         assert state == State.POPULATED || state == State.INIT;
         singleUpdater = new NativeSchemaIndexUpdater<>( treeKey, treeValue );
-        schemaIndex.instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
         state = State.ONLINE;
     }
 
