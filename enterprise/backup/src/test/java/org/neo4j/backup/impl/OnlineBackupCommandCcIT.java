@@ -109,7 +109,7 @@ public class OnlineBackupCommandCcIT
 
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
+                runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
@@ -118,7 +118,7 @@ public class OnlineBackupCommandCcIT
         createSomeData( cluster );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
+                runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
@@ -142,7 +142,7 @@ public class OnlineBackupCommandCcIT
 
         // then backup is successful
         String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from=" + address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
                 "--name=defaultport" ) );
     }
 

@@ -64,6 +64,7 @@ public class OnlineBackupContextBuilderTest
     public SuppressOutput suppress = SuppressOutput.suppressAll();
 
     private Path homeDir;
+    private Path backupDir;
     private Path configDir;
     private Path configFile;
 
@@ -71,6 +72,7 @@ public class OnlineBackupContextBuilderTest
     public void setUp() throws IOException
     {
         homeDir = testDirectory.directory( "home" ).toPath();
+        backupDir = testDirectory.directory( "backup" ).toPath();
         configDir = testDirectory.directory( "config" ).toPath();
         configFile = configDir.resolve( "neo4j.conf" );
         String neo4jConfContents = "dbms.backup.address = localhost:1234";
@@ -267,7 +269,7 @@ public class OnlineBackupContextBuilderTest
 
         // when
         OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
-        OnlineBackupContext context = builder.createContext( requiredAnd("--additional-config=" + additionalConf ) );
+        OnlineBackupContext context = builder.createContext( requiredAnd( "--additional-config=" + additionalConf ) );
 
         // then
         assertThat( context.getConfig().get( pagecache_memory ), is( "8m" ) );
@@ -278,7 +280,7 @@ public class OnlineBackupContextBuilderTest
     {
         // when
         OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
-        OnlineBackupContext context = builder.createContext( requiredAnd("--pagecache=42m" ) );
+        OnlineBackupContext context = builder.createContext( requiredAnd( "--pagecache=42m" ) );
 
         // then
         assertThat( context.getConfig().get( pagecache_memory ), is( "42m" ) );
@@ -287,20 +289,34 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void logsMustBePlacedInTargetBackupDirectory() throws Exception
     {
-        // when
+        // given
         String name = "mybackup";
-        Path backupDir = homeDir.resolve( "poke" );
         Path backupPath = backupDir.resolve( name );
         Files.createDirectories( backupDir );
+
+        // when
         OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
-        OnlineBackupContext context = builder.createContext( "--backup-dir=" + backupDir, "--name=" + name );
+        OnlineBackupContext context = builder.createContext( requiredAnd() );
+
+        // then
         assertThat( context.getConfig().get( logical_logs_location ).getAbsolutePath(), is( backupPath.toString() ) );
+    }
+
+    @Test
+    public void defaultPortIsNotProvided() throws CommandFailed, IncorrectUsage
+    {
+        // when
+        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContext context = builder.createContext( requiredAnd() );
+
+        // then
+        assertFalse( context.getRequiredArguments().getAddress().getPort().isPresent() );
     }
 
     private String[] requiredAnd( String... additionalArgs )
     {
         List<String> args = new ArrayList<>();
-        args.add( "--backup-dir=/" );
+        args.add( "--backup-dir=" + backupDir );
         args.add( "--name=mybackup" );
         Collections.addAll( args, additionalArgs );
         return args.toArray( new String[0] );

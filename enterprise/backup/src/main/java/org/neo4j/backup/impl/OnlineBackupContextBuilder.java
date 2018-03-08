@@ -61,7 +61,7 @@ class OnlineBackupContextBuilder
 
     static final String ARG_NAME_BACKUP_SOURCE = "from";
     static final String ARG_DESC_BACKUP_SOURCE = "Host and port of Neo4j.";
-    static final String ARG_DFLT_BACKUP_SOURCE = "localhost:6362";
+    static final String ARG_DFLT_BACKUP_SOURCE = "";
 
     static final String ARG_NAME_TIMEOUT = "timeout";
     static final String ARG_DESC_TIMEOUT =
