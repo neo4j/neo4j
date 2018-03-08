@@ -304,7 +304,6 @@ public class BatchInsertTest
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
     }
 
-
     @Test
     public void shouldIndexNodeWhenAddingProperty() throws Exception
     {
