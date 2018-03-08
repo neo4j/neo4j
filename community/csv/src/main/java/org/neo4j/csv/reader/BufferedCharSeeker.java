@@ -267,9 +267,9 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
-    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, String optionalData )
     {
-        if ( !tryExtract( mark, extractor ) )
+        if ( !tryExtract( mark, extractor, optionalData ) )
         {
             throw new IllegalStateException( extractor + " didn't extract value for " + mark +
                     ". For values which are optional please use tryExtract method instead" );
@@ -278,11 +278,11 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
-    public boolean tryExtract( Mark mark, Extractor<?> extractor )
+    public boolean tryExtract( Mark mark, Extractor<?> extractor, String optionalData )
     {
         int from = mark.startPosition();
         int to = mark.position();
-        return extractor.extract( buffer, from, to - from, mark.isQuoted() );
+        return extractor.extract( buffer, from, to - from, mark.isQuoted(), optionalData );
     }
 
     private int nextChar( int skippedChars ) throws IOException

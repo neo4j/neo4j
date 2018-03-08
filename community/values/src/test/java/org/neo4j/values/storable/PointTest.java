@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
@@ -108,6 +109,19 @@ public class PointTest
     {
         assertEqual( pointValue( WGS84_3D, -74.0060, 40.7128, 567.8 ),
                 PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}" ) ); // - explicitly WGS84-3D, without quotes
+    }
+
+    @Test
+    public void shouldNotBeAbleToParsePointWithConflictingCrsInformation()
+    {
+        try
+        {
+            PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}", "wgs-84" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            assertEquals( "Conflicting crs attributes for point found. Header crs states 'wgs-84' while column specifies 'wgs-84-3D'", e.getMessage() );
+        }
     }
 
     @Test

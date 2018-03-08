@@ -22,6 +22,9 @@ package org.neo4j.csv.reader;
 import org.junit.Test;
 
 import org.neo4j.csv.reader.Extractors.IntExtractor;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -40,7 +43,7 @@ public class ExtractorsTest
         // WHEN
         @SuppressWarnings( "unchecked" )
         Extractor<String[]> extractor = (Extractor<String[]>) extractors.valueOf( "STRING[]" );
-        extractor.extract( data.toCharArray(), 0, data.length(), false );
+        extractor.extract( data.toCharArray(), 0, data.length(), false, null );
 
         // THEN
         assertArrayEquals( new String[] {"abcde","fghijkl","mnopq"}, extractor.value() );
@@ -57,7 +60,7 @@ public class ExtractorsTest
         // WHEN
         @SuppressWarnings( "unchecked" )
         Extractor<long[]> extractor = (Extractor<long[]>) extractors.valueOf( "long[]" );
-        extractor.extract( data.toCharArray(), 0, data.length(), false );
+        extractor.extract( data.toCharArray(), 0, data.length(), false, null );
 
         // THEN
         assertArrayEquals( longData, extractor.value() );
@@ -73,7 +76,7 @@ public class ExtractorsTest
 
         // WHEN
         Extractor<boolean[]> extractor = extractors.booleanArray();
-        extractor.extract( data.toCharArray(), 0, data.length(), false );
+        extractor.extract( data.toCharArray(), 0, data.length(), false, null );
 
         // THEN
         assertBooleanArrayEquals( booleanData, extractor.value() );
@@ -89,7 +92,7 @@ public class ExtractorsTest
 
         // WHEN
         Extractor<double[]> extractor = extractors.doubleArray();
-        extractor.extract( data.toCharArray(), 0, data.length(), false );
+        extractor.extract( data.toCharArray(), 0, data.length(), false, null );
 
         // THEN
         assertArrayEquals( doubleData, extractor.value(), 0.001 );
@@ -106,7 +109,7 @@ public class ExtractorsTest
         // WHEN extracting long[] from "<number>;<number>...;" i.e. ending with a delimiter
         try
         {
-            extractors.longArray().extract( data.toCharArray(), 0, data.length(), false );
+            extractors.longArray().extract( data.toCharArray(), 0, data.length(), false, null );
             fail( "Should have failed" );
         }
         catch ( NumberFormatException e )
@@ -124,12 +127,28 @@ public class ExtractorsTest
         String data = "123;456;abc;789";
         try
         {
-            extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length(), false );
+            extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length(), false, null );
             fail( "Should have failed" );
         }
         catch ( NumberFormatException e )
         {   // Great
         }
+    }
+
+    @Test
+    public void shouldExtractPoint()
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',' );
+        PointValue value = Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.7 );
+
+        // WHEN
+        char[] asChars = "Point{latitude: 56.7, longitude: 13.2}".toCharArray();
+        Extractors.PointExtractor extractor = extractors.point();
+        extractor.extract( asChars, 0, asChars.length, false, "WGS-84" );
+
+        // THEN
+        assertEquals( value, extractor.value );
     }
 
     @Test
@@ -142,7 +161,7 @@ public class ExtractorsTest
         // WHEN
         char[] asChars = String.valueOf( value ).toCharArray();
         IntExtractor extractor = extractors.int_();
-        extractor.extract( asChars, 0, asChars.length, false );
+        extractor.extract( asChars, 0, asChars.length, false, null );
 
         // THEN
         assertEquals( value, extractor.intValue() );
@@ -157,7 +176,7 @@ public class ExtractorsTest
 
         // WHEN
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract( value.toCharArray(), 0, value.length(), false );
+        extractor.extract( value.toCharArray(), 0, value.length(), false, null );
 
         // THEN
         assertEquals( 0, extractor.value().length );
@@ -172,7 +191,7 @@ public class ExtractorsTest
 
         // WHEN
         Extractor<long[]> extractor = extractors.longArray();
-        extractor.extract( value.toCharArray(), 0, value.length(), false );
+        extractor.extract( value.toCharArray(), 0, value.length(), false, null );
 
         // THEN
         assertEquals( 0, extractor.value().length );
@@ -187,7 +206,7 @@ public class ExtractorsTest
 
         // WHEN
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract( value.toCharArray(), 0, value.length(), false );
+        extractor.extract( value.toCharArray(), 0, value.length(), false, null );
 
         // THEN
         assertArrayEquals( new String[] { "", "" }, extractor.value() );
@@ -202,7 +221,7 @@ public class ExtractorsTest
 
         // WHEN
         Extractor<String> extractor = extractors.string();
-        extractor.extract( value.toCharArray(), 0, value.length(), true );
+        extractor.extract( value.toCharArray(), 0, value.length(), true, null );
 
         // THEN
         assertEquals( "", extractor.value() );
@@ -216,7 +235,7 @@ public class ExtractorsTest
         Extractor<String> extractor = extractors.string();
 
         // WHEN
-        extractor.extract( new char[0], 0, 0, true );
+        extractor.extract( new char[0], 0, 0, true, null );
         String extracted = extractor.value();
 
         // THEN
@@ -233,7 +252,7 @@ public class ExtractorsTest
         // WHEN
         char[] asChars = value.toCharArray();
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract( asChars, 0, asChars.length, true );
+        extractor.extract( asChars, 0, asChars.length, true, null );
 
         // THEN
         assertArrayEquals( new String[] {"ab", "cd", "ef", "gh"}, extractor.value() );
@@ -249,7 +268,7 @@ public class ExtractorsTest
         // WHEN
         char[] asChars = value.toCharArray();
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract( asChars, 0, asChars.length, true );
+        extractor.extract( asChars, 0, asChars.length, true, null );
 
         // THEN
         assertArrayEquals( new String[] {"ab", "cd ", " ef", " gh "}, extractor.value() );
@@ -265,13 +284,13 @@ public class ExtractorsTest
 
         // WHEN
         String v1 = "abc";
-        e1.extract( v1.toCharArray(), 0, v1.length(), false );
+        e1.extract( v1.toCharArray(), 0, v1.length(), false, null );
         assertEquals( v1, e1.value() );
         assertNull( e2.value() );
 
         // THEN
         String v2 = "def";
-        e2.extract( v2.toCharArray(), 0, v2.length(), false );
+        e2.extract( v2.toCharArray(), 0, v2.length(), false, null );
         assertEquals( v2, e2.value() );
         assertEquals( v1, e1.value() );
     }

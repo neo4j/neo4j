@@ -40,9 +40,10 @@ public interface Extractor<T> extends Cloneable
      * @param offset offset into the buffer where the value starts.
      * @param length number of characters from the offset to extract.
      * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
+     * @param optionalData optional data to be used for spatial (CRS) or temporal (timezone) values or null
      * @return {@code true} if a value was extracted, otherwise {@code false}.
      */
-    boolean extract( char[] data, int offset, int length, boolean hadQuotes );
+    boolean extract( char[] data, int offset, int length, boolean hadQuotes, String optionalData );
 
     /**
      * @return the most recently extracted value.

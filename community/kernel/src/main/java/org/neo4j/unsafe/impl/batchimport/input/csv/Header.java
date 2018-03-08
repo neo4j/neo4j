@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
@@ -103,6 +104,7 @@ public class Header implements Cloneable
         private final Type type;
         private final Group group;
         private final Extractor<?> extractor;
+        private final String optionalParameter;  // This can be used to encapsulate the parameter set in the header for spatial and temporal columns
 
         public Entry( String name, Type type, Group group, Extractor<?> extractor )
         {
@@ -110,14 +112,32 @@ public class Header implements Cloneable
             this.type = type;
             this.group = group;
             this.extractor = extractor;
+            this.optionalParameter = null;
+        }
+
+        public Entry( String name, Type type, Group group, Extractor<?> extractor, String optionalParameter )
+        {
+            this.name = name;
+            this.type = type;
+            this.group = group;
+            this.extractor = extractor;
+            this.optionalParameter = optionalParameter;
         }
 
         @Override
         public String toString()
         {
-            return (name != null ? name : "") +
-                   ":" + (type == Type.PROPERTY ? extractor.name().toLowerCase() : type.name()) +
-                   (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
+            if ( optionalParameter == null )
+            {
+                return (name != null ? name : "") + ":" + (type == Type.PROPERTY ? extractor.name().toLowerCase() : type.name()) +
+                        (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
+            }
+            else
+            {
+                return (name != null ? name : "") + ":" +
+                        (type == Type.PROPERTY ? extractor.name().toLowerCase() + "[" + optionalParameter + "]" : type.name()) +
+                        (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
+            }
         }
 
         public Extractor<?> extractor()
@@ -138,6 +158,11 @@ public class Header implements Cloneable
         public String name()
         {
             return name;
+        }
+
+        public String optionalParameter()
+        {
+            return optionalParameter;
         }
 
         @Override
@@ -171,13 +196,14 @@ public class Header implements Cloneable
             }
             Entry other = (Entry) obj;
             return nullSafeEquals( name, other.name ) && type == other.type &&
-                    nullSafeEquals( group, other.group ) && extractorEquals( extractor, other.extractor );
+                    nullSafeEquals( group, other.group ) && extractorEquals( extractor, other.extractor ) &&
+                    nullSafeEquals( optionalParameter, other.optionalParameter );
         }
 
         @Override
         public Entry clone()
         {
-            return new Entry( name, type, group, extractor != null ? extractor.clone() : null );
+            return new Entry( name, type, group, extractor != null ? extractor.clone() : null, optionalParameter );
         }
 
         private boolean nullSafeEquals( Object o1, Object o2 )

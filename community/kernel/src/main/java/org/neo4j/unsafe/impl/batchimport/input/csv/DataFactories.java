@@ -38,6 +38,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -45,6 +46,7 @@ import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
+import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.csv.reader.Readables.individualFiles;
 import static org.neo4j.csv.reader.Readables.iterator;
@@ -189,14 +191,14 @@ public class DataFactories
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && dataSeeker.seek( mark, delimiter ); i++ )
                 {
-                    String entryString = dataSeeker.tryExtract( mark, extractors.string() )
+                    String entryString = dataSeeker.tryExtract( mark, extractors.string(), null )
                             ? extractors.string().value() : null;
                     HeaderEntrySpec spec = new HeaderEntrySpec( entryString );
 
                     if ( (spec.name == null && spec.type == null) ||
                          (spec.type != null && spec.type.equals( Type.IGNORE.name() )) )
                     {
-                        columns.add( new Header.Entry( null, Type.IGNORE, Group.GLOBAL, null ) );
+                        columns.add( new Header.Entry( null, Type.IGNORE, Group.GLOBAL, null, null ) );
                     }
                     else
                     {
@@ -332,32 +334,39 @@ public class DataFactories
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
             Type type = null;
             Extractor<?> extractor = null;
+            String optionalParameter = null;
             if ( typeSpec == null )
             {
                 type = Type.PROPERTY;
                 extractor = extractors.string();
             }
-            else if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
-            {
-                type = Type.ID;
-                extractor = idExtractor;
-            }
-            else if ( typeSpec.equalsIgnoreCase( Type.LABEL.name() ) )
-            {
-                type = Type.LABEL;
-                extractor = extractors.stringArray();
-            }
-            else if ( isRecognizedType( typeSpec ) )
-            {
-                throw new HeaderException( "Unexpected node header type '" + typeSpec + "'" );
-            }
             else
             {
-                type = Type.PROPERTY;
-                extractor = parsePropertyType( typeSpec, extractors );
-            }
+                Pair<String, String> split = splitTypeSpecAndOptionalParameter(typeSpec);
+                typeSpec = split.first();
+                optionalParameter = split.other();
 
-            return new Header.Entry( name, type, group, extractor );
+                if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
+                {
+                    type = Type.ID;
+                    extractor = idExtractor;
+                }
+                else if ( typeSpec.equalsIgnoreCase( Type.LABEL.name() ) )
+                {
+                    type = Type.LABEL;
+                    extractor = extractors.stringArray();
+                }
+                else if ( isRecognizedType( typeSpec ) )
+                {
+                    throw new HeaderException( "Unexpected node header type '" + typeSpec + "'" );
+                }
+                else
+                {
+                    type = Type.PROPERTY;
+                    extractor = parsePropertyType( typeSpec, extractors );
+                }
+            }
+            return new Header.Entry( name, type, group, extractor, optionalParameter );
         }
     }
 
@@ -375,37 +384,44 @@ public class DataFactories
         {
             Type type = null;
             Extractor<?> extractor = null;
+            String optionalParameter = null;
             if ( typeSpec == null )
             {   // Property
                 type = Type.PROPERTY;
                 extractor = extractors.string();
             }
-            else if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )
-            {
-                type = Type.START_ID;
-                extractor = idExtractor;
-            }
-            else if ( typeSpec.equalsIgnoreCase( Type.END_ID.name() ) )
-            {
-                type = Type.END_ID;
-                extractor = idExtractor;
-            }
-            else if ( typeSpec.equalsIgnoreCase( Type.TYPE.name() ) )
-            {
-                type = Type.TYPE;
-                extractor = extractors.string();
-            }
-            else if ( isRecognizedType( typeSpec ) )
-            {
-                throw new HeaderException( "Unexpected relationship header type '" + typeSpec + "'" );
-            }
             else
             {
-                type = Type.PROPERTY;
-                extractor = parsePropertyType( typeSpec, extractors );
-            }
+                Pair<String, String> split = splitTypeSpecAndOptionalParameter(typeSpec);
+                typeSpec = split.first();
+                optionalParameter = split.other();
 
-            return new Header.Entry( name, type, group, extractor );
+                if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )
+                {
+                    type = Type.START_ID;
+                    extractor = idExtractor;
+                }
+                else if ( typeSpec.equalsIgnoreCase( Type.END_ID.name() ) )
+                {
+                    type = Type.END_ID;
+                    extractor = idExtractor;
+                }
+                else if ( typeSpec.equalsIgnoreCase( Type.TYPE.name() ) )
+                {
+                    type = Type.TYPE;
+                    extractor = extractors.string();
+                }
+                else if ( isRecognizedType( typeSpec ) )
+                {
+                    throw new HeaderException( "Unexpected relationship header type '" + typeSpec + "'" );
+                }
+                else
+                {
+                    type = Type.PROPERTY;
+                    extractor = parsePropertyType( typeSpec, extractors );
+                }
+            }
+            return new Header.Entry( name, type, group, extractor, optionalParameter );
         }
 
     }
@@ -426,5 +442,26 @@ public class DataFactories
     public static Iterable<DataFactory> datas( DataFactory... factories )
     {
         return Iterables.iterable( factories );
+    }
+
+    public static Pair<String,String> splitTypeSpecAndOptionalParameter( String typeSpec )
+    {
+        String optionalParameter = null;
+        String newTypeSpec = typeSpec;
+        //TODO: This could be done with some clever regex magic
+        int begin = typeSpec.indexOf( '{' );
+        if ( begin != -1 )
+        {
+            // only extract optional parameter if one is given
+            int end = typeSpec.indexOf( '}' );
+            if ( end == -1 )
+            {
+                String errorMessage = format( "Failed to parse header: '%s'", typeSpec );
+                throw new IllegalArgumentException( errorMessage );
+            }
+            optionalParameter = typeSpec.substring( begin + 1, end ).trim();
+            newTypeSpec = typeSpec.substring( 0, begin );
+        }
+        return Pair.of( newTypeSpec, optionalParameter );
     }
 }

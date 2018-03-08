@@ -25,7 +25,7 @@ import java.io.IOException;
 /**
  * Seeks for specific characters in a stream of characters, e.g. a {@link CharReadable}. Uses a {@link Mark}
  * as keeper of position. Once a {@link #seek(Mark, int)} has succeeded the characters specified by
- * the mark can be {@link #extract(Mark, Extractor) extracted} into a value of an arbitrary type.
+ * the mark can be {@link #extract(Mark, Extractor, String) extracted} into a value of an arbitrary type.
  *
  * Typical usage is:
  *
@@ -66,19 +66,21 @@ public interface CharSeeker extends Closeable, SourceTraceability
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
+     * @param optionalData holds additional information for spatial and temporal values or null
      * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
      * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
-     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean) extraction}
+     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, String) extraction}
      * returns {@code false}.
      */
-    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor );
+    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, String optionalData );
 
     /**
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
+     * @param optionalData holds additional information for spatial and temporal values or null
      * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for
      * returning {@code false} would be if the data to extract was empty.
      */
-    boolean tryExtract( Mark mark, Extractor<?> extractor );
+    boolean tryExtract( Mark mark, Extractor<?> extractor, String optionalData );
 }

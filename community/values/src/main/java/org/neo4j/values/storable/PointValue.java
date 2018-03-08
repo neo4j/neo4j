@@ -281,8 +281,13 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
     public static PointValue parse( CharSequence text )
     {
+        return PointValue.parse( text, null );
+    }
+
+    public static PointValue parse( CharSequence text, String crs )
+    {
         Matcher mapMatcher = mapPattern.matcher( text );
-        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1  ) )
+        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
         {
             String errorMessage = format( "Failed to parse point value: '%s'", text );
             throw new IllegalArgumentException( errorMessage );
@@ -346,7 +351,19 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                         {
                             // Eliminate any quoutes
                             String unquotedValue = quotesPattern.matcher( value ).replaceAll( "" );
-                            fields[field.ordinal()] = Values.stringValue( unquotedValue );
+                            if ( crs != null ) // global crs is given
+                            {
+                                if ( !crs.toLowerCase().equals( unquotedValue.toLowerCase() ) )
+                                {
+                                    throw new IllegalArgumentException(
+                                            "Conflicting crs attributes for point found. Header crs states '" + crs + "' while column specifies '" +
+                                                    unquotedValue + "'" );
+                                }
+                            }
+                            else
+                            {
+                                fields[field.ordinal()] = Values.stringValue( unquotedValue );
+                            }
                             break;
                         }
 
@@ -357,6 +374,11 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 }
             }
         } while ( matcher.find() );
+
+        if ( crs != null )
+        {
+            fields[PointValueField.CRS.ordinal()] = Values.stringValue( crs );
+        }
 
         return fromInputFields( fields );
     }
@@ -425,7 +447,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
             if ( !crs.isGeographic() )
             {
-                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs );
+                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs +
+                        ". This is set either in the csv header or the actual data column" );
             }
         }
         else

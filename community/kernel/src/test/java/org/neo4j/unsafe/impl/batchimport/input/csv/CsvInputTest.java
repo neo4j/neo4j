@@ -489,6 +489,27 @@ public class CsvInputTest
     }
 
     @Test
+    public void shouldParsePointPropertyValuesWithCRSInHeader() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,point:Point{WGS-84-3D}\n" +
+                        "0,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2 } \"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Johan", "point",
+                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 5, -4.2, 0.01)}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
     public void shouldParseDatePropertyValues() throws Exception
     {
         // GIVEN

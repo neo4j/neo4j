@@ -74,7 +74,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
         val buffer = new ArrayBuffer[String]
         breakable {
           while (seeker.seek(mark, intDelimiter)) {
-            val success = seeker.tryExtract(mark, extractor)
+            val success = seeker.tryExtract(mark, extractor, null)
             buffer += (if (success) extractor.value() else null)
             if (mark.isEndOfLine) break()
           }
