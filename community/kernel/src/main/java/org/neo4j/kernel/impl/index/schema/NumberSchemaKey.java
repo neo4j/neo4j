@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -34,7 +33,7 @@ import static java.lang.String.format;
  * Distinction between double and float exists because coersions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
-class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements NativeSchemaKey
+class NumberSchemaKey extends NativeSchemaKey
 {
     static final int SIZE =
             Byte.BYTES + /* type of value */
@@ -43,41 +42,13 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
             // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
             Long.BYTES;  /* entityId */
 
-    private long entityId;
-    private boolean compareId = true;
-
     byte type;
     long rawValueBits;
 
-    public void setCompareId( boolean compareId )
-    {
-        this.compareId = compareId;
-    }
-
-    public boolean getCompareId()
-    {
-        return compareId;
-    }
-
     @Override
-    public long getEntityId()
-    {
-        return entityId;
-    }
-
-    @Override
-    public void setEntityId( long entityId )
-    {
-        this.entityId = entityId;
-        compareId = true;
-    }
-
-    @Override
-    public void from( long entityId, Value... values )
+    void from( Value... values )
     {
         extractRawBitsAndType( assertValidValue( values ) );
-        this.entityId = entityId;
-        compareId = true;
     }
 
     private NumberValue assertValidValue( Value... values )
@@ -100,31 +71,21 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     }
 
     @Override
-    public String propertiesAsString()
-    {
-        return asValue().toString();
-    }
-
-    @Override
-    public NumberValue asValue()
+    NumberValue asValue()
     {
         return RawBits.asNumberValue( rawValueBits, type );
     }
 
     @Override
-    public void initAsLowest()
+    void initValueAsLowest()
     {
         writeFloatingPoint( Double.NEGATIVE_INFINITY );
-        entityId = Long.MIN_VALUE;
-        compareId = true;
     }
 
     @Override
-    public void initAsHighest()
+    void initValueAsHighest()
     {
         writeFloatingPoint( Double.POSITIVE_INFINITY );
-        entityId = Long.MAX_VALUE;
-        compareId = true;
     }
 
     /**
@@ -152,7 +113,7 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     @Override
     public String toString()
     {
-        return format( "type=%d,rawValue=%d,value=%s,entityId=%d", type, rawValueBits, asValue(), entityId );
+        return format( "type=%d,rawValue=%d,value=%s,entityId=%d", type, rawValueBits, asValue(), getEntityId() );
     }
 
     @Override
