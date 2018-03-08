@@ -92,6 +92,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -301,6 +302,28 @@ public class BatchInsertTest
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
+    }
+
+
+    @Test
+    public void shouldIndexNodeWhenAddingProperty() throws Exception
+    {
+        BatchInserter graphDb = newBatchInserter();
+        long node1 = graphDb.createNode( null, TestLabels.LABEL_ONE );
+        graphDb.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "prop" ).create();
+        graphDb.shutdown();
+        graphDb = newBatchInserter();
+        graphDb.setNodeProperties( node1, Collections.singletonMap( "prop", "hej" ) );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node = db.findNode( TestLabels.LABEL_ONE, "prop", "hej" );
+            assertEquals( node1, node.getId() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
