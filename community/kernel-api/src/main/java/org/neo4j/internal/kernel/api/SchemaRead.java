@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
@@ -59,6 +60,24 @@ public interface SchemaRead
      * @throws IndexNotFoundKernelException if the index was not found in the database
      */
     InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Retrives the population progress of the index
+     * @param index The index whose progress to retrieve
+     * @return The population progress of the given index
+     * @throws IndexNotFoundKernelException if the index was not found in the database
+     */
+    PopulationProgress indexGetPopulationProgress( CapableIndexReference index ) throws
+            IndexNotFoundKernelException;
+
+    /**
+     * Returns the failure description of a failed index.
+     *
+     * @param index the failed index
+     * @return The failure message from the index
+     * @throws IndexNotFoundKernelException if the index was not found in the database
+     */
+    String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException;
 
     /**
      * Finds all constraints for the given schema

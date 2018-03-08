@@ -29,6 +29,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -38,6 +39,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -52,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
@@ -565,6 +568,31 @@ public class MockStore extends Read implements TestRule
     public Iterator<CapableIndexReference> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<CapableIndexReference> indexesGetAll()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public PopulationProgress indexGetPopulationProgress( CapableIndexReference index )
+            throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        return null;
     }
 
     @Override

@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -564,6 +565,12 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
         assertEquals( providerKey(), index.providerKey() );
         assertEquals( providerVersion(), index.providerVersion() );
+    }
+
+    @Test
+    public void shouldGetAllIndexes() throws Exception
+    {
+       assertEquals( 2, Iterators.asList( schemaRead.indexesGetAll() ).size());
     }
 
     @Test
