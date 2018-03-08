@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueGroup;
 
 class DefaultCapableIndexReference implements CapableIndexReference
@@ -30,13 +31,17 @@ class DefaultCapableIndexReference implements CapableIndexReference
     private final int label;
     private final int[] properties;
     private final boolean unique;
+    private final IndexProvider.Descriptor providerDescriptor;
     private final IndexCapability capability;
 
-    DefaultCapableIndexReference( boolean unique, IndexCapability indexCapability, int label, int... properties )
+    DefaultCapableIndexReference( boolean unique, IndexCapability indexCapability,
+            IndexProvider.Descriptor providerDescriptor, int label,
+            int... properties )
     {
         this.unique = unique;
         this.capability = indexCapability;
         this.label = label;
+        this.providerDescriptor = providerDescriptor;
         this.properties = properties;
     }
 
@@ -56,6 +61,18 @@ class DefaultCapableIndexReference implements CapableIndexReference
     public int[] properties()
     {
         return properties;
+    }
+
+    @Override
+    public String providerKey()
+    {
+        return providerDescriptor.getKey();
+    }
+
+    @Override
+    public String providerVersion()
+    {
+        return providerDescriptor.getVersion();
     }
 
     @Override

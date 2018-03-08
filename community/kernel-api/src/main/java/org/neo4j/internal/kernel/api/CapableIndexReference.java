@@ -58,5 +58,17 @@ public interface CapableIndexReference extends IndexReference, IndexCapability
         {
             return new int[0];
         }
+
+        @Override
+        public String providerKey()
+        {
+            return null;
+        }
+
+        @Override
+        public String providerVersion()
+        {
+            return null;
+        }
     };
 }

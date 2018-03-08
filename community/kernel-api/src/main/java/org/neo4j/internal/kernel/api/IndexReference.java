@@ -30,4 +30,8 @@ public interface IndexReference
     int label();
 
     int[] properties();
+
+    String providerKey();
+
+    String providerVersion();
 }

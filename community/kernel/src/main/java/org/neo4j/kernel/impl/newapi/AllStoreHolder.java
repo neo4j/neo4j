@@ -28,7 +28,6 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -286,13 +285,9 @@ public class AllStoreHolder extends Read
 
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        boolean unique = schemaIndexDescriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         try
         {
-            IndexCapability indexCapability = storeReadLayer.indexGetCapability( schemaIndexDescriptor );
-            return new DefaultCapableIndexReference( unique, indexCapability, schemaIndexDescriptor.schema()
-                                                                                                   .getLabelId(),
-                    schemaIndexDescriptor.schema().getPropertyIds() );
+            return storeReadLayer.indexReference( schemaIndexDescriptor );
         }
         catch ( IndexNotFoundKernelException e )
         {
