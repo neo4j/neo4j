@@ -20,15 +20,12 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.File
-import java.util.stream.Collectors
 
-import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
+import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
-class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
+class SpatialIndexAcceptanceTest extends IndexingTestSupport {
 
   private var dbDir = new File("test")
 
@@ -57,208 +54,97 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     }
   }
 
-  test("persisted indexed point should be readable from node property") {
-    graph.createIndex("Place", "location")
-    createLabeledNode("Place")
+  private val wgs1 = Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)
+  private val wgs2 = Values.pointValue(CoordinateReferenceSystem.WGS84, 44.4, 44.5)
+  private val wgs1_3d = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0)
+  private val car = Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78)
+  private val car_3d = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0)
 
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+  test("persisted indexed point should be seekable from node property") {
+    createIndex()
+    val node = createIndexedNode(wgs1)
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs1, node)
 
     restartGraphDatabase()
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs1, node)
   }
 
-  test("persisted indexed 3D point should be readable from node property") {
-    graph.createIndex("Place", "location")
-    createLabeledNode("Place")
+  test("different types of indexed points should survive restart") {
+    createIndex()
 
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0}) RETURN p.location as point")
+    val n1 = createIndexedNode(wgs1)
+    val n2 = createIndexedNode(wgs1_3d)
+    val n3 = createIndexedNode(car)
+    val n4 = createIndexedNode(car_3d)
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
-
-    restartGraphDatabase()
-
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
-  }
-
-  test("persisted indexed 3D cartesian point should be readable from node property") {
-    graph.createIndex("Place", "location")
-    createLabeledNode("Place")
-
-    graph.execute("MATCH (p:Place) SET p.location = point({x: -1, y: 1, z: -1}) RETURN p.location as point")
-
-    testPointRead("MATCH (p:Place) WHERE p.location = point({x: -1, y: 1, z: -1}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -1, 1, -1))
+    assertScanMatch(n1, n2, n3, n4)
 
     restartGraphDatabase()
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({x: -1, y: 1, z: -1}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -1, 1, -1))
-  }
-
-  test("create index after adding node and also survive restart") {
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
-    graph.createIndex("Place", "location")
-
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-
-    restartGraphDatabase()
-
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-  }
-
-  test("indexScan should handle multiple different types of points and also survive restart") {
-    graph.createIndex("Place", "location")
-
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
-
-    val query = "MATCH (p:Place) WHERE EXISTS(p.location) RETURN p.location AS point"
-    testPointScan(query,
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78),
-      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
-
-    restartGraphDatabase()
-
-    testPointScan(query,
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78),
-      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
-  }
-
-  test("indexScan should handle multiple different types of 3D points and also survive restart") {
-    graph.createIndex("Place", "location")
-
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
-
-    val query = "MATCH (p:Place) WHERE EXISTS(p.location) RETURN p.location AS point"
-    testPointScan(query,
-      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
-
-    restartGraphDatabase()
-
-    testPointScan(query,
-      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0),
-      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
-  }
-
-  test("indexSeek should handle multiple different types of points and also survive restart") {
-    graph.createIndex("Place", "location")
-
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'})")
-
-    val query1 = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location AS point"
-    val query2 = "MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'}) RETURN p.location AS point"
-    val query3 = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 100.0, crs: 'WGS-84-3D'}) RETURN p.location AS point"
-    val query4 = "MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, z: 5.0, crs: 'cartesian-3D'}) RETURN p.location AS point"
-
-    testPointRead(query1, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-    testPointRead(query2, Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
-    testPointRead(query3, Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
-    testPointRead(query4, Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
-
-    restartGraphDatabase()
-
-    testPointRead(query1, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-    testPointRead(query2, Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
-    testPointRead(query3, Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 100.0))
-    testPointRead(query4, Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 5.0))
+    assertScanMatch(n1, n2, n3, n4)
   }
 
   test("overwriting indexed property should work") {
-    graph.createIndex("Place", "location")
-    createLabeledNode("Place")
+    createIndex()
+    val node = createIndexedNode(wgs1)
+    assertSeekMatchFor(wgs1, node)
 
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point")
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.0, 56.0))
-
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    setIndexedValue(node, wgs2)
+    assertSeekMatchFor(wgs2, node)
 
     restartGraphDatabase()
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs2, node)
   }
 
   test("create index before and after adding node and also survive restart") {
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
-    graph.createIndex("Place", "location")
+    val n1 = createIndexedNode(wgs1)
+    createIndex()
+    val n2 = createIndexedNode(wgs2)
 
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point")
-
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.0, 56.0))
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs1, n1)
+    assertSeekMatchFor(wgs2, n2)
 
     restartGraphDatabase()
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.0, 56.0))
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs1, n1)
+    assertSeekMatchFor(wgs2, n2)
   }
 
   test("create drop create index") {
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
-    graph.createIndex("Place", "location")
+    val n1 = createIndexedNode(wgs1)
+    createIndex()
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs1, n1)
 
-    graph.execute("DROP INDEX ON :Place(location)")
-    graph.createIndex("Place", "location")
+    dropIndex()
+    createIndex()
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs1, n1)
   }
 
   test("change crs") {
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point")
-    graph.createIndex("Place", "location")
+    val n1 = createIndexedNode(wgs1)
+    createIndex()
 
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    assertSeekMatchFor(wgs1, n1)
 
     // When changing to Cartesian
-    graph.execute("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78}) SET p.location = point({x: 1.0, y: 2.78})")
-    testPointRead("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
+    setIndexedValue(n1, car)
+    assertSeekMatchFor(car, n1)
 
     // When changing to Cartesian-3D
-    graph.execute("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78}) SET p.location = point({x: 1.0, y: 2.78, z: 3.2})")
-    testPointRead("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, z: 3.2}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.78, 3.2))
+    setIndexedValue(n1, car_3d)
+    assertSeekMatchFor(car_3d, n1)
 
     // When changing to WGS84-3D
-    graph.execute("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, z: 3.2}) SET p.location = point({latitude: 56.7, longitude: 12.78, height: 123.0})")
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 123.0}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 123.0))
+    setIndexedValue(n1, wgs1_3d)
+    assertSeekMatchFor(wgs1_3d, n1)
 
-    // When changing back to WGS84-3D
-    graph.execute("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, height: 123.0}) SET p.location = point({latitude: 56.7, longitude: 12.78})")
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    // When changing back to WGS84
+    setIndexedValue(n1, wgs1)
+    assertSeekMatchFor(wgs1, n1)
   }
-
-  private def testPointRead(query: String, expected: PointValue*): Unit = {
-    testPointScanOrRead(query, seek = true, expected)
-  }
-
-  private def testPointScan(query: String, expected: PointValue*): Unit = {
-    testPointScanOrRead(query, seek = false, expected)
-  }
-
-  private def testPointScanOrRead(query: String, seek: Boolean, expected: Seq[PointValue]): Unit = {
-    val result = graph.execute(query)
-
-    val plan = result.getExecutionPlanDescription.toString
-    if (seek) plan should include("NodeIndexSeek")
-    else plan should include("NodeIndexScan")
-    plan should include (":Place(location)")
-
-    val points = result.columnAs("point").stream().collect(Collectors.toSet)
-    expected.foreach(p => assert(points.contains(p)))
-    points.size() should be(expected.size)
-  }
-
 }
