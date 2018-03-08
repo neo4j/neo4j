@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -58,30 +56,6 @@ class NativeNonUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     @Override
     public IndexSample sampleResult()
     {
-        // Close the writer before scanning
-        try
-        {
-            closeWriter();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-
-        try
-        {
-            return sampler.result();
-        }
-        finally
-        {
-            try
-            {
-                instantiateWriter();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        }
+        return sampler.result();
     }
 }

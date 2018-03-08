@@ -45,11 +45,4 @@ public class NumberLayoutNonUnique extends NumberLayout
     {
         return MINOR_VERSION;
     }
-
-    @Override
-    public int compare( NumberSchemaKey o1, NumberSchemaKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
-    }
 }

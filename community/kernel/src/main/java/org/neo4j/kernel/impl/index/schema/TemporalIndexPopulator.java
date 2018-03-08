@@ -76,7 +76,10 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         {
             select( update.values()[0].valueGroup() ).batchUpdate( update );
         }
-        forAll( PartPopulator::applyUpdateBatch, this );
+        for ( PartPopulator part : this )
+        {
+            part.applyUpdateBatch();
+        }
     }
 
     @Override
@@ -184,7 +187,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
             updates.add( update );
         }
 
-        void applyUpdateBatch() throws IOException
+        void applyUpdateBatch() throws IOException, IndexEntryConflictException
         {
             try
             {

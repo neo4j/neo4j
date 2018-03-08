@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
-import org.neo4j.index.internal.gbptree.ValueMergers;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.values.storable.Value;
@@ -34,58 +34,49 @@ import org.neo4j.values.storable.ValueTuple;
  *
  * @param <VALUE> type of values being merged.
  */
-abstract class ConflictDetectingValueMerger<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> implements ValueMerger<KEY,VALUE>
+class ConflictDetectingValueMerger<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> implements ValueMerger<KEY,VALUE>
 {
-    /**
-     * @throw IndexEntryConflictException if merge conflicted with an existing key. This call also clears the conflict flag.
-     */
-    abstract void checkConflict( Value[] values ) throws IndexEntryConflictException;
+    private final boolean compareEntityIds;
 
-    private static ConflictDetectingValueMerger DONT_CHECK = new ConflictDetectingValueMerger()
+    private boolean conflict;
+    private long existingNodeId;
+    private long addedNodeId;
+
+    ConflictDetectingValueMerger( boolean compareEntityIds )
     {
-        @Override
-        public Object merge( Object existingKey, Object newKey, Object existingValue, Object newValue )
-        {
-            return null;
-        }
-
-        @Override
-        void checkConflict( Value[] values )
-        {
-            // do nothing
-        }
-    };
-
-    static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> ConflictDetectingValueMerger<KEY, VALUE> dontCheck()
-    {
-        return DONT_CHECK;
+        this.compareEntityIds = compareEntityIds;
     }
 
-    static class Check<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends ConflictDetectingValueMerger<KEY, VALUE>
+    @Override
+    public VALUE merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
     {
-        private boolean conflict;
-        private long existingNodeId;
-        private long addedNodeId;
-
-        @Override
-        public VALUE merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
+        if ( existingKey.getEntityId() != newKey.getEntityId() )
         {
-            if ( existingKey.getEntityId() != newKey.getEntityId() )
-            {
-                conflict = true;
-                existingNodeId = existingKey.getEntityId();
-                addedNodeId = newKey.getEntityId();
-            }
-            return null;
+            conflict = true;
+            existingNodeId = existingKey.getEntityId();
+            addedNodeId = newKey.getEntityId();
         }
+        return null;
+    }
 
-        void checkConflict( Value[] values ) throws IndexEntryConflictException
+    /**
+     * To be called for a populated key that is about to be sent off to a {@link Writer}.
+     * {@link GBPTree}'s ability to check for conflicts while applying updates is an opportunity,
+     * but also complicates some scenarios. This is why the strictness can be tweaked like this.
+     *
+     * @param key key to let know about conflict detection strictness.
+     */
+    void controlConflictDetection( KEY key )
+    {
+        key.setCompareId( compareEntityIds );
+    }
+
+    void checkConflict( Value[] values ) throws IndexEntryConflictException
+    {
+        if ( conflict )
         {
-            if ( conflict )
-            {
-                conflict = false;
-                throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( values ) );
-            }
+            conflict = false;
+            throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( values ) );
         }
     }
 }

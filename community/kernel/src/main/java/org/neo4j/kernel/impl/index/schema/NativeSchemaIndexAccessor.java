@@ -79,7 +79,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer(), true );
+            return singleUpdater.initialize( tree.writer() );
         }
         catch ( IOException e )
         {

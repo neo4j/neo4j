@@ -44,7 +44,7 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
             Long.BYTES;  /* entityId */
 
     private long entityId;
-    private boolean compareId;
+    private boolean compareId = true;
 
     byte type;
     long rawValueBits;
@@ -69,6 +69,7 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     public void setEntityId( long entityId )
     {
         this.entityId = entityId;
+        compareId = true;
     }
 
     @Override
@@ -76,7 +77,7 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     {
         extractRawBitsAndType( assertValidValue( values ) );
         this.entityId = entityId;
-        compareId = false;
+        compareId = true;
     }
 
     private NumberValue assertValidValue( Value... values )

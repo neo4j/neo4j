@@ -25,9 +25,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils;
 
-public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<NativePopulatingUpdater,IOException> implements IndexUpdater
+public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpdater,IOException> implements IndexUpdater
 {
     TemporalIndexPopulatingUpdater( TemporalIndexPopulator populator, PropertyAccessor propertyAccessor )
     {
@@ -45,8 +44,8 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<NativePop
 
         case CHANGED:
             // These are both temporal, but could belong in different parts
-            NativePopulatingUpdater from = select( update.beforeValues()[0].valueGroup() );
-            NativePopulatingUpdater to = select( update.values()[0].valueGroup() );
+            IndexUpdater from = select( update.beforeValues()[0].valueGroup() );
+            IndexUpdater to = select( update.values()[0].valueGroup() );
             // There are two cases:
             // - both before/after go into the same updater --> pass update into that updater
             if ( from == to )
@@ -73,10 +72,13 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<NativePop
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        FusionIndexUtils.forAll( NativePopulatingUpdater::close, this );
+        for ( IndexUpdater part : this )
+        {
+            part.close();
+        }
     }
 
-    static class PartFactory implements TemporalIndexCache.Factory<NativePopulatingUpdater,IOException>
+    static class PartFactory implements TemporalIndexCache.Factory<IndexUpdater,IOException>
     {
         private final TemporalIndexPopulator populator;
         private PropertyAccessor propertyAccessor;
@@ -88,37 +90,37 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<NativePop
         }
 
         @Override
-        public NativePopulatingUpdater newDate() throws IOException
+        public IndexUpdater newDate() throws IOException
         {
             return populator.date().newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
-        public NativePopulatingUpdater newDateTime() throws IOException
+        public IndexUpdater newDateTime() throws IOException
         {
             throw new UnsupportedOperationException( "too tired to write" );
         }
 
         @Override
-        public NativePopulatingUpdater newDateTimeZoned() throws IOException
+        public IndexUpdater newDateTimeZoned() throws IOException
         {
             throw new UnsupportedOperationException( "too tired to write" );
         }
 
         @Override
-        public NativePopulatingUpdater newTime() throws IOException
+        public IndexUpdater newTime() throws IOException
         {
             throw new UnsupportedOperationException( "too tired to write" );
         }
 
         @Override
-        public NativePopulatingUpdater newTimeZoned() throws IOException
+        public IndexUpdater newTimeZoned() throws IOException
         {
             throw new UnsupportedOperationException( "too tired to write" );
         }
 
         @Override
-        public NativePopulatingUpdater newDuration() throws IOException
+        public IndexUpdater newDuration() throws IOException
         {
             throw new UnsupportedOperationException( "too tired to write" );
         }

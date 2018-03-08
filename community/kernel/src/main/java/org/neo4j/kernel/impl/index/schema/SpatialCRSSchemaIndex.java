@@ -36,9 +36,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -57,6 +55,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
 
@@ -80,9 +79,9 @@ public class SpatialCRSSchemaIndex
     private NativeSchemaValue treeValue;
     private SpatialLayout layout;
     private NativeSchemaIndexUpdater<SpatialSchemaKey,NativeSchemaValue> singleUpdater;
-    private Writer<SpatialSchemaKey,NativeSchemaValue> singleTreeWriter;
     private NativeSchemaIndex<SpatialSchemaKey,NativeSchemaValue> schemaIndex;
-    private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> workSync;
+    private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> additionsWorkSync;
+    private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> updatesWorkSync;
 
     public SpatialCRSSchemaIndex( IndexDescriptor descriptor,
             IndexDirectoryStructure directoryStructure,
@@ -221,7 +220,7 @@ public class SpatialCRSSchemaIndex
         schemaIndex.assertOpen();
         try
         {
-            return singleUpdater.initialize( schemaIndex.tree.writer(), true );
+            return singleUpdater.initialize( schemaIndex.tree.writer() );
         }
         catch ( IOException e )
         {
@@ -234,42 +233,34 @@ public class SpatialCRSSchemaIndex
     public synchronized void finishPopulation( boolean populationCompletedSuccessfully ) throws IOException
     {
         assert state == State.POPULATING;
-        closeWriter();
         if ( populationCompletedSuccessfully && failureBytes != null )
         {
             throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
         }
 
-        try
+        if ( populationCompletedSuccessfully )
         {
-            if ( populationCompletedSuccessfully )
-            {
-                schemaIndex.assertOpen();
-                markTreeAsOnline();
-                state = State.POPULATED;
-            }
-            else
-            {
-                assertNotDropped();
-                ensureTreeInstantiated();
-                markTreeAsFailed();
-                state = State.FAILED;
-            }
+            schemaIndex.assertOpen();
+            markTreeAsOnline();
+            state = State.POPULATED;
         }
-        finally
+        else
         {
-            schemaIndex.closeTree();
+            assertNotDropped();
+            ensureTreeInstantiated();
+            markTreeAsFailed();
+            state = State.FAILED;
         }
     }
 
     public void add( Collection<IndexEntryUpdate<?>> updates ) throws IOException
     {
-        applyWithWorkSync( updates );
+        applyWithWorkSync( additionsWorkSync, updates );
     }
 
-    private NativePopulatingUpdater newPopulatingUpdater()
+    private IndexUpdater newPopulatingUpdater()
     {
-        return new NativePopulatingUpdater()
+        return new IndexUpdater()
         {
             private boolean closed;
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
@@ -284,7 +275,7 @@ public class SpatialCRSSchemaIndex
             @Override
             public void close() throws IOException
             {
-                applyWithWorkSync( updates );
+                applyWithWorkSync( updatesWorkSync, updates );
                 closed = true;
             }
 
@@ -304,7 +295,6 @@ public class SpatialCRSSchemaIndex
     {
         try
         {
-            closeWriter();
             schemaIndex.closeTree();
             schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile );
         }
@@ -341,8 +331,9 @@ public class SpatialCRSSchemaIndex
         assert state == State.INIT;
         schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile );
         schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
-        instantiateWriter();
-        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger.Check<>() ) );
+        additionsWorkSync = new WorkSync<>( new IndexUpdateApply<>( schemaIndex.tree, treeKey, treeValue,
+                new ConflictDetectingValueMerger<>( schemaIndex.descriptor.type() == GENERAL ) ) );
+        updatesWorkSync = new WorkSync<>( new IndexUpdateApply<>( schemaIndex.tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( true ) ) );
         state = State.POPULATING;
     }
 
@@ -354,13 +345,8 @@ public class SpatialCRSSchemaIndex
         state = State.ONLINE;
     }
 
-    private void instantiateWriter() throws IOException
-    {
-        assert singleTreeWriter == null;
-        singleTreeWriter = schemaIndex.tree.writer();
-    }
-
-    private void applyWithWorkSync( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
+    private void applyWithWorkSync( WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> workSync,
+            Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
     {
         try
         {
@@ -370,11 +356,6 @@ public class SpatialCRSSchemaIndex
         {
             throw new IOException( e );
         }
-    }
-
-    private void closeWriter() throws IOException
-    {
-        singleTreeWriter = schemaIndex.closeIfPresent( singleTreeWriter );
     }
 
     private void markTreeAsOnline() throws IOException

@@ -81,7 +81,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
             return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, layoutNonUnique(), samplingConfig,
                     monitor, descriptor, indexId );
         case UNIQUE:
-            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, layoutUnique(), monitor, descriptor,
+            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, layoutUnique(), samplingConfig, monitor, descriptor,
                     indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );

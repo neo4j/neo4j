@@ -88,6 +88,21 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
+    public int compare( NumberSchemaKey o1, NumberSchemaKey o2 )
+    {
+        int comparison = o1.compareValueTo( o2 );
+        if ( comparison == 0 )
+        {
+            // This is a special case where we need also compare entityId to support inclusive/exclusive
+            if ( o1.getCompareId() & o2.getCompareId() )
+            {
+                return Long.compare( o1.getEntityId(), o2.getEntityId() );
+            }
+        }
+        return comparison;
+    }
+
+    @Override
     public boolean fixedSize()
     {
         return true;
