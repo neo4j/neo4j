@@ -21,8 +21,11 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,11 +37,27 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.ArrayUtil.array;
 
+@RunWith( Parameterized.class )
 public class AccidentalUniquenessConstraintViolationIT
 {
     private static final Label Foo = Label.label( "Foo" );
     private static final String BAR = "bar";
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data()
+    {
+        Collection<Object[]> data = new ArrayList<>();
+        data.add( array( 42, 41 ) );
+        data.add( array( "a", "b" ) );
+        return data;
+    }
+
+    @Parameterized.Parameter
+    public Object value1;
+    @Parameterized.Parameter( 1 )
+    public Object value2;
 
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
@@ -57,25 +76,24 @@ public class AccidentalUniquenessConstraintViolationIT
         try ( Transaction tx = db.beginTx() )
         {
             fourtyTwo = db.createNode( Foo );
-            fourtyTwo.setProperty( BAR, 42 );
+            fourtyTwo.setProperty( BAR, value1 );
             fourtyOne = db.createNode( Foo );
-            fourtyOne.setProperty( BAR, 41 );
+            fourtyOne.setProperty( BAR, value2 );
             tx.success();
         }
 
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            Map<String,Object> props = fourtyOne.getAllProperties();
             fourtyOne.delete();
-            fourtyTwo.setProperty( BAR, props.get( BAR ) );
+            fourtyTwo.setProperty( BAR, value2 );
             tx.success();
         }
 
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 41, fourtyTwo.getProperty( BAR ) );
+            assertEquals( value2, fourtyTwo.getProperty( BAR ) );
             try
             {
                 fourtyOne.getProperty( BAR );
@@ -87,8 +105,8 @@ public class AccidentalUniquenessConstraintViolationIT
             }
             tx.success();
 
-            assertEquals( fourtyTwo, db.findNode( Foo, BAR, 41 ) );
-            assertNull( db.findNode( Foo, BAR, 42 ) );
+            assertEquals( fourtyTwo, db.findNode( Foo, BAR, value2 ) );
+            assertNull( db.findNode( Foo, BAR, value1 ) );
         }
     }
 }
