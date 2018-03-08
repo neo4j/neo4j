@@ -791,9 +791,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public StatementLocks locks()
+    public org.neo4j.internal.kernel.api.Locks locks()
     {
-       return statementLocks;
+       return operations.locks();
+    }
+
+    public StatementLocks statementLocks()
+    {
+        return statementLocks;
     }
 
     @Override

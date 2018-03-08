@@ -383,7 +383,7 @@ public class AllStoreHolder extends Read
         return Iterators.map( constraintDescriptor ->
         {
             SchemaDescriptor schema = constraintDescriptor.schema();
-            ktx.locks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
+            ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
             return constraintDescriptor;
         }, constraints );
     }

@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
-import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
@@ -634,22 +633,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def indexGet(name: String, key: String, value: Any): Iterator[NodeValue] =
-      JavaConversionSupport
-        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getByIdIfExists)
-
-    override def indexQuery(name: String, query: Any): Iterator[NodeValue] =
-      JavaConversionSupport
-        .mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeExplicitIndexQuery(name, query))(getByIdIfExists)
-
     override def isDeletedInThisTx(id: Long): Boolean = transactionalContext.stateView
       .hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long): Unit =
-      transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
+      transactionalContext.kernelTransaction.locks().acquireExclusiveNodeLock(obj)
 
     override def releaseExclusiveLock(obj: Long): Unit =
-      transactionalContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
+      transactionalContext.kernelTransaction.locks().releaseExclusiveNodeLock(obj)
 
     override def exists(id: Long): Boolean = reads().nodeExists(id)
 
@@ -773,23 +764,15 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def indexGet(name: String, key: String, value: Any): Iterator[RelationshipValue] =
-      JavaConversionSupport.mapToScalaENFXSafe(
-        transactionalContext.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getByIdIfExists)
-
-    override def indexQuery(name: String, query: Any): Iterator[RelationshipValue] =
-      JavaConversionSupport.mapToScalaENFXSafe(
-        transactionalContext.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getByIdIfExists)
-
     override def isDeletedInThisTx(id: Long): Boolean =
       transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState()
         .relationshipIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long): Unit =
-      transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+      transactionalContext.kernelTransaction.locks().acquireExclusiveRelationshipLock(obj)
 
     override def releaseExclusiveLock(obj: Long): Unit =
-      transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+      transactionalContext.kernelTransaction.locks().releaseExclusiveRelationshipLock(obj)
 
     override def exists(id: Long): Boolean = reads().relationshipExists(id)
   }
@@ -938,11 +921,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def lockNodes(nodeIds: Long*) =
-    nodeIds.sorted.foreach(transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, _))
+  nodeIds.sorted.foreach(transactionalContext.kernelTransaction.locks().acquireExclusiveNodeLock(_))
 
   override def lockRelationships(relIds: Long*) =
     relIds.sorted
-      .foreach(transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, _))
+      .foreach(transactionalContext.kernelTransaction.locks().acquireExclusiveRelationshipLock(_))
 
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                   pathPredicate: KernelPredicate[Path],

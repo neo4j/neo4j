@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.configuration.Config
-import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
@@ -237,11 +236,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
-    tc.readOperations.releaseShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
+    tc.kernelTransaction.locks().releaseSharedLabelLock(labelIds.toArray[Long]:_*)
   }
 
   private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
-    tc.readOperations.acquireShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
+    tc.kernelTransaction.locks().acquireSharedLabelLock(labelIds.toArray[Long]:_*)
   }
 
   private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any], Seq[String]), version: CypherVersion, tc:
