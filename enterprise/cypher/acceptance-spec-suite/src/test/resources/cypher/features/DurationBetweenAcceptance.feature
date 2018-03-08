@@ -576,6 +576,29 @@ Feature: DurationBetweenAcceptance
       | 'PT-0.001S' |
     And no side effects
 
+  Scenario: Should compute negative duration between in big units
+    Given an empty graph
+    When executing query:
+      """
+      WITH [[date("2018-03-11"), date("2016-06-24")],
+              [date("2018-07-21"), datetime("2016-07-21T21:40:32.142+0100")],
+              [localdatetime("2018-07-21T21:40:32.142"), date("2016-07-21")],
+              [datetime("2018-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:40:36.143")],
+              [datetime("2018-07-21T21:40:36.143+0500"), datetime("1984-07-21T22:40:36.143+0200")]] as temporalCombos
+      UNWIND temporalCombos as pair
+      WITH pair[0] as first, pair[1] as second
+      RETURN duration.years(first, second) as years, duration.quarters(first, second) as quarters, duration.months(first, second) as months
+      """
+    Then the result should be, in order:
+      | years   | quarters   | months      |
+      | 'P-1Y'  | 'P-1Y-6M'  | 'P-1Y-8M'   |
+      | 'P-1Y'  | 'P-1Y-9M'  | 'P-1Y-11M'  |
+      | 'P-2Y'  | 'P-2Y'     | 'P-2Y'      |
+      | 'P-2Y'  | 'P-2Y'     | 'P-2Y'      |
+      | 'P-33Y' | 'P-33Y-9M' | 'P-33Y-11M' |
+
+    And no side effects
+
   Scenario: Should handle durations at daylight saving time day
     Given an empty graph
     When executing query:
