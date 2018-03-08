@@ -150,6 +150,10 @@ public class SpatialCRSSchemaIndex
         }
         if ( state == State.INIT || state == State.POPULATED )
         {
+            if ( state == State.INIT )
+            {
+                schemaIndex.instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
+            }
             online();
         }
         if ( state != State.ONLINE )
