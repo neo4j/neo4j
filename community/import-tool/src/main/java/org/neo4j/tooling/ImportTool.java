@@ -675,6 +675,7 @@ public class ImportTool
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ), out );
         printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
         printIndented( "Configured max memory: " + bytes( configuration.maxMemoryUsage() ), out );
+        printIndented( "High-IO: " + configuration.parallelRecordReadsWhenWriting(), out );
         out.println();
     }
 
