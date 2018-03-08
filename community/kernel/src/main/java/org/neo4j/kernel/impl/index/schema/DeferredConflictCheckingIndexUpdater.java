@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -90,14 +90,16 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
         {
             for ( ValueTuple tuple : touchedTuples )
             {
-                PrimitiveLongIterator results = reader.query( queryOf( tuple ) );
-                if ( results.hasNext() )
+                try ( PrimitiveLongResourceIterator results = reader.query( queryOf( tuple ) ) )
                 {
-                    long firstEntityId = results.next();
                     if ( results.hasNext() )
                     {
-                        long secondEntityId = results.next();
-                        throw new IndexEntryConflictException( firstEntityId, secondEntityId, tuple );
+                        long firstEntityId = results.next();
+                        if ( results.hasNext() )
+                        {
+                            long secondEntityId = results.next();
+                            throw new IndexEntryConflictException( firstEntityId, secondEntityId, tuple );
+                        }
                     }
                 }
             }
