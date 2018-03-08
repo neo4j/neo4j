@@ -2004,7 +2004,7 @@ public class ProcedureIT
 
         public static class ByteArrayAggregator
         {
-            byte[] aggregated = null;
+            byte[] aggregated;
 
             @UserAggregationUpdate
             public void update( @Name( "bytes" ) byte[] bytes )
