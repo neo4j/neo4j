@@ -159,7 +159,6 @@ sealed trait InequalityExpression extends Expression with BinaryOperatorExpressi
     TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean),
     TypeSignature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTDuration, CTDuration), outputType = CTBoolean),
     TypeSignature(argumentTypes = Vector(CTDate, CTDate), outputType = CTBoolean),
     TypeSignature(argumentTypes = Vector(CTTime, CTTime), outputType = CTBoolean),
     TypeSignature(argumentTypes = Vector(CTDateTime, CTDateTime), outputType = CTBoolean),

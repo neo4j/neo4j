@@ -47,7 +47,8 @@ class GreaterThanOrEqualTest extends InfixExpressionTestBase(GreaterThanOrEqual(
   }
 
   test("shouldReturnErrorIfInvalidArgumentTypes") {
-    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node")
+    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer, Point, String, Date, Time, LocalTime, LocalDateTime or DateTime but was Node")
     testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Float or Integer but was Node")
+    testInvalidApplication(CTDuration, CTDuration)("Type mismatch: expected Float, Integer, Point, String, Date, Time, LocalTime, LocalDateTime or DateTime but was Duration")
   }
 }
