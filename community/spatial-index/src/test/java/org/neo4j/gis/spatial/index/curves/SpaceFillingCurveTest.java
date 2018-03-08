@@ -461,12 +461,12 @@ public class SpaceFillingCurveTest
             log( "" );
             log( formatHeader1 );
             log( formatHeader2 );
-            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{new StandardConfiguration( 1 ), new StandardConfiguration( 2 ),
-                    new StandardConfiguration( 3 ), new StandardConfiguration( 4 ), new PartialOverlapConfiguration( 1, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 1, 0.99, 0.5 ), new PartialOverlapConfiguration( 2, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 2, 0.99, 0.5 ), new PartialOverlapConfiguration( 3, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 3, 0.99, 0.5 ), new PartialOverlapConfiguration( 4, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 4, 0.99, 0.5 )} )
+            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{new StandardConfiguration( 1 ),
+                    new StandardConfiguration( 2 ), new StandardConfiguration( 3 ), new StandardConfiguration( 4 ),
+                    new PartialOverlapConfiguration( 1, 0.99, 0.1 ), new PartialOverlapConfiguration( 1, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 2, 0.99, 0.1 ), new PartialOverlapConfiguration( 2, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 3, 0.99, 0.1 ), new PartialOverlapConfiguration( 3, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 4, 0.99, 0.1 ), new PartialOverlapConfiguration( 4, 0.99, 0.5 )} )
             {
                 MonitorDoubleStats areaStats = new MonitorDoubleStats();
                 MonitorStats rangeStats = new MonitorStats();

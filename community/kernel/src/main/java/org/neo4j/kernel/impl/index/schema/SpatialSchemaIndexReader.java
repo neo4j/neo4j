@@ -27,6 +27,7 @@ import java.util.List;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -45,11 +46,14 @@ import static java.lang.String.format;
 public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
 {
     private final SpatialLayout spatial;
+    private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor,
+            SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );
         spatial = (SpatialLayout) layout;
+        this.configuration = configuration;
     }
 
     @Override
@@ -130,7 +134,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
             double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
             Envelope envelope = new Envelope( from, to );
-            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope );
+            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope, configuration );
             for ( SpaceFillingCurve.LongRange range : ranges )
             {
                 KEY treeKeyFrom = layout.newKey();

@@ -23,7 +23,7 @@ public interface SpaceFillingCurveMonitor
 {
     /**
      * Tells the monitor that a range was added at a certain depth in the space filling curve.
-     * Can be used to build a historgram showing how many ranges were added at which depth.
+     * Can be used to build a histogram showing how many ranges were added at which depth.
      *
      * @param depth the current recursion depth
      */

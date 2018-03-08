@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
+import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -84,7 +85,7 @@ public class SpatialKnownIndexTest
         IndexDirectoryStructure dirStructure = IndexDirectoryStructure.directoriesByProvider( storeDir ).forProvider( SPATIAL_PROVIDER_DESCRIPTOR );
         descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
         index = new SpatialCRSSchemaIndex( descriptor, dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
-                SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE );
+                SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 60 );
         samplingConfig = mock( IndexSamplingConfig.class );
     }
 

@@ -90,7 +90,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         NumberSchemaIndexProvider nativeProvider =
                 new NumberSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         SpatialFusionSchemaIndexProvider spatialProvider =
-                new SpatialFusionSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+                new SpatialFusionSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
         TemporalSchemaIndexProvider temporalProvider =
                 new TemporalSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
