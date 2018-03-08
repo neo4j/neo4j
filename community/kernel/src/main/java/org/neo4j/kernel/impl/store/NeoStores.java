@@ -142,9 +142,24 @@ public class NeoStores implements AutoCloseable
 
         verifyRecordFormat();
         stores = new Object[StoreType.values().length];
-        for ( StoreType type : storeTypes )
+        try
         {
-            getOrCreateStore( type );
+            for ( StoreType type : storeTypes )
+            {
+                getOrCreateStore( type );
+            }
+        }
+        catch ( Exception initException )
+        {
+            try
+            {
+                close();
+            }
+            catch ( Exception closeException )
+            {
+                initException.addSuppressed( closeException );
+            }
+            throw initException;
         }
         initializedStores = storeTypes;
     }
