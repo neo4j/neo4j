@@ -42,8 +42,6 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -84,14 +82,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     {
         Map<MemberId,RoleInfo> roleMap = emptyMap();
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
-        try
-        {
-            roleMap = topologyService.allCoreRoles();
-        }
-        catch ( InterruptedException e )
-        {
-            log.warn( "Hazelcast instance not yet available.", e );
-        }
+        roleMap = topologyService.allCoreRoles();
 
         CoreTopology coreTopology = topologyService.allCoreServers();
         Set<MemberId> coreMembers = coreTopology.members().keySet();

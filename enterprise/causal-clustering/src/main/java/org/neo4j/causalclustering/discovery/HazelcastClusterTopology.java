@@ -54,7 +54,7 @@ import static java.util.stream.Stream.of;
 import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
-public class HazelcastClusterTopology
+public final class HazelcastClusterTopology
 {
     // per server attributes
     private static final String DISCOVERY_SERVER = "discovery_server"; // not currently used

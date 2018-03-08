@@ -29,9 +29,9 @@ import org.neo4j.causalclustering.identity.ClusterId;
  */
 public interface CoreTopologyService extends TopologyService
 {
-    void addCoreTopologyListener( Listener listener );
+    void addLocalCoreTopologyListener( Listener listener );
 
-    void removeCoreTopologyListener( Listener listener );
+    void removeLocalCoreTopologyListener( Listener listener );
 
     /**
      * Publishes the cluster ID so that other members might discover it.

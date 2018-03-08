@@ -35,7 +35,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 
-public class SharedDiscoveryService
+public final class SharedDiscoveryService
 {
     private static final int MIN_DISCOVERY_MEMBERS = 2;
 

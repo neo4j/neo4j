@@ -64,14 +64,14 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
-    public synchronized void addCoreTopologyListener( Listener listener )
+    public synchronized void addLocalCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
         listener.onCoreTopologyChange( localCoreServers() );
     }
 
     @Override
-    public void removeCoreTopologyListener( Listener listener )
+    public void removeLocalCoreTopologyListener( Listener listener )
     {
         listenerService.removeCoreTopologyListener( listener );
     }

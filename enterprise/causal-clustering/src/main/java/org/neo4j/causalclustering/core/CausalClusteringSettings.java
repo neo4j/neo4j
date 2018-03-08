@@ -112,10 +112,10 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "causal_clustering.expected_core_cluster_size", INTEGER, "3" );
 
-    //TODO: Document that when using multi-clustering this size refers to the size of the sub-cluster which shares this instances database name
     @Description( "Minimum number of Core machines in the cluster at formation. The expected_core_cluster size setting is used when bootstrapping the " +
             "cluster on first formation. A cluster will not form without the configured amount of cores and this should in general be configured to the" +
-            " full and fixed amount." )
+            " full and fixed amount. When using multi-clustering (configuring multiple distinct database names across core hosts), this setting is used " +
+            "to define the minimum size of *each* sub-cluster at formation." )
     public static final Setting<Integer> minimum_core_cluster_size_at_formation =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_formation", INTEGER, expected_core_cluster_size.getDefaultValue() )
                     .constraint( min( 2 ) ).build();

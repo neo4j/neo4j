@@ -23,9 +23,11 @@ import java.io.Serializable;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
-// TODO: basics for Serializable
 public class LeaderInfo implements Serializable
 {
+
+    private static final long serialVersionUID = 7983780359510842910L;
+
     public static final LeaderInfo INITIAL = new LeaderInfo( null, -1 );
 
     private final MemberId memberId;

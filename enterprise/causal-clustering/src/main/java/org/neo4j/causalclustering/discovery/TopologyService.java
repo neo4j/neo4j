@@ -43,5 +43,5 @@ public interface TopologyService extends Lifecycle
 
     Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream );
 
-    Map<MemberId,RoleInfo> allCoreRoles() throws InterruptedException;
+    Map<MemberId,RoleInfo> allCoreRoles();
 }

@@ -71,14 +71,16 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     }
 
     /**
-     * This method verifies if the local topology being returned by the discovery service is a viable cluster.
+     * This method verifies if the local topology being returned by the discovery service is a viable cluster
+     * and should be bootstrapped by this host.
+     *
      * If true, then a) the topology is sufficiently large to form a cluster; & b) this host can bootstrap for
      * its configured database.
      *
      * @param coreTopology the present state of the local topology, as reported by the discovery service.
      * @return Whether or not coreTopology, in its current state, can form a viable cluster
      */
-    private boolean isViableCluster( CoreTopology coreTopology )
+    private boolean hostShouldBootstrapCluster( CoreTopology coreTopology )
     {
         int memberCount = coreTopology.members().size();
         if ( memberCount < minCoreHosts )
@@ -130,7 +132,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
                 clusterId = topology.clusterId();
                 log.info( "Bound to cluster: " + clusterId );
             }
-            else if ( isViableCluster( topology ) )
+            else if ( hostShouldBootstrapCluster( topology ) )
             {
                 clusterId = new ClusterId( UUID.randomUUID() );
                 snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );

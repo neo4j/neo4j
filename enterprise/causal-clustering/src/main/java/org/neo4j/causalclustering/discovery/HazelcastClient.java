@@ -63,10 +63,12 @@ public class HazelcastClient extends AbstractTopologyService
 
     private JobScheduler.JobHandle keepAliveJob;
     private JobScheduler.JobHandle refreshTopologyJob;
+    private JobScheduler.JobHandle refreshRolesJob;
 
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile ReadReplicaTopology rrTopology = ReadReplicaTopology.EMPTY;
+    private volatile Map<MemberId,RoleInfo> coreRoles = emptyMap();
 
     public HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config, MemberId myself,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
@@ -83,6 +85,7 @@ public class HazelcastClient extends AbstractTopologyService
         this.groups = config.get( CausalClusteringSettings.server_groups );
         this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod, logProvider );
         this.dbName = config.get( CausalClusteringSettings.database );
+        this.coreRoles = emptyMap();
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis, LogProvider logProvider )
@@ -96,17 +99,7 @@ public class HazelcastClient extends AbstractTopologyService
     @Override
     public Map<MemberId,RoleInfo> allCoreRoles()
     {
-        Map<MemberId,RoleInfo> roles = emptyMap();
-
-        try
-        {
-            roles = hzInstance.apply(hz -> HazelcastClusterTopology.getCoreRoles( hz, allCoreServers().members().keySet() ) );
-        }
-        catch ( HazelcastInstanceNotActiveException e )
-        {
-            log.warn( "Tried to fetch the server roles, but hazelcast was not available.", e);
-        }
-        return roles;
+        return coreRoles;
     }
 
     @Override
@@ -148,11 +141,19 @@ public class HazelcastClient extends AbstractTopologyService
         catchupAddressMap = extractCatchupAddressesMap( localCoreServers(), localReadReplicas() );
     }
 
+    private void refreshRoles() throws HazelcastInstanceNotActiveException
+    {
+        coreRoles = hzInstance.apply(hz -> HazelcastClusterTopology.getCoreRoles( hz, allCoreServers().members().keySet() ) );
+    }
+
     @Override
     public void start()
     {
         keepAliveJob = scheduler.scheduleRecurring( "KeepAlive", timeToLive / 3, this::keepReadReplicaAlive );
-        refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, this::refreshTopology );
+        refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, () -> {
+            this.refreshTopology();
+            this.refreshRoles();
+        } );
     }
 
     @Override

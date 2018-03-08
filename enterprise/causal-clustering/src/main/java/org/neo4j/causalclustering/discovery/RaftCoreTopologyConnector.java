@@ -28,7 +28,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
- * Makes the Raft aware of changes to the core topology and visa versa
+ * Makes the Raft aware of changes to the core topology and vice versa
  */
 public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreTopologyService.Listener, LeaderListener
 {
@@ -46,7 +46,7 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     @Override
     public void start()
     {
-        coreTopologyService.addCoreTopologyListener( this );
+        coreTopologyService.addLocalCoreTopologyListener( this );
         raftMachine.registerListener( this );
     }
 

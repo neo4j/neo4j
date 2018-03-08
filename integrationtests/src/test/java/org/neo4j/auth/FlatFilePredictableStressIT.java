@@ -352,7 +352,7 @@ public class FlatFilePredictableStressIT extends FlatFileStressBase
 
         private boolean validRoleDoesNotExist( InvalidArgumentsException e )
         {
-            return !exists && e.getMessage().contains( "RoleInfo '" + roleName + "' does not exist" );
+            return !exists && e.getMessage().contains( "Role '" + roleName + "' does not exist" );
         }
 
         private boolean userDoesNotExist( InvalidArgumentsException e )

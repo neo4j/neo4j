@@ -448,7 +448,7 @@ public class ReadReplicaReplicationIT
         // when the poller is paused, transaction doesn't make it to the read replica
         try
         {
-            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 15 ) );
             fail( "should have thrown exception" );
         }
         catch ( TransactionFailureException e )
@@ -458,7 +458,7 @@ public class ReadReplicaReplicationIT
 
         // when the poller is resumed, it does make it to the read replica
         pollingClient.start();
-        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 15 ) );
     }
 
     private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )

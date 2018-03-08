@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
@@ -88,11 +90,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+    private volatile Map<MemberId,RoleInfo> coreRoles = Collections.emptyMap();
 
     private Thread startingThread;
     private volatile boolean stopped;
 
-    protected HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
@@ -109,14 +112,14 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
-    public void addCoreTopologyListener( Listener listener )
+    public void addLocalCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
         listener.onCoreTopologyChange( localCoreServers() );
     }
 
     @Override
-    public void removeCoreTopologyListener( Listener listener )
+    public void removeLocalCoreTopologyListener( Listener listener )
     {
         listenerService.removeCoreTopologyListener( listener );
     }
@@ -138,11 +141,9 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
-    public Map<MemberId,RoleInfo> allCoreRoles() throws InterruptedException
+    public Map<MemberId,RoleInfo> allCoreRoles()
     {
-        waitOnHazelcastInstanceCreation();
-
-        return HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );
+        return coreRoles;
     }
 
     @Override
@@ -350,11 +351,14 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
     private void refreshRoles() throws InterruptedException
     {
+        waitOnHazelcastInstanceCreation();
+
         if ( leaderInfo != null && leaderInfo.memberId().equals( myself ) )
         {
-            waitOnHazelcastInstanceCreation();
             HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
         }
+
+        coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );
     }
 
     private synchronized void refreshTopology() throws InterruptedException
