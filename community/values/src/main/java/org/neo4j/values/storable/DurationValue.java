@@ -45,7 +45,7 @@ import static java.lang.Long.parseLong;
 import static java.time.temporal.ChronoField.EPOCH_DAY;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.OFFSET_SECONDS;
-import static java.time.temporal.ChronoField.SECOND_OF_DAY;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
@@ -539,11 +539,14 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         int fromNanos = from.isSupported( NANO_OF_SECOND ) ? from.get( NANO_OF_SECOND ) : 0;
         int toNanos = to.isSupported( NANO_OF_SECOND ) ? to.get( NANO_OF_SECOND ) : 0;
         nanos = toNanos - fromNanos;
-        if ( seconds > 0 && nanos < 0 )
+
+        boolean specialZeroSecondCase = seconds == 0 && from.get( SECOND_OF_MINUTE ) != to.get( SECOND_OF_MINUTE );
+
+        if ( nanos < 0 && ( seconds > 0 || specialZeroSecondCase ) )
         {
             nanos = NANOS_PER_SECOND + nanos;
         }
-        else if ( seconds < 0 && nanos > 0 )
+        else if ( nanos > 0 && ( seconds < 0 || specialZeroSecondCase ) )
         {
             nanos = nanos - NANOS_PER_SECOND;
         }

@@ -646,3 +646,37 @@ Feature: DurationBetweenAcceptance
       | 'P1999999998Y11M30D' |
       | 'PT17531639991215H59M59S' |
     And no side effects
+
+  Scenario: Should handle when seconds and subseconds have different signs
+    Given an empty graph
+    When executing query:
+    """
+    UNWIND[ duration.seconds(localtime("12:34:54.7"), localtime("12:34:54.3")),
+            duration.seconds(localtime("12:34:54.3"), localtime("12:34:54.7")),
+
+            duration.seconds(localtime("12:34:54.7"), localtime("12:34:55.3")),
+            duration.seconds(localtime("12:34:54.7"), localtime("12:44:55.3")),
+            duration.seconds(localtime("12:44:54.7"), localtime("12:34:55.3")),
+
+            duration.seconds(localtime("12:34:56"), localtime("12:34:55.7")),
+            duration.seconds(localtime("12:34:56"), localtime("12:44:55.7")),
+            duration.seconds(localtime("12:44:56"), localtime("12:34:55.7")),
+
+            duration.seconds(localtime("12:34:56.3"), localtime("12:34:54.7")),
+            duration.seconds(localtime("12:34:54.7"), localtime("12:34:56.3"))
+          ] as d
+    RETURN d
+    """
+    Then the result should be, in order:
+      | d             |
+      | 'PT-0.4S'     |
+      | 'PT0.4S'      |
+      | 'PT0.6S'      |
+      | 'PT10M0.6S'   |
+      | 'PT-9M-59.4S' |
+      | 'PT-0.3S'     |
+      | 'PT9M59.7S'   |
+      | 'PT-10M-0.3S' |
+      | 'PT-1.6S'     |
+      | 'PT1.6S'      |
+    And no side effects

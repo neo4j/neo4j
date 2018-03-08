@@ -163,4 +163,4 @@ Feature "DurationBetweenAcceptance": Scenario "Should compute duration between i
 Feature "DurationBetweenAcceptance": Scenario "Should compute negative duration between in big units"
 Feature "DurationBetweenAcceptance": Scenario "Should handle durations at daylight saving time day"
 Feature "DurationBetweenAcceptance": Scenario "Should handle large durations"
-
+Feature "DurationBetweenAcceptance": Scenario "Should handle when seconds and subseconds have different signs"
