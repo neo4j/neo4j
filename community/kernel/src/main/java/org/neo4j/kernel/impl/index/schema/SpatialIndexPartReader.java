@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
@@ -43,12 +44,12 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
-public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
+public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
 {
     private final SpatialLayout spatial;
     private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
+    SpatialIndexPartReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
             SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );
@@ -76,6 +77,14 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
         throw new UnsupportedOperationException( "Cannot initialize 1D range in multidimensional spatial index reader" );
+    }
+
+    @Override
+    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
+    {
+        NodeValueIterator nodeValueIterator = new NodeValueIterator();
+        query( nodeValueIterator, IndexOrder.NONE, predicates );
+        return nodeValueIterator;
     }
 
     @Override
@@ -130,7 +139,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
             client.initialize( descriptor, multiProgressor, query );
             SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
-            Envelope completeEnvelope = SpatialCRSSchemaIndex.envelopeFromCRS( spatial.crs );
+            Envelope completeEnvelope = SpatialIndexFiles.envelopeFromCRS( spatial.crs );
             double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
             Envelope envelope = new Envelope( from, to );

@@ -17,20 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.fusion;
+package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -43,18 +37,12 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-/**
- * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
- */
-public class SpatialFusionIndexProvider extends IndexProvider implements SpatialCRSSchemaIndex.Supplier
+public class SpatialIndexProvider extends IndexProvider
 {
     public static final String KEY = "spatial";
-    public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
-    private static final Pattern CRS_DIR_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
+    private static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -62,14 +50,11 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
     private final SpaceFillingCurveConfiguration configuration;
-    private final int maxBits;
+    private final Integer maxBits;
 
-    private Map<Long,Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex>> indexes = new HashMap<>();
-
-    public SpatialFusionIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-                                       IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
-                                       RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
-                                       Config config )
+    public SpatialIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;
@@ -104,79 +89,71 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        return new SpatialFusionIndexPopulator( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
+        return new SpatialIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor, configuration );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new SpatialFusionIndexAccessor( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
-    }
-
-    Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexesFor( long indexId )
-    {
-        return indexes.computeIfAbsent( indexId, k -> new HashMap<>() );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
+        return new SpatialIndexAccessor( indexId, descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
     }
 
     @Override
     public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
+
         try
         {
-            // This assumes a previous call to getInitialState returned that at least one index was failed
-            // We find the first failed index failure message
-            for ( SpatialCRSSchemaIndex index : indexesFor( indexId ).values() )
+            for ( SpatialIndexFiles.SpatialFileLayout subIndex : spatialIndexFiles.existing() )
             {
-                String indexFailure = index.readPopulationFailure();
+                String indexFailure = NativeSchemaIndexes.readFailureMessage( pageCache, subIndex.indexFile );
                 if ( indexFailure != null )
                 {
                     return indexFailure;
                 }
             }
-            throw new IllegalStateException( "Index " + indexId + " isn't failed" );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+        throw new IllegalStateException( "Index " + indexId + " isn't failed" );
     }
 
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
-        // loop through all files, check if file exists, then check state
-        // if any have failed, return failed, else if any are populating return populating, else online
-
-        Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap = indexesFor( indexId );
-        findAndCreateSpatialIndex( indexMap, indexId, descriptor );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
 
         InternalIndexState state = InternalIndexState.ONLINE;
-        for ( SpatialCRSSchemaIndex index : indexMap.values() )
+        for ( SpatialIndexFiles.SpatialFileLayout subIndex : spatialIndexFiles.existing() )
         {
             try
             {
-                switch ( index.readState() )
+                switch ( NativeSchemaIndexes.readState( pageCache, subIndex.indexFile ) )
                 {
                 case FAILED:
                     return InternalIndexState.FAILED;
                 case POPULATING:
                     state = InternalIndexState.POPULATING;
-                default:
+                default: // continue
                 }
             }
             catch ( IOException e )
             {
                 monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
-                state = InternalIndexState.POPULATING;
+                return InternalIndexState.POPULATING;
             }
         }
         return state;
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( SchemaIndexDescriptor indexDescriptor )
     {
-        // Spatial indexes are not ordered, nor do they return complete values
         return IndexCapability.NO_CAPABILITY;
     }
 
@@ -186,46 +163,5 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
         // Since this native provider is a new one, there's no need for migration on this level.
         // Migration should happen in the combined layer for the time being.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
-    }
-
-    @Override
-    public SpatialCRSSchemaIndex get( SchemaIndexDescriptor descriptor,
-            Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
-    {
-        return indexMap.computeIfAbsent( crs,
-                crsKey -> new SpatialCRSSchemaIndex( descriptor, directoryStructure(), crsKey, indexId, pageCache, fs, monitor,
-                        recoveryCleanupWorkCollector, configuration, maxBits ) );
-    }
-
-    /**
-     * The expected directory structure for spatial indexes are:
-     * provider/{indexId}/spatial/{crs-tableId}-{crs-code}/index-{indexId}
-     * If a directory is found for a crs and it is missing the index file, the index will be marked as failed.
-     */
-    private void findAndCreateSpatialIndex( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, SchemaIndexDescriptor descriptor )
-    {
-        File directoryForIndex = this.directoryStructure().directoryForIndex( indexId );
-        if ( directoryForIndex != null )
-        {
-            File[] crsDirs = directoryForIndex.listFiles();
-            if ( crsDirs != null )
-            {
-                for ( File crsDir : crsDirs )
-                {
-                    Matcher m = CRS_DIR_PATTERN.matcher( crsDir.getName() );
-                    if ( m.matches() )
-                    {
-                        int tableId = Integer.parseInt( m.group( 1 ) );
-                        int code = Integer.parseInt( m.group( 2 ) );
-                        CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-                        SpatialCRSSchemaIndex index = get( descriptor, indexMap, indexId, crs );
-                        if ( !index.indexExists() )
-                        {
-                            index.markAsFailed( "Index file was not found" );
-                        }
-                    }
-                }
-            }
-        }
     }
 }
