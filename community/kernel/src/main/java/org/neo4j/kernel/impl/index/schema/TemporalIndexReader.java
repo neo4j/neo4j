@@ -72,17 +72,9 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
-        if ( predicates[0] instanceof ExistsPredicate )
-        {
-            return PrimitiveLongResourceCollections.concat(
-                    Iterables.map( partReader -> partReader.query( predicates ), this ) );
-        }
-        else
-        {
-            NodeValueIterator nodeValueIterator = new NodeValueIterator();
-            query( nodeValueIterator, IndexOrder.NONE, predicates );
-            return nodeValueIterator;
-        }
+        NodeValueIterator nodeValueIterator = new NodeValueIterator();
+        query( nodeValueIterator, IndexOrder.NONE, predicates );
+        return nodeValueIterator;
     }
 
     @Override
@@ -95,6 +87,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         IndexQuery predicate = predicates[0];
         if ( predicate instanceof ExistsPredicate )
         {
+            loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
             for ( NativeSchemaIndexReader reader : this )

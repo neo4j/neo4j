@@ -38,6 +38,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
@@ -172,6 +173,20 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             ) );
 
         assertThat( query( range( 1, d4, true, d7, true ) ), Matchers.contains( 4L, 5L, 6L, 7L ) );
+    }
+
+    @Test
+    public void shouldScanAllValues() throws Exception
+    {
+        // GIVEN
+        List<IndexEntryUpdate<?>> updates = updates( valueSet1 );
+        updateAndCommit( updates );
+        Long[] allNodes = valueSet1.stream().map( x -> x.nodeId ).toArray( Long[]::new );
+
+        // THEN
+        int propertyKeyId = descriptor.schema().getPropertyId();
+        List<Long> result = query( IndexQuery.exists( propertyKeyId ) );
+        assertThat( result, containsInAnyOrder( allNodes ) );
     }
 
     // This behaviour is expected by General indexes
