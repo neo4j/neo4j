@@ -152,6 +152,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public long getIndexId()
+    {
+        return getDelegate().getIndexId();
+    }
+
+    @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return getDelegate().snapshotFiles();

@@ -200,6 +200,12 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
+    public long getIndexId()
+    {
+        return indexId;
+    }
+
+    @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
         throw new IllegalStateException( this + " is ONLINE" );

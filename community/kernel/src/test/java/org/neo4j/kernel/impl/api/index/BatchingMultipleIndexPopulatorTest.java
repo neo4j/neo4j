@@ -350,7 +350,7 @@ public class BatchingMultipleIndexPopulatorTest
 
         batchingPopulator.addPopulator(
                 populator, descriptor.schema().getLabelId(),
-                new IndexMeta( descriptor, new SchemaIndexProvider.Descriptor( "foo", "1" ), NO_CAPABILITY ),
+                new IndexMeta( 1, descriptor, new SchemaIndexProvider.Descriptor( "foo", "1" ), NO_CAPABILITY ),
                 flipper, failedIndexProxyFactory, "testIndex" );
 
         return populator;

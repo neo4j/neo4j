@@ -161,6 +161,12 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public long getIndexId()
+    {
+        return indexMeta.getIndexId();
+    }
+
+    @Override
     public ResourceIterator<File> snapshotFiles()
     {
         return emptyResourceIterator();

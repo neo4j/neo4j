@@ -27,9 +27,8 @@ import org.junit.Test;
 import java.io.File;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 
 import static org.junit.Assert.assertEquals;
 
@@ -50,7 +49,7 @@ public class PrepareStoreCopyResponseMarshalTest
         long transactionId = Long.MAX_VALUE;
 
         // when a transaction id is serialised
-        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( new File[0], new IndexDescriptor[0], transactionId );
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( new File[0], Primitive.longSet(), transactionId );
         sendToChannel( prepareStoreCopyResponse, embeddedChannel );
 
         // then it can be deserialised
@@ -66,7 +65,7 @@ public class PrepareStoreCopyResponseMarshalTest
                 new File[]{new File( "File a.txt" ), new File( "file-b" ), new File( "aoifnoasndfosidfoisndfoisnodainfsonidfaosiidfna" ), new File( "" )};
 
         // when
-        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( files, new IndexDescriptor[0], 0L );
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( files, Primitive.longSet(), 0L );
         sendToChannel( prepareStoreCopyResponse, embeddedChannel );
 
         // then it can be deserialised
@@ -84,10 +83,11 @@ public class PrepareStoreCopyResponseMarshalTest
         // given
         File[] files =
                 new File[]{new File( "File a.txt" ), new File( "file-b" ), new File( "aoifnoasndfosidfoisndfoisnodainfsonidfaosiidfna" ), new File( "" )};
-        IndexDescriptor[] descriptors = {new IndexDescriptor( new LabelSchemaDescriptor( 1, 2, 3 ), IndexDescriptor.Type.GENERAL )};
+        PrimitiveLongSet indexIds = Primitive.longSet();
+        indexIds.add( 13 );
 
         // when
-        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( files, descriptors, 1L );
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( files, indexIds, 1L );
         sendToChannel( prepareStoreCopyResponse, embeddedChannel );
 
         // then it can be deserialised
@@ -97,11 +97,7 @@ public class PrepareStoreCopyResponseMarshalTest
         {
             assertEquals( 1, Stream.of( readPrepareStoreCopyResponse.getFiles() ).map( File::getName ).filter( f -> f.equals( file.getName() ) ).count() );
         }
-        assertEquals( prepareStoreCopyResponse.getDescriptors().length, readPrepareStoreCopyResponse.getDescriptors().length );
-        for ( IndexDescriptor descriptor : descriptors )
-        {
-            assertEquals( 1, Stream.of( readPrepareStoreCopyResponse.getDescriptors() ).filter( f -> f.equals( descriptor ) ).count() );
-        }
+        assertEquals( prepareStoreCopyResponse.getIndexIds(), readPrepareStoreCopyResponse.getIndexIds() );
     }
 
     private static void sendToChannel( PrepareStoreCopyResponse prepareStoreCopyResponse, EmbeddedChannel embeddedChannel )

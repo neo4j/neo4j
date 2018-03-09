@@ -47,19 +47,19 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void activate()
     {
-        throw  unsupportedOperation( "Cannot activate recovering index." );
+        throw unsupportedOperation( "Cannot activate recovering index." );
     }
 
     @Override
     public void validate()
     {
-        throw  unsupportedOperation( "Cannot validate recovering index." );
+        throw unsupportedOperation( "Cannot validate recovering index." );
     }
 
     @Override
     public ResourceIterator<File> snapshotFiles()
     {
-        throw  unsupportedOperation( "Cannot snapshot a recovering index." );
+        throw unsupportedOperation( "Cannot snapshot a recovering index." );
     }
 
     @Override
