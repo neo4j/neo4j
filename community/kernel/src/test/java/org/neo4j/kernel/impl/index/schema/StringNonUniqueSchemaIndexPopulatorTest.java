@@ -31,8 +31,8 @@ public class StringNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSche
     NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
             File indexFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor,
-                schemaIndexDescriptor, indexId );
+        return new StringSchemaIndexPopulator( pageCache, fs, indexFile, layout,  monitor, schemaIndexDescriptor,
+                indexId, samplingConfig );
     }
 
     @Override

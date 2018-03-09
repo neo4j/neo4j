@@ -86,8 +86,8 @@ class ContainerIndexTest extends CypherFunSuite {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     implicit val expression = Literal(node)
-    when(qtx.getPropertyKeyId("v")).thenReturn(0)
-    when(qtx.getPropertyKeyId("c")).thenReturn(1)
+    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
+    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
     val nodeOps = mock[Operations[NodeValue]]
     when(nodeOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
       override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
@@ -105,8 +105,8 @@ class ContainerIndexTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     implicit val expression = Literal(rel)
-    when(qtx.getPropertyKeyId("v")).thenReturn(0)
-    when(qtx.getPropertyKeyId("c")).thenReturn(1)
+    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
+    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
     val relOps = mock[Operations[RelationshipValue]]
     when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
       override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)

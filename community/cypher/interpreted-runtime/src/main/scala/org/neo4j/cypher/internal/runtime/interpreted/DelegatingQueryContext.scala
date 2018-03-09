@@ -27,9 +27,8 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -214,6 +213,18 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
+  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+    singleDbHit(inner.callReadOnlyProcedure(id, args, allowed))
+
+  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+    singleDbHit(inner.callReadWriteProcedure(id, args, allowed))
+
+  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+    singleDbHit(inner.callSchemaWriteProcedure(id, args, allowed))
+
+  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+    inner.callDbmsProcedure(id, args, allowed)
+
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callReadOnlyProcedure(name, args, allowed))
 
@@ -226,8 +237,15 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     inner.callDbmsProcedure(name, args, allowed)
 
+  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+    singleDbHit(inner.callFunction(id, args, allowed))
+
   override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callFunction(name, args, allowed))
+
+  override def aggregateFunction(id: Int,
+                                 allowed: Array[String]): UserDefinedAggregator =
+    singleDbHit(inner.aggregateFunction(id, allowed))
 
   override def aggregateFunction(name: QualifiedName,
                                  allowed: Array[String]): UserDefinedAggregator =
@@ -263,10 +281,6 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
   override def propertyKeyIds(obj: Long): Iterator[Int] = singleDbHit(inner.propertyKeyIds(obj))
 
   override def removeProperty(obj: Long, propertyKeyId: Int): Unit = singleDbHit(inner.removeProperty(obj, propertyKeyId))
-
-  override def indexGet(name: String, key: String, value: Any): Iterator[T] = manyDbHits(inner.indexGet(name, key, value))
-
-  override def indexQuery(name: String, query: Any): Iterator[T] = manyDbHits(inner.indexQuery(name, query))
 
   override def all: Iterator[T] = manyDbHits(inner.all)
 

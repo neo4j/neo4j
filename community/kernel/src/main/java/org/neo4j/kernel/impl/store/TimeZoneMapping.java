@@ -71,7 +71,7 @@ public class TimeZoneMapping
     static
     {
         String latestVersion = "";
-        Pattern VERSION = Pattern.compile( "# tzdata([0-9]{4}[a-z])" );
+        Pattern version = Pattern.compile( "# tzdata([0-9]{4}[a-z])" );
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZoneMapping.class.getResourceAsStream( "/TZIDS" ) ) ) )
         {
             for ( String line; (line = reader.readLine()) != null; )
@@ -82,7 +82,7 @@ public class TimeZoneMapping
                 }
                 else if ( line.startsWith( "#" ) )
                 {
-                    Matcher matcher = VERSION.matcher( line );
+                    Matcher matcher = version.matcher( line );
                     if ( matcher.matches() )
                     {
                         latestVersion = matcher.group( 1 );

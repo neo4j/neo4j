@@ -28,8 +28,13 @@ import static org.neo4j.kernel.impl.index.schema.StringSchemaKey.ENTITY_ID_SIZE;
 /**
  * {@link Layout} for strings.
  */
-abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaValue>
+abstract class StringLayout extends SchemaLayout<StringSchemaKey>
 {
+    StringLayout( long identifier, int majorVersion, int minorVersion )
+    {
+        super( identifier, majorVersion, minorVersion );
+    }
+
     @Override
     public StringSchemaKey newKey()
     {
@@ -47,21 +52,9 @@ abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaV
     }
 
     @Override
-    public NativeSchemaValue newValue()
-    {
-        return NativeSchemaValue.INSTANCE;
-    }
-
-    @Override
     public int keySize( StringSchemaKey key )
     {
         return key.size();
-    }
-
-    @Override
-    public int valueSize( NativeSchemaValue value )
-    {
-        return NativeSchemaValue.SIZE;
     }
 
     @Override
@@ -69,11 +62,6 @@ abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaV
     {
         cursor.putLong( key.getEntityId() );
         cursor.putBytes( key.bytes );
-    }
-
-    @Override
-    public void writeValue( PageCursor cursor, NativeSchemaValue value )
-    {
     }
 
     @Override
@@ -91,11 +79,6 @@ abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaV
     }
 
     @Override
-    public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
-    {
-    }
-
-    @Override
     public boolean fixedSize()
     {
         return false;
@@ -105,5 +88,11 @@ abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaV
     public String toString()
     {
         return format( "%s[version:%d.%d, identifier:%d]", getClass().getSimpleName(), majorVersion(), minorVersion(), identifier() );
+    }
+
+    @Override
+    int compareValue( StringSchemaKey o1, StringSchemaKey o2 )
+    {
+        return o1.compareValueTo( o2 );
     }
 }

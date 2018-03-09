@@ -37,9 +37,7 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.RelationshipValue;
@@ -49,7 +47,6 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.stream.StreamSupport.stream;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
 public final class ValueUtils
@@ -94,7 +91,7 @@ public final class ValueUtils
             {
                 if ( object instanceof Path )
                 {
-                    return asPathValue( (Path) object );
+                    return fromPath( (Path) object );
                 }
                 else if ( object instanceof List<?> )
                 {
@@ -223,16 +220,6 @@ public final class ValueUtils
         }
     }
 
-    public static PathValue asPathValue( Path path )
-    {
-        NodeValue[] nodes = stream( path.nodes().spliterator(), false )
-                .map( ValueUtils::fromNodeProxy ).toArray( NodeValue[]::new );
-        RelationshipValue[] relationships = stream( path.relationships().spliterator(), false )
-                .map( ValueUtils::fromRelationshipProxy ).toArray( RelationshipValue[]::new );
-
-        return VirtualValues.path( nodes, relationships );
-    }
-
     public static ListValue asListOfEdges( Iterable<Relationship> rels )
     {
         return VirtualValues.list( StreamSupport.stream( rels.spliterator(), false )
@@ -254,70 +241,6 @@ public final class ValueUtils
         return map( mapValues( map ) );
     }
 
-    public static PointValue pointFromMap( MapValue map )
-    {
-        CoordinateReferenceSystem crs;
-        double[] coordinates;
-        if ( map.containsKey( "crs" ) )
-        {
-            TextValue crsName = (TextValue) map.get( "crs" );
-            crs = CoordinateReferenceSystem.byName( crsName.stringValue() );
-            if ( crs == null )
-            {
-                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crsName.stringValue() );
-            }
-        }
-        else
-        {
-            crs = null;
-        }
-        if ( map.containsKey( "x" ) && map.containsKey( "y" ) )
-        {
-            double x = ((NumberValue) map.get( "x" )).doubleValue();
-            double y = ((NumberValue) map.get( "y" )).doubleValue();
-            coordinates = map.containsKey( "z" ) ? new double[]{x, y, ((NumberValue) map.get( "z" )).doubleValue()} : new double[]{x, y};
-            if ( crs == null )
-            {
-                crs = coordinates.length == 3 ? CoordinateReferenceSystem.Cartesian_3D : CoordinateReferenceSystem.Cartesian;
-            }
-        }
-        else if ( map.containsKey( "latitude" ) && map.containsKey( "longitude" ) )
-        {
-            double x = ((NumberValue) map.get( "longitude" )).doubleValue();
-            double y = ((NumberValue) map.get( "latitude" )).doubleValue();
-            // TODO Consider supporting key 'height'
-            if ( map.containsKey( "z" ) )
-            {
-                coordinates = new double[]{x, y, ((NumberValue) map.get( "z" )).doubleValue()};
-            }
-            else if ( map.containsKey( "height" ) )
-            {
-                coordinates = new double[]{x, y, ((NumberValue) map.get( "height" )).doubleValue()};
-            }
-            else
-            {
-                coordinates = new double[]{x, y};
-            }
-            if ( crs == null )
-            {
-                crs = coordinates.length == 3 ? CoordinateReferenceSystem.WGS84_3D : CoordinateReferenceSystem.WGS84;
-            }
-            if ( !crs.isGeographic() )
-            {
-                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs );
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
-        }
-        if ( crs.getDimension() != coordinates.length )
-        {
-            throw new IllegalArgumentException( "Cannot create " + crs.getDimension() + "D point with " + coordinates.length + " coordinates" );
-        }
-        return Values.pointValue( crs, coordinates );
-    }
-
     private static Map<String,AnyValue> mapValues( Map<String,Object> map )
     {
         HashMap<String,AnyValue> newMap = new HashMap<>( map.size() );
@@ -337,5 +260,25 @@ public final class ValueUtils
     public static RelationshipValue fromRelationshipProxy( Relationship relationship )
     {
         return new RelationshipProxyWrappingValue( relationship );
+    }
+
+    public static PathValue fromPath( Path path )
+    {
+        return new PathWrappingPathValue( path );
+    }
+
+    /**
+     * Creates a {@link Value} from the given object, or if it is already a Value it is returned as it is.
+     * <p>
+     * This is different from {@link Values#of} which often explicitly fails or creates a new copy
+     * if given a Value.
+     */
+    public static Value asValue( Object value )
+    {
+        if ( value instanceof Value )
+        {
+            return (Value) value;
+        }
+        return Values.of( value );
     }
 }

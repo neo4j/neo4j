@@ -22,10 +22,10 @@ package org.neo4j.kernel.builtinprocs;
 import java.lang.management.ManagementFactory;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.impl.proc.Procedures;
 
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 /**
  * This class houses built-in procedures which use a backdoor to inject dependencies.

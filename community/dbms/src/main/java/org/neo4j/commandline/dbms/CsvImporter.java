@@ -24,7 +24,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.time.ZoneId;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -34,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.tooling.ImportTool;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
@@ -108,9 +111,14 @@ class CsvImporter implements Importer
 
         Configuration configuration = new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration(
                 null, false, databaseConfig, storeDir ) );
+
+        // Extract the default time zone from the database configuration
+        LogTimeZone dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_timezone );
+        Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone.getZoneId();
+
         CsvInput input = new CsvInput(
-                nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
-                relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
+                nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone ),
+                relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone ),
                 idType,
                 new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
                 badCollector );

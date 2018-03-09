@@ -31,6 +31,8 @@ import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
@@ -145,7 +147,7 @@ public class Operations implements Write, ExplicitIndexWrite
             }
         }
 
-        ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
+        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
         if ( allStoreHolder.nodeExistsInStore( node ) )
         {
             autoIndexing.nodes().entityRemoved( this, node );
@@ -326,7 +328,7 @@ public class Operations implements Write, ExplicitIndexWrite
             int labelId = schemaIndexDescriptor.schema().getLabelId();
 
             //Take a big fat lock, and check for existing node in index
-            ktx.locks().optimistic().acquireExclusive(
+            ktx.statementLocks().optimistic().acquireExclusive(
                     ktx.lockTracer(), INDEX_ENTRY,
                     indexEntryResourceId( labelId, propertyValues )
             );
@@ -384,7 +386,7 @@ public class Operations implements Write, ExplicitIndexWrite
         ktx.assertOpen();
 
         singleNode( node );
-        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
                 nodeCursor.labels().all() );
         Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
                 allStoreHolder.constraintsGetAll() );
@@ -497,7 +499,7 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value graphSetProperty( int propertyKey, Value value )
     {
-        ktx.locks().optimistic()
+        ktx.statementLocks().optimistic()
                 .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
 
@@ -512,7 +514,7 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value graphRemoveProperty( int propertyKey )
     {
-        ktx.locks().optimistic()
+        ktx.statementLocks().optimistic()
                 .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         ktx.assertOpen();
         Value existingValue = readGraphProperty( propertyKey );
@@ -678,6 +680,11 @@ public class Operations implements Write, ExplicitIndexWrite
         return cursors;
     }
 
+    public Procedures procedures()
+    {
+        return allStoreHolder;
+    }
+
     public void release()
     {
         if ( nodeCursor != null )
@@ -696,6 +703,7 @@ public class Operations implements Write, ExplicitIndexWrite
             relationshipCursor = null;
         }
 
+        cursors.assertClosed();
         cursors.release();
     }
 
@@ -708,7 +716,7 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         if ( !ktx.hasTxStateWithChanges() || !ktx.txState().nodeIsAddedInThisTx( node ) )
         {
-            ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
+            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
         }
     }
 
@@ -716,18 +724,18 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
-            ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
         }
     }
 
     private void acquireSharedLabelLock( long labelId )
     {
-        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
     }
 
     private void sharedRelationshipTypeLock( long typeId )
     {
-        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )
@@ -770,6 +778,11 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     public SchemaRead schemaRead()
+    {
+        return allStoreHolder;
+    }
+
+    public Locks locks()
     {
         return allStoreHolder;
     }

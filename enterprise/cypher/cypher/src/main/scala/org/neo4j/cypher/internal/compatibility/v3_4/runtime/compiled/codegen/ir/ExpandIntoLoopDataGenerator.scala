@@ -33,19 +33,21 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
     }
   }
 
-  override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def produceLoopData[E](cursorName: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     if(types.isEmpty)
-      generator.connectingRelationships(iterVar, fromVar.name, fromVar.codeGenType, dir, toVar.name, toVar.codeGenType)
+      generator.connectingRelationships(cursorName, fromVar.name, fromVar.codeGenType, dir, toVar.name, toVar.codeGenType)
     else
-      generator.connectingRelationships(iterVar, fromVar.name, fromVar.codeGenType, dir, types.keys.toIndexedSeq, toVar.name, toVar.codeGenType)
+      generator.connectingRelationships(cursorName, fromVar.name, fromVar.codeGenType, dir, types.keys.toIndexedSeq, toVar.name, toVar.codeGenType)
     generator.incrementDbHits()
   }
 
-  override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+  override def getNext[E](nextVar: Variable, cursorName: String, generator: MethodStructure[E])
                          (implicit context: CodeGenContext) = {
     generator.incrementDbHits()
-    generator.nextRelationship(iterVar, dir, relVar.name)
+    generator.nextRelationship(cursorName, dir, relVar.name)
   }
 
-  override def checkNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceRelationshipSelectionCursor(iterVar)
+  override def checkNext[E](generator: MethodStructure[E], cursorName: String): E = generator.advanceRelationshipSelectionCursor(cursorName)
+
+  override def close[E](cursorName: String, generator: MethodStructure[E]): Unit = generator.closeRelationshipSelectionCursor(cursorName)
 }

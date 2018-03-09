@@ -27,7 +27,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -68,7 +67,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -513,8 +511,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 assert index != null : "Index " + rule + " doesn't exists";
                 try
                 {
-                    Future<Void> dropFuture = index.drop();
-                    awaitIndexFuture( dropFuture );
+                    index.drop();
                 }
                 catch ( Exception e )
                 {
@@ -537,19 +534,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         String description = descriptor.userDescription( tokenNameLookup );
         log.info( "Manual trigger for sampling index " + description + " [" + mode + "]" );
         samplingController.sampleIndex( indexMapRef.getIndexId( descriptor ), mode );
-    }
-
-    private void awaitIndexFuture( Future<Void> future ) throws Exception
-    {
-        try
-        {
-            future.get( 1, MINUTES );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw e;
-        }
     }
 
     private void dropRecoveringIndexes( IndexMap indexMap, PrimitiveLongIterator indexesToRebuild )
@@ -637,31 +621,17 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMapRef.modify( indexMap ->
         {
             Iterable<IndexProxy> indexesToStop = indexMap.getAllIndexProxies();
-            Collection<Future<Void>> indexStopFutures = new ArrayList<>();
             for ( IndexProxy index : indexesToStop )
             {
                 try
                 {
-                    indexStopFutures.add( index.close() );
+                    index.close();
                 }
                 catch ( Exception e )
                 {
                     log.error( "Unable to close index", e );
                 }
             }
-
-            for ( Future<Void> future : indexStopFutures )
-            {
-                try
-                {
-                    awaitIndexFuture( future );
-                }
-                catch ( Exception e )
-                {
-                    log.error( "Error awaiting index to close", e );
-                }
-            }
-
             // Effectively clearing it
             return new IndexMap();
         } );

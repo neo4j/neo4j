@@ -48,17 +48,17 @@ public class LastCommittedIndexFinder
 
     public long getLastCommittedIndex()
     {
-        long lastCommittedIndex;
+        long lastConsensusIndex;
         long lastTxId = transactionIdStore.getLastCommittedTransactionId();
+        log.info( "Last transaction id in metadata store %d", lastTxId );
 
-        byte[] lastHeaderFound = null;
+        CommittedTransactionRepresentation lastTx = null;
         try ( IOCursor<CommittedTransactionRepresentation> transactions =
-                      transactionStore.getTransactions( lastTxId ) )
+                transactionStore.getTransactions( lastTxId ) )
         {
             while ( transactions.next() )
             {
-                CommittedTransactionRepresentation committedTransactionRepresentation = transactions.get();
-                lastHeaderFound = committedTransactionRepresentation.getStartEntry().getAdditionalHeader();
+                lastTx = transactions.get();
             }
         }
         catch ( Exception e )
@@ -66,13 +66,18 @@ public class LastCommittedIndexFinder
             throw new RuntimeException( e );
         }
 
-        if ( lastHeaderFound == null )
+        if ( lastTx == null )
         {
             throw new RuntimeException( "We must have at least one transaction telling us where we are at in the consensus log." );
         }
 
-        lastCommittedIndex = decodeLogIndexFromTxHeader( lastHeaderFound );
-        log.info( "Last committed index %d", lastCommittedIndex );
-        return lastCommittedIndex;
+        log.info( "Start id of last committed transaction in transaction log %d", lastTx.getStartEntry().getLastCommittedTxWhenTransactionStarted() );
+        log.info( "Last committed transaction id in transaction log %d", lastTx.getCommitEntry().getTxId() );
+
+        byte[] lastHeaderFound = lastTx.getStartEntry().getAdditionalHeader();
+        lastConsensusIndex = decodeLogIndexFromTxHeader( lastHeaderFound );
+
+        log.info( "Last committed consensus log index committed into tx log %d", lastConsensusIndex );
+        return lastConsensusIndex;
     }
 }

@@ -134,7 +134,7 @@ public class ArrayEncoderTest
     public void shouldEncodeProperlyWithMultipleThreadsRacing() throws Throwable
     {
         // given
-        String[] INPUT = {
+        final String[] INPUT = {
                 "These strings need to be longer than 57 bytes, because that is the line wrapping length of BASE64.",
                 "This next line is also long. The number of strings in this array is the number of threads to use.",
                 "Each thread will get a different string as input to encode, and ensure the result is always the same.",

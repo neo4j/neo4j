@@ -26,17 +26,13 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.values.storable.Values.stringValue;
 
 public class ConflictDetectingValueMergerTest
 {
-    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger.Check<>();
+    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger<>( true );
 
     @Test
     public void shouldReportConflictOnSameValueAndDifferentEntityIds()

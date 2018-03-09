@@ -31,7 +31,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTLocalDateTime;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalDateTime;
 
 @Description( "Create a LocalDateTime instant." )
 class LocalDateTimeFunction extends TemporalFunction<LocalDateTimeValue>

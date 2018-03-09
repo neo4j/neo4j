@@ -26,17 +26,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.impl.proc.TypeMappers.DefaultValueConverter;
 import org.neo4j.procedure.Name;
 
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 
 /**
- * Given a java method, figures out a valid {@link org.neo4j.kernel.api.proc.ProcedureSignature} field signature.
+ * Given a java method, figures out a valid {@link ProcedureSignature} field signature.
  * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
  */
 public class MethodSignatureCompiler

@@ -35,13 +35,23 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -58,20 +68,36 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
 
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
-    private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> workSync;
+    private final UniqueIndexSampler uniqueSampler;
+    private final NonUniqueIndexSampler nonUniqueSampler;
+    final IndexSamplingConfig samplingConfig;
 
-    private Writer<KEY,VALUE> singleTreeWriter;
+    private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> additionsWorkSync;
+    private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> updatesWorkSync;
+
     private byte[] failureBytes;
     private boolean dropped;
 
     NativeSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
+            IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
-        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger.Check<>();
+        this.samplingConfig = samplingConfig;
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            uniqueSampler = null;
+            nonUniqueSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+            break;
+        case UNIQUE:
+            uniqueSampler = new UniqueIndexSampler();
+            nonUniqueSampler = null;
+            break;
+        default:
+            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
     }
 
     public void clear() throws IOException
@@ -84,14 +110,15 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     {
         gbpTreeFileUtil.deleteFileIfPresent( storeFile );
         instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
-        instantiateWriter();
-        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, conflictDetectingValueMerger ) );
-    }
 
-    void instantiateWriter() throws IOException
-    {
-        assert singleTreeWriter == null;
-        singleTreeWriter = tree.writer();
+        // true:  tree uniqueness is (value,entityId)
+        // false: tree uniqueness is (value) <-- i.e. more strict
+        boolean compareIds = descriptor.type() == GENERAL;
+        additionsWorkSync = new WorkSync<>( new IndexUpdateApply<>( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( compareIds ) ) );
+
+        // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
+        // there are added conflict checks after updates have been applied.
+        updatesWorkSync = new WorkSync<>( new IndexUpdateApply<>( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( true ) ) );
     }
 
     @Override
@@ -99,7 +126,6 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     {
         try
         {
-            closeWriter();
             closeTree();
             gbpTreeFileUtil.deleteFileIfPresent( storeFile );
         }
@@ -110,9 +136,9 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
     {
-        applyWithWorkSync( updates );
+        applyWithWorkSync( additionsWorkSync, updates );
     }
 
     @Override
@@ -122,9 +148,9 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     }
 
     @Override
-    public NativePopulatingUpdater newPopulatingUpdater( PropertyAccessor accessor )
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        return new NativePopulatingUpdater()
+        IndexUpdater updater = new IndexUpdater()
         {
             private boolean closed;
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
@@ -137,9 +163,9 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
             }
 
             @Override
-            public void close() throws IOException
+            public void close() throws IOException, IndexEntryConflictException
             {
-                applyWithWorkSync( updates );
+                applyWithWorkSync( updatesWorkSync, updates );
                 closed = true;
             }
 
@@ -151,12 +177,21 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
                 }
             }
         };
+
+        if ( descriptor.type() == UNIQUE )
+        {
+            // The index population detects conflicts on the fly, however for updates coming in we're in a position
+            // where we cannot detect conflicts while applying, but instead afterwards.
+            updater = new DeferredConflictCheckingIndexUpdater( updater, this::newReader, descriptor );
+        }
+        return updater;
     }
+
+    abstract IndexReader newReader();
 
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        closeWriter();
         if ( populationCompletedSuccessfully && failureBytes != null )
         {
             throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
@@ -182,7 +217,8 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         }
     }
 
-    private void applyWithWorkSync( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
+    private void applyWithWorkSync( WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> workSync,
+            Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
     {
         try
         {
@@ -190,7 +226,16 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         }
         catch ( ExecutionException e )
         {
-            throw new IOException( e );
+            Throwable cause = e.getCause();
+            if ( cause instanceof IOException )
+            {
+                throw (IOException) cause;
+            }
+            if ( cause instanceof IndexEntryConflictException )
+            {
+                throw (IndexEntryConflictException) cause;
+            }
+            throw new IOException( cause );
         }
     }
 
@@ -238,30 +283,30 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         tree.checkpoint( IOLimiter.unlimited(), pc -> pc.putByte( BYTE_ONLINE ) );
     }
 
-    void closeWriter() throws IOException
-    {
-        singleTreeWriter = closeIfPresent( singleTreeWriter );
-    }
-
     static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
     {
+        private final GBPTree<KEY,VALUE> tree;
         private final KEY treeKey;
         private final VALUE treeValue;
-        private final Writer<KEY,VALUE> writer;
         private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
 
-        IndexUpdateApply( KEY treeKey, VALUE treeValue, Writer<KEY,VALUE> writer,
-                ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+        IndexUpdateApply( GBPTree<KEY,VALUE> tree, KEY treeKey, VALUE treeValue, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
         {
+            this.tree = tree;
             this.treeKey = treeKey;
             this.treeValue = treeValue;
-            this.writer = writer;
             this.conflictDetectingValueMerger = conflictDetectingValueMerger;
         }
 
-        public void process( IndexEntryUpdate<?> indexEntryUpdate ) throws Exception
+        void process( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates ) throws Exception
         {
-            NativeSchemaIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetectingValueMerger );
+            try ( Writer<KEY,VALUE> writer = tree.writer() )
+            {
+                for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
+                {
+                    NativeSchemaIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetectingValueMerger );
+                }
+            }
         }
     }
 
@@ -276,7 +321,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         }
 
         @Override
-        public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork<KEY,VALUE> work )
+        public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork work )
         {
             ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
             combined.addAll( work.updates );
@@ -286,10 +331,37 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         @Override
         public void apply( IndexUpdateApply<KEY,VALUE> indexUpdateApply ) throws Exception
         {
-            for ( IndexEntryUpdate<?> indexEntryUpdate : updates )
-            {
-                indexUpdateApply.process( indexEntryUpdate );
-            }
+            indexUpdateApply.process( updates );
+        }
+    }
+
+    @Override
+    public void includeSample( IndexEntryUpdate<?> update )
+    {
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            nonUniqueSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
+            break;
+        case UNIQUE:
+            uniqueSampler.increment( 1 );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
+    }
+
+    @Override
+    public IndexSample sampleResult()
+    {
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            return nonUniqueSampler.result();
+        case UNIQUE:
+            return uniqueSampler.result();
+        default:
+            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
         }
     }
 }

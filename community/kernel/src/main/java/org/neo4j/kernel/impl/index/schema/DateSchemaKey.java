@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 
 import static java.lang.String.format;
 
@@ -30,44 +29,17 @@ import static java.lang.String.format;
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
  * or rather any string that {@link GBPTree} can handle.
  */
-class DateSchemaKey extends ValueWriter.Adapter<RuntimeException> implements NativeSchemaKey
+class DateSchemaKey extends NativeSchemaKey
 {
     static final int SIZE =
             Long.BYTES + /* raw value bits */
             Long.BYTES;  /* entityId */
 
-    private long entityId;
-    private boolean compareId;
-
     long epochDay;
 
-    public void setCompareId( boolean compareId )
-    {
-        this.compareId = compareId;
-    }
-
-    public boolean getCompareId()
-    {
-        return compareId;
-    }
-
     @Override
-    public long getEntityId()
+    void from( Value... values )
     {
-        return entityId;
-    }
-
-    @Override
-    public void setEntityId( long entityId )
-    {
-        this.entityId = entityId;
-    }
-
-    @Override
-    public void from( long entityId, Value... values )
-    {
-        this.entityId = entityId;
-        compareId = false;
         assertValidValue( values ).writeTo( this );
     }
 
@@ -90,31 +62,21 @@ class DateSchemaKey extends ValueWriter.Adapter<RuntimeException> implements Nat
     }
 
     @Override
-    public String propertiesAsString()
-    {
-        return asValue().toString();
-    }
-
-    @Override
     public Value asValue()
     {
         return DateValue.epochDate( epochDay );
     }
 
     @Override
-    public void initAsLowest()
+    void initValueAsLowest()
     {
         epochDay = Long.MIN_VALUE;
-        entityId = Long.MIN_VALUE;
-        compareId = true;
     }
 
     @Override
-    public void initAsHighest()
+    void initValueAsHighest()
     {
         epochDay = Long.MAX_VALUE;
-        entityId = Long.MAX_VALUE;
-        compareId = true;
     }
 
     /**
@@ -132,7 +94,7 @@ class DateSchemaKey extends ValueWriter.Adapter<RuntimeException> implements Nat
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,epochDay=%s", asValue(), entityId, epochDay );
+        return format( "value=%s,entityId=%d,epochDay=%s", asValue(), getEntityId(), epochDay );
     }
 
     @Override

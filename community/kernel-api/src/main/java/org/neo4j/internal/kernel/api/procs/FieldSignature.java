@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.proc;
+package org.neo4j.internal.kernel.api.procs;
 
 import java.util.Objects;
 import java.util.Optional;
-
-import org.neo4j.kernel.impl.proc.DefaultParameterValue;
 
 import static java.util.Objects.requireNonNull;
 

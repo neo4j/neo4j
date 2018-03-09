@@ -33,5 +33,7 @@ trait LoopDataGenerator {
 
   def produceLoopData[E](iterVarName: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
+  def close[E](iterVarName: String, generator: MethodStructure[E]): Unit
+
   def opName: String
 }

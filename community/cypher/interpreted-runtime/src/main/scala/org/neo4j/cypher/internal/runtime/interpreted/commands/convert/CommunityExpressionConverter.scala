@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, NonEmptyList}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.v3_4.functions._
-import org.neo4j.cypher.internal.v3_4.functions
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
 
 object CommunityExpressionConverter extends ExpressionConverter {
 
@@ -104,8 +103,12 @@ object CommunityExpressionConverter extends ExpressionConverter {
             case (given, default) => given.map(self.toCommandExpression).getOrElse(commandexpressions.Literal(default.get))
           }
           val signature = e.fcnSignature.get
-          if (signature.isAggregate) commandexpressions.AggregationFunctionInvocation(signature, callArgumentCommands)
-          else commandexpressions.FunctionInvocation(signature, callArgumentCommands)
+          (signature.isAggregate, signature.id) match {
+            case (true, Some(_)) => commandexpressions.AggregationFunctionInvocationById(signature, callArgumentCommands)
+            case (true, None) => commandexpressions.AggregationFunctionInvocationByName(signature, callArgumentCommands)
+            case (false, Some(_)) => commandexpressions.FunctionInvocationById(signature, callArgumentCommands)
+            case (false, None) => commandexpressions.FunctionInvocationByName(signature, callArgumentCommands)
+          }
         case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
         case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
         case _ => null

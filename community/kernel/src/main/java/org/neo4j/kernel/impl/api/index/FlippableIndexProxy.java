@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -103,13 +102,13 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop() throws IOException
+    public void drop() throws IOException
     {
         lock.readLock().lock();
         try
         {
             closed = true;
-            return delegate.drop();
+            delegate.drop();
         }
         finally
         {
@@ -285,13 +284,13 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> close() throws IOException
+    public void close() throws IOException
     {
         lock.readLock().lock();
         try
         {
             closed = true;
-            return delegate.close();
+            delegate.close();
         }
         finally
         {

@@ -51,7 +51,6 @@ import org.neo4j.values.storable.Value;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -94,32 +93,6 @@ public abstract class NativeSchemaIndexProviderTest
             // then
             // good
         }
-    }
-
-    @Test
-    public void getPopulatorMustCreateUniquePopulatorForTypeUnique()
-    {
-        // given
-        provider = newProvider();
-
-        // when
-        IndexPopulator populator = provider.getPopulator( indexId, descriptorUnique(), samplingConfig() );
-
-        // then
-        assertTrue( "Expected populator to be unique populator", populator instanceof NativeUniqueSchemaIndexPopulator );
-    }
-
-    @Test
-    public void getPopulatorMustCreateNonUniquePopulatorForTypeGeneral()
-    {
-        // given
-        provider = newProvider();
-
-        // when
-        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
-
-        // then
-        assertTrue( "Expected populator to be non-unique populator", populator instanceof NativeNonUniqueSchemaIndexPopulator );
     }
 
     /* getOnlineAccessor */

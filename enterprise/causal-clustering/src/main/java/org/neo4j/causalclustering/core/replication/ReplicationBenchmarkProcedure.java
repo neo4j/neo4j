@@ -19,14 +19,12 @@
  */
 package org.neo4j.causalclustering.core.replication;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;

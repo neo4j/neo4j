@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -475,6 +477,12 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
+            public Procedures procedures()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
             public CursorFactory cursors()
             {
                 throw new UnsupportedOperationException( "not implemented" );
@@ -594,6 +602,12 @@ public class ConstraintIndexCreatorTest
 
             @Override
             public PropertyCursor propertyCursor()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public ClockContext clocks()
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }

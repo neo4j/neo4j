@@ -72,17 +72,17 @@ public class RelationshipGroupGetterTest
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );
 
-            RelationshipGroupRecord group_2 = group( 0, 2 );
-            RelationshipGroupRecord group_4 = group( 1, 4 );
-            RelationshipGroupRecord group_10 = group( 2, 10 );
-            RelationshipGroupRecord group_23 = group( 3, 23 );
-            link( group_2, group_4, group_10, group_23 );
-            store.updateRecord( group_2 );
-            store.updateRecord( group_4 );
-            store.updateRecord( group_10 );
-            store.updateRecord( group_23 );
+            RelationshipGroupRecord group2 = group( 0, 2 );
+            RelationshipGroupRecord group4 = group( 1, 4 );
+            RelationshipGroupRecord group10 = group( 2, 10 );
+            RelationshipGroupRecord group23 = group( 3, 23 );
+            link( group2, group4, group10, group23 );
+            store.updateRecord( group2 );
+            store.updateRecord( group4 );
+            store.updateRecord( group10 );
+            store.updateRecord( group23 );
             RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store );
-            NodeRecord node = new NodeRecord( 0, true, group_2.getId(), -1 );
+            NodeRecord node = new NodeRecord( 0, true, group2.getId(), -1 );
 
             // WHEN trying to find relationship group 7
             RecordAccess<RelationshipGroupRecord, Integer> access =
@@ -91,16 +91,16 @@ public class RelationshipGroupGetterTest
 
             // THEN only groups 2, 4 and 10 should have been loaded
             InOrder verification = inOrder( store );
-            verification.verify( store ).getRecord( eq( group_2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store ).getRecord( eq( group_4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store ).getRecord( eq( group_10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
             verification.verify( store, times( 0 ) )
-                    .getRecord( eq( group_23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+                    .getRecord( eq( group23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
 
             // it should also be reported as not found
             assertNull( result.group() );
             // with group 4 as closes previous one
-            assertEquals( group_4, result.closestPrevious().forReadingData() );
+            assertEquals( group4, result.closestPrevious().forReadingData() );
         }
     }
 

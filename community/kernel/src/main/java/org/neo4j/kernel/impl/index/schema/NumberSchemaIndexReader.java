@@ -32,7 +32,6 @@ import org.neo4j.values.storable.ValueGroup;
 
 class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
 {
-
     NumberSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );

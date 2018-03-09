@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.procedure.ProcedureTransaction;

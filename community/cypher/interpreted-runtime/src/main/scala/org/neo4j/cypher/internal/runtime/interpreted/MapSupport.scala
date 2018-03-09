@@ -71,7 +71,13 @@ class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
 
   override def putAll(m: util.Map[_ <: String, _ <: AnyValue]): Unit = throw new UnsupportedOperationException()
 
-  override def get(key: scala.Any): AnyValue = ops.getProperty(id, ctx.getPropertyKeyId(key.asInstanceOf[String]))
+  override def get(key: scala.Any): AnyValue =
+    ctx.getOptPropertyKeyId(key.asInstanceOf[String]) match {
+      case Some(keyId) =>
+        ops.getProperty(id, keyId)
+      case None =>
+        null
+    }
 
   override def keySet(): util.Set[String] = allProps.keySet()
 

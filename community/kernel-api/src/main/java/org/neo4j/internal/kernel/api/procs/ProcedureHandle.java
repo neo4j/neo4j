@@ -17,21 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.internal.kernel.api.procs;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
-public class ProcedureException extends KernelException
+public class ProcedureHandle
 {
-    public ProcedureException( Status statusCode, Throwable cause,
-                               String message, Object... parameters )
+    private final ProcedureSignature signature;
+    private final int id;
+
+    public ProcedureHandle( ProcedureSignature signature, int id )
     {
-        super( statusCode, cause, message, parameters );
+        this.signature = signature;
+        this.id = id;
     }
 
-    public ProcedureException( Status statusCode, String message,
-                               Object... parameters )
+    public ProcedureSignature signature()
     {
-        super( statusCode, message, parameters );
+        return signature;
+    }
+
+    public int id()
+    {
+        return id;
     }
 }

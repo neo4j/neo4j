@@ -74,18 +74,13 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
         }
 
         File storeFile = nativeIndexFileFromIndexId( indexId );
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, layoutNonUnique(), samplingConfig,
-                    monitor, descriptor, indexId );
-        case UNIQUE:
-            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, layoutUnique(), monitor, descriptor,
-                    indexId );
-        default:
-            throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
-        }
+        Layout<KEY,VALUE> layout = layout( descriptor );
+        return newIndexPopulator( storeFile, layout, descriptor, indexId, samplingConfig );
     }
+
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout,
+                                                         SchemaIndexDescriptor descriptor, long indexId,
+                                                         IndexSamplingConfig samplingConfig );
 
     @Override
     public IndexAccessor getOnlineAccessor(

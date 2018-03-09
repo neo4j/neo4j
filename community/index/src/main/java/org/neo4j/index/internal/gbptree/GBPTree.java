@@ -816,7 +816,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, rootGeneration,
-                exceptionDecorator );
+                exceptionDecorator, SeekCursor.DEFAULT_MAX_READ_AHEAD );
     }
 
     /**

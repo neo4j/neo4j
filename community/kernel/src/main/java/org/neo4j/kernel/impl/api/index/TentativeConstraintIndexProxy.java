@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -32,8 +33,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.DeferredConflictCheckingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
@@ -73,7 +76,8 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         switch ( mode )
         {
             case ONLINE:
-                return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
+                return new DelegatingIndexUpdater( new DeferredConflictCheckingIndexUpdater(
+                        target.accessor.newUpdater( mode ), target::newReader, target.getDescriptor() ) )
                 {
                     @Override
                     public void process( IndexEntryUpdate<?> update )
@@ -134,6 +138,22 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     protected IndexProxy getDelegate()
     {
         return target;
+    }
+
+    @Override
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    {
+        // If we've seen constraint violation failures in here when updates came in then fail immediately with those
+        if ( !failures.isEmpty() )
+        {
+            Iterator<IndexEntryConflictException> failureIterator = failures.iterator();
+            IndexEntryConflictException conflict = failureIterator.next();
+            failureIterator.forEachRemaining( conflict::addSuppressed );
+            throw conflict;
+        }
+
+        // Otherwise consolidate the usual verification
+        super.verifyDeferredConstraints( accessor );
     }
 
     @Override

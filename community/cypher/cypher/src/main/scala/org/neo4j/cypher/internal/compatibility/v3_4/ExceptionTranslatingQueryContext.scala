@@ -142,6 +142,18 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
+  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    translateIterator(inner.callReadOnlyProcedure(id, args, allowed))
+
+  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    translateIterator(inner.callReadWriteProcedure(id, args, allowed))
+
+  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    translateIterator(inner.callSchemaWriteProcedure(id, args, allowed))
+
+  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    translateIterator(inner.callDbmsProcedure(id, args, allowed))
+
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callReadOnlyProcedure(name, args, allowed))
 
@@ -154,9 +166,15 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args, allowed))
 
+  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+    translateException(inner.callFunction(id, args, allowed))
+
   override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     translateException(inner.callFunction(name, args, allowed))
 
+  override def aggregateFunction(id: Int,
+                                 allowed: Array[String]): UserDefinedAggregator =
+    translateException(inner.aggregateFunction(id, allowed))
 
   override def aggregateFunction(name: QualifiedName,
                                  allowed: Array[String]): UserDefinedAggregator =
@@ -282,12 +300,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
     override def removeProperty(id: Long, propertyKeyId: Int) =
       translateException(inner.removeProperty(id, propertyKeyId))
-
-    override def indexGet(name: String, key: String, value: Any): Iterator[T] =
-      translateException(inner.indexGet(name, key, value))
-
-    override def indexQuery(name: String, query: Any): Iterator[T] =
-      translateException(inner.indexQuery(name, query))
 
     override def all: Iterator[T] =
       translateException(inner.all)

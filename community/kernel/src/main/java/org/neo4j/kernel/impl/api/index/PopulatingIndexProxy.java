@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -41,11 +40,13 @@ public class PopulatingIndexProxy implements IndexProxy
 {
     private final IndexMeta indexMeta;
     private final IndexPopulationJob job;
+    private final MultipleIndexPopulator.IndexPopulation indexPopulation;
 
-    PopulatingIndexProxy( IndexMeta indexMeta, IndexPopulationJob job )
+    PopulatingIndexProxy( IndexMeta indexMeta, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
     {
         this.indexMeta = indexMeta;
         this.job = job;
+        this.indexPopulation = indexPopulation;
     }
 
     @Override
@@ -81,9 +82,9 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop()
+    public void drop()
     {
-        return job.cancel();
+        job.cancelPopulation( indexPopulation );
     }
 
     @Override
@@ -129,9 +130,9 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> close()
+    public void close()
     {
-        return job.cancel();
+        job.cancelPopulation( indexPopulation );
     }
 
     @Override

@@ -52,6 +52,14 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
@@ -452,6 +460,187 @@ public class CsvInputTest
             // THEN
             assertNextNode( nodes, 0L, new Object[] {"name", "Mattias"}, labels() );
             assertNextNode( nodes, 1L, new Object[] {"name", "Johan", "extra", 10}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParsePointPropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,point:Point\n" +
+                "0,Mattias,\"{x: 2.7, y:3.2 }\"\n" +
+                "1,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2 } \"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "point",
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.7, 3.2) }, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "point",
+                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 5, -4.2, 0.01)}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParseDatePropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,date:Date\n" +
+                "0,Mattias,2018-02-27\n" +
+                "1,Johan,2018-03-01\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "date",
+                    DateValue.date( 2018, 2, 27 )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "date",
+                    DateValue.date( 2018, 3, 1 )}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParseTimePropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,time:Time\n" +
+                "0,Mattias,13:37\n" +
+                "1,Johan,\"16:20:01\"\n" +
+                "2,Bob,07:30-05:00\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "time",
+                    TimeValue.time( 13, 37, 0, 0, "+00:00" )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
+                    TimeValue.time( 16, 20, 1, 0, "+00:00" )}, labels() );
+            assertNextNode( nodes, 2L, new Object[]{"name", "Bob", "time",
+                    TimeValue.time( 7, 30, 0, 0, "-05:00" )}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParseDateTimePropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,time:DateTime\n" +
+                "0,Mattias,2018-02-27T13:37\n" +
+                "1,Johan,\"2018-03-01T16:20:01\"\n" +
+                "2,Bob,1981-05-11T07:30-05:00\n" );
+
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "time",
+                    DateTimeValue.datetime( 2018, 2, 27, 13, 37, 0, 0, "+00:00" )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
+                    DateTimeValue.datetime( 2018, 3, 1, 16, 20, 1, 0, "+00:00" )}, labels() );
+            assertNextNode( nodes, 2L, new Object[]{"name", "Bob", "time",
+                    DateTimeValue.datetime( 1981, 5, 11, 7, 30, 0, 0, "-05:00" )}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParseLocalTimePropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,time:LocalTime\n" +
+                "0,Mattias,13:37\n" +
+                "1,Johan,\"16:20:01\"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "time",
+                    LocalTimeValue.localTime( 13, 37, 0, 0 )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
+                    LocalTimeValue.localTime( 16, 20, 1, 0 )}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParseLocalDateTimePropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,time:LocalDateTime\n" +
+                "0,Mattias,2018-02-27T13:37\n" +
+                "1,Johan,\"2018-03-01T16:20:01\"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "time",
+                    LocalDateTimeValue.localDateTime( 2018, 2, 27, 13, 37, 0, 0 )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
+                    LocalDateTimeValue.localDateTime( 2018, 3, 1, 16, 20, 1, 0 )}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParseDurationPropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,duration:Duration\n" +
+                "0,Mattias,P3MT13H37M\n" +
+                "1,Johan,\"P-1YT4H20M\"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "duration",
+                    DurationValue.duration( 3, 0, 13 * 3600 + 37 * 60, 0 )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "duration",
+                    DurationValue.duration( -12, 0, 4 * 3600 + 20 * 60, 0 )}, labels() );
             assertFalse( readNext( nodes ) );
         }
     }

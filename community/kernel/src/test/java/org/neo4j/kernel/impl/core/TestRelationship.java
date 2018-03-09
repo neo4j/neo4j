@@ -772,9 +772,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         /* create 256 nodes */
         GraphDatabaseService graphDB = getGraphDb();
         Node[] nodes = new Node[256];
-        for ( int num_nodes = 0; num_nodes < nodes.length; num_nodes += 1 )
+        for ( int numNodes = 0; numNodes < nodes.length; numNodes += 1 )
         {
-            nodes[num_nodes] = graphDB.createNode();
+            nodes[numNodes] = graphDB.createNode();
         }
         newTransaction();
 

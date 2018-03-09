@@ -65,7 +65,6 @@ class IndexProxyCreator
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
-        // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
         IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
@@ -77,9 +76,9 @@ class IndexProxyCreator
                 new IndexCountsRemover( storeView, ruleId ),
                 logProvider );
 
-        PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy( indexMeta, populationJob );
-
-        populationJob.addPopulator( populator, ruleId, indexMeta, indexUserDescription, flipper, failureDelegateFactory );
+        MultipleIndexPopulator.IndexPopulation indexPopulation = populationJob
+                .addPopulator( populator, ruleId, indexMeta, indexUserDescription, flipper, failureDelegateFactory );
+        PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy( indexMeta, populationJob, indexPopulation );
 
         flipper.flipTo( populatingIndex );
 
@@ -116,7 +115,6 @@ class IndexProxyCreator
             IndexDescriptor descriptor,
             IndexProvider.Descriptor providerDescriptor )
     {
-        // TODO Hook in version verification/migration calls to the IndexProvider here
         try
         {
             IndexAccessor onlineAccessor =

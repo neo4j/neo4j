@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.load_balancing;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 
 public interface LoadBalancingProcessor
 {

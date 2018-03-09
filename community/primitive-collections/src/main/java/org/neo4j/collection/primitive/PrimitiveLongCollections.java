@@ -63,7 +63,7 @@ public class PrimitiveLongCollections
 
     public static PrimitiveLongIterator iterator( final long... items )
     {
-        return new PrimitiveLongBaseIterator()
+        return new PrimitiveLongResourceCollections.PrimitiveLongBaseResourceIterator( Resource.EMPTY )
         {
             private int index = -1;
 

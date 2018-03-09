@@ -17,21 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.internal.kernel.api.procs;
 
-import java.io.IOException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
-
-/**
- * IndexUpdater which does not throw on process.
- */
-public interface NativePopulatingUpdater extends IndexUpdater
+public interface UserAggregator
 {
-    @Override
-    void process( IndexEntryUpdate<?> update );
+    void update( Object[] input ) throws ProcedureException;
 
-    @Override
-    void close() throws IOException;
+    Object result() throws ProcedureException;
 }

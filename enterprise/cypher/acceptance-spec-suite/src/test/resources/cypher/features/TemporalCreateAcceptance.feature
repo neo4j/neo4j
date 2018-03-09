@@ -374,7 +374,7 @@ Feature: TemporalCreateAcceptance
 
     And no side effects
 
-  Scenario: Should create duration
+  Scenario: Should construct duration
     Given an empty graph
     When executing query:
       """
@@ -401,3 +401,112 @@ Feature: TemporalCreateAcceptance
       | 'P14DT1M10.000000001S' |
       | 'PT1M31S' |
     And no side effects
+
+  Scenario: Should store date
+    Given an empty graph
+    When executing query:
+    """
+      UNWIND [date({year:1984, month:10, day:11}),
+              [date({year:1984, month:10, day:12})],
+              [date({year:1984, month:10, day:13}), date({year:1984, month:10, day:14}), date({year:1984, month:10, day:15})]
+              ] as d
+      CREATE ({p:d})
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3 |
+    And the side effects should be:
+      | +nodes      | 3 |
+      | +properties | 3 |
+
+  Scenario: Should store local time
+    Given an empty graph
+    When executing query:
+    """
+      UNWIND [localtime({hour:12}),
+              [localtime({hour:13})],
+              [localtime({hour:14}), localtime({hour:15}), localtime({hour:16})]
+              ] as t
+      CREATE ({p:t})
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3 |
+    And the side effects should be:
+      | +nodes      | 3 |
+      | +properties | 3 |
+
+  Scenario: Should store time
+    Given an empty graph
+    When executing query:
+    """
+      UNWIND [time({hour:12}),
+              [time({hour:13})],
+              [time({hour:14}), time({hour:15}), time({hour:16})]
+              ] as t
+      CREATE ({p:t})
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3 |
+    And the side effects should be:
+      | +nodes      | 3 |
+      | +properties | 3 |
+
+  Scenario: Should store local date time
+    Given an empty graph
+    When executing query:
+    """
+      UNWIND [localdatetime({year:1912}),
+              [localdatetime({year:1913})],
+              [localdatetime({year:1914}), localdatetime({year:1915}), localdatetime({year:1916})]
+              ] as dt
+      CREATE ({p:dt})
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3 |
+    And the side effects should be:
+      | +nodes      | 3 |
+      | +properties | 3 |
+
+  Scenario: Should store date time
+    Given an empty graph
+    When executing query:
+    """
+      UNWIND [datetime({year:1912}),
+              [datetime({year:1913})],
+              [datetime({year:1914}), datetime({year:1915}), datetime({year:1916})]
+              ] as dt
+      CREATE ({p:dt})
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3 |
+    And the side effects should be:
+      | +nodes      | 3 |
+      | +properties | 3 |
+
+  Scenario: Should store duration
+    Given an empty graph
+    When executing query:
+    """
+      UNWIND [duration({seconds:12}),
+              [duration({seconds:13})],
+              [duration({seconds:14}), duration({seconds:15}), duration({seconds:16})]
+              ] as duration
+      CREATE ({p:duration})
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3 |
+    And the side effects should be:
+      | +nodes      | 3 |
+      | +properties | 3 |
+

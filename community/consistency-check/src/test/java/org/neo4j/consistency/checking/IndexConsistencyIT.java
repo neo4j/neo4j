@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -71,6 +72,7 @@ public class IndexConsistencyIT
     private static final double DELETE_RATIO = 0.2;
     private static final double UPDATE_RATIO = 0.2;
     private static final int NODE_COUNT_BASELINE = 10;
+    private final FileFilter SOURCE_COPY_FILE_FILTER = file -> file.isDirectory() || file.getName().startsWith( "index" );
 
     @Test
     public void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
@@ -80,7 +82,7 @@ public class IndexConsistencyIT
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File indexesCopy = new File( storeDir, "indexesCopy" );
         File indexSources = resolveComponent( FusionSchemaIndexProvider.class ).directoryStructure().rootDirectory();
-        copyRecursively( indexSources, indexesCopy );
+        copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -106,7 +108,7 @@ public class IndexConsistencyIT
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File indexesCopy = new File( storeDir, "indexesCopy" );
         File indexSources = resolveComponent( FusionSchemaIndexProvider.class ).directoryStructure().rootDirectory();
-        copyRecursively( indexSources, indexesCopy );
+        copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         db.shutdownAndKeepStore();
 

@@ -338,8 +338,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ),
-                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF ),
-                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF_TMP )
+                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF )
         );
     }
 

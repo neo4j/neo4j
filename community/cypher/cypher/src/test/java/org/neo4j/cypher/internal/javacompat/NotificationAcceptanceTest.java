@@ -26,6 +26,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
@@ -66,6 +68,9 @@ public class NotificationAcceptanceTest
 
     @Rule
     public final ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule();
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIsTheDefault()
@@ -126,19 +131,15 @@ public class NotificationAcceptanceTest
         result.close();
     }
 
-    //TODO unignore when supporting 3.3
-    @Ignore
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3()
+    @Test
+    public void shouldGetErrorWhenUsingCreateUniqueWhenCypherVersionIs3_3()
     {
-        // when
-        Result result = db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
-        InputPosition position = new InputPosition( 36, 1, 37 );
+        // expect exception
+        thrown.expect( QueryExecutionException.class );
+        thrown.expectMessage( "CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE");
 
-        // then
-        assertThat( result.getNotifications(), Matchers.contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        result.close();
+        // when
+        db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
     }
 
     @Test

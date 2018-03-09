@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -426,7 +427,7 @@ abstract class MuninnPageCursor extends PageCursor
         pinEvent.done();
     }
 
-    long assertPagedFileStillMappedAndGetIdOfLastPage()
+    long assertPagedFileStillMappedAndGetIdOfLastPage() throws FileIsNotMappedException
     {
         return pagedFile.getLastPageId();
     }
@@ -435,7 +436,8 @@ abstract class MuninnPageCursor extends PageCursor
 
     protected abstract void convertPageFaultLock( long pageRef );
 
-    protected abstract void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper );
+    protected abstract void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
+            throws FileIsNotMappedException;
 
     protected abstract boolean tryLockPage( long pageRef );
 

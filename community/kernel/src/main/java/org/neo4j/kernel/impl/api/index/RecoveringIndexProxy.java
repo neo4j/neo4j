@@ -20,14 +20,10 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-
-import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 {
@@ -67,9 +63,8 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public Future<Void> drop()
+    public void drop()
     {
-        return VOID;
     }
 
     @Override

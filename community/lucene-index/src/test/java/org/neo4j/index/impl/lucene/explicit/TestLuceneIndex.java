@@ -1662,9 +1662,9 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void updateIndex()
     {
-        String TEXT = "text";
-        String NUMERIC = "numeric";
-        String TEXT_1 = "text_1";
+        final String TEXT = "text";
+        final String NUMERIC = "numeric";
+        final String TEXT_1 = "text_1";
 
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node n = graphDb.createNode();

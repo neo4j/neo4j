@@ -182,29 +182,29 @@ public class TestGraphDescription implements GraphHolder
         {
             Map<String, Node> graph = data.get();
             assertEquals( "Wrong graph size.", 2, graph.size() );
-            Node I = graph.get( "I" );
-            assertNotNull( "The node 'I' was not defined", I );
+            Node iNode = graph.get( "I" );
+            assertNotNull( "The node 'I' was not defined", iNode );
             Node you = graph.get( "you" );
             assertNotNull( "The node 'you' was not defined", you );
-            assertEquals( "'I' has wrong 'name'.", myName, I.getProperty( "name" ) );
+            assertEquals( "'I' has wrong 'name'.", myName, iNode.getProperty( "name" ) );
             assertEquals( "'you' has wrong 'name'.", "you",
                     you.getProperty( "name" ) );
 
-            Iterator<Relationship> rels = I.getRelationships().iterator();
+            Iterator<Relationship> rels = iNode.getRelationships().iterator();
             assertTrue( "'I' has too few relationships", rels.hasNext() );
             Relationship rel = rels.next();
-            assertEquals( "'I' is not related to 'you'", you, rel.getOtherNode( I ) );
+            assertEquals( "'I' is not related to 'you'", you, rel.getOtherNode( iNode ) );
             assertEquals( "Wrong relationship type.", type, rel.getType().name() );
             assertFalse( "'I' has too many relationships", rels.hasNext() );
 
             rels = you.getRelationships().iterator();
             assertTrue( "'you' has too few relationships", rels.hasNext() );
             rel = rels.next();
-            assertEquals( "'you' is not related to 'i'", I, rel.getOtherNode( you ) );
+            assertEquals( "'you' is not related to 'i'", iNode, rel.getOtherNode( you ) );
             assertEquals( "Wrong relationship type.", type, rel.getType().name() );
             assertFalse( "'you' has too many relationships", rels.hasNext() );
 
-            assertEquals( "wrong direction", I, rel.getStartNode() );
+            assertEquals( "wrong direction", iNode, rel.getStartNode() );
         }
     }
 

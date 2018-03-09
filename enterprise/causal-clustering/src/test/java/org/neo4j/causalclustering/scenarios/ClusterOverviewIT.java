@@ -48,10 +48,10 @@ import org.neo4j.causalclustering.discovery.procedures.Role;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -66,7 +66,7 @@ import static org.neo4j.causalclustering.discovery.procedures.Role.FOLLOWER;
 import static org.neo4j.causalclustering.discovery.procedures.Role.LEADER;
 import static org.neo4j.causalclustering.discovery.procedures.Role.READ_REPLICA;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )

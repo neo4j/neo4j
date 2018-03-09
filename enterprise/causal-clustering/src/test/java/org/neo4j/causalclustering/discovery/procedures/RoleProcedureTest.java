@@ -21,13 +21,12 @@ package org.neo4j.causalclustering.discovery.procedures;
 
 import org.junit.Test;
 
-import org.neo4j.collection.RawIterator;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;

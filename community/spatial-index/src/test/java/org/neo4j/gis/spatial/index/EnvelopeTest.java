@@ -48,21 +48,21 @@ public class EnvelopeTest
     @Test
     public void shouldHandleIntersectionsIn1D()
     {
-        double width_x = 1.0;
-        double width_y = 1.0;
-        Envelope left = new Envelope( 0.0, width_x, 0.0, width_y );
+        double widthX = 1.0;
+        double widthY = 1.0;
+        Envelope left = new Envelope( 0.0, widthX, 0.0, widthY );
         for ( double minx = -10.0; minx < 10.0; minx += 0.2 )
         {
-            double maxx = minx + width_x;
-            Envelope right = new Envelope( minx, maxx, 0.0, width_y );
+            double maxx = minx + widthX;
+            Envelope right = new Envelope( minx, maxx, 0.0, widthY );
             if ( maxx < left.getMinX() || minx > left.getMaxX() )
             {
                 testDoesNotOverlap(left, right);
             }
             else
             {
-                double overlap_x = (maxx < left.getMaxX()) ? maxx - left.getMinX() : left.getMaxX() - minx;
-                double overlap = overlap_x * width_y;
+                double overlapX = (maxx < left.getMaxX()) ? maxx - left.getMinX() : left.getMaxX() - minx;
+                double overlap = overlapX * widthY;
                 testOverlaps(left, right, true, overlap);
             }
         }

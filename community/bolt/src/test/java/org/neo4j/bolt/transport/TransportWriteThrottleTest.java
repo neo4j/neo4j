@@ -59,6 +59,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -77,9 +78,9 @@ public class TransportWriteThrottleTest
     private Attribute lockAttribute;
 
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
-        lock = mock( ThrottleLock.class );
+        lock = newThrottleLockMock();
 
         config = mock( SocketChannelConfig.class );
 
@@ -159,7 +160,7 @@ public class TransportWriteThrottleTest
         when( channel.isWritable() ).thenReturn( false );
 
         // when
-        Future future = otherThread.execute( state ->
+        Future<Void> future = otherThread.execute( state ->
         {
             throttle.acquire( channel );
             return null;
@@ -180,6 +181,11 @@ public class TransportWriteThrottleTest
         assertFalse( future.isDone() );
         assertThat( lockOverride.lockCallCount(), greaterThan( 0 ) );
         assertThat( lockOverride.unlockCallCount(), is( 0 ) );
+
+        // stop the thread that is trying to acquire the lock
+        // otherwise it remains actively spinning even after the test
+        when( channel.isWritable() ).thenReturn( true );
+        otherThread.get().awaitFuture( future );
     }
 
     @Test
@@ -236,7 +242,7 @@ public class TransportWriteThrottleTest
         when( channel.isWritable() ).thenReturn( false );
 
         // when
-        Future future = otherThread.execute( state ->
+        Future<Void> future = otherThread.execute( state ->
         {
             throttle.acquire( channel );
             return null;
@@ -293,6 +299,19 @@ public class TransportWriteThrottleTest
         throttle.install( channel );
 
         return throttle;
+    }
+
+    private static ThrottleLock newThrottleLockMock() throws InterruptedException
+    {
+        ThrottleLock lock = mock( ThrottleLock.class );
+        doAnswer( invocation ->
+        {
+            // sleep a bit to prevent the caller thread spinning in a tight loop
+            // every mock invocation is recorded and generates objects, like the stacktrace
+            Thread.sleep( 500 );
+            return null;
+        } ).when( lock ).lock( any(), anyLong() );
+        return lock;
     }
 
     private static class TestThrottleLock implements ThrottleLock

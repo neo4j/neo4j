@@ -34,14 +34,11 @@ import static java.lang.String.format;
  * Includes value and entity id (to be able to handle non-unique values).
  * A value can be any {@link PointValue} and is represented as a {@code long} to store the 1D mapped version
  */
-class SpatialSchemaKey implements NativeSchemaKey
+class SpatialSchemaKey extends NativeSchemaKey
 {
     static final int SIZE =
             Long.BYTES + /* raw value bits */
             Long.BYTES;  /* entityId */
-
-    private long entityId;
-    private boolean compareId;
 
     long rawValueBits;
     CoordinateReferenceSystem crs;
@@ -54,41 +51,9 @@ class SpatialSchemaKey implements NativeSchemaKey
     }
 
     @Override
-    public void setCompareId( boolean entityIdIsSpecialTieBreaker )
-    {
-        this.compareId = entityIdIsSpecialTieBreaker;
-    }
-
-    @Override
-    public boolean getCompareId()
-    {
-        return compareId;
-    }
-
-    @Override
-    public long getEntityId()
-    {
-        return entityId;
-    }
-
-    @Override
-    public void setEntityId( long entityId )
-    {
-        this.entityId = entityId;
-    }
-
-    @Override
-    public void from( long entityId, Value... values )
+    void from( Value... values )
     {
         extractRawBits( assertValidValue( values ) );
-        this.entityId = entityId;
-        compareId = false;
-    }
-
-    @Override
-    public String propertiesAsString()
-    {
-        return asValue().toString();
     }
 
     @Override
@@ -102,32 +67,28 @@ class SpatialSchemaKey implements NativeSchemaKey
     }
 
     @Override
-    public void initAsLowest()
+    void initValueAsLowest()
     {
         double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
         writePoint( limit );
-        entityId = Long.MIN_VALUE;
-        compareId = true;
     }
 
     @Override
-    public void initAsHighest()
+    void initValueAsHighest()
     {
         // These coords will generate the largest value on the spacial curve
         double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
         limit[0] = Double.POSITIVE_INFINITY;
         writePoint( limit );
-        entityId = Long.MAX_VALUE;
-        compareId = true;
     }
 
     public void fromDerivedValue( long entityId, long derivedValue )
     {
         rawValueBits = derivedValue;
-        this.entityId = entityId;
-        this.compareId = false;
+        setEntityId( entityId );
+        setCompareId( DEFAULT_COMPARE_ID );
     }
 
     /**
@@ -175,6 +136,6 @@ class SpatialSchemaKey implements NativeSchemaKey
     @Override
     public String toString()
     {
-        return format( "rawValue=%d,value=%s,entityId=%d", rawValueBits, "unknown", entityId );
+        return format( "rawValue=%d,value=%s,entityId=%d", rawValueBits, "unknown", getEntityId() );
     }
 }

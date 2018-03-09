@@ -31,10 +31,10 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.internal.kernel.api.Transaction.Type;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Settings;
@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V1;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 @RunWith( Parameterized.class )
 public class ClusterDiscoveryIT
@@ -120,8 +120,8 @@ public class ClusterDiscoveryIT
     }
 
     @SuppressWarnings( "unchecked" )
-    private List<Map<String,Object>> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException, org
-            .neo4j.kernel.api.exceptions.ProcedureException
+    private List<Map<String,Object>> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException,
+            ProcedureException
     {
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );

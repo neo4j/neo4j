@@ -20,11 +20,25 @@
 package org.neo4j.csv.reader;
 
 import java.lang.reflect.Field;
+import java.nio.CharBuffer;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
+import static java.time.ZoneOffset.UTC;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.Numbers.safeCastLongToByte;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
@@ -85,15 +99,27 @@ public class Extractors
     private final Extractor<long[]> longArray;
     private final Extractor<float[]> floatArray;
     private final Extractor<double[]> doubleArray;
+    private final PointExtractor point;
+    private final DateExtractor date;
+    private final TimeExtractor time;
+    private final DateTimeExtractor dateTime;
+    private final LocalTimeExtractor localTime;
+    private final LocalDateTimeExtractor localDateTime;
+    private final DurationExtractor duration;
 
     public Extractors( char arrayDelimiter )
     {
-        this( arrayDelimiter, Configuration.DEFAULT.emptyQuotedStringsAsNull(), Configuration.DEFAULT.trimStrings() );
+        this( arrayDelimiter, Configuration.DEFAULT.emptyQuotedStringsAsNull(), Configuration.DEFAULT.trimStrings(), inUTC );
     }
 
     public Extractors( char arrayDelimiter, boolean emptyStringsAsNull )
     {
-        this( arrayDelimiter, emptyStringsAsNull, Configuration.DEFAULT.trimStrings() );
+        this( arrayDelimiter, emptyStringsAsNull, Configuration.DEFAULT.trimStrings(), inUTC );
+    }
+
+    public Extractors( char arrayDelimiter, boolean emptyStringsAsNull, boolean trimStrings )
+    {
+        this( arrayDelimiter, emptyStringsAsNull, trimStrings, inUTC );
     }
 
     /**
@@ -102,7 +128,7 @@ public class Extractors
      * something that would be impossible otherwise. There's an equivalent {@link #valueOf(String)}
      * method to keep the feel of an enum.
      */
-    public Extractors( char arrayDelimiter, boolean emptyStringsAsNull, boolean trimStrings )
+    public Extractors( char arrayDelimiter, boolean emptyStringsAsNull, boolean trimStrings, Supplier<ZoneId> defaultTimeZone )
     {
         try
         {
@@ -135,6 +161,13 @@ public class Extractors
             add( longArray = new LongArrayExtractor( arrayDelimiter ) );
             add( floatArray = new FloatArrayExtractor( arrayDelimiter ) );
             add( doubleArray = new DoubleArrayExtractor( arrayDelimiter ) );
+            add( point = new PointExtractor() );
+            add( date = new DateExtractor() );
+            add( time = new TimeExtractor( defaultTimeZone ) );
+            add( dateTime = new DateTimeExtractor( defaultTimeZone ) );
+            add( localTime = new LocalTimeExtractor() );
+            add( localDateTime = new LocalDateTimeExtractor() );
+            add( duration = new DurationExtractor() );
         }
         catch ( IllegalAccessException e )
         {
@@ -242,6 +275,41 @@ public class Extractors
         return doubleArray;
     }
 
+    public PointExtractor point()
+    {
+        return point;
+    }
+
+    public DateExtractor date()
+    {
+        return date;
+    }
+
+    public TimeExtractor time()
+    {
+        return time;
+    }
+
+    public DateTimeExtractor dateTime()
+    {
+        return dateTime;
+    }
+
+    public LocalTimeExtractor localTime()
+    {
+        return localTime;
+    }
+
+    public LocalDateTimeExtractor localDateTime()
+    {
+        return localDateTime;
+    }
+
+    public DurationExtractor duration()
+    {
+        return duration;
+    }
+
     private abstract static class AbstractExtractor<T> implements Extractor<T>
     {
         private final String name;
@@ -299,6 +367,28 @@ public class Extractors
         protected abstract void clear();
 
         protected abstract boolean extract0( char[] data, int offset, int length );
+    }
+
+    private abstract static class AbstractSingleAnyValueExtractor extends AbstractSingleValueExtractor<AnyValue>
+    {
+        protected AnyValue value;
+
+        AbstractSingleAnyValueExtractor( String toString )
+        {
+            super( toString );
+        }
+
+        @Override
+        protected void clear()
+        {
+            value = Values.NO_VALUE;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
     }
 
     public static class StringExtractor extends AbstractSingleValueExtractor<String>
@@ -910,6 +1000,160 @@ public class Extractors
             }
         }
     }
+
+    public static class PointExtractor extends AbstractSingleAnyValueExtractor
+    {
+        PointExtractor()
+        {
+            super( "Point" );
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = PointValue.parse( CharBuffer.wrap( data, offset, length ) );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
+    public static class DateExtractor extends AbstractSingleAnyValueExtractor
+    {
+        DateExtractor()
+        {
+            super( "Date" );
+        }
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = DateValue.parse( CharBuffer.wrap( data, offset, length ) );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
+    public static class TimeExtractor extends AbstractSingleAnyValueExtractor
+    {
+        private Supplier<ZoneId> defaultTimeZone;
+
+        TimeExtractor( Supplier<ZoneId> defaultTimeZone )
+        {
+            super( "Time" );
+            this.defaultTimeZone = defaultTimeZone;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = TimeValue.parse( CharBuffer.wrap( data, offset, length ), defaultTimeZone );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
+    public static class DateTimeExtractor extends AbstractSingleAnyValueExtractor
+    {
+        private Supplier<ZoneId> defaultTimeZone;
+
+        DateTimeExtractor( Supplier<ZoneId> defaultTimeZone )
+        {
+            super( "DateTime" );
+            this.defaultTimeZone = defaultTimeZone;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = DateTimeValue.parse( CharBuffer.wrap( data, offset, length ), defaultTimeZone );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
+    public static class LocalTimeExtractor extends AbstractSingleAnyValueExtractor
+    {
+        LocalTimeExtractor()
+        {
+            super( "LocalTime" );
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = LocalTimeValue.parse( CharBuffer.wrap( data, offset, length ) );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
+    public static class LocalDateTimeExtractor extends AbstractSingleAnyValueExtractor
+    {
+        LocalDateTimeExtractor()
+        {
+            super( "LocalDateTime" );
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = LocalDateTimeValue.parse( CharBuffer.wrap( data, offset, length ) );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
+    public static class DurationExtractor extends AbstractSingleAnyValueExtractor
+    {
+        DurationExtractor()
+        {
+            super( "Duration" );
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = DurationValue.parse( CharBuffer.wrap( data, offset, length ) );
+            return true;
+        }
+
+        @Override
+        public AnyValue value()
+        {
+            return value;
+        }
+    }
+
+    private static final Supplier<ZoneId> inUTC = () -> UTC;
 
     private static long extractLong( char[] data, int originalOffset, int fullLength )
     {

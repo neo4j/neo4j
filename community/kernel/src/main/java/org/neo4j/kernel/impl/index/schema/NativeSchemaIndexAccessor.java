@@ -32,7 +32,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -79,7 +78,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer(), true );
+            return singleUpdater.initialize( tree.writer() );
         }
         catch ( IOException e )
         {

@@ -103,6 +103,13 @@ object CastSupport {
           p1
         }
 
+      case (_:DateValue, _:DateValue) => a
+      case (_:DateTimeValue, _:DateTimeValue) => a
+      case (_:LocalDateTimeValue, _:LocalDateTimeValue) => a
+      case (_:TimeValue, _:TimeValue) => a
+      case (_:LocalTimeValue, _:LocalTimeValue) => a
+      case (_:DurationValue, _:DurationValue) => a
+
       case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")
 

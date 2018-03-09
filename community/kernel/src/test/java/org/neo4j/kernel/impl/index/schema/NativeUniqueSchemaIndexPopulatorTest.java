@@ -51,10 +51,9 @@ public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSch
             populator.add( Arrays.asList( updates ) );
             fail( "Updates should have conflicted" );
         }
-        catch ( Exception e )
+        catch ( IndexEntryConflictException e )
         {
-            // then
-            assertTrue( Exceptions.contains( e, IndexEntryConflictException.class ) );
+            // then good
         }
         finally
         {

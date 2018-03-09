@@ -247,9 +247,9 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "3", "4", "weight", 0.013d );
 
         // WHEN
-        WeightedPath best1_4 = finder.findSinglePath( node1, node4 );
+        WeightedPath best14 = finder.findSinglePath( node1, node4 );
         // THEN
-        assertPath( best1_4, node1, node2, node3, node4 );
+        assertPath( best14, node1, node2, node3, node4 );
     }
 
     static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
+import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -84,7 +85,7 @@ public class SpatialKnownIndexTest
         IndexDirectoryStructure dirStructure = IndexDirectoryStructure.directoriesByProvider( storeDir ).forProvider( SPATIAL_PROVIDER_DESCRIPTOR );
         descriptor = SchemaIndexDescriptorFactory.forLabel( 42, 1337 );
         index = new SpatialCRSSchemaIndex( descriptor, dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
-                IndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE );
+                IndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 60 );
         samplingConfig = mock( IndexSamplingConfig.class );
     }
 
@@ -100,6 +101,7 @@ public class SpatialKnownIndexTest
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
         index.finishPopulation( true );
+        index.close();
     }
 
     @Test
@@ -119,6 +121,7 @@ public class SpatialKnownIndexTest
             assertThat( e.getMessage(), containsString( "Index file does not exist." ) );
             assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
         }
+        index.close();
     }
 
     @Test
@@ -140,6 +143,7 @@ public class SpatialKnownIndexTest
             assertThat( e.getMessage(), containsString( "Failed to bring index online." ) );
             index.finishPopulation( true );
         }
+        index.close();
     }
 
     @Test
@@ -183,6 +187,7 @@ public class SpatialKnownIndexTest
 
         updater.close();
         index.finishPopulation( true );
+        index.close();
     }
 
     @Test

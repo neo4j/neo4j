@@ -24,36 +24,22 @@ import java.io.File;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
-/**
- * {@link NativeSchemaIndexPopulator} which can enforces unique values.
- */
-class NativeUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndexPopulator<KEY,VALUE>
+public class StringSchemaIndexPopulator extends NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue>
 {
-    private final UniqueIndexSampler sampler;
-
-    NativeUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
+    StringSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout,
+            IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
-        this.sampler = new UniqueIndexSampler();
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate<?> update )
+    IndexReader newReader()
     {
-        sampler.increment( 1 );
-    }
-
-    @Override
-    public IndexSample sampleResult()
-    {
-        return sampler.result();
+        return new StringSchemaIndexReader( tree, layout, samplingConfig, descriptor );
     }
 }

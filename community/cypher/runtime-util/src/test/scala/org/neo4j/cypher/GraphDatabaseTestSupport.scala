@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, UserFunctionSignature}
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.monitoring.Monitors

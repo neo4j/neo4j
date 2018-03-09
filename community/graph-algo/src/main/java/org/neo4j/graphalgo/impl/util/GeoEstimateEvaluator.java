@@ -66,14 +66,14 @@ public class GeoEstimateEvaluator implements EstimateEvaluator<Double>
         latitude2 = Math.toRadians( latitude2 );
         longitude2 = Math.toRadians( longitude2 );
         double cLa1 = Math.cos( latitude1 );
-        double x_A = EARTH_RADIUS * cLa1 * Math.cos( longitude1 );
-        double y_A = EARTH_RADIUS * cLa1 * Math.sin( longitude1 );
-        double z_A = EARTH_RADIUS * Math.sin( latitude1 );
+        double xA = EARTH_RADIUS * cLa1 * Math.cos( longitude1 );
+        double yA = EARTH_RADIUS * cLa1 * Math.sin( longitude1 );
+        double zA = EARTH_RADIUS * Math.sin( latitude1 );
         double cLa2 = Math.cos( latitude2 );
-        double x_B = EARTH_RADIUS * cLa2 * Math.cos( longitude2 );
-        double y_B = EARTH_RADIUS * cLa2 * Math.sin( longitude2 );
-        double z_B = EARTH_RADIUS * Math.sin( latitude2 );
-        return Math.sqrt( ( x_A - x_B ) * ( x_A - x_B ) + ( y_A - y_B )
-                          * ( y_A - y_B ) + ( z_A - z_B ) * ( z_A - z_B ) );
+        double xB = EARTH_RADIUS * cLa2 * Math.cos( longitude2 );
+        double yB = EARTH_RADIUS * cLa2 * Math.sin( longitude2 );
+        double zB = EARTH_RADIUS * Math.sin( latitude2 );
+        return Math.sqrt( ( xA - xB ) * ( xA - xB ) + ( yA - yB )
+                          * ( yA - yB ) + ( zA - zB ) * ( zA - zB ) );
     }
 }

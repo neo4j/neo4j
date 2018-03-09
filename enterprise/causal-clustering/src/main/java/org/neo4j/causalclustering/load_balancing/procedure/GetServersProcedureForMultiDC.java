@@ -23,18 +23,18 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.neo4j.causalclustering.load_balancing.procedure.ParameterNames.CONTEXT;
 import static org.neo4j.causalclustering.load_balancing.procedure.ParameterNames.SERVERS;
 import static org.neo4j.causalclustering.load_balancing.procedure.ParameterNames.TTL;
 import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V2;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 /**
  * Returns endpoints and their capabilities.

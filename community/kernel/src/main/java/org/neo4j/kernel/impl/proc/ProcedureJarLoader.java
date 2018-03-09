@@ -26,7 +26,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -88,7 +87,7 @@ public class ProcedureJarLoader
         while ( classes.hasNext() )
         {
             Class<?> next = classes.next();
-            target.addAllProcedures( compiler.compileProcedure( next, Optional.empty(), false ) );
+            target.addAllProcedures( compiler.compileProcedure( next, null, false ) );
             target.addAllFunctions( compiler.compileFunction( next ) );
             target.addAllAggregationFunctions( compiler.compileAggregationFunction( next ) );
         }

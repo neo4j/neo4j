@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
@@ -113,7 +114,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
+    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper ) throws FileIsNotMappedException
     {
         reset( pageRef );
         // Check if we've been racing with unmapping. We want to do this before

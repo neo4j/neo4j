@@ -137,42 +137,42 @@ public abstract class CRSCalculator
 
             // Extend the distance slightly to assure that all relevant points lies inside the bounding box,
             // with rounding errors taken into account
-            double extended_distance = distance * EXTENSION_FACTOR;
+            double extendedDistance = distance * EXTENSION_FACTOR;
 
             CoordinateReferenceSystem crs = center.getCoordinateReferenceSystem();
             double lat = center.coordinate()[1];
             double lon = center.coordinate()[0];
 
-            double r = extended_distance / EARTH_RADIUS_METERS;
+            double r = extendedDistance / EARTH_RADIUS_METERS;
 
-            double lat_min = lat - toDegrees( r );
-            double lat_max = lat + toDegrees( r );
+            double latMin = lat - toDegrees( r );
+            double latMax = lat + toDegrees( r );
 
             // If your query circle includes one of the poles
-            if ( lat_max >= 90 )
+            if ( latMax >= 90 )
             {
-                return boundingBoxOf( -180, 180, lat_min, 90, center, distance );
+                return boundingBoxOf( -180, 180, latMin, 90, center, distance );
             }
-            else if ( lat_min <= -90 )
+            else if ( latMin <= -90 )
             {
-                return boundingBoxOf( -180, 180, -90, lat_max, center, distance );
+                return boundingBoxOf( -180, 180, -90, latMax, center, distance );
             }
             else
             {
-                double delta_lon = toDegrees( asin( sin( r ) / cos( toRadians( lat ) ) ) );
-                double lon_min = lon - delta_lon;
-                double lon_max = lon + delta_lon;
+                double deltaLon = toDegrees( asin( sin( r ) / cos( toRadians( lat ) ) ) );
+                double lonMin = lon - deltaLon;
+                double lonMax = lon + deltaLon;
 
                 // If you query circle wraps around the dateline
                 // Large rectangle covering all longitudes
                 // TODO implement two rectangle solution instead
-                if ( lon_min < -180 || lon_max > 180 )
+                if ( lonMin < -180 || lonMax > 180 )
                 {
-                    return boundingBoxOf( -180, 180, lat_min, lat_max, center, distance );
+                    return boundingBoxOf( -180, 180, latMin, latMax, center, distance );
                 }
                 else
                 {
-                    return boundingBoxOf( lon_min, lon_max, lat_min, lat_max, center, distance );
+                    return boundingBoxOf( lonMin, lonMax, latMin, latMax, center, distance );
                 }
             }
         }

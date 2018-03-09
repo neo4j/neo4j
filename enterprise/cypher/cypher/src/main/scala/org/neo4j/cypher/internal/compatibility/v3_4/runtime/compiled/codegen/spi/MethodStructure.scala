@@ -164,10 +164,14 @@ trait MethodStructure[E] {
   def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
   def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
 
-  def advanceNodeCursor(iterVar: String): E
-  def advanceNodeLabelIndexCursor(iterVar: String): E
-  def advanceRelationshipSelectionCursor(iterVar: String): E
-  def advanceNodeValueIndexCursor(iterVar: String): E
+  def advanceNodeCursor(cursorName: String): E
+  def closeNodeCursor(cursorName: String): Unit
+  def advanceNodeLabelIndexCursor(cursorName: String): E
+  def closeNodeLabelIndexCursor(cursorName: String): Unit
+  def advanceRelationshipSelectionCursor(cursorName: String): E
+  def closeRelationshipSelectionCursor(cursorName: String): Unit
+  def advanceNodeValueIndexCursor(cursorName: String): E
+  def closeNodeValueIndexCursor(cursorName: String): Unit
 
   def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit

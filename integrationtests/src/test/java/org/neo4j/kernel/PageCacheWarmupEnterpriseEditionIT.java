@@ -30,6 +30,8 @@ import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Settings;
@@ -92,6 +94,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
     {
         int backupPort = PortAuthority.allocatePort();
         db.setConfig( MetricsSettings.metricsEnabled, Settings.FALSE )
+          .setConfig( UdcSettings.udc_enabled, Settings.FALSE )
           .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
           .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + backupPort )
           .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
@@ -100,9 +103,12 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         createTestData( db );
         long pagesInMemory = waitForCacheProfile( db );
 
+        BinaryLatch latch = pauseProfile( db ); // We don't want torn profile files in this test.
+
         File metricsDirectory = dir.cleanDirectory( "metrics" );
         File backupDir = dir.cleanDirectory( "backup" );
         assertTrue( OnlineBackup.from( "localhost", backupPort ).backup( backupDir ).isConsistent() );
+        latch.release();
         DatabaseRule.RestartAction useBackupDir = ( fs, storeDir ) ->
         {
             fs.deleteRecursively( storeDir );
@@ -116,6 +122,28 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
                 MetricsSettings.csvPath.name(), metricsDirectory.getAbsolutePath() );
 
         verifyEventuallyWarmsUp( pagesInMemory, metricsDirectory );
+    }
+
+    @Test
+    public void cacheProfilesMustNotInterfereWithOnlineBackups() throws Exception
+    {
+        // Here we are testing that the file modifications done by the page cache profiler,
+        // does not make online backup throw any exceptions.
+        int backupPort = PortAuthority.allocatePort();
+        db.setConfig( MetricsSettings.metricsEnabled, Settings.FALSE )
+          .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+          .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + backupPort )
+          .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "1ms" );
+        db.ensureStarted();
+
+        createTestData( db );
+        waitForCacheProfile( db );
+
+        for ( int i = 0; i < 20; i++ )
+        {
+            String backupDir = dir.cleanDirectory( "backup" ).getAbsolutePath();
+            assertTrue( OnlineBackup.from( "localhost", backupPort ).full( backupDir ).isConsistent() );
+        }
     }
 
     @Test

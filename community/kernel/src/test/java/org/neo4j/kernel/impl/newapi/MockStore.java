@@ -25,9 +25,15 @@ import org.junit.runners.model.Statement;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -46,6 +52,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -225,6 +232,157 @@ public class MockStore extends Read implements TestRule
     public boolean relationshipExists( long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public UserFunctionHandle functionGet( QualifiedName name )
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallRead( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunction( int id ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
     }
 
     private abstract static class Record<R extends AbstractBaseRecord>

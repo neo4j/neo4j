@@ -34,6 +34,7 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.ssl.SecureClient;
 import org.neo4j.ssl.SslContextFactory;
 import org.neo4j.ssl.SslResource;
@@ -120,6 +121,7 @@ public class BoltTlsIT
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( bolt.enabled, "true" )
+                .setConfig( bolt.listen_address, ":" + PortAuthority.allocatePort() )
                 .setConfig( BoltKernelExtension.Settings.ssl_policy, "bolt" )
                 .setConfig( sslPolicy.allow_key_generation, "true" )
                 .setConfig( sslPolicy.base_directory, "certificates" )

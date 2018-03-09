@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,7 +54,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
@@ -1742,17 +1740,17 @@ public class RestfulGraphDatabaseTest
     public void shouldGetSomeHitsWhenTraversingWithDefaultDescription()
     {
         long startNode = helper.createNode();
-        long child1_l1 = helper.createNode();
-        helper.createRelationship( "knows", startNode, child1_l1 );
-        long child2_l1 = helper.createNode();
-        helper.createRelationship( "knows", startNode, child2_l1 );
-        long child1_l2 = helper.createNode();
-        helper.createRelationship( "knows", child2_l1, child1_l2 );
+        long child1L1 = helper.createNode();
+        helper.createRelationship( "knows", startNode, child1L1 );
+        long child2L1 = helper.createNode();
+        helper.createRelationship( "knows", startNode, child2L1 );
+        long child1L2 = helper.createNode();
+        helper.createRelationship( "knows", child2L1, child1L2 );
         Response response = service.traverse( startNode, TraverserReturnType.node, "" );
         String entity = entityAsString( response );
-        assertTrue( entity.contains( "/node/" + child1_l1 ) );
-        assertTrue( entity.contains( "/node/" + child2_l1 ) );
-        assertFalse( entity.contains( "/node/" + child1_l2 ) );
+        assertTrue( entity.contains( "/node/" + child1L1 ) );
+        assertTrue( entity.contains( "/node/" + child2L1 ) );
+        assertFalse( entity.contains( "/node/" + child1L2 ) );
 
         checkContentTypeCharsetUtf8(response);
     }

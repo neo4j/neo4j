@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -64,7 +65,8 @@ public class SpatialFusionSchemaIndexProviderTest
                 NONE,
                 IndexProvider.Monitor.EMPTY,
                 null,
-                false );
+                false,
+                Config.defaults() );
         indexMap = provider.indexesFor( 0 );
         indexMap.put( CoordinateReferenceSystem.WGS84, mock( SpatialCRSSchemaIndex.class ) );
         indexMap.put( CoordinateReferenceSystem.Cartesian, mock( SpatialCRSSchemaIndex.class ) );

@@ -28,19 +28,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -61,7 +60,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ReflectiveProcedureTest
@@ -88,7 +87,7 @@ public class ReflectiveProcedureTest
         Log log = spy( Log.class );
         components.register( Log.class, ctx -> log );
         CallableProcedure procedure =
-                procedureCompiler.compileProcedure( LoggingProcedure.class, Optional.empty(), true ).get( 0 );
+                procedureCompiler.compileProcedure( LoggingProcedure.class, null, true ).get( 0 );
 
         // When
         procedure.apply( new BasicContext(), new Object[0], resourceTracker );
@@ -337,7 +336,7 @@ public class ReflectiveProcedureTest
 
         // When
         List<CallableProcedure> procs =
-                procedureCompiler.compileProcedure( ProcedureWithDeprecation.class, Optional.empty(), true );
+                procedureCompiler.compileProcedure( ProcedureWithDeprecation.class, null, true );
 
         // Then
         verify( log ).warn( "Use of @Procedure(deprecatedBy) without @Deprecated in badProc" );
@@ -375,7 +374,7 @@ public class ReflectiveProcedureTest
 
         // When
         CallableProcedure proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false ).get( 0 );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false ).get( 0 );
         // When
         RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0], resourceTracker );
 
@@ -396,7 +395,7 @@ public class ReflectiveProcedureTest
 
         // When
         List<CallableProcedure> proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false );
         // Then
         verify( log )
                 .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
@@ -414,7 +413,7 @@ public class ReflectiveProcedureTest
 
         // When
         CallableProcedure proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), true ).get( 0 );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, true ).get( 0 );
         // Then
         RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0], resourceTracker );
         assertEquals( result.next()[0], "Bonnie" );
@@ -431,7 +430,7 @@ public class ReflectiveProcedureTest
 
         // When
         List<CallableProcedure> proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false );
         // Then
         verify( log )
                 .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
@@ -659,7 +658,7 @@ public class ReflectiveProcedureTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return procedureCompiler.compileProcedure( clazz, Optional.empty(), true );
+        return procedureCompiler.compileProcedure( clazz, null, true );
     }
 
     private static class ExceptionDuringClose extends RuntimeException

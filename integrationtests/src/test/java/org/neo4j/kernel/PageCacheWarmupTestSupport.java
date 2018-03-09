@@ -68,6 +68,12 @@ class PageCacheWarmupTestSupport
         return pageCount.get();
     }
 
+    BinaryLatch pauseProfile( GraphDatabaseAPI db )
+    {
+        Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
+        return new PauseProfileMonitor( monitors );
+    }
+
     private static class AwaitProfileMonitor implements PageCacheWarmerMonitor
     {
         private final AtomicLong pageCount;
@@ -89,6 +95,29 @@ class PageCacheWarmupTestSupport
         {
             pageCount.set( pagesInMemory );
             profileLatch.release();
+        }
+    }
+
+    private static class PauseProfileMonitor extends BinaryLatch implements PageCacheWarmerMonitor
+    {
+        private final Monitors monitors;
+
+        PauseProfileMonitor( Monitors monitors )
+        {
+            this.monitors = monitors;
+            monitors.addMonitorListener( this );
+        }
+
+        @Override
+        public void warmupCompleted( long elapsedMillis, long pagesLoaded )
+        {
+        }
+
+        @Override
+        public void profileCompleted( long elapsedMillis, long pagesInMemory )
+        {
+            await();
+            monitors.removeMonitorListener( this );
         }
     }
 }

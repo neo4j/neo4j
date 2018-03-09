@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
 
@@ -54,7 +55,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
                             FileSystemAbstraction fs,
                             IndexProvider.Monitor monitor )
     {
-        super( new PartFactory( pageCache, fs, temporalIndexFiles, indexId, descriptor, monitor ) );
+        super( new PartFactory( pageCache, fs, temporalIndexFiles, indexId, descriptor, samplingConfig, monitor ) );
         this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
     }
 
@@ -77,7 +78,10 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         {
             select( update.values()[0].valueGroup() ).batchUpdate( update );
         }
-        forAll( PartPopulator::applyUpdateBatch, this );
+        for ( PartPopulator part : this )
+        {
+            part.applyUpdateBatch();
+        }
     }
 
     @Override
@@ -175,9 +179,9 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
-                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
+                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
         }
 
         void batchUpdate( IndexEntryUpdate<?> update )
@@ -185,7 +189,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
             updates.add( update );
         }
 
-        void applyUpdateBatch() throws IOException
+        void applyUpdateBatch() throws IOException, IndexEntryConflictException
         {
             try
             {
@@ -195,6 +199,12 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
             {
                 updates = new ArrayList<>();
             }
+        }
+
+        @Override
+        IndexReader newReader()
+        {
+            return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
         }
 
         @Override
@@ -217,16 +227,18 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         private final TemporalIndexFiles temporalIndexFiles;
         private final long indexId;
         private final SchemaIndexDescriptor descriptor;
+        private final IndexSamplingConfig samplingConfig;
         private final IndexProvider.Monitor monitor;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles temporalIndexFiles, long indexId,
-                     SchemaIndexDescriptor descriptor, IndexProvider.Monitor monitor )
+                     SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexProvider.Monitor monitor )
         {
             this.pageCache = pageCache;
             this.fs = fs;
             this.temporalIndexFiles = temporalIndexFiles;
             this.indexId = indexId;
             this.descriptor = descriptor;
+            this.samplingConfig = samplingConfig;
             this.monitor = monitor;
         }
 
@@ -268,7 +280,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
 
         private <KEY extends NativeSchemaKey> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
-            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId );
+            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig );
             populator.create();
             return populator;
         }

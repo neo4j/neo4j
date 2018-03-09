@@ -32,12 +32,12 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
      */
     protected int extraLevels;
 
-    StandardConfiguration()
+    public StandardConfiguration()
     {
         this( DEFAULT_EXTRA_LEVELS );
     }
 
-    StandardConfiguration( int extraLevels )
+    public StandardConfiguration( int extraLevels )
     {
         this.extraLevels = extraLevels;
     }

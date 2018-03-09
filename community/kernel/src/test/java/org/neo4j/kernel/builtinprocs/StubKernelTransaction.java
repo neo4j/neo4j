@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.ClockContext;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -147,6 +149,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public Procedures procedures()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public long closeTransaction()
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -232,6 +240,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Revertable overrideWith( SecurityContext context )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public ClockContext clocks()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

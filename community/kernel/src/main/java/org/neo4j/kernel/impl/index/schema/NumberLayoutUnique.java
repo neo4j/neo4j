@@ -27,41 +27,12 @@ import org.neo4j.index.internal.gbptree.Layout;
 class NumberLayoutUnique extends NumberLayout
 {
     private static final String IDENTIFIER_NAME = "UNI";
-    static final int MAJOR_VERSION = 0;
-    static final int MINOR_VERSION = 1;
-    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NumberSchemaKey.SIZE );
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
+    private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NumberSchemaKey.SIZE );
 
-    @Override
-    public long identifier()
+    NumberLayoutUnique()
     {
-        // todo Is Number.Value.SIZE a good checksum?
-        return IDENTIFIER;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return MAJOR_VERSION;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return MINOR_VERSION;
-    }
-
-    @Override
-    public int compare( NumberSchemaKey o1, NumberSchemaKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        if ( comparison == 0 )
-        {
-            // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getCompareId() || o2.getCompareId() )
-            {
-                return Long.compare( o1.getEntityId(), o2.getEntityId() );
-            }
-        }
-        return comparison;
+        super( IDENTIFIER, MAJOR_VERSION, MINOR_VERSION );
     }
 }

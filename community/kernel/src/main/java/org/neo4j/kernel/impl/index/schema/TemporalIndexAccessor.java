@@ -240,31 +240,31 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         }
 
         @Override
-        public PartAccessor<?> newDateTime() throws IOException
+        public PartAccessor<?> newDateTime()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newDateTimeZoned() throws IOException
+        public PartAccessor<?> newDateTimeZoned()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newTime() throws IOException
+        public PartAccessor<?> newTime()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newTimeZoned() throws IOException
+        public PartAccessor<?> newTimeZoned()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
 
         @Override
-        public PartAccessor<?> newDuration() throws IOException
+        public PartAccessor<?> newDuration()
         {
             throw new UnsupportedOperationException( "no comprende" );
         }
@@ -279,7 +279,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
 
         private <KEY extends NativeSchemaKey> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
-            IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId );
+            IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig );
             populator.create();
             populator.close( true );
         }

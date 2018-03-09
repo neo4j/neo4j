@@ -21,14 +21,20 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values).
  * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
  * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
  */
-interface NativeSchemaKey
+abstract class NativeSchemaKey extends ValueWriter.Adapter<RuntimeException>
 {
+    static final boolean DEFAULT_COMPARE_ID = true;
+
+    private long entityId;
+    private boolean compareId = DEFAULT_COMPARE_ID;
+
     /**
      * Marks that comparisons with this key requires also comparing entityId, this allows functionality
      * of inclusive/exclusive bounds of range queries.
@@ -36,25 +42,57 @@ interface NativeSchemaKey
      * <p>
      * Note that {@code compareId} is only an in memory state.
      */
-    void setCompareId( boolean compareId );
+    void setCompareId( boolean compareId )
+    {
+        this.compareId = compareId;
+    }
 
-    boolean getCompareId();
+    boolean getCompareId()
+    {
+        return compareId;
+    }
 
-    long getEntityId();
+    long getEntityId()
+    {
+        return entityId;
+    }
 
-    void setEntityId( long entityId );
+    void setEntityId( long entityId )
+    {
+        this.entityId = entityId;
+    }
 
-    void from( long entityId, Value... values );
+    final void from( long entityId, Value... values )
+    {
+        compareId = DEFAULT_COMPARE_ID;
+        this.entityId = entityId;
+        from( values );
+    }
 
-    String propertiesAsString();
+    abstract void from( Value[] values );
 
-    Value asValue();
+    String propertiesAsString()
+    {
+        return asValue().toString();
+    }
 
-    void initAsLowest();
+    abstract Value asValue();
 
-    void initAsHighest();
+    final void initAsLowest()
+    {
+        compareId = DEFAULT_COMPARE_ID;
+        entityId = Long.MIN_VALUE;
+        initValueAsLowest();
+    }
 
-    @Override
-    String toString();
+    abstract void initValueAsLowest();
 
+    final void initAsHighest()
+    {
+        compareId = DEFAULT_COMPARE_ID;
+        entityId = Long.MAX_VALUE;
+        initValueAsHighest();
+    }
+
+    abstract void initValueAsHighest();
 }

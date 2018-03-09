@@ -25,37 +25,22 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-
 import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompare;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
  * or rather any string that {@link GBPTree} can handle.
  */
-class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements NativeSchemaKey
+class StringSchemaKey extends NativeSchemaKey
 {
     static final int ENTITY_ID_SIZE = Long.BYTES;
-
-    private long entityId;
-    private boolean compareId;
 
     // TODO something better or?
     // TODO this is UTF-8 bytes for now
     byte[] bytes;
-
-    public void setCompareId( boolean compareId )
-    {
-        this.compareId = compareId;
-    }
-
-    public boolean getCompareId()
-    {
-        return compareId;
-    }
 
     int size()
     {
@@ -63,22 +48,8 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     }
 
     @Override
-    public long getEntityId()
+    void from( Value... values )
     {
-        return entityId;
-    }
-
-    @Override
-    public void setEntityId( long entityId )
-    {
-        this.entityId = entityId;
-    }
-
-    @Override
-    public void from( long entityId, Value... values )
-    {
-        this.entityId = entityId;
-        compareId = false;
         assertValidValue( values ).writeTo( this );
     }
 
@@ -101,37 +72,26 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     }
 
     @Override
-    public String propertiesAsString()
-    {
-        return asValue().toString();
-    }
-
-    @Override
     public Value asValue()
     {
         return bytes == null ? Values.NO_VALUE : Values.utf8Value( bytes );
     }
 
-    // TODO perhaps merge these lowest/highest methods into parent
     @Override
-    public void initAsLowest()
+    void initValueAsLowest()
     {
         bytes = null;
-        entityId = Long.MIN_VALUE;
-        compareId = true;
     }
 
     @Override
-    public void initAsHighest()
+    void initValueAsHighest()
     {
         bytes = null;
-        entityId = Long.MAX_VALUE;
-        compareId = true;
     }
 
     private boolean isHighest()
     {
-        return compareId && entityId == Long.MAX_VALUE && bytes == null;
+        return getCompareId() && getEntityId() == Long.MAX_VALUE && bytes == null;
     }
 
     /**
@@ -198,7 +158,7 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,bytes=%s", asValue(), entityId, Arrays.toString( bytes ) );
+        return format( "value=%s,entityId=%d,bytes=%s", asValue(), getEntityId(), Arrays.toString( bytes ) );
     }
 
     @Override
