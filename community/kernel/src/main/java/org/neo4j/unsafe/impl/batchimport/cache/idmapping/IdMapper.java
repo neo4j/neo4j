@@ -31,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 /**
  * Maps input node ids as specified by data read into {@link InputEntityVisitor} into actual node ids.
  */
-public interface IdMapper extends MemoryStatsVisitor.Visitable
+public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
 {
     long ID_NOT_FOUND = -1;
 

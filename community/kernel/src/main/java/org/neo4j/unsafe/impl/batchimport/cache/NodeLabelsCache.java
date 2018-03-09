@@ -29,7 +29,7 @@ import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
  * Caches labels for each node. Tries to keep memory as 8b (a long) per node. If a particular node has many labels
  * it will spill over into two or more longs in a separate array.
  */
-public class NodeLabelsCache implements MemoryStatsVisitor.Visitable
+public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoCloseable
 {
     public static class Client
     {
