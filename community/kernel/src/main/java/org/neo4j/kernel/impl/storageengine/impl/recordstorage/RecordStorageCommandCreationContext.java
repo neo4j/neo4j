@@ -81,7 +81,7 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
         this.idBatches.close();
     }
 
-    public TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,
+    TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,
             ResourceLocker locks )
     {
         RecordChangeSet recordChangeSet = new RecordChangeSet( loaders );
