@@ -132,7 +132,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     public void setUp()
     {
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-        dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedSchemaIndexProviderFactory( indexProvider ) ) );
+        dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
         db = dbFactory.newImpermanentDatabase( graphDbDir );
     }
 
@@ -990,7 +990,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         }
     }
 
-    private static class PredefinedSchemaIndexProviderFactory extends KernelExtensionFactory<PredefinedSchemaIndexProviderFactory.NoDeps>
+    private static class PredefinedIndexProviderFactory extends KernelExtensionFactory<PredefinedIndexProviderFactory.NoDeps>
     {
         private final IndexProvider indexProvider;
 
@@ -1004,7 +1004,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
         }
 
-        PredefinedSchemaIndexProviderFactory( IndexProvider indexProvider )
+        PredefinedIndexProviderFactory( IndexProvider indexProvider )
         {
             super( indexProvider.getClass().getSimpleName() );
             this.indexProvider = indexProvider;

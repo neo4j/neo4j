@@ -40,8 +40,8 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class LuceneSchemaIndexProviderFactory extends
-        KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
+public class LuceneIndexProviderFactory extends
+        KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "lucene";
 
@@ -59,7 +59,7 @@ public class LuceneSchemaIndexProviderFactory extends
         FileSystemAbstraction fileSystem();
     }
 
-    public LuceneSchemaIndexProviderFactory()
+    public LuceneIndexProviderFactory()
     {
         super( KEY );
     }

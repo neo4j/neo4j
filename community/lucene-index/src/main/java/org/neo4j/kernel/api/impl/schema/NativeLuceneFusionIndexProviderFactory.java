@@ -45,22 +45,22 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class NativeLuceneFusionSchemaIndexProviderFactory
-        extends KernelExtensionFactory<NativeLuceneFusionSchemaIndexProviderFactory.Dependencies>
+public class NativeLuceneFusionIndexProviderFactory
+        extends KernelExtensionFactory<NativeLuceneFusionIndexProviderFactory.Dependencies>
 {
-    public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NumberIndexProvider.KEY;
+    public static final String KEY = LuceneIndexProviderFactory.KEY + "+" + NumberIndexProvider.KEY;
     private static final int PRIORITY = LuceneIndexProvider.PRIORITY + 1;
 
     public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
 
-    public interface Dependencies extends LuceneSchemaIndexProviderFactory.Dependencies
+    public interface Dependencies extends LuceneIndexProviderFactory.Dependencies
     {
         PageCache pageCache();
 
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector();
     }
 
-    public NativeLuceneFusionSchemaIndexProviderFactory()
+    public NativeLuceneFusionIndexProviderFactory()
     {
         super( KEY );
     }
@@ -94,7 +94,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         TemporalIndexProvider temporalProvider =
                 new TemporalIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider
-                luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
+                luceneProvider = LuceneIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
                 operationalMode );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;

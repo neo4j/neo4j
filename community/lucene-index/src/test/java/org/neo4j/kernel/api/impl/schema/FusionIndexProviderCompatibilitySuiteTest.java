@@ -40,7 +40,7 @@ public class FusionIndexProviderCompatibilitySuiteTest extends IndexProviderComp
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
-        return NativeLuceneFusionSchemaIndexProviderFactory
+        return NativeLuceneFusionIndexProviderFactory
                 .newInstance( pageCache, graphDbDir, fs, monitor, config, OperationalMode.single,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
     }

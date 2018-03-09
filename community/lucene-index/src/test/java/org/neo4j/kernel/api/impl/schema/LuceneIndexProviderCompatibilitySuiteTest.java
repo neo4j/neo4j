@@ -42,7 +42,7 @@ public class LuceneIndexProviderCompatibilitySuiteTest extends IndexProviderComp
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.FALSE ) );
         OperationalMode mode = OperationalMode.single;
-        return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, monitor, config, mode );
+        return LuceneIndexProviderFactory.create( fs, graphDbDir, monitor, config, mode );
     }
 
     @Override

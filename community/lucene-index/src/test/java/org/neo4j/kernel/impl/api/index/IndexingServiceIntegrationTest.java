@@ -41,8 +41,8 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -81,8 +81,8 @@ public class IndexingServiceIntegrationTest
     public static Collection<Object[]> parameters()
     {
         return asList(
-                new Object[]{new LuceneSchemaIndexProviderFactory(), LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR},
-                new Object[]{new NativeLuceneFusionSchemaIndexProviderFactory(), NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR},
+                new Object[]{new LuceneIndexProviderFactory(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory(), NativeLuceneFusionIndexProviderFactory.DESCRIPTOR},
                 new Object[]{new InMemoryIndexProviderFactory(), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );
     }
 
