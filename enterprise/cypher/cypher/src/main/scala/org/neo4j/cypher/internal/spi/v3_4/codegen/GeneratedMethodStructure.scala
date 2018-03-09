@@ -129,26 +129,26 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
   private def relCursor(relVar: String) = s"${relVar}Iter"
 
-  override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
+  override def nextRelationship(cursorName: String, ignored: SemanticDirection, relVar: String) = {
     generator.assign(typeRef[Long], relVar, invoke(generator.load(relCursor(relVar)),
                                                    method[RelationshipSelectionCursor, Long]("relationshipReference")))
   }
 
-  override def allNodesScan(iterVar: String) = {
-    generator.assign(typeRef[NodeCursor], iterVar, invoke(cursors, method[CursorFactory, NodeCursor]("allocateNodeCursor")))
+  override def allNodesScan(cursorName: String) = {
+    generator.assign(typeRef[NodeCursor], cursorName, invoke(cursors, method[CursorFactory, NodeCursor]("allocateNodeCursor")))
     _finalizers.append((_: Boolean) => (block) =>
       block.expression(
-        invoke(block.load(iterVar), method[NodeCursor, Unit]("close"))))
-    generator.expression(invoke(dataRead, method[Read, Unit]("allNodesScan", typeRef[NodeCursor]), generator.load(iterVar) ))
+        invoke(block.load(cursorName), method[NodeCursor, Unit]("close"))))
+    generator.expression(invoke(dataRead, method[Read, Unit]("allNodesScan", typeRef[NodeCursor]), generator.load(cursorName) ))
   }
 
-  override def labelScan(iterVar: String, labelIdVar: String) = {
-    generator.assign(typeRef[NodeLabelIndexCursor], iterVar, invoke(cursors, method[CursorFactory, NodeLabelIndexCursor]("allocateNodeLabelIndexCursor")))
+  override def labelScan(cursorName: String, labelIdVar: String) = {
+    generator.assign(typeRef[NodeLabelIndexCursor], cursorName, invoke(cursors, method[CursorFactory, NodeLabelIndexCursor]("allocateNodeLabelIndexCursor")))
     _finalizers.append((_: Boolean) => (block) =>
       block.expression(
-        invoke(block.load(iterVar), method[NodeLabelIndexCursor, Unit]("close"))))
+        invoke(block.load(cursorName), method[NodeLabelIndexCursor, Unit]("close"))))
     generator.expression(invoke(dataRead, method[Read, Unit]("nodeLabelScan", typeRef[Int], typeRef[NodeLabelIndexCursor]),
-                                generator.load(labelIdVar), generator.load(iterVar) ))
+                                generator.load(labelIdVar), generator.load(cursorName) ))
   }
 
   override def lookupLabelId(labelIdVar: String, labelName: String) =
@@ -164,17 +164,32 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def lookupRelationshipTypeIdE(typeName: String) =
     invoke(tokenRead, relationshipTypeGetForName, constant(typeName))
 
-  override def advanceNodeCursor(iterVar: String) =
-    invoke(generator.load(iterVar), method[NodeCursor, Boolean]("next"))
+  override def advanceNodeCursor(cursorName: String) =
+    invoke(generator.load(cursorName), method[NodeCursor, Boolean]("next"))
 
-  override def advanceNodeLabelIndexCursor(iterVar: String) =
-    invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Boolean]("next"))
+  override def closeNodeCursor(cursorName: String) =
+    generator.expression(invoke(generator.load(cursorName), method[NodeCursor, Unit]("close")))
 
-  override def advanceRelationshipSelectionCursor(iterVar: String) =
-    invoke(generator.load(iterVar), method[RelationshipSelectionCursor, Boolean]("next"))
+  override def advanceNodeLabelIndexCursor(cursorName: String) =
+    invoke(generator.load(cursorName), method[NodeLabelIndexCursor, Boolean]("next"))
 
-  override def advanceNodeValueIndexCursor(iterVar: String) =
-    invoke(generator.load(iterVar), method[NodeValueIndexCursor, Boolean]("next"))
+  override def closeNodeLabelIndexCursor(cursorName: String) =
+    generator.expression(invoke(generator.load(cursorName), method[NodeLabelIndexCursor, Unit]("close")))
+
+  override def advanceRelationshipSelectionCursor(cursorName: String) =
+    invoke(generator.load(cursorName), method[RelationshipSelectionCursor, Boolean]("next"))
+
+  override def closeRelationshipSelectionCursor(cursorName: String) =
+    generator.expression(invoke(generator.load(cursorName), method[RelationshipSelectionCursor, Unit]("close")))
+
+  override def advanceNodeValueIndexCursor(cursorName: String) =
+    invoke(generator.load(cursorName), method[NodeValueIndexCursor, Boolean]("next"))
+
+  override def closeNodeValueIndexCursor(cursorName: String) =
+    using(generator.ifStatement(Expression.notNull(generator.load(cursorName)))) { inner =>
+      inner.expression(
+        invoke(inner.load(cursorName), method[NodeValueIndexCursor, Unit]("close")))
+    }
 
   override def whileLoop(test: Expression)(block: MethodStructure[Expression] => Unit) =
     using(generator.whileLoop(test)) { body =>
@@ -1489,13 +1504,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     )
   }
 
-  override def indexSeek(iterVar: String, indexReference: String, value: Expression, codeGenType: CodeGenType) = {
-    val local = generator.declare(typeRef[NodeValueIndexCursor], iterVar)
+  override def indexSeek(cursorName: String, indexReference: String, value: Expression, codeGenType: CodeGenType) = {
+    val local = generator.declare(typeRef[NodeValueIndexCursor], cursorName)
     generator.assign(local, constant(null))
     _finalizers.append((_: Boolean) => (block) =>
-      using(block.ifStatement(Expression.notNull(block.load(iterVar)))) { inner =>
+      using(block.ifStatement(Expression.notNull(block.load(cursorName)))) { inner =>
         inner.expression(
-          invoke(block.load(iterVar), method[NodeValueIndexCursor, Unit]("close")))
+          invoke(inner.load(cursorName), method[NodeValueIndexCursor, Unit]("close")))
       })
     val boxedValue =
       if (codeGenType.isPrimitive) Expression.box(value) else value

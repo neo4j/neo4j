@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, TaskCloser}
+import org.neo4j.cypher.internal.util.v3_4.CypherExecutionException
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api._
@@ -182,7 +182,6 @@ object Templates {
             MethodReference.constructorReference(typeRef[RelationshipDataExtractor]))
 
   def constructor(classHandle: ClassHandle) = MethodTemplate.constructor(
-    param[TaskCloser]("closer"),
     param[QueryContext]("queryContext"),
     param[ExecutionMode]("executionMode"),
     param[Provider[InternalPlanDescription]]("description"),
@@ -190,7 +189,6 @@ object Templates {
 
     param[MapValue]("params")).
     invokeSuper().
-    put(self(classHandle), typeRef[TaskCloser], "closer", load("closer", typeRef[TaskCloser])).
     put(self(classHandle), typeRef[QueryContext], "queryContext", load("queryContext", typeRef[QueryContext])).
     put(self(classHandle), typeRef[ExecutionMode], "executionMode", load("executionMode", typeRef[ExecutionMode])).
     put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).

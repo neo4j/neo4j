@@ -42,4 +42,7 @@ case class UnwindCollection(opName: String, collection: CodeGenExpression) exten
 
   override def checkNext[E](generator: MethodStructure[E], iterVar: String): E =
     generator.iteratorHasNext(generator.loadVariable(iterVar))
+
+  override def close[E](iterVarName: String,
+                        generator: MethodStructure[E]): Unit = {/*nothing to close*/}
 }
