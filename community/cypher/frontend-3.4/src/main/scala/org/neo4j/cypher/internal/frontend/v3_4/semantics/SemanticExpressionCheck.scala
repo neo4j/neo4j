@@ -189,7 +189,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:Property =>
         check(ctx, x.map) chain
-          expectType(CTMap.covariant | CTAny.invariant, x.map) chain
+          expectType(CTMap.covariant | CTNode.covariant | CTRelationship.covariant | CTPoint.covariant | CTAny.invariant, x.map) chain
           specifyType(CTAny.covariant, x)
 
       // Check the variable is defined and, if not, define it so that later errors are suppressed
