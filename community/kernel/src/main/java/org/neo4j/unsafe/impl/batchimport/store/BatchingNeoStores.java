@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -71,6 +72,7 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
@@ -351,11 +353,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         flushAndForce();
 
         // Flush out all pending changes
-        safeClose( propertyKeyRepository, labelRepository, relationshipTypeRepository );
+        closeAll( propertyKeyRepository, labelRepository, relationshipTypeRepository );
 
         // Close the neo store
         life.shutdown();
-        safeClose( neoStores, temporaryNeoStores );
+        closeAll( neoStores, temporaryNeoStores );
         if ( !externalPageCache )
         {
             pageCache.close();
@@ -364,25 +366,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         if ( successful )
         {
             cleanup();
-        }
-    }
-
-    private void safeClose( AutoCloseable... closeables ) throws IOException
-    {
-        for ( AutoCloseable closeable : closeables )
-        {
-            try
-            {
-                closeable.close();
-            }
-            catch ( IOException e )
-            {
-                throw e;
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
         }
     }
 
