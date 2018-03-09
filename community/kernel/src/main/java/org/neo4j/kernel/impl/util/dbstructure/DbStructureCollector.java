@@ -82,13 +82,13 @@ public class DbStructureCollector implements DbStructureVisitor
             }
 
             @Override
-            public Iterator<Pair<String[],String[]>> knownIndices()
+            public Iterator<Pair<String,String[]>> knownIndices()
             {
                 return regularIndices.iterator();
             }
 
             @Override
-            public Iterator<Pair<String[],String[]>> knownUniqueIndices()
+            public Iterator<Pair<String,String[]>> knownUniqueIndices()
             {
                 return uniqueIndices.iterator();
             }
@@ -345,7 +345,7 @@ public class DbStructureCollector implements DbStructureVisitor
         }
     }
 
-    private class IndexDescriptorMap implements Iterable<Pair<String[],String[]>>
+    private class IndexDescriptorMap implements Iterable<Pair<String,String[]>>
     {
         private final String indexType;
         private final Map<SchemaDescriptor, IndexStatistics> indexMap = new HashMap<>();
@@ -374,10 +374,10 @@ public class DbStructureCollector implements DbStructureVisitor
         }
 
         @Override
-        public Iterator<Pair<String[],String[]>> iterator()
+        public Iterator<Pair<String,String[]>> iterator()
         {
             final Iterator<SchemaDescriptor> iterator = indexMap.keySet().iterator();
-            return new Iterator<Pair<String[],String[]>>()
+            return new Iterator<Pair<String,String[]>>()
             {
                 @Override
                 public boolean hasNext()
@@ -386,12 +386,13 @@ public class DbStructureCollector implements DbStructureVisitor
                 }
 
                 @Override
-                public Pair<String[],String[]> next()
+                public Pair<String,String[]> next()
                 {
                     //TODO: Add support for composite indexes
+                    //TODO: Add support for multi-label indexes
                     //TODO: Add support for relationship indexes for DbStructureCollector as well
                     SchemaDescriptor next = iterator.next();
-                    String[] enetityTokens = labels.byIdOrFail( next.getEntityTokenIds() );
+                    String enetityTokens = labels.byIdOrFail( next.getEntityTokenIds()[0] );
                     String[] propertyKeyNames = propertyKeys.byIdOrFail( next.getPropertyIds() );
                     return Pair.of( enetityTokens, propertyKeyNames );
                 }
