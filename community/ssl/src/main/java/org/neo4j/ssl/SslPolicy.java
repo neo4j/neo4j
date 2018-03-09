@@ -20,20 +20,30 @@
 package org.neo4j.ssl;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
+
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 
 public class SslPolicy
 {
@@ -77,6 +87,7 @@ public class SslPolicy
     {
         return SslContextBuilder.forClient()
                 .sslProvider( sslProvider )
+                .clientAuth( forNetty( clientAuth ) )
                 .keyManager( privateKey, keyCertChain )
                 .protocols( tlsVersions )
                 .ciphers( ciphers )
@@ -116,7 +127,50 @@ public class SslPolicy
         {
             sslEngine.setEnabledProtocols( tlsVersions );
         }
-        return new SslHandler( sslEngine );
+        return new SslHandler( sslEngine )
+        {
+            private void bootstrapSNI( final InetSocketAddress remoteAddress )
+            {
+                SSLParameters params = this.engine().getSSLParameters();
+
+                Stream<SNIServerName> existingServerNames = params.getServerNames().stream();
+                Stream<SNIServerName> newServerNames = Stream.of( new SNIHostName( remoteAddress.getHostString() ) );
+                List<SNIServerName> serverNames = Stream
+                        .concat( existingServerNames, newServerNames )
+                        .collect( collectingAndThen( toList(), Collections::unmodifiableList ) );
+
+                params.setServerNames( serverNames );
+                this.engine().setSSLParameters( params );
+            }
+
+            private void checkRemoteAddressAndBootstrapSNI( SocketAddress remoteAddress )
+            {
+                if ( remoteAddress != null && remoteAddress instanceof InetSocketAddress )
+                {
+                    bootstrapSNI( (InetSocketAddress) remoteAddress );
+                }
+            }
+
+            @Override
+            public void channelActive( final ChannelHandlerContext ctx ) throws Exception
+            {
+                // The channel's remote address is not set until the channel is active
+                // so we can use it to get the remote host - but we have to time it correctly.
+                checkRemoteAddressAndBootstrapSNI( ctx.channel().remoteAddress() );
+                super.channelActive( ctx );
+            }
+
+            @Override
+            public void handlerAdded( final ChannelHandlerContext ctx ) throws Exception
+            {
+                Channel ch = ctx.channel();
+                if ( ch.isActive() )
+                {
+                    checkRemoteAddressAndBootstrapSNI( ch.remoteAddress() );
+                }
+                super.handlerAdded( ctx );
+            }
+        };
     }
 
     public PrivateKey privateKey()
@@ -185,7 +239,7 @@ public class SslPolicy
 
     private String describeCertChain()
     {
-        List<String> certificates = Arrays.stream( keyCertChain ).map( this::describeCertificate ).collect( Collectors.toList() );
+        List<String> certificates = Arrays.stream( keyCertChain ).map( this::describeCertificate ).collect( toList() );
         return String.join( ", ", certificates );
     }
 }
