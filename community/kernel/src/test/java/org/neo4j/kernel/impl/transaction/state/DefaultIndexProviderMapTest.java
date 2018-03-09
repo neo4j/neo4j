@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 
 import static java.util.Arrays.asList;
 
-public class DefaultSchemaIndexProviderMapTest
+public class DefaultIndexProviderMapTest
 {
     @Test
     public void shouldNotSupportMultipleProvidersWithSameDescriptor()
@@ -45,7 +45,7 @@ public class DefaultSchemaIndexProviderMapTest
         // when
         try
         {
-            new DefaultSchemaIndexProviderMap( provider1, asList( provider2 ) );
+            new DefaultIndexProviderMap( provider1, asList( provider2 ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
@@ -62,10 +62,10 @@ public class DefaultSchemaIndexProviderMapTest
         when( provider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "provider", "1.2" ) );
 
         // when
-        SchemaIndexProviderMap map = new DefaultSchemaIndexProviderMap( provider );
+        IndexProviderMap map = new DefaultIndexProviderMap( provider );
         try
         {
-            new DefaultSchemaIndexProviderMap( provider ).apply( new IndexProvider.Descriptor( "provider2", "1.2" ) );
+            new DefaultIndexProviderMap( provider ).apply( new IndexProvider.Descriptor( "provider2", "1.2" ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

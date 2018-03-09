@@ -41,7 +41,7 @@ public class IndexingServiceFactory
 
     public static IndexingService createIndexingService( Config config,
                                           JobScheduler scheduler,
-                                          SchemaIndexProviderMap providerMap,
+                                          IndexProviderMap providerMap,
                                           IndexStoreView storeView,
                                           TokenNameLookup tokenNameLookup,
                                           Iterable<IndexRule> indexRules,

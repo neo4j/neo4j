@@ -27,20 +27,20 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 
-public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
+public class DefaultIndexProviderMap implements IndexProviderMap
 {
     private final IndexProvider defaultIndexProvider;
     private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
 
-    public DefaultSchemaIndexProviderMap( IndexProvider defaultIndexProvider )
+    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
     {
         this( defaultIndexProvider, Collections.emptyList() );
     }
 
-    public DefaultSchemaIndexProviderMap( IndexProvider defaultIndexProvider,
-            Iterable<IndexProvider> additionalIndexProviders )
+    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider,
+                                    Iterable<IndexProvider> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
         indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );

@@ -90,7 +90,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
     private final IndexStoreView storeView;
-    private final SchemaIndexProviderMap providerMap;
+    private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
     private final Iterable<IndexRule> indexRules;
     private final Log log;
@@ -148,7 +148,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private volatile State state = State.NOT_STARTED;
 
     IndexingService( IndexProxyCreator indexProxyCreator,
-            SchemaIndexProviderMap providerMap,
+            IndexProviderMap providerMap,
             IndexMapReference indexMapRef,
             IndexStoreView storeView,
             Iterable<IndexRule> indexRules,

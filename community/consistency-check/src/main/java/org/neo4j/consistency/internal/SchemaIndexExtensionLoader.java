@@ -31,12 +31,12 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -45,12 +45,12 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class SchemaIndexExtensionLoader
 {
-    public static SchemaIndexProviderMap loadIndexProviders( KernelExtensions extensions )
+    public static IndexProviderMap loadIndexProviders( KernelExtensions extensions )
     {
         AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
         IndexProvider defaultIndexProvider =
                 extensions.resolveDependency( IndexProvider.class, indexProviderSelection );
-        return new DefaultSchemaIndexProviderMap( defaultIndexProvider,
+        return new DefaultIndexProviderMap( defaultIndexProvider,
                 indexProviderSelection.lowerPrioritizedCandidates() );
     }
 

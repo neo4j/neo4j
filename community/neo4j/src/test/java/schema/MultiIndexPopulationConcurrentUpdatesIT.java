@@ -68,7 +68,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -313,7 +313,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, neoStores, labelScanStore );
 
-            SchemaIndexProviderMap providerMap = getSchemaIndexProvider();
+            IndexProviderMap providerMap = getSchemaIndexProvider();
             JobScheduler scheduler = getJobScheduler();
             TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
@@ -470,9 +470,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return embeddedDatabase.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    private SchemaIndexProviderMap getSchemaIndexProvider()
+    private IndexProviderMap getSchemaIndexProvider()
     {
-        return embeddedDatabase.resolveDependency( SchemaIndexProviderMap.class );
+        return embeddedDatabase.resolveDependency( IndexProviderMap.class );
     }
 
     private JobScheduler getJobScheduler()
