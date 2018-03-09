@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
@@ -108,7 +108,7 @@ public class SchemaRuleSerialization
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
-        SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+        IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
@@ -185,7 +185,7 @@ public class SchemaRuleSerialization
         int length = 4; // legacy label or relType id
         length += 1;    // schema rule type
 
-        SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+        IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() );
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
@@ -229,7 +229,7 @@ public class SchemaRuleSerialization
 
     private static IndexRule readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
-        SchemaIndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
+        IndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         LabelSchemaDescriptor schema;
         byte indexRuleType = source.get();
         String name;
@@ -264,11 +264,11 @@ public class SchemaRuleSerialization
         return (LabelSchemaDescriptor)schemaDescriptor;
     }
 
-    private static SchemaIndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer source )
+    private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer source )
     {
         String providerKey = getDecodedStringFrom( source );
         String providerVersion = getDecodedStringFrom( source );
-        return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
+        return new IndexProvider.Descriptor( providerKey, providerVersion );
     }
 
     // READ CONSTRAINT

@@ -32,18 +32,18 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
-public class UpdateCapturingIndexProvider extends SchemaIndexProvider
+public class UpdateCapturingIndexProvider extends IndexProvider
 {
-    private final SchemaIndexProvider actual;
+    private final IndexProvider actual;
     private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
     private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
 
-    public UpdateCapturingIndexProvider( SchemaIndexProvider actual, Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates )
+    public UpdateCapturingIndexProvider( IndexProvider actual, Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates )
     {
         super( actual );
         this.actual = actual;

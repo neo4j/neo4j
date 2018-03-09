@@ -49,8 +49,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -190,8 +190,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
                 long indexId = indexRule.getId();
                 IndexDescriptor descriptor = indexRule.getIndexDescriptor();
-                SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
-                SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
+                IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+                IndexProvider provider = providerMap.apply( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
                 .add( new IndexLogRecord( indexId, descriptor ) );

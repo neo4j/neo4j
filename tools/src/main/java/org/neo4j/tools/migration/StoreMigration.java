@@ -31,7 +31,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -138,8 +138,8 @@ public class StoreMigration
             // Add the kernel store migrator
             life.start();
 
-            AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
-            SchemaIndexProvider defaultIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
+            AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+            IndexProvider defaultIndexProvider = kernelExtensions.resolveDependency( IndexProvider.class,
                     indexProviderSelection );
             SchemaIndexProviderMap schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( defaultIndexProvider,
                     indexProviderSelection.lowerPrioritizedCandidates() );

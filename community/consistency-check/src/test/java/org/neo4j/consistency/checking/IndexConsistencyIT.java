@@ -39,7 +39,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
@@ -81,7 +81,7 @@ public class IndexConsistencyIT
         someData();
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File indexesCopy = new File( storeDir, "indexesCopy" );
-        File indexSources = resolveComponent( FusionSchemaIndexProvider.class ).directoryStructure().rootDirectory();
+        File indexSources = resolveComponent( FusionIndexProvider.class ).directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         try ( Transaction tx = db.beginTx() )
@@ -107,7 +107,7 @@ public class IndexConsistencyIT
         someData();
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File indexesCopy = new File( storeDir, "indexesCopy" );
-        File indexSources = resolveComponent( FusionSchemaIndexProvider.class ).directoryStructure().rootDirectory();
+        File indexSources = resolveComponent( FusionIndexProvider.class ).directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         db.shutdownAndKeepStore();

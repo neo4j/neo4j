@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.logging.AssertableLogProvider;
@@ -38,7 +38,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class FailedIndexProxyTest
 {
-    private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
+    private final IndexProvider.Descriptor providerDescriptor = mock( IndexProvider.Descriptor.class );
     private final IndexCapability indexCapability = mock( IndexCapability.class );
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
     private final IndexPopulationFailure indexPopulationFailure = mock( IndexPopulationFailure.class );

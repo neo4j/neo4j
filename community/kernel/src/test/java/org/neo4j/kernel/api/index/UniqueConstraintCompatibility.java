@@ -60,7 +60,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
@@ -77,7 +77,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      *
      * We have two supported providers:
      *  - InMemoryIndexProvider
-     *  - LuceneSchemaIndexProvider
+     *  - LuceneIndexProvider
      *
      * An index can be in a number of states, two of which are interesting:
      *  - ONLINE: the index is in active duty
@@ -992,7 +992,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private static class PredefinedSchemaIndexProviderFactory extends KernelExtensionFactory<PredefinedSchemaIndexProviderFactory.NoDeps>
     {
-        private final SchemaIndexProvider indexProvider;
+        private final IndexProvider indexProvider;
 
         @Override
         public Lifecycle newInstance( KernelContext context, NoDeps noDeps )
@@ -1004,7 +1004,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
         }
 
-        PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )
+        PredefinedSchemaIndexProviderFactory( IndexProvider indexProvider )
         {
             super( indexProvider.getClass().getSimpleName() );
             this.indexProvider = indexProvider;

@@ -45,7 +45,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( NumberSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
+        CapabilityValidator.validateQuery( NumberIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override

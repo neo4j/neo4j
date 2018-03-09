@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
@@ -43,32 +43,32 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 
 /**
- * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by four physical
+ * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
  * indexes, the number, spatial, temporal native indexes, and the general purpose lucene index.
  */
-public class FusionSchemaIndexProvider extends SchemaIndexProvider
+public class FusionIndexProvider extends IndexProvider
 {
     interface Selector
     {
         <T> T select( T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values );
     }
 
-    private final SchemaIndexProvider numberProvider;
-    private final SchemaIndexProvider spatialProvider;
-    private final SchemaIndexProvider temporalProvider;
-    private final SchemaIndexProvider luceneProvider;
+    private final IndexProvider numberProvider;
+    private final IndexProvider spatialProvider;
+    private final IndexProvider temporalProvider;
+    private final IndexProvider luceneProvider;
     private final Selector selector;
     private final DropAction dropAction;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider numberProvider,
-            SchemaIndexProvider spatialProvider,
-            SchemaIndexProvider temporalProvider,
-            SchemaIndexProvider luceneProvider,
-            Selector selector,
-            Descriptor descriptor,
-            int priority,
-            IndexDirectoryStructure.Factory directoryStructure,
-            FileSystemAbstraction fs )
+    public FusionIndexProvider( IndexProvider numberProvider,
+                                IndexProvider spatialProvider,
+                                IndexProvider temporalProvider,
+                                IndexProvider luceneProvider,
+                                Selector selector,
+                                Descriptor descriptor,
+                                int priority,
+                                IndexDirectoryStructure.Factory directoryStructure,
+                                FileSystemAbstraction fs )
     {
         super( descriptor, priority, directoryStructure );
         this.numberProvider = numberProvider;
@@ -116,7 +116,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, SchemaIndexProvider provider, long indexId, IndexDescriptor descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, IndexDescriptor descriptor )
     {
         try
         {

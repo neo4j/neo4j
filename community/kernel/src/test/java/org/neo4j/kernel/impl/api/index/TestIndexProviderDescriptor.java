@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 
-public class TestSchemaIndexProviderDescriptor
+public class TestIndexProviderDescriptor
 {
-    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( "quantum-dex", "25.0" );
+    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+            new IndexProvider.Descriptor( "quantum-dex", "25.0" );
 
-    private TestSchemaIndexProviderDescriptor()
+    private TestIndexProviderDescriptor()
     {
     }
 }

@@ -60,7 +60,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
         IndexQuery.NumberRangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
-        for ( IndexOrder supportedOrder : NumberSchemaIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
+        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
         {
             if ( supportedOrder == IndexOrder.ASCENDING )
             {

@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
@@ -194,7 +194,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         sharedLabelLock( state, descriptor.schema().getLabelId() );
         state.assertOpen();

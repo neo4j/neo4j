@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -160,10 +160,10 @@ public interface StoreReadLayer
      * Return index provider descriptor of a stored index.
      *
      * @param descriptor {@link LabelSchemaDescriptor} to get provider descriptor for.
-     * @return {@link SchemaIndexProvider.Descriptor} for index.
+     * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Return capability of stored index.

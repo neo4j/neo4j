@@ -58,7 +58,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -69,7 +69,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -486,15 +486,15 @@ public class SchemaIndexHaIT
         }
     }
 
-    private static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( "controlled", "1.0" );
+    private static final IndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
+            new IndexProvider.Descriptor( "controlled", "1.0" );
 
-    private static class ControlledSchemaIndexProvider extends SchemaIndexProvider
+    private static class ControlledIndexProvider extends IndexProvider
     {
-        private final SchemaIndexProvider delegate;
+        private final IndexProvider delegate;
         private final DoubleLatch latch = new DoubleLatch();
 
-        ControlledSchemaIndexProvider( SchemaIndexProvider delegate )
+        ControlledIndexProvider( IndexProvider delegate )
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/, given( delegate.directoryStructure() ) );
             this.delegate = delegate;
@@ -550,10 +550,10 @@ public class SchemaIndexHaIT
 
     private static class ControllingIndexProviderFactory extends KernelExtensionFactory<IndexProviderDependencies>
     {
-        private final Map<GraphDatabaseService, SchemaIndexProvider> perDbIndexProvider;
+        private final Map<GraphDatabaseService,IndexProvider> perDbIndexProvider;
         private final Predicate<GraphDatabaseService> injectLatchPredicate;
 
-        ControllingIndexProviderFactory( Map<GraphDatabaseService,SchemaIndexProvider> perDbIndexProvider,
+        ControllingIndexProviderFactory( Map<GraphDatabaseService,IndexProvider> perDbIndexProvider,
                 Predicate<GraphDatabaseService> injectLatchPredicate )
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR.getKey() );
@@ -567,17 +567,17 @@ public class SchemaIndexHaIT
             PageCache pageCache = deps.pageCache();
             File storeDir = context.storeDir();
             DefaultFileSystemAbstraction fs = fileSystemRule.get();
-            SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
+            IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
             Config config = deps.config();
             OperationalMode operationalMode = context.databaseInfo().operationalMode;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
 
-            FusionSchemaIndexProvider fusionSchemaIndexProvider = NativeLuceneFusionSchemaIndexProviderFactory
+            FusionIndexProvider fusionSchemaIndexProvider = NativeLuceneFusionSchemaIndexProviderFactory
                     .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
 
             if ( injectLatchPredicate.test( deps.db() ) )
             {
-                ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider( fusionSchemaIndexProvider );
+                ControlledIndexProvider provider = new ControlledIndexProvider( fusionSchemaIndexProvider );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
@@ -590,7 +590,7 @@ public class SchemaIndexHaIT
 
     private static class ControlledGraphDatabaseFactory extends TestHighlyAvailableGraphDatabaseFactory
     {
-        final Map<GraphDatabaseService,SchemaIndexProvider> perDbIndexProvider = new ConcurrentHashMap<>();
+        final Map<GraphDatabaseService,IndexProvider> perDbIndexProvider = new ConcurrentHashMap<>();
         private final KernelExtensionFactory<?> factory;
 
         ControlledGraphDatabaseFactory()
@@ -613,7 +613,7 @@ public class SchemaIndexHaIT
 
         void awaitPopulationStarted( GraphDatabaseService db )
         {
-            ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );
+            ControlledIndexProvider provider = (ControlledIndexProvider) perDbIndexProvider.get( db );
             if ( provider != null )
             {
                 provider.latch.waitForAllToStart();
@@ -622,7 +622,7 @@ public class SchemaIndexHaIT
 
         void triggerFinish( GraphDatabaseService db )
         {
-            ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );
+            ControlledIndexProvider provider = (ControlledIndexProvider) perDbIndexProvider.get( db );
             if ( provider != null )
             {
                 provider.latch.finish();

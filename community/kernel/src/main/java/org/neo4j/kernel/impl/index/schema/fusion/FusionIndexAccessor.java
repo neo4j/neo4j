@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.util.Arrays.asList;

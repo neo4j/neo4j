@@ -93,7 +93,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -217,7 +217,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         LogService logService = new SimpleLogService( logProvider, logProvider );
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
                 pageCache, RecoveryCleanupWorkCollector.IGNORE, DatabaseInfo.COMMUNITY, monitors ) );
-        return loadSchemaIndexProviders( extensions );
+        return loadIndexProviders( extensions );
     }
 
     public File directory()

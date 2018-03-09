@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;

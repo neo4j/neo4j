@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.test.rule.PageCacheRule;
@@ -50,7 +50,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionSchemaIndexProvider.SPATIAL_PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionIndexProvider.SPATIAL_PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class SpatialCRSSchemaIndexTest
@@ -82,7 +82,7 @@ public class SpatialCRSSchemaIndexTest
         IndexDirectoryStructure dirStructure = IndexDirectoryStructure.directoriesByProvider( storeDir ).forProvider( SPATIAL_PROVIDER_DESCRIPTOR );
         descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
         index = new SpatialCRSSchemaIndex( descriptor, dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
-                SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 60 );
+                IndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 60 );
     }
 
     @Test

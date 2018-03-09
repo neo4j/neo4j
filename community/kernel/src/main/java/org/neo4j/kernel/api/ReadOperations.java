@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -240,7 +240,7 @@ public interface ReadOperations
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Retrieve provider descriptor for an index. */
-    SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Retrieve the population progress of an index. */
     PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

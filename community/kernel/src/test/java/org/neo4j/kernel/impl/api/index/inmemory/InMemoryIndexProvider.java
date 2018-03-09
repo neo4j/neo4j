@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
-public class InMemoryIndexProvider extends SchemaIndexProvider
+public class InMemoryIndexProvider extends IndexProvider
 {
     private final Map<Long, InMemoryIndex> indexes;
 

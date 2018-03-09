@@ -58,7 +58,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
@@ -757,14 +757,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         if ( state.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
                     state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
             {
-                return SchemaIndexProvider.UNDECIDED;
+                return IndexProvider.UNDECIDED;
             }
         }
         return storeLayer.indexGetProviderDescriptor( descriptor );

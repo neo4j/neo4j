@@ -63,7 +63,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -297,7 +297,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
-        SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
+        IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
                 HighestSelectionStrategy.INSTANCE );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
@@ -584,7 +584,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         List<IndexRule> indexesNeedingPopulation = new ArrayList<>();
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            SchemaIndexProvider provider = schemaIndexProviders.apply( rule.getProviderDescriptor() );
+            IndexProvider provider = schemaIndexProviders.apply( rule.getProviderDescriptor() );
             if ( provider.getInitialState( rule.getId(), rule.getIndexDescriptor() ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );

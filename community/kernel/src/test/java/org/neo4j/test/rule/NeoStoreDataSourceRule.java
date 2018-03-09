@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
@@ -178,9 +178,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
             @Override
             public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
             {
-                if ( SchemaIndexProvider.class.isAssignableFrom( type ) )
+                if ( IndexProvider.class.isAssignableFrom( type ) )
                 {
-                    return type.cast( SchemaIndexProvider.NO_INDEX_PROVIDER );
+                    return type.cast( IndexProvider.NO_INDEX_PROVIDER );
                 }
                 throw new IllegalArgumentException( type.toString() );
             }

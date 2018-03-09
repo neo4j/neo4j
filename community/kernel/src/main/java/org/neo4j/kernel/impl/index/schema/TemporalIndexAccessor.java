@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -57,7 +57,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
                            PageCache pageCache,
                            FileSystemAbstraction fs,
                            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                           SchemaIndexProvider.Monitor monitor,
+                           IndexProvider.Monitor monitor,
                            TemporalIndexFiles temporalIndexFiles ) throws IOException
     {
         super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig, temporalIndexFiles ) );
@@ -179,7 +179,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
                       FileSystemAbstraction fs,
                       TemporalIndexFiles.FileLayout<KEY> fileLayout,
                       RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                      SchemaIndexProvider.Monitor monitor,
+                      IndexProvider.Monitor monitor,
                       IndexDescriptor descriptor,
                       long indexId,
                       IndexSamplingConfig samplingConfig ) throws IOException
@@ -202,7 +202,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-        private final SchemaIndexProvider.Monitor monitor;
+        private final IndexProvider.Monitor monitor;
         private final IndexDescriptor descriptor;
         private final long indexId;
         private final IndexSamplingConfig samplingConfig;
@@ -211,7 +211,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         PartFactory( PageCache pageCache,
                      FileSystemAbstraction fs,
                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                     SchemaIndexProvider.Monitor monitor,
+                     IndexProvider.Monitor monitor,
                      IndexDescriptor descriptor,
                      long indexId,
                      IndexSamplingConfig samplingConfig,

@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -52,7 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
-import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 
 public class LuceneIndexRecoveryIT
 {
@@ -314,8 +314,8 @@ public class LuceneIndexRecoveryIT
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
-                        SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
+                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                        IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
@@ -337,11 +337,11 @@ public class LuceneIndexRecoveryIT
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
-                        SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
+                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                        IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
-                    public int compareTo( SchemaIndexProvider o )
+                    public int compareTo( IndexProvider o )
                     {
                         return 1;
                     }

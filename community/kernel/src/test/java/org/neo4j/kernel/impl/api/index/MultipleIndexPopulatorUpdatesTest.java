@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -126,7 +126,7 @@ public class MultipleIndexPopulatorUpdatesTest
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
-                new IndexMeta( indexId, descriptor, mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY ),
+                new IndexMeta( indexId, descriptor, mock( IndexProvider.Descriptor.class ), NO_CAPABILITY ),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 

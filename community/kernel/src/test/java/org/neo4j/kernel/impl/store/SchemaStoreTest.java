@@ -32,7 +32,7 @@ import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -49,7 +49,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class SchemaStoreTest
 {
@@ -173,14 +173,14 @@ public class SchemaStoreTest
         return Iterables.first( records ).getId();
     }
 
-    private IndexRule indexRule( long ruleId, SchemaIndexProvider.Descriptor descriptor,
+    private IndexRule indexRule( long ruleId, IndexProvider.Descriptor descriptor,
             int labelId, int... propertyIds )
     {
         return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyIds ), descriptor );
     }
 
     private IndexRule uniqueIndexRule( long ruleId, long owningConstraint,
-            SchemaIndexProvider.Descriptor descriptor, int labelId, int... propertyIds )
+                                       IndexProvider.Descriptor descriptor, int labelId, int... propertyIds )
     {
         return IndexRule.constraintIndexRule( ruleId,
                 IndexDescriptorFactory.uniqueForLabel( labelId, propertyIds ), descriptor, owningConstraint );

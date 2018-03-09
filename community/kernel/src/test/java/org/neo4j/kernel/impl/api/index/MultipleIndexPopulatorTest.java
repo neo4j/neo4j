@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -484,7 +484,7 @@ public class MultipleIndexPopulatorTest
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
-                new IndexMeta( indexId, descriptor, mock( SchemaIndexProvider.Descriptor.class ), NO_CAPABILITY ),
+                new IndexMeta( indexId, descriptor, mock( IndexProvider.Descriptor.class ), NO_CAPABILITY ),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 

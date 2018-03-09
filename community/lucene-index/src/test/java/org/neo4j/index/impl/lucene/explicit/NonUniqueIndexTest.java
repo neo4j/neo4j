@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -164,11 +164,11 @@ public class NonUniqueIndexTest
     {
         FileSystemAbstraction fs = resources.fileSystem();
         File storeDir = resources.directory().graphDbDir();
-        SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
+        IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         OperationalMode operationalMode = OperationalMode.single;
         PageCache pageCache = resources.pageCache();
         Boolean useFusionIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
-        SchemaIndexProvider indexProvider;
+        IndexProvider indexProvider;
         if ( useFusionIndex )
         {
             indexProvider = NativeLuceneFusionSchemaIndexProviderFactory

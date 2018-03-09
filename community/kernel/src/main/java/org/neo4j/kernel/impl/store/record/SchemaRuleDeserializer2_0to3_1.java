@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -93,7 +93,7 @@ public class SchemaRuleDeserializer2_0to3_1
 
     private static IndexRule readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
     {
-        SchemaIndexProvider.Descriptor providerDescriptor = readIndexProviderDescriptor( serialized );
+        IndexProvider.Descriptor providerDescriptor = readIndexProviderDescriptor( serialized );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
         IndexDescriptor descriptor = constraintIndex ?
                                      IndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
@@ -102,11 +102,11 @@ public class SchemaRuleDeserializer2_0to3_1
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
-    private static SchemaIndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer serialized )
+    private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer serialized )
     {
         String providerKey = getDecodedStringFrom( serialized );
         String providerVersion = getDecodedStringFrom( serialized );
-        return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
+        return new IndexProvider.Descriptor( providerKey, providerVersion );
     }
 
     private static int[] readIndexPropertyKeys( ByteBuffer serialized )

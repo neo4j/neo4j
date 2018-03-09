@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
+public class ControlledPopulationIndexProvider extends IndexProvider
 {
     private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
     private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
@@ -52,10 +52,10 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     final AtomicInteger populatorCallCount = new AtomicInteger();
     final AtomicInteger writerCallCount = new AtomicInteger();
 
-    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
+    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor(
             "controlled-population", "1.0" );
 
-    public ControlledPopulationSchemaIndexProvider()
+    public ControlledPopulationIndexProvider()
     {
         super( PROVIDER_DESCRIPTOR, 10, IndexDirectoryStructure.NONE );
         setInitialIndexState( initialIndexState );
@@ -128,7 +128,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public int compareTo( SchemaIndexProvider o )
+    public int compareTo( IndexProvider o )
     {
         return 1;
     }

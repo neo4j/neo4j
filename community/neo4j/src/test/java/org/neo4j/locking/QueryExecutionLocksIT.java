@@ -91,7 +91,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -851,7 +851,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetProviderDescriptor( descriptor );
         }

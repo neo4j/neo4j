@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelExcept
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -242,7 +242,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    public IndexProvider.Descriptor getProviderDescriptor()
     {
         lock.readLock().lock();
         try

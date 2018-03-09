@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
  * @param <KEY> type of {@link NativeSchemaKey}
  * @param <VALUE> type of {@link NativeSchemaValue}
  */
-abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> extends SchemaIndexProvider
+abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> extends IndexProvider
 {
     protected final PageCache pageCache;
     protected final FileSystemAbstraction fs;
@@ -50,8 +50,8 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean readOnly;
 
-    protected NativeSchemaIndexProvider( Descriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache,
-            FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+    protected NativeIndexProvider( Descriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache,
+                                   FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( descriptor, priority, directoryStructureFactory );
         this.pageCache = pageCache;

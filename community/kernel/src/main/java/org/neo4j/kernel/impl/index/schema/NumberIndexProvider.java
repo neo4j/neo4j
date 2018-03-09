@@ -40,43 +40,43 @@ import org.neo4j.values.storable.ValueGroup;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class StringSchemaIndexProvider extends NativeSchemaIndexProvider<StringSchemaKey,NativeSchemaValue>
+public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,NativeSchemaValue>
 {
-    public static final String KEY = "string";
-    static final IndexCapability CAPABILITY = new StringIndexCapability();
-    private static final Descriptor STRING_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    public static final String KEY = "native";
+    public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    static final IndexCapability CAPABILITY = new NumberIndexCapability();
 
-    StringSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean readOnly )
+    public NumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+                                IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                                boolean readOnly )
     {
-        super( STRING_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        super( NATIVE_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     @Override
-    protected StringLayoutUnique layoutUnique()
+    protected NumberLayoutUnique layoutUnique()
     {
-        return new StringLayoutUnique();
+        return new NumberLayoutUnique();
     }
 
     @Override
-    protected StringLayoutNonUnique layoutNonUnique()
+    protected NumberLayoutNonUnique layoutNonUnique()
     {
-        return new StringLayoutNonUnique();
+        return new NumberLayoutNonUnique();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor, long indexId,
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor, long indexId,
             IndexSamplingConfig samplingConfig )
     {
-        return new StringSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor,
             long indexId, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
+        return new NumberSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 indexId, samplingConfig );
     }
 
@@ -87,13 +87,13 @@ public class StringSchemaIndexProvider extends NativeSchemaIndexProvider<StringS
     }
 
     /**
-     * For single property string queries capabilities are
+     * For single property number queries capabilities are
      * Order: ASCENDING
      * Value: YES (can provide exact value)
      *
      * For other queries there is no support
      */
-    private static class StringIndexCapability implements IndexCapability
+    private static class NumberIndexCapability implements IndexCapability
     {
         private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
         private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
@@ -129,7 +129,7 @@ public class StringSchemaIndexProvider extends NativeSchemaIndexProvider<StringS
 
         private boolean support( ValueGroup[] valueGroups )
         {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.TEXT;
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.NUMBER;
         }
     }
 }

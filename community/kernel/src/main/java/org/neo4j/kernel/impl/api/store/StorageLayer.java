@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
@@ -237,7 +237,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
     }

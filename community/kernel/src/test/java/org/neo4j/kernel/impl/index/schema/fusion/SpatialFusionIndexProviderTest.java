@@ -29,7 +29,7 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -47,23 +47,23 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 
-public class SpatialFusionSchemaIndexProviderTest
+public class SpatialFusionIndexProviderTest
 {
     @Rule
     public RandomRule random = new RandomRule();
 
     private Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
-    private SpatialFusionSchemaIndexProvider provider;
+    private SpatialFusionIndexProvider provider;
     private IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
     @Before
     public void setup()
     {
-        provider = new SpatialFusionSchemaIndexProvider(
+        provider = new SpatialFusionIndexProvider(
                 mock( PageCache.class ),
                 mock( FileSystemAbstraction.class ),
                 NONE,
-                SchemaIndexProvider.Monitor.EMPTY,
+                IndexProvider.Monitor.EMPTY,
                 null,
                 false,
                 Config.defaults() );

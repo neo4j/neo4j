@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -50,7 +50,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implements SpatialCRSSchemaIndex.Supplier
+public class SpatialFusionIndexProvider extends IndexProvider implements SpatialCRSSchemaIndex.Supplier
 {
     public static final String KEY = "spatial";
     public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -66,9 +66,10 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
 
     private Map<Long,Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex>> indexes = new HashMap<>();
 
-    public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
-            Config config )
+    public SpatialFusionIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+                                       IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
+                                       RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
+                                       Config config )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;

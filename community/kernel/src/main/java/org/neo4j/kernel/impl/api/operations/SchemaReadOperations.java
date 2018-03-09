@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -58,7 +58,7 @@ public interface SchemaReadOperations
     /**
      * Retrieve the index provider descriptor for an index.
      */
-    SchemaIndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Retrieve the population progress of an index.

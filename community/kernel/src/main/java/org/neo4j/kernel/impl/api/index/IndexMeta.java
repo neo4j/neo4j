@@ -20,17 +20,17 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 public class IndexMeta
 {
     private final long ruleId;
     private final IndexDescriptor indexDescriptor;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final IndexProvider.Descriptor providerDescriptor;
     private final IndexCapability indexCapability;
 
-    public IndexMeta( long ruleId, IndexDescriptor indexDescriptor, SchemaIndexProvider.Descriptor providerDescriptor, IndexCapability indexCapability )
+    public IndexMeta( long ruleId, IndexDescriptor indexDescriptor, IndexProvider.Descriptor providerDescriptor, IndexCapability indexCapability )
     {
         this.ruleId = ruleId;
         this.indexDescriptor = indexDescriptor;
@@ -48,7 +48,7 @@ public class IndexMeta
         return indexDescriptor;
     }
 
-    public SchemaIndexProvider.Descriptor providerDescriptor()
+    public IndexProvider.Descriptor providerDescriptor()
     {
         return providerDescriptor;
     }

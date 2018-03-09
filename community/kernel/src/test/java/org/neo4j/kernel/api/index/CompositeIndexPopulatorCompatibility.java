@@ -43,7 +43,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )

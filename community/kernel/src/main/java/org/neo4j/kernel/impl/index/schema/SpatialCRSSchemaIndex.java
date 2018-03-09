@@ -45,7 +45,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateApply;
@@ -91,7 +91,7 @@ public class SpatialCRSSchemaIndex
             long indexId,
             PageCache pageCache,
             FileSystemAbstraction fs,
-            SchemaIndexProvider.Monitor monitor,
+            IndexProvider.Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             SpaceFillingCurveConfiguration configuration,
             int maxBits )
@@ -103,8 +103,8 @@ public class SpatialCRSSchemaIndex
         this.configuration = configuration;
 
         // Depends on crs
-        SchemaIndexProvider.Descriptor crsDescriptor =
-                new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
+        IndexProvider.Descriptor crsDescriptor =
+                new IndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
         IndexDirectoryStructure indexDir =
                 IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), "index-" + indexId );

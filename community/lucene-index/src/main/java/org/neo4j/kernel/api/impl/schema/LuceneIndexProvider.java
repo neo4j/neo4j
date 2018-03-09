@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.impl.schema.populator.UniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
-public class LuceneSchemaIndexProvider extends SchemaIndexProvider
+public class LuceneIndexProvider extends IndexProvider
 {
     static final int PRIORITY = 1;
 
@@ -56,9 +56,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final FileSystemAbstraction fileSystem;
     private final Monitor monitor;
 
-    public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            IndexDirectoryStructure.Factory directoryStructureFactory, Monitor monitor, Config config,
-            OperationalMode operationalMode )
+    public LuceneIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
+                                IndexDirectoryStructure.Factory directoryStructureFactory, Monitor monitor, Config config,
+                                OperationalMode operationalMode )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, PRIORITY, directoryStructureFactory );
         this.monitor = monitor;

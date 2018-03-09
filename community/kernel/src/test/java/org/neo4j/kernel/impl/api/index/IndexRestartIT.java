@@ -59,7 +59,7 @@ public class IndexRestartIT
 
     private GraphDatabaseService db;
     private TestGraphDatabaseFactory factory;
-    private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
+    private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
     private final Label myLabel = label( "MyLabel" );
 
     @Before

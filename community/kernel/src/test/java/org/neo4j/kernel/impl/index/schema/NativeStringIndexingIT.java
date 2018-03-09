@@ -44,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IGNORE;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.test.Randoms.CSA_LETTERS_AND_DIGITS;
 import static org.neo4j.values.storable.Values.stringValue;
 

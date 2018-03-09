@@ -62,7 +62,7 @@ import org.neo4j.values.storable.Values;
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    protected abstract SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
+    protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
 
     public abstract boolean supportsSpatial();
 
@@ -75,7 +75,7 @@ public abstract class IndexProviderCompatibilityTestSuite
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
-        protected SchemaIndexProvider indexProvider;
+        protected IndexProvider indexProvider;
         protected IndexDescriptor descriptor;
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;

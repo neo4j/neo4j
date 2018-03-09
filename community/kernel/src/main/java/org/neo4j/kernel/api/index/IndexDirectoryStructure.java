@@ -21,27 +21,27 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
 /**
- * Dictates how directory structure looks for a {@link SchemaIndexProvider} and its indexes. Generally there's a
+ * Dictates how directory structure looks for a {@link IndexProvider} and its indexes. Generally there's a
  * {@link #rootDirectory() root directory} which contains all index directories in some shape and form.
  * For getting a directory (which must be a sub-directory to the root directory) for a particular index there's the
  * {@link #directoryForIndex(long)} method.
  *
- * These instances are created from a {@link Factory} which typically gets passed into a {@link SchemaIndexProvider} constructor,
+ * These instances are created from a {@link Factory} which typically gets passed into a {@link IndexProvider} constructor,
  * which then creates a {@link IndexDirectoryStructure} given its {@link Descriptor}.
  */
 public abstract class IndexDirectoryStructure
 {
     /**
-     * Creates an {@link IndexDirectoryStructure} for a {@link Descriptor} for a {@link SchemaIndexProvider}.
+     * Creates an {@link IndexDirectoryStructure} for a {@link Descriptor} for a {@link IndexProvider}.
      */
     public interface Factory
     {
-        IndexDirectoryStructure forProvider( SchemaIndexProvider.Descriptor descriptor );
+        IndexDirectoryStructure forProvider( IndexProvider.Descriptor descriptor );
     }
 
     private static class SubDirectoryByIndexId extends IndexDirectoryStructure
@@ -119,7 +119,7 @@ public abstract class IndexDirectoryStructure
     }
 
     /**
-     * Useful when combining multiple {@link SchemaIndexProvider} into one.
+     * Useful when combining multiple {@link IndexProvider} into one.
      *
      * @param parentStructure {@link IndexDirectoryStructure} of the parent.
      * @return {@link Factory} creating {@link IndexDirectoryStructure} looking something like:

@@ -42,7 +42,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
@@ -127,7 +127,6 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransacti
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -386,10 +385,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         life.add( recoveryCleanupWorkCollector );
 
-        AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection =
+        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection =
                 new AllByPrioritySelectionStrategy<>();
-        SchemaIndexProvider defaultIndexProvider =
-                dependencyResolver.resolveDependency( SchemaIndexProvider.class, indexProviderSelection );
+        IndexProvider defaultIndexProvider =
+                dependencyResolver.resolveDependency( IndexProvider.class, indexProviderSelection );
 
         schemaIndexProviderMap =
                 new DefaultSchemaIndexProviderMap( defaultIndexProvider,

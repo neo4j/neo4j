@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
@@ -31,7 +30,7 @@ import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -562,7 +561,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
+        final IndexRule rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
@@ -585,7 +584,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
+        final IndexRule rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
@@ -609,7 +608,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule =
-                constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
+                constraintIndexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
@@ -632,7 +631,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule =
-                constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
+                constraintIndexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
@@ -660,7 +659,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule =
-                constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
+                constraintIndexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
@@ -687,7 +686,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
+        final IndexRule rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
@@ -710,7 +709,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
+        final IndexRule rule = indexRule( 0, 1, 2, new IndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
@@ -931,7 +930,7 @@ public class NeoStoreTransactionApplierTest
     // SCHEMA RULE COMMAND
 
     public static IndexRule indexRule( long id, int label, int propertyKeyId,
-            SchemaIndexProvider.Descriptor providerDescriptor )
+            IndexProvider.Descriptor providerDescriptor )
     {
         //TODO: Consider testing composite indexes
         return IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKeyId ),
@@ -939,7 +938,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     private static IndexRule constraintIndexRule( long id, int label, int propertyKeyId,
-            SchemaIndexProvider.Descriptor providerDescriptor, Long owningConstraint )
+                                                  IndexProvider.Descriptor providerDescriptor, Long owningConstraint )
     {
         //TODO: Consider testing composite indexes
         return IndexRule.constraintIndexRule( id, IndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),

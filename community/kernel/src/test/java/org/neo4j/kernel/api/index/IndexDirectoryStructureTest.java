@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.fs.FileUtils.path;

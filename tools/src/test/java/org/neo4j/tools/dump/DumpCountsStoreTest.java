@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -153,7 +153,7 @@ public class DumpCountsStoreTest
     private SchemaStorage createSchemaStorage()
     {
         SchemaStorage schemaStorage = mock(SchemaStorage.class);
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
         IndexRule rule = IndexRule.indexRule( indexId, descriptor, providerDescriptor );
         ArrayList<IndexRule> rules = new ArrayList<>();
         rules.add( rule );
