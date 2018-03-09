@@ -82,6 +82,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
@@ -547,7 +548,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void relationshipDoReplaceProperty( long relationshipId, int propertyKeyId, Value replacedValue,
             Value newValue )
     {
-        if ( replacedValue != Values.NO_VALUE )
+        if ( replacedValue != NO_VALUE )
         {
             getOrCreateRelationshipState( relationshipId ).changeProperty( propertyKeyId, newValue );
         }
@@ -561,7 +562,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void graphDoReplaceProperty( int propertyKeyId, Value replacedValue, Value newValue )
     {
-        if ( replacedValue != Values.NO_VALUE )
+        if ( replacedValue != NO_VALUE )
         {
             getOrCreateGraphState().changeProperty( propertyKeyId, newValue );
         }
@@ -1062,6 +1063,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
     }
 
+    @Deprecated
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( SchemaIndexDescriptor descriptor,
                                                                            String lower, boolean includeLower,
@@ -1109,6 +1111,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                                                                    Value lower, boolean includeLower,
                                                                    Value upper, boolean includeUpper )
     {
+        assert lower != null && upper != null : "Use Values.NO_VALUE to encode the lack of a bound";
+
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
@@ -1121,7 +1125,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         ValueTuple selectedUpper;
         boolean selectedIncludeUpper;
 
-        if ( lower == null )
+        if ( lower == NO_VALUE )
         {
             selectedLower = ValueTuple.of( Values.minValue( valueGroup, upper ) );
             selectedIncludeLower = true;
@@ -1132,7 +1136,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             selectedIncludeLower = includeLower;
         }
 
-        if ( upper == null )
+        if ( upper == NO_VALUE )
         {
             selectedUpper = ValueTuple.of( Values.maxValue( valueGroup, lower ) );
             selectedIncludeUpper = false;
