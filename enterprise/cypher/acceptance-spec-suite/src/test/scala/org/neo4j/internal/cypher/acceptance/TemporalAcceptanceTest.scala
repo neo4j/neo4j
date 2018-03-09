@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.temporal.UnsupportedTemporalTypeException
 import java.time.format.DateTimeParseException
 import java.time.temporal.UnsupportedTemporalTypeException
 
