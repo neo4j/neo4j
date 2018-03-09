@@ -267,7 +267,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def setInRow(column: Int, value: Expression) =
     generator.expression(invoke(resultRow, set, constant(column), value))
 
-
   override def toAnyValue(expression: Expression, codeGenType: CodeGenType): Expression = codeGenType match {
     case CodeGenType.primitiveNode =>
       invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),

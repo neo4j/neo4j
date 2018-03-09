@@ -24,7 +24,7 @@ import java.util
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.values.storable.{DateValue, DurationValue}
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
@@ -129,6 +129,33 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     val result = executeWith(config, query, params = Map("param" -> dateMap))
 
     result.toList should equal(List(Map("$param" -> dateMap.asScala, "a" -> dateMap.get("a"), "b" -> dateMap.get("b"))))
+  }
+
+  test("indexed date array should be readable from parameterized node property") {
+    // Given
+    graph.createIndex("Occasion", "timeSpan")
+    createLabeledNode("Occasion")
+    graph.execute(
+      """MATCH (o:Occasion) SET o.timeSpan = [date("2018-04-01"), date("2018-04-02")]
+        |RETURN o.timeSpan as timeSpan""".stripMargin)
+
+    // When
+    val localConfig = Configs.Interpreted - Configs.OldAndRule
+    val result = executeWith(localConfig,
+      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "timeSpan")
+        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+      params = Map("param" ->
+        Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
+
+    // Then
+    val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList
+    dateList should equal(List(
+      LocalDate.of(2018, 4, 1),
+      LocalDate.of(2018, 4, 2))
+    )
   }
 
   test("should handle duration parameter") {
