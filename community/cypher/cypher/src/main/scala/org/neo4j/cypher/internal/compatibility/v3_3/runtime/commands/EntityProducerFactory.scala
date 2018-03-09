@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{EntityProduce
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.{IndexHintException, InternalException}
-import org.neo4j.cypher.internal.v3_3.logical.plans.ScanQueryExpression
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
@@ -71,17 +70,6 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   def nodeByIndexHint(readOnly: Boolean): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, Some(ScanQueryExpression(_)), _)) =>
-
-      val indexGetter = planContext.indexGet(labelName, propertyNames)
-
-      val index = indexGetter getOrElse
-        (throw new IndexHintException(variable, labelName, propertyNames, "No such index found."))
-
-      asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val resultNodes: Iterator[Node] = state.query.indexScan(index)
-        resultNodes
-      }
 
     case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, valueExp, _)) =>
 
