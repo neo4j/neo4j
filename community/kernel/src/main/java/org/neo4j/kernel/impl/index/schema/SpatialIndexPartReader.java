@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
@@ -139,7 +140,7 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
             client.initialize( descriptor, multiProgressor, query );
             SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
-            Envelope completeEnvelope = SpatialIndexFiles.envelopeFromCRS( spatial.crs );
+            Envelope completeEnvelope = curve.getRange();
             double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
             Envelope envelope = new Envelope( from, to );

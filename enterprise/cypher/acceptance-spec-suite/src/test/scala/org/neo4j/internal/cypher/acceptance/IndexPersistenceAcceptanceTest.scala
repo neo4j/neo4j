@@ -23,8 +23,13 @@ import java.io.File
 import java.time.ZoneOffset
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.io.fs.FileUtils
+import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings
 import org.neo4j.values.storable._
+
+import scala.collection.{Map, immutable}
 
 class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
 
@@ -38,13 +43,21 @@ class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
   }
 
   override protected def startGraphDatabase(storeDir: File): Unit = {
-    graphOps = graphDatabaseFactory().newEmbeddedDatabase(storeDir)
+    startGraphDatabaseWithConfig(storeDir, databaseConfig())
+  }
+
+  private def startGraphDatabaseWithConfig(storeDir: File, config: Map[Setting[_], String]): Unit = {
+    val builder = graphDatabaseFactory().newEmbeddedDatabaseBuilder(storeDir)
+    config.foreach {
+      case (setting, settingValue) => builder.setConfig(setting, settingValue)
+    }
+    graphOps = builder.newGraphDatabase()
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
-  protected def restartGraphDatabase(): Unit = {
+  private def restartGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): Unit = {
     graph.shutdown()
-    startGraphDatabase(dbDir)
+    startGraphDatabaseWithConfig(dbDir, config)
   }
 
   override protected def stopTest() {
@@ -143,5 +156,40 @@ class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
       setIndexedValue(n1, value)
       assertSeekMatchFor(value, n1)
     }
+  }
+
+  test("Should not get new index configuration on database settings changes of maxBits") {
+    // halve the value of maxBits
+    testIndexRestartWithSettingsChanges(Map(SpatialIndexSettings.space_filling_curve_max_bits -> "30"))
+  }
+
+  test("Should not get new index configuration on database settings changes of WGS84 minimum x extent") {
+    // remove the entire western hemisphere
+    testIndexRestartWithSettingsChanges(Map(SpatialIndexSettings.spatial_crs_WGS_84_x_min -> "0"))
+  }
+
+  private def testIndexRestartWithSettingsChanges(settings: Map[Setting[_], String]): Unit = {
+    createIndex()
+    val data = (-180 to 180 by 10).flatMap { lon =>
+      (-90 to 90 by 10).map { lat =>
+        val point = Values.pointValue(CoordinateReferenceSystem.WGS84, lon, lat)
+        point -> createIndexedNode(point)
+      }
+    }.toMap
+    val expected = Values.pointValue(CoordinateReferenceSystem.WGS84, 10, 50)
+    val node = data(expected)
+    val min = Values.pointValue(CoordinateReferenceSystem.WGS84, 40, 0)
+    val max = Values.pointValue(CoordinateReferenceSystem.WGS84, 60, 20)
+
+    assertRangeScanFor(">", min, "<", max, node)
+
+    restartGraphDatabase(settings)
+
+    assertRangeScanFor(">", min, "<", max, node)
+
+    dropIndex()
+    createIndex()
+
+    assertRangeScanFor(">", min, "<", max, node)
   }
 }

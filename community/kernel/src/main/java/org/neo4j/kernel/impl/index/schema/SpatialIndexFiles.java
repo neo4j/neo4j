@@ -33,19 +33,20 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 class SpatialIndexFiles
 {
     private static final Pattern CRS_DIR_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
     private final FileSystemAbstraction fs;
-    private final int maxBits;
+    private final SpaceFillingCurveSettingsFactory settingsFactory;
     private final File indexDirectory;
 
-    SpatialIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, FileSystemAbstraction fs, int maxBits )
+    SpatialIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, FileSystemAbstraction fs, SpaceFillingCurveSettingsFactory settingsFactory )
     {
         this.fs = fs;
-        this.maxBits = maxBits;
+        this.settingsFactory = settingsFactory;
         indexDirectory = directoryStructure.directoryForIndex( indexId );
     }
 
@@ -66,19 +67,7 @@ class SpatialIndexFiles
 
     SpatialFileLayout forCrs( CoordinateReferenceSystem crs )
     {
-        SpaceFillingCurve curve;
-        if ( crs.getDimension() == 2 )
-        {
-            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), Math.min( 30, maxBits / 2 ) );
-        }
-        else if ( crs.getDimension() == 3 )
-        {
-            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), Math.min( 20, maxBits / 3 ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + crs );
-        }
+        SpaceFillingCurve curve = settingsFactory.settingsFor( crs ).curve();
         String s = crs.getTable().getTableId() + "-" + Integer.toString( crs.getCode() );
         File file = new File( indexDirectory, s );
         return new SpatialFileLayout( file, new SpatialLayout( crs, curve ), crs );
@@ -116,11 +105,5 @@ class SpatialIndexFiles
             this.layout = layout;
             this.crs = crs;
         }
-    }
-
-    static Envelope envelopeFromCRS( CoordinateReferenceSystem crs )
-    {
-        Pair<double[],double[]> indexEnvelope = crs.getIndexEnvelope();
-        return new Envelope( indexEnvelope.first(), indexEnvelope.other() );
     }
 }
