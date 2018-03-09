@@ -165,22 +165,7 @@ public final class ValueUtils
             primitiveCoordinate[i] = coordinate.get( i );
         }
 
-        // TODO:
-        // From a (public class) CRS we can not get the name of the CRSTable.
-        // I do not know how to a sensible mapping here.
-        // Maybe we have to deprecate the public types after all and rewrite them
-        if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.getCode() )
-        {
-            return Values.pointValue( CoordinateReferenceSystem.Cartesian, primitiveCoordinate );
-        }
-        else if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.WGS84.getCode() )
-        {
-            return Values.pointValue( CoordinateReferenceSystem.WGS84, primitiveCoordinate );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system " + geometry.getCRS() );
-        }
+        return Values.pointValue( CoordinateReferenceSystem.get( geometry.getCRS() ), primitiveCoordinate );
     }
 
     public static ListValue asListValue( List<?> collection )

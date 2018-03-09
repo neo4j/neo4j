@@ -303,6 +303,12 @@ public final class Values
 
     public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
     {
+        if ( crs.getDimension() != coordinate.length )
+        {
+            throw new IllegalArgumentException(
+                    format( "Cannot create point, CRS %s expects %d dimensions, but got coordinates %s",
+                            crs, crs.getDimension(), Arrays.toString( coordinate ) ) );
+        }
         return new PointValue( crs, coordinate );
     }
 
@@ -708,6 +714,7 @@ public final class Values
         case TEXT: return MIN_STRING;
         case NUMBER: return MIN_NUMBER;
         case GEOMETRY: return minPointValue( (PointValue)value );
+        case DATE: return DateValue.MIN_VALUE;
         default: throw new IllegalStateException(
                 format( "The minValue for valueGroup %s is not defined yet", valueGroup ) );
         }
@@ -720,6 +727,7 @@ public final class Values
         case TEXT: return MAX_STRING;
         case NUMBER: return MAX_NUMBER;
         case GEOMETRY: return maxPointValue( (PointValue)value );
+        case DATE: return DateValue.MAX_VALUE;
         default: throw new IllegalStateException(
                 format( "The maxValue for valueGroup %s is not defined yet", valueGroup ) );
         }

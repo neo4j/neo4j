@@ -402,7 +402,7 @@ public abstract class IndexQuery
             if ( value instanceof PointValue )
             {
                 PointValue point = (PointValue) value;
-                if ( point.getCRS().equals( crs ) )
+                if ( point.getCoordinateReferenceSystem().equals( crs ) )
                 {
                     return point.withinRange( from, fromInclusive, to, toInclusive );
                 }

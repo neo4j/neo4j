@@ -166,6 +166,14 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             case TEXT:
                 instances[STRING].query( cursor, indexOrder, predicates );
                 return;
+            case DATE:
+            case LOCAL_DATE_TIME:
+            case ZONED_DATE_TIME:
+            case LOCAL_TIME:
+            case ZONED_TIME:
+            case DURATION:
+                temporalReader.query( cursor, indexOrder, predicates );
+                return;
             default: // fall through
             }
             // TODO: support temporal range queries

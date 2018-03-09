@@ -22,38 +22,72 @@ package org.neo4j.cypher.internal.compiler.v3_4
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable._
 import org.scalacheck.Gen
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.prop.PropertyChecks
+
+import scala.collection.JavaConversions._
 
 class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
 
-  //the actual test
+  private val allCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().toArray.groupBy(_.getDimension)
+  private val allCRSDimensions = allCRS.keys.toArray
+  private val oneDay = DurationValue.duration(0, 1, 0, 0)
+  private val MAX_EPOCH_DAYS = 999999999 * 365
+
+  // ----------------
+  // the actual test
+  // ----------------
+
   for {
     bound <- List("<", "<=", "=", ">", ">=")
     valueGen <- List(
       ValueSetup[LongValue]("longs", longGen, x => x.minus(1L), x => x.plus(1L)),
       ValueSetup[DoubleValue]("doubles", doubleGen, x => x.minus(0.1), x => x.plus(0.1)),
-      ValueSetup[TextValue]("strings", textGen, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar))
+      ValueSetup[TextValue]("strings", textGen, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar)),
+//      ValueSetup[PointValue]("points", pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)), // TODO: here is a bug
+      ValueSetup[DateValue]("dates", dateGen, x => x.sub(oneDay), x => x.add(oneDay))
     )
   } {
     testOperator(bound, valueGen)
   }
-
-  case class ValueSetup[T <: Value](name: String, generator:Gen[T], lower: T => T, upper: T => T)
-
-  def longGen: Gen[LongValue] =
-    for (x <- Gen.chooseNum(Long.MinValue+1, Long.MaxValue-1)) yield Values.longValue(x)
-
-  def doubleGen: Gen[DoubleValue] =
-    for (x <- Gen.chooseNum(Double.MinValue, Double.MaxValue)) yield Values.doubleValue(x)
-
-  def textGen: Gen[TextValue] =
-    for (x <- Gen.alphaStr) yield Values.stringValue(x)
 
   override protected def initTest(): Unit = {
     super.initTest()
     for(_ <- 1 to 1000) createLabeledNode("Label")
   }
 
+  /**
+    * Value distribution to test. Allow value generation. Can also provide a slightly smaller
+    * or larger version of a value, which allows testing around a property bound.
+    */
+  case class ValueSetup[T <: Value](name: String, generator:Gen[T], lessThan: T => T, moreThan: T => T)
+
+  // GENERATORS
+
+  def longGen: Gen[LongValue] =
+    for (x <- Gen.chooseNum(Long.MinValue+1, Long.MaxValue-1)) yield Values.longValue(x)
+
+  def doubleGen: Gen[DoubleValue] =
+    for (x <- arbitrary[Double]) yield Values.doubleValue(x)
+
+  def textGen: Gen[TextValue] =
+    for (x <- Gen.alphaStr) yield Values.stringValue(x)
+
+  def pointGen: Gen[PointValue] =
+    for {
+      dimension <- Gen.oneOf(allCRSDimensions)
+      coordinates <- Gen.listOfN(dimension, arbitrary[Double])
+      crs <- Gen.oneOf(allCRS(dimension))
+    } yield Values.pointValue(crs, coordinates:_*)
+
+  def dateGen: Gen[DateValue] =
+    for {
+      epochDays <- arbitrary[Int] //Gen.chooseNum(-MAX_EPOCH_DAYS+1, MAX_EPOCH_DAYS-1)?
+    } yield DateValue.epochDate(epochDays)
+
+  /**
+    * Test a single value setup and operator
+    */
   private def testOperator[T <: Value](operator: String, setup: ValueSetup[T]): Unit = {
 
     val queryNotUsingIndex = s"match (n:Label) where n.nonIndexed $operator {prop} return n order by id(n)"
@@ -74,14 +108,14 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
           withClue("with TxState") {
             testValue(queryNotUsingIndex, queryUsingIndex, propertyValue)
-            testValue(queryNotUsingIndex, queryUsingIndex, setup.lower(propertyValue))
-            testValue(queryNotUsingIndex, queryUsingIndex, setup.upper(propertyValue))
+            testValue(queryNotUsingIndex, queryUsingIndex, setup.lessThan(propertyValue))
+            testValue(queryNotUsingIndex, queryUsingIndex, setup.moreThan(propertyValue))
           }
         }
         withClue("without TxState") {
           testValue(queryNotUsingIndex, queryUsingIndex, propertyValue)
-          testValue(queryNotUsingIndex, queryUsingIndex, setup.lower(propertyValue))
-          testValue(queryNotUsingIndex, queryUsingIndex, setup.upper(propertyValue))
+          testValue(queryNotUsingIndex, queryUsingIndex, setup.lessThan(propertyValue))
+          testValue(queryNotUsingIndex, queryUsingIndex, setup.moreThan(propertyValue))
         }
       }
     }
@@ -93,4 +127,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     else
       Values.stringValue(str.substring(0, in.length - 1) + (str.last - 1).toChar)
   }
+
+  private def modifyPoint(f: Double => Double)(in: PointValue): PointValue =
+    Values.pointValue(in.getCoordinateReferenceSystem, in.coordinate().map(f):_*)
+
 }
