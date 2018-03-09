@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
@@ -639,7 +640,11 @@ public abstract class CompiledConversionUtils
 
     private static boolean hasSafeType( Object value )
     {
-        if ( value instanceof String )
+        if ( value instanceof Value )
+        {
+            return true;
+        }
+        else if ( value instanceof String )
         {
             return true;
         }
