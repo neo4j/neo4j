@@ -26,8 +26,8 @@ trait IdGen {
   def id(): Id
 }
 
-class SequentialIdGen() extends IdGen {
-  var i = 0
+class SequentialIdGen(initialValue: Int = 0) extends IdGen {
+  private var i: Int = initialValue
 
   def id(): Id = {
     val id = Id(i)

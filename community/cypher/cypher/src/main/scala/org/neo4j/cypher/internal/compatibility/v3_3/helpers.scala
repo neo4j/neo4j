@@ -35,12 +35,14 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3
 import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast => astV3_4, notification => nfV3_4}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticTable => SemanticTableV3_4}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, PlannerNameWithVersion, ProcedurePlannerName}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Attributes, Id}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, InputPosition}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId => LogicalPlanIdV3_3}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {
@@ -146,32 +148,53 @@ object helpers {
     case nfV3_3.DeprecatedPlannerNotification => nfV3_4.DeprecatedPlannerNotification
   }
 
-  def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
-    val startPosition = logicalPlan.startPosition.map(as3_4)
+  def as3_4(logicalPlanState: LogicalPlanStateV3_3) : LogicalPlanState = {
+    val startPosition = logicalPlanState.startPosition.map(as3_4)
     // Wrap the planner name to correctly report version 3.3.
-    val plannerName = PlannerNameWithVersion(as3_4(logicalPlan.plannerName), v3_3.name)
-
-    def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.exists(_.seen(expression))
+    val plannerName = PlannerNameWithVersion(as3_4(logicalPlanState.plannerName), v3_3.name)
 
     val solveds = new Solveds
     val cardinalities = new Cardinalities
-    val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, solveds, cardinalities, isImportant)
+    val (plan3_4, semanticTable3_4) = convertLogicalPlan(logicalPlanState, solveds, cardinalities)
 
-    val statement3_3 = logicalPlan.maybeStatement.get
+    val statement3_3 = logicalPlanState.maybeStatement.get
 
-    LogicalPlanState(logicalPlan.queryText,
+    LogicalPlanState(logicalPlanState.queryText,
       startPosition,
       plannerName,
       solveds,
       cardinalities,
       Some(as3_4(statement3_3)),
       None,
-      logicalPlan.maybeExtractedParams,
-      logicalPlan.maybeSemanticTable.map(t => SemanticTableConverter.convertSemanticTable(t, expressionMap)),
+      logicalPlanState.maybeExtractedParams,
+      semanticTable3_4,
       None,
       Some(plan3_4),
-      Some(logicalPlan.maybePeriodicCommit.flatten.map(x => as3_4(x))),
+      Some(logicalPlanState.maybePeriodicCommit.flatten.map(x => as3_4(x))),
       Set.empty)
   }
 
+  private def convertLogicalPlan(logicalPlanState: LogicalPlanStateV3_3,
+                                 solveds: Solveds,
+                                 cardinalities: Cardinalities): (LogicalPlanV3_4, Option[SemanticTableV3_4]) = {
+
+    def isImportant(expression: ExpressionV3_3) : Boolean =
+      logicalPlanState.maybeSemanticTable.exists(_.seen(expression))
+
+    val idConverter = new MaxIdConverter
+    val (plan3_4, expressionMap) =
+      LogicalPlanConverter.convertLogicalPlan(
+        logicalPlanState.maybeLogicalPlan.get,
+        solveds,
+        cardinalities,
+        idConverter,
+        isImportant
+      )
+
+    val attributes = Attributes(idConverter.idGenFromMax, solveds, cardinalities)
+    val planWithActiveReads = ActiveReadInjector(attributes).apply(plan3_4)
+    val semanticTable = logicalPlanState.maybeSemanticTable.map(
+                          table => SemanticTableConverter.convertSemanticTable(table, expressionMap))
+    (planWithActiveReads, semanticTable)
+  }
 }
