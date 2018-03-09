@@ -20,14 +20,21 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
@@ -48,6 +55,9 @@ public class FusionIndexUpdaterTest
     private IndexUpdater luceneUpdater;
     private IndexUpdater[] allUpdaters;
     private FusionIndexUpdater fusionIndexUpdater;
+
+    @Rule
+    public RandomRule random = new RandomRule();
 
     @Before
     public void mockComponents()
@@ -147,8 +157,12 @@ public class FusionIndexUpdaterTest
                 {
                     // when
                     verifyChangeWithCorrectUpdaterMixed( allUpdaters[f], allUpdaters[t], values[f], values[t] );
-                    mockComponents();
                 }
+                else
+                {
+                    verifyChangeWithCorrectUpdaterNotMixed( allUpdaters[f], values[f] );
+                }
+                mockComponents();
             }
         }
     }
@@ -194,6 +208,17 @@ public class FusionIndexUpdaterTest
             if ( populator != correctPopulator )
             {
                 verify( populator, times( 0 ) ).process( update );
+            }
+        }
+    }
+
+    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater updater, Value[] supportedValues ) throws IndexEntryConflictException, IOException
+    {
+        for ( Value before : supportedValues )
+        {
+            for ( Value after : supportedValues )
+            {
+                verifyChangeWithCorrectUpdaterNotMixed( updater, before, after );
             }
         }
     }

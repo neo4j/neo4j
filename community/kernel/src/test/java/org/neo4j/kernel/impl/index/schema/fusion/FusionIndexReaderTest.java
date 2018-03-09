@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
@@ -113,6 +116,13 @@ public class FusionIndexReaderTest
         {
             verify( iterator, times( 1 ) ).close();
         }
+    }
+
+    private PrimitiveLongResourceIterator mockReaderForQuery( IndexReader reader ) throws IndexNotApplicableKernelException
+    {
+        PrimitiveLongResourceIterator mockIterator = mock( PrimitiveLongResourceIterator.class );
+        when( reader.query( any( IndexQuery.class ) ) ).thenReturn( mockIterator );
+        return mockIterator;
     }
 
     /* countIndexedNodes */
