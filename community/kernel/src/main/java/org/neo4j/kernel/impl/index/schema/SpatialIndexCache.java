@@ -37,6 +37,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
 {
+    private static final CoordinateReferenceSystem[] referenceSystems =
+            {CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.WGS84_3D, CoordinateReferenceSystem.Cartesian, CoordinateReferenceSystem.Cartesian_3D};
+
     private final Factory<T, E> factory;
 
     private ConcurrentMap<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
@@ -105,6 +108,14 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
             return orElse;
         }
         return function.apply( part );
+    }
+
+    void loadAll()
+    {
+        for ( CoordinateReferenceSystem crs : referenceSystems )
+        {
+            uncheckedSelect( crs );
+        }
     }
 
     @Override

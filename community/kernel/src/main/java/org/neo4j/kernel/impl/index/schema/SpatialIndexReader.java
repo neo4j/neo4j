@@ -87,6 +87,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Spatia
         IndexQuery predicate = predicates[0];
         if ( predicate instanceof ExistsPredicate )
         {
+            loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
             for ( NativeSchemaIndexReader reader : this )
