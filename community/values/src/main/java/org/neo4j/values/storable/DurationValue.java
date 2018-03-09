@@ -45,7 +45,7 @@ import static java.lang.Long.parseLong;
 import static java.time.temporal.ChronoField.EPOCH_DAY;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.OFFSET_SECONDS;
-import static java.time.temporal.ChronoField.SECOND_OF_DAY;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
@@ -141,7 +141,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             case MINUTES:
                 return newDuration( 0, 0, from.until( to, unit ) * 60, 0 );
             case SECONDS:
-                return difference( 0, 0, from, to );
+                return durationInSecondsAndNanos( from, to );
             default:
                 throw new IllegalArgumentException( "Unsupported unit: " + unit );
             }
@@ -518,55 +518,44 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             }
         }
         // Compute the time difference - which is simple at this point
-        return difference( months, days, from, to );
+        // NANOS of a day will never overflow a long
+        long nanos = from.until( to, NANOS );
+        return newDuration( months, days, nanos / NANOS_PER_SECOND, (int) (nanos % NANOS_PER_SECOND) );
     }
 
-    private static DurationValue difference( long months, long days, Temporal from, Temporal to )
+    private static DurationValue durationInSecondsAndNanos( Temporal from, Temporal to )
     {
-        long seconds = 0;
-        long nanos = 0;
-        if ( from.isSupported( SECONDS ) )
+        long seconds;
+        long nanos;
+        boolean negate = false;
+        if ( from.isSupported( OFFSET_SECONDS ) && !to.isSupported( OFFSET_SECONDS ) )
         {
-            if ( to.isSupported( SECONDS ) )
-            {
-                boolean negate = false;
-                if ( from.isSupported( OFFSET_SECONDS ) && !to.isSupported( OFFSET_SECONDS ) )
-                {
-                    negate = true;
-                    Temporal tmp = from;
-                    from = to;
-                    to = tmp;
-                }
-                seconds = from.until( to, SECONDS );
-                nanos = to.getLong( NANO_OF_SECOND ) - from.getLong( NANO_OF_SECOND );
-                if ( seconds > 0 && nanos < 0 )
-                {
-                    seconds--;
-                    nanos = NANOS_PER_SECOND - nanos;
-                }
-                else if ( seconds < 0 && nanos > 0 )
-                {
-                    seconds++;
-                    nanos = nanos - NANOS_PER_SECOND;
-                }
-                if ( negate )
-                {
-                    seconds = -seconds;
-                    nanos = -nanos;
-                }
-            }
-            else
-            {
-                seconds = -from.getLong( SECOND_OF_DAY );
-                nanos = -from.getLong( NANO_OF_SECOND );
-            }
+            negate = true;
+            Temporal tmp = from;
+            from = to;
+            to = tmp;
         }
-        else if ( to.isSupported( SECONDS ) )
+        seconds = from.until( to, SECONDS );
+        int fromNanos = from.isSupported( NANO_OF_SECOND ) ? from.get( NANO_OF_SECOND ) : 0;
+        int toNanos = to.isSupported( NANO_OF_SECOND ) ? to.get( NANO_OF_SECOND ) : 0;
+        nanos = toNanos - fromNanos;
+
+        boolean specialZeroSecondCase = seconds == 0 && from.get( SECOND_OF_MINUTE ) != to.get( SECOND_OF_MINUTE );
+
+        if ( nanos < 0 && ( seconds > 0 || specialZeroSecondCase ) )
         {
-            seconds = to.getLong( SECOND_OF_DAY );
-            nanos = to.getLong( NANO_OF_SECOND );
+            nanos = NANOS_PER_SECOND + nanos;
         }
-        return duration( months, days, seconds, nanos );
+        else if ( nanos > 0 && ( seconds < 0 || specialZeroSecondCase ) )
+        {
+            nanos = nanos - NANOS_PER_SECOND;
+        }
+        if ( negate )
+        {
+            seconds = -seconds;
+            nanos = -nanos;
+        }
+        return duration( 0, 0, seconds, nanos );
     }
 
     @Override

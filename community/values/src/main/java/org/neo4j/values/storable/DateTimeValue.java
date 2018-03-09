@@ -161,7 +161,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         LocalDate truncatedDate = pair.first();
         LocalTime truncatedTime = pair.other();
 
-        ZoneId zoneId = input.hasTimeZone() ? input.getZoneId( defaultZone ) : defaultZone.get();
+        ZoneId zoneId = input.supportsTimeZone() ? input.getZoneId( defaultZone ) : defaultZone.get();
         ZonedDateTime truncatedZDT = ZonedDateTime.of( truncatedDate, truncatedTime, zoneId );
 
         if ( fields.size() == 0 )
@@ -234,7 +234,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     LocalTime timePart = dt.getTimePart( defaultZone ).toLocalTime();
                     ZoneId zoneId = dt.getZoneId( defaultZone );
                     result = ZonedDateTime.of( dt.getDatePart(), timePart, zoneId );
-                    selectingTimeZone = dt.hasTimeZone();
+                    selectingTimeZone = dt.supportsTimeZone();
                 }
                 else if ( selectingEpoch )
                 {
@@ -262,7 +262,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                         TemporalValue t = (TemporalValue) timeField;
                         time = t.getTimePart( defaultZone ).toLocalTime();
                         zoneId = t.getZoneId( defaultZone );
-                        selectingTimeZone = t.hasTimeZone();
+                        selectingTimeZone = t.supportsTimeZone();
                     }
                     else
                     {
@@ -390,7 +390,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    public boolean hasTimeZone()
+    public boolean supportsTimeZone()
     {
         return true;
     }

@@ -20,8 +20,6 @@
 
 Feature: DurationBetweenAcceptance
 
-    # TODO the commented lines should work too
-
   Scenario: Should compute duration between two temporals
     Given an empty graph
     When executing query:
@@ -39,27 +37,52 @@ Feature: DurationBetweenAcceptance
               duration.between(localtime("14:30"), time("16:30+0100")),
 
               duration.between(time("14:30"), date("2015-06-24")),
-              //duration.between(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.between(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.between(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
               duration.between(time("14:30"), localtime("16:30")),
               duration.between(time("14:30"), time("16:30+0100")),
 
-              //duration.between(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.between(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.between(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.between(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.between(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.between(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.between(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.between(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.between(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.between(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.between(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.between(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.between(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.between(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.between(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.between(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.between(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'P30Y8M13D' |
+      | 'P31Y9M10DT21H45M22.142S' |
+      | 'P30Y9M10DT21H40M32.142S' |
+      | 'PT16H30M' |
+      | 'PT16H30M' |
+      | 'PT-14H-30M' |
+      | 'PT7H15M22.142S' |
+      | 'PT7H10M32.142S' |
+      | 'PT2H' |
+      | 'PT2H' |
+      | 'PT-14H-30M' |
+      | 'PT7H15M22.142S' |
+      | 'PT6H10M32.142S' |
+      | 'PT2H' |
+      | 'PT1H' |
+      | 'P-27DT-21H-40M-32.142S' |
+      | 'P1YT4M50S' |
+      | 'PT0S' |
+      | 'PT-5H-10M-32.142S' |
+      | 'PT-5H-10M-32.142S' |
+      | 'P11M3DT-21H-40M-36.143S' |
+      | 'P2YT4M45.999S' |
+      | 'P1YT59M55.999S' |
+      | 'PT-5H-10M-36.143S' |
+      | 'PT-4H-10M-36.143S' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in years
@@ -75,31 +98,48 @@ Feature: DurationBetweenAcceptance
               duration.years(localtime("14:30"), date("2015-06-24")),
               duration.years(localtime("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.years(localtime("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.years(localtime("14:30"), localtime("16:30")),
-              duration.years(localtime("14:30"), time("16:30+0100")),
 
               duration.years(time("14:30"), date("2015-06-24")),
-              //duration.years(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.years(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.years(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.years(time("14:30"), localtime("16:30")),
-              duration.years(time("14:30"), time("16:30+0100")),
 
-              //duration.years(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.years(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.years(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.years(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.years(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.years(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.years(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.years(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.years(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.years(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.years(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.years(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.years(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.years(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.years(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.years(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.years(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'P30Y' |
+      | 'P31Y' |
+      | 'P30Y' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P1Y' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P2Y' |
+      | 'P1Y' |
+      | 'PT0S' |
+      | 'PT0S' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in quarters
@@ -115,31 +155,48 @@ Feature: DurationBetweenAcceptance
               duration.quarters(localtime("14:30"), date("2015-06-24")),
               duration.quarters(localtime("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.quarters(localtime("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.quarters(localtime("14:30"), localtime("16:30")),
-              duration.quarters(localtime("14:30"), time("16:30+0100")),
 
               duration.quarters(time("14:30"), date("2015-06-24")),
-              //duration.quarters(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.quarters(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.quarters(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.quarters(time("14:30"), localtime("16:30")),
-              duration.quarters(time("14:30"), time("16:30+0100")),
 
-              //duration.quarters(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.quarters(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.quarters(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.quarters(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.quarters(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.quarters(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.quarters(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.quarters(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.quarters(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'P30Y6M' |
+      | 'P31Y9M' |
+      | 'P30Y9M' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P1Y' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P9M' |
+      | 'P2Y' |
+      | 'P1Y' |
+      | 'PT0S' |
+      | 'PT0S' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in months
@@ -155,31 +212,48 @@ Feature: DurationBetweenAcceptance
               duration.months(localtime("14:30"), date("2015-06-24")),
               duration.months(localtime("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.months(localtime("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.months(localtime("14:30"), localtime("16:30")),
-              duration.months(localtime("14:30"), time("16:30+0100")),
 
               duration.months(time("14:30"), date("2015-06-24")),
-              //duration.months(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.months(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.months(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.months(time("14:30"), localtime("16:30")),
-              duration.months(time("14:30"), time("16:30+0100")),
 
-              //duration.months(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.months(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.months(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.months(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.months(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.months(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.months(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.months(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.months(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.months(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.months(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.months(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.months(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.months(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.months(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.months(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.months(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'P30Y8M' |
+      | 'P31Y9M' |
+      | 'P30Y9M' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P1Y' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P11M' |
+      | 'P2Y' |
+      | 'P1Y' |
+      | 'PT0S' |
+      | 'PT0S' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in weeks
@@ -195,31 +269,48 @@ Feature: DurationBetweenAcceptance
               duration.weeks(localtime("14:30"), date("2015-06-24")),
               duration.weeks(localtime("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.weeks(localtime("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.weeks(localtime("14:30"), localtime("16:30")),
-              duration.weeks(localtime("14:30"), time("16:30+0100")),
 
               duration.weeks(time("14:30"), date("2015-06-24")),
-              //duration.weeks(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.weeks(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.weeks(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.weeks(time("14:30"), localtime("16:30")),
-              duration.weeks(time("14:30"), time("16:30+0100")),
 
-              //duration.weeks(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.weeks(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.weeks(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.weeks(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.weeks(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.weeks(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.weeks(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.weeks(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.weeks(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'P11207D' |
+      | 'P11606D' |
+      | 'P11235D' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P-21D' |
+      | 'P364D' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P336D' |
+      | 'P728D' |
+      | 'P364D' |
+      | 'PT0S' |
+      | 'PT0S' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in days
@@ -235,31 +326,48 @@ Feature: DurationBetweenAcceptance
               duration.days(localtime("14:30"), date("2015-06-24")),
               duration.days(localtime("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.days(localtime("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.days(localtime("14:30"), localtime("16:30")),
-              duration.days(localtime("14:30"), time("16:30+0100")),
 
               duration.days(time("14:30"), date("2015-06-24")),
-              //duration.days(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.days(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.days(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
-              duration.days(time("14:30"), localtime("16:30")),
-              duration.days(time("14:30"), time("16:30+0100")),
 
-              //duration.days(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.days(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.days(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.days(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.days(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.days(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.days(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.days(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.days(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.days(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.days(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.days(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.days(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.days(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.days(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.days(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.days(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'P11213D' |
+      | 'P11606D' |
+      | 'P11240D' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P-27D' |
+      | 'P366D' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'P337D' |
+      | 'P731D' |
+      | 'P365D' |
+      | 'PT0S' |
+      | 'PT0S' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in hours
@@ -279,27 +387,52 @@ Feature: DurationBetweenAcceptance
               duration.hours(localtime("14:30"), time("16:30+0100")),
 
               duration.hours(time("14:30"), date("2015-06-24")),
-              //duration.hours(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.hours(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.hours(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
               duration.hours(time("14:30"), localtime("16:30")),
               duration.hours(time("14:30"), time("16:30+0100")),
 
-              //duration.hours(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.hours(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.hours(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.hours(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.hours(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.hours(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.hours(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.hours(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.hours(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.hours(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.hours(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.hours(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.hours(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.hours(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.hours(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.hours(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.hours(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'PT269112H'  |
+      | 'PT278565H' |
+      | 'PT269781H' |
+      | 'PT16H' |
+      | 'PT16H' |
+      | 'PT-14H' |
+      | 'PT7H' |
+      | 'PT7H' |
+      | 'PT2H' |
+      | 'PT2H' |
+      | 'PT-14H' |
+      | 'PT7H' |
+      | 'PT6H' |
+      | 'PT2H' |
+      | 'PT1H' |
+      | 'PT-669H' |
+      | 'PT8784H' |
+      | 'PT0S' |
+      | 'PT-5H' |
+      | 'PT-5H' |
+      | 'PT8090H' |
+      | 'PT17544H' |
+      | 'PT8760H' |
+      | 'PT-5H' |
+      | 'PT-4H' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in minutes
@@ -319,27 +452,52 @@ Feature: DurationBetweenAcceptance
               duration.minutes(localtime("14:30"), time("16:30+0100")),
 
               duration.minutes(time("14:30"), date("2015-06-24")),
-              //duration.minutes(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.minutes(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.minutes(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
               duration.minutes(time("14:30"), localtime("16:30")),
               duration.minutes(time("14:30"), time("16:30+0100")),
 
-              //duration.minutes(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.minutes(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.minutes(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.minutes(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.minutes(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.minutes(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.minutes(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.minutes(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.minutes(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'PT269112H'  |
+      | 'PT278565H45M' |
+      | 'PT269781H40M' |
+      | 'PT16H30M' |
+      | 'PT16H30M' |
+      | 'PT-14H-30M' |
+      | 'PT7H15M' |
+      | 'PT7H10M' |
+      | 'PT2H' |
+      | 'PT2H' |
+      | 'PT-14H-30M' |
+      | 'PT7H15M' |
+      | 'PT6H10M' |
+      | 'PT2H' |
+      | 'PT1H' |
+      | 'PT-669H-40M' |
+      | 'PT8784H4M' |
+      | 'PT0S' |
+      | 'PT-5H-10M' |
+      | 'PT-5H-10M' |
+      | 'PT8090H19M' |
+      | 'PT17544H4M' |
+      | 'PT8760H59M' |
+      | 'PT-5H-10M' |
+      | 'PT-4H-10M' |
     And no side effects
 
   Scenario: Should compute duration between two temporals in seconds
@@ -359,25 +517,166 @@ Feature: DurationBetweenAcceptance
               duration.seconds(localtime("14:30"), time("16:30+0100")),
 
               duration.seconds(time("14:30"), date("2015-06-24")),
-              //duration.seconds(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
+              duration.seconds(time("14:30"), localdatetime("2016-07-21T21:45:22.142")),
               duration.seconds(time("14:30"), datetime("2015-07-21T21:40:32.142+0100")),
               duration.seconds(time("14:30"), localtime("16:30")),
               duration.seconds(time("14:30"), time("16:30+0100")),
 
-              //duration.seconds(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
+              duration.seconds(localdatetime("2015-07-21T21:40:32.142"), date("2015-06-24")),
               duration.seconds(localdatetime("2015-07-21T21:40:32.142"), localdatetime("2016-07-21T21:45:22.142")),
               duration.seconds(localdatetime("2015-07-21T21:40:32.142"), datetime("2015-07-21T21:40:32.142+0100")),
-              //duration.seconds(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
-              //duration.seconds(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
+              duration.seconds(localdatetime("2015-07-21T21:40:32.142"), localtime("16:30")),
+              duration.seconds(localdatetime("2015-07-21T21:40:32.142"), time("16:30+0100")),
 
-              //duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
+              duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), date("2015-06-24")),
               duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:45:22.142")),
-              duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100"))
-              //duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
-              //duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
+              duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), datetime("2015-07-21T21:40:32.142+0100")),
+              duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), localtime("16:30")),
+              duration.seconds(datetime("2014-07-21T21:40:36.143+0200"), time("16:30+0100"))
               ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d |
+      | 'PT269112H' |
+      | 'PT278565H45M22.142S' |
+      | 'PT269781H40M32.142S' |
+      | 'PT16H30M' |
+      | 'PT16H30M' |
+      | 'PT-14H-30M' |
+      | 'PT7H15M22.142S' |
+      | 'PT7H10M32.142S' |
+      | 'PT2H' |
+      | 'PT2H' |
+      | 'PT-14H-30M' |
+      | 'PT7H15M22.142S' |
+      | 'PT6H10M32.142S' |
+      | 'PT2H' |
+      | 'PT1H' |
+      | 'PT-669H-40M-32.142S' |
+      | 'PT8784H4M50S' |
+      | 'PT0S' |
+      | 'PT-5H-10M-32.142S' |
+      | 'PT-5H-10M-32.142S' |
+      | 'PT8090H19M23.857S' |
+      | 'PT17544H4M45.999S' |
+      | 'PT8760H59M55.999S' |
+      | 'PT-5H-10M-36.143S' |
+      | 'PT-4H-10M-36.143S' |
+    And no side effects
+
+  Scenario: Should compute duration between if they differ only by a fraction of a second and the first comes after the second.
+    Given an empty graph
+    When executing query:
+      """
+      RETURN duration.seconds(localdatetime("2014-07-21T21:40:36.143"), localdatetime("2014-07-21T21:40:36.142")) as d
+      """
+    Then the result should be, in order:
+      | d |
+      | 'PT-0.001S' |
+    And no side effects
+
+  Scenario: Should compute negative duration between in big units
+    Given an empty graph
+    When executing query:
+      """
+      WITH [[date("2018-03-11"), date("2016-06-24")],
+              [date("2018-07-21"), datetime("2016-07-21T21:40:32.142+0100")],
+              [localdatetime("2018-07-21T21:40:32.142"), date("2016-07-21")],
+              [datetime("2018-07-21T21:40:36.143+0200"), localdatetime("2016-07-21T21:40:36.143")],
+              [datetime("2018-07-21T21:40:36.143+0500"), datetime("1984-07-21T22:40:36.143+0200")]] as temporalCombos
+      UNWIND temporalCombos as pair
+      WITH pair[0] as first, pair[1] as second
+      RETURN duration.years(first, second) as years, duration.quarters(first, second) as quarters, duration.months(first, second) as months
+      """
+    Then the result should be, in order:
+      | years   | quarters   | months      |
+      | 'P-1Y'  | 'P-1Y-6M'  | 'P-1Y-8M'   |
+      | 'P-1Y'  | 'P-1Y-9M'  | 'P-1Y-11M'  |
+      | 'P-2Y'  | 'P-2Y'     | 'P-2Y'      |
+      | 'P-2Y'  | 'P-2Y'     | 'P-2Y'      |
+      | 'P-33Y' | 'P-33Y-9M' | 'P-33Y-11M' |
+
+    And no side effects
+
+  Scenario: Should handle durations at daylight saving time day
+    Given an empty graph
+    When executing query:
+    """
+    UNWIND[ duration.hours(datetime({year: 2017, month: 10, day: 29, hour: 0, timezone: 'Europe/Stockholm'}), localdatetime({year: 2017, month: 10, day: 29, hour: 4})),
+            duration.between(datetime({year: 2017, month: 10, day: 29, hour: 0, timezone: 'Europe/Stockholm'}), localdatetime({year: 2017, month: 10, day: 29, hour: 4})),
+            duration.hours(datetime({year: 2017, month: 10, day: 29, hour: 0, timezone: 'Europe/Stockholm'}), localtime({hour: 4})),
+            duration.between(datetime({year: 2017, month: 10, day: 29, hour: 0, timezone: 'Europe/Stockholm'}), localtime({hour: 4})),
+            duration.hours(localdatetime({year: 2017, month: 10, day: 29, hour: 0 }), datetime({year: 2017, month: 10, day: 29, hour: 4, timezone: 'Europe/Stockholm'})),
+            duration.between(localdatetime({year: 2017, month: 10, day: 29, hour: 0 }), datetime({year: 2017, month: 10, day: 29, hour: 4, timezone: 'Europe/Stockholm'})),
+            duration.hours(localtime({hour: 0 }), datetime({year: 2017, month: 10, day: 29, hour: 4, timezone: 'Europe/Stockholm'})),
+            duration.between(localtime({hour: 0 }), datetime({year: 2017, month: 10, day: 29, hour: 4, timezone: 'Europe/Stockholm'})),
+            duration.hours(date({year: 2017, month: 10, day: 29}), datetime({year: 2017, month: 10, day: 29, hour: 4, timezone: 'Europe/Stockholm'})),
+            duration.between(date({year: 2017, month: 10, day: 29}), datetime({year: 2017, month: 10, day: 29, hour: 4, timezone: 'Europe/Stockholm'})),
+            duration.hours(datetime({year: 2017, month: 10, day: 29, hour: 0, timezone: 'Europe/Stockholm'}), date({year: 2017, month: 10, day: 30}))
+          ] as d
+    RETURN d
+    """
+    Then the result should be, in order:
+      | d      |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT5H' |
+      | 'PT25H' |
+    And no side effects
+
+  Scenario: Should handle large durations
+    Given an empty graph
+    When executing query:
+    """
+    UNWIND[ duration.between(date("-999999999-01-01"), date("+999999999-12-31")),
+            duration.seconds(localdatetime("-999999999-01-01"), localdatetime("+999999999-12-31T23:59:59"))
+            ] as d
+    RETURN d
+    """
+    Then the result should be, in order:
+      | d      |
+      | 'P1999999998Y11M30D' |
+      | 'PT17531639991215H59M59S' |
+    And no side effects
+
+  Scenario: Should handle when seconds and subseconds have different signs
+    Given an empty graph
+    When executing query:
+    """
+    UNWIND[ duration.seconds(localtime("12:34:54.7"), localtime("12:34:54.3")),
+            duration.seconds(localtime("12:34:54.3"), localtime("12:34:54.7")),
+
+            duration.seconds(localtime("12:34:54.7"), localtime("12:34:55.3")),
+            duration.seconds(localtime("12:34:54.7"), localtime("12:44:55.3")),
+            duration.seconds(localtime("12:44:54.7"), localtime("12:34:55.3")),
+
+            duration.seconds(localtime("12:34:56"), localtime("12:34:55.7")),
+            duration.seconds(localtime("12:34:56"), localtime("12:44:55.7")),
+            duration.seconds(localtime("12:44:56"), localtime("12:34:55.7")),
+
+            duration.seconds(localtime("12:34:56.3"), localtime("12:34:54.7")),
+            duration.seconds(localtime("12:34:54.7"), localtime("12:34:56.3"))
+          ] as d
+    RETURN d
+    """
+    Then the result should be, in order:
+      | d             |
+      | 'PT-0.4S'     |
+      | 'PT0.4S'      |
+      | 'PT0.6S'      |
+      | 'PT10M0.6S'   |
+      | 'PT-9M-59.4S' |
+      | 'PT-0.3S'     |
+      | 'PT9M59.7S'   |
+      | 'PT-10M-0.3S' |
+      | 'PT-1.6S'     |
+      | 'PT1.6S'      |
     And no side effects

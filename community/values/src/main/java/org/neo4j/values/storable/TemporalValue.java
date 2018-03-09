@@ -20,11 +20,13 @@
 package org.neo4j.values.storable;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.chrono.ChronoZonedDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
@@ -50,9 +52,12 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 
+import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
+import static org.neo4j.values.storable.TimeValue.time;
 
 public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<T,V>>
         extends ScalarValue implements Temporal
@@ -105,7 +110,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
      */
     abstract ZoneOffset getZoneOffset();
 
-    abstract boolean hasTimeZone();
+    abstract boolean supportsTimeZone();
 
     abstract boolean hasTime();
 
@@ -168,7 +173,88 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     @Override
     public final long until( Temporal endExclusive, TemporalUnit unit )
     {
-        return temporal().until( endExclusive, unit );
+        if (  !(endExclusive instanceof TemporalValue) )
+        {
+            throw new IllegalArgumentException( "Can only compute durations between TemporalValues." );
+        }
+        TemporalValue from = this;
+        TemporalValue to = (TemporalValue) endExclusive;
+
+        from = attachTime( from );
+        to = attachTime( to );
+
+        if ( from.isSupported( ChronoField.MONTH_OF_YEAR ) && !to.isSupported( ChronoField.MONTH_OF_YEAR ) )
+        {
+            to = attachDate( to, from.getDatePart() );
+        }
+        else if ( to.isSupported( ChronoField.MONTH_OF_YEAR ) && !from.isSupported( ChronoField.MONTH_OF_YEAR ) )
+        {
+            from = attachDate( from, to.getDatePart() );
+        }
+
+        if ( from.supportsTimeZone() && !to.supportsTimeZone() )
+        {
+            to = attachTimeZone( to, from.getZoneId( from::getZoneOffset ) );
+        }
+        else if ( to.supportsTimeZone() && !from.supportsTimeZone() )
+        {
+            from = attachTimeZone( from, to.getZoneId( to::getZoneOffset ) );
+        }
+
+        return from.temporal().until( to, unit );
+    }
+
+    private TemporalValue attachTime( TemporalValue temporal )
+    {
+        boolean supportsTime = temporal.isSupported( ChronoField.SECOND_OF_DAY );
+
+        if ( supportsTime )
+        {
+            return temporal;
+        }
+        else
+        {
+            LocalDate datePart = temporal.getDatePart();
+            LocalTime timePart = LocalTimeValue.DEFAULT_LOCAL_TIME;
+            return localDateTime( LocalDateTime.of( datePart, timePart ) );
+        }
+    }
+
+    private TemporalValue attachDate( TemporalValue temporal, LocalDate dateToAttach )
+    {
+        LocalTime timePart = temporal.getLocalTimePart();
+
+        if ( temporal.supportsTimeZone() )
+        {
+            // turn time into date time
+            return datetime( ZonedDateTime.of( dateToAttach, timePart, temporal.getZoneOffset() ) );
+        }
+        else
+        {
+            // turn local time into local date time
+            return localDateTime( LocalDateTime.of( dateToAttach, timePart ) );
+        }
+    }
+
+    private TemporalValue attachTimeZone( TemporalValue temporal, ZoneId zoneIdToAttach )
+    {
+        if ( temporal.isSupported( ChronoField.MONTH_OF_YEAR ) )
+        {
+            // turn local date time into date time
+            return datetime( ZonedDateTime.of( temporal.getDatePart(), temporal.getLocalTimePart(), zoneIdToAttach ) );
+        }
+        else
+        {
+            // turn local time into time
+            if ( zoneIdToAttach instanceof ZoneOffset )
+            {
+                return time( OffsetTime.of( temporal.getLocalTimePart(), (ZoneOffset) zoneIdToAttach ) );
+            }
+            else
+            {
+                throw new IllegalStateException( "Should only attach offsets to local times, not zone ids." );
+            }
+        }
     }
 
     @Override
