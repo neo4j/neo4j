@@ -24,55 +24,58 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 /**
- * {@link Layout} for dates.
+ * {@link Layout} for absolute times.
  */
-class DateLayout extends BaseLayout<DateSchemaKey>
+class ZonedTimeLayout extends BaseLayout<ZonedTimeSchemaKey>
 {
-    public static Layout<DateSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
+    public static Layout<ZonedTimeSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
     {
-        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? DateLayout.UNIQUE : DateLayout.NON_UNIQUE;
+        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? ZonedTimeLayout.UNIQUE : ZonedTimeLayout.NON_UNIQUE;
     }
 
-    private static DateLayout UNIQUE = new DateLayout( "UTda", 0, 1 );
-    private static DateLayout NON_UNIQUE = new DateLayout( "NTda", 0, 1 );
+    private static final ZonedTimeLayout UNIQUE = new ZonedTimeLayout( "UTzt", 0, 1 );
+    private static final ZonedTimeLayout NON_UNIQUE = new ZonedTimeLayout( "NTzt", 0, 1 );
 
-    private DateLayout( String layoutName, int majorVersion, int minorVersion )
+    private ZonedTimeLayout( String layoutName, int majorVersion, int minorVersion )
     {
         super( layoutName, majorVersion, minorVersion );
     }
 
     @Override
-    public DateSchemaKey newKey()
+    public ZonedTimeSchemaKey newKey()
     {
-        return new DateSchemaKey();
+        return new ZonedTimeSchemaKey();
     }
 
     @Override
-    public DateSchemaKey copyKey( DateSchemaKey key, DateSchemaKey into )
+    public ZonedTimeSchemaKey copyKey( ZonedTimeSchemaKey key, ZonedTimeSchemaKey into )
     {
-        into.epochDay = key.epochDay;
+        into.nanosOfDayUTC = key.nanosOfDayUTC;
+        into.zoneOffsetSeconds = key.zoneOffsetSeconds;
         into.setEntityId( key.getEntityId() );
         into.setCompareId( key.getCompareId() );
         return into;
     }
 
     @Override
-    public int keySize( DateSchemaKey key )
+    public int keySize( ZonedTimeSchemaKey key )
     {
-        return DateSchemaKey.SIZE;
+        return ZonedTimeSchemaKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, DateSchemaKey key )
+    public void writeKey( PageCursor cursor, ZonedTimeSchemaKey key )
     {
-        cursor.putLong( key.epochDay );
+        cursor.putLong( key.nanosOfDayUTC );
+        cursor.putInt( key.zoneOffsetSeconds );
         cursor.putLong( key.getEntityId() );
     }
 
     @Override
-    public void readKey( PageCursor cursor, DateSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, ZonedTimeSchemaKey into, int keySize )
     {
-        into.epochDay = cursor.getLong();
+        into.nanosOfDayUTC = cursor.getLong();
+        into.zoneOffsetSeconds = cursor.getInt();
         into.setEntityId( cursor.getLong() );
     }
 }

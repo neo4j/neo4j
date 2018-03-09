@@ -24,55 +24,55 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 /**
- * {@link Layout} for dates.
+ * {@link Layout} for local times.
  */
-class DateLayout extends BaseLayout<DateSchemaKey>
+class LocalTimeLayout extends BaseLayout<LocalTimeSchemaKey>
 {
-    public static Layout<DateSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
+    public static Layout<LocalTimeSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
     {
-        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? DateLayout.UNIQUE : DateLayout.NON_UNIQUE;
+        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? LocalTimeLayout.UNIQUE : LocalTimeLayout.NON_UNIQUE;
     }
 
-    private static DateLayout UNIQUE = new DateLayout( "UTda", 0, 1 );
-    private static DateLayout NON_UNIQUE = new DateLayout( "NTda", 0, 1 );
+    private static LocalTimeLayout UNIQUE = new LocalTimeLayout( "UTlt", 0, 1 );
+    private static LocalTimeLayout NON_UNIQUE = new LocalTimeLayout( "NTlt", 0, 1 );
 
-    private DateLayout( String layoutName, int majorVersion, int minorVersion )
+    private LocalTimeLayout( String layoutName, int majorVersion, int minorVersion )
     {
         super( layoutName, majorVersion, minorVersion );
     }
 
     @Override
-    public DateSchemaKey newKey()
+    public LocalTimeSchemaKey newKey()
     {
-        return new DateSchemaKey();
+        return new LocalTimeSchemaKey();
     }
 
     @Override
-    public DateSchemaKey copyKey( DateSchemaKey key, DateSchemaKey into )
+    public LocalTimeSchemaKey copyKey( LocalTimeSchemaKey key, LocalTimeSchemaKey into )
     {
-        into.epochDay = key.epochDay;
+        into.nanoOfDay = key.nanoOfDay;
         into.setEntityId( key.getEntityId() );
         into.setCompareId( key.getCompareId() );
         return into;
     }
 
     @Override
-    public int keySize( DateSchemaKey key )
+    public int keySize( LocalTimeSchemaKey key )
     {
-        return DateSchemaKey.SIZE;
+        return LocalTimeSchemaKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, DateSchemaKey key )
+    public void writeKey( PageCursor cursor, LocalTimeSchemaKey key )
     {
-        cursor.putLong( key.epochDay );
+        cursor.putLong( key.nanoOfDay );
         cursor.putLong( key.getEntityId() );
     }
 
     @Override
-    public void readKey( PageCursor cursor, DateSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, LocalTimeSchemaKey into, int keySize )
     {
-        into.epochDay = cursor.getLong();
+        into.nanoOfDay = cursor.getLong();
         into.setEntityId( cursor.getLong() );
     }
 }

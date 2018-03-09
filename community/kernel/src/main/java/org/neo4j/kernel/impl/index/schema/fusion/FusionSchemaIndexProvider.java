@@ -43,15 +43,14 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 
 /**
- * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by two physical
- * indexes, the native index and the lucene index. All index entries that can be handled by the native index will be directed
- * there and the rest will be directed to the lucene index.
+ * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by four physical
+ * indexes, the number, spatial, temporal native indexes, and the general purpose lucene index.
  */
 public class FusionSchemaIndexProvider extends SchemaIndexProvider
 {
     interface Selector
     {
-        <T> T select( T nativeInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values );
+        <T> T select( T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values );
     }
 
     private final SchemaIndexProvider numberProvider;

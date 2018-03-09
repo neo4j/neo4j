@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
-import org.neo4j.kernel.impl.store.TimeZoneMapping;
+import org.neo4j.kernel.impl.store.TimeZones;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -74,7 +74,9 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 public class Neo4jPackV2Test
 {
     private static final String[] TIME_ZONE_NAMES =
-            TimeZoneMapping.supportedTimeZones().stream().filter( s -> ZoneId.getAvailableZoneIds().contains( s ) ).toArray( length -> new String[length] );
+            TimeZones.supportedTimeZones().stream()
+                    .filter( s -> ZoneId.getAvailableZoneIds().contains( s ) )
+                    .toArray( length -> new String[length] );
 
     private static final int RANDOM_VALUES_TO_TEST = 1_000;
     private static final int RANDOM_LISTS_TO_TEST = 1_000;

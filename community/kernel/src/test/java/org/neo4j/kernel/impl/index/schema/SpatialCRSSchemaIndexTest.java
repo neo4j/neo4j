@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -51,11 +50,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionSchemaIndexProvider.SPATIAL_PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public class SpatialKnownIndexTest
+public class SpatialCRSSchemaIndexTest
 {
     private final FileSystemRule fsRule = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fsRule.get() );
@@ -66,7 +64,6 @@ public class SpatialKnownIndexTest
 
     private SpatialCRSSchemaIndex index;
     private IndexDescriptor descriptor;
-    private IndexSamplingConfig samplingConfig;
     private FileSystemAbstraction fs;
     private File storeDir;
     private File indexDir;
@@ -86,7 +83,6 @@ public class SpatialKnownIndexTest
         descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
         index = new SpatialCRSSchemaIndex( descriptor, dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
                 SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 60 );
-        samplingConfig = mock( IndexSamplingConfig.class );
     }
 
     @Test

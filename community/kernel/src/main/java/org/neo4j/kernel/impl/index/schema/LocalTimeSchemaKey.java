@@ -19,65 +19,65 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
 /**
- * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateValue}.
+ * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link LocalTimeValue}.
  */
-class DateSchemaKey extends ComparableNativeSchemaKey<DateSchemaKey>
+class LocalTimeSchemaKey extends ComparableNativeSchemaKey<LocalTimeSchemaKey>
 {
     static final int SIZE =
-            Long.BYTES + /* epochDay */
+            Long.BYTES + /* nanoOfDay */
             Long.BYTES;  /* entityId */
 
-    long epochDay;
+    long nanoOfDay;
 
     @Override
     public Value asValue()
     {
-        return DateValue.epochDate( epochDay );
+        return LocalTimeValue.localTime( nanoOfDay );
     }
 
     @Override
-    void initValueAsLowest()
+    public void initValueAsLowest()
     {
-        epochDay = Long.MIN_VALUE;
+        nanoOfDay = Long.MIN_VALUE;
     }
 
     @Override
-    void initValueAsHighest()
+    public void initValueAsHighest()
     {
-        epochDay = Long.MAX_VALUE;
+        nanoOfDay = Long.MAX_VALUE;
     }
 
     @Override
-    public int compareValueTo( DateSchemaKey other )
+    public int compareValueTo( LocalTimeSchemaKey other )
     {
-        return Long.compare( epochDay, other.epochDay );
+        return Long.compare( nanoOfDay, other.nanoOfDay );
     }
 
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,epochDay=%d", asValue(), getEntityId(), epochDay );
+        return format( "value=%s,entityId=%d,nanoOfDay=%d", asValue(), getEntityId(), nanoOfDay );
     }
 
     @Override
-    public void writeDate( long epochDay )
+    public void writeLocalTime( long nanoOfDay )
     {
-        this.epochDay = epochDay;
+        this.nanoOfDay = nanoOfDay;
     }
 
     @Override
     protected Value assertCorrectType( Value value )
     {
-        if ( !(value instanceof DateValue) )
+        if ( !(value instanceof LocalTimeValue) )
         {
             throw new IllegalArgumentException(
-                    "Key layout does only support DateValue, tried to create key from " + value );
+                    "Key layout does only support LocalTimeValue, tried to create key from " + value );
         }
         return value;
     }

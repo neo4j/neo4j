@@ -248,33 +248,33 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
 
         @Override
-        public PartPopulator<?> newDateTime() throws IOException
+        public PartPopulator<?> newLocalDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "not implementedur still" );
+            return create( temporalIndexFiles.localDateTime() );
         }
 
         @Override
-        public PartPopulator<?> newDateTimeZoned() throws IOException
+        public PartPopulator<?> newZonedDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "not implementedur still" );
+            return create( temporalIndexFiles.zonedDateTime() );
         }
 
         @Override
-        public PartPopulator<?> newTime() throws IOException
+        public PartPopulator<?> newLocalTime() throws IOException
         {
-            throw new UnsupportedOperationException( "not implementedur still" );
+            return create( temporalIndexFiles.localTime() );
         }
 
         @Override
-        public PartPopulator<?> newTimeZoned() throws IOException
+        public PartPopulator<?> newZonedTime() throws IOException
         {
-            throw new UnsupportedOperationException( "not implementedur still" );
+            return create( temporalIndexFiles.zonedTime() );
         }
 
         @Override
         public PartPopulator<?> newDuration() throws IOException
         {
-            throw new UnsupportedOperationException( "not implementedur still" );
+            return create( temporalIndexFiles.duration() );
         }
 
         private <KEY extends NativeSchemaKey> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException

@@ -32,17 +32,30 @@ import java.util.regex.Pattern;
 
 import static java.util.Collections.unmodifiableSet;
 
-public class TimeZoneMapping
+public class TimeZones
 {
     /**
      * Prevent instance creation.
      */
-    private TimeZoneMapping()
+    private TimeZones()
     {
     }
 
     private static final List<String> TIME_ZONE_SHORT_TO_STRING = new ArrayList<>( 1024 );
     private static final Map<String,Short> TIME_ZONE_STRING_TO_SHORT = new HashMap<>( 1024 );
+
+    private static final long MIN_ZONE_OFFSET_SECONDS = -18 * 3600;
+    private static final long MAX_ZONE_OFFSET_SECONDS = 18 * 3600;
+
+    public static boolean validZoneOffset( int zoneOffsetSeconds )
+    {
+        return zoneOffsetSeconds >= MIN_ZONE_OFFSET_SECONDS && zoneOffsetSeconds <= MAX_ZONE_OFFSET_SECONDS;
+    }
+
+    public static boolean validZoneId( short zoneId )
+    {
+        return zoneId >= 0 && zoneId < TIME_ZONE_SHORT_TO_STRING.size();
+    }
 
     static final String LATEST_SUPPORTED_IANA_VERSION;
 
@@ -72,7 +85,7 @@ public class TimeZoneMapping
     {
         String latestVersion = "";
         Pattern version = Pattern.compile( "# tzdata([0-9]{4}[a-z])" );
-        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZoneMapping.class.getResourceAsStream( "/TZIDS" ) ) ) )
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZones.class.getResourceAsStream( "/TZIDS" ) ) ) )
         {
             for ( String line; (line = reader.readLine()) != null; )
             {

@@ -25,6 +25,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import java.io.File;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +39,12 @@ import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -91,7 +98,29 @@ public abstract class IndexProviderCompatibilityTestSuite
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),
                     Arrays.asList( Values.of( "string1" ), Values.of( 42 ) ),
-                    Arrays.asList( DateValue.epochDate( 2 ), DateValue.epochDate( 5 ) ),
+                    Arrays.asList(
+                            DateValue.epochDate( 2 ),
+                            LocalTimeValue.localTime( 100000 ),
+                            TimeValue.time( 43_200_000_000_000L, ZoneOffset.UTC ), // Noon
+                            TimeValue.time( 43_201_000_000_000L, ZoneOffset.UTC ),
+                            TimeValue.time( 43_200_000_000_000L, ZoneId.of( "+01:00" ) ), // Noon in the next time-zone
+                            TimeValue.time( 46_800_000_000_000L, ZoneOffset.UTC ), // Same time UTC as prev time
+                            LocalDateTimeValue.localDateTime( 2018, 3, 1, 13, 50, 42, 1337 ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "UTC" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "Europe/Stockholm" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2015, 3, 25, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 4, 25, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 26, 12, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 13, 45, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 46, 13, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7474, "+05:00" ),
+                            DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7475, "+05:00" ),
+                            DurationValue.duration( 10, 20, 30, 40 ),
+                            DurationValue.duration( 11, 20, 30, 40 ),
+                            DurationValue.duration( 10, 21, 30, 40 ),
+                            DurationValue.duration( 10, 20, 31, 40 ),
+                            DurationValue.duration( 10, 20, 30, 41 ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
                                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
 
@@ -99,7 +128,13 @@ public abstract class IndexProviderCompatibilityTestSuite
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),
                     Arrays.asList( Values.of( "string2" ), Values.of( 1337 ) ),
-                    Arrays.asList( DateValue.epochDate( 42 ), DateValue.epochDate( 1337 ) ),
+                    Arrays.asList(
+                            DateValue.epochDate( 42 ),
+                            LocalTimeValue.localTime( 2000 ),
+                            TimeValue.time( 100L, ZoneOffset.UTC ), // Just around midnight
+                            LocalDateTimeValue.localDateTime( 2018, 2, 28, 11, 5, 1, 42 ),
+                            DateTimeValue.datetime( 1999, 12, 31, 23, 59, 59, 123456789, "Europe/London" ),
+                            DurationValue.duration( 4, 3, 2, 1 ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 10 ),
                             Values.pointValue( CoordinateReferenceSystem.WGS84, 87.21, 7.65 ) ) );
 

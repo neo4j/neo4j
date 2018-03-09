@@ -123,6 +123,11 @@ public final class Values
         return value instanceof PointValue;
     }
 
+    public static boolean isTemporalValue( Value value )
+    {
+        return value instanceof TemporalValue || value instanceof DurationValue;
+    }
+
     public static double coerceToDouble( Value value )
     {
         if ( value instanceof IntegralValue )

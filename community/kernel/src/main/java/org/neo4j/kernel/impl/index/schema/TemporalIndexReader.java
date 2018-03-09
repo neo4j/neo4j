@@ -120,7 +120,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
 
     private boolean validPredicates( IndexQuery[] predicates )
     {
-        return predicates[0] instanceof ExactPredicate || predicates[0] instanceof GeometryRangePredicate;
+        return predicates[0] instanceof ExactPredicate;
     }
 
     /**
@@ -137,39 +137,39 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         }
 
         @Override
-        public TemporalIndexPartReader<?> newDate() throws IOException
+        public TemporalIndexPartReader<?> newDate()
         {
             return accessor.selectOrElse( ValueGroup.DATE, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newDateTime()
+        public TemporalIndexPartReader<?> newLocalDateTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.LOCAL_DATE_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newDateTimeZoned()
+        public TemporalIndexPartReader<?> newZonedDateTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.ZONED_DATE_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newTime()
+        public TemporalIndexPartReader<?> newLocalTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.LOCAL_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newTimeZoned()
+        public TemporalIndexPartReader<?> newZonedTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.ZONED_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
         public TemporalIndexPartReader<?> newDuration()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.DURATION, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
     }
 }
