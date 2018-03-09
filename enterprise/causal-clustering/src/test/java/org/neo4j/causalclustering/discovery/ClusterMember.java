@@ -56,4 +56,6 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
     Monitors monitors();
 
     File storeDir();
+
+    File homeDir();
 }

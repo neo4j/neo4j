@@ -29,16 +29,20 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupStrategy
 {
     private final BackupDelegator backupDelegator;
     private final AddressResolver addressResolver;
+    private final Log log;
 
-    CausalClusteringBackupStrategy( BackupDelegator backupDelegator, AddressResolver addressResolver )
+    CausalClusteringBackupStrategy( BackupDelegator backupDelegator, AddressResolver addressResolver, LogProvider logProvider )
     {
         this.backupDelegator = backupDelegator;
         this.addressResolver = addressResolver;
+        this.log = logProvider.getLog( CausalClusteringBackupStrategy.class );
     }
 
     @Override
@@ -46,6 +50,7 @@ class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupS
                                                            OptionalHostnamePort userProvidedAddress )
     {
         AdvertisedSocketAddress fromAddress = addressResolver.resolveCorrectCCAddress( config, userProvidedAddress );
+        log.info( "Resolved address for catchup protocol is " + fromAddress );
         StoreId storeId;
         try
         {
@@ -72,6 +77,7 @@ class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupS
                                                                   OptionalHostnamePort userProvidedAddress )
     {
         AdvertisedSocketAddress fromAddress = addressResolver.resolveCorrectCCAddress( config, userProvidedAddress );
+        log.info( "Resolved address for catchup protocol is " + fromAddress );
         StoreId storeId;
         try
         {

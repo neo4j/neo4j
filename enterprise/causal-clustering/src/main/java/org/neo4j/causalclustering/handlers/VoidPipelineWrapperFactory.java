@@ -24,6 +24,7 @@ import io.netty.channel.ChannelHandler;
 
 import java.util.List;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
@@ -48,13 +49,13 @@ public class VoidPipelineWrapperFactory implements DuplexPipelineWrapperFactory
     };
 
     @Override
-    public PipelineWrapper forServer( Config config, Dependencies dependencies, LogProvider logProvider )
+    public PipelineWrapper forServer( Config config, Dependencies dependencies, LogProvider logProvider, Setting<String> policyName )
     {
         return VOID_WRAPPER;
     }
 
     @Override
-    public PipelineWrapper forClient( Config config, Dependencies dependencies, LogProvider logProvider )
+    public PipelineWrapper forClient( Config config, Dependencies dependencies, LogProvider logProvider, Setting<String> policyName )
     {
         return VOID_WRAPPER;
     }

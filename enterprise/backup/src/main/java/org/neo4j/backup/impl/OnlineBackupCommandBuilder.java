@@ -143,23 +143,9 @@ public class OnlineBackupCommandBuilder
         return this;
     }
 
-    /**
-     * Perform a backup with the parameters set using the builder
-     * @param targetLocation target location of backup (NOTE: uses the parent directory as well)
-     * @return true if backup was successful
-     */
-    public boolean backup( String targetLocation ) throws CommandFailed, IncorrectUsage
+    public boolean backup( File neo4jHome, String backupName ) throws CommandFailed, IncorrectUsage
     {
-        return backup( relativeFileFromString( targetLocation ) );
-    }
-
-    /**
-     * Perform a backup with the parameters set using the builder
-     * @param targetLocation target location of backup (NOTE: uses the parent directory as well)
-     * @return true if backup was successful
-     */
-    public boolean backup( File targetLocation ) throws CommandFailed, IncorrectUsage
-    {
+        File targetLocation = new File( neo4jHome, backupName );
         String[] args;
         try
         {
@@ -170,26 +156,11 @@ public class OnlineBackupCommandBuilder
             throw new CommandFailed( "Failed to resolve arguments", e );
         }
         new OnlineBackupCommandProvider()
-                .create( neo4jHomeFromTarget( targetLocation ),
-                        configDirFromTarget( targetLocation ),
+                .create( neo4jHome.toPath(),
+                        configDirFromTarget( neo4jHome.toPath() ),
                         resolveOutsideWorld() )
                 .execute( args );
         return true;
-    }
-
-    private File relativeFileFromString( String targetLocation )
-    {
-        return new File( "." ).toPath().resolve( targetLocation ).toFile();
-    }
-
-    /**
-     * This is a helper method when debugging tests where in some cases the file is a relative string
-     * @param targetLocation relative backup location as a string
-     * @return the arguments that would be passed to the backup command
-     */
-    public String[] resolveArgs( String targetLocation ) throws IOException
-    {
-        return resolveArgs( relativeFileFromString( targetLocation ) );
     }
 
     public String[] resolveArgs( File targetLocation ) throws IOException
@@ -318,7 +289,7 @@ public class OnlineBackupCommandBuilder
         {
             return "";
         }
-        File configFile = neo4jHomeFromTarget( backupTarget ).resolve( "../additional_neo4j.conf" ).toFile();
+        File configFile = backupTarget.toPath().resolve( "../additional_neo4j.conf" ).toFile();
         writeConfigToFile( additionalConfig, configFile );
 
         return format( "--additional-config=%s", configFile );
@@ -361,18 +332,8 @@ public class OnlineBackupCommandBuilder
                 .toArray( String[]::new );
     }
 
-    private static <E> Predicate<E> not( Predicate<E> predicate )
+    private static Path configDirFromTarget( Path neo4jHome )
     {
-        return item -> !predicate.test( item );
-    }
-
-    private static Path neo4jHomeFromTarget( File target )
-    {
-        return target.toPath();
-    }
-
-    private static Path configDirFromTarget( File target )
-    {
-        return neo4jHomeFromTarget( target ).resolve( "config" );
+        return neo4jHome.resolve( "conf" );
     }
 }

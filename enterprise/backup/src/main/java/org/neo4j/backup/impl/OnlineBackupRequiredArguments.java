@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 class OnlineBackupRequiredArguments
 {
     private final OptionalHostnamePort address;
-    private final Path folder;
+    private final Path directory;
     private final String name;
     private final boolean fallbackToFull;
     private final boolean doConsistencyCheck;
@@ -34,11 +34,11 @@ class OnlineBackupRequiredArguments
     private final Path reportDir;
     private final SelectedBackupProtocol selectedBackupProtocol;
 
-    OnlineBackupRequiredArguments( OptionalHostnamePort address, Path folder, String name, SelectedBackupProtocol selectedBackupProtocol,
+    OnlineBackupRequiredArguments( OptionalHostnamePort address, Path directory, String name, SelectedBackupProtocol selectedBackupProtocol,
             boolean fallbackToFull, boolean doConsistencyCheck, long timeout, Path reportDir )
     {
         this.address = address;
-        this.folder = folder;
+        this.directory = directory;
         this.name = name;
         this.fallbackToFull = fallbackToFull;
         this.doConsistencyCheck = doConsistencyCheck;
@@ -52,9 +52,9 @@ class OnlineBackupRequiredArguments
         return address;
     }
 
-    public Path getFolder()
+    public Path getDirectory()
     {
-        return folder;
+        return directory;
     }
 
     public String getName()
@@ -84,7 +84,7 @@ class OnlineBackupRequiredArguments
 
     public Path getResolvedLocationFromName()
     {
-        return folder.resolve( name );
+        return directory.resolve( name );
     }
 
     public SelectedBackupProtocol getSelectedBackupProtocol()

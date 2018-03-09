@@ -82,7 +82,7 @@ public class OnlineBackupCommandTest
         when( fileSystemAbstraction.isDirectory( backupDirectory.toFile() ) ).thenReturn( true );
         when( fileSystemAbstraction.isDirectory( reportDirectory.toFile() ) ).thenReturn( true );
 
-        when( requiredArguments.getFolder() ).thenReturn( backupDirectory );
+        when( requiredArguments.getDirectory() ).thenReturn( backupDirectory );
         when( requiredArguments.getReportDir() ).thenReturn( reportDirectory );
         when( requiredArguments.getName() ).thenReturn( "backup name" );
         when( backupStrategyCoordinatorFactory.backupStrategyCoordinator( any(), any(), any(), any() ) ).thenReturn( backupStrategyCoordinator );

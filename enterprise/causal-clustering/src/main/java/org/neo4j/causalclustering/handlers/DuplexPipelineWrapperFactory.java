@@ -19,13 +19,14 @@
  */
 package org.neo4j.causalclustering.handlers;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 
 public interface DuplexPipelineWrapperFactory
 {
-    PipelineWrapper forServer( Config config, Dependencies dependencies, LogProvider logProvider );
+    PipelineWrapper forServer( Config config, Dependencies dependencies, LogProvider logProvider, Setting<String> policyName );
 
-    PipelineWrapper forClient( Config config, Dependencies dependencies, LogProvider logProvider );
+    PipelineWrapper forClient( Config config, Dependencies dependencies, LogProvider logProvider, Setting<String> policyName );
 }

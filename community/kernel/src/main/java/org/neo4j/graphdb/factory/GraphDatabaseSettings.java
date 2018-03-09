@@ -21,7 +21,12 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Dynamic;
@@ -29,9 +34,12 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.csv.reader.Configuration;
+import org.neo4j.graphdb.config.BaseSetting;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.BoltConnectorValidator;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
@@ -62,6 +70,7 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.list;
@@ -989,5 +998,31 @@ public class GraphDatabaseSettings implements LoadableConfig
             OPTIONAL,
             DISABLED
         }
+    }
+
+    public static BaseSetting<String> prefixSetting( final String name, final Function<String,String> parser, final String defaultValue )
+    {
+        BiFunction<String,Function<String,String>,String> valueLookup = ( n, settings ) -> settings.apply( n );
+        BiFunction<String,Function<String,String>,String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
+
+        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
+        {
+            @Override
+            public Map<String,String> validate( Map<String,String> rawConfig, Consumer<String> warningConsumer ) throws InvalidSettingException
+            {
+                // Validate setting, if present or default value otherwise
+                try
+                {
+                    apply( rawConfig::get );
+                    // only return if it was present though
+
+                    return rawConfig.entrySet().stream().filter( entry -> entry.getKey().startsWith( name() ) ).collect( CollectorsUtil.entriesToMap() );
+                }
+                catch ( RuntimeException e )
+                {
+                    throw new InvalidSettingException( e.getMessage(), e );
+                }
+            }
+        };
     }
 }

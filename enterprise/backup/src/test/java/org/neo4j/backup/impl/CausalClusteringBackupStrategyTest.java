@@ -33,6 +33,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,7 +63,7 @@ public class CausalClusteringBackupStrategyTest
     public void setup()
     {
         when( addressResolver.resolveCorrectCCAddress( any(), any() ) ).thenReturn( resolvedFromAddress );
-        subject = new CausalClusteringBackupStrategy( backupDelegator, addressResolver );
+        subject = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, NullLogProvider.getInstance() );
     }
 
     @Test

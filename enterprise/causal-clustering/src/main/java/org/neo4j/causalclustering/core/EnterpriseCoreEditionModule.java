@@ -108,6 +108,7 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -243,11 +244,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
         dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
 
-        PipelineWrapper clientPipelineWrapper = pipelineWrapperFactory().forClient( config, dependencies, logProvider );
-        PipelineWrapper serverPipelineWrapper = pipelineWrapperFactory().forServer( config, dependencies, logProvider );
+        PipelineWrapper clientPipelineWrapper = pipelineWrapperFactory().forClient( config, dependencies, logProvider, CausalClusteringSettings.ssl_policy );
+        PipelineWrapper serverPipelineWrapper = pipelineWrapperFactory().forServer( config, dependencies, logProvider, CausalClusteringSettings.ssl_policy );
+        PipelineWrapper backupServerPipelineWrapper = pipelineWrapperFactory().forServer( config, dependencies, logProvider, OnlineBackupSettings.ssl_policy );
 
         NettyPipelineBuilderFactory clientPipelineBuilderFactory = new NettyPipelineBuilderFactory( clientPipelineWrapper );
         NettyPipelineBuilderFactory serverPipelineBuilderFactory = new NettyPipelineBuilderFactory( serverPipelineWrapper );
+        NettyPipelineBuilderFactory backupServerPipelineBuilderFactory = new NettyPipelineBuilderFactory( backupServerPipelineWrapper );
 
         topologyService = clusteringModule.topologyService();
 
@@ -310,7 +313,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         this.coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
                 replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineBuilderFactory,
-                serverPipelineBuilderFactory, serverInstalledProtocolHandler );
+                serverPipelineBuilderFactory, backupServerPipelineBuilderFactory, serverInstalledProtocolHandler );
 
         TypicallyConnectToRandomReadReplicaStrategy defaultStrategy = new TypicallyConnectToRandomReadReplicaStrategy( 2 );
         defaultStrategy.inject( topologyService, config, logProvider, identityModule.myself() );
@@ -449,7 +452,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logFile.getParentFile().mkdirs();
         try
         {
-
             return new PrintWriter( new FileOutputStream( logFile, true ) );
         }
         catch ( FileNotFoundException e )
