@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(long, IndexDescriptor, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(long, SchemaIndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -87,7 +87,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(long, IndexDescriptor, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(long, SchemaIndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class IndexProvider extends LifecycleAdapter implements Comparable<IndexProvider>
@@ -99,19 +99,19 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         class Adaptor implements Monitor
         {
             @Override
-            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+            public void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
             {   // no-op
             }
 
             @Override
-            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+            public void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data )
             {   // no-op
             }
         }
 
-        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
+        void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
+        void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data );
     }
 
     public static final IndexProvider NO_INDEX_PROVIDER =
@@ -121,27 +121,27 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
 
                 @Override
-                public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+                public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
                                                         IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
+                public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
                                                     IndexSamplingConfig samplingConfig )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+                public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
                 {
                     return InternalIndexState.POPULATING;
                 }
 
                 @Override
-                public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+                public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }
@@ -154,7 +154,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 }
 
                 @Override
-                public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+                public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
                 {
                     throw new IllegalStateException();
                 }
@@ -189,13 +189,13 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
+    public abstract IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
                                                  IndexSamplingConfig samplingConfig );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+    public abstract IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
                                                      IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
@@ -203,26 +203,26 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
      *
      * Implementations are expected to persist this failure
      * @param indexId the id of the index.
-     * @param descriptor {@link IndexDescriptor} of the index.
+     * @param descriptor {@link SchemaIndexDescriptor} of the index.
      * @return failure, in the form of a stack trace, that happened during population.
      * @throws IllegalStateException If there was no failure during population.
      */
-    public abstract String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException;
+    public abstract String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(long, IndexDescriptor)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(long, SchemaIndexDescriptor)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
-    public abstract InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor );
+    public abstract InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor );
 
     /**
-     * Return {@link IndexCapability} for this index provider for a given {@link IndexDescriptor}.
+     * Return {@link IndexCapability} for this index provider for a given {@link SchemaIndexDescriptor}.
      *
-     * @param indexDescriptor {@link IndexDescriptor} to get IndexCapability for.
+     * @param schemaIndexDescriptor {@link SchemaIndexDescriptor} to get IndexCapability for.
      */
-    public abstract IndexCapability getCapability( IndexDescriptor indexDescriptor );
+    public abstract IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor );
 
     /**
      * @return a description of this index provider

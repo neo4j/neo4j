@@ -28,7 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -44,7 +44,7 @@ public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringS
             Layout<StringSchemaKey,NativeSchemaValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IndexProvider.Monitor monitor,
-            IndexDescriptor descriptor,
+            SchemaIndexDescriptor descriptor,
             long indexId,
             IndexSamplingConfig samplingConfig ) throws IOException
     {

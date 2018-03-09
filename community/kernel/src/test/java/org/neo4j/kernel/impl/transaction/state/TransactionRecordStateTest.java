@@ -104,7 +104,7 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;

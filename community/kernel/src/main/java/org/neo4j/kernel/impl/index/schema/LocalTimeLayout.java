@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 /**
  * {@link Layout} for local times.
  */
 class LocalTimeLayout extends BaseLayout<LocalTimeSchemaKey>
 {
-    public static Layout<LocalTimeSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
+    public static Layout<LocalTimeSchemaKey,NativeSchemaValue> of( SchemaIndexDescriptor descriptor )
     {
-        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? LocalTimeLayout.UNIQUE : LocalTimeLayout.NON_UNIQUE;
+        return descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE ? LocalTimeLayout.UNIQUE : LocalTimeLayout.NON_UNIQUE;
     }
 
     private static LocalTimeLayout UNIQUE = new LocalTimeLayout( "UTlt", 0, 1 );

@@ -59,7 +59,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -501,7 +501,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
+        public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
                                             IndexSamplingConfig samplingConfig )
         {
             IndexPopulator populator = delegate.getPopulator( indexId, descriptor, samplingConfig );
@@ -509,22 +509,22 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+        public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
                                                 IndexSamplingConfig samplingConfig  ) throws IOException
         {
             return delegate.getOnlineAccessor(indexId, descriptor, samplingConfig );
         }
 
         @Override
-        public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+        public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
         {
             return delegate.getInitialState( indexId, descriptor );
         }
 
         @Override
-        public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+        public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
         {
-            return delegate.getCapability( indexDescriptor );
+            return delegate.getCapability( schemaIndexDescriptor );
         }
 
         @Override
@@ -534,7 +534,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+        public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
         {
             return delegate.getPopulationFailure( indexId, descriptor );
         }

@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
@@ -49,7 +49,7 @@ class FusionIndexAccessor implements IndexAccessor
     private final IndexAccessor luceneAccessor;
     private final Selector selector;
     private final long indexId;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
     private final DropAction dropAction;
 
     FusionIndexAccessor( IndexAccessor numberAccessor,
@@ -58,7 +58,7 @@ class FusionIndexAccessor implements IndexAccessor
             IndexAccessor luceneAccessor,
             Selector selector,
             long indexId,
-            IndexDescriptor descriptor,
+            SchemaIndexDescriptor descriptor,
             DropAction dropAction )
     {
         this.numberAccessor = numberAccessor;

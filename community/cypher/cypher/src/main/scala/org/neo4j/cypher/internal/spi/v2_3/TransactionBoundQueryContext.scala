@@ -47,7 +47,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory
 import org.neo4j.kernel.api.{SilentTokenNameLookup, StatementConstants}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.storable.Values
@@ -480,7 +480,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().indexDrop(IndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
+    tc.statement.schemaWriteOperations().indexDrop(SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.UniquenessConstraint] = try {
     IdempotentResult(

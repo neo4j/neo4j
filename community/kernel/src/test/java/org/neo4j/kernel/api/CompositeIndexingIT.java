@@ -46,8 +46,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -58,7 +58,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
@@ -74,7 +74,7 @@ public class CompositeIndexingIT
     @Rule
     public Timeout globalTimeout = Timeout.seconds( 200 );
 
-    private final IndexDescriptor index;
+    private final SchemaIndexDescriptor index;
     private GraphDatabaseAPI graphDatabaseAPI;
 
     @Before
@@ -138,17 +138,17 @@ public class CompositeIndexingIT
     @Parameterized.Parameters( name = "Index: {0}" )
     public static Iterable<Object[]> parameterValues()
     {
-        return Arrays.asList( Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
-                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
-                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
-                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
-                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
+        return Arrays.asList( Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
+                Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
+                Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
+                Iterators.array( SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
+                Iterators.array( SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
         );
     }
 
-    public CompositeIndexingIT( IndexDescriptor nodeDescriptor )
+    public CompositeIndexingIT( SchemaIndexDescriptor nodeDescriptor )
     {
         this.index = nodeDescriptor;
     }

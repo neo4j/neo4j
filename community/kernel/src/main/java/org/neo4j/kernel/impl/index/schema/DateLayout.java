@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 /**
  * {@link Layout} for dates.
  */
 class DateLayout extends BaseLayout<DateSchemaKey>
 {
-    public static Layout<DateSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
+    public static Layout<DateSchemaKey,NativeSchemaValue> of( SchemaIndexDescriptor descriptor )
     {
-        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? DateLayout.UNIQUE : DateLayout.NON_UNIQUE;
+        return descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE ? DateLayout.UNIQUE : DateLayout.NON_UNIQUE;
     }
 
     private static DateLayout UNIQUE = new DateLayout( "UTda", 0, 1 );

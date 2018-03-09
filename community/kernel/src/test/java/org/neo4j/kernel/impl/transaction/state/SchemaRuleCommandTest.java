@@ -28,7 +28,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -91,7 +91,7 @@ public class SchemaRuleCommandTest
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
             new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
-    private final IndexRule rule = IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( labelId, propertyKey ),
+    private final IndexRule rule = IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( labelId, propertyKey ),
             PROVIDER_DESCRIPTOR );
 
     @Test

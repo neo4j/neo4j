@@ -29,7 +29,8 @@ public abstract class StringSchemaIndexAccessorTest extends NativeSchemaIndexAcc
     @Override
     StringSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
+        return new StringSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor,
+                schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     // TODO test reader unsupported index order

@@ -27,7 +27,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
@@ -44,7 +44,7 @@ public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSch
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         try
@@ -67,11 +67,11 @@ public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSch
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
 
         // when
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
         {
             updater.process( update );
         }
@@ -96,11 +96,11 @@ public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSch
     {
         // GIVEN
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // WHEN
         populator.add( asList( updates ) );
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
         {
             populator.includeSample( update );
         }

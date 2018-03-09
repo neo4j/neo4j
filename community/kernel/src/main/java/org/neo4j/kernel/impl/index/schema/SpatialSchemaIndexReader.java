@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -48,7 +48,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     private final SpatialLayout spatial;
     private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor,
+    SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
             SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );

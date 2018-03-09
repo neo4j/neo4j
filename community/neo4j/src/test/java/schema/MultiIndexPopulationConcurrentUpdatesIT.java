@@ -60,7 +60,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -382,7 +382,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> IndexRule.indexRule( index, IndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
+                .map( index -> IndexRule.indexRule( index, SchemaIndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
                 .toArray( IndexRule[]::new );
     }
 

@@ -45,8 +45,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -68,7 +68,7 @@ public class DatabaseCompositeIndexAccessorTest
 {
     private static final int PROP_ID1 = 1;
     private static final int PROP_ID2 = 2;
-    private static final IndexDescriptor DESCRIPTOR = IndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
+    private static final SchemaIndexDescriptor DESCRIPTOR = SchemaIndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
     private static final Config config = Config.defaults();
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -84,9 +84,9 @@ public class DatabaseCompositeIndexAccessorTest
     private final Object[] values = {"value1", "values2"};
     private final Object[] values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory
+    private static final SchemaIndexDescriptor SCHEMA_INDEX_DESCRIPTOR = SchemaIndexDescriptorFactory
             .forLabel( 0, PROP_ID1, PROP_ID2 );
-    private static final IndexDescriptor uniqueIndexDescriptor = IndexDescriptorFactory
+    private static final SchemaIndexDescriptor UNIQUE_SCHEMA_INDEX_DESCRIPTOR = SchemaIndexDescriptorFactory
             .uniqueForLabel( 1, PROP_ID1, PROP_ID2 );
 
     @Parameterized.Parameters( name = "{0}" )
@@ -96,7 +96,7 @@ public class DatabaseCompositeIndexAccessorTest
         return Arrays.asList(
                 arg( dirFactory1 ->
                 {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor, config )
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( SCHEMA_INDEX_DESCRIPTOR, config )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( new File( dir, "1" ) )
@@ -108,7 +108,7 @@ public class DatabaseCompositeIndexAccessorTest
                 } ),
                 arg( dirFactory1 ->
                 {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor, config )
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_SCHEMA_INDEX_DESCRIPTOR, config )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( new File( dir, "testIndex" ) )
@@ -263,17 +263,17 @@ public class DatabaseCompositeIndexAccessorTest
 
     private IndexEntryUpdate<?> add( long nodeId, Object... values )
     {
-        return IndexQueryHelper.add( nodeId, indexDescriptor.schema(), values );
+        return IndexQueryHelper.add( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), values );
     }
 
     private IndexEntryUpdate<?> remove( long nodeId, Object... values )
     {
-        return IndexQueryHelper.remove( nodeId, indexDescriptor.schema(), values );
+        return IndexQueryHelper.remove( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), values );
     }
 
     private IndexEntryUpdate<?> change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
     {
-        return IndexQueryHelper.change( nodeId, indexDescriptor.schema(), valuesBefore, valuesAfter );
+        return IndexQueryHelper.change( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), valuesBefore, valuesAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates )

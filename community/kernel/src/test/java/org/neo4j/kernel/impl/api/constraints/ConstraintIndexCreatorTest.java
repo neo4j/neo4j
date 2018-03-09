@@ -59,8 +59,8 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -94,7 +94,7 @@ public class ConstraintIndexCreatorTest
     private static final int LABEL_ID = 123;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
-    private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
+    private final SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 123, 456 );
     private final Monitors monitors = new Monitors();
 
     @Test
@@ -170,7 +170,7 @@ public class ConstraintIndexCreatorTest
         }
         assertEquals( 2, kernel.statements.size() );
         TransactionState tx1 = kernel.statements.get( 0 ).txState();
-        IndexDescriptor newIndex = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
+        SchemaIndexDescriptor newIndex = SchemaIndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
         verify( schemaOps ).indexGetCommittedId( state, index );

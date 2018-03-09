@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -36,17 +36,18 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+    public void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
     {
         log.error( "Failed to open index:" + indexId + ". " + action, cause );
     }
 
     @Override
-    public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+    public void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data )
     {
         StringBuilder builder =
                 new StringBuilder(
-                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + indexDescriptor.toString() );
+                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + schemaIndexDescriptor
+                                .toString() );
         data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
         log.info( builder.toString() );
     }

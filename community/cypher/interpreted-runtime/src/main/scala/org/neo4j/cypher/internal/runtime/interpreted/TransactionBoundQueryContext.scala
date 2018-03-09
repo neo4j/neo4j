@@ -52,7 +52,7 @@ import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
@@ -462,7 +462,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def lockingUniqueIndexSeek(indexReference: IndexReference, values: Seq[Any]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, values)
-    val index = IndexDescriptorFactory.uniqueForLabel(indexReference.label, indexReference.properties:_*)
+    val index = SchemaIndexDescriptorFactory.uniqueForLabel(indexReference.label, indexReference.properties:_*)
     val predicates = indexReference.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
     val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, predicates:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))

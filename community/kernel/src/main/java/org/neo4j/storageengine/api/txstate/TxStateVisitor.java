@@ -25,8 +25,7 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -55,9 +54,9 @@ public interface TxStateVisitor extends AutoCloseable
     void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed ) throws
             ConstraintValidationException;
 
-    void visitAddedIndex( IndexDescriptor element );
+    void visitAddedIndex( SchemaIndexDescriptor element );
 
-    void visitRemovedIndex( IndexDescriptor element );
+    void visitRemovedIndex( SchemaIndexDescriptor element );
 
     void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
 
@@ -118,12 +117,12 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index )
+        public void visitAddedIndex( SchemaIndexDescriptor index )
         {
         }
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor index )
+        public void visitRemovedIndex( SchemaIndexDescriptor index )
         {
         }
 
@@ -225,13 +224,13 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index )
+        public void visitAddedIndex( SchemaIndexDescriptor index )
         {
             actual.visitAddedIndex( index );
         }
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor index )
+        public void visitRemovedIndex( SchemaIndexDescriptor index )
         {
             actual.visitRemovedIndex( index );
         }

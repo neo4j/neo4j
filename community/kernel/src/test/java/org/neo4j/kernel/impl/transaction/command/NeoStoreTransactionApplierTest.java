@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -933,7 +933,7 @@ public class NeoStoreTransactionApplierTest
             IndexProvider.Descriptor providerDescriptor )
     {
         //TODO: Consider testing composite indexes
-        return IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKeyId ),
+        return IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( label, propertyKeyId ),
                 providerDescriptor );
     }
 
@@ -941,7 +941,7 @@ public class NeoStoreTransactionApplierTest
                                                   IndexProvider.Descriptor providerDescriptor, Long owningConstraint )
     {
         //TODO: Consider testing composite indexes
-        return IndexRule.constraintIndexRule( id, IndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),
+        return IndexRule.constraintIndexRule( id, SchemaIndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),
                 providerDescriptor, owningConstraint );
     }
 

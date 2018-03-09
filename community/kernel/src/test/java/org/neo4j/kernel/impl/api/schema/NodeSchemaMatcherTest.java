@@ -30,7 +30,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.state.StubCursors;
@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
 
 public class NodeSchemaMatcherTest
 {
@@ -61,11 +61,11 @@ public class NodeSchemaMatcherTest
     KernelStatement state;
     NodeItem node;
 
-    IndexDescriptor index1 = forLabel( labelId1, propId1 );
-    IndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
-    IndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
-    IndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
-    IndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
+    SchemaIndexDescriptor index1 = forLabel( labelId1, propId1 );
+    SchemaIndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
+    SchemaIndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
+    SchemaIndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
+    SchemaIndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
 
     private NodeSchemaMatcher nodeSchemaMatcher;
 
@@ -96,7 +96,7 @@ public class NodeSchemaMatcherTest
     public void shouldMatchOnSingleProperty()
     {
         // when
-        final List<IndexDescriptor> matched = new ArrayList<>();
+        final List<SchemaIndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema(
                 state, iterator( index1 ), node, unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
 
@@ -108,7 +108,7 @@ public class NodeSchemaMatcherTest
     public void shouldMatchOnTwoProperties()
     {
         // when
-        final List<IndexDescriptor> matched = new ArrayList<>();
+        final List<SchemaIndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema(
                 state, iterator( index1_2 ), node, unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
 
@@ -120,7 +120,7 @@ public class NodeSchemaMatcherTest
     public void shouldNotMatchIfNodeIsMissingProperty()
     {
         // when
-        final List<IndexDescriptor> matched = new ArrayList<>();
+        final List<SchemaIndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema( state, iterator( indexWithMissingProperty ), node, unIndexedPropId,
                 ( schema, props ) -> matched.add( schema ) );
 
@@ -132,7 +132,7 @@ public class NodeSchemaMatcherTest
     public void shouldNotMatchIfNodeIsMissingLabel()
     {
         // when
-        final List<IndexDescriptor> matched = new ArrayList<>();
+        final List<SchemaIndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema( state, iterator( indexWithMissingLabel ), node, unIndexedPropId,
                 ( schema, props ) -> matched.add( schema ) );
 
@@ -144,7 +144,7 @@ public class NodeSchemaMatcherTest
     public void shouldMatchOnSpecialProperty()
     {
         // when
-        final List<IndexDescriptor> matched = new ArrayList<>();
+        final List<SchemaIndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema( state, iterator( indexOnSpecialProperty ), node, specialPropId,
                 ( schema, props ) -> matched.add( schema ) );
 
@@ -156,10 +156,10 @@ public class NodeSchemaMatcherTest
     public void shouldMatchSeveralTimes()
     {
         // given
-        List<IndexDescriptor> indexes = Arrays.asList( index1, index1, index1_2, index1_2 );
+        List<SchemaIndexDescriptor> indexes = Arrays.asList( index1, index1, index1_2, index1_2 );
 
         // when
-        final List<IndexDescriptor> matched = new ArrayList<>();
+        final List<SchemaIndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema(
                 state, indexes.iterator(), node, unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
 

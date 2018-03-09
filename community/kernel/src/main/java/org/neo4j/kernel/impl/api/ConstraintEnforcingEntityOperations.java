@@ -60,7 +60,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -243,7 +243,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try
         {
-            IndexDescriptor index = constraint.ownedIndexDescriptor();
+            SchemaIndexDescriptor index = constraint.ownedIndexDescriptor();
             assertIndexOnline( state, index );
 
             int labelId = index.schema().getLabelId();
@@ -266,15 +266,16 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private void assertIndexOnline( KernelStatement state, IndexDescriptor indexDescriptor )
+    private void assertIndexOnline( KernelStatement state, SchemaIndexDescriptor schemaIndexDescriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        switch ( schemaReadOperations.indexGetState( state, indexDescriptor ) )
+        switch ( schemaReadOperations.indexGetState( state, schemaIndexDescriptor ) )
         {
             case ONLINE:
                 return;
             default:
-                throw new IndexBrokenKernelException( schemaReadOperations.indexGetFailure( state, indexDescriptor ) );
+                throw new IndexBrokenKernelException( schemaReadOperations.indexGetFailure( state,
+                        schemaIndexDescriptor ) );
         }
     }
 
@@ -357,7 +358,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongResourceIterator indexQuery( KernelStatement statement, IndexDescriptor index,
+    public PrimitiveLongResourceIterator indexQuery( KernelStatement statement, SchemaIndexDescriptor index,
             IndexQuery[] predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
@@ -367,7 +368,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
-            IndexDescriptor index,
+            SchemaIndexDescriptor index,
             ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
@@ -422,7 +423,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
+    public long nodesCountIndexed( KernelStatement statement, SchemaIndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return entityReadOperations.nodesCountIndexed( statement, index, nodeId, value );
@@ -555,20 +556,20 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         return schemaWriteOperations.indexCreate( state, descriptor );
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.indexDrop( state, descriptor );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.uniqueIndexDrop( state, descriptor );
     }

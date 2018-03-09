@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateApply;
 import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateWork;
@@ -56,7 +56,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
 
@@ -85,7 +85,7 @@ public class SpatialCRSSchemaIndex
     private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> additionsWorkSync;
     private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> updatesWorkSync;
 
-    public SpatialCRSSchemaIndex( IndexDescriptor descriptor,
+    public SpatialCRSSchemaIndex( SchemaIndexDescriptor descriptor,
             IndexDirectoryStructure directoryStructure,
             CoordinateReferenceSystem crs,
             long indexId,
@@ -203,7 +203,7 @@ public class SpatialCRSSchemaIndex
         return new NativeAllEntriesReader<>( schemaIndex.tree, layout );
     }
 
-    public IndexReader newReader( IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    public IndexReader newReader( IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor )
     {
         schemaIndex.assertOpen();
         return new SpatialSchemaIndexReader<>( schemaIndex.tree, layout, samplingConfig, descriptor, configuration );
@@ -325,12 +325,12 @@ public class SpatialCRSSchemaIndex
         return fs.fileExists( indexFile );
     }
 
-    public String readPopulationFailure( IndexDescriptor descriptor ) throws IOException
+    public String readPopulationFailure( SchemaIndexDescriptor descriptor ) throws IOException
     {
         return NativeSchemaIndexes.readFailureMessage( pageCache, indexFile, layout( descriptor ) );
     }
 
-    public InternalIndexState readState( IndexDescriptor descriptor ) throws IOException
+    public InternalIndexState readState( SchemaIndexDescriptor descriptor ) throws IOException
     {
         return NativeSchemaIndexes.readState( pageCache, indexFile, layout( descriptor ) );
     }
@@ -396,7 +396,7 @@ public class SpatialCRSSchemaIndex
         }
     }
 
-    private SpatialLayout layout( IndexDescriptor descriptor )
+    private SpatialLayout layout( SchemaIndexDescriptor descriptor )
     {
         SpatialLayout layout;
         if ( isUnique( descriptor ) )
@@ -410,7 +410,7 @@ public class SpatialCRSSchemaIndex
         return layout;
     }
 
-    private boolean isUnique( IndexDescriptor descriptor )
+    private boolean isUnique( SchemaIndexDescriptor descriptor )
     {
         switch ( descriptor.type() )
         {
@@ -434,7 +434,7 @@ public class SpatialCRSSchemaIndex
 
     public interface Supplier
     {
-        SpatialCRSSchemaIndex get( IndexDescriptor descriptor,
+        SpatialCRSSchemaIndex get( SchemaIndexDescriptor descriptor,
                 Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
                 CoordinateReferenceSystem crs );
     }

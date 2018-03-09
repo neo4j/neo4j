@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 /**
  * {@link Layout} for durations.
  */
 class DurationLayout extends BaseLayout<DurationSchemaKey>
 {
-    public static Layout<DurationSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
+    public static Layout<DurationSchemaKey,NativeSchemaValue> of( SchemaIndexDescriptor descriptor )
     {
-        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? DurationLayout.UNIQUE : DurationLayout.NON_UNIQUE;
+        return descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE ? DurationLayout.UNIQUE : DurationLayout.NON_UNIQUE;
     }
 
     private static DurationLayout UNIQUE = new DurationLayout( "UTdu", 0, 1 );

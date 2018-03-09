@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -111,19 +111,19 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public interface Monitor
     {
-        void populationCompleteOn( IndexDescriptor descriptor );
+        void populationCompleteOn( SchemaIndexDescriptor descriptor );
 
         void indexPopulationScanStarting();
 
         void indexPopulationScanComplete();
 
-        void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
+        void awaitingPopulationOfRecoveredIndex( long indexId, SchemaIndexDescriptor descriptor );
     }
 
     public static class MonitorAdapter implements Monitor
     {
         @Override
-        public void populationCompleteOn( IndexDescriptor descriptor )
+        public void populationCompleteOn( SchemaIndexDescriptor descriptor )
         {   // Do nothing
         }
 
@@ -138,7 +138,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
 
         @Override
-        public void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor )
+        public void awaitingPopulationOfRecoveredIndex( long indexId, SchemaIndexDescriptor descriptor )
         {   // Do nothing
         }
     }
@@ -189,7 +189,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProxy indexProxy;
 
                 long indexId = indexRule.getId();
-                IndexDescriptor descriptor = indexRule.getIndexDescriptor();
+                SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
                 IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
                 IndexProvider provider = providerMap.apply( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
@@ -242,7 +242,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             indexMap.forEachIndexProxy( ( indexId, proxy ) ->
             {
                 InternalIndexState state = proxy.getState();
-                IndexDescriptor descriptor = proxy.getDescriptor();
+                SchemaIndexDescriptor descriptor = proxy.getDescriptor();
                 indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
                 .add( new IndexLogRecord( indexId, descriptor ) );
                 log.debug( indexStateInfo( "start", indexId, state, descriptor ) );
@@ -277,7 +277,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                         {
                             IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy(
                                     indexId,
-                                    descriptor.getIndexDescriptor(),
+                                    descriptor.getSchemaIndexDescriptor(),
                                     descriptor.getProviderDescriptor(),
                                     false, // never pass through a tentative online state during recovery
                                     monitor,
@@ -301,7 +301,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         rebuildingDescriptors.visitEntries(
                 (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->
                 {
-                    if ( descriptor.getIndexDescriptor().type() != IndexDescriptor.Type.UNIQUE )
+                    if ( descriptor.getSchemaIndexDescriptor().type() != SchemaIndexDescriptor.Type.UNIQUE )
                     {
                         // It's not a uniqueness constraint, so don't wait for it to be rebuilt
                         return false;
@@ -318,7 +318,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                                 "What? This index was seen during recovery just now, why isn't it available now?" );
                     }
 
-                    monitor.awaitingPopulationOfRecoveredIndex( indexId, descriptor.getIndexDescriptor() );
+                    monitor.awaitingPopulationOfRecoveredIndex( indexId, descriptor.getSchemaIndexDescriptor() );
                     awaitOnline( proxy );
                     return false;
                 } );
@@ -639,7 +639,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         populationJobController.startIndexPopulation( job );
     }
 
-    private String indexStateInfo( String tag, Long indexId, InternalIndexState state, IndexDescriptor descriptor )
+    private String indexStateInfo( String tag, Long indexId, InternalIndexState state, SchemaIndexDescriptor descriptor )
     {
         return format( "IndexingService.%s: index %d on %s is %s", tag, indexId,
                 descriptor.schema().userDescription( tokenNameLookup ), state.name() );
@@ -709,7 +709,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     indexMap.putIndexProxy( ruleId, index );
                     continue;
                 }
-                final IndexDescriptor descriptor = rule.getIndexDescriptor();
+                final SchemaIndexDescriptor descriptor = rule.getIndexDescriptor();
                 Descriptor providerDescriptor = rule.getProviderDescriptor();
                 boolean flipToTentative = rule.canSupportUniqueConstraint();
                 if ( state == State.RUNNING )
@@ -741,9 +741,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private static final class IndexLogRecord
     {
         private final long indexId;
-        private final IndexDescriptor descriptor;
+        private final SchemaIndexDescriptor descriptor;
 
-        IndexLogRecord( long indexId, IndexDescriptor descriptor )
+        IndexLogRecord( long indexId, SchemaIndexDescriptor descriptor )
         {
             this.indexId = indexId;
             this.descriptor = descriptor;
@@ -754,7 +754,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             return indexId;
         }
 
-        public IndexDescriptor getDescriptor()
+        public SchemaIndexDescriptor getDescriptor()
         {
             return descriptor;
         }

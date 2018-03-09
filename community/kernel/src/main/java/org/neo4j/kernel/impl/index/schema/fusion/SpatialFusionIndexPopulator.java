@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
@@ -46,12 +46,12 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 class SpatialFusionIndexPopulator implements IndexPopulator
 {
     private final long indexId;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
     private final SpatialCRSSchemaIndex.Supplier indexSupplier;
     private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
     private final IndexSamplerWrapper sampler;
 
-    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor,
+    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Supplier indexSupplier )
     {
         this.indexMap = indexMap;
@@ -144,7 +144,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         private final DefaultNonUniqueIndexSampler generalSampler;
         private final UniqueIndexSampler uniqueSampler;
 
-        IndexSamplerWrapper( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        IndexSamplerWrapper( SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
         {
             switch ( descriptor.type() )
             {

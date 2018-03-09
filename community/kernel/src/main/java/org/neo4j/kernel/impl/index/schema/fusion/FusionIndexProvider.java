@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -80,7 +80,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new FusionIndexPopulator(
                 numberProvider.getPopulator( indexId, descriptor, samplingConfig ),
@@ -90,7 +90,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new FusionIndexAccessor(
@@ -101,7 +101,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
         writeFailure( "number", builder, numberProvider, indexId, descriptor );
@@ -116,7 +116,7 @@ public class FusionIndexProvider extends IndexProvider
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, IndexDescriptor descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, SchemaIndexDescriptor descriptor )
     {
         try
         {
@@ -132,7 +132,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
         InternalIndexState numberState = numberProvider.getInitialState( indexId, descriptor );
         InternalIndexState spatialState = spatialProvider.getInitialState( indexId, descriptor );
@@ -153,12 +153,12 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability numberCapability = numberProvider.getCapability( indexDescriptor );
-        IndexCapability spatialCapability = spatialProvider.getCapability( indexDescriptor );
-        IndexCapability temporalCapability = temporalProvider.getCapability( indexDescriptor );
-        IndexCapability luceneCapability = luceneProvider.getCapability( indexDescriptor );
+        IndexCapability numberCapability = numberProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability spatialCapability = spatialProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability temporalCapability = temporalProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability luceneCapability = luceneProvider.getCapability( schemaIndexDescriptor );
         return new UnionIndexCapability( numberCapability, spatialCapability, temporalCapability, luceneCapability )
         {
             @Override

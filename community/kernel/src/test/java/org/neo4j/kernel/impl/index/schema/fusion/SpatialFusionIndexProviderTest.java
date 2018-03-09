@@ -30,8 +30,8 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.test.rule.RandomRule;
@@ -54,7 +54,7 @@ public class SpatialFusionIndexProviderTest
 
     private Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
     private SpatialFusionIndexProvider provider;
-    private IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+    private SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
 
     @Before
     public void setup()

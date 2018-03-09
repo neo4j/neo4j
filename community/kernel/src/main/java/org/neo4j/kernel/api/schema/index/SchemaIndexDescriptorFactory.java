@@ -23,32 +23,32 @@ package org.neo4j.kernel.api.schema.index;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 
-public class IndexDescriptorFactory
+public class SchemaIndexDescriptorFactory
 {
-    private IndexDescriptorFactory()
+    private SchemaIndexDescriptorFactory()
     {
     }
 
-    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
+    public static SchemaIndexDescriptor forLabel( int labelId, int... propertyIds )
     {
         return forSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
+    public static SchemaIndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static IndexDescriptor forSchema( LabelSchemaDescriptor schema )
+    public static SchemaIndexDescriptor forSchema( LabelSchemaDescriptor schema )
     {
-        return new IndexDescriptor( schema, GENERAL );
+        return new SchemaIndexDescriptor( schema, GENERAL );
     }
 
-    public static IndexDescriptor uniqueForSchema( LabelSchemaDescriptor schema )
+    public static SchemaIndexDescriptor uniqueForSchema( LabelSchemaDescriptor schema )
     {
-        return new IndexDescriptor( schema, UNIQUE );
+        return new SchemaIndexDescriptor( schema, UNIQUE );
     }
 }

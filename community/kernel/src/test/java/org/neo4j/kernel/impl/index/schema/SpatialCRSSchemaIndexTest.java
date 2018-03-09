@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -63,7 +63,7 @@ public class SpatialCRSSchemaIndexTest
     public final RuleChain rules = outerRule( fsRule ).around( directory ).around( pageCacheRule ).around( random );
 
     private SpatialCRSSchemaIndex index;
-    private IndexDescriptor descriptor;
+    private SchemaIndexDescriptor descriptor;
     private FileSystemAbstraction fs;
     private File storeDir;
     private File indexDir;
@@ -80,7 +80,7 @@ public class SpatialCRSSchemaIndexTest
         String crsDir = String.format("%s-%s", crs.getTable().getTableId(), crs.getCode() );
         indexDir = new File( new File( new File( new File( new File( storeDir, "schema" ), "index" ), "spatial-1.0" ), "1" ), crsDir );
         IndexDirectoryStructure dirStructure = IndexDirectoryStructure.directoriesByProvider( storeDir ).forProvider( SPATIAL_PROVIDER_DESCRIPTOR );
-        descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
+        descriptor = SchemaIndexDescriptorFactory.forLabel( 42, 1337 );
         index = new SpatialCRSSchemaIndex( descriptor, dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
                 IndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE, new StandardConfiguration(), 60 );
     }

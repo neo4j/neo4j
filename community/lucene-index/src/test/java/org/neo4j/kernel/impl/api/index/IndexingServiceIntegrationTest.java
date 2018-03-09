@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -128,7 +128,7 @@ public class IndexingServiceIntegrationTest
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
         IndexRule rule = IndexRule.indexRule(
-                schemaStore.nextId(), IndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
+                schemaStore.nextId(), SchemaIndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 
@@ -200,7 +200,8 @@ public class IndexingServiceIntegrationTest
         int indexLabel7 = labelTokenHolder.getIdByName( indexLabelPrefix + 7 );
         int indexProperty7 = propertyKeyTokenHolder.getIdByName( indexPropertyPrefix + 7 );
 
-        IndexProxy index = indexingService.getIndexProxy( IndexDescriptorFactory.forLabel( indexLabel7, indexProperty7).schema() );
+        IndexProxy index = indexingService.getIndexProxy( SchemaIndexDescriptorFactory
+                .forLabel( indexLabel7, indexProperty7).schema() );
 
         index.drop();
 
