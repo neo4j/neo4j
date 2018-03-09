@@ -616,7 +616,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         // Find middle
         int keyCountAfterInsert = leftKeyCount + 1;
-        int middlePos = middleLeaf( leftCursor, insertPos, newKey, newValue );
+        int middlePos = middleLeaf( leftCursor, insertPos, newKey, newValue, keyCountAfterInsert );
 
         if ( middlePos == insertPos )
         {
@@ -662,7 +662,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter )
     {
         int keyCountAfterInsert = leftKeyCount + 1;
-        int middlePos = middleInternal( leftCursor, insertPos, newKey );
+        int middlePos = middleInternal( leftCursor, insertPos, newKey, keyCountAfterInsert );
 
         if ( middlePos == insertPos )
         {
@@ -955,7 +955,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return toAllocOffset;
     }
 
-    private int middleInternal( PageCursor cursor, int insertPos, KEY newKey )
+    private int middleInternal( PageCursor cursor, int insertPos, KEY newKey, int keyCountAfterInsert )
     {
         int halfSpace = this.halfSpace;
         int middle = 0;
@@ -968,8 +968,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         do
         {
             // We may come closer to split by keeping one more in left
-            middle++;
-            currentPos++;
             int space;
             if ( currentPos == insertPos & !includedNew )
             {
@@ -984,13 +982,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             middleSpace += space;
             prevDelta = currentDelta;
             currentDelta = Math.abs( middleSpace - halfSpace );
+            middle++;
+            currentPos++;
         }
-        while ( currentDelta < prevDelta );
+        while ( currentDelta < prevDelta && currentPos < keyCountAfterInsert );
         middle--; // Step back to the pos that most equally divide the available space in two
         return middle;
     }
 
-    private int middleLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue )
+    private int middleLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue, int keyCountAfterInsert )
     {
         int halfSpace = this.halfSpace;
         int middle = 0;
@@ -1003,8 +1003,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         do
         {
             // We may come closer to split by keeping one more in left
-            middle++;
-            currentPos++;
             int space;
             if ( currentPos == insertPos & !includedNew )
             {
@@ -1019,8 +1017,10 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             middleSpace += space;
             prevDelta = currentDelta;
             currentDelta = Math.abs( middleSpace - halfSpace );
+            currentPos++;
+            middle++;
         }
-        while ( currentDelta < prevDelta );
+        while ( currentDelta < prevDelta && currentPos < keyCountAfterInsert );
         middle--; // Step back to the pos that most equally divide the available space in two
         return middle;
     }
