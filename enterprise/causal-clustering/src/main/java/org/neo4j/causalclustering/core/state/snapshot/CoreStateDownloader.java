@@ -88,6 +88,7 @@ public class CoreStateDownloader
              */
             if ( commitStateHelper.hasTxLogs( localDatabase.storeDir() ) )
             {
+                log.info( "Recovering local database" );
                 localDatabase.start();
                 localDatabase.stop();
             }

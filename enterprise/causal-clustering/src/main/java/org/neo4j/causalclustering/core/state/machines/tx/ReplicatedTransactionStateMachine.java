@@ -110,6 +110,11 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
                 TransactionToApply transaction = new TransactionToApply( tx, versionContextSupplier.getVersionContext() );
                 transaction.onClose( txId ->
                 {
+                    if ( tx.getLatestCommittedTxWhenStarted() >= txId )
+                    {
+                        throw new IllegalStateException( "Out of order transaction" );
+                    }
+
                     callback.accept( Result.of( txId ) );
                     commandIndexTracker.setAppliedCommandIndex( commandIndex );
                 } );
