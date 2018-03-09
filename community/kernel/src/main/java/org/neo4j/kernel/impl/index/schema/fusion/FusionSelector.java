@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Values;
 public class FusionSelector implements FusionIndexProvider.Selector
 {
     @Override
-    public <T> T select( T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values )
+    public <T> T select( T stringInstance, T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values )
     {
         if ( values.length > 1 )
         {
@@ -35,6 +35,12 @@ public class FusionSelector implements FusionIndexProvider.Selector
         }
 
         Value singleValue = values[0];
+        if ( singleValue.valueGroup() == ValueGroup.TEXT )
+        {
+            // It's a string, the native string index can handle this
+            return stringInstance;
+        }
+
         if ( singleValue.valueGroup() == ValueGroup.NUMBER )
         {
             // It's a number, the native index can handle this
@@ -51,6 +57,7 @@ public class FusionSelector implements FusionIndexProvider.Selector
         {
             return temporalInstance;
         }
+
         return luceneInstance;
     }
 }

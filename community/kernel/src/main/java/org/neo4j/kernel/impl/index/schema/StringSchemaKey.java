@@ -156,6 +156,7 @@ class StringSchemaKey extends NativeSchemaKey
     @Override
     public void writeString( char value )
     {
-        throw new UnsupportedOperationException( "Not supported a.t.m. should it be?" );
+        // TODO more efficient impl
+        writeString( String.valueOf( value ) );
     }
 }

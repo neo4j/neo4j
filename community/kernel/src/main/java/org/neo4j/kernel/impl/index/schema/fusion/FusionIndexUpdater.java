@@ -20,33 +20,39 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 
+import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class FusionIndexUpdater implements IndexUpdater
 {
+    private final IndexUpdater stringUpdater;
     private final IndexUpdater numberUpdater;
     private final IndexUpdater spatialUpdater;
     private final IndexUpdater temporalUpdater;
     private final IndexUpdater luceneUpdater;
+    private final IndexUpdater[] updaters;
     private final Selector selector;
 
-    FusionIndexUpdater( IndexUpdater numberUpdater,
-                        IndexUpdater spatialUpdater,
-                        IndexUpdater temporalUpdater,
-                        IndexUpdater luceneUpdater,
-                        Selector selector )
+    FusionIndexUpdater(
+            IndexUpdater stringUpdater,
+            IndexUpdater numberUpdater,
+            IndexUpdater spatialUpdater,
+            IndexUpdater temporalUpdater,
+            IndexUpdater luceneUpdater,
+            Selector selector )
     {
+        this.stringUpdater = stringUpdater;
         this.numberUpdater = numberUpdater;
         this.spatialUpdater = spatialUpdater;
         this.temporalUpdater = temporalUpdater;
         this.luceneUpdater = luceneUpdater;
+        this.updaters = array( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater );
         this.selector = selector;
     }
 
@@ -56,14 +62,14 @@ class FusionIndexUpdater implements IndexUpdater
         switch ( update.updateMode() )
         {
         case ADDED:
-            selector.select( numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.values() ).process( update );
+            selector.select( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.values() ).process( update );
             break;
         case CHANGED:
             // Hmm, here's a little conundrum. What if we change from a value that goes into native
             // to a value that goes into fallback, or vice versa? We also don't want to blindly pass
             // all CHANGED updates to both updaters since not all values will work in them.
-            IndexUpdater from = selector.select( numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.beforeValues() );
-            IndexUpdater to = selector.select( numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.values() );
+            IndexUpdater from = selector.select( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.beforeValues() );
+            IndexUpdater to = selector.select( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.values() );
             // There are two cases:
             // - both before/after go into the same updater --> pass update into that updater
             if ( from == to )
@@ -73,14 +79,12 @@ class FusionIndexUpdater implements IndexUpdater
             // - before go into one and after into the other --> REMOVED from one and ADDED into the other
             else
             {
-                from.process( IndexEntryUpdate.remove(
-                        update.getEntityId(), update.indexKey(), update.beforeValues() ) );
-                to.process( IndexEntryUpdate.add(
-                        update.getEntityId(), update.indexKey(), update.values() ) );
+                from.process( IndexEntryUpdate.remove( update.getEntityId(), update.indexKey(), update.beforeValues() ) );
+                to.process( IndexEntryUpdate.add( update.getEntityId(), update.indexKey(), update.values() ) );
             }
             break;
         case REMOVED:
-            selector.select( numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.values() ).process( update );
+            selector.select( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater, update.values() ).process( update );
             break;
         default:
             throw new IllegalArgumentException( "Unknown update mode" );
@@ -92,14 +96,15 @@ class FusionIndexUpdater implements IndexUpdater
     {
         try
         {
-            forAll( IndexUpdater::close, Arrays.asList( numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater ) );
+            forAll( IndexUpdater::close, updaters );
         }
-        catch ( IOException | IndexEntryConflictException e )
+        catch ( IOException | IndexEntryConflictException | RuntimeException e )
         {
             throw e;
         }
         catch ( Exception e )
         {
+            // This catch-clause is basically only here to satisfy the compiler
             throw new RuntimeException( e );
         }
     }

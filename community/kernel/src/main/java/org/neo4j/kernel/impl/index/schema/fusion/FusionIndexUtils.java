@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.Arrays;
-import java.util.Collection;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * Utility methods for working with multiple sub-components within the Fusion Index system
@@ -30,6 +30,9 @@ import org.neo4j.function.ThrowingConsumer;
 public abstract class FusionIndexUtils
 {
     /**
+     * NOTE: duplicate of {@link #forAll(ThrowingConsumer, Iterable)} to avoid having to wrap subjects of one form into another.
+     * There are some real use cases for passing in an array instead of {@link Iterable} out there...
+     *
      * Method for calling a lambda function on many objects when it is expected that the function might
      * throw an exception. First exception will be thrown and subsequent will be suppressed.
      *
@@ -37,8 +40,56 @@ public abstract class FusionIndexUtils
      * <pre>
      *    public void drop() throws IOException
      *    {
-     *        forAll( IndexAccessor::drop, nativeAccessor, spatialAccessor, luceneAccessor );
-     *        dropAction.drop( indexId );
+     *        forAll( IndexAccessor::drop, firstAccessor, secondAccessor, thirdAccessor );
+     *    }
+     * </pre>
+     *
+     * @param consumer lambda function to call on each object passed
+     * @param subjects varargs array of objects to call the function on
+     * @param <E> the type of exception anticipated, inferred from the lambda
+     * @throws E if consumption fails with this exception
+     */
+    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
+    {
+        E exception = null;
+        for ( T subject : subjects )
+        {
+            try
+            {
+                consumer.accept( subject );
+            }
+            catch ( Throwable t )
+            {
+                E e = (E) t;
+                if ( exception == null )
+                {
+                    exception = e;
+                }
+                else
+                {
+                    exception.addSuppressed( e );
+                }
+            }
+        }
+        if ( exception != null )
+        {
+            throw exception;
+        }
+    }
+
+    /**
+     * See {@link FusionIndexUtils#forAll(ThrowingConsumer, Iterable)}
+     * NOTE: duplicate of {@link #forAll(ThrowingConsumer, Object[])} to avoid having to wrap subjects of one form into another.
+     * There are some real use cases for passing in an Iterable instead of array out there...
+     *
+     * Method for calling a lambda function on many objects when it is expected that the function might
+     * throw an exception. First exception will be thrown and subsequent will be suppressed.
+     *
+     * For example, in FusionIndexAccessor:
+     * <pre>
+     *    public void drop() throws IOException
+     *    {
+     *        forAll( IndexAccessor::drop, firstAccessor, secondAccessor, thirdAccessor );
      *    }
      * </pre>
      *
@@ -75,11 +126,11 @@ public abstract class FusionIndexUtils
         }
     }
 
-    /**
-     * See {@link FusionIndexUtils#forAll(ThrowingConsumer, Iterable)}
-     */
-    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
+    static IndexSample combineSamples( IndexSample... samples )
     {
-        forAll( consumer, Arrays.asList( subjects ) );
+        return new IndexSample(
+                Arrays.stream( samples ).mapToLong( IndexSample::indexSize ).sum(),
+                Arrays.stream( samples ).mapToLong( IndexSample::uniqueValues ).sum(),
+                Arrays.stream( samples ).mapToLong( IndexSample::sampleSize ).sum() );
     }
 }

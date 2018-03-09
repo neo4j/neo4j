@@ -30,38 +30,47 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
+
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class FusionIndexReader implements IndexReader
 {
+    private final IndexReader stringReader;
     private final IndexReader numberReader;
     private final IndexReader spatialReader;
     private final IndexReader temporalReader;
     private final IndexReader luceneReader;
+    private final IndexReader[] readers;
     private final Selector selector;
     private final SchemaIndexDescriptor descriptor;
 
-    FusionIndexReader( IndexReader numberReader,
-                       IndexReader spatialReader,
-                       IndexReader temporalReader,
-                       IndexReader luceneReader,
-                       Selector selector,
-                       SchemaIndexDescriptor descriptor )
+    FusionIndexReader(
+            IndexReader stringReader,
+            IndexReader numberReader,
+            IndexReader spatialReader,
+            IndexReader temporalReader,
+            IndexReader luceneReader,
+            Selector selector,
+            SchemaIndexDescriptor descriptor )
     {
+        this.stringReader = stringReader;
         this.numberReader = numberReader;
         this.spatialReader = spatialReader;
         this.temporalReader = temporalReader;
         this.luceneReader = luceneReader;
+        this.readers = array( stringReader, numberReader, spatialReader, temporalReader, luceneReader );
         this.selector = selector;
         this.descriptor = descriptor;
     }
@@ -69,19 +78,21 @@ class FusionIndexReader implements IndexReader
     @Override
     public void close()
     {
-        forAll( Resource::close, numberReader, spatialReader, temporalReader, luceneReader );
+        forAll( Resource::close, readers );
     }
 
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        return selector.select( numberReader, spatialReader, temporalReader, luceneReader, propertyValues ).countIndexedNodes( nodeId, propertyValues );
+        return selector.select( stringReader, numberReader, spatialReader, temporalReader, luceneReader, propertyValues )
+                .countIndexedNodes( nodeId, propertyValues );
     }
 
     @Override
     public IndexSampler createSampler()
     {
         return new FusionIndexSampler(
+                stringReader.createSampler(),
                 numberReader.createSampler(),
                 spatialReader.createSampler(),
                 temporalReader.createSampler(),
@@ -95,19 +106,25 @@ class FusionIndexReader implements IndexReader
         {
             return luceneReader.query( predicates );
         }
+        IndexQuery predicate = predicates[0];
 
-        if ( predicates[0] instanceof ExactPredicate )
+        if ( predicate instanceof ExactPredicate )
         {
             ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
-            return selector.select( numberReader, spatialReader, temporalReader, luceneReader, exactPredicate.value() ).query( predicates );
+            return selector.select( stringReader, numberReader, spatialReader, temporalReader, luceneReader, exactPredicate.value() ).query( predicates );
         }
 
-        if ( predicates[0] instanceof NumberRangePredicate )
+        if ( predicate instanceof NumberRangePredicate )
         {
             return numberReader.query( predicates );
         }
 
-        if ( predicates[0] instanceof GeometryRangePredicate )
+        if ( predicate instanceof StringRangePredicate )
+        {
+            return stringReader.query( predicate );
+        }
+
+        if ( predicate instanceof GeometryRangePredicate )
         {
             return spatialReader.query( predicates );
         }
@@ -119,13 +136,14 @@ class FusionIndexReader implements IndexReader
 //        }
 
         // todo: There will be no ordering of the node ids here. Is this a problem?
-        if ( predicates[0] instanceof ExistsPredicate )
+        if ( predicate instanceof ExistsPredicate )
         {
-            PrimitiveLongResourceIterator numberResult = numberReader.query( predicates );
-            PrimitiveLongResourceIterator spatialResult = spatialReader.query( predicates );
-            PrimitiveLongResourceIterator temporalResult = temporalReader.query( predicates );
-            PrimitiveLongResourceIterator luceneResult = luceneReader.query( predicates );
-            return PrimitiveLongResourceCollections.concat( numberResult, spatialResult, temporalResult, luceneResult );
+            PrimitiveLongResourceIterator[] iterators = new PrimitiveLongResourceIterator[readers.length];
+            for ( int i = 0; i < readers.length; i++ )
+            {
+                iterators[i] = readers[i].query( predicates );
+            }
+            return PrimitiveLongResourceCollections.concat( iterators );
         }
 
         return luceneReader.query( predicates );
@@ -140,23 +158,31 @@ class FusionIndexReader implements IndexReader
             luceneReader.query( cursor, indexOrder, predicates );
             return;
         }
+        IndexQuery predicate = predicates[0];
 
-        if ( predicates[0] instanceof ExactPredicate )
+        if ( predicate instanceof ExactPredicate )
         {
             ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
-            selector.select( numberReader, spatialReader, temporalReader, luceneReader, exactPredicate.value() ).query( cursor, indexOrder, predicates );
+            selector.select( stringReader, numberReader, spatialReader, temporalReader, luceneReader, exactPredicate.value() )
+                    .query( cursor, indexOrder, predicate );
             return;
         }
 
-        if ( predicates[0] instanceof NumberRangePredicate )
+        if ( predicate instanceof NumberRangePredicate )
         {
-            numberReader.query( cursor, indexOrder, predicates );
+            numberReader.query( cursor, indexOrder, predicate );
             return;
         }
 
-        if ( predicates[0] instanceof GeometryRangePredicate )
+        if ( predicate instanceof StringRangePredicate )
         {
-            spatialReader.query( cursor, indexOrder, predicates );
+            stringReader.query( cursor, indexOrder, predicate );
+            return;
+        }
+
+        if ( predicate instanceof GeometryRangePredicate )
+        {
+            spatialReader.query( cursor, indexOrder, predicate );
             return;
         }
 
@@ -167,7 +193,7 @@ class FusionIndexReader implements IndexReader
 //        }
 
         // todo: There will be no ordering of the node ids here. Is this a problem?
-        if ( predicates[0] instanceof ExistsPredicate )
+        if ( predicate instanceof ExistsPredicate )
         {
             if ( indexOrder != IndexOrder.NONE )
             {
@@ -178,10 +204,10 @@ class FusionIndexReader implements IndexReader
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor,
                     descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
-            numberReader.query( multiProgressor, indexOrder, predicates );
-            spatialReader.query( multiProgressor, indexOrder, predicates );
-            temporalReader.query( multiProgressor, indexOrder, predicates );
-            luceneReader.query( multiProgressor, indexOrder, predicates );
+            for ( IndexReader reader : readers )
+            {
+                reader.query( multiProgressor, indexOrder, predicate );
+            }
             return;
         }
 
@@ -201,6 +227,7 @@ class FusionIndexReader implements IndexReader
         {
             Value value = ((ExactPredicate) predicate).value();
             return selector.select(
+                    stringReader.hasFullValuePrecision( predicates ),
                     numberReader.hasFullValuePrecision( predicates ),
                     spatialReader.hasFullValuePrecision( predicates ),
                     temporalReader.hasFullValuePrecision( predicates ),

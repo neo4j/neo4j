@@ -32,26 +32,31 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
+import static org.neo4j.helpers.collection.Iterators.array;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.combineSamples;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.combineSamples;
 
 class FusionIndexPopulator implements IndexPopulator
 {
+    private final IndexPopulator stringPopulator;
     private final IndexPopulator numberPopulator;
     private final IndexPopulator spatialPopulator;
     private final IndexPopulator temporalPopulator;
     private final IndexPopulator lucenePopulator;
+    private final IndexPopulator[] populators;
     private final Selector selector;
     private final long indexId;
     private final DropAction dropAction;
 
-    FusionIndexPopulator( IndexPopulator numberPopulator, IndexPopulator spatialPopulator, IndexPopulator temporalPopulator,
+    FusionIndexPopulator( IndexPopulator stringPopulator, IndexPopulator numberPopulator, IndexPopulator spatialPopulator, IndexPopulator temporalPopulator,
             IndexPopulator lucenePopulator, Selector selector, long indexId, DropAction dropAction )
     {
+        this.stringPopulator = stringPopulator;
         this.numberPopulator = numberPopulator;
         this.spatialPopulator = spatialPopulator;
         this.temporalPopulator = temporalPopulator;
         this.lucenePopulator = lucenePopulator;
+        this.populators = array( stringPopulator, numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
         this.selector = selector;
         this.indexId = indexId;
         this.dropAction = dropAction;
@@ -60,50 +65,50 @@ class FusionIndexPopulator implements IndexPopulator
     @Override
     public void create() throws IOException
     {
-        numberPopulator.create();
-        spatialPopulator.create();
-        temporalPopulator.create();
-        lucenePopulator.create();
+        FusionIndexUtils.forAll( IndexPopulator::create, populators );
     }
 
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexPopulator::drop, numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
+        forAll( IndexPopulator::drop, populators );
         dropAction.drop( indexId );
     }
 
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<?>> luceneBatch = new ArrayList<>();
+        Collection<IndexEntryUpdate<?>> stringBatch = new ArrayList<>();
+        Collection<IndexEntryUpdate<?>> numberBatch = new ArrayList<>();
         Collection<IndexEntryUpdate<?>> spatialBatch = new ArrayList<>();
         Collection<IndexEntryUpdate<?>> temporalBatch = new ArrayList<>();
-        Collection<IndexEntryUpdate<?>> numberBatch = new ArrayList<>();
+        Collection<IndexEntryUpdate<?>> luceneBatch = new ArrayList<>();
         for ( IndexEntryUpdate<?> update : updates )
         {
-            selector.select( numberBatch, spatialBatch, temporalBatch, luceneBatch, update.values() ).add( update );
+            selector.select( stringBatch, numberBatch, spatialBatch, temporalBatch, luceneBatch, update.values() ).add( update );
         }
-        lucenePopulator.add( luceneBatch );
+        stringPopulator.add( stringBatch );
+        numberPopulator.add( numberBatch );
         spatialPopulator.add( spatialBatch );
         temporalPopulator.add( temporalBatch );
-        numberPopulator.add( numberBatch );
+        lucenePopulator.add( luceneBatch );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        numberPopulator.verifyDeferredConstraints( propertyAccessor );
-        spatialPopulator.verifyDeferredConstraints( propertyAccessor );
-        temporalPopulator.verifyDeferredConstraints( propertyAccessor );
-        lucenePopulator.verifyDeferredConstraints( propertyAccessor );
+        for ( IndexPopulator populator : populators )
+        {
+            populator.verifyDeferredConstraints( propertyAccessor );
+        }
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
         return new FusionIndexUpdater(
+                stringPopulator.newPopulatingUpdater( accessor ),
                 numberPopulator.newPopulatingUpdater( accessor ),
                 spatialPopulator.newPopulatingUpdater( accessor ),
                 temporalPopulator.newPopulatingUpdater( accessor ),
@@ -113,25 +118,26 @@ class FusionIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( populator -> populator.close( populationCompletedSuccessfully ), numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
+        forAll( populator -> populator.close( populationCompletedSuccessfully ), populators );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( populator -> populator.markAsFailed( failure ), numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
+        forAll( populator -> populator.markAsFailed( failure ), populators );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        selector.select( numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator, update.values() ).includeSample( update );
+        selector.select( stringPopulator, numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator, update.values() ).includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
         return combineSamples(
+                stringPopulator.sampleResult(),
                 numberPopulator.sampleResult(),
                 spatialPopulator.sampleResult(),
                 temporalPopulator.sampleResult(),
