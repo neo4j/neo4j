@@ -57,8 +57,8 @@ trait Query extends Parser
     | Match
     | Unwind
     | Merge
-    | Create
     | CreateUnique
+    | Create
     | SetClause
     | Delete
     | Remove
