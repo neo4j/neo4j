@@ -115,6 +115,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
+import static org.neo4j.causalclustering.core.server.CoreServerModule.asCCAddress;
 import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 
 /**
@@ -281,7 +282,12 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                         platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                         null, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
-                        platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
+                        config.get( CausalClusteringSettings.transaction_listen_address ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
+        CatchupServer backupCatchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ),
+                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
+                null, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
+                asCCAddress( config.get( OnlineBackupSettings.online_backup_server ) ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
 
         servicesToStopOnStoreCopy.add( catchupServer );
 

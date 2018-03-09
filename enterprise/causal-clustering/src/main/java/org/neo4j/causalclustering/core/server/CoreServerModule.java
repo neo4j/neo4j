@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.server;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.ReplicationModule;
@@ -58,6 +59,8 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -82,6 +85,7 @@ public class CoreServerModule
 
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
     private final CatchupServer catchupServer;
+    private final CatchupServer backupCatchupServer;
     private final IdentityModule identityModule;
     private final CoreStateMachinesModule coreStateMachinesModule;
     private final ConsensusModule consensusModule;
@@ -118,8 +122,6 @@ public class CoreServerModule
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final LifeSupport life = platformModule.life;
-        Map<String, String> overrideBackupSettings = backupDisabledSettings();
-        config.augment( overrideBackupSettings );
 
         this.logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
@@ -162,7 +164,20 @@ public class CoreServerModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
+                config.get( CausalClusteringSettings.transaction_listen_address ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
+        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
+        {
+            backupCatchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
+                    platformModule.dependencies.provideDependency( TransactionIdStore.class ),
+                    platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
+                    snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem,
+                    platformModule.pageCache, asCCAddress( config.get( OnlineBackupSettings.online_backup_server ) ), platformModule.storeCopyCheckPointMutex,
+                    serverPipelineWrapper );
+        }
+        else
+        {
+            backupCatchupServer = null;
+        }
 
         RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
@@ -174,6 +189,11 @@ public class CoreServerModule
         dependencies.satisfyDependency( catchupServer );
 
         servicesToStopOnStoreCopy.add( catchupServer );
+    }
+
+    public static ListenSocketAddress asCCAddress( HostnamePort hostnamePort )
+    {
+        return new ListenSocketAddress( hostnamePort.getHost(), hostnamePort.getPort() );
     }
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )
@@ -211,6 +231,11 @@ public class CoreServerModule
         return catchupServer;
     }
 
+    public Optional<CatchupServer> backupCatchupServer()
+    {
+        return Optional.ofNullable( backupCatchupServer );
+    }
+
     public CoreLife createCoreLife( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler )
     {
         return new CoreLife( consensusModule.raftMachine(),
@@ -226,12 +251,5 @@ public class CoreServerModule
     public CoreStateDownloaderService downloadService()
     {
         return downloadService;
-    }
-
-    private static Map<String,String> backupDisabledSettings()
-    {
-        Map<String,String> overrideBackupSettings = new HashMap<>(  );
-        overrideBackupSettings.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
-        return overrideBackupSettings;
     }
 }

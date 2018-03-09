@@ -116,12 +116,12 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                           Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
                           CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
-                          FileSystemAbstraction fs, PageCache pageCache,
+                          FileSystemAbstraction fs, PageCache pageCache, ListenSocketAddress listenAddress,
                           StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineWrapper pipelineWrapper )
     {
         this.snapshotService = snapshotService;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
-        this.listenAddress = config.get( CausalClusteringSettings.transaction_listen_address );
+        this.listenAddress = listenAddress;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
         this.dataSourceAvailabilitySupplier = dataSourceAvailabilitySupplier;

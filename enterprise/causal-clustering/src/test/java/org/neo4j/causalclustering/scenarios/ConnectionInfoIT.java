@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -71,12 +72,12 @@ public class ConnectionInfoIT
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
         CoreSnapshotService snapshotService = mock( CoreSnapshotService.class );
         Config config = Config.defaults( transaction_listen_address, ":" + testSocket.getLocalPort() );
+        ListenSocketAddress listenSocketAddress = new ListenSocketAddress( "localhost", testSocket.getPort() );
 
         CatchupServer catchupServer =
-                new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),
-                        mockSupplier(), mock( BooleanSupplier.class ), snapshotService, config, new Monitors(),
-                        mock( CheckpointerSupplier.class), mock( FileSystemAbstraction.class ), mock( PageCache.class ),
-                        new StoreCopyCheckPointMutex(), null );
+                new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(), mockSupplier(), mock( BooleanSupplier.class ),
+                        snapshotService, config, new Monitors(), mock( CheckpointerSupplier.class ), mock( FileSystemAbstraction.class ),
+                        mock( PageCache.class ), listenSocketAddress, new StoreCopyCheckPointMutex(), null );
 
         //then
         try
